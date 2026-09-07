@@ -1,0 +1,2021 @@
+
+HEALTHCARE PLATFORM
+BUSINESS BLUEPRINT v0.1
+========================
+
+Document Type:
+Business Blueprint / Pre-Architecture Product Definition
+
+Purpose:
+هذا الملف يعرّف البيزنس المقترح للمشروع قبل البدء في الـ Architecture أو الـ Code.
+
+الهدف أن نعرف:
+- لماذا نبني المنتج؟
+- لمن نبنيه؟
+- ما المشكلة التي يحلها؟
+- ما القيمة لكل Actor؟
+- كيف يعمل المنتج كنظام Business متكامل؟
+- ما الذي تم الاتفاق عليه؟
+- ما الذي ما زال Proposal؟
+- ما الذي يحتاج Validation قبل البناء؟
+
+IMPORTANT PRINCIPLE
+-------------------
+Business First
+    ↓
+Customer Problem
+    ↓
+Value Proposition
+    ↓
+Business Capability
+    ↓
+Product Feature
+    ↓
+Domain Model
+    ↓
+Architecture
+    ↓
+API / Code
+
+أي Feature لا نستطيع تفسير:
+"من المستفيد منها؟ ولماذا هي مهمة؟ وما القيمة الناتجة عنها؟"
+لا تعتبر تلقائيًا جزءًا من المنتج.
+
+STATUS LEGEND
+-------------
+[CONFIRMED]         تم الاتفاق عليه مبدئيًا في المناقشات.
+[PROPOSED]          اقتراح Business منطقي يحتاج اعتماد.
+[DECISION REQUIRED] قرار لم يُحسم بعد.
+[VALIDATION]        فرضية Business تحتاج اختبار مع مستخدمين/سوق.
+[FUTURE]            ليست مطلوبة في النسخة الأولى لكن يجب عدم غلق الباب أمامها.
+
+======================================================================
+1. PRODUCT VISION
+======================================================================
+
+[CONFIRMED]
+
+المنتج عبارة عن Healthcare Platform مركزية تربط:
+- Patients
+- Doctors
+- Doctor Reception / Front Desk
+- SuperAdmin
+- Medical Records
+- Reservations
+- Queue / Tickets
+- Prescriptions
+- Diagnoses
+- Lab Requests / Results
+- Radiology Requests / Results
+- Payments
+- Doctor Revenue
+- Doctor Branding / Configuration
+
+الفكرة ليست مجرد:
+"حجز دكتور أونلاين"
+
+ولكن:
+"منصة تدير رحلة المريض من البحث عن الطبيب والحجز والوصول للعيادة والانتظار والكشف
+وحتى تخزين التاريخ الطبي الكامل للمريض بصورة مركزية يمكن الاستفادة منها في زياراته
+المستقبلية داخل المنصة."
+
+High-Level Promise:
+
+PATIENT:
+"تاريخك الطبي لا يبدأ من الصفر كل مرة."
+
+DOCTOR:
+"اعرف المريض قبل أن تعالجه، وأدر عيادتك من مكان واحد."
+
+RECEPTION:
+"أدر الحجز، الحضور، الـ Queue والدفع بسهولة."
+
+PLATFORM:
+"ابنِ شبكة رعاية صحية مترابطة، وليس مجرد دليل أطباء."
+
+======================================================================
+2. CORE BUSINESS PROBLEM
+======================================================================
+
+2.1 Patient Problems
+--------------------
+
+[CONFIRMED / HIGH-CONFIDENCE HYPOTHESIS]
+
+المريض غالبًا يعاني من:
+- تاريخ طبي موزع بين دكاترة مختلفين.
+- روشتات ورقية تضيع.
+- تحاليل وأشعة غير منظمة.
+- تكرار شرح تاريخه الطبي لكل دكتور.
+- عدم معرفة مواعيد الأطباء المتاحة بدقة.
+- تجربة انتظار غير واضحة داخل العيادة.
+- عدم وجود Timeline موحدة للزيارات.
+- صعوبة معرفة ماذا وصف الطبيب وما التشخيص وما المطلوب من تحاليل وأشعة.
+
+Business Opportunity:
+تحويل بيانات المريض من ملفات متفرقة إلى Longitudinal Medical Record مركزي.
+
+2.2 Doctor Problems
+-------------------
+
+[PROPOSED / VALIDATION]
+
+الدكتور قد يعاني من:
+- Scheduling يدوي أو غير منظم.
+- ضغط Reception.
+- ضعف رؤية الـ Queue.
+- مرضى Walk-In بدون تنظيم.
+- غياب أو NoShow.
+- صعوبة معرفة تاريخ المريض.
+- الاعتماد على الورق.
+- روشتات غير محفوظة مركزيًا.
+- ضعف متابعة الإيرادات اليومية.
+- استخدام أكثر من أداة:
+  WhatsApp + Notebook + Excel + Paper + Phone Calls.
+
+Potential Value:
+توحيد Clinic Operations + Patient Context + Medical Documentation.
+
+2.3 Reception Problems
+----------------------
+
+[PROPOSED / VALIDATION]
+
+Reception تحتاج:
+- تسجيل مريض بسرعة.
+- البحث عن مريض موجود.
+- الحجز له.
+- Check-In.
+- تحويل Reservation إلى Ticket.
+- إنشاء Direct Ticket للـ Walk-In.
+- تحريك Queue.
+- تسجيل Payment.
+- معرفة من ينتظر ومن تم استدعاؤه.
+- عدم الدخول في Financial Analytics لا تخصها.
+
+======================================================================
+3. TARGET USERS & BUSINESS ACTORS
+======================================================================
+
+3.1 SuperAdmin
+--------------
+
+[CONFIRMED]
+
+هو أعلى Authority على مستوى الـ Platform.
+
+Responsibilities:
+- إدارة المنصة كلها.
+- مراجعة طلبات تسجيل الأطباء.
+- Approve Doctor.
+- Reject Doctor.
+- Suspend Doctor.
+- Reactivate Doctor.
+- إدارة Specializations.
+- إدارة Roles & Permissions.
+- الاطلاع على Platform Operations.
+- إدارة Global Settings.
+- إدارة Reference Data العامة.
+- الإشراف على المشاكل التشغيلية.
+- Audit / Monitoring.
+
+Business Role:
+Platform Operator / Platform Owner.
+
+3.2 Doctor
+----------
+
+[CONFIRMED]
+
+الدكتور هو الـ Operational Owner لوحدته.
+
+Doctor manages:
+- Profile.
+- Specialization.
+- Schedule.
+- Slot Duration.
+- Segments.
+- Booking availability.
+- Reception users.
+- Queue.
+- Medical visits.
+- Prescriptions.
+- Diagnosis.
+- Lab Requests.
+- Radiology Requests.
+- Configuration.
+- Branding / Theme.
+- Revenue Dashboard.
+
+Important:
+Doctor is not automatically approved after registration.
+
+3.3 Reception
+-------------
+
+[CONFIRMED]
+
+Reception تكون تابعة لدكتور.
+
+Responsibilities:
+- Patient registration.
+- Patient search.
+- Create reservation.
+- Check-in reservation.
+- Convert reservation to ticket.
+- Create direct ticket.
+- Queue operations.
+- Call next.
+- Mark NoShow حسب Permission.
+- Record payments.
+
+Restrictions:
+- لا ترى Revenue Dashboard الخاص بالدكتور.
+- لا ترى Financial Aggregates غير اللازمة للتشغيل.
+- Medical access يجب أن يكون محدودًا بما تحتاجه وظيفيًا.
+
+3.4 Patient
+-----------
+
+[CONFIRMED]
+
+Patient كيان Global على مستوى المنصة.
+لا ينتمي لدكتور واحد.
+
+Patient can:
+- Create profile.
+- Manage basic profile.
+- Browse doctors.
+- Filter by specialization.
+- View doctor profile.
+- View available dates/slots.
+- Create reservation.
+- See active reservation.
+- See current ticket.
+- See queue status.
+- See visit history.
+- See prescriptions.
+- See diagnosis shared with him.
+- See lab requests/results.
+- See radiology requests/results.
+- See medical timeline.
+
+======================================================================
+4. ORGANIZATIONAL MODEL
+======================================================================
+
+[CONFIRMED]
+
+SuperAdmin
+   |
+   +-- Doctors
+   |    |
+   |    +-- Reception Users
+   |    +-- Schedules
+   |    +-- Segments
+   |    +-- Reservations
+   |    +-- Tickets
+   |    +-- Queue
+   |    +-- Branding
+   |    +-- Configuration
+   |    +-- Revenue
+   |
+   +-- Patients
+   +-- Medical Specializations
+   +-- Platform Configuration
+   +-- Roles / Permissions
+
+[DECISION REQUIRED]
+
+Business-wise:
+Doctor currently acts like Branch.
+
+لكن future-proof model قد يصبح:
+
+Doctor
+   ↓
+Practice / Clinic
+
+Reasons:
+- Doctor may work in multiple clinics.
+- Clinic may contain multiple doctors.
+- Reception may belong to clinic instead of one doctor.
+- Prices may vary by location.
+- Schedule may vary by location.
+
+For V1:
+Possible simplification:
+1 Doctor = 1 Practice
+
+======================================================================
+5. DOCTOR ONBOARDING BUSINESS FLOW
+======================================================================
+
+[CONFIRMED]
+
+Doctor Registration
+        ↓
+User Account Created
+        ↓
+Doctor Profile Created
+        ↓
+Status = Pending
+        ↓
+SuperAdmin Review
+        ↓
+Approve / Reject
+
+Suggested statuses:
+
+[PROPOSED]
+Pending
+Approved
+Rejected
+Suspended
+
+Important distinction:
+
+DoctorApprovalStatus
+!=
+DoctorPublicationStatus
+
+A doctor may be Approved but Not Ready For Booking because they have not completed:
+- Profile.
+- Specialization.
+- Schedule.
+- Price.
+- Booking configuration.
+
+Possible publication lifecycle:
+Incomplete
+Ready
+Published
+Unpublished
+
+Rule:
+Only Approved + Published doctors appear in patient search.
+
+======================================================================
+6. PATIENT ONBOARDING
+======================================================================
+
+[CONFIRMED]
+
+Patient can create an account directly.
+
+Core profile may include:
+
+[PROPOSED]
+- Full Name
+- Date of Birth
+- Gender
+- Phone
+- Email
+- Address
+- Emergency Contact
+- Blood Type
+- Allergies
+- Chronic Conditions
+- Current Medications
+
+Important:
+Not all medical fields should necessarily be mandatory at registration.
+
+Business Goal:
+Keep onboarding low-friction.
+
+[VALIDATION]
+How much information will patients realistically provide during signup?
+
+======================================================================
+7. DOCTOR DISCOVERY
+======================================================================
+
+[CONFIRMED]
+
+Patient Journey:
+
+Specialization
+      ↓
+Doctors
+      ↓
+Doctor Profile
+      ↓
+Available Dates
+      ↓
+Available Slots
+      ↓
+Reservation
+
+Doctor Profile may show:
+
+[PROPOSED]
+- Name
+- Photo
+- Specialization
+- Qualifications
+- Bio
+- Consultation Price
+- Clinic/Practice info
+- Location
+- Working days
+- Ratings [FUTURE / VALIDATION]
+- Languages
+- Available slots
+- Branding
+
+======================================================================
+8. DOCTOR SCHEDULE
+======================================================================
+
+[CONFIRMED]
+
+Doctor controls weekly schedule.
+
+Example:
+Saturday 10:00 → 14:00
+Monday 17:00 → 21:00
+Wednesday 17:00 → 21:00
+
+Doctor defines:
+- Working days.
+- Working periods.
+- Slot Duration.
+
+Example:
+Working Period: 17:00 → 21:00
+Slot Duration: 20 minutes
+Theoretical slots: 240 / 20 = 12 patients.
+
+8.1 Schedule Exceptions
+-----------------------
+
+[PROPOSED]
+
+Need support eventually for:
+- Doctor vacation.
+- One-day closure.
+- Emergency unavailable day.
+- Extra working day.
+- Break.
+- Blocked slot.
+- Special seasonal schedule.
+- Override slot duration.
+
+[DECISION REQUIRED]
+What is MVP scope?
+
+======================================================================
+9. SEGMENTS
+======================================================================
+
+[CONFIRMED]
+
+Doctor can define Segments similar to QControl.
+
+Examples:
+Normal
+VIP
+Follow-up
+Priority
+
+Segment may contain:
+
+[PROPOSED]
+- Name.
+- Daily quota.
+- Priority.
+- Price.
+- Booking rules.
+
+Example:
+VIP Daily Quota = 10
+
+[VALIDATION]
+Do doctors actually need VIP / priority segmentation?
+Which specialties benefit?
+
+======================================================================
+10. RESERVATION
+======================================================================
+
+[CONFIRMED]
+
+Reservation represents:
+"Booked intention / appointment"
+
+It is not yet actual queue attendance.
+
+Example:
+Patient: X
+Doctor: Y
+Date: 2026-09-10
+Time: 18:20
+Segment: Normal
+
+Reservation business checks should include conceptually:
+
+[PROPOSED]
+- Doctor approved.
+- Doctor published.
+- Doctor available.
+- Slot exists.
+- Slot not already fully consumed.
+- Segment quota available.
+- Patient not violating duplicate booking policy.
+
+======================================================================
+11. CHECK-IN & RESERVATION TO TICKET
+======================================================================
+
+[CONFIRMED]
+
+When patient arrives:
+
+Reservation
+     ↓
+Reception
+     ↓
+Check-In
+     ↓
+Ticket
+     ↓
+Waiting Queue
+
+Reservation = planned visit
+Ticket = actual physical/operational arrival
+
+======================================================================
+12. DIRECT TICKET / WALK-IN
+======================================================================
+
+[CONFIRMED]
+
+Reception can create a Direct Ticket without prior reservation.
+
+Walk-In Patient
+      ↓
+Find/Create Patient
+      ↓
+Direct Ticket
+      ↓
+Queue
+
+[DECISION REQUIRED]
+Can a Direct Ticket consume daily capacity beyond scheduled reservations?
+Can Doctor disable Walk-In completely?
+
+======================================================================
+13. QUEUE MANAGEMENT
+======================================================================
+
+[CONFIRMED]
+
+Queue lifecycle inspired by QControl.
+
+Suggested states:
+Waiting
+Called
+InProgress
+Completed
+Cancelled
+NoShow
+
+Potential transitions:
+
+Waiting
+  ↓
+Called
+  ↓
+InProgress
+  ↓
+Completed
+
+Alternative:
+Called
+  ↓
+NoShow
+
+Possible:
+NoShow
+  ↓
+Waiting
+
+depending on business rule.
+
+Reception:
+- Next
+- Call
+- Call Again
+- NoShow
+- Cancel
+
+Doctor:
+- Start Visit
+- Complete Visit
+
+[DECISION REQUIRED]
+Exact ownership of every transition.
+
+======================================================================
+14. CURRENT TICKET EXPERIENCE FOR PATIENT
+======================================================================
+
+[CONFIRMED]
+
+Patient should see:
+- Doctor.
+- Appointment.
+- Ticket number.
+- Current status.
+- Queue position / patients ahead.
+- Visit timeline.
+
+Example:
+Doctor: Dr. Ahmed
+Appointment: 18:20
+Ticket: A-015
+Status: Waiting
+Patients Ahead: 3
+
+======================================================================
+15. TICKET HISTORY
+======================================================================
+
+[CONFIRMED]
+
+Operational history should be tracked.
+
+Example:
+18:02 Reservation Converted To Ticket
+18:04 Entered Waiting Queue
+18:21 Called
+18:23 Visit Started
+18:41 Visit Completed
+
+Business Value:
+- Transparency.
+- Troubleshooting.
+- Audit.
+- Queue analytics.
+- Patient confidence.
+
+======================================================================
+16. MEDICAL ENCOUNTER / CLINICAL VISIT
+======================================================================
+
+[PROPOSED - STRONGLY RECOMMENDED]
+
+Do NOT treat Ticket as the complete medical record.
+
+Separate:
+
+Ticket
+=
+Operational Queue Lifecycle
+
+MedicalEncounter
+=
+Clinical Visit
+
+Flow:
+
+Ticket
+   ↓
+Doctor Starts Visit
+   ↓
+MedicalEncounter
+   ↓
+Diagnosis
+Prescription
+Lab Requests
+Radiology Requests
+Clinical Notes
+   ↓
+Completed
+
+Business Reason:
+Queue operations and clinical documentation have different responsibilities,
+privacy rules, history and lifecycle.
+
+======================================================================
+17. DIAGNOSIS
+======================================================================
+
+[CONFIRMED]
+
+Doctor records diagnosis during visit.
+
+Possible data:
+
+[PROPOSED]
+- Primary diagnosis.
+- Secondary diagnosis.
+- Symptoms.
+- Clinical notes.
+- Recommendations.
+
+[DECISION REQUIRED]
+Free-text only in V1?
+Or standardized diagnosis catalog later?
+
+======================================================================
+18. PRESCRIPTION
+======================================================================
+
+[CONFIRMED]
+
+Doctor creates prescription on platform.
+
+Prescription linked to:
+- Patient
+- Doctor
+- Medical Encounter
+- Date
+
+Prescription may contain:
+Medication
+- Name
+- Dose
+- Frequency
+- Duration
+- Instructions
+
+Business Value:
+- Patient keeps prescription permanently.
+- Doctor sees previous medications.
+- Reduces lost paper prescriptions.
+- Supports medical history.
+
+======================================================================
+19. LAB REQUESTS
+======================================================================
+
+[CONFIRMED]
+
+Doctor can request lab tests.
+
+Examples:
+- CBC
+- HbA1c
+- Liver Function
+- Kidney Function
+- Vitamin D
+
+Suggested lifecycle:
+Requested
+Completed
+Cancelled
+
+Patient profile should show:
+- Request.
+- Doctor.
+- Date.
+- Status.
+- Result when available.
+
+19.1 Lab Result Entry
+---------------------
+
+[DECISION REQUIRED]
+
+Who uploads result?
+
+Possibilities:
+1. Patient uploads.
+2. Reception uploads.
+3. Doctor uploads.
+4. Lab center integration.
+5. Multiple sources with verification.
+
+Need provenance:
+Who uploaded this result?
+When?
+Was it externally verified?
+
+======================================================================
+20. RADIOLOGY
+======================================================================
+
+[CONFIRMED]
+
+Doctor can request:
+- X-Ray
+- MRI
+- CT
+- Ultrasound
+etc.
+
+Possible lifecycle:
+Requested
+Completed
+Cancelled
+
+Result may contain:
+- PDF report.
+- Images.
+- Attachments.
+- Notes.
+
+[FUTURE]
+Direct Radiology Center integration.
+
+======================================================================
+21. CENTRAL PATIENT MEDICAL RECORD
+======================================================================
+
+[CONFIRMED - CORE PRODUCT VALUE]
+
+Patient
+   |
+   +-- Visits
+   +-- Diagnoses
+   +-- Prescriptions
+   +-- Lab Requests
+   +-- Lab Results
+   +-- Radiology Requests
+   +-- Radiology Results
+   +-- Medical Attachments
+   +-- Doctors Visited
+
+Goal:
+Create a Longitudinal Medical Record.
+
+Patient Outcome:
+"No need to carry my history manually between doctors."
+
+======================================================================
+22. MEDICAL RECORD SHARING
+======================================================================
+
+[CONFIRMED CONCEPT / DECISION REQUIRED DETAILS]
+
+Doctor should be able to see relevant patient history.
+
+BUT:
+
+Permission alone must not mean:
+"Any doctor can open any patient."
+
+Need an Access Policy.
+
+Potential models:
+
+[PROPOSED]
+
+Model A:
+Doctor can access only patients with current/past encounter.
+
+Model B:
+Patient explicitly grants access.
+
+Model C:
+Hybrid:
+Current encounter gives limited access;
+full history requires patient consent.
+
+Model D:
+Emergency override with audit trail.
+
+This is a CRITICAL BUSINESS + PRIVACY DECISION.
+
+======================================================================
+23. DOCTOR CONFIGURATION
+======================================================================
+
+[CONFIRMED]
+
+Doctor behaves similarly to QControl Branch in operational configuration.
+
+DoctorConfiguration may conceptually include:
+- Slot duration.
+- Booking rules.
+- Walk-in enabled/disabled.
+- Maximum daily patients.
+- NoShow policy.
+- Cancellation policy.
+- Queue behavior.
+- Payment requirements.
+- Patient arrival grace period.
+
+======================================================================
+24. DOCTOR BRANDING / THEME
+======================================================================
+
+[CONFIRMED]
+
+Doctor can customize identity/experience.
+
+Possible:
+- Logo.
+- Profile image.
+- Primary color.
+- Secondary color.
+- Background.
+- Public booking page theme.
+- Welcome text.
+- Instructions.
+- Display theme.
+
+Business Value:
+- Doctor feels ownership.
+- Better clinic identity.
+- Stronger SaaS stickiness.
+- White-label-like experience without full white labeling.
+
+======================================================================
+25. WAITING ROOM DISPLAY
+======================================================================
+
+[PROPOSED]
+
+Potential future capability inspired by QControl.
+
+Example:
+Dr. Ahmed Clinic
+---------------------
+Now Serving: A-017
+
+Next:
+A-018
+A-019
+A-020
+
+Potential options:
+- Ticket number only.
+- Masked patient name.
+- Doctor branding.
+- Messages / media.
+
+[VALIDATION]
+Do target doctors actually need physical waiting screen?
+
+======================================================================
+26. PAYMENTS
+======================================================================
+
+[CONFIRMED]
+
+Reception records payment.
+
+Example:
+Consultation Fee: 500 EGP
+Paid: 500
+Method: Cash
+
+Possible payment methods:
+
+[PROPOSED]
+- Cash
+- Card
+- Wallet
+- Online payment
+
+======================================================================
+27. REVENUE
+======================================================================
+
+[CONFIRMED]
+
+Doctor can view revenue.
+
+Reception should NOT see Doctor Revenue Dashboard.
+
+Doctor may see:
+- Today revenue.
+- This month revenue.
+- Revenue by day.
+- Revenue by segment.
+- Payments by method.
+- Paid / unpaid visits.
+
+SuperAdmin may have platform-level financial visibility depending on business model.
+
+[DECISION REQUIRED]
+Will platform take commission?
+Subscription only?
+Hybrid?
+
+======================================================================
+28. PROPOSED REVENUE MODEL FOR THE PLATFORM
+======================================================================
+
+[PROPOSED / VALIDATION REQUIRED]
+
+MODEL 1 — Doctor Subscription
+-----------------------------
+Doctor pays monthly/annual SaaS subscription.
+
+Pros:
+- Predictable revenue.
+- Simple.
+- Doctor knows cost.
+
+Cons:
+- Harder initial adoption.
+- Need clear ROI.
+
+MODEL 2 — Commission Per Booking
+--------------------------------
+Platform takes % or fixed fee per successful reservation/visit.
+
+Pros:
+- Low entry barrier.
+- Revenue aligns with value.
+
+Cons:
+- Doctors may move patients offline.
+- Payment tracking complexity.
+
+MODEL 3 — Hybrid
+----------------
+Low subscription + small booking/payment fee.
+
+MODEL 4 — Freemium
+------------------
+Free core clinic operations.
+Paid:
+- Medical analytics.
+- Branding.
+- More reception users.
+- Higher storage.
+- Reports.
+- Integrations.
+- SMS/WhatsApp.
+- Advanced queue.
+
+[VALIDATION]
+Pricing cannot be decided from software cost only.
+Need willingness-to-pay interviews.
+
+======================================================================
+29. VALUE PROPOSITION BY ACTOR
+======================================================================
+
+PATIENT
+-------
+"احجز بسهولة، اعرف دورك، واحتفظ بتاريخك الطبي كله في مكان واحد."
+
+Benefits:
+- Convenience.
+- Continuity.
+- Transparency.
+- Less repeated paperwork.
+- Better access to personal records.
+
+DOCTOR
+------
+"شغّل عيادتك بوضوح واعرف تاريخ مريضك قبل القرار الطبي."
+
+Benefits:
+- Better workflow.
+- Better patient context.
+- Digital clinical documentation.
+- Revenue visibility.
+- Less operational chaos.
+
+RECEPTION
+---------
+"كل عمليات اليوم في شاشة واحدة."
+
+Benefits:
+- Less manual work.
+- Better queue control.
+- Faster patient check-in.
+- Less confusion.
+
+SUPERADMIN
+----------
+"تحكم في شبكة المنصة بأمان وبصورة قابلة للتوسع."
+
+Benefits:
+- Governance.
+- Doctor approval.
+- Platform visibility.
+- Standardized operations.
+
+======================================================================
+30. CUSTOMER JOURNEYS
+======================================================================
+
+30.1 Patient Journey
+--------------------
+Discover
+  ↓
+Search Specialization
+  ↓
+Choose Doctor
+  ↓
+View Availability
+  ↓
+Reserve Slot
+  ↓
+Arrive
+  ↓
+Check-In
+  ↓
+Ticket
+  ↓
+Wait
+  ↓
+Doctor Visit
+  ↓
+Diagnosis / Prescription / Requests
+  ↓
+Medical History Updated
+  ↓
+Future Doctor Visit Uses History
+
+30.2 Doctor Journey
+-------------------
+Register
+  ↓
+Pending
+  ↓
+Approved by SuperAdmin
+  ↓
+Complete Profile
+  ↓
+Configure Branding
+  ↓
+Configure Schedule
+  ↓
+Configure Segments / Pricing
+  ↓
+Create Reception
+  ↓
+Publish
+  ↓
+Receive Reservations
+  ↓
+Treat Patients
+  ↓
+Build Medical Records
+  ↓
+View Revenue
+
+30.3 Reception Journey
+----------------------
+Login
+  ↓
+Today's Schedule
+  ↓
+Search/Create Patient
+  ↓
+Reservation / Walk-In
+  ↓
+Check-In
+  ↓
+Ticket
+  ↓
+Queue Operations
+  ↓
+Record Payment
+  ↓
+Complete Front Desk Workflow
+
+======================================================================
+31. MARKET ALTERNATIVES
+======================================================================
+
+[VALIDATION]
+
+Likely alternatives customers currently use:
+- Paper notebooks.
+- Phone calls.
+- WhatsApp.
+- Excel.
+- Generic clinic software.
+- Doctor booking marketplaces.
+- Hospital systems.
+- Separate lab portals.
+- Separate radiology portals.
+- Patient manually carrying records.
+
+Business Question:
+Why switch?
+
+Potential answer:
+Because product combines:
+Booking + Clinic Operations + Queue + Medical Record Continuity.
+
+But this is a hypothesis until market interviews confirm it.
+
+======================================================================
+32. DIFFERENTIATION HYPOTHESIS
+======================================================================
+
+[PROPOSED]
+
+Do NOT position merely as:
+"Doctor Booking App"
+
+Potential positioning:
+
+"A connected outpatient healthcare platform where every visit improves the patient's permanent medical history."
+
+Differentiation pillars:
+1. Central Patient Medical Record.
+2. Doctor Operations / Queue.
+3. Booking & Scheduling.
+4. Clinical documentation.
+5. Doctor-owned configuration & branding.
+6. Cross-doctor continuity.
+
+======================================================================
+33. TRUST AS A CORE BUSINESS REQUIREMENT
+======================================================================
+
+Healthcare adoption requires trust.
+
+Trust dimensions:
+- Doctor verification.
+- Data privacy.
+- Patient consent.
+- Access history.
+- Accurate identity.
+- Secure documents.
+- Clear ownership of medical records.
+- Reliable availability.
+- Reliable reservation.
+- Clear payment records.
+
+Potential trust feature:
+Patient can see:
+"Who accessed my medical record?"
+
+[PROPOSED]
+
+======================================================================
+34. DATA OWNERSHIP PRINCIPLE
+======================================================================
+
+[DECISION REQUIRED]
+
+Recommended business principle:
+
+Patient owns/accesses personal longitudinal record.
+Doctor owns clinical authorship of entries they created.
+Platform acts as trusted custodian/operator.
+
+Need legal validation based on target market.
+
+======================================================================
+35. AUDITABILITY
+======================================================================
+
+[CONFIRMED BUSINESS NEED]
+
+Critical actions should have history:
+- Doctor approval.
+- Doctor suspension.
+- Medical record access.
+- Diagnosis changes.
+- Prescription creation/change.
+- Lab result upload.
+- Radiology result upload.
+- Payment.
+- Refund.
+- Ticket transitions.
+- Reservation changes.
+
+Healthcare requires:
+"Who did what, when?"
+
+======================================================================
+36. NOTIFICATIONS
+======================================================================
+
+[PROPOSED]
+
+Patient:
+- Reservation confirmation.
+- Reminder.
+- Doctor cancellation.
+- Queue called.
+- Prescription available.
+- New lab request.
+- New radiology request.
+
+Doctor:
+- New booking.
+- Cancellation.
+- Daily schedule.
+- NoShow summary.
+
+Channels:
+- In-app.
+- Email.
+- SMS.
+- WhatsApp [FUTURE / paid integration].
+
+======================================================================
+37. OUTBOX BUSINESS PRINCIPLE
+======================================================================
+
+[CONFIRMED]
+
+Any important communication generated from a business transaction should not depend
+on synchronous email sending.
+
+Example:
+
+Doctor Approved
+      +
+Approval Email
+      ↓
+Commit Business Change + Outbox Message
+      ↓
+Async Delivery
+
+Business benefit:
+- Reliability.
+- Reduced failed workflows.
+- Traceability.
+
+======================================================================
+38. CANCELLATION & NOSHOW
+======================================================================
+
+[DECISION REQUIRED]
+
+Need policies:
+
+Patient Cancellation:
+- Until how long before appointment?
+- Penalty?
+- Refund?
+- Slot returned immediately?
+
+NoShow:
+- Grace period?
+- Auto mark?
+- Can patient return to queue?
+- Repeated NoShow consequences?
+
+Doctor Cancellation:
+- Patients notified?
+- Automatic reschedule?
+- Refund?
+
+======================================================================
+39. FOLLOW-UP VISITS
+======================================================================
+
+[PROPOSED]
+
+Follow-up may be treated as:
+- Segment.
+- Separate booking type.
+- Reduced price.
+- Different duration.
+- Only allowed after prior encounter.
+
+Need business validation.
+
+======================================================================
+40. MEDICAL FILE UPLOADS
+======================================================================
+
+[PROPOSED]
+
+Patient may upload:
+- Previous lab report.
+- Radiology report.
+- Prescription.
+- Medical document.
+
+Important:
+Need distinction:
+
+Patient Uploaded
+vs
+Doctor Verified
+vs
+External Provider Verified
+
+Otherwise all documents appear equally trustworthy.
+
+======================================================================
+41. LAB / RADIOLOGY ECOSYSTEM
+======================================================================
+
+[FUTURE]
+
+Possible future Actors:
+- Lab Center
+- Radiology Center
+- Pharmacy
+
+Potential expansion:
+
+Doctor requests lab
+    ↓
+Patient chooses lab
+    ↓
+Lab receives order
+    ↓
+Lab submits verified result
+    ↓
+Medical record updated
+
+This could become a major network effect.
+
+======================================================================
+42. PHARMACY OPPORTUNITY
+======================================================================
+
+[FUTURE / VALIDATION]
+
+Prescription
+    ↓
+Patient chooses pharmacy
+    ↓
+Medicine availability
+    ↓
+Delivery / pickup
+
+Not MVP.
+
+Avoid expanding before core doctor/patient workflow is proven.
+
+======================================================================
+43. BUSINESS NETWORK EFFECT
+======================================================================
+
+[PROPOSED]
+
+Potential network effect:
+
+More Doctors
+   ↓
+More Patients
+   ↓
+Richer Patient Medical Histories
+   ↓
+More Value for Doctors
+   ↓
+More Doctor Adoption
+
+However:
+Network effect is not guaranteed.
+Must be tested.
+
+======================================================================
+44. KEY BUSINESS METRICS
+======================================================================
+
+44.1 Acquisition
+----------------
+- New patients/week.
+- New doctors/week.
+- Doctor approval rate.
+- Doctor activation rate.
+- Published doctors.
+
+44.2 Marketplace
+----------------
+- Searches.
+- Doctor profile views.
+- Slot views.
+- Reservation conversion rate.
+- Reservations per doctor.
+
+44.3 Operations
+---------------
+- Check-in rate.
+- Walk-in rate.
+- Average waiting time.
+- NoShow rate.
+- Cancellation rate.
+- Completed visits.
+- Queue throughput.
+
+44.4 Medical Record
+-------------------
+- % visits with diagnosis.
+- % visits with prescription.
+- % patients with previous history viewed.
+- Lab request completion.
+- Radiology request completion.
+- Medical file uploads.
+
+44.5 Doctor Value
+-----------------
+- Weekly active doctors.
+- Reservations per doctor.
+- Returning patients.
+- Reception usage.
+- Revenue recorded.
+- Doctor retention.
+
+44.6 Patient Value
+------------------
+- Repeat bookings.
+- Multi-doctor usage.
+- Medical history access.
+- Reservation-to-visit completion.
+- Patient retention.
+
+44.7 Financial
+--------------
+- MRR if subscription.
+- Revenue per doctor.
+- CAC.
+- LTV.
+- Gross margin.
+- Churn.
+- Payment success rate.
+
+======================================================================
+45. CRITICAL BUSINESS ASSUMPTIONS
+======================================================================
+
+[VALIDATION]
+
+A1. Patients want one central medical record.
+A2. Patients trust the platform with medical information.
+A3. Doctors will review historical data when available.
+A4. Doctors see enough operational value to adopt the system.
+A5. Reception can use digital queue tools easily.
+A6. Doctors are willing to configure schedules digitally.
+A7. Patients will use online reservations instead of phone/WhatsApp.
+A8. Doctors are willing to create prescriptions digitally.
+A9. Doctors are willing to document diagnosis digitally.
+A10. Medical history increases retention and switching value.
+A11. Doctors will pay subscription/commission.
+A12. One platform can serve different specialties without excessive complexity.
+A13. Segment/VIP model provides real value.
+A14. Queue functionality is important enough for independent clinics.
+A15. Cross-doctor record sharing is acceptable if privacy is controlled.
+
+======================================================================
+46. VALIDATION EXPERIMENTS BEFORE FULL BUILD
+======================================================================
+
+Recommended interviews:
+
+Doctors:
+- 10–20 doctors across specialties.
+
+Reception:
+- 5–10 receptionists.
+
+Patients:
+- 15–30 patients.
+
+Questions to test:
+- Current booking process.
+- Current queue pain.
+- NoShow rate.
+- Current record keeping.
+- How old reports are handled.
+- Will doctor read external history?
+- Biggest daily operational bottleneck.
+- What would doctor pay for?
+- What feature would make doctor switch?
+- What data will patient share?
+- Preferred consent model.
+
+Prototype experiments:
+1. Doctor schedule setup prototype.
+2. Patient booking prototype.
+3. Reception queue dashboard prototype.
+4. Patient medical timeline prototype.
+5. Doctor patient-history screen prototype.
+
+Success is evidence,
+not user saying:
+"Nice idea."
+
+======================================================================
+47. MVP BUSINESS SCOPE
+======================================================================
+
+[PROPOSED]
+
+MVP should prove:
+
+A. Doctor Supply
+- Doctor registration.
+- SuperAdmin approval.
+- Doctor profile.
+- Specialization.
+
+B. Doctor Operations
+- Schedule.
+- Slot duration.
+- Segments basic.
+- Reception.
+- Basic configuration.
+
+C. Patient Demand
+- Patient registration.
+- Search doctor.
+- Available slots.
+- Reservation.
+
+D. Physical Visit
+- Check-in.
+- Reservation → Ticket.
+- Direct Ticket.
+- Queue lifecycle.
+
+E. Clinical Value
+- Medical encounter.
+- Diagnosis.
+- Prescription.
+- Lab request.
+- Radiology request.
+
+F. Longitudinal Value
+- Patient timeline.
+- Previous encounters.
+- Prescriptions.
+- Uploaded results.
+
+G. Money
+- Record payment.
+- Doctor daily/basic revenue.
+
+Do NOT overload MVP with:
+- Pharmacy.
+- Insurance.
+- AI diagnosis.
+- Full hospital ERP.
+- Multi-clinic complex organizations.
+- Advanced accounting.
+- Video consultation.
+- Lab marketplace.
+- Radiology marketplace.
+
+======================================================================
+48. PHASED BUSINESS ROLLOUT
+======================================================================
+
+PHASE 1 — TRUST & ACCESS
+------------------------
+- SuperAdmin.
+- Doctor onboarding.
+- Doctor approval.
+- Patient identity.
+- Reception identity.
+- Roles/permissions.
+- Login/account recovery.
+
+Business Goal:
+Establish who can participate and under what authority.
+
+PHASE 2 — DOCTOR ACTIVATION
+---------------------------
+- Doctor profile.
+- Specialization.
+- Configuration.
+- Branding.
+- Schedule.
+- Slot duration.
+- Segments.
+- Reception.
+
+Business Goal:
+Turn an approved doctor into an operational provider.
+
+PHASE 3 — PATIENT BOOKING
+-------------------------
+- Doctor discovery.
+- Availability.
+- Reservation.
+- Cancellation.
+
+Business Goal:
+Create demand → supply transaction.
+
+PHASE 4 — CLINIC OPERATIONS
+---------------------------
+- Check-in.
+- Direct Ticket.
+- Queue.
+- NoShow.
+- Ticket history.
+- Payment.
+
+Business Goal:
+Deliver the appointment successfully inside the clinic.
+
+PHASE 5 — CLINICAL ENCOUNTER
+----------------------------
+- Diagnosis.
+- Notes.
+- Prescription.
+- Lab requests.
+- Radiology requests.
+
+Business Goal:
+Digitize the medical output of the visit.
+
+PHASE 6 — MEDICAL DATA CENTER
+-----------------------------
+- Patient timeline.
+- Results.
+- Attachments.
+- Cross-doctor history.
+- Consent/access controls.
+
+Business Goal:
+Create differentiated long-term patient value.
+
+PHASE 7 — DOCTOR ECONOMICS
+--------------------------
+- Revenue.
+- Reports.
+- NoShow analytics.
+- Utilization.
+- Doctor performance metrics.
+
+Business Goal:
+Prove measurable economic value to doctor.
+
+PHASE 8 — PLATFORM GROWTH
+-------------------------
+- Notifications.
+- Ratings/reviews.
+- Promotions.
+- Subscription plans.
+- Payment gateway.
+- Doctor acquisition tools.
+
+Business Goal:
+Scale marketplace and monetize.
+
+PHASE 9 — HEALTHCARE NETWORK
+----------------------------
+[FUTURE]
+- Labs.
+- Radiology centers.
+- Pharmacies.
+- Insurance.
+- External integrations.
+
+======================================================================
+49. MAJOR BUSINESS RISKS
+======================================================================
+
+R1. TRUST RISK
+Patients may not trust centralized medical data.
+
+R2. DOCTOR ADOPTION RISK
+Doctors may prefer paper/WhatsApp.
+
+R3. WORKFLOW FRICTION
+Digital documentation could slow doctors.
+
+R4. PRIVACY RISK
+Improper cross-doctor access can destroy trust.
+
+R5. MARKETPLACE CHICKEN-AND-EGG
+Patients need doctors; doctors need patients.
+
+R6. SCOPE EXPLOSION
+Healthcare can become hospital ERP quickly.
+
+R7. DATA QUALITY
+Patient-uploaded reports may be inaccurate/outdated.
+
+R8. SPECIALTY VARIATION
+Different specialties may need very different workflows.
+
+R9. PAYMENT/PRICING
+Doctors may resist subscription or commission.
+
+R10. REGULATORY RISK
+Healthcare data regulations vary by market.
+
+======================================================================
+50. BUSINESS GUARDRAILS
+======================================================================
+
+1. Do not build hospital ERP in V1.
+2. Do not add AI clinical decision making before data quality/governance.
+3. Do not allow unrestricted doctor access to all patients.
+4. Do not expose doctor revenue to Reception.
+5. Do not treat Patient as owned by Doctor.
+6. Do not confuse Reservation with Ticket.
+7. Do not confuse Ticket with Medical Encounter.
+8. Do not assume every QControl feature belongs here.
+9. Do not build features without business reason.
+10. Do not mark hypotheses as facts.
+
+======================================================================
+51. PRODUCT TREE
+======================================================================
+
+HEALTHCARE PLATFORM
+|
++-- PLATFORM GOVERNANCE
+|   +-- SuperAdmin
+|   +-- Doctor Approval
+|   +-- Specializations
+|   +-- Roles
+|   +-- Permissions
+|   +-- Global Settings
+|
++-- IDENTITY
+|   +-- Application User
+|   +-- Patient
+|   +-- Doctor
+|   +-- Reception
+|   +-- Login
+|   +-- Password Recovery
+|
++-- DOCTOR PRACTICE
+|   +-- Profile
+|   +-- Configuration
+|   +-- Branding / Theme
+|   +-- Schedule
+|   +-- Slot Duration
+|   +-- Segments
+|   +-- Reception Users
+|
++-- PATIENT MARKETPLACE
+|   +-- Search
+|   +-- Specializations
+|   +-- Doctor Details
+|   +-- Availability
+|   +-- Booking
+|
++-- RESERVATION
+|   +-- Reservation Lifecycle
+|   +-- Cancellation
+|   +-- Check-In
+|
++-- QUEUE
+|   +-- Ticket
+|   +-- Direct Ticket
+|   +-- Waiting
+|   +-- Called
+|   +-- InProgress
+|   +-- NoShow
+|   +-- Completed
+|   +-- Cancelled
+|   +-- History
+|
++-- CLINICAL
+|   +-- Medical Encounter
+|   +-- Diagnosis
+|   +-- Prescription
+|   +-- Lab Request
+|   +-- Radiology Request
+|
++-- PATIENT MEDICAL DATA CENTER
+|   +-- Timeline
+|   +-- Encounter History
+|   +-- Prescriptions
+|   +-- Lab Results
+|   +-- Radiology Results
+|   +-- Attachments
+|   +-- Access / Consent
+|
++-- FINANCE
+|   +-- Payment Recording
+|   +-- Doctor Revenue
+|   +-- Reports
+|
++-- COMMUNICATION
+|   +-- Notifications
+|   +-- Email
+|   +-- SMS
+|   +-- WhatsApp [FUTURE]
+|
++-- GROWTH
+    +-- Subscription
+    +-- Marketplace
+    +-- Ratings
+    +-- Labs [FUTURE]
+    +-- Radiology Centers [FUTURE]
+    +-- Pharmacies [FUTURE]
+
+======================================================================
+52. WHAT SUCCESS LOOKS LIKE
+======================================================================
+
+V1 is business-successful if:
+
+[ ] Doctors can be approved and activated.
+[ ] Patients can discover real doctors.
+[ ] Patients can book real available slots.
+[ ] Clinics can operate the arrival/queue flow.
+[ ] Doctors can complete digital medical encounters.
+[ ] Patients accumulate useful medical history.
+[ ] Doctors can safely access relevant historical context.
+[ ] Reception can operate without access to doctor financial analytics.
+[ ] Doctor can see operational/revenue value.
+[ ] Users return because history and workflow create real switching value.
+[ ] We can measure demand, usage, completion and retention.
+[ ] We have evidence for willingness to pay.
+
+======================================================================
+53. OPEN BUSINESS DECISIONS
+======================================================================
+
+01. Doctor vs Practice/Clinic as primary operational owner.
+02. Can one Doctor belong to multiple clinics?
+03. Can clinic contain multiple doctors?
+04. Exact doctor approval documents.
+05. Exact medical record consent model.
+06. Emergency medical access policy.
+07. Who can upload lab results?
+08. Who can upload radiology results?
+09. Whether results require verification state.
+10. Reservation cancellation policy.
+11. NoShow policy.
+12. Walk-In capacity rules.
+13. VIP/Segment exact use cases.
+14. Follow-up visit model.
+15. Pricing model.
+16. Platform monetization.
+17. Commission vs subscription.
+18. Refund policy.
+19. Rating/review policy.
+20. Medical data retention policy.
+21. Doctor data visibility after suspension.
+22. Patient deletion/account closure rules.
+23. Multi-country / language strategy.
+24. Insurance role.
+25. Lab/Radiology integration strategy.
+
+======================================================================
+54. BUSINESS THINKING RULES
+======================================================================
+
+This project should preserve the following business-thinking discipline:
+
+1. Separate business facts from business assumptions.
+2. Every assumption should have a validation question or experiment.
+3. Do not confuse a technical module with customer value.
+4. Translate every major feature through:
+   Technical Feature
+       ↓
+   Business Capability
+       ↓
+   Customer Outcome
+       ↓
+   Perceived Value
+
+5. Evaluate the business as an interconnected system:
+   Value Creation
+       ↓
+   Marketing
+       ↓
+   Sales
+       ↓
+   Value Delivery
+       ↓
+   Finance
+       ↓
+   Measurement
+       ↓
+   Improvement
+
+6. A working API is not proof of demand.
+7. A completed module is not proof of value.
+8. The roadmap must be revisable when evidence contradicts assumptions.
+
+======================================================================
+55. FINAL BUSINESS PRINCIPLE
+======================================================================
+
+The project should not be judged by:
+- Number of endpoints.
+- Number of entities.
+- Number of modules.
+- Technical complexity.
+
+It should be judged by:
+
+Can the Patient get better continuity?
+Can the Doctor operate more effectively?
+Can Reception reduce operational friction?
+Can the Platform build a trusted healthcare network?
+Can the business capture enough value to sustain itself?
+
+The permanent mental model:
+
+Problem
+   ↓
+Value
+   ↓
+Offer
+   ↓
+Adoption
+   ↓
+Delivery
+   ↓
+Revenue
+   ↓
+Measure
+   ↓
+Improve
+
+======================================================================
+END OF BUSINESS BLUEPRINT v0.1
+======================================================================

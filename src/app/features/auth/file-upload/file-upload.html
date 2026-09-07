@@ -1,0 +1,31 @@
+<div class="upload-field">
+  <div class="upload-copy">
+    <strong>{{ label() }}</strong
+    ><span>{{ required() ? 'مطلوب' : 'اختياري' }}</span>
+  </div>
+  <div class="file-picker">
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      tabindex="-1"
+      (change)="selectFile($event)"
+      [attr.aria-label]="label()"
+    />
+    <button type="button" (click)="fileInput.click()">اختيار صورة</button>
+    <span>{{ fileName() || 'لم يتم اختيار ملف' }}</span>
+  </div>
+  @if (fileName()) {
+    <div class="file-preview">
+      @if (previewUrl()) {
+        <img [src]="previewUrl()" [alt]="'معاينة ' + label()" />
+      }
+      <button type="button" (click)="removeFile(fileInput)" [attr.aria-label]="'إزالة ' + label()">
+        إزالة
+      </button>
+    </div>
+  }
+  @if (error()) {
+    <small class="upload-error" role="alert">{{ error() }}</small>
+  }
+</div>

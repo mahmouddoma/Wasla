@@ -1,0 +1,203 @@
+<div class="auth-form-wrap registration-wrap">
+  <a class="back-link" routerLink="/login">العودة إلى تسجيل الدخول</a>
+  <header class="auth-form-heading">
+    <h1>تسجيل طبيب</h1>
+    <p>أكمل البيانات والمستندات المطلوبة. سيظل الطلب قيد المراجعة حتى اعتماد الحساب.</p>
+  </header>
+  @if (apiMessages().length) {
+    <div class="form-notice error" role="alert">
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  <form class="auth-form registration-form" (submit)="onSubmit($event)" novalidate>
+    <fieldset>
+      <legend>بيانات الحساب</legend>
+      <div class="row g-3">
+        <label class="form-field col-12 col-md-6"
+          ><span>اسم المستخدم</span
+          ><input type="text" autocomplete="username" [formField]="registrationForm.userName" />
+          @if (
+            registrationForm.userName().touched() && registrationForm.userName().errors().length
+          ) {
+            <small class="field-error">{{ registrationForm.userName().errors()[0].message }}</small>
+          }
+          @if (serverError('UserName')) {
+            <small class="field-error">{{ serverError('UserName') }}</small>
+          }
+        </label>
+        <label class="form-field col-12 col-md-6"
+          ><span>البريد الإلكتروني</span
+          ><input type="email" autocomplete="email" [formField]="registrationForm.email" />
+          @if (registrationForm.email().touched() && registrationForm.email().errors().length) {
+            <small class="field-error">{{ registrationForm.email().errors()[0].message }}</small>
+          }
+          @if (serverError('Email')) {
+            <small class="field-error">{{ serverError('Email') }}</small>
+          }
+        </label>
+        <label class="form-field col-12"
+          ><span>رقم الهاتف</span
+          ><input type="tel" autocomplete="tel" [formField]="registrationForm.phoneNumber" />
+          @if (
+            registrationForm.phoneNumber().touched() &&
+            registrationForm.phoneNumber().errors().length
+          ) {
+            <small class="field-error">{{
+              registrationForm.phoneNumber().errors()[0].message
+            }}</small>
+          }
+          @if (serverError('PhoneNumber')) {
+            <small class="field-error">{{ serverError('PhoneNumber') }}</small>
+          }
+        </label>
+        <label class="form-field col-12 col-md-6"
+          ><span>كلمة المرور</span
+          ><input
+            [type]="showPasswords() ? 'text' : 'password'"
+            autocomplete="new-password"
+            [formField]="registrationForm.password"
+          />
+          @if (
+            registrationForm.password().touched() && registrationForm.password().errors().length
+          ) {
+            <small class="field-error">{{ registrationForm.password().errors()[0].message }}</small>
+          }
+          @if (serverError('Password')) {
+            <small class="field-error">{{ serverError('Password') }}</small>
+          }
+        </label>
+        <label class="form-field col-12 col-md-6"
+          ><span>تأكيد كلمة المرور</span
+          ><input
+            [type]="showPasswords() ? 'text' : 'password'"
+            autocomplete="new-password"
+            [formField]="registrationForm.confirmPassword"
+          />
+          @if (
+            registrationForm.confirmPassword().touched() &&
+            registrationForm.confirmPassword().errors().length
+          ) {
+            <small class="field-error">{{
+              registrationForm.confirmPassword().errors()[0].message
+            }}</small>
+          }
+          @if (serverError('ConfirmPassword')) {
+            <small class="field-error">{{ serverError('ConfirmPassword') }}</small>
+          }
+        </label>
+        <label class="form-check-line col-12"
+          ><input type="checkbox" [checked]="showPasswords()" (change)="togglePasswords()" /> إظهار
+          كلمات المرور</label
+        >
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>البيانات الشخصية</legend>
+      <div class="row g-3">
+        <label class="form-field col-12 col-md-6"
+          ><span>الاسم بالعربية</span
+          ><input type="text" autocomplete="name" dir="rtl" [formField]="registrationForm.nameAr" />
+          @if (registrationForm.nameAr().touched() && registrationForm.nameAr().errors().length) {
+            <small class="field-error">{{ registrationForm.nameAr().errors()[0].message }}</small>
+          }
+          @if (serverError('NameAr')) {
+            <small class="field-error">{{ serverError('NameAr') }}</small>
+          }
+        </label>
+        <label class="form-field col-12 col-md-6"
+          ><span>الاسم بالإنجليزية <small>اختياري</small></span
+          ><input type="text" autocomplete="name" dir="ltr" [formField]="registrationForm.nameEn" />
+          @if (registrationForm.nameEn().touched() && registrationForm.nameEn().errors().length) {
+            <small class="field-error">{{ registrationForm.nameEn().errors()[0].message }}</small>
+          }
+          @if (serverError('NameEn')) {
+            <small class="field-error">{{ serverError('NameEn') }}</small>
+          }
+        </label>
+        <label class="form-field col-12 col-md-6"
+          ><span>تاريخ الميلاد</span
+          ><input type="date" [formField]="registrationForm.dateOfBirth" />
+          @if (
+            registrationForm.dateOfBirth().touched() &&
+            registrationForm.dateOfBirth().errors().length
+          ) {
+            <small class="field-error">{{
+              registrationForm.dateOfBirth().errors()[0].message
+            }}</small>
+          }
+          @if (serverError('DateOfBirth')) {
+            <small class="field-error">{{ serverError('DateOfBirth') }}</small>
+          }
+        </label>
+        <label class="form-field col-12 col-md-6"
+          ><span>النوع</span
+          ><select [formField]="registrationForm.gender">
+            <option value="">اختر النوع</option>
+            <option value="Male">ذكر</option>
+            <option value="Female">أنثى</option>
+          </select>
+          @if (registrationForm.gender().touched() && registrationForm.gender().errors().length) {
+            <small class="field-error">{{ registrationForm.gender().errors()[0].message }}</small>
+          }
+          @if (serverError('Gender')) {
+            <small class="field-error">{{ serverError('Gender') }}</small>
+          }
+        </label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>مستندات الاعتماد</legend>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <app-file-upload
+            label="الصورة الشخصية"
+            [error]="serverError('ProfileImage')"
+            (fileChange)="profileImage.set($event)"
+          />
+        </div>
+        <div class="col-12 col-md-6">
+          <app-file-upload
+            label="الهوية — الوجه الأمامي"
+            [required]="true"
+            [error]="serverError('PersonalIdFrontImage')"
+            (fileChange)="personalIdFrontImage.set($event)"
+          />
+        </div>
+        <div class="col-12 col-md-6">
+          <app-file-upload
+            label="الهوية — الوجه الخلفي"
+            [required]="true"
+            [error]="serverError('PersonalIdBackImage')"
+            (fileChange)="personalIdBackImage.set($event)"
+          />
+        </div>
+        <div class="col-12 col-md-6">
+          <app-file-upload
+            label="بطاقة النقابة — الوجه الأمامي"
+            [required]="true"
+            [error]="serverError('SyndicateCardFrontImage')"
+            (fileChange)="syndicateCardFrontImage.set($event)"
+          />
+        </div>
+        <div class="col-12 col-md-6">
+          <app-file-upload
+            label="بطاقة النقابة — الوجه الخلفي"
+            [error]="serverError('SyndicateCardBackImage')"
+            (fileChange)="syndicateCardBackImage.set($event)"
+          />
+        </div>
+      </div>
+      @if (filesError()) {
+        <p class="field-error files-error" role="alert">{{ filesError() }}</p>
+      }
+    </fieldset>
+    <div class="form-notice info">
+      بعد الإرسال سيكون الطلب قيد مراجعة إدارة وصلة، ولن يُعامل الحساب كطبيب معتمد قبل الموافقة.
+    </div>
+    <button class="btn btn-primary auth-submit" type="submit" [disabled]="isSubmitting()">
+      {{ isSubmitting() ? 'جارٍ إرسال الطلب…' : 'إرسال طلب التسجيل' }}
+    </button>
+  </form>
+</div>

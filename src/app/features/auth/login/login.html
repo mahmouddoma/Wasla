@@ -1,0 +1,72 @@
+<div class="auth-form-wrap">
+  <header class="auth-form-heading">
+    <h1>تسجيل الدخول</h1>
+    <p>أدخل بيانات حسابك للوصول إلى مساحة العمل الخاصة بك.</p>
+  </header>
+  @if (successStatus === 'patient-registered') {
+    <div class="form-notice success" role="status">
+      تم إنشاء حساب المريض بنجاح. يمكنك تسجيل الدخول الآن.
+    </div>
+  }
+  @if (successStatus === 'doctor-registered') {
+    <div class="form-notice success" role="status">
+      تم استلام طلب تسجيل الطبيب وهو الآن قيد المراجعة.
+    </div>
+  }
+  @if (successStatus === 'password-changed') {
+    <div class="form-notice success" role="status">
+      تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.
+    </div>
+  }
+  @if (apiMessages().length) {
+    <div class="form-notice error" role="alert">
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  <form class="auth-form" (submit)="onSubmit($event)" novalidate>
+    <label class="form-field"
+      ><span>اسم المستخدم أو البريد الإلكتروني</span
+      ><input
+        type="text"
+        autocomplete="username"
+        [formField]="loginForm.identifier"
+        placeholder="أدخل اسم المستخدم أو البريد"
+      />
+      @if (loginForm.identifier().touched() && loginForm.identifier().errors().length) {
+        <small class="field-error">{{ loginForm.identifier().errors()[0].message }}</small>
+      }
+      @if (serverError('identifier')) {
+        <small class="field-error">{{ serverError('identifier') }}</small>
+      }
+    </label>
+    <label class="form-field"
+      ><span>كلمة المرور</span
+      ><span class="password-control"
+        ><input
+          [type]="showPassword() ? 'text' : 'password'"
+          autocomplete="current-password"
+          [formField]="loginForm.password"
+          placeholder="أدخل كلمة المرور"
+        /><button type="button" (click)="togglePassword()">
+          {{ showPassword() ? 'إخفاء' : 'إظهار' }}
+        </button></span
+      >
+      @if (loginForm.password().touched() && loginForm.password().errors().length) {
+        <small class="field-error">{{ loginForm.password().errors()[0].message }}</small>
+      }
+      @if (serverError('password')) {
+        <small class="field-error">{{ serverError('password') }}</small>
+      }
+    </label>
+    <div class="form-row-link"><a routerLink="/forgot-password">نسيت كلمة المرور؟</a></div>
+    <button class="btn btn-primary auth-submit" type="submit" [disabled]="isSubmitting()">
+      {{ isSubmitting() ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول' }}
+    </button>
+  </form>
+  <div class="auth-options">
+    <span>ليس لديك حساب؟</span><a routerLink="/register/patient">تسجيل مريض</a><i></i
+    ><a routerLink="/register/doctor">تسجيل طبيب</a>
+  </div>
+</div>
