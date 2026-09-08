@@ -1,0 +1,113 @@
+@if (messages().length) {
+  <div class="form-notice" role="alert">
+    @for (message of messages(); track message) {
+      <p>{{ message }}</p>
+    }
+  </div>
+}
+
+<form class="admin-form" (submit)="onSubmit($event)" novalidate>
+  @if (mode() === 'update' && record(); as admin) {
+    <div class="readonly-field">
+      <span>اسم المستخدم</span>
+      <strong>{{ admin.userName }}</strong>
+      <small>اسم المستخدم للعرض فقط ولا يتغير من هذه العملية.</small>
+    </div>
+  } @else {
+    <label class="form-field">
+      <span>اسم المستخدم</span>
+      <input type="text" autocomplete="username" [formField]="adminForm.userName" />
+      @if (clientError('userName') || serverError('userName')) {
+        <small class="field-error">{{ clientError('userName') || serverError('userName') }}</small>
+      }
+    </label>
+  }
+
+  <label class="form-field">
+    <span>الاسم بالعربية</span>
+    <input type="text" autocomplete="name" [formField]="adminForm.nameAr" />
+    @if (clientError('nameAr') || serverError('nameAr')) {
+      <small class="field-error">{{ clientError('nameAr') || serverError('nameAr') }}</small>
+    }
+  </label>
+
+  <label class="form-field">
+    <span>الاسم بالإنجليزية <small>اختياري</small></span>
+    <input type="text" lang="en" dir="ltr" [formField]="adminForm.nameEn" />
+    @if (clientError('nameEn') || serverError('nameEn')) {
+      <small class="field-error">{{ clientError('nameEn') || serverError('nameEn') }}</small>
+    }
+  </label>
+
+  <label class="form-field">
+    <span>البريد الإلكتروني</span>
+    <input type="email" autocomplete="email" dir="ltr" [formField]="adminForm.email" />
+    @if (clientError('email') || serverError('email')) {
+      <small class="field-error">{{ clientError('email') || serverError('email') }}</small>
+    }
+  </label>
+
+  <label class="form-field">
+    <span>رقم الهاتف <small>اختياري</small></span>
+    <input type="tel" autocomplete="tel" dir="ltr" [formField]="adminForm.phoneNumber" />
+    @if (clientError('phoneNumber') || serverError('phoneNumber')) {
+      <small class="field-error">{{
+        clientError('phoneNumber') || serverError('phoneNumber')
+      }}</small>
+    }
+  </label>
+
+  @if (mode() === 'create') {
+    <label class="form-field">
+      <span>كلمة المرور الأولية</span>
+      <input
+        [type]="showPasswords() ? 'text' : 'password'"
+        autocomplete="new-password"
+        [formField]="adminForm.initialPassword"
+      />
+      <small>استخدم كلمة مرور قوية مطابقة لسياسة النظام.</small>
+      @if (clientError('initialPassword') || serverError('initialPassword')) {
+        <small class="field-error">
+          {{ clientError('initialPassword') || serverError('initialPassword') }}
+        </small>
+      }
+    </label>
+
+    <label class="form-field">
+      <span>تأكيد كلمة المرور</span>
+      <input
+        [type]="showPasswords() ? 'text' : 'password'"
+        autocomplete="new-password"
+        [formField]="adminForm.confirmPassword"
+      />
+      @if (clientError('confirmPassword') || serverError('confirmPassword')) {
+        <small class="field-error">
+          {{ clientError('confirmPassword') || serverError('confirmPassword') }}
+        </small>
+      }
+    </label>
+
+    <label class="password-toggle">
+      <input type="checkbox" [checked]="showPasswords()" (change)="togglePasswords()" />
+      إظهار كلمتي المرور
+    </label>
+
+    <p class="first-login-note">سيُطلب من المستخدم تغيير كلمة المرور الأولية عند أول تسجيل دخول.</p>
+  }
+
+  <footer>
+    @if (mode() === 'update') {
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="busy()"
+        (click)="cancelled.emit()"
+      >
+        إلغاء
+      </button>
+    }
+    <button class="btn btn-primary" type="submit" [disabled]="busy()">
+      {{ busy() ? 'جارٍ الحفظ…' : mode() === 'create' ? 'إنشاء الحساب' : 'حفظ التعديلات' }}
+    </button>
+  </footer>
+</form>

@@ -1,0 +1,193 @@
+<section class="superadmins-page">
+  <header class="page-heading">
+    <div>
+      <h1>إدارة المشرفين</h1>
+      <p>راجع حسابات SuperAdmin وحالة التفعيل والحذف من مصدر النظام.</p>
+    </div>
+    <div class="heading-actions">
+      @if (result()) {
+        <span class="result-count">{{ result()!.totalCount }} حساب</span>
+      }
+      @if (canCreate) {
+        <a class="btn btn-primary" routerLink="/admin/superadmins/create">إنشاء SuperAdmin</a>
+      }
+    </div>
+  </header>
+
+  <div class="list-controls">
+    <label class="search-field">
+      <span>البحث</span>
+      <div>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0z" />
+        </svg>
+        <input
+          type="search"
+          autocomplete="off"
+          placeholder="الاسم أو اسم المستخدم أو البريد"
+          [formField]="filterForm.searchText"
+          (input)="scheduleSearch()"
+        />
+        @if (filterModel().searchText) {
+          <button type="button" aria-label="مسح البحث" (click)="clearSearch()">مسح</button>
+        }
+      </div>
+      @if (filterForm.searchText().touched() && filterForm.searchText().errors().length) {
+        <small class="field-error">{{ filterForm.searchText().errors()[0].message }}</small>
+      }
+      @if (searchError()) {
+        <small class="field-error">{{ searchError() }}</small>
+      }
+    </label>
+
+    <label class="deleted-toggle">
+      <input type="checkbox" [checked]="includeDeleted()" (change)="toggleDeleted($event)" />
+      تضمين السجلات المحذوفة
+    </label>
+  </div>
+
+  @if (successMessage()) {
+    <div class="list-notice" role="status">{{ successMessage() }}</div>
+  }
+
+  @if (apiMessages().length) {
+    <div class="list-state error-state" role="alert">
+      <h2>تعذر تحميل المشرفين</h2>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+        إعادة المحاولة
+      </button>
+    </div>
+  } @else if (isLoading() && !result()) {
+    <div class="list-state" role="status">
+      <span class="loading-indicator" aria-hidden="true"></span>
+      <h2>جارٍ تحميل المشرفين…</h2>
+    </div>
+  } @else if (result(); as adminsPage) {
+    <div class="list-progress" [class.visible]="isLoading()" role="status">
+      {{ isLoading() ? 'جارٍ تحديث النتائج…' : '' }}
+    </div>
+    @if (adminsPage.items.length) {
+      <div class="admins-list">
+        <div class="list-header" aria-hidden="true">
+          <span>المشرف</span><span>التواصل</span><span>الحساب</span><span>السجل</span
+          ><span>الإنشاء</span><span></span>
+        </div>
+        @for (admin of adminsPage.items; track admin.superAdminId) {
+          <article class="admin-row" [class.root-record]="admin.isRootSuperAdmin">
+            <div class="admin-identity">
+              @if (canViewDetails) {
+                <a [routerLink]="['/admin/superadmins', admin.superAdminId]">{{ admin.nameAr }}</a>
+              } @else {
+                <strong>{{ admin.nameAr }}</strong>
+              }
+              @if (admin.nameEn) {
+                <span lang="en" dir="ltr">{{ admin.nameEn }}</span>
+              }
+              <small lang="en" dir="ltr">{{ admin.userName }}</small>
+            </div>
+            <div class="admin-contact">
+              <span class="cell-label">التواصل</span>
+              <a [href]="'mailto:' + admin.email">{{ admin.email }}</a>
+              <span dir="ltr">{{ admin.phoneNumber || '—' }}</span>
+            </div>
+            <div class="record-state">
+              <span class="cell-label">الحساب</span>
+              <span [class.active]="admin.isActive" [class.inactive]="!admin.isActive">
+                {{ admin.isActive ? 'نشط' : 'غير نشط' }}
+              </span>
+              @if (admin.isRootSuperAdmin) {
+                <small>Root محمي</small>
+              }
+            </div>
+            <div class="record-state">
+              <span class="cell-label">السجل</span>
+              <span [class.deleted]="admin.isDeleted">
+                {{ admin.isDeleted ? 'محذوف' : 'موجود' }}
+              </span>
+            </div>
+            <div class="created-date">
+              <span class="cell-label">الإنشاء</span>
+              <time [attr.datetime]="admin.createdOnUtc">{{ formatDate(admin.createdOnUtc) }}</time>
+            </div>
+            <div class="row-action">
+              @if (canDeleteRecord(admin)) {
+                <button
+                  class="btn btn-outline-danger"
+                  type="button"
+                  [disabled]="isActionSubmitting()"
+                  (click)="openAction('delete', admin)"
+                >
+                  حذف
+                </button>
+              }
+              @if (canRestoreRecord(admin)) {
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  [disabled]="isActionSubmitting()"
+                  (click)="openAction('restore', admin)"
+                >
+                  استعادة
+                </button>
+              }
+              @if (canViewDetails) {
+                <a
+                  class="btn btn-outline-secondary"
+                  [routerLink]="['/admin/superadmins', admin.superAdminId]"
+                >
+                  التفاصيل
+                </a>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      <nav class="pagination-bar" aria-label="صفحات قائمة المشرفين">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() <= 1 || isLoading()"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          السابق
+        </button>
+        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() >= totalPages() || isLoading()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          التالي
+        </button>
+      </nav>
+    } @else {
+      <div class="list-state empty-state">
+        <h2>لا توجد نتائج</h2>
+        <p>غيّر عبارة البحث أو خيار السجلات المحذوفة لعرض نتائج أخرى.</p>
+        @if (filterModel().searchText) {
+          <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
+            مسح البحث
+          </button>
+        }
+      </div>
+    }
+  }
+
+  <app-confirmation-dialog
+    dialogId="superadmin-list-action-dialog"
+    [title]="actionDialog().title"
+    [description]="actionDialog().description"
+    [confirmLabel]="actionDialog().confirmLabel"
+    [danger]="actionDialog().danger"
+    [opened]="pendingAction() !== null"
+    [busy]="isActionSubmitting()"
+    [messages]="actionMessages()"
+    (confirmed)="confirmAction()"
+    (dismissed)="dismissAction()"
+  />
+</section>

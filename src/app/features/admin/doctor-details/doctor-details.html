@@ -1,0 +1,293 @@
+<section class="details-page">
+  <a class="details-back" routerLink="/admin/doctors">العودة إلى قائمة الأطباء</a>
+
+  @if (apiMessages().length && !details()) {
+    <div class="details-state error-state" role="alert">
+      <h1>تعذر تحميل بيانات الطبيب</h1>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <div>
+        <a class="btn btn-outline-secondary" routerLink="/admin/doctors">العودة للقائمة</a>
+        <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+      </div>
+    </div>
+  } @else if (isLoading() && !details()) {
+    <div class="details-state" role="status">
+      <span class="loading-indicator" aria-hidden="true"></span>
+      <h1>جارٍ تحميل بيانات الطبيب…</h1>
+    </div>
+  } @else if (details(); as doctor) {
+    <header class="details-heading">
+      <div>
+        <div class="heading-status">
+          <span [class]="statusClass(doctor.approvalStatus)">
+            {{ statusLabel(doctor.approvalStatus) }}
+          </span>
+          @if (isLoading()) {
+            <span class="refreshing" role="status">جارٍ تحديث البيانات…</span>
+          }
+        </div>
+        <h1>{{ doctor.nameAr }}</h1>
+        @if (doctor.nameEn) {
+          <p lang="en" dir="ltr">{{ doctor.nameEn }}</p>
+        }
+      </div>
+      <div class="heading-actions">
+        @if (canSuspend()) {
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            [disabled]="isLoading() || isActionSubmitting()"
+            (click)="openDecision('suspend')"
+          >
+            تعليق الحساب
+          </button>
+        }
+        @if (canReactivate()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isLoading() || isActionSubmitting()"
+            (click)="openReactivate()"
+          >
+            إعادة التفعيل
+          </button>
+        }
+        @if (canReject()) {
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            [disabled]="isLoading() || isActionSubmitting()"
+            (click)="openDecision('reject')"
+          >
+            رفض الطلب
+          </button>
+        }
+        @if (canApprove()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isLoading() || isActionSubmitting()"
+            (click)="openDecision('approve')"
+          >
+            اعتماد الطبيب
+          </button>
+        }
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="isLoading()"
+          (click)="load()"
+        >
+          تحديث
+        </button>
+      </div>
+    </header>
+
+    @if (apiMessages().length) {
+      <div class="page-notice" role="alert">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+    }
+
+    <div class="details-layout">
+      <div class="details-main">
+        <section class="details-section">
+          <h2>البيانات الأساسية</h2>
+          <dl class="information-grid">
+            <div>
+              <dt>اسم المستخدم</dt>
+              <dd>{{ doctor.userName }}</dd>
+            </div>
+            <div>
+              <dt>البريد الإلكتروني</dt>
+              <dd>{{ doctor.email }}</dd>
+            </div>
+            <div>
+              <dt>رقم الهاتف</dt>
+              <dd dir="ltr">{{ doctor.phone }}</dd>
+            </div>
+            <div>
+              <dt>النوع</dt>
+              <dd>{{ genderLabel(doctor.gender) }}</dd>
+            </div>
+            <div>
+              <dt>تاريخ الميلاد</dt>
+              <dd>{{ formatDate(doctor.dateOfBirth) }}</dd>
+            </div>
+            <div>
+              <dt>العمر</dt>
+              <dd>{{ doctor.age }} سنة</dd>
+            </div>
+            <div>
+              <dt>الرقم القومي</dt>
+              <dd>{{ doctor.nationalId || 'غير مسجل' }}</dd>
+            </div>
+            <div>
+              <dt>معرّف الطبيب</dt>
+              <dd class="technical-value">{{ doctor.doctorId }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="details-section">
+          <h2>سجل الحالة والقرارات</h2>
+          <dl class="information-grid governance-grid">
+            <div>
+              <dt>تاريخ الاعتماد</dt>
+              <dd>{{ formatDate(doctor.approvedOnUtc) }}</dd>
+            </div>
+            <div>
+              <dt>تم الاعتماد بواسطة</dt>
+              <dd class="technical-value">
+                {{ doctor.approvedByApplicationUserId || 'غير مسجل' }}
+              </dd>
+            </div>
+            <div>
+              <dt>تاريخ الرفض</dt>
+              <dd>{{ formatDate(doctor.rejectedOnUtc) }}</dd>
+            </div>
+            <div>
+              <dt>تم الرفض بواسطة</dt>
+              <dd class="technical-value">
+                {{ doctor.rejectedByApplicationUserId || 'غير مسجل' }}
+              </dd>
+            </div>
+            <div>
+              <dt>تاريخ التعليق</dt>
+              <dd>{{ formatDate(doctor.suspendedOnUtc) }}</dd>
+            </div>
+            <div>
+              <dt>تم التعليق بواسطة</dt>
+              <dd class="technical-value">
+                {{ doctor.suspendedByApplicationUserId || 'غير مسجل' }}
+              </dd>
+            </div>
+            <div>
+              <dt>تاريخ إعادة التفعيل</dt>
+              <dd>{{ formatDate(doctor.reactivatedOnUtc) }}</dd>
+            </div>
+            <div>
+              <dt>أعيد التفعيل بواسطة</dt>
+              <dd class="technical-value">
+                {{ doctor.reactivatedByApplicationUserId || 'غير مسجل' }}
+              </dd>
+            </div>
+          </dl>
+          @if (doctor.rejectionReason) {
+            <div class="decision-reason">
+              <strong>سبب الرفض</strong>
+              <p>{{ doctor.rejectionReason }}</p>
+            </div>
+          }
+          @if (doctor.suspensionReason) {
+            <div class="decision-reason">
+              <strong>سبب التعليق</strong>
+              <p>{{ doctor.suspensionReason }}</p>
+            </div>
+          }
+        </section>
+      </div>
+
+      <aside class="documents-section">
+        <h2>مستندات التحقق</h2>
+        <p>المعاينة تتم بطلب آمن ومصادق عليه من الخادم.</p>
+        <div class="documents-list">
+          @for (document of documents(); track document.type) {
+            <div class="document-item">
+              <div>
+                <strong>{{ document.label }}</strong>
+                <span>{{ document.available ? 'متاح للمراجعة' : 'غير مرفوع' }}</span>
+              </div>
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                [disabled]="!document.available || mediaState(document.type).loading"
+                (click)="openMedia(document)"
+              >
+                {{ mediaState(document.type).loading ? 'جارٍ الفتح…' : 'معاينة' }}
+              </button>
+              @if (mediaState(document.type).error) {
+                <p class="document-error" role="alert">{{ mediaState(document.type).error }}</p>
+              }
+            </div>
+          }
+        </div>
+      </aside>
+    </div>
+
+    <app-doctor-decision-dialog
+      action="approve"
+      [opened]="approveDialogOpen()"
+      [busy]="isActionSubmitting()"
+      [messages]="actionMessages()"
+      [fieldError]="actionFieldError()"
+      (confirmed)="approve($event)"
+      (dismissed)="dismissDecision('approve')"
+    />
+    <app-doctor-decision-dialog
+      action="reject"
+      [opened]="rejectDialogOpen()"
+      [busy]="isActionSubmitting()"
+      [messages]="actionMessages()"
+      [fieldError]="actionFieldError()"
+      (confirmed)="reject($event)"
+      (dismissed)="dismissDecision('reject')"
+    />
+    <app-doctor-decision-dialog
+      action="suspend"
+      [opened]="suspendDialogOpen()"
+      [busy]="isActionSubmitting()"
+      [messages]="actionMessages()"
+      [fieldError]="actionFieldError()"
+      (confirmed)="suspend($event)"
+      (dismissed)="dismissDecision('suspend')"
+    />
+    <app-confirmation-dialog
+      dialogId="reactivate-doctor-dialog"
+      title="إعادة تفعيل الطبيب"
+      description="سيعود حساب الطبيب إلى حالة معتمد ويمكنه استخدام الصلاحيات التشغيلية التي يمنحها له النظام."
+      confirmLabel="تأكيد إعادة التفعيل"
+      [opened]="reactivateDialogOpen()"
+      [busy]="isActionSubmitting()"
+      [messages]="actionMessages()"
+      (confirmed)="reactivate()"
+      (dismissed)="dismissReactivate()"
+    />
+  }
+
+  <dialog class="media-dialog" aria-labelledby="media-dialog-title" (cancel)="closeMedia($event)">
+    @if (activeMedia(); as media) {
+      <header>
+        <div>
+          <h2 id="media-dialog-title">{{ media.label }}</h2>
+          <p>{{ media.filename }}</p>
+        </div>
+        <button type="button" aria-label="إغلاق المعاينة" (click)="closeMedia()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+        </button>
+      </header>
+      <div class="media-preview">
+        @if (media.isImage) {
+          <img [src]="media.url" [alt]="media.label" />
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5m-5 4h5" />
+          </svg>
+          <p>هذا الملف ليس صورة. افتحه في نافذة جديدة لعرضه باستخدام العارض المناسب.</p>
+        }
+      </div>
+      <footer>
+        <button class="btn btn-outline-secondary" type="button" (click)="closeMedia()">
+          إغلاق
+        </button>
+        <a class="btn btn-primary" [href]="media.url" target="_blank" rel="noopener noreferrer"
+          >فتح الملف</a
+        >
+      </footer>
+    }
+  </dialog>
+</section>

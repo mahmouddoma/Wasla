@@ -3,6 +3,7 @@ import {
   accountAreaGuard,
   anonymousGuard,
   authenticatedGuard,
+  doctorOnboardingGuard,
   passwordChangeGuard,
 } from './core/auth/auth.guards';
 
@@ -34,16 +35,25 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'forgot-password',
-        canActivate: [anonymousGuard],
-        loadComponent: () =>
-          import('./features/auth/forgot-password/forgot-password').then((m) => m.ForgotPassword),
-      },
-      {
         path: 'forgot-password/otp',
         canActivate: [anonymousGuard],
         loadComponent: () =>
           import('./features/auth/otp-handoff/otp-handoff').then((m) => m.OtpHandoff),
+        title: 'تأكيد رمز التحقق | وصلة',
+      },
+      {
+        path: 'forgot-password/reset',
+        canActivate: [anonymousGuard],
+        loadComponent: () =>
+          import('./features/auth/reset-password/reset-password').then((m) => m.ResetPassword),
+        title: 'تعيين كلمة مرور جديدة | وصلة',
+      },
+      {
+        path: 'forgot-password',
+        canActivate: [anonymousGuard],
+        loadComponent: () =>
+          import('./features/auth/forgot-password/forgot-password').then((m) => m.ForgotPassword),
+        title: 'استعادة كلمة المرور | وصلة',
       },
       {
         path: 'change-password',
@@ -53,6 +63,21 @@ export const routes: Routes = [
       },
       { path: '', pathMatch: 'full', redirectTo: 'login' },
     ],
+  },
+  {
+    path: 'doctor/onboarding',
+    canActivate: [authenticatedGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/doctor-onboarding/doctor-onboarding').then((m) => m.DoctorOnboarding),
+    title: 'حالة اعتماد الطبيب | وصلة',
+  },
+  {
+    path: 'admin',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-layout/admin-layout').then((m) => m.AdminLayout),
+    loadChildren: () =>
+      import('./features/admin/admin.routes').then((routes) => routes.ADMIN_ROUTES),
   },
   {
     path: 'workspace/:area',

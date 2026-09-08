@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, email, form, maxLength, required, submit } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
+import { PasswordRecoverySession } from '../../../core/auth/password-recovery-session';
 
 @Component({
   selector: 'app-forgot-password',
@@ -13,7 +14,9 @@ import { AuthApi } from '../../../core/auth/auth-api';
 })
 export class ForgotPassword {
   private readonly api = inject(AuthApi);
+  private readonly recovery = inject(PasswordRecoverySession);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   protected readonly model = signal({ email: '' });
   protected readonly resetForm = form(this.model, (field) => {
     required(field.email, { message: 'أدخل البريد الإلكتروني.' });
@@ -23,6 +26,12 @@ export class ForgotPassword {
   protected readonly isSubmitting = signal(false);
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
+  protected readonly recoveryStatus = this.route.snapshot.queryParamMap.get('status');
+
+  constructor() {
+    this.recovery.clear();
+  }
+
   protected async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.resetForm, async () => {
@@ -32,13 +41,8 @@ export class ForgotPassword {
       this.fieldErrors.set({});
       try {
         const response = await firstValueFrom(this.api.requestPasswordReset(this.model()));
-        await this.router.navigate(['/forgot-password/otp'], {
-          state: {
-            requestId: response.requestId,
-            message: response.message,
-            email: this.model().email,
-          },
-        });
+        this.recovery.begin(this.model().email, response);
+        await this.router.navigate(['/forgot-password/otp']);
       } catch (error) {
         const parsed = parseApiErrors(error);
         this.apiMessages.set(parsed.messages);

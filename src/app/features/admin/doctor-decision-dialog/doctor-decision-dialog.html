@@ -1,0 +1,58 @@
+<dialog
+  [attr.aria-labelledby]="headingId()"
+  [attr.aria-describedby]="headingId() + '-description'"
+  (cancel)="onCancel($event)"
+>
+  <form (submit)="onSubmit($event)" novalidate>
+    <header>
+      <div>
+        <h2 [id]="headingId()">{{ title() }}</h2>
+        <p [id]="headingId() + '-description'">{{ description() }}</p>
+      </div>
+      <button type="button" aria-label="إغلاق" [disabled]="busy()" (click)="close()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+      </button>
+    </header>
+
+    <div class="dialog-body">
+      @if (messages().length) {
+        <div class="dialog-errors" role="alert">
+          @for (message of messages(); track message) {
+            <p>{{ message }}</p>
+          }
+        </div>
+      }
+
+      <label class="decision-field">
+        <span>{{ fieldLabel() }}</span>
+        @if (action() === 'approve') {
+          <input type="text" autocomplete="off" [formField]="decisionForm.value" />
+        } @else {
+          <textarea rows="5" [formField]="decisionForm.value"></textarea>
+        }
+        <small>{{ model().value.length }}/{{ maximumLength() }}</small>
+        @if (decisionForm.value().touched() && decisionForm.value().errors().length) {
+          <span class="field-error">{{ decisionForm.value().errors()[0].message }}</span>
+        }
+        @if (fieldError()) {
+          <span class="field-error">{{ fieldError() }}</span>
+        }
+      </label>
+    </div>
+
+    <footer>
+      <button class="btn btn-outline-secondary" type="button" [disabled]="busy()" (click)="close()">
+        إلغاء
+      </button>
+      <button
+        class="btn"
+        [class.btn-primary]="action() === 'approve'"
+        [class.btn-danger]="action() !== 'approve'"
+        type="submit"
+        [disabled]="busy()"
+      >
+        {{ busy() ? 'جارٍ التنفيذ…' : confirmLabel() }}
+      </button>
+    </footer>
+  </form>
+</dialog>

@@ -1,0 +1,189 @@
+<section class="role-page">
+  <a class="role-back" routerLink="/admin/roles">العودة إلى قائمة الأدوار</a>
+
+  @if (apiMessages().length && !role()) {
+    <div class="role-state role-error" role="alert">
+      <h1>{{ notFound() ? 'الدور غير موجود' : 'تعذر تحميل بيانات الدور' }}</h1>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <div>
+        <a class="btn btn-outline-secondary" routerLink="/admin/roles">العودة للقائمة</a>
+        @if (!notFound()) {
+          <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+        }
+      </div>
+    </div>
+  } @else if (isLoading() && !role()) {
+    <div class="role-state" role="status">
+      <span class="role-loader" aria-hidden="true"></span>
+      <h1>جارٍ تحميل الدور والصلاحيات…</h1>
+    </div>
+  } @else if (role(); as roleDetails) {
+    <header class="role-heading">
+      <div>
+        <div class="role-status">
+          <span>{{ roleDetails.isSystemRole ? 'System Role' : 'Role' }}</span>
+          @if (roleDetails.isSystemRole) {
+            <small>لا توجد عمليات rename أو delete مدعومة لهذا الدور.</small>
+          }
+        </div>
+        <h1 lang="en" dir="ltr">{{ roleDetails.name }}</h1>
+        <code>{{ roleDetails.id }}</code>
+      </div>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="isLoading()"
+        (click)="load()"
+      >
+        تحديث البيانات
+      </button>
+    </header>
+
+    @if (successMessage()) {
+      <div class="role-notice success" role="status">{{ successMessage() }}</div>
+    }
+    @if (apiMessages().length) {
+      <div class="role-notice error" role="alert">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">
+          إعادة المحاولة
+        </button>
+      </div>
+    }
+    @if (catalogMessages().length) {
+      <div class="role-notice error" role="alert">
+        @for (message of catalogMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">
+          إعادة المحاولة
+        </button>
+      </div>
+    }
+
+    <section class="permissions-section">
+      <header class="permissions-heading">
+        <div>
+          <h2>صلاحيات الدور</h2>
+          <p>الاختيار يتم بالمعرّف الأصلي، والحفظ يستبدل كل الربط الحالي دفعة واحدة.</p>
+        </div>
+        <span>{{ selectedCount() }} محددة</span>
+      </header>
+
+      @if (managementBlockReason()) {
+        <div class="management-note" role="status">{{ managementBlockReason() }}</div>
+      }
+
+      @if (catalog(); as permissionCatalog) {
+        @if (permissionCatalog.length) {
+          <div class="permission-groups">
+            @for (group of permissionGroups(); track group.name) {
+              <section
+                class="permission-group"
+                [attr.aria-labelledby]="'permission-group-' + group.name"
+              >
+                <header>
+                  <h3 [id]="'permission-group-' + group.name" lang="en" dir="ltr">
+                    {{ group.name }}
+                  </h3>
+                  <span>{{ group.permissions.length }} صلاحية</span>
+                </header>
+                <div class="permission-options">
+                  @for (permission of group.permissions; track permission.id) {
+                    <label class="permission-option" [class.restricted]="!isAssignable(permission)">
+                      <input
+                        type="checkbox"
+                        [checked]="isSelected(permission.id)"
+                        [disabled]="!isAssignable(permission) || isSaving()"
+                        (change)="togglePermission(permission, $event)"
+                      />
+                      <span>
+                        <strong lang="en" dir="ltr">{{ permission.name }}</strong>
+                        <code>{{ permission.id }}</code>
+                        @if (isRootOnly(permission)) {
+                          <small
+                            >Root-only effective permission — غير قابلة للإسناد إلى Role.</small
+                          >
+                        } @else if (!permission.isSystemPermission) {
+                          <small>ليست System Permission ولا يمكن إرسالها في عملية الاستبدال.</small>
+                        }
+                      </span>
+                    </label>
+                  }
+                </div>
+              </section>
+            }
+          </div>
+
+          @if (missingCatalogPermissions().length) {
+            <div class="missing-permissions" role="status">
+              <strong>صلاحيات مرتبطة وغير موجودة في الكتالوج الحالي</strong>
+              <p>سيتم الاحتفاظ بمعرّفاتها في الطلب حتى يعيد الخادم الحالة النهائية.</p>
+              @for (permission of missingCatalogPermissions(); track permission.id) {
+                <code>{{ permission.name }} — {{ permission.id }}</code>
+              }
+            </div>
+          }
+
+          <footer class="permissions-actions">
+            <p>أي صلاحية غير موجودة في القائمة المحددة عند الحفظ ستُزال من هذا الدور.</p>
+            <div>
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                [disabled]="!isDirty() || isSaving()"
+                (click)="resetSelection()"
+              >
+                إلغاء التغييرات
+              </button>
+              @if (canManage()) {
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  [disabled]="!isDirty() || isSaving()"
+                  (click)="openConfirmation()"
+                >
+                  حفظ الصلاحيات
+                </button>
+              }
+            </div>
+          </footer>
+        } @else {
+          <div class="permissions-empty">
+            <h3>لا توجد صلاحيات في الكتالوج</h3>
+            <p>لم يرجع الخادم أي Permissions متاحة لهذا الحساب.</p>
+          </div>
+        }
+      } @else if (!canViewCatalog) {
+        <div class="current-permissions">
+          <h3>الصلاحيات المسندة حاليًا</h3>
+          @for (permission of current()?.permissions ?? []; track permission.id) {
+            <div>
+              <strong lang="en" dir="ltr">{{ permission.name }}</strong>
+              <code>{{ permission.id }}</code>
+            </div>
+          } @empty {
+            <p>لا توجد صلاحيات مرتبطة بهذا الدور.</p>
+          }
+        </div>
+      }
+    </section>
+
+    <app-confirmation-dialog
+      dialogId="replace-role-permissions-dialog"
+      title="استبدال صلاحيات الدور"
+      description="سيتم إرسال القائمة المحددة كاملة، وأي ربط حالي غير موجود فيها سيُحذف. راجع الاختيارات قبل المتابعة."
+      confirmLabel="تأكيد الاستبدال"
+      [danger]="true"
+      [opened]="confirmationOpen()"
+      [busy]="isSaving()"
+      [messages]="saveMessages()"
+      (confirmed)="save()"
+      (dismissed)="dismissConfirmation()"
+    />
+  }
+</section>

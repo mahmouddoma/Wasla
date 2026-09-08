@@ -1,0 +1,188 @@
+<section class="details-page">
+  <a class="details-back" routerLink="/admin/superadmins">العودة إلى قائمة المشرفين</a>
+
+  @if (apiMessages().length && !details()) {
+    <div class="details-state error-state" role="alert">
+      <h1>تعذر تحميل بيانات المشرف</h1>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <div>
+        <a class="btn btn-outline-secondary" routerLink="/admin/superadmins">العودة للقائمة</a>
+        <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+      </div>
+    </div>
+  } @else if (isLoading() && !details()) {
+    <div class="details-state" role="status">
+      <span class="loading-indicator" aria-hidden="true"></span>
+      <h1>جارٍ تحميل بيانات المشرف…</h1>
+    </div>
+  } @else if (details(); as admin) {
+    <header class="details-heading">
+      <div>
+        <div class="status-line">
+          <span [class.active]="admin.isActive" [class.inactive]="!admin.isActive">
+            {{ admin.isActive ? 'حساب نشط' : 'حساب غير نشط' }}
+          </span>
+          <span [class.deleted]="admin.isDeleted">
+            {{ admin.isDeleted ? 'سجل محذوف' : 'سجل موجود' }}
+          </span>
+          @if (isLoading()) {
+            <small role="status">جارٍ تحديث البيانات…</small>
+          }
+        </div>
+        <h1>{{ admin.nameAr }}</h1>
+        @if (admin.nameEn) {
+          <p lang="en" dir="ltr">{{ admin.nameEn }}</p>
+        }
+      </div>
+      <div class="heading-actions">
+        @if (canDelete()) {
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('delete')"
+          >
+            حذف الحساب
+          </button>
+        }
+        @if (canDeactivate()) {
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('deactivate')"
+          >
+            تعطيل الحساب
+          </button>
+        }
+        @if (canActivate()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('activate')"
+          >
+            تفعيل الحساب
+          </button>
+        }
+        @if (canRestore()) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('restore')"
+          >
+            استعادة الحساب
+          </button>
+        }
+        @if (canUpdate() && !isEditing()) {
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="isLoading()"
+            (click)="startEditing()"
+          >
+            تعديل البيانات
+          </button>
+        }
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="isLoading()"
+          (click)="load()"
+        >
+          تحديث
+        </button>
+      </div>
+    </header>
+
+    @if (admin.isRootSuperAdmin) {
+      <div class="protected-notice" role="status">
+        هذا هو حساب Root SuperAdmin وهو محمي؛ لا تتوفر له أي إجراءات تغيير أو حذف أو استعادة.
+      </div>
+    }
+    @if (admin.isDeleted) {
+      <div class="deleted-notice" role="status">
+        هذا السجل محذوف مبدئيًا والحساب معطل. يمكن إعادته للعمل باستخدام استعادة الحساب.
+      </div>
+    }
+    @if (successMessage()) {
+      <div class="success-notice" role="status">{{ successMessage() }}</div>
+    }
+    @if (apiMessages().length) {
+      <div class="error-notice" role="alert">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+    }
+
+    @if (isEditing()) {
+      <section class="details-section edit-section">
+        <h2>تعديل بيانات المشرف</h2>
+        <app-superadmin-form
+          mode="update"
+          [record]="admin"
+          [busy]="isSubmitting()"
+          [messages]="formMessages()"
+          [fieldErrors]="fieldErrors()"
+          (saved)="update($event)"
+          (cancelled)="cancelEditing()"
+        />
+      </section>
+    } @else {
+      <section class="details-section">
+        <h2>بيانات الحساب</h2>
+        <dl class="information-grid">
+          <div>
+            <dt>اسم المستخدم</dt>
+            <dd lang="en" dir="ltr">{{ admin.userName }}</dd>
+          </div>
+          <div>
+            <dt>البريد الإلكتروني</dt>
+            <dd lang="en" dir="ltr">{{ admin.email }}</dd>
+          </div>
+          <div>
+            <dt>رقم الهاتف</dt>
+            <dd dir="ltr">{{ admin.phoneNumber || 'غير مسجل' }}</dd>
+          </div>
+          <div>
+            <dt>تاريخ الإنشاء</dt>
+            <dd>{{ formatDate(admin.createdOnUtc) }}</dd>
+          </div>
+          <div>
+            <dt>نوع السجل</dt>
+            <dd>{{ admin.isRootSuperAdmin ? 'Root SuperAdmin' : 'SuperAdmin عادي' }}</dd>
+          </div>
+          <div>
+            <dt>حالة الدخول</dt>
+            <dd>{{ admin.isActive ? 'مسموح' : 'معطل' }}</dd>
+          </div>
+          <div>
+            <dt>معرّف SuperAdmin</dt>
+            <dd class="technical-value">{{ admin.superAdminId }}</dd>
+          </div>
+          <div>
+            <dt>معرّف المستخدم</dt>
+            <dd class="technical-value">{{ admin.applicationUserId }}</dd>
+          </div>
+        </dl>
+      </section>
+    }
+
+    <app-confirmation-dialog
+      dialogId="superadmin-account-action-dialog"
+      [title]="actionDialog().title"
+      [description]="actionDialog().description"
+      [confirmLabel]="actionDialog().confirmLabel"
+      [danger]="actionDialog().danger"
+      [opened]="pendingAction() !== null"
+      [busy]="isSubmitting()"
+      [messages]="actionMessages()"
+      (confirmed)="confirmAction()"
+      (dismissed)="dismissAction()"
+    />
+  }
+</section>

@@ -1,9 +1,46 @@
 <div class="auth-form-wrap registration-wrap">
-  <a class="back-link" routerLink="/login">العودة إلى تسجيل الدخول</a>
+  <div class="registration-top-bar">
+    <a class="back-link" routerLink="/login">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      <span>العودة إلى تسجيل الدخول</span>
+    </a>
+
+    <!-- Role Switcher -->
+    <div class="registration-role-switcher" role="tablist" aria-label="نوع الحساب">
+      <a routerLink="/register/patient" class="role-switch-tab active" role="tab" aria-selected="true">
+        <span class="role-tab-icon">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+          </svg>
+        </span>
+        <span>حساب مريض</span>
+      </a>
+      <a routerLink="/register/doctor" class="role-switch-tab" role="tab" aria-selected="false">
+        <span class="role-tab-icon">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.89 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/>
+          </svg>
+        </span>
+        <span>حساب طبيب</span>
+      </a>
+    </div>
+  </div>
+
   <header class="auth-form-heading">
+    <div class="heading-badge-wrap">
+      <span class="auth-welcome-pill patient-pill-badge">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+          <circle cx="12" cy="12" r="10"/>
+        </svg>
+        تسجيل الأفراد والمرضى
+      </span>
+    </div>
     <h1>إنشاء حساب مريض</h1>
-    <p>أنشئ ملفك على وصلة للوصول إلى تاريخك الطبي وخدمات الرعاية.</p>
+    <p>أنشئ ملفك على وصلة للوصول إلى تاريخك الطبي وخدمات الرعاية المتصلة.</p>
   </header>
+
   @if (apiMessages().length) {
     <div class="form-notice error" role="alert">
       @for (message of apiMessages(); track message) {
@@ -11,13 +48,28 @@
       }
     </div>
   }
+
   <form class="auth-form registration-form" (submit)="onSubmit($event)" novalidate>
-    <fieldset>
-      <legend>بيانات الحساب</legend>
+    <!-- بيانات الحساب -->
+    <fieldset class="form-section-card">
+      <legend>
+        <span class="legend-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        <span>بيانات الحساب الأساسية</span>
+      </legend>
       <div class="row g-3">
-        <label class="form-field col-12 col-md-6"
-          ><span>اسم المستخدم</span
-          ><input type="text" autocomplete="username" [formField]="registrationForm.userName" />
+        <label class="form-field col-12 col-md-6">
+          <span>اسم المستخدم</span>
+          <input
+            type="text"
+            autocomplete="username"
+            [formField]="registrationForm.userName"
+            placeholder="مثال: ahmed_ali"
+          />
           @if (
             registrationForm.userName().touched() && registrationForm.userName().errors().length
           ) {
@@ -27,9 +79,15 @@
             <small class="field-error">{{ serverError('UserName') }}</small>
           }
         </label>
-        <label class="form-field col-12 col-md-6"
-          ><span>البريد الإلكتروني</span
-          ><input type="email" autocomplete="email" [formField]="registrationForm.email" />
+
+        <label class="form-field col-12 col-md-6">
+          <span>البريد الإلكتروني</span>
+          <input
+            type="email"
+            autocomplete="email"
+            [formField]="registrationForm.email"
+            placeholder="name@example.com"
+          />
           @if (registrationForm.email().touched() && registrationForm.email().errors().length) {
             <small class="field-error">{{ registrationForm.email().errors()[0].message }}</small>
           }
@@ -37,9 +95,15 @@
             <small class="field-error">{{ serverError('Email') }}</small>
           }
         </label>
-        <label class="form-field col-12"
-          ><span>رقم الهاتف</span
-          ><input type="tel" autocomplete="tel" [formField]="registrationForm.phoneNumber" />
+
+        <label class="form-field col-12">
+          <span>رقم الهاتف</span>
+          <input
+            type="tel"
+            autocomplete="tel"
+            [formField]="registrationForm.phoneNumber"
+            placeholder="مثال: 01012345678"
+          />
           @if (
             registrationForm.phoneNumber().touched() &&
             registrationForm.phoneNumber().errors().length
@@ -52,12 +116,14 @@
             <small class="field-error">{{ serverError('PhoneNumber') }}</small>
           }
         </label>
-        <label class="form-field col-12 col-md-6"
-          ><span>كلمة المرور</span
-          ><input
+
+        <label class="form-field col-12 col-md-6">
+          <span>كلمة المرور</span>
+          <input
             [type]="showPasswords() ? 'text' : 'password'"
             autocomplete="new-password"
             [formField]="registrationForm.password"
+            placeholder="أدخل كلمة مرور قوية"
           />
           @if (
             registrationForm.password().touched() && registrationForm.password().errors().length
@@ -68,12 +134,14 @@
             <small class="field-error">{{ serverError('Password') }}</small>
           }
         </label>
-        <label class="form-field col-12 col-md-6"
-          ><span>تأكيد كلمة المرور</span
-          ><input
+
+        <label class="form-field col-12 col-md-6">
+          <span>تأكيد كلمة المرور</span>
+          <input
             [type]="showPasswords() ? 'text' : 'password'"
             autocomplete="new-password"
             [formField]="registrationForm.confirmPassword"
+            placeholder="أعد إدخال كلمة المرور"
           />
           @if (
             registrationForm.confirmPassword().touched() &&
@@ -87,18 +155,38 @@
             <small class="field-error">{{ serverError('ConfirmPassword') }}</small>
           }
         </label>
-        <label class="form-check-line col-12"
-          ><input type="checkbox" [checked]="showPasswords()" (change)="togglePasswords()" /> إظهار
-          كلمات المرور</label
-        >
+
+        <label class="form-check-line col-12">
+          <input type="checkbox" [checked]="showPasswords()" (change)="togglePasswords()" />
+          <span>إظهار كلمات المرور</span>
+        </label>
       </div>
     </fieldset>
-    <fieldset>
-      <legend>البيانات الشخصية</legend>
+
+    <!-- البيانات الشخصية -->
+    <fieldset class="form-section-card">
+      <legend>
+        <span class="legend-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </span>
+        <span>البيانات الشخصية</span>
+      </legend>
       <div class="row g-3">
-        <label class="form-field col-12 col-md-6"
-          ><span>الاسم بالعربية</span
-          ><input type="text" autocomplete="name" dir="rtl" [formField]="registrationForm.nameAr" />
+        <label class="form-field col-12 col-md-6">
+          <span>الاسم بالعربية</span>
+          <input
+            type="text"
+            autocomplete="name"
+            dir="rtl"
+            [formField]="registrationForm.nameAr"
+            placeholder="الاسم الثلاثي أو الرباعي"
+          />
           @if (registrationForm.nameAr().touched() && registrationForm.nameAr().errors().length) {
             <small class="field-error">{{ registrationForm.nameAr().errors()[0].message }}</small>
           }
@@ -106,9 +194,16 @@
             <small class="field-error">{{ serverError('NameAr') }}</small>
           }
         </label>
-        <label class="form-field col-12 col-md-6"
-          ><span>الاسم بالإنجليزية <small>اختياري</small></span
-          ><input type="text" autocomplete="name" dir="ltr" [formField]="registrationForm.nameEn" />
+
+        <label class="form-field col-12 col-md-6">
+          <span>الاسم بالإنجليزية <small class="text-muted">(اختياري)</small></span>
+          <input
+            type="text"
+            autocomplete="name"
+            dir="ltr"
+            [formField]="registrationForm.nameEn"
+            placeholder="Full Name in English"
+          />
           @if (registrationForm.nameEn().touched() && registrationForm.nameEn().errors().length) {
             <small class="field-error">{{ registrationForm.nameEn().errors()[0].message }}</small>
           }
@@ -116,9 +211,10 @@
             <small class="field-error">{{ serverError('NameEn') }}</small>
           }
         </label>
-        <label class="form-field col-12 col-md-6"
-          ><span>تاريخ الميلاد</span
-          ><input type="date" [formField]="registrationForm.dateOfBirth" />
+
+        <label class="form-field col-12 col-md-6">
+          <span>تاريخ الميلاد</span>
+          <input type="date" [formField]="registrationForm.dateOfBirth" />
           @if (
             registrationForm.dateOfBirth().touched() &&
             registrationForm.dateOfBirth().errors().length
@@ -131,9 +227,10 @@
             <small class="field-error">{{ serverError('DateOfBirth') }}</small>
           }
         </label>
-        <label class="form-field col-12 col-md-6"
-          ><span>النوع</span
-          ><select [formField]="registrationForm.gender">
+
+        <label class="form-field col-12 col-md-6">
+          <span>النوع</span>
+          <select [formField]="registrationForm.gender">
             <option value="">اختر النوع</option>
             <option value="Male">ذكر</option>
             <option value="Female">أنثى</option>
@@ -147,8 +244,19 @@
         </label>
       </div>
     </fieldset>
-    <fieldset>
-      <legend>الصور والمستندات <small>اختيارية</small></legend>
+
+    <!-- الصور والمستندات -->
+    <fieldset class="form-section-card">
+      <legend>
+        <span class="legend-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </span>
+        <span>الصور والمستندات <small class="text-muted">(اختيارية)</small></span>
+      </legend>
       <div class="row g-3">
         <div class="col-12 col-md-4">
           <app-file-upload
@@ -173,8 +281,16 @@
         </div>
       </div>
     </fieldset>
+
     <button class="btn btn-primary auth-submit" type="submit" [disabled]="isSubmitting()">
-      {{ isSubmitting() ? 'جارٍ إنشاء الحساب…' : 'إنشاء حساب المريض' }}
+      @if (isSubmitting()) {
+        <span>جارٍ إنشاء الحساب…</span>
+      } @else {
+        <span>إنشاء حساب المريض</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      }
     </button>
   </form>
 </div>

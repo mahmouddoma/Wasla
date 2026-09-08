@@ -1,0 +1,157 @@
+<section class="doctors-page">
+  <header class="page-heading">
+    <div>
+      <h1>إدارة الأطباء</h1>
+      <p>راجع حسابات الأطباء وحالة الاعتماد والمستندات المتاحة.</p>
+    </div>
+    @if (result()) {
+      <span class="result-count">{{ result()!.totalCount }} طبيب</span>
+    }
+  </header>
+
+  <div class="list-controls">
+    <label class="search-field">
+      <span>البحث</span>
+      <div>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0z" />
+        </svg>
+        <input
+          type="search"
+          autocomplete="off"
+          placeholder="الاسم أو البريد أو الهاتف"
+          [formField]="filterForm.searchText"
+          (input)="scheduleSearch()"
+        />
+        @if (filterModel().searchText) {
+          <button type="button" aria-label="مسح البحث" (click)="clearSearch()">مسح</button>
+        }
+      </div>
+      @if (filterForm.searchText().touched() && filterForm.searchText().errors().length) {
+        <small class="field-error">{{ filterForm.searchText().errors()[0].message }}</small>
+      }
+      @if (searchError()) {
+        <small class="field-error">{{ searchError() }}</small>
+      }
+    </label>
+
+    <div class="status-filters" role="group" aria-label="تصفية حسب حالة الاعتماد">
+      @for (option of statusOptions; track option.value) {
+        <button
+          type="button"
+          [class.active]="selectedStatus() === option.value"
+          [attr.aria-pressed]="selectedStatus() === option.value"
+          (click)="filterBy(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (apiMessages().length) {
+    <div class="list-state error-state" role="alert">
+      <h2>تعذر تحميل الأطباء</h2>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+        إعادة المحاولة
+      </button>
+    </div>
+  } @else if (isLoading() && !result()) {
+    <div class="list-state" role="status">
+      <span class="loading-indicator" aria-hidden="true"></span>
+      <h2>جارٍ تحميل الأطباء…</h2>
+    </div>
+  } @else if (result(); as doctorsPage) {
+    <div class="list-progress" [class.visible]="isLoading()" role="status">
+      {{ isLoading() ? 'جارٍ تحديث النتائج…' : '' }}
+    </div>
+    @if (doctorsPage.items.length) {
+      <div class="doctors-list">
+        <div class="list-header" aria-hidden="true">
+          <span>الطبيب</span><span>التواصل</span><span>الحالة</span><span>المستندات</span
+          ><span>التسجيل</span><span></span>
+        </div>
+        @for (doctor of doctorsPage.items; track doctor.doctorId) {
+          <article class="doctor-row">
+            <div class="doctor-identity">
+              @if (canViewDetails) {
+                <a [routerLink]="['/admin/doctors', doctor.doctorId]">{{ doctor.nameAr }}</a>
+              } @else {
+                <strong>{{ doctor.nameAr }}</strong>
+              }
+              @if (doctor.nameEn) {
+                <span lang="en" dir="ltr">{{ doctor.nameEn }}</span>
+              }
+              <small>{{ doctor.age }} سنة · {{ doctor.gender }}</small>
+            </div>
+            <div class="doctor-contact">
+              <span class="cell-label">التواصل</span>
+              <a [href]="'mailto:' + doctor.email">{{ doctor.email }}</a>
+              <a [href]="'tel:' + doctor.phone" dir="ltr">{{ doctor.phone }}</a>
+            </div>
+            <div>
+              <span class="cell-label">الحالة</span>
+              <span [class]="statusClass(doctor.approvalStatus)">
+                {{ statusLabel(doctor.approvalStatus) }}
+              </span>
+            </div>
+            <div class="documents-count">
+              <span class="cell-label">المستندات</span>
+              <strong>{{ availableDocuments(doctor) }}/5</strong>
+              <small>ملفات متاحة</small>
+            </div>
+            <div class="created-date">
+              <span class="cell-label">التسجيل</span>
+              <time [attr.datetime]="doctor.createdOnUtc">{{
+                formatDate(doctor.createdOnUtc)
+              }}</time>
+            </div>
+            <div class="row-action">
+              @if (canViewDetails) {
+                <a
+                  class="btn btn-outline-secondary"
+                  [routerLink]="['/admin/doctors', doctor.doctorId]"
+                >
+                  التفاصيل
+                </a>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      <nav class="pagination-bar" aria-label="صفحات قائمة الأطباء">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() <= 1 || isLoading()"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          السابق
+        </button>
+        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() >= totalPages() || isLoading()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          التالي
+        </button>
+      </nav>
+    } @else {
+      <div class="list-state empty-state">
+        <h2>لا توجد نتائج</h2>
+        <p>غيّر حالة الاعتماد أو عبارة البحث لعرض أطباء آخرين.</p>
+        @if (filterModel().searchText) {
+          <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
+            مسح البحث
+          </button>
+        }
+      </div>
+    }
+  }
+</section>

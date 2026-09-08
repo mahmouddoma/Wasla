@@ -1,0 +1,115 @@
+<main class="onboarding-shell" dir="rtl">
+  <header class="onboarding-header">
+    <img
+      class="onboarding-logo"
+      ngSrc="/images/wasla-mark.png"
+      width="1254"
+      height="1254"
+      priority
+      alt="وصلة - منصة الرعاية الصحية المتصلة"
+    />
+    <button class="btn btn-outline-secondary" type="button" (click)="logout()">تسجيل الخروج</button>
+  </header>
+
+  <section class="onboarding-panel" [attr.aria-busy]="isLoading()">
+    @if (isLoading() && !status()) {
+      <div class="status-symbol loading" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" /></svg>
+      </div>
+      <h1>جارٍ تحميل حالة الاعتماد…</h1>
+      <p>نتحقق من أحدث حالة مسجلة لدى وصلة.</p>
+    } @else if (apiMessages().length && !status()) {
+      <div class="status-symbol error" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 8v5m0 3h.01M4 20h16L12 4z" /></svg>
+      </div>
+      <h1>تعذر تحميل حالة الاعتماد</h1>
+      <div class="onboarding-errors" role="alert">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+      <button class="btn btn-primary" type="button" [disabled]="isLoading()" (click)="load()">
+        إعادة المحاولة
+      </button>
+    } @else if (status(); as doctorStatus) {
+      @switch (doctorStatus.approvalStatus) {
+        @case ('Pending') {
+          <div class="status-symbol pending" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
+          </div>
+          <p class="status-label"><span></span> قيد المراجعة</p>
+          <h1>طلبك لدى فريق المراجعة</h1>
+          <p class="status-description">
+            تم استلام بياناتك ومستنداتك. ستظل مساحة الطبيب التشغيلية مغلقة حتى اكتمال مراجعة
+            الإدارة.
+          </p>
+        }
+        @case ('Approved') {
+          <div class="status-symbol approved" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>
+          </div>
+          <p class="status-label"><span></span> معتمد</p>
+          <h1>تم اعتماد حساب الطبيب</h1>
+          <p class="status-description">
+            نحدّث صلاحيات مساحة الطبيب الآن. إذا بقيت هنا، أعد التحقق بعد لحظات.
+          </p>
+        }
+        @case ('Rejected') {
+          <div class="status-symbol rejected" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="m8 8 8 8m0-8-8 8M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z" />
+            </svg>
+          </div>
+          <p class="status-label"><span></span> مرفوض</p>
+          <h1>لم تتم الموافقة على الطلب</h1>
+          <p class="status-description">راجع سبب الرفض المسجل من الإدارة.</p>
+          <div class="status-reason">
+            <strong>سبب الرفض</strong>
+            <p>{{ doctorStatus.rejectionReason || 'لم تُرفق الإدارة سببًا للرفض.' }}</p>
+          </div>
+        }
+        @case ('Suspended') {
+          <div class="status-symbol suspended" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14m8-14v14M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z" />
+            </svg>
+          </div>
+          <p class="status-label"><span></span> معلّق</p>
+          <h1>حساب الطبيب معلّق</h1>
+          <p class="status-description">الوصول إلى الوحدات التشغيلية مقيّد حاليًا.</p>
+          <div class="status-reason">
+            <strong>سبب التعليق</strong>
+            <p>{{ doctorStatus.suspensionReason || 'لم تُرفق الإدارة سببًا للتعليق.' }}</p>
+          </div>
+        }
+      }
+
+      <dl class="status-details">
+        <div>
+          <dt>صورة الملف الشخصي</dt>
+          <dd>{{ doctorStatus.hasProfileImage ? 'مرفوعة' : 'غير مرفوعة' }}</dd>
+        </div>
+        @if (approvedOn()) {
+          <div>
+            <dt>تاريخ الاعتماد</dt>
+            <dd>{{ approvedOn() }}</dd>
+          </div>
+        }
+      </dl>
+
+      @if (apiMessages().length) {
+        <div class="onboarding-errors" role="alert">
+          @for (message of apiMessages(); track message) {
+            <p>{{ message }}</p>
+          }
+        </div>
+      }
+
+      <button class="btn btn-primary" type="button" [disabled]="isLoading()" (click)="load()">
+        {{ isLoading() ? 'جارٍ التحديث…' : 'تحديث الحالة' }}
+      </button>
+    }
+  </section>
+</main>

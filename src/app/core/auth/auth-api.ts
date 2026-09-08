@@ -9,11 +9,14 @@ import {
   DoctorRegistrationResponse,
   LoginRequest,
   LoginResponse,
-  PasswordResetRequest,
-  PasswordResetRequestResponse,
+  PasswordRecoveryOtpRequest,
+  PasswordRecoveryOtpResponse,
+  PasswordRecoveryRequest,
+  PasswordRecoveryRequestResponse,
   PatientRegistrationRequest,
   PatientRegistrationResponse,
   RegistrationFields,
+  ResetPasswordRequest,
 } from './auth.models';
 
 @Injectable({ providedIn: 'root' })
@@ -45,11 +48,24 @@ export class AuthApi {
     this.appendOptionalFile(body, 'SyndicateCardBackImage', request.syndicateCardBackImage);
     return this.http.post<DoctorRegistrationResponse>(`${this.authUrl}/doctors/register`, body);
   }
-  requestPasswordReset(request: PasswordResetRequest): Observable<PasswordResetRequestResponse> {
-    return this.http.post<PasswordResetRequestResponse>(
+  requestPasswordReset(
+    request: PasswordRecoveryRequest,
+  ): Observable<PasswordRecoveryRequestResponse> {
+    return this.http.post<PasswordRecoveryRequestResponse>(
       `${this.authUrl}/forgot-password/request-otp`,
       request,
     );
+  }
+  verifyPasswordResetOtp(
+    request: PasswordRecoveryOtpRequest,
+  ): Observable<PasswordRecoveryOtpResponse> {
+    return this.http.post<PasswordRecoveryOtpResponse>(
+      `${this.authUrl}/forgot-password/verify-otp`,
+      request,
+    );
+  }
+  resetPassword(request: ResetPasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.authUrl}/forgot-password/reset`, request);
   }
   private registrationFormData(request: RegistrationFields): FormData {
     const body = new FormData();

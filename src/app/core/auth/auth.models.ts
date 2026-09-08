@@ -59,12 +59,27 @@ export interface DoctorRegistrationResponse {
   applicationUserId: string;
   approvalStatus: 'Pending';
 }
-export interface PasswordResetRequest {
+export interface PasswordRecoveryRequest {
   email: string;
 }
-export interface PasswordResetRequestResponse {
+export interface PasswordRecoveryRequestResponse {
   requestId: string;
   message: string | null;
+}
+export interface PasswordRecoveryOtpRequest {
+  requestId: string;
+  otp: string;
+}
+export interface PasswordRecoveryOtpResponse {
+  requestId: string;
+  resetToken: string;
+  expiresOnUtc: string;
+}
+export interface ResetPasswordRequest {
+  requestId: string;
+  resetToken: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 export interface ApiErrorItem {
   code?: string;

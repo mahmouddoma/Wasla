@@ -1,30 +1,68 @@
 <div class="auth-form-wrap">
+  <a class="back-link" routerLink="/forgot-password">استخدام بريد إلكتروني آخر</a>
   <div class="sent-mark" aria-hidden="true">
-    <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>
+    <svg viewBox="0 0 24 24">
+      <path d="M4 6h16v12H4zM4 7l8 6 8-6" />
+    </svg>
   </div>
   <header class="auth-form-heading">
-    <h1>تحقق من بريدك</h1>
-    <p>{{ apiMessage() || 'إذا كان البريد مسجلًا، ستصلك رسالة تحتوي على رمز التحقق.' }}</p>
+    <h1>أدخل رمز التحقق</h1>
+    <p>
+      {{
+        challenge()?.message ||
+          'إذا كان البريد مسجلًا، ستصلك رسالة تحتوي على رمز التحقق المكوّن من 6 أرقام.'
+      }}
+    </p>
   </header>
-  <div class="form-notice info" role="status">
-    تم حفظ معرّف الطلب داخليًا لاستخدامه في خطوة تأكيد الرمز.
-  </div>
-  @if (apiErrors().length) {
+
+  @if (apiMessages().length) {
     <div class="form-notice error" role="alert">
-      @for (message of apiErrors(); track message) {
+      @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
       }
     </div>
   }
-  <div class="otp-actions">
+
+  @if (challengeUnavailable()) {
+    <div class="form-notice info" role="status">
+      لم يعد هذا الرمز صالحًا للاستخدام. ابدأ الاستعادة من جديد للحصول على رمز جديد.
+    </div>
+  }
+
+  <form class="auth-form" (submit)="onSubmit($event)" novalidate>
+    <label class="form-field">
+      <span>رمز التحقق</span>
+      <input
+        class="otp-input"
+        type="text"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        dir="ltr"
+        [formField]="otpForm.otp"
+        placeholder="000000"
+        (input)="normalizeOtp($event)"
+      />
+      @if (otpForm.otp().touched() && otpForm.otp().errors().length) {
+        <small class="field-error">{{ otpForm.otp().errors()[0].message }}</small>
+      }
+      @if (serverError()) {
+        <small class="field-error">{{ serverError() }}</small>
+      }
+    </label>
+
     <button
       class="btn btn-primary auth-submit"
-      type="button"
-      [disabled]="isResending()"
-      (click)="resend()"
+      type="submit"
+      [disabled]="isSubmitting() || isResending() || challengeUnavailable()"
     >
-      {{ isResending() ? 'جارٍ إعادة الإرسال…' : 'إعادة إرسال الرمز' }}
+      {{ isSubmitting() ? 'جارٍ التحقق…' : 'تأكيد الرمز' }}
     </button>
-    <a class="btn btn-outline-secondary auth-submit" routerLink="/login">العودة إلى تسجيل الدخول</a>
+  </form>
+
+  <div class="otp-actions">
+    <span>لم يصلك الرمز؟</span>
+    <button type="button" [disabled]="isResending() || isSubmitting()" (click)="resend()">
+      {{ isResending() ? 'جارٍ إعادة الإرسال…' : 'إعادة الإرسال' }}
+    </button>
   </div>
 </div>

@@ -4,15 +4,24 @@ import { ApiProblemDetails } from './auth.models';
 export interface ParsedApiErrors {
   messages: string[];
   fields: Readonly<Record<string, string[]>>;
+  codes: string[];
+  status: number;
 }
 
 export function parseApiErrors(error: unknown): ParsedApiErrors {
   if (!(error instanceof HttpErrorResponse))
-    return { messages: ['تعذر إكمال الطلب. حاول مرة أخرى.'], fields: {} };
+    return {
+      messages: ['تعذر إكمال الطلب. حاول مرة أخرى.'],
+      fields: {},
+      codes: [],
+      status: 0,
+    };
   const problem = isProblemDetails(error.error) ? error.error : undefined;
   const fields: Record<string, string[]> = {};
   const messages: string[] = [];
+  const codes: string[] = [];
   for (const item of problem?.errors ?? []) {
+    if (item.code) codes.push(item.code);
     if (!item.message) continue;
     if (item.source) {
       const source = item.source.split('.').at(-1)?.toLowerCase() ?? item.source.toLowerCase();
@@ -22,7 +31,7 @@ export function parseApiErrors(error: unknown): ParsedApiErrors {
   if (!messages.length && !Object.keys(fields).length) {
     messages.push(problem?.detail || problem?.title || connectionMessage(error.status));
   }
-  return { messages, fields };
+  return { messages, fields, codes, status: error.status };
 }
 
 function isProblemDetails(value: unknown): value is ApiProblemDetails {

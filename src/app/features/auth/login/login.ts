@@ -10,6 +10,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
   selector: 'app-login',
   imports: [FormField, RouterLink],
   templateUrl: './login.html',
+  styleUrl: './login.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login {
@@ -47,7 +48,7 @@ export class Login {
         this.session.complete(user);
         const destination = this.session.requiresPasswordChange()
           ? '/change-password'
-          : this.session.destinationFor(user.userType);
+          : this.session.destinationFor(user);
         await this.router.navigate([destination]);
       } catch (error) {
         this.session.clear();

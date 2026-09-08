@@ -1,8 +1,41 @@
-<div class="auth-form-wrap">
-  <header class="auth-form-heading">
+<div class="auth-form-wrap" dir="rtl">
+  <!-- Brand logo & platform tagline -->
+  <header class="auth-logo-header">
+    <a routerLink="/login" class="auth-logo-link" title="الرئيسية - وصلة">
+      <img src="/images/logo-transparent.png" alt="وصلة" class="auth-logo-img" />
+    </a>
+    <p class="auth-platform-tagline">منصة الرعاية الصحية المتصلة</p>
+  </header>
+
+  <!-- Welcome Pill Badge (100% SVG, No Emojis) -->
+  <div class="auth-badge-wrap">
+    <span class="auth-welcome-pill">
+      <svg
+        class="welcome-badge-svg"
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"
+        />
+      </svg>
+      <span>مرحبًا بك مجددًا</span>
+    </span>
+  </div>
+
+  <!-- Heading and Subheading -->
+  <div class="auth-form-heading">
     <h1>تسجيل الدخول</h1>
     <p>أدخل بيانات حسابك للوصول إلى مساحة العمل الخاصة بك.</p>
-  </header>
+  </div>
+
   @if (successStatus === 'patient-registered') {
     <div class="form-notice success" role="status">
       تم إنشاء حساب المريض بنجاح. يمكنك تسجيل الدخول الآن.
@@ -18,6 +51,11 @@
       تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.
     </div>
   }
+  @if (successStatus === 'password-reset') {
+    <div class="form-notice success" role="status">
+      تم تعيين كلمة المرور الجديدة بنجاح. يمكنك تسجيل الدخول الآن.
+    </div>
+  }
   @if (apiMessages().length) {
     <div class="form-notice error" role="alert">
       @for (message of apiMessages(); track message) {
@@ -25,48 +63,201 @@
       }
     </div>
   }
+
   <form class="auth-form" (submit)="onSubmit($event)" novalidate>
-    <label class="form-field"
-      ><span>اسم المستخدم أو البريد الإلكتروني</span
-      ><input
-        type="text"
-        autocomplete="username"
-        [formField]="loginForm.identifier"
-        placeholder="أدخل اسم المستخدم أو البريد"
-      />
+    <!-- Field 1: Username / Email -->
+    <div class="form-group">
+      <label class="form-label" for="login-identifier">اسم المستخدم أو البريد الإلكتروني</label>
+      <div class="input-control">
+        <input
+          id="login-identifier"
+          type="text"
+          autocomplete="username"
+          [formField]="loginForm.identifier"
+          placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
+        />
+        <span class="input-trailing-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </span>
+      </div>
       @if (loginForm.identifier().touched() && loginForm.identifier().errors().length) {
         <small class="field-error">{{ loginForm.identifier().errors()[0].message }}</small>
       }
       @if (serverError('identifier')) {
         <small class="field-error">{{ serverError('identifier') }}</small>
       }
-    </label>
-    <label class="form-field"
-      ><span>كلمة المرور</span
-      ><span class="password-control"
-        ><input
+    </div>
+
+    <!-- Field 2: Password -->
+    <div class="form-group">
+      <label class="form-label" for="login-password">كلمة المرور</label>
+      <div class="input-control password-control">
+        <input
+          id="login-password"
           [type]="showPassword() ? 'text' : 'password'"
           autocomplete="current-password"
           [formField]="loginForm.password"
           placeholder="أدخل كلمة المرور"
-        /><button type="button" (click)="togglePassword()">
-          {{ showPassword() ? 'إخفاء' : 'إظهار' }}
-        </button></span
-      >
+        />
+        <span class="input-trailing-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </span>
+        <button
+          type="button"
+          class="btn-toggle-pwd"
+          (click)="togglePassword()"
+          [attr.aria-label]="showPassword() ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"
+        >
+          @if (showPassword()) {
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+              />
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          } @else {
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          }
+        </button>
+      </div>
       @if (loginForm.password().touched() && loginForm.password().errors().length) {
         <small class="field-error">{{ loginForm.password().errors()[0].message }}</small>
       }
       @if (serverError('password')) {
         <small class="field-error">{{ serverError('password') }}</small>
       }
-    </label>
-    <div class="form-row-link"><a routerLink="/forgot-password">نسيت كلمة المرور؟</a></div>
-    <button class="btn btn-primary auth-submit" type="submit" [disabled]="isSubmitting()">
-      {{ isSubmitting() ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول' }}
+    </div>
+
+    <!-- Options Row: Remember Me (Right) & Forgot Password (Left) -->
+    <div class="form-row-options">
+      <label class="remember-label" for="login-remember">
+        <input id="login-remember" type="checkbox" class="custom-checkbox" />
+        <span>تذكرني في هذا الجهاز</span>
+      </label>
+      <a routerLink="/forgot-password" class="forgot-link">نسيت كلمة المرور؟</a>
+    </div>
+
+    <!-- Submit Button -->
+    <button
+      id="login-submit-btn"
+      class="btn-login-submit"
+      type="submit"
+      [disabled]="isSubmitting()"
+    >
+      @if (isSubmitting()) {
+        <span>جارٍ تسجيل الدخول…</span>
+      } @else {
+        <span>تسجيل الدخول</span>
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      }
     </button>
   </form>
-  <div class="auth-options">
-    <span>ليس لديك حساب؟</span><a routerLink="/register/patient">تسجيل مريض</a><i></i
-    ><a routerLink="/register/doctor">تسجيل طبيب</a>
+
+  <!-- Divider: أو أنشئ حسابًا جديدًا -->
+  <div class="login-divider">
+    <span>أو أنشئ حسابًا جديدًا</span>
+  </div>
+
+  <!-- Role Switcher Cards Grid -->
+  <!-- In RTL: First card placed on RIGHT (Patient), Second card placed on LEFT (Doctor) -->
+  <div class="login-role-cards">
+    <!-- Right Card: Patient -->
+    <a id="register-patient-btn" routerLink="/register/patient" class="role-card patient-card">
+      <div class="role-avatar-circle patient-circle">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path
+            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+          />
+        </svg>
+      </div>
+      <div class="role-text">
+        <strong>حساب مريض</strong>
+        <small>متابعة السجل الطبي والرعاية</small>
+      </div>
+      <svg
+        class="role-chevron"
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+      >
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </a>
+
+    <!-- Left Card: Doctor -->
+    <a id="register-doctor-btn" routerLink="/register/doctor" class="role-card doctor-card">
+      <div class="role-avatar-circle doctor-circle">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
+          />
+        </svg>
+      </div>
+      <div class="role-text">
+        <strong>حساب طبيب</strong>
+        <small>إدارة المرضى والاستشارات</small>
+      </div>
+      <svg
+        class="role-chevron"
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+      >
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </a>
   </div>
 </div>

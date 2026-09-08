@@ -1,0 +1,63 @@
+<section class="roles-page">
+  <header class="roles-heading">
+    <div>
+      <h1>الأدوار والصلاحيات</h1>
+      <p>راجع أدوار النظام وافتح كل دور لإدارة الصلاحيات المسندة إليه.</p>
+    </div>
+    @if (roles()) {
+      <span>{{ roles()!.length }} دور</span>
+    }
+  </header>
+
+  @if (apiMessages().length) {
+    <div class="roles-state roles-error" role="alert">
+      <h2>تعذر تحميل الأدوار</h2>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+        إعادة المحاولة
+      </button>
+    </div>
+  } @else if (isLoading() && !roles()) {
+    <div class="roles-state" role="status">
+      <span class="roles-loader" aria-hidden="true"></span>
+      <h2>جارٍ تحميل الأدوار…</h2>
+    </div>
+  } @else if (roles(); as roleItems) {
+    @if (roleItems.length) {
+      <div class="roles-list">
+        <div class="roles-list-header" aria-hidden="true">
+          <span>اسم الدور</span><span>النوع</span><span>المعرّف</span><span></span>
+        </div>
+        @for (role of roleItems; track role.id) {
+          <article class="role-row">
+            <div class="role-name">
+              <a [routerLink]="['/admin/roles', role.id]" lang="en" dir="ltr">{{ role.name }}</a>
+              <small>الاسم كما رجع من النظام</small>
+            </div>
+            <div class="role-type">
+              <span class="mobile-label">النوع</span>
+              <strong>{{ role.isSystemRole ? 'System Role' : 'Role' }}</strong>
+              @if (role.isSystemRole) {
+                <small>غير قابل لإعادة التسمية أو الحذف</small>
+              }
+            </div>
+            <div class="role-id">
+              <span class="mobile-label">المعرّف</span>
+              <code>{{ role.id }}</code>
+            </div>
+            <a class="btn btn-outline-secondary" [routerLink]="['/admin/roles', role.id]">
+              عرض الصلاحيات
+            </a>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="roles-state">
+        <h2>لا توجد أدوار</h2>
+        <p>لم يرجع الخادم أي أدوار متاحة لهذا الحساب.</p>
+      </div>
+    }
+  }
+</section>

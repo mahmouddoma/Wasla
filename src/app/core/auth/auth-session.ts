@@ -1,5 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { AuthSessionState, CurrentUser, LoginResponse, UserType } from './auth.models';
+import { AuthSessionState, CurrentUser, LoginResponse } from './auth.models';
+import { PERMISSIONS } from './permissions';
 
 const SESSION_KEY = 'wasla.auth.session';
 
@@ -35,7 +36,15 @@ export class AuthSession {
   hasPermission(permission: string): boolean {
     return this.user()?.permissions.includes(permission) ?? false;
   }
-  destinationFor(userType: UserType): string {
+  destinationFor(user: CurrentUser): string {
+    if (user.userType === 'SuperAdmin') {
+      if (user.permissions.includes(PERMISSIONS.doctorsViewAll)) return '/admin/doctors';
+      if (user.permissions.includes(PERMISSIONS.superAdminsViewAll)) return '/admin/superadmins';
+      if (user.permissions.includes(PERMISSIONS.rolesView)) return '/admin/roles';
+    }
+    if (user.userType === 'Doctor' && !this.hasDoctorOperationalAccess(user)) {
+      return '/doctor/onboarding';
+    }
     return (
       {
         SuperAdmin: '/workspace/super-admin',
@@ -43,7 +52,13 @@ export class AuthSession {
         Reception: '/workspace/reception',
         Patient: '/workspace/patient',
       } as const
-    )[userType];
+    )[user.userType];
+  }
+  hasDoctorOperationalAccess(user: CurrentUser): boolean {
+    return (
+      user.userType === 'Doctor' &&
+      user.permissions.some((permission) => permission !== PERMISSIONS.doctorOnboardingViewOwn)
+    );
   }
   clear(): void {
     this.state.set(null);
