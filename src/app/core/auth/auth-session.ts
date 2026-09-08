@@ -3,6 +3,14 @@ import { AuthSessionState, CurrentUser, LoginResponse } from './auth.models';
 import { PERMISSIONS } from './permissions';
 
 const SESSION_KEY = 'wasla.auth.session';
+const DOCTOR_ONBOARDING_PERMISSIONS = new Set<string>([
+  PERMISSIONS.doctorOnboardingViewOwn,
+  PERMISSIONS.doctorSpecializationsViewOwn,
+  PERMISSIONS.doctorSpecializationsSubmitOwn,
+  PERMISSIONS.doctorSpecializationsResubmitOwn,
+  PERMISSIONS.doctorPracticeLocationViewOwn,
+  PERMISSIONS.doctorPracticeLocationManageOwn,
+]);
 
 @Injectable({ providedIn: 'root' })
 export class AuthSession {
@@ -41,6 +49,12 @@ export class AuthSession {
       if (user.permissions.includes(PERMISSIONS.doctorsViewAll)) return '/admin/doctors';
       if (user.permissions.includes(PERMISSIONS.superAdminsViewAll)) return '/admin/superadmins';
       if (user.permissions.includes(PERMISSIONS.rolesView)) return '/admin/roles';
+      if (user.permissions.includes(PERMISSIONS.specializationsView)) {
+        return '/admin/medical-specializations';
+      }
+      if (user.permissions.includes(PERMISSIONS.doctorSpecializationRequestsViewAll)) {
+        return '/admin/doctor-specialization-requests';
+      }
     }
     if (user.userType === 'Doctor' && !this.hasDoctorOperationalAccess(user)) {
       return '/doctor/onboarding';
@@ -57,7 +71,7 @@ export class AuthSession {
   hasDoctorOperationalAccess(user: CurrentUser): boolean {
     return (
       user.userType === 'Doctor' &&
-      user.permissions.some((permission) => permission !== PERMISSIONS.doctorOnboardingViewOwn)
+      user.permissions.some((permission) => !DOCTOR_ONBOARDING_PERMISSIONS.has(permission))
     );
   }
   clear(): void {

@@ -1,0 +1,105 @@
+<section class="management-page">
+  <header class="page-heading">
+    <div>
+      <h1>طلبات تخصصات الأطباء</h1>
+      <p>راجع المقترحات الحالية دون خلطها بالتخصصات المعتمدة.</p>
+    </div>
+    @if (result()) {
+      <strong>{{ result()!.totalCount }} طلب</strong>
+    }
+  </header>
+  <div class="toolbar">
+    <label
+      >البحث<input
+        type="search"
+        [formField]="searchForm.search"
+        (input)="scheduleSearch()"
+        placeholder="اسم الطبيب أو البريد"
+    /></label>
+    <label
+      >الحالة<select [value]="status()" (change)="setFilter('status', $event)">
+        <option value="">الكل</option>
+        <option value="PendingReview">قيد المراجعة</option>
+        <option value="ModificationRequested">مطلوب تعديل</option>
+        <option value="Approved">معتمد</option>
+        <option value="Rejected">مرفوض</option>
+      </select></label
+    >
+    <label
+      >النوع<select [value]="type()" (change)="setFilter('type', $event)">
+        <option value="">الكل</option>
+        <option value="Initial">طلب أول</option>
+        <option value="Change">تغيير</option>
+      </select></label
+    >
+  </div>
+  @if (apiMessages().length) {
+    <div class="state error" role="alert">
+      <h2>تعذر تحميل الطلبات</h2>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary mt-3" type="button" (click)="load()">
+        إعادة المحاولة
+      </button>
+    </div>
+  } @else if (isLoading() && !result()) {
+    <div class="state" role="status"><h2>جارٍ تحميل الطلبات…</h2></div>
+  } @else if (result(); as page) {
+    @if (page.items.length) {
+      <div class="data-list">
+        <div class="data-header">
+          <span>الطبيب</span><span>النوع</span><span>الحالة</span><span>المراجعة</span
+          ><span>تاريخ الإرسال</span><span></span>
+        </div>
+        @for (item of page.items; track item.requestId) {
+          <article class="data-row">
+            <div class="identity">
+              <a [routerLink]="['/admin/doctor-specialization-requests', item.requestId]">{{
+                item.doctorNameAr
+              }}</a>
+              @if (item.doctorNameEn) {
+                <small lang="en">{{ item.doctorNameEn }}</small>
+              }
+              <small>{{ item.email }}</small>
+            </div>
+            <div><span class="mobile-label">النوع</span>{{ typeLabel(item.type) }}</div>
+            <span [class]="'badge-state ' + item.status.toLowerCase()">{{
+              statusLabel(item.status)
+            }}</span>
+            <div><span class="mobile-label">المراجعة</span>#{{ item.currentRevisionNumber }}</div>
+            <time [attr.datetime]="item.submittedOnUtc">{{ formatDate(item.submittedOnUtc) }}</time>
+            <a
+              class="btn btn-outline-secondary"
+              [routerLink]="['/admin/doctor-specialization-requests', item.requestId]"
+              >المراجعة</a
+            >
+          </article>
+        }
+      </div>
+      <nav class="pagination-bar" aria-label="صفحات طلبات التخصص">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() <= 1 || isLoading()"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          السابق</button
+        ><span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() >= totalPages() || isLoading()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          التالي
+        </button>
+      </nav>
+    } @else {
+      <div class="state">
+        <h2>لا توجد طلبات مطابقة</h2>
+        <p>غيّر عوامل البحث أو الفلترة.</p>
+      </div>
+    }
+  }
+</section>

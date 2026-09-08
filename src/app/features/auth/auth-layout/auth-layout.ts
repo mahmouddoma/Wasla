@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
 export interface StorySlide {
   id: number;
@@ -20,7 +20,7 @@ export interface StorySlide {
 
 @Component({
   selector: 'app-auth-layout',
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterOutlet],
   templateUrl: './auth-layout.html',
   styleUrl: './auth-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

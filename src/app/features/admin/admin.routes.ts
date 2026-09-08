@@ -4,6 +4,56 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'doctor-specialization-requests/:requestId',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.doctorSpecializationRequestsViewDetails },
+    loadComponent: () =>
+      import('./specialization-request-details/specialization-request-details').then(
+        (m) => m.SpecializationRequestDetailsPage,
+      ),
+    title: 'مراجعة طلب التخصص | وصلة',
+  },
+  {
+    path: 'doctor-specialization-requests',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.doctorSpecializationRequestsViewAll },
+    loadComponent: () =>
+      import('./specialization-requests-list/specialization-requests-list').then(
+        (m) => m.SpecializationRequestsList,
+      ),
+    title: 'طلبات تخصصات الأطباء | وصلة',
+  },
+  {
+    path: 'medical-specializations/create',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.specializationsCreate },
+    loadComponent: () =>
+      import('./medical-specialization-details/medical-specialization-details').then(
+        (m) => m.MedicalSpecializationDetails,
+      ),
+    title: 'إضافة تخصص طبي | وصلة',
+  },
+  {
+    path: 'medical-specializations/:id',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.specializationsView },
+    loadComponent: () =>
+      import('./medical-specialization-details/medical-specialization-details').then(
+        (m) => m.MedicalSpecializationDetails,
+      ),
+    title: 'تفاصيل التخصص الطبي | وصلة',
+  },
+  {
+    path: 'medical-specializations',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.specializationsView },
+    loadComponent: () =>
+      import('./medical-specializations-list/medical-specializations-list').then(
+        (m) => m.MedicalSpecializationsList,
+      ),
+    title: 'التخصصات الطبية | وصلة',
+  },
+  {
     path: 'roles/:roleId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.rolesView },

@@ -8,6 +8,7 @@ import { AuthSession } from './auth-session';
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const session = inject(AuthSession);
   const router = inject(Router);
+  const hadSession = session.session() !== null;
   const token = session.token();
   if (!token && session.session()) session.clear();
   const isWaslaApi = request.url.startsWith(environment.apiBaseUrl);
@@ -24,7 +25,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       if (
         error instanceof HttpErrorResponse &&
         error.status === 401 &&
-        token &&
+        isWaslaApi &&
+        (token !== null || hadSession) &&
         !request.url.endsWith('/login')
       ) {
         session.clear();

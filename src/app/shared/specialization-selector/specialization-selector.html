@@ -1,0 +1,33 @@
+<div class="selector" role="group" aria-label="اختيار التخصصات والتخصص الأساسي">
+  @for (option of options(); track option.id) {
+    <article [class.selected]="selectedIds().has(option.id)">
+      <label>
+        <input
+          type="checkbox"
+          [checked]="selectedIds().has(option.id)"
+          [disabled]="disabled()"
+          (change)="toggle(option.id, $event)"
+        />
+        <span>
+          <strong>{{ option.nameAr }}</strong>
+          @if (option.nameEn) {
+            <small lang="en" dir="ltr">{{ option.nameEn }}</small>
+          }
+        </span>
+      </label>
+      @if (selectedIds().has(option.id)) {
+        <button
+          type="button"
+          [class.active]="isPrimary(option.id)"
+          [attr.aria-pressed]="isPrimary(option.id)"
+          [disabled]="disabled()"
+          (click)="makePrimary(option.id)"
+        >
+          {{ isPrimary(option.id) ? 'التخصص الأساسي' : 'تعيين كأساسي' }}
+        </button>
+      }
+    </article>
+  } @empty {
+    <p class="empty">لا توجد تخصصات متاحة حاليًا.</p>
+  }
+</div>

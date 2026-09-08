@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormField, form, maxLength, pattern, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ParsedApiErrors, parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { PasswordRecoverySession } from '../../../core/auth/password-recovery-session';
+
+const RESEND_COOLDOWN_SECONDS = 60;
 
 @Component({
   selector: 'app-otp-handoff',
@@ -13,7 +15,7 @@ import { PasswordRecoverySession } from '../../../core/auth/password-recovery-se
   styleUrl: './otp-handoff.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OtpHandoff {
+export class OtpHandoff implements OnDestroy {
   private readonly api = inject(AuthApi);
   private readonly recovery = inject(PasswordRecoverySession);
   private readonly router = inject(Router);
@@ -30,11 +32,19 @@ export class OtpHandoff {
   protected readonly isSubmitting = signal(false);
   protected readonly isResending = signal(false);
   protected readonly challengeUnavailable = signal(false);
+  protected readonly resendCooldown = signal(0);
+  private cooldownTimer: ReturnType<typeof setInterval> | undefined;
 
   constructor() {
     if (!this.challenge()) {
       void this.router.navigate(['/forgot-password'], { replaceUrl: true });
+    } else {
+      this.startCooldown();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stopCooldown();
   }
 
   protected async onSubmit(event: Event): Promise<void> {
@@ -71,7 +81,9 @@ export class OtpHandoff {
 
   protected async resend(): Promise<void> {
     const challenge = this.challenge();
-    if (!challenge || this.isResending() || this.isSubmitting()) return;
+    if (!challenge || this.isResending() || this.isSubmitting() || this.resendCooldown() > 0) {
+      return;
+    }
     this.isResending.set(true);
     this.clearErrors();
     try {
@@ -82,6 +94,7 @@ export class OtpHandoff {
       this.model.set({ otp: '' });
       this.otpForm().reset();
       this.challengeUnavailable.set(false);
+      this.startCooldown();
     } catch (error) {
       this.setErrors(parseApiErrors(error));
     } finally {
@@ -116,5 +129,19 @@ export class OtpHandoff {
     return ['expired', 'tooManyAttempts', 'invalidated', 'challengeInvalid'].some((term) =>
       codes.includes(term.toLowerCase()),
     );
+  }
+
+  private startCooldown(): void {
+    this.stopCooldown();
+    this.resendCooldown.set(RESEND_COOLDOWN_SECONDS);
+    this.cooldownTimer = setInterval(() => {
+      this.resendCooldown.update((seconds) => Math.max(0, seconds - 1));
+      if (this.resendCooldown() === 0) this.stopCooldown();
+    }, 1000);
+  }
+
+  private stopCooldown(): void {
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+    this.cooldownTimer = undefined;
   }
 }

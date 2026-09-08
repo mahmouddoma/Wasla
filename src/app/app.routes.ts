@@ -4,6 +4,7 @@ import {
   anonymousGuard,
   authenticatedGuard,
   doctorOnboardingGuard,
+  doctorProfileGuard,
   passwordChangeGuard,
 } from './core/auth/auth.guards';
 
@@ -63,6 +64,13 @@ export const routes: Routes = [
       },
       { path: '', pathMatch: 'full', redirectTo: 'login' },
     ],
+  },
+  {
+    path: 'doctor/profile',
+    canActivate: [authenticatedGuard, doctorProfileGuard],
+    loadComponent: () =>
+      import('./features/doctor-profile/doctor-profile').then((m) => m.DoctorProfile),
+    title: 'التخصص وموقع الممارسة | وصلة',
   },
   {
     path: 'doctor/onboarding',

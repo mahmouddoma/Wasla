@@ -13,11 +13,12 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { Gender } from '../../../core/auth/auth.models';
+import { NoFutureDate } from '../../../shared/no-future-date/no-future-date';
 import { FileUpload } from '../file-upload/file-upload';
 
 @Component({
   selector: 'app-patient-registration',
-  imports: [FormField, RouterLink, FileUpload],
+  imports: [FormField, RouterLink, FileUpload, NoFutureDate],
   templateUrl: './patient-registration.html',
   styleUrl: './patient-registration.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

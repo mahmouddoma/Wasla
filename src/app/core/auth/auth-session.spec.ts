@@ -72,4 +72,42 @@ describe('AuthSession doctor destination', () => {
       }),
     ).toBe('/admin/roles');
   });
+
+  it('forces the first-login password change from the login response', () => {
+    expect(
+      session.begin({
+        accessToken: 'token',
+        expiresOnUtc: new Date(Date.now() + 60_000).toISOString(),
+        passwordChangeRequired: true,
+      }),
+    ).toBe(true);
+    session.complete({ ...doctor, isFirstLogin: false });
+
+    expect(session.requiresPasswordChange()).toBe(true);
+  });
+
+  it('forces the first-login password change when auth me marks the user as first login', () => {
+    session.begin({
+      accessToken: 'token',
+      expiresOnUtc: new Date(Date.now() + 60_000).toISOString(),
+      passwordChangeRequired: false,
+    });
+    session.complete({ ...doctor, isFirstLogin: true });
+
+    expect(session.requiresPasswordChange()).toBe(true);
+  });
+
+  it('keeps new doctor onboarding permissions out of the operational workspace', () => {
+    expect(
+      session.destinationFor({
+        ...doctor,
+        permissions: [
+          PERMISSIONS.doctorOnboardingViewOwn,
+          PERMISSIONS.doctorSpecializationsViewOwn,
+          PERMISSIONS.doctorSpecializationsSubmitOwn,
+          PERMISSIONS.doctorPracticeLocationManageOwn,
+        ],
+      }),
+    ).toBe('/doctor/onboarding');
+  });
 });

@@ -1,0 +1,182 @@
+<section class="request-page">
+  <a class="back-link" routerLink="/admin/doctor-specialization-requests">العودة إلى الطلبات</a>
+  @if (apiMessages().length) {
+    <div class="form-notice error" role="alert">
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  @if (isLoading() && !details()) {
+    <div class="panel" role="status">جارٍ تحميل تفاصيل الطلب…</div>
+  } @else if (details(); as page) {
+    <header>
+      <div>
+        <p class="eyebrow">
+          {{ page.request.type === 'Initial' ? 'طلب تخصص أول' : 'طلب تغيير تخصص' }} · المراجعة #{{
+            page.request.currentRevisionNumber
+          }}
+        </p>
+        <h1>{{ page.doctorNameAr }}</h1>
+        @if (page.doctorNameEn) {
+          <p lang="en">{{ page.doctorNameEn }}</p>
+        }
+        <a [href]="'mailto:' + page.email">{{ page.email }}</a>
+      </div>
+      <span [class]="'request-status ' + page.request.status.toLowerCase()">{{
+        page.request.status
+      }}</span>
+    </header>
+    @if (page.request.latestModificationMessage) {
+      <div class="form-notice info">
+        <strong>آخر رسالة تعديل</strong>
+        <p>{{ page.request.latestModificationMessage }}</p>
+      </div>
+    }
+    <div class="sets-grid">
+      <section class="panel">
+        <h2>التخصصات المعتمدة حاليًا</h2>
+        <p class="hint">لا تتغير أثناء المراجعة.</p>
+        <ul>
+          @for (item of page.currentEffectiveSpecializations; track item.medicalSpecializationId) {
+            <li>
+              <span>{{ item.nameAr }}</span>
+              @if (item.isPrimary) {
+                <strong>أساسي</strong>
+              }
+            </li>
+          } @empty {
+            <li class="empty">لا توجد تخصصات معتمدة بعد.</li>
+          }
+        </ul>
+      </section>
+      <section class="panel">
+        <h2>أحدث مقترح</h2>
+        <p class="hint">المراجعة #{{ page.request.currentRevisionNumber }}</p>
+        <ul>
+          @for (item of page.request.latestRevision; track item.medicalSpecializationId) {
+            <li>
+              <span>{{ item.nameAr }}</span>
+              @if (item.isPrimary) {
+                <strong>أساسي</strong>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+    @if (isPending()) {
+      <div class="review-actions">
+        @if (can('adjust')) {
+          <button class="btn btn-outline-secondary" type="button" (click)="openAction('adjust')">
+            تعديل المقترح
+          </button>
+        }
+        @if (can('modification')) {
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            (click)="openAction('modification')"
+          >
+            طلب تعديل من الطبيب
+          </button>
+        }
+        @if (can('approve')) {
+          <button class="btn btn-primary" type="button" (click)="openAction('approve')">
+            اعتماد
+          </button>
+        }
+        @if (can('reject')) {
+          <button class="btn btn-danger" type="button" (click)="openAction('reject')">رفض</button>
+        }
+      </div>
+    }
+    @if (action(); as currentAction) {
+      <form class="panel review-form" (submit)="submitAction($event)">
+        <div>
+          <h2>
+            {{
+              currentAction === 'adjust'
+                ? 'تعديل المقترح'
+                : currentAction === 'modification'
+                  ? 'طلب تعديل'
+                  : 'رفض الطلب'
+            }}
+          </h2>
+          <button type="button" aria-label="إغلاق" (click)="closeAction()">×</button>
+        </div>
+        @if (currentAction === 'adjust') {
+          <app-specialization-selector
+            [options]="options()"
+            [selected]="selected()"
+            [disabled]="isSubmitting()"
+            (selectionChange)="selected.set($event)"
+          />
+        }
+        <label class="form-field"
+          ><span>{{ currentAction === 'modification' ? 'الرسالة' : 'السبب' }}</span
+          ><textarea [formField]="textForm.text"></textarea>
+          @if (textForm.text().touched() && textForm.text().errors().length) {
+            <small class="field-error">{{ textForm.text().errors()[0].message }}</small>
+          }
+        </label>
+        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'جارٍ الإرسال…' : 'تأكيد الإجراء' }}
+        </button>
+      </form>
+    }
+    @if (page.revisions.length) {
+      <section class="panel">
+        <h2>نسخ المقترح</h2>
+        <div class="revisions">
+          @for (revision of page.revisions; track revision.revisionNumber) {
+            <article>
+              <strong>المراجعة #{{ revision.revisionNumber }}</strong>
+              @if (revision.createdOnUtc) {
+                <time [attr.datetime]="revision.createdOnUtc">{{
+                  formatDate(revision.createdOnUtc)
+                }}</time>
+              }
+              <ul>
+                @for (item of revision.specializations; track item.medicalSpecializationId) {
+                  <li>
+                    <span>{{ item.nameAr }}</span>
+                    @if (item.isPrimary) {
+                      <strong>أساسي</strong>
+                    }
+                  </li>
+                }
+              </ul>
+            </article>
+          }
+        </div>
+      </section>
+    }
+    <section class="panel">
+      <h2>سجل الطلب</h2>
+      <ol class="timeline">
+        @for (item of history(); track item.id) {
+          <li>
+            <div>
+              <strong>{{ item.action }}</strong
+              ><time [attr.datetime]="item.performedOnUtc">{{
+                formatDate(item.performedOnUtc)
+              }}</time>
+            </div>
+            <p>
+              المراجعة #{{ item.revisionNumber }}
+              @if (item.previousRevisionNumber !== null) {
+                · السابقة #{{ item.previousRevisionNumber }}
+              }
+            </p>
+            @if (item.message) {
+              <blockquote>{{ item.message }}</blockquote>
+            }
+          </li>
+        } @empty {
+          <li class="empty">لا يوجد سجل متاح.</li>
+        }
+      </ol>
+    </section>
+  }
+</section>

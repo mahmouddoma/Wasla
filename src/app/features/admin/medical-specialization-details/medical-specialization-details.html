@@ -1,0 +1,108 @@
+<section class="details-page">
+  <a class="back-link" routerLink="/admin/medical-specializations">العودة إلى التخصصات</a>
+  <header>
+    <div>
+      <h1>{{ isCreate ? 'إضافة تخصص طبي' : 'تفاصيل التخصص' }}</h1>
+      <p>البيانات الأساسية منفصلة عن حالة التفعيل والحذف.</p>
+    </div>
+    @if (details(); as item) {
+      <div class="actions">
+        @if (can('activate')) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="lifecycle('activate')"
+          >
+            تفعيل
+          </button>
+        }
+        @if (can('deactivate')) {
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="lifecycle('deactivate')"
+          >
+            تعطيل
+          </button>
+        }
+        @if (can('restore')) {
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="lifecycle('restore')"
+          >
+            استعادة
+          </button>
+        }
+        @if (can('delete')) {
+          <button
+            class="btn btn-danger"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="lifecycle('delete')"
+          >
+            حذف مبدئي
+          </button>
+        }
+      </div>
+    }
+  </header>
+
+  @if (apiMessages().length) {
+    <div class="form-notice error" role="alert">
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="panel" role="status">جارٍ تحميل بيانات التخصص…</div>
+  } @else {
+    @if (details(); as item) {
+      <div class="status-line">
+        <span [class.active]="item.isActive">{{ item.isActive ? 'نشط' : 'غير نشط' }}</span
+        ><span [class.deleted]="item.isDeleted">{{ item.isDeleted ? 'محذوف' : 'غير محذوف' }}</span>
+      </div>
+    }
+    <form class="panel" (submit)="save($event)">
+      <div class="form-grid">
+        <label class="form-field"
+          ><span>الاسم بالعربية</span><input [formField]="detailsForm.nameAr" />
+          @if (detailsForm.nameAr().touched() && detailsForm.nameAr().errors().length) {
+            <small class="field-error">{{ detailsForm.nameAr().errors()[0].message }}</small>
+          }
+          @if (serverError('nameAr')) {
+            <small class="field-error">{{ serverError('nameAr') }}</small>
+          }
+        </label>
+        <label class="form-field"
+          ><span>الاسم بالإنجليزية <small>اختياري</small></span
+          ><input lang="en" dir="ltr" [formField]="detailsForm.nameEn" />
+          @if (serverError('nameEn')) {
+            <small class="field-error">{{ serverError('nameEn') }}</small>
+          }
+        </label>
+        <label class="form-field full"
+          ><span>الوصف بالعربية <small>اختياري</small></span
+          ><textarea [formField]="detailsForm.descriptionAr"></textarea>
+        </label>
+        <label class="form-field full"
+          ><span>الوصف بالإنجليزية <small>اختياري</small></span
+          ><textarea lang="en" dir="ltr" [formField]="detailsForm.descriptionEn"></textarea>
+        </label>
+        <label class="form-field"
+          ><span>ترتيب العرض</span><input type="number" [formField]="detailsForm.sortOrder"
+        /></label>
+      </div>
+      @if (canEdit()) {
+        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'جارٍ الحفظ…' : 'حفظ التخصص' }}
+        </button>
+      }
+    </form>
+  }
+</section>

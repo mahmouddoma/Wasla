@@ -36,6 +36,22 @@ export const doctorOnboardingGuard: CanActivateFn = () => {
   return true;
 };
 
+export const doctorProfileGuard: CanActivateFn = () => {
+  const session = inject(AuthSession);
+  const router = inject(Router);
+  const user = session.user();
+  if (!user) return router.createUrlTree(['/login']);
+  const permissions = [
+    PERMISSIONS.doctorSpecializationsViewOwn,
+    PERMISSIONS.doctorPracticeLocationViewOwn,
+    PERMISSIONS.doctorPracticeLocationManageOwn,
+  ];
+  return user.userType === 'Doctor' &&
+    permissions.some((permission) => session.hasPermission(permission))
+    ? true
+    : router.createUrlTree([session.destinationFor(user)]);
+};
+
 export const permissionGuard: CanActivateFn = (route) => {
   const session = inject(AuthSession);
   const router = inject(Router);

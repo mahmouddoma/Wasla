@@ -1,0 +1,107 @@
+<section class="management-page">
+  <header class="page-heading">
+    <div>
+      <h1>التخصصات الطبية</h1>
+      <p>إدارة دليل التخصصات المتاح للأطباء أثناء إعداد الحساب.</p>
+    </div>
+    @if (canCreate) {
+      <a class="btn btn-primary" routerLink="/admin/medical-specializations/create">إضافة تخصص</a>
+    }
+  </header>
+
+  <div class="toolbar">
+    <label>
+      البحث
+      <input
+        type="search"
+        [formField]="searchForm.search"
+        (input)="scheduleSearch()"
+        placeholder="الاسم العربي أو الإنجليزي"
+      />
+    </label>
+    <label>
+      حالة الإتاحة
+      <select [value]="activeFilter()" (change)="setFilter('active', $event)">
+        <option value="">الكل</option>
+        <option value="true">نشط</option>
+        <option value="false">غير نشط</option>
+      </select>
+    </label>
+    <label>
+      حالة الحذف
+      <select [value]="deletedFilter()" (change)="setFilter('deleted', $event)">
+        <option value="false">غير محذوف</option>
+        <option value="true">محذوف</option>
+        <option value="">الكل</option>
+      </select>
+    </label>
+  </div>
+
+  @if (apiMessages().length) {
+    <div class="state error" role="alert">
+      <h2>تعذر تحميل التخصصات</h2>
+      @for (message of apiMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary mt-3" type="button" (click)="load()">
+        إعادة المحاولة
+      </button>
+    </div>
+  } @else if (isLoading() && !result()) {
+    <div class="state" role="status"><h2>جارٍ تحميل التخصصات…</h2></div>
+  } @else if (result(); as page) {
+    @if (page.items.length) {
+      <div class="data-list">
+        <div class="data-header">
+          <span>التخصص</span><span>الترتيب</span><span>الإتاحة</span><span>الحذف</span><span></span>
+        </div>
+        @for (item of page.items; track item.id) {
+          <article class="data-row">
+            <div class="identity">
+              <a [routerLink]="['/admin/medical-specializations', item.id]">{{ item.nameAr }}</a>
+              @if (item.nameEn) {
+                <small lang="en">{{ item.nameEn }}</small>
+              }
+            </div>
+            <div><span class="mobile-label">الترتيب</span>{{ item.sortOrder }}</div>
+            <span [class]="item.isActive ? 'badge-state active' : 'badge-state'">{{
+              item.isActive ? 'نشط' : 'غير نشط'
+            }}</span>
+            <span [class]="item.isDeleted ? 'badge-state deleted' : 'badge-state'">{{
+              item.isDeleted ? 'محذوف' : 'سليم'
+            }}</span>
+            <a
+              class="btn btn-outline-secondary"
+              [routerLink]="['/admin/medical-specializations', item.id]"
+              >التفاصيل</a
+            >
+          </article>
+        }
+      </div>
+      <nav class="pagination-bar" aria-label="صفحات التخصصات">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() <= 1 || isLoading()"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          السابق
+        </button>
+        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() >= totalPages() || isLoading()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          التالي
+        </button>
+      </nav>
+    } @else {
+      <div class="state">
+        <h2>لا توجد تخصصات مطابقة</h2>
+        <p>غيّر عوامل البحث أو الفلترة.</p>
+      </div>
+    }
+  }
+</section>

@@ -23,6 +23,12 @@ export class AdminLayout {
   protected readonly canViewRoles = computed(() =>
     this.session.hasPermission(PERMISSIONS.rolesView),
   );
+  protected readonly canViewSpecializations = computed(() =>
+    this.session.hasPermission(PERMISSIONS.specializationsView),
+  );
+  protected readonly canViewSpecializationRequests = computed(() =>
+    this.session.hasPermission(PERMISSIONS.doctorSpecializationRequestsViewAll),
+  );
   protected readonly home = computed(() => {
     const user = this.user();
     return user ? this.session.destinationFor(user) : '/login';

@@ -1,16 +1,17 @@
 import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../core/auth/api-errors';
 import { AuthApi } from '../../core/auth/auth-api';
 import { AuthSession } from '../../core/auth/auth-session';
+import { PERMISSIONS } from '../../core/auth/permissions';
 import { DoctorApi } from '../../core/doctors/doctor-api';
 import { DoctorOnboardingStatus } from '../../core/doctors/doctor.models';
 
 @Component({
   selector: 'app-doctor-onboarding',
-  imports: [NgOptimizedImage],
+  imports: [NgOptimizedImage, RouterLink],
   templateUrl: './doctor-onboarding.html',
   styleUrl: './doctor-onboarding.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +25,11 @@ export class DoctorOnboarding {
   protected readonly status = signal<DoctorOnboardingStatus | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly apiMessages = signal<string[]>([]);
+  protected readonly canManageProfile = computed(
+    () =>
+      this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
+      this.session.hasPermission(PERMISSIONS.doctorPracticeLocationManageOwn),
+  );
   protected readonly approvedOn = computed(() => {
     const value = this.status()?.approvedOnUtc;
     if (!value) return '';

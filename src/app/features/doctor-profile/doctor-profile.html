@@ -1,0 +1,205 @@
+<main class="profile-shell" dir="rtl">
+  <header class="profile-header">
+    <a routerLink="/doctor/onboarding" aria-label="حالة اعتماد الطبيب"
+      ><img src="/images/wasla-mark.png" width="1254" height="1254" alt="وصلة"
+    /></a>
+    <div>
+      <a class="btn btn-outline-secondary" routerLink="/doctor/onboarding">حالة الاعتماد</a
+      ><button class="btn btn-outline-secondary" type="button" (click)="logout()">
+        تسجيل الخروج
+      </button>
+    </div>
+  </header>
+  <section class="profile-content">
+    <header>
+      <p>إعداد الملف المهني</p>
+      <h1>التخصص وموقع الممارسة</h1>
+      <span>البيانات هنا تأتي من Wasla API وتظل قابلة للمراجعة.</span>
+    </header>
+    @if (apiMessages().length) {
+      <div class="form-notice error" role="alert">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+    }
+    @if (isLoading()) {
+      <div class="panel" role="status">جارٍ تحميل بيانات الملف…</div>
+    }
+
+    @if (canViewSpecializations) {
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <h2>التخصصات المعتمدة</h2>
+            <p>هذه هي المجموعة الفعالة حاليًا.</p>
+          </div>
+        </div>
+        <ul class="current-list">
+          @for (item of current().items; track item.medicalSpecializationId) {
+            <li>
+              <span
+                >{{ item.nameAr }}
+                @if (item.nameEn) {
+                  <small lang="en">{{ item.nameEn }}</small>
+                }
+              </span>
+              @if (item.isPrimary) {
+                <strong>أساسي</strong>
+              }
+            </li>
+          } @empty {
+            <li class="empty">لا توجد تخصصات معتمدة حتى الآن.</li>
+          }
+        </ul>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <h2>طلب التخصص</h2>
+            @if (openRequest(); as request) {
+              <p>المراجعة #{{ request.currentRevisionNumber }} · {{ request.status }}</p>
+            } @else {
+              <p>اختر تخصصًا أو أكثر وحدد تخصصًا أساسيًا واحدًا.</p>
+            }
+          </div>
+        </div>
+        @if (openRequest()?.status === 'PendingReview') {
+          <div class="form-notice info"><p>الطلب قيد المراجعة ولا يمكن تعديله الآن.</p></div>
+        }
+        @if (openRequest()?.status === 'ModificationRequested') {
+          <div class="form-notice info">
+            <strong>رسالة الإدارة</strong>
+            <p>{{ openRequest()?.latestModificationMessage }}</p>
+          </div>
+        }
+        <app-specialization-selector
+          [options]="options()"
+          [selected]="selected()"
+          [disabled]="!canEditProposal() || isSpecializationSubmitting()"
+          (selectionChange)="selected.set($event)"
+        />
+        @if (canEditProposal()) {
+          <button
+            class="btn btn-primary mt-3"
+            type="button"
+            [disabled]="isSpecializationSubmitting()"
+            (click)="saveSpecializations()"
+          >
+            {{
+              isSpecializationSubmitting()
+                ? 'جارٍ الإرسال…'
+                : openRequest()
+                  ? 'إعادة إرسال الطلب'
+                  : 'إرسال للمراجعة'
+            }}
+          </button>
+        }
+      </section>
+      @if (history().length) {
+        <section class="panel">
+          <h2>سجل طلب التخصص</h2>
+          <ol class="timeline">
+            @for (item of history(); track item.id) {
+              <li>
+                <div>
+                  <strong>{{ item.action }}</strong
+                  ><time [attr.datetime]="item.performedOnUtc">{{
+                    formatDate(item.performedOnUtc)
+                  }}</time>
+                </div>
+                <p>
+                  المراجعة #{{ item.revisionNumber }}
+                  @if (item.previousRevisionNumber !== null) {
+                    · السابقة #{{ item.previousRevisionNumber }}
+                  }
+                </p>
+                @if (item.message) {
+                  <blockquote>{{ item.message }}</blockquote>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+      }
+    }
+
+    @if (canViewLocation || canManageLocation) {
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <h2>موقع الممارسة</h2>
+            <p>
+              {{
+                location() ? 'عدّل موقعك الحالي باستخدام أحدث نسخة.' : 'أضف موقع الممارسة الأول.'
+              }}
+            </p>
+          </div>
+        </div>
+        <form (submit)="saveLocation($event)">
+          @if (canManageLocation) {
+            <button
+              class="btn btn-outline-secondary location-picker"
+              type="button"
+              [disabled]="isLocating()"
+              (click)="useCurrentLocation()"
+            >
+              {{ isLocating() ? 'جارٍ تحديد الموقع…' : 'استخدام موقعي الحالي' }}
+            </button>
+          }
+          <div class="location-grid">
+            <label class="form-field"
+              ><span>المحافظة</span
+              ><select
+                [formField]="locationForm.governorateId"
+                (change)="governorateChanged($event)"
+              >
+                <option value="">اختر المحافظة</option>
+                @for (item of governorates(); track item.id) {
+                  <option [value]="item.id">{{ item.nameAr }}</option>
+                }
+              </select></label
+            >
+            <label class="form-field"
+              ><span>المدينة</span
+              ><select [formField]="locationForm.cityId" (change)="cityChanged($event)">
+                <option value="">{{ citiesLoading() ? 'جارٍ التحميل…' : 'اختر المدينة' }}</option>
+                @for (item of cities(); track item.id) {
+                  <option [value]="item.id">{{ item.nameAr }}</option>
+                }
+              </select></label
+            >
+            <label class="form-field"
+              ><span>المنطقة</span
+              ><select [formField]="locationForm.areaId">
+                <option value="">{{ areasLoading() ? 'جارٍ التحميل…' : 'اختر المنطقة' }}</option>
+                @for (item of areas(); track item.id) {
+                  <option [value]="item.id">{{ item.nameAr }}</option>
+                }
+              </select></label
+            >
+            <label class="form-field full"
+              ><span>العنوان التفصيلي</span
+              ><input
+                [formField]="locationForm.detailedAddress"
+                placeholder="رقم العقار والشارع والعلامة المميزة"
+            /></label>
+            <label class="form-field"
+              ><span>خط العرض</span
+              ><input type="number" step="any" [formField]="locationForm.latitude"
+            /></label>
+            <label class="form-field"
+              ><span>خط الطول</span
+              ><input type="number" step="any" [formField]="locationForm.longitude"
+            /></label>
+          </div>
+          @if (canManageLocation) {
+            <button class="btn btn-primary" type="submit" [disabled]="isLocationSubmitting()">
+              {{ isLocationSubmitting() ? 'جارٍ الحفظ…' : 'حفظ الموقع' }}
+            </button>
+          }
+        </form>
+      </section>
+    }
+  </section>
+</main>

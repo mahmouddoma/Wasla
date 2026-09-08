@@ -61,8 +61,18 @@
 
   <div class="otp-actions">
     <span>لم يصلك الرمز؟</span>
-    <button type="button" [disabled]="isResending() || isSubmitting()" (click)="resend()">
-      {{ isResending() ? 'جارٍ إعادة الإرسال…' : 'إعادة الإرسال' }}
+    <button
+      type="button"
+      [disabled]="isResending() || isSubmitting() || resendCooldown() > 0"
+      (click)="resend()"
+    >
+      {{
+        isResending()
+          ? 'جارٍ إعادة الإرسال…'
+          : resendCooldown() > 0
+            ? 'إعادة الإرسال خلال ' + resendCooldown() + ' ث'
+            : 'إعادة الإرسال'
+      }}
     </button>
   </div>
 </div>
