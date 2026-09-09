@@ -4,12 +4,13 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { SecurityGovernanceApi } from '../../../core/security-governance/security-governance-api';
 import { SecurityRole } from '../../../core/security-governance/security-governance.models';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-roles-list',
-  imports: [RouterLink],
+  imports: [RouterLink, PageHeader],
   templateUrl: './roles-list.html',
-  styleUrl: './roles-list.css',
+  styleUrls: ['../management-list.css', './roles-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RolesList {

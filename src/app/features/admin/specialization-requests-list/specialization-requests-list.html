@@ -1,13 +1,15 @@
 <section class="management-page">
-  <header class="page-heading">
-    <div>
-      <h1>طلبات تخصصات الأطباء</h1>
-      <p>راجع المقترحات الحالية دون خلطها بالتخصصات المعتمدة.</p>
-    </div>
+  <app-page-header
+    heading="طلبات تخصصات الأطباء"
+    description="راجع المقترحات الحالية دون خلطها بالتخصصات المعتمدة."
+    icon="requests"
+  >
     @if (result()) {
-      <strong>{{ result()!.totalCount }} طلب</strong>
+      <div pageHeaderActions class="page-header-actions">
+        <span class="result-count">{{ result()!.totalCount }} طلب</span>
+      </div>
     }
-  </header>
+  </app-page-header>
   <div class="toolbar">
     <label
       >البحث<input
@@ -35,6 +37,7 @@
   </div>
   @if (apiMessages().length) {
     <div class="state error" role="alert">
+      <img class="state-illustration" src="/SVG-AVATAR/Medical prescription-amico.svg" alt="" />
       <h2>تعذر تحميل الطلبات</h2>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
@@ -44,7 +47,10 @@
       </button>
     </div>
   } @else if (isLoading() && !result()) {
-    <div class="state" role="status"><h2>جارٍ تحميل الطلبات…</h2></div>
+    <div class="state" role="status">
+      <span class="loading-indicator" aria-hidden="true"></span>
+      <h2>جارٍ تحميل الطلبات…</h2>
+    </div>
   } @else if (result(); as page) {
     @if (page.items.length) {
       <div class="data-list">
@@ -97,6 +103,7 @@
       </nav>
     } @else {
       <div class="state">
+        <img class="state-illustration" src="/SVG-AVATAR/Medical prescription-amico.svg" alt="" />
         <h2>لا توجد طلبات مطابقة</h2>
         <p>غيّر عوامل البحث أو الفلترة.</p>
       </div>

@@ -14,6 +14,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { SuperAdminsApi } from '../../../core/superadmins/superadmins-api';
 import { SuperAdminRecord, SuperAdminsPage } from '../../../core/superadmins/superadmins.models';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 
 type ListAction = 'delete' | 'restore';
@@ -25,9 +26,9 @@ interface PendingListAction {
 
 @Component({
   selector: 'app-superadmins-list',
-  imports: [FormField, RouterLink, ConfirmationDialog],
+  imports: [FormField, RouterLink, PageHeader, ConfirmationDialog],
   templateUrl: './superadmins-list.html',
-  styleUrl: './superadmins-list.css',
+  styleUrls: ['../management-list.css', './superadmins-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuperAdminsList {

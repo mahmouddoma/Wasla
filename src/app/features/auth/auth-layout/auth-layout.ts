@@ -7,6 +7,9 @@ import {
   signal,
 } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { LanguageSwitcher } from '../../../shared/components/language-switcher/language-switcher';
 
 export interface StorySlide {
   id: number;
@@ -20,12 +23,13 @@ export interface StorySlide {
 
 @Component({
   selector: 'app-auth-layout',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, LanguageSwitcher, TranslatePipe],
   templateUrl: './auth-layout.html',
   styleUrl: './auth-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthLayout implements OnInit {
+  readonly langService = inject(LanguageService);
   private readonly destroyRef = inject(DestroyRef);
   private timerId: ReturnType<typeof setInterval> | null = null;
 

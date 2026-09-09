@@ -16,9 +16,11 @@ import { Gender } from '../../../core/auth/auth.models';
 import { NoFutureDate } from '../../../shared/no-future-date/no-future-date';
 import { FileUpload } from '../file-upload/file-upload';
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-doctor-registration',
-  imports: [FormField, RouterLink, FileUpload, NoFutureDate],
+  imports: [FormField, RouterLink, FileUpload, NoFutureDate, TranslatePipe],
   templateUrl: './doctor-registration.html',
   styleUrl: './doctor-registration.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -6,9 +6,11 @@ import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-login',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe],
   templateUrl: './login.html',
   styleUrl: './login.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,57 +1,377 @@
-<section class="doctors-page">
-  <header class="page-heading">
-    <div>
-      <h1>إدارة الأطباء</h1>
-      <p>راجع حسابات الأطباء وحالة الاعتماد والمستندات المتاحة.</p>
+<section class="management-page">
+  <!-- Page Header -->
+  <app-page-header
+    heading="إدارة الأطباء"
+    description="إدارة حسابات الأطباء، التراخيص، الاعتماد والتوثيق."
+    icon="doctors"
+  >
+    <div pageHeaderActions class="page-header-actions">
+      <button
+        type="button"
+        class="btn btn-primary btn-refresh-header"
+        (click)="loadMetrics(); load()"
+        [disabled]="isLoading()"
+        title="تحديث البيانات"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="17"
+          height="17"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          [class.spin]="isLoading()"
+          aria-hidden="true"
+        >
+          <path
+            d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"
+          />
+        </svg>
+        <span>تحديث البيانات</span>
+      </button>
     </div>
-    @if (result()) {
-      <span class="result-count">{{ result()!.totalCount }} طبيب</span>
-    }
-  </header>
+  </app-page-header>
 
-  <div class="list-controls">
-    <label class="search-field">
-      <span>البحث</span>
-      <div>
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0z" />
+  <!-- KPI Metric Cards Row -->
+  <div class="kpi-metrics-grid" role="region" aria-label="مؤشرات أداء الأطباء">
+    <!-- Total Doctors Card -->
+    <button
+      type="button"
+      class="kpi-card kpi-card--total"
+      [class.active]="selectedStatus() === ''"
+      (click)="filterBy('')"
+    >
+      <div class="kpi-card__icon-wrap">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      </div>
+      <div class="kpi-card__content">
+        <span class="kpi-card__value">
+          {{ metrics().loaded ? metrics().total : (result()?.totalCount ?? 0) }}
+        </span>
+        <span class="kpi-card__label">إجمالي الأطباء</span>
+        <span class="kpi-card__sub">جميع الأطباء المسجلين</span>
+      </div>
+    </button>
+
+    <!-- Approved Doctors Card -->
+    <button
+      type="button"
+      class="kpi-card kpi-card--approved"
+      [class.active]="selectedStatus() === 'Approved'"
+      (click)="filterBy('Approved')"
+    >
+      <div class="kpi-card__icon-wrap">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <polyline points="9 12 11 14 15 10" />
+        </svg>
+      </div>
+      <div class="kpi-card__content">
+        <span class="kpi-card__value">
+          {{ metrics().loaded ? metrics().approved : '-' }}
+        </span>
+        <span class="kpi-card__label">معتمد</span>
+        <span class="kpi-card__sub">أطباء معتمدين ونشطين</span>
+      </div>
+    </button>
+
+    <!-- Pending Doctors Card -->
+    <button
+      type="button"
+      class="kpi-card kpi-card--pending"
+      [class.active]="selectedStatus() === 'Pending'"
+      (click)="filterBy('Pending')"
+    >
+      <div class="kpi-card__icon-wrap">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </div>
+      <div class="kpi-card__content">
+        <span class="kpi-card__value">
+          {{ metrics().loaded ? metrics().pending : '-' }}
+        </span>
+        <span class="kpi-card__label">قيد المراجعة</span>
+        <span class="kpi-card__sub">بانتظار اعتماد الإدارة</span>
+      </div>
+    </button>
+
+    <!-- Needs Action Card -->
+    <button
+      type="button"
+      class="kpi-card kpi-card--action"
+      [class.active]="selectedStatus() === 'Rejected' || selectedStatus() === 'Suspended'"
+      (click)="filterBy(selectedStatus() === 'Rejected' ? 'Suspended' : 'Rejected')"
+    >
+      <div class="kpi-card__icon-wrap">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <div class="kpi-card__content">
+        <span class="kpi-card__value">
+          {{ metrics().loaded ? metrics().needsAction : '-' }}
+        </span>
+        <span class="kpi-card__label">يحتاج إجراء</span>
+        <span class="kpi-card__sub">مرفوض أو معلّق الحساب</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- Main Filters & Search Toolbar -->
+  <div class="toolbar-medical-card">
+    <div class="toolbar-row-main">
+      <!-- Search Box -->
+      <div class="search-input-box-enterprise">
+        <svg
+          class="search-icon"
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
+          id="doctors-search-input"
           type="search"
           autocomplete="off"
-          placeholder="الاسم أو البريد أو الهاتف"
+          placeholder="ابحث بالاسم، رقم الهاتف، البريد الإلكتروني..."
           [formField]="filterForm.searchText"
           (input)="scheduleSearch()"
         />
         @if (filterModel().searchText) {
-          <button type="button" aria-label="مسح البحث" (click)="clearSearch()">مسح</button>
+          <button
+            type="button"
+            class="btn-clear-search-enterprise"
+            aria-label="مسح البحث"
+            (click)="clearSearch()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         }
       </div>
-      @if (filterForm.searchText().touched() && filterForm.searchText().errors().length) {
-        <small class="field-error">{{ filterForm.searchText().errors()[0].message }}</small>
-      }
-      @if (searchError()) {
-        <small class="field-error">{{ searchError() }}</small>
-      }
-    </label>
 
-    <div class="status-filters" role="group" aria-label="تصفية حسب حالة الاعتماد">
-      @for (option of statusOptions; track option.value) {
+      <!-- Filters Dropdowns -->
+      <div class="toolbar-controls-cluster">
+        <!-- Status Dropdown -->
+        <div class="custom-select-wrap">
+          <select
+            class="filter-select"
+            [value]="selectedStatus()"
+            (change)="filterBy($any($event.target).value)"
+            aria-label="تصفية حسب حالة الاعتماد"
+          >
+            <option value="">حالة الاعتماد: الكل</option>
+            <option value="Approved">معتمد</option>
+            <option value="Pending">قيد المراجعة</option>
+            <option value="Rejected">مرفوض</option>
+            <option value="Suspended">معلّق</option>
+          </select>
+          <svg
+            class="select-chevron"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+
+        <!-- Reset Button -->
+        @if (hasActiveFilter()) {
+          <button
+            type="button"
+            class="btn-reset-filters"
+            (click)="clearAllFilters()"
+            title="إعادة ضبط الفلاتر"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            <span>إعادة تعيين</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Field and Search Errors -->
+    @if (filterForm.searchText().touched() && filterForm.searchText().errors().length) {
+      <small class="field-error">{{ filterForm.searchText().errors()[0].message }}</small>
+    }
+    @if (searchError()) {
+      <small class="field-error">{{ searchError() }}</small>
+    }
+  </div>
+
+  <!-- Meta Header Bar (Results Count, View Toggle, Sorting) -->
+  <div class="table-meta-bar">
+    <div class="meta-start">
+      <span class="meta-count-text">
+        <strong>{{ result()?.totalCount ?? 0 }}</strong> طبيب
+      </span>
+      @if (isLoading()) {
+        <span class="live-update-pill">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span>جارٍ التحديث…</span>
+        </span>
+      }
+    </div>
+
+    <div class="meta-end">
+      <!-- Sort Dropdown -->
+      <div class="sort-select-wrap">
+        <select
+          class="sort-select"
+          [value]="sortBy()"
+          (change)="onSortChange($event)"
+          aria-label="ترتيب النتائج"
+        >
+          <option value="newest">ترتيب حسب: الأحدث إضافة</option>
+          <option value="oldest">ترتيب حسب: الأقدم</option>
+          <option value="name">ترتيب حسب: الاسم (أ-ي)</option>
+        </select>
+        <svg
+          class="select-chevron"
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+
+      <!-- View Switcher (Table / Grid) -->
+      <div class="view-toggle-group" role="group" aria-label="طريقة العرض">
         <button
           type="button"
-          [class.active]="selectedStatus() === option.value"
-          [attr.aria-pressed]="selectedStatus() === option.value"
-          (click)="filterBy(option.value)"
+          class="view-toggle-btn"
+          [class.active]="viewMode() === 'table'"
+          (click)="toggleViewMode('table')"
+          title="عرض جدولي"
         >
-          {{ option.label }}
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
         </button>
-      }
+        <button
+          type="button"
+          class="view-toggle-btn"
+          [class.active]="viewMode() === 'grid'"
+          (click)="toggleViewMode('grid')"
+          title="عرض بطاقات"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
+  <!-- Main Content Area -->
   @if (apiMessages().length) {
-    <div class="list-state error-state" role="alert">
-      <h2>تعذر تحميل الأطباء</h2>
+    <div class="state error" role="alert">
+      <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" />
+      <h2>تعذر تحميل بيانات الأطباء</h2>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
       }
@@ -60,95 +380,384 @@
       </button>
     </div>
   } @else if (isLoading() && !result()) {
-    <div class="list-state" role="status">
+    <div class="state" role="status">
       <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>جارٍ تحميل الأطباء…</h2>
+      <h2>جارٍ فحص وتحديث سجل الأطباء…</h2>
     </div>
   } @else if (result(); as doctorsPage) {
-    <div class="list-progress" [class.visible]="isLoading()" role="status">
-      {{ isLoading() ? 'جارٍ تحديث النتائج…' : '' }}
-    </div>
-    @if (doctorsPage.items.length) {
-      <div class="doctors-list">
-        <div class="list-header" aria-hidden="true">
-          <span>الطبيب</span><span>التواصل</span><span>الحالة</span><span>المستندات</span
-          ><span>التسجيل</span><span></span>
-        </div>
-        @for (doctor of doctorsPage.items; track doctor.doctorId) {
-          <article class="doctor-row">
-            <div class="doctor-identity">
-              @if (canViewDetails) {
-                <a [routerLink]="['/admin/doctors', doctor.doctorId]">{{ doctor.nameAr }}</a>
-              } @else {
-                <strong>{{ doctor.nameAr }}</strong>
-              }
-              @if (doctor.nameEn) {
-                <span lang="en" dir="ltr">{{ doctor.nameEn }}</span>
-              }
-              <small>{{ doctor.age }} سنة · {{ doctor.gender }}</small>
-            </div>
-            <div class="doctor-contact">
-              <span class="cell-label">التواصل</span>
-              <a [href]="'mailto:' + doctor.email">{{ doctor.email }}</a>
-              <a [href]="'tel:' + doctor.phone" dir="ltr">{{ doctor.phone }}</a>
-            </div>
-            <div>
-              <span class="cell-label">الحالة</span>
-              <span [class]="statusClass(doctor.approvalStatus)">
-                {{ statusLabel(doctor.approvalStatus) }}
-              </span>
-            </div>
-            <div class="documents-count">
-              <span class="cell-label">المستندات</span>
-              <strong>{{ availableDocuments(doctor) }}/5</strong>
-              <small>ملفات متاحة</small>
-            </div>
-            <div class="created-date">
-              <span class="cell-label">التسجيل</span>
-              <time [attr.datetime]="doctor.createdOnUtc">{{
-                formatDate(doctor.createdOnUtc)
-              }}</time>
-            </div>
-            <div class="row-action">
-              @if (canViewDetails) {
-                <a
-                  class="btn btn-outline-secondary"
-                  [routerLink]="['/admin/doctors', doctor.doctorId]"
-                >
-                  التفاصيل
-                </a>
-              }
-            </div>
-          </article>
-        }
-      </div>
+    @if (sortedItems().length) {
+      @if (viewMode() === 'table') {
+        <!-- Enterprise Medical Data Table -->
+        <div class="medical-table-card">
+          <div class="medical-table-header" aria-hidden="true">
+            <span class="col-head col-head--doctor">الطبيب</span>
+            <span class="col-head col-head--contact">بيانات التواصل</span>
+            <span class="col-head col-head--license">الترخيص والمستندات</span>
+            <span class="col-head col-head--progress">اكتمال الملف</span>
+            <span class="col-head col-head--status">حالة الاعتماد</span>
+            <span class="col-head col-head--date">آخر تحديث</span>
+            <span class="col-head col-head--action">الإجراءات</span>
+          </div>
 
-      <nav class="pagination-bar" aria-label="صفحات قائمة الأطباء">
-        <button
-          class="btn btn-outline-secondary"
-          type="button"
-          [disabled]="pageNumber() <= 1 || isLoading()"
-          (click)="goToPage(pageNumber() - 1)"
-        >
-          السابق
-        </button>
-        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
-        <button
-          class="btn btn-outline-secondary"
-          type="button"
-          [disabled]="pageNumber() >= totalPages() || isLoading()"
-          (click)="goToPage(pageNumber() + 1)"
-        >
-          التالي
-        </button>
+          <div class="medical-table-body">
+            @for (doctor of sortedItems(); track doctor.doctorId) {
+              <article class="doctor-row-enterprise">
+                <!-- Col 1: Doctor Identity -->
+                <div class="col-doctor">
+                  <div class="doctor-avatar-circle">
+                    <span>{{ doctorInitials(doctor) }}</span>
+                    @if (doctor.approvalStatus === 'Approved') {
+                      <span class="verified-indicator" title="طبيب معتمد وموثق">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="9"
+                          height="9"
+                          fill="none"
+                          stroke="white"
+                          stroke-width="3"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                    }
+                  </div>
+
+                  <div class="doctor-name-cluster">
+                    @if (canViewDetails) {
+                      <a
+                        class="doctor-title-link"
+                        [routerLink]="['/admin/doctors', doctor.doctorId]"
+                      >
+                        {{ doctor.nameAr }}
+                      </a>
+                    } @else {
+                      <strong class="doctor-title-text">{{ doctor.nameAr }}</strong>
+                    }
+
+                    <div class="doctor-sub-cluster">
+                      <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
+                      @if (doctor.nameEn) {
+                        <span class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Col 2: Contact Info -->
+                <div class="col-contact">
+                  <span class="mobile-col-label">التواصل:</span>
+                  <a
+                    class="contact-pill-link"
+                    [href]="'mailto:' + doctor.email"
+                    title="إرسال بريد إلكتروني"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                    <span>{{ doctor.email }}</span>
+                  </a>
+                  <a
+                    class="contact-pill-link contact-phone"
+                    [href]="'tel:' + doctor.phone"
+                    dir="ltr"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                      />
+                    </svg>
+                    <span>{{ doctor.phone }}</span>
+                  </a>
+                  <span class="demographics-line"
+                    >{{ doctor.age }} سنة · {{ doctor.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span
+                  >
+                </div>
+
+                <!-- Col 3: License & Documents -->
+                <div class="col-license">
+                  <span class="mobile-col-label">المستندات:</span>
+                  <div class="license-status-line">
+                    <span
+                      class="license-dot"
+                      [class.license-dot--valid]="doctor.hasSyndicateFront"
+                      [class.license-dot--missing]="!doctor.hasSyndicateFront"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="license-text">
+                      {{
+                        doctor.hasSyndicateFront ? 'بطاقة النقابة مرفوعة' : 'بانتظار بطاقة النقابة'
+                      }}
+                    </span>
+                  </div>
+                  <span class="docs-count-sub">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>{{ availableDocuments(doctor) }} من 5 وثائق</span>
+                  </span>
+                </div>
+
+                <!-- Col 4: Completion Progress Bar -->
+                <div class="col-progress">
+                  <span class="mobile-col-label">اكتمال الملف:</span>
+                  <div class="progress-bar-wrap">
+                    <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+                    <div
+                      class="progress-track"
+                      role="progressbar"
+                      [attr.aria-valuenow]="completionPercentage(doctor)"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    >
+                      <div
+                        class="progress-fill"
+                        [style.width.%]="completionPercentage(doctor)"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Col 5: Approval Status Badge -->
+                <div class="col-status">
+                  <span class="mobile-col-label">حالة الاعتماد:</span>
+                  <span
+                    class="enterprise-status-badge"
+                    [class]="'status--' + doctor.approvalStatus.toLowerCase()"
+                  >
+                    <span class="status-living-dot" aria-hidden="true"></span>
+                    <span>{{ statusLabel(doctor.approvalStatus) }}</span>
+                  </span>
+                </div>
+
+                <!-- Col 6: Date -->
+                <div class="col-date">
+                  <span class="mobile-col-label">تاريخ التسجيل:</span>
+                  <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">
+                    {{ formatDate(doctor.createdOnUtc) }}
+                  </time>
+                </div>
+
+                <!-- Col 7: Actions -->
+                <div class="col-action">
+                  @if (canViewDetails) {
+                    <a
+                      class="btn-inspect-enterprise"
+                      [routerLink]="['/admin/doctors', doctor.doctorId]"
+                    >
+                      <span>عرض الملف</span>
+                    </a>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      } @else {
+        <!-- Grid View Mode -->
+        <div class="doctors-cards-grid">
+          @for (doctor of sortedItems(); track doctor.doctorId) {
+            <article class="doctor-card-item">
+              <div class="card-item-top">
+                <div class="doctor-avatar-circle large">
+                  <span>{{ doctorInitials(doctor) }}</span>
+                  @if (doctor.approvalStatus === 'Approved') {
+                    <span class="verified-indicator" title="طبيب معتمد">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="10"
+                        height="10"
+                        fill="none"
+                        stroke="white"
+                        stroke-width="3"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                  }
+                </div>
+                <div class="card-top-info">
+                  <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
+                  <h3 class="card-doctor-name">
+                    @if (canViewDetails) {
+                      <a [routerLink]="['/admin/doctors', doctor.doctorId]">{{ doctor.nameAr }}</a>
+                    } @else {
+                      {{ doctor.nameAr }}
+                    }
+                  </h3>
+                  @if (doctor.nameEn) {
+                    <p class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</p>
+                  }
+                </div>
+                <span
+                  class="enterprise-status-badge"
+                  [class]="'status--' + doctor.approvalStatus.toLowerCase()"
+                >
+                  <span class="status-living-dot" aria-hidden="true"></span>
+                  <span>{{ statusLabel(doctor.approvalStatus) }}</span>
+                </span>
+              </div>
+
+              <div class="card-item-body">
+                <div class="card-data-row">
+                  <span class="card-row-label">التواصل</span>
+                  <span class="card-row-value field-ltr">{{ doctor.phone }}</span>
+                </div>
+                <div class="card-data-row">
+                  <span class="card-row-label">المستندات المرفوعة</span>
+                  <span class="card-row-value">{{ availableDocuments(doctor) }} / 5</span>
+                </div>
+                <div class="card-data-row">
+                  <span class="card-row-label">اكتمال الملف</span>
+                  <div class="progress-bar-wrap">
+                    <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+                    <div class="progress-track">
+                      <div
+                        class="progress-fill"
+                        [style.width.%]="completionPercentage(doctor)"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-item-footer">
+                <time class="date-time-text">{{ formatDate(doctor.createdOnUtc) }}</time>
+                @if (canViewDetails) {
+                  <a
+                    class="btn-inspect-enterprise"
+                    [routerLink]="['/admin/doctors', doctor.doctorId]"
+                  >
+                    <span>عرض الملف</span>
+                  </a>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+
+      <!-- Numbered Enterprise Pagination Bar -->
+      <nav class="pagination-bar-enterprise" aria-label="صفحات قائمة الأطباء">
+        <!-- Range Indicator -->
+        <div class="pagination-info">
+          <span
+            >عرض {{ pageItemRange().start }} - {{ pageItemRange().end }} من
+            {{ pageItemRange().total }} طبيب</span
+          >
+          <div class="page-size-picker">
+            <span>عرض</span>
+            <select
+              [value]="pageSize()"
+              (change)="onPageSizeChange($event)"
+              aria-label="عدد العناصر بالصفحة"
+            >
+              @for (size of pageSizeOptions; track size) {
+                <option [value]="size">{{ size }}</option>
+              }
+            </select>
+            <span>في الصفحة</span>
+          </div>
+        </div>
+
+        <!-- Numbered Page Controls -->
+        <div class="pagination-buttons-group">
+          <!-- Previous Button -->
+          <button
+            class="btn-pagination-step"
+            type="button"
+            [disabled]="pageNumber() <= 1 || isLoading()"
+            (click)="goToPage(pageNumber() - 1)"
+            aria-label="الصفحة السابقة"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+
+          <!-- Numbered Pages -->
+          @for (p of visiblePages(); track $index) {
+            @if (p === '...') {
+              <span class="pagination-ellipsis">…</span>
+            } @else {
+              <button
+                type="button"
+                class="btn-pagination-num"
+                [class.active]="p === pageNumber()"
+                (click)="goToPage(+p)"
+              >
+                {{ p }}
+              </button>
+            }
+          }
+
+          <!-- Next Button -->
+          <button
+            class="btn-pagination-step"
+            type="button"
+            [disabled]="pageNumber() >= totalPages() || isLoading()"
+            (click)="goToPage(pageNumber() + 1)"
+            aria-label="الصفحة التالية"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        </div>
       </nav>
     } @else {
-      <div class="list-state empty-state">
-        <h2>لا توجد نتائج</h2>
-        <p>غيّر حالة الاعتماد أو عبارة البحث لعرض أطباء آخرين.</p>
-        @if (filterModel().searchText) {
-          <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
-            مسح البحث
+      <!-- Empty Search / Filter Results State -->
+      <div class="state medical-empty-state">
+        <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" />
+        <h2>لا توجد نتائج مطابقة</h2>
+        <p>
+          لم يتم العثور على أي أطباء مسجلين وفق معايير التصفية الحالية. يمكنك تغيير حالة الاعتماد أو
+          مسح عبارة البحث لعرض المزيد من الأطباء.
+        </p>
+
+        @if (hasActiveFilter()) {
+          <button class="btn btn-outline-secondary" type="button" (click)="clearAllFilters()">
+            إعادة ضبط البحث والتصفية
           </button>
         }
       </div>

@@ -9,14 +9,19 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 import { DoctorApi } from '../../core/doctors/doctor-api';
 import { DoctorOnboardingStatus } from '../../core/doctors/doctor.models';
 
+import { LanguageService } from '../../core/i18n/language.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { LanguageSwitcher } from '../../shared/components/language-switcher/language-switcher';
+
 @Component({
   selector: 'app-doctor-onboarding',
-  imports: [NgOptimizedImage, RouterLink],
+  imports: [NgOptimizedImage, RouterLink, LanguageSwitcher, TranslatePipe],
   templateUrl: './doctor-onboarding.html',
   styleUrl: './doctor-onboarding.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorOnboarding {
+  readonly langService = inject(LanguageService);
   private readonly doctorApi = inject(DoctorApi);
   private readonly authApi = inject(AuthApi);
   private readonly session = inject(AuthSession);

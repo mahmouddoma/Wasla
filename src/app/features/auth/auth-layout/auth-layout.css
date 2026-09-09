@@ -15,7 +15,9 @@
    ---------------------------------------------------------------- */
 .auth-shell {
   display: grid;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   grid-template-columns: 1fr 1fr;
   grid-template-areas: 'story form';
   background: #ffffff;
@@ -23,6 +25,10 @@
 
 @media (max-width: 1080px) {
   .auth-shell {
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    overflow: visible;
     grid-template-columns: 1fr;
     grid-template-areas: 'form';
   }
@@ -34,11 +40,13 @@
 .auth-story {
   grid-area: story;
   position: relative;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 32px clamp(28px, 4vw, 56px) 24px;
+  padding: 28px clamp(24px, 3.5vw, 48px) 20px;
   background: linear-gradient(165deg, #071f30 0%, #051624 50%, #030d17 100%);
   color: #ffffff;
   border-inline-end: 1px solid rgba(255, 255, 255, 0.06);
@@ -60,7 +68,12 @@
   transform: translate(-50%, -50%);
   width: 540px;
   height: 540px;
-  background: radial-gradient(circle, rgba(14, 147, 137, 0.2) 0%, rgba(12, 34, 54, 0.1) 45%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(14, 147, 137, 0.2) 0%,
+    rgba(12, 34, 54, 0.1) 45%,
+    transparent 70%
+  );
   filter: blur(55px);
 }
 
@@ -74,23 +87,17 @@
   pointer-events: none;
 }
 
-/* ----------------------------------------------------------------
-   Realistic Layered Botanical Foliage (Bottom-Left Corner)
-   ---------------------------------------------------------------- */
-.botanical-leaves {
+/* Atmospheric botanical layer */
+.botanical-foliage {
   position: absolute;
-  bottom: -6px;
-  left: -6px;
-  width: 250px;
-  height: 310px;
+  bottom: -9%;
+  left: -8%;
+  width: clamp(270px, 34vw, 520px);
+  height: auto;
   pointer-events: none;
-  z-index: 1;
-}
-
-.botanical-leaves svg {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 14px 32px rgba(0, 0, 0, 0.55));
+  opacity: 0.34;
+  filter: saturate(0.68) brightness(0.72) contrast(0.92) blur(0.35px);
+  mask-image: linear-gradient(135deg, #000 42%, rgba(0, 0, 0, 0.82) 68%, transparent 94%);
 }
 
 /* ----------------------------------------------------------------
@@ -106,18 +113,27 @@
   margin-bottom: 16px;
 }
 
-.story-platform-badge {
+.story-brand-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: rgba(12, 34, 54, 0.75);
-  border: 1px solid rgba(14, 147, 137, 0.28);
-  border-radius: 99px;
-  color: #d1e0ea;
-  font-size: 0.8rem;
-  font-weight: 600;
-  backdrop-filter: blur(8px);
+  gap: 12px;
+  padding: 8px 18px;
+  backdrop-filter: blur(12px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* .story-brand-badge:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+} */
+
+.story-brand-logo {
+  height: 78px;
+  width: auto;
+  max-width: 170px;
+  object-fit: contain;
+  display: block;
 }
 
 .live-pulse-dot {
@@ -125,12 +141,15 @@
   height: 8px;
   border-radius: 50%;
   background: #0e9389;
-  box-shadow: 0 0 10px #0e9389, 0 0 4px #14b8a6;
+  box-shadow:
+    0 0 10px #0e9389,
+    0 0 4px #14b8a6;
   animation: pulse-dot 2.2s infinite ease-in-out;
 }
 
 @keyframes pulse-dot {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -311,7 +330,9 @@
   border: 1.5px solid rgba(14, 147, 137, 0.4);
   color: #12a59a;
   backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42), 0 0 14px rgba(14, 147, 137, 0.16);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.42),
+    0 0 14px rgba(14, 147, 137, 0.16);
   animation: floatNode 4.5s ease-in-out infinite alternate;
 }
 
@@ -595,10 +616,43 @@
    ================================================================ */
 .auth-panel {
   grid-area: form;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
   background: #ffffff;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+}
+
+/* Modern, subtle scrollbar for the form section */
+.auth-panel::-webkit-scrollbar {
+  width: 7px;
+}
+
+.auth-panel::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.auth-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+  transition: background 0.2s ease;
+}
+
+.auth-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--wasla-teal-500, #0e9389);
+}
+
+@media (max-width: 1080px) {
+  .auth-panel {
+    height: auto;
+    max-height: none;
+    overflow-y: visible;
+    min-height: 100dvh;
+  }
 }
 
 .auth-panel-inner {

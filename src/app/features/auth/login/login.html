@@ -1,4 +1,4 @@
-<div class="auth-form-wrap" dir="rtl">
+<div class="auth-form-wrap">
   <!-- Brand logo & platform tagline -->
   <header class="auth-logo-header">
     <a routerLink="/login" class="auth-logo-link" title="الرئيسية - وصلة">
@@ -10,7 +10,7 @@
         class="auth-logo-img"
       />
     </a>
-    <p class="auth-platform-tagline">منصة الرعاية الصحية المتصلة</p>
+    <p class="auth-platform-tagline">{{ 'common.platformSubtitle' | t }}</p>
   </header>
 
   <!-- Welcome Pill Badge (100% SVG, No Emojis) -->
@@ -32,14 +32,14 @@
           d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"
         />
       </svg>
-      <span>مرحبًا بك مجددًا</span>
+      <span>{{ 'login.welcome' | t }}</span>
     </span>
   </div>
 
   <!-- Heading and Subheading -->
   <div class="auth-form-heading">
-    <h1>تسجيل الدخول</h1>
-    <p>أدخل بيانات حسابك للوصول إلى مساحة العمل الخاصة بك.</p>
+    <h1>{{ 'login.title' | t }}</h1>
+    <p>{{ 'login.subtitle' | t }}</p>
   </div>
 
   @if (successStatus === 'patient-registered') {
@@ -73,14 +73,14 @@
   <form class="auth-form" (submit)="onSubmit($event)" novalidate>
     <!-- Field 1: Username / Email -->
     <div class="form-group">
-      <label class="form-label" for="login-identifier">اسم المستخدم أو البريد الإلكتروني</label>
+      <label class="form-label" for="login-identifier">{{ 'login.usernameLabel' | t }}</label>
       <div class="input-control">
         <input
           id="login-identifier"
           type="text"
           autocomplete="username"
           [formField]="loginForm.identifier"
-          placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
+          [placeholder]="'login.usernamePlaceholder' | t"
         />
         <span class="input-trailing-icon" aria-hidden="true">
           <svg
@@ -106,14 +106,14 @@
 
     <!-- Field 2: Password -->
     <div class="form-group">
-      <label class="form-label" for="login-password">كلمة المرور</label>
+      <label class="form-label" for="login-password">{{ 'login.passwordLabel' | t }}</label>
       <div class="input-control password-control">
         <input
           id="login-password"
           [type]="showPassword() ? 'text' : 'password'"
           autocomplete="current-password"
           [formField]="loginForm.password"
-          placeholder="أدخل كلمة المرور"
+          [placeholder]="'login.passwordPlaceholder' | t"
         />
         <span class="input-trailing-icon" aria-hidden="true">
           <svg
@@ -132,7 +132,7 @@
           type="button"
           class="btn-toggle-pwd"
           (click)="togglePassword()"
-          [attr.aria-label]="showPassword() ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"
+          [attr.aria-label]="showPassword() ? ('register.showPasswords' | t) : ('register.showPasswords' | t)"
         >
           @if (showPassword()) {
             <svg
@@ -172,13 +172,13 @@
       }
     </div>
 
-    <!-- Options Row: Remember Me (Right) & Forgot Password (Left) -->
+    <!-- Options Row: Remember Me & Forgot Password -->
     <div class="form-row-options">
       <label class="remember-label" for="login-remember">
         <input id="login-remember" type="checkbox" class="custom-checkbox" />
-        <span>تذكرني في هذا الجهاز</span>
+        <span>{{ 'login.rememberMe' | t }}</span>
       </label>
-      <a routerLink="/forgot-password" class="forgot-link">نسيت كلمة المرور؟</a>
+      <a routerLink="/forgot-password" class="forgot-link">{{ 'login.forgotPassword' | t }}</a>
     </div>
 
     <!-- Submit Button -->
@@ -189,10 +189,11 @@
       [disabled]="isSubmitting()"
     >
       @if (isSubmitting()) {
-        <span>جارٍ تسجيل الدخول…</span>
+        <span>{{ 'login.submitting' | t }}</span>
       } @else {
-        <span>تسجيل الدخول</span>
+        <span>{{ 'login.submit' | t }}</span>
         <svg
+          class="login-arrow-icon"
           viewBox="0 0 24 24"
           width="18"
           height="18"
@@ -208,13 +209,12 @@
 
   <!-- Divider: أو أنشئ حسابًا جديدًا -->
   <div class="login-divider">
-    <span>أو أنشئ حسابًا جديدًا</span>
+    <span>{{ 'login.orCreate' | t }}</span>
   </div>
 
   <!-- Role Switcher Cards Grid -->
-  <!-- In RTL: First card placed on RIGHT (Patient), Second card placed on LEFT (Doctor) -->
   <div class="login-role-cards">
-    <!-- Right Card: Patient -->
+    <!-- Card: Patient -->
     <a id="register-patient-btn" routerLink="/register/patient" class="role-card patient-card">
       <div class="role-avatar-circle patient-circle">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -224,8 +224,8 @@
         </svg>
       </div>
       <div class="role-text">
-        <strong>حساب مريض</strong>
-        <small>متابعة السجل الطبي والرعاية</small>
+        <strong>{{ 'login.patientAccount' | t }}</strong>
+        <small>{{ 'login.patientDesc' | t }}</small>
       </div>
       <svg
         class="role-chevron"
@@ -240,7 +240,7 @@
       </svg>
     </a>
 
-    <!-- Left Card: Doctor -->
+    <!-- Card: Doctor -->
     <a id="register-doctor-btn" routerLink="/register/doctor" class="role-card doctor-card">
       <div class="role-avatar-circle doctor-circle">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -250,8 +250,8 @@
         </svg>
       </div>
       <div class="role-text">
-        <strong>حساب طبيب</strong>
-        <small>إدارة المرضى والاستشارات</small>
+        <strong>{{ 'login.doctorAccount' | t }}</strong>
+        <small>{{ 'login.doctorDesc' | t }}</small>
       </div>
       <svg
         class="role-chevron"

@@ -14,12 +14,13 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { MedicalSpecializationsApi } from '../../../core/medical-specializations/medical-specializations-api';
 import { MedicalSpecializationsPage } from '../../../core/medical-specializations/medical-specializations.models';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 type BooleanFilter = '' | 'true' | 'false';
 
 @Component({
   selector: 'app-medical-specializations-list',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, PageHeader],
   templateUrl: './medical-specializations-list.html',
   styleUrls: ['../management-list.css', './medical-specializations-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -17,15 +17,19 @@ import {
   MedicalSpecializationOption,
 } from '../../core/doctor-profile/doctor-profile.models';
 import { SpecializationSelector } from '../../shared/specialization-selector/specialization-selector';
+import { LanguageService } from '../../core/i18n/language.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { LanguageSwitcher } from '../../shared/components/language-switcher/language-switcher';
 
 @Component({
   selector: 'app-doctor-profile',
-  imports: [FormField, RouterLink, SpecializationSelector],
+  imports: [FormField, RouterLink, SpecializationSelector, LanguageSwitcher, TranslatePipe],
   templateUrl: './doctor-profile.html',
   styleUrl: './doctor-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorProfile {
+  readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorProfileApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);

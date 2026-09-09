@@ -16,10 +16,11 @@ import {
   DoctorSpecializationRequestStatus,
   DoctorSpecializationRequestType,
 } from '../../../core/doctor-profile/doctor-profile.models';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-specialization-requests-list',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, PageHeader],
   templateUrl: './specialization-requests-list.html',
   styleUrls: ['../management-list.css', './specialization-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

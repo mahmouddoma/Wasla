@@ -1,39 +1,71 @@
 <section class="details-page">
-  <a class="details-back" routerLink="/admin/doctors">العودة إلى قائمة الأطباء</a>
+  <!-- Breadcrumb -->
+  <a class="details-back" routerLink="/admin/doctors">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    العودة إلى قائمة الأطباء
+  </a>
 
-  @if (apiMessages().length && !details()) {
+  <!-- Loading State -->
+  @if (isLoading() && !details()) {
+    <div class="details-state" role="status">
+      <span class="loading-ring" aria-hidden="true"></span>
+      <h1>جارٍ تحميل بيانات الطبيب…</h1>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (apiMessages().length && !details()) {
     <div class="details-state error-state" role="alert">
+      <div class="state-error-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
       <h1>تعذر تحميل بيانات الطبيب</h1>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
       }
-      <div>
+      <div class="state-actions">
         <a class="btn btn-outline-secondary" routerLink="/admin/doctors">العودة للقائمة</a>
         <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
       </div>
     </div>
-  } @else if (isLoading() && !details()) {
-    <div class="details-state" role="status">
-      <span class="loading-indicator" aria-hidden="true"></span>
-      <h1>جارٍ تحميل بيانات الطبيب…</h1>
-    </div>
-  } @else if (details(); as doctor) {
-    <header class="details-heading">
-      <div>
-        <div class="heading-status">
-          <span [class]="statusClass(doctor.approvalStatus)">
-            {{ statusLabel(doctor.approvalStatus) }}
-          </span>
-          @if (isLoading()) {
-            <span class="refreshing" role="status">جارٍ تحديث البيانات…</span>
+  }
+
+  @else if (details(); as doctor) {
+    <!-- Profile Hero Banner -->
+    <header class="profile-hero">
+      <div class="hero-content">
+        <!-- Squircle Avatar -->
+        <div class="hero-avatar">
+          <span class="avatar-initials" aria-hidden="true">{{ doctorInitials() }}</span>
+          <span
+            class="avatar-status-dot"
+            [class]="'status-dot--' + doctor.approvalStatus.toLowerCase()"
+            aria-hidden="true"
+          ></span>
+        </div>
+
+        <!-- Identity Block -->
+        <div class="hero-identity">
+          <div class="hero-status-row">
+            <span class="status-chip" [class]="'status-chip--' + doctor.approvalStatus.toLowerCase()">
+              {{ statusLabel(doctor.approvalStatus) }}
+            </span>
+            @if (isLoading()) {
+              <span class="refreshing-badge" role="status">
+                <span class="refreshing-dot" aria-hidden="true"></span>
+                جارٍ تحديث البيانات…
+              </span>
+            }
+          </div>
+          <h1>{{ doctor.nameAr }}</h1>
+          @if (doctor.nameEn) {
+            <p class="hero-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</p>
           }
         </div>
-        <h1>{{ doctor.nameAr }}</h1>
-        @if (doctor.nameEn) {
-          <p lang="en" dir="ltr">{{ doctor.nameEn }}</p>
-        }
       </div>
-      <div class="heading-actions">
+
+      <!-- Action Cluster -->
+      <div class="hero-actions">
         @if (canSuspend()) {
           <button
             class="btn btn-outline-danger"
@@ -41,6 +73,7 @@
             [disabled]="isLoading() || isActionSubmitting()"
             (click)="openDecision('suspend')"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
             تعليق الحساب
           </button>
         }
@@ -51,6 +84,7 @@
             [disabled]="isLoading() || isActionSubmitting()"
             (click)="openReactivate()"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             إعادة التفعيل
           </button>
         }
@@ -61,6 +95,7 @@
             [disabled]="isLoading() || isActionSubmitting()"
             (click)="openDecision('reject')"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
             رفض الطلب
           </button>
         }
@@ -71,20 +106,23 @@
             [disabled]="isLoading() || isActionSubmitting()"
             (click)="openDecision('approve')"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             اعتماد الطبيب
           </button>
         }
         <button
-          class="btn btn-outline-secondary"
+          class="btn-refresh"
           type="button"
+          aria-label="تحديث بيانات الطبيب"
           [disabled]="isLoading()"
           (click)="load()"
         >
-          تحديث
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </button>
       </div>
     </header>
 
+    <!-- API Error Notice (after details loaded) -->
     @if (apiMessages().length) {
       <div class="page-notice" role="alert">
         @for (message of apiMessages(); track message) {
@@ -93,121 +131,179 @@
       </div>
     }
 
+    <!-- Body Layout -->
     <div class="details-layout">
+
+      <!-- Main Column -->
       <div class="details-main">
-        <section class="details-section">
-          <h2>البيانات الأساسية</h2>
+
+        <!-- Basic Data Card -->
+        <section class="info-card">
+          <header class="card-header">
+            <div class="card-icon card-icon--primary">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h2>البيانات الأساسية</h2>
+          </header>
           <dl class="information-grid">
-            <div>
+            <div class="info-field">
               <dt>اسم المستخدم</dt>
               <dd>{{ doctor.userName }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>البريد الإلكتروني</dt>
-              <dd>{{ doctor.email }}</dd>
+              <dd class="field-ltr">{{ doctor.email }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>رقم الهاتف</dt>
               <dd dir="ltr">{{ doctor.phone }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>النوع</dt>
               <dd>{{ genderLabel(doctor.gender) }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تاريخ الميلاد</dt>
               <dd>{{ formatDate(doctor.dateOfBirth) }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>العمر</dt>
               <dd>{{ doctor.age }} سنة</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>الرقم القومي</dt>
               <dd>{{ doctor.nationalId || 'غير مسجل' }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>معرّف الطبيب</dt>
               <dd class="technical-value">{{ doctor.doctorId }}</dd>
             </div>
           </dl>
         </section>
 
-        <section class="details-section">
-          <h2>سجل الحالة والقرارات</h2>
+        <!-- Governance Log Card -->
+        <section class="info-card">
+          <header class="card-header">
+            <div class="card-icon card-icon--governance">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2>سجل الحالة والقرارات</h2>
+          </header>
           <dl class="information-grid governance-grid">
-            <div>
+            <div class="info-field">
               <dt>تاريخ الاعتماد</dt>
               <dd>{{ formatDate(doctor.approvedOnUtc) }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تم الاعتماد بواسطة</dt>
-              <dd class="technical-value">
-                {{ doctor.approvedByApplicationUserId || 'غير مسجل' }}
-              </dd>
+              <dd class="technical-value">{{ doctor.approvedByApplicationUserId || 'غير مسجل' }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تاريخ الرفض</dt>
               <dd>{{ formatDate(doctor.rejectedOnUtc) }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تم الرفض بواسطة</dt>
-              <dd class="technical-value">
-                {{ doctor.rejectedByApplicationUserId || 'غير مسجل' }}
-              </dd>
+              <dd class="technical-value">{{ doctor.rejectedByApplicationUserId || 'غير مسجل' }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تاريخ التعليق</dt>
               <dd>{{ formatDate(doctor.suspendedOnUtc) }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تم التعليق بواسطة</dt>
-              <dd class="technical-value">
-                {{ doctor.suspendedByApplicationUserId || 'غير مسجل' }}
-              </dd>
+              <dd class="technical-value">{{ doctor.suspendedByApplicationUserId || 'غير مسجل' }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>تاريخ إعادة التفعيل</dt>
               <dd>{{ formatDate(doctor.reactivatedOnUtc) }}</dd>
             </div>
-            <div>
+            <div class="info-field">
               <dt>أعيد التفعيل بواسطة</dt>
-              <dd class="technical-value">
-                {{ doctor.reactivatedByApplicationUserId || 'غير مسجل' }}
-              </dd>
+              <dd class="technical-value">{{ doctor.reactivatedByApplicationUserId || 'غير مسجل' }}</dd>
             </div>
           </dl>
+
           @if (doctor.rejectionReason) {
-            <div class="decision-reason">
-              <strong>سبب الرفض</strong>
-              <p>{{ doctor.rejectionReason }}</p>
+            <div class="decision-reason decision-reason--reject">
+              <div class="reason-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </div>
+              <div>
+                <strong>سبب الرفض</strong>
+                <p>{{ doctor.rejectionReason }}</p>
+              </div>
             </div>
           }
+
           @if (doctor.suspensionReason) {
-            <div class="decision-reason">
-              <strong>سبب التعليق</strong>
-              <p>{{ doctor.suspensionReason }}</p>
+            <div class="decision-reason decision-reason--suspend">
+              <div class="reason-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+              </div>
+              <div>
+                <strong>سبب التعليق</strong>
+                <p>{{ doctor.suspensionReason }}</p>
+              </div>
             </div>
           }
         </section>
       </div>
 
-      <aside class="documents-section">
-        <h2>مستندات التحقق</h2>
-        <p>المعاينة تتم بطلب آمن ومصادق عليه من الخادم.</p>
+      <!-- Documents Sidebar -->
+      <aside class="documents-card">
+        <header class="card-header">
+          <div class="card-icon card-icon--docs">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="card-header-text">
+            <h2>مستندات التحقق</h2>
+            <p class="docs-subtitle">
+              <span>{{ documentsAvailableCount() }}</span> / {{ documents().length }} متاحة
+            </p>
+          </div>
+        </header>
+        <p class="docs-notice">المعاينة بطلب آمن ومصادق عليه من الخادم.</p>
         <div class="documents-list">
           @for (document of documents(); track document.type) {
             <div class="document-item">
-              <div>
+              <div class="document-type-icon" aria-hidden="true">
+                @switch (document.type) {
+                  @case ('ProfileImage') {
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  }
+                  @case ('PersonalIdFront') {
+                    <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M14 9h4M14 13h4M6 17h12"/></svg>
+                  }
+                  @case ('PersonalIdBack') {
+                    <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 10h12M6 14h8"/></svg>
+                  }
+                  @default {
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10M7 11h10M7 15h6"/></svg>
+                  }
+                }
+              </div>
+              <div class="document-info">
                 <strong>{{ document.label }}</strong>
-                <span>{{ document.available ? 'متاح للمراجعة' : 'غير مرفوع' }}</span>
+                <span
+                  class="doc-status"
+                  [class.doc-status--available]="document.available"
+                  [class.doc-status--missing]="!document.available"
+                >
+                  {{ document.available ? 'متاح للمراجعة' : 'غير مرفوع' }}
+                </span>
               </div>
               <button
-                class="btn btn-outline-secondary"
+                class="btn-preview"
                 type="button"
                 [disabled]="!document.available || mediaState(document.type).loading"
                 (click)="openMedia(document)"
               >
+                @if (mediaState(document.type).loading) {
+                  <span class="preview-spinner" aria-hidden="true"></span>
+                } @else {
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
                 {{ mediaState(document.type).loading ? 'جارٍ الفتح…' : 'معاينة' }}
               </button>
               @if (mediaState(document.type).error) {
@@ -219,6 +315,7 @@
       </aside>
     </div>
 
+    <!-- Action Dialogs -->
     <app-doctor-decision-dialog
       action="approve"
       [opened]="approveDialogOpen()"
@@ -259,6 +356,7 @@
     />
   }
 
+  <!-- Media Preview Dialog -->
   <dialog class="media-dialog" aria-labelledby="media-dialog-title" (cancel)="closeMedia($event)">
     @if (activeMedia(); as media) {
       <header>
@@ -267,7 +365,7 @@
           <p>{{ media.filename }}</p>
         </div>
         <button type="button" aria-label="إغلاق المعاينة" (click)="closeMedia()">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
         </button>
       </header>
       <div class="media-preview">
@@ -275,18 +373,14 @@
           <img [src]="media.url" [alt]="media.label" />
         } @else {
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5m-5 4h5" />
+            <path d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5m-5 4h5"/>
           </svg>
           <p>هذا الملف ليس صورة. افتحه في نافذة جديدة لعرضه باستخدام العارض المناسب.</p>
         }
       </div>
       <footer>
-        <button class="btn btn-outline-secondary" type="button" (click)="closeMedia()">
-          إغلاق
-        </button>
-        <a class="btn btn-primary" [href]="media.url" target="_blank" rel="noopener noreferrer"
-          >فتح الملف</a
-        >
+        <button class="btn btn-outline-secondary" type="button" (click)="closeMedia()">إغلاق</button>
+        <a class="btn btn-primary" [href]="media.url" target="_blank" rel="noopener noreferrer">فتح الملف</a>
       </footer>
     }
   </dialog>
