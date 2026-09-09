@@ -6,7 +6,9 @@ import {
   doctorOnboardingGuard,
   doctorProfileGuard,
   passwordChangeGuard,
+  permissionGuard,
 } from './core/auth/auth.guards';
+import { PERMISSIONS } from './core/auth/permissions';
 
 export const routes: Routes = [
   {
@@ -86,6 +88,64 @@ export const routes: Routes = [
       import('./features/admin/admin-layout/admin-layout').then((m) => m.AdminLayout),
     loadChildren: () =>
       import('./features/admin/admin.routes').then((routes) => routes.ADMIN_ROUTES),
+  },
+  {
+    path: 'reception/patients',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [PERMISSIONS.patientsSearchBasic, PERMISSIONS.patientsRegister],
+    },
+    loadComponent: () =>
+      import('./features/reception/reception-patients/reception-patients').then(
+        (m) => m.ReceptionPatients,
+      ),
+    title: 'إدارة المرضى | وصلة',
+  },
+  {
+    path: 'reception/family-requests',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [
+        PERMISSIONS.familyRelationshipRequestsCreateAssisted,
+        PERMISSIONS.familyRelationshipRequestsViewAssisted,
+        PERMISSIONS.familyRelationshipRequestsResubmitAssisted,
+      ],
+    },
+    loadComponent: () =>
+      import('./features/reception/reception-family-requests/reception-family-requests').then(
+        (m) => m.ReceptionFamilyRequests,
+      ),
+    title: 'طلبات العائلة بمساعدة الاستقبال | وصلة',
+  },
+  {
+    path: 'patient/profile',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [
+        PERMISSIONS.patientProfileViewOwn,
+        PERMISSIONS.patientProfileUpdateOwn,
+        PERMISSIONS.patientContactsViewOwn,
+        PERMISSIONS.patientContactsManageOwn,
+      ],
+    },
+    loadComponent: () =>
+      import('./features/patient/patient-profile/patient-profile').then((m) => m.PatientProfile),
+    title: 'ملف المريض | وصلة',
+  },
+  {
+    path: 'patient/family',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [
+        PERMISSIONS.familiesViewOwn,
+        PERMISSIONS.familyRelationshipRequestsCreate,
+        PERMISSIONS.familyRelationshipRequestsViewOwn,
+        PERMISSIONS.familyRelationshipRequestsResubmitOwn,
+      ],
+    },
+    loadComponent: () =>
+      import('./features/patient/patient-family/patient-family').then((m) => m.PatientFamily),
+    title: 'العائلة والطلبات | وصلة',
   },
   {
     path: 'workspace/:area',

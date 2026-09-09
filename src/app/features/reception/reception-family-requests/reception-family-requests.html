@@ -1,0 +1,232 @@
+<main class="health-workspace" dir="rtl">
+  <header class="workspace-bar">
+    <div>
+      <h1>طلبات إثبات العلاقة بمساعدة الاستقبال</h1>
+      <p>قدّم الطلب نيابة عن مرضى موجودين. الإرسال يبدأ المراجعة ولا يعني الموافقة.</p>
+    </div>
+    <div class="bar-actions">
+      <a class="btn btn-outline-secondary" routerLink="/reception/patients">بحث المرضى</a>
+      <a class="btn btn-outline-secondary" routerLink="/workspace/reception">الرئيسية</a>
+      <button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+    </div>
+  </header>
+
+  @if (messages().length) {
+    <div class="notice error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="notice success" role="status">{{ successMessage() }}</div>
+  }
+
+  @if (canCreate) {
+    <section class="workspace-panel assisted-create">
+      <div class="section-heading">
+        <div><h2>إنشاء طلب للمراجعة</h2></div>
+        <p>يجب اختيار الطرفين من Patient Search؛ بيانات contact وحدها لا تكفي.</p>
+      </div>
+      <div class="picker-grid">
+        <app-patient-picker label="مقدم الطلب" (selected)="requester.set($event)" />
+        <app-patient-picker label="المريض المستهدف" (selected)="target.set($event)" />
+      </div>
+      <form class="detail-form assisted-form" (submit)="submitRequest($event)" novalidate>
+        <label class="form-field"
+          ><span>نوع الطلب</span
+          ><select [formField]="requestForm.requestType">
+            <option value="CreateFamily">إنشاء عائلة</option>
+            <option value="AddFamilyMember">إضافة عضو</option>
+          </select></label
+        >
+        @if (requestModel().requestType === 'AddFamilyMember') {
+          <label class="form-field"
+            ><span>Family ID *</span><input dir="ltr" [formField]="requestForm.familyId"
+          /></label>
+        }
+        <label class="form-field"
+          ><span>دور مقدم الطلب</span
+          ><select [formField]="requestForm.requesterClaimedRole">
+            <option value="Father">أب</option>
+            <option value="Mother">أم</option>
+            <option value="Guardian">ولي أمر</option>
+            <option value="LegalGuardian">وصي قانوني</option>
+          </select></label
+        >
+        <label class="form-field"
+          ><span>دور المريض المستهدف</span
+          ><select [formField]="requestForm.targetClaimedRole">
+            <option value="Father">أب</option>
+            <option value="Mother">أم</option>
+            <option value="Child">طفل</option>
+            <option value="Guardian">ولي أمر</option>
+            <option value="LegalGuardian">وصي قانوني</option>
+          </select></label
+        >
+        <label class="form-field"
+          ><span>أنواع المستندات *</span
+          ><input
+            placeholder="BirthCertificate, NationalId"
+            [formField]="requestForm.documentTypes"
+          /><small>نوع واحد مقابل كل ملف وبنفس الترتيب.</small></label
+        >
+        <label class="form-field"
+          ><span>مستندات الإثبات *</span
+          ><input type="file" multiple (change)="filesChanged($event)"
+        /></label>
+        <button class="btn btn-primary full" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'جارٍ التقديم…' : 'تقديم الطلب للمراجعة' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (canView) {
+    <section class="workspace-panel requests-section">
+      <div class="section-heading">
+        <div><h2>الطلبات التي قدمتها</h2></div>
+        <p>هذه القائمة خاصة بحساب الاستقبال الحالي فقط.</p>
+      </div>
+      <form class="compact-form" (submit)="loadRequests(1, $event)">
+        <label class="form-field"
+          ><span>بحث</span><input type="search" [formField]="filterForm.search"
+        /></label>
+        <label class="form-field"
+          ><span>الحالة</span
+          ><select [formField]="filterForm.status">
+            <option value="">الكل</option>
+            <option value="Pending">Pending</option>
+            <option value="ModificationRequested">Modification Requested</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select></label
+        >
+        <label class="form-field"
+          ><span>النوع</span
+          ><select [formField]="filterForm.requestType">
+            <option value="">الكل</option>
+            <option value="CreateFamily">إنشاء عائلة</option>
+            <option value="AddFamilyMember">إضافة عضو</option>
+          </select></label
+        >
+        <button class="btn btn-primary" type="submit">تطبيق</button>
+      </form>
+      @if (loading()) {
+        <div class="empty-state" role="status">جارٍ تحميل الطلبات…</div>
+      } @else if (result(); as page) {
+        <div class="result-list">
+          @for (request of page.items; track request.requestId) {
+            <button class="request-row" type="button" (click)="openRequest(request.requestId)">
+              <div>
+                <strong>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</strong
+                ><span
+                  >{{ request.requestType }} · Revision {{ request.currentRevisionNumber }}</span
+                >
+              </div>
+              <span
+                class="status-badge"
+                [class.action]="request.status === 'ModificationRequested'"
+                >{{ request.status }}</span
+              >
+            </button>
+          } @empty {
+            <div class="empty-state">لم تقدم طلبات مطابقة بعد.</div>
+          }
+        </div>
+        <nav class="pager" aria-label="صفحات الطلبات">
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            type="button"
+            [disabled]="pageNumber() <= 1"
+            (click)="loadRequests(pageNumber() - 1)"
+          >
+            السابق</button
+          ><span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span
+          ><button
+            class="btn btn-sm btn-outline-secondary"
+            type="button"
+            [disabled]="pageNumber() >= totalPages()"
+            (click)="loadRequests(pageNumber() + 1)"
+          >
+            التالي
+          </button>
+        </nav>
+      }
+    </section>
+  }
+
+  @if (selectedRequest(); as request) {
+    <aside class="details-drawer" aria-label="تفاصيل الطلب">
+      <button
+        class="drawer-close"
+        type="button"
+        (click)="closeDetails()"
+        aria-label="إغلاق التفاصيل"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
+      </button>
+      <span class="status-badge" [class.action]="request.status === 'ModificationRequested'">{{
+        request.status
+      }}</span>
+      <h2>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h2>
+      <p>{{ request.requestType }} · Revision {{ request.currentRevisionNumber }}</p>
+      @if (request.status === 'ModificationRequested') {
+        <div class="notice warning">
+          <strong>التعديل المطلوب</strong>
+          <p>{{ request.modificationMessage }}</p>
+        </div>
+      }
+      @if (request.status === 'Rejected') {
+        <div class="notice error">
+          <strong>سبب الرفض النهائي</strong>
+          <p>{{ request.rejectionReason }}</p>
+        </div>
+      }
+      <h3>المستندات</h3>
+      <div class="document-list">
+        @for (document of request.documents; track document.documentId) {
+          <button type="button" (click)="openDocument(document.documentId)">
+            <strong>{{ document.fileName }}</strong
+            ><span>{{ document.documentType }} · Revision {{ document.revisionNumber }}</span>
+          </button>
+        } @empty {
+          <p>لا توجد مستندات.</p>
+        }
+      </div>
+      <h3>السجل</h3>
+      <ol class="history-list">
+        @for (item of request.history; track item.occurredOnUtc + item.action) {
+          <li>
+            <strong>{{ item.action }}</strong
+            ><span>{{ item.occurredOnUtc }}</span>
+            @if (item.message) {
+              <p>{{ item.message }}</p>
+            }
+          </li>
+        }
+      </ol>
+      @if (request.status === 'ModificationRequested' && canResubmit) {
+        <div class="resubmit-box">
+          <h3>إعادة الإرسال</h3>
+          <p>النسخ والأدلة السابقة ستظل محفوظة.</p>
+          <label class="form-field"
+            ><span>أدلة جديدة</span
+            ><input type="file" multiple (change)="filesChanged($event, true)" /></label
+          ><label class="form-field"
+            ><span>أنواع المستندات</span><input (input)="revisionTypesChanged($event)" /></label
+          ><button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="submitting()"
+            (click)="resubmit()"
+          >
+            إعادة الإرسال
+          </button>
+        </div>
+      }
+    </aside>
+  }
+</main>

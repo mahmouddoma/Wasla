@@ -1,0 +1,174 @@
+<main class="health-workspace" dir="rtl">
+  <header class="workspace-bar">
+    <div>
+      <h1>البحث وإنشاء ملف مريض</h1>
+      <p>الملف الصحي مستقل عن حساب تسجيل الدخول، ولن يتم دمج النتائج المتشابهة تلقائياً.</p>
+    </div>
+    <div class="bar-actions">
+      <a class="btn btn-outline-secondary" routerLink="/workspace/reception">الرئيسية</a>
+      <button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+    </div>
+  </header>
+
+  @if (messages().length) {
+    <div class="notice error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  @if (createdPatientId()) {
+    <div class="notice success" role="status">
+      تم إنشاء الملف بنجاح. Patient ID: <strong>{{ createdPatientId() }}</strong>
+    </div>
+  }
+
+  <div class="workspace-grid">
+    <section class="workspace-panel search-panel">
+      <div class="section-heading">
+        <div>
+          <span class="step">01</span>
+          <h2>ابحث أولاً</h2>
+        </div>
+        <p>البحث يتم من الخادم، وقد يظهر أكثر من مريض بنفس رقم الهاتف.</p>
+      </div>
+      <form class="compact-form" (submit)="search(1, $event)" novalidate>
+        <label class="form-field">
+          <span>الاسم</span>
+          <input [formField]="searchForm.name" autocomplete="off" />
+        </label>
+        <label class="form-field">
+          <span>رقم الهاتف</span>
+          <input type="tel" [formField]="searchForm.phoneNumber" autocomplete="off" />
+        </label>
+        <label class="form-field">
+          <span>تاريخ الميلاد</span>
+          <input type="date" [formField]="searchForm.dateOfBirth" />
+        </label>
+        <button class="btn btn-primary" type="submit" [disabled]="isSearching()">
+          {{ isSearching() ? 'جارٍ البحث…' : 'بحث' }}
+        </button>
+      </form>
+
+      @if (results(); as page) {
+        <div class="result-list" aria-live="polite">
+          @for (patient of page.items; track patient.patientId) {
+            <button
+              class="patient-result"
+              [class.selected]="selectedPatientId() === patient.patientId"
+              type="button"
+              (click)="choose(patient.patientId)"
+            >
+              <strong>{{ displayName(patient) }}</strong>
+              <span
+                >{{ patient.dateOfBirth }} · {{ patient.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span
+              >
+              <small>{{
+                patient.phoneNumber ||
+                  (patient.hasContactPhone ? 'هاتف جهة اتصال متاح' : 'لا يوجد هاتف')
+              }}</small>
+            </button>
+          } @empty {
+            <div class="empty-state">لا توجد نتائج مطابقة. يمكنك إنشاء ملف جديد.</div>
+          }
+        </div>
+        <nav class="pager" aria-label="صفحات نتائج البحث">
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            type="button"
+            [disabled]="pageNumber() <= 1"
+            (click)="search(pageNumber() - 1)"
+          >
+            السابق
+          </button>
+          <span>صفحة {{ page.pageNumber }}</span>
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            type="button"
+            [disabled]="page.items.length < page.pageSize"
+            (click)="search(pageNumber() + 1)"
+          >
+            التالي
+          </button>
+        </nav>
+      }
+    </section>
+
+    <section class="workspace-panel">
+      <div class="section-heading">
+        <div>
+          <span class="step">02</span>
+          <h2>إنشاء ملف جديد</h2>
+        </div>
+        <p>لا يتم إنشاء Username أو Password في هذا التدفق.</p>
+      </div>
+      <form class="detail-form" (submit)="createPatient($event)" novalidate>
+        <label class="form-field"
+          ><span>الاسم بالعربية *</span><input [formField]="createForm.nameAr"
+        /></label>
+        <label class="form-field"
+          ><span>الاسم بالإنجليزية</span><input dir="ltr" [formField]="createForm.nameEn"
+        /></label>
+        <label class="form-field"
+          ><span>تاريخ الميلاد *</span><input type="date" [formField]="createForm.dateOfBirth"
+        /></label>
+        <label class="form-field"
+          ><span>النوع *</span
+          ><select [formField]="createForm.gender">
+            <option value="">اختر</option>
+            <option value="Male">ذكر</option>
+            <option value="Female">أنثى</option>
+          </select></label
+        >
+        <label class="form-field"
+          ><span>رقم الهاتف</span><input type="tel" [formField]="createForm.phoneNumber"
+        /></label>
+        <label class="form-field"
+          ><span>البريد الإلكتروني</span
+          ><input type="email" dir="ltr" [formField]="createForm.email"
+        /></label>
+        <label class="form-field full"
+          ><span>الصورة الشخصية</span
+          ><input type="file" accept="image/*" (change)="fileChanged($event)"
+        /></label>
+
+        <fieldset class="contact-fields full">
+          <legend>
+            جهة الاتصال الأساسية {{ createModel().phoneNumber.trim() ? '(اختيارية)' : '*' }}
+          </legend>
+          <p>مطلوبة عند غياب هاتف المريض. بيانات تواصل فقط؛ لا تمنح صلاحية عائلية أو طبية.</p>
+          <div class="detail-form">
+            <label class="form-field"
+              ><span>الاسم بالعربية</span><input [formField]="createForm.primaryContactNameAr"
+            /></label>
+            <label class="form-field"
+              ><span>رقم الهاتف</span
+              ><input type="tel" [formField]="createForm.primaryContactPhoneNumber"
+            /></label>
+            <label class="form-field"
+              ><span>صلة القرابة</span
+              ><select [formField]="createForm.primaryContactRelationshipType">
+                <option value="Father">أب</option>
+                <option value="Mother">أم</option>
+                <option value="Guardian">ولي أمر</option>
+                <option value="LegalGuardian">وصي قانوني</option>
+                <option value="Other">أخرى</option>
+              </select></label
+            >
+            <label class="form-field"
+              ><span>Patient ID مرتبط (اختياري)</span
+              ><input dir="ltr" [formField]="createForm.primaryContactLinkedPatientId"
+            /></label>
+          </div>
+        </fieldset>
+
+        @if (createForm().touched() && createForm().errors().length) {
+          <div class="notice error full">راجع الحقول المطلوبة والقيم المدخلة.</div>
+        }
+        <button class="btn btn-primary full" type="submit" [disabled]="isCreating()">
+          {{ isCreating() ? 'جارٍ الإنشاء…' : 'إنشاء ملف المريض' }}
+        </button>
+      </form>
+    </section>
+  </div>
+</main>

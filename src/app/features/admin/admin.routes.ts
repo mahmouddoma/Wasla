@@ -4,6 +4,24 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'family-relationship-requests/:requestId',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.familyRelationshipRequestsViewDetails },
+    loadComponent: () =>
+      import('./family-request-details/family-request-details').then(
+        (m) => m.FamilyRequestDetailsPage,
+      ),
+    title: 'مراجعة طلب علاقة عائلية | وصلة',
+  },
+  {
+    path: 'family-relationship-requests',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.familyRelationshipRequestsViewAll },
+    loadComponent: () =>
+      import('./family-requests-list/family-requests-list').then((m) => m.FamilyRequestsList),
+    title: 'طلبات العلاقات العائلية | وصلة',
+  },
+  {
     path: 'doctor-specialization-requests/:requestId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.doctorSpecializationRequestsViewDetails },

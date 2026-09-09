@@ -21,6 +21,23 @@ export class Workspace {
   protected readonly canManageDoctorProfile =
     this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
     this.session.hasPermission(PERMISSIONS.doctorPracticeLocationManageOwn);
+  protected readonly canManagePatients =
+    this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
+    this.session.hasPermission(PERMISSIONS.patientsRegister);
+  protected readonly canManageAssistedFamilyRequests =
+    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsCreateAssisted) ||
+    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewAssisted) ||
+    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsResubmitAssisted);
+  protected readonly canManagePatientProfile =
+    this.session.hasPermission(PERMISSIONS.patientProfileViewOwn) ||
+    this.session.hasPermission(PERMISSIONS.patientProfileUpdateOwn) ||
+    this.session.hasPermission(PERMISSIONS.patientContactsViewOwn) ||
+    this.session.hasPermission(PERMISSIONS.patientContactsManageOwn);
+  protected readonly canManageFamily =
+    this.session.hasPermission(PERMISSIONS.familiesViewOwn) ||
+    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewOwn) ||
+    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsCreate) ||
+    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsResubmitOwn);
   protected logout(): void {
     this.session.clear();
     void this.router.navigate(['/login']);

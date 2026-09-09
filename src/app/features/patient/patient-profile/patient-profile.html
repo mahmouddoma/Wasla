@@ -1,0 +1,184 @@
+<main class="health-workspace" dir="rtl">
+  <header class="workspace-bar">
+    <div>
+      <h1>البيانات وجهات الاتصال</h1>
+      <p>الهوية الصحية تُحمّل من الحساب الحالي بدون إرسال Patient ID.</p>
+    </div>
+    <div class="bar-actions">
+      <a class="btn btn-outline-secondary" routerLink="/patient/family">العائلة والطلبات</a
+      ><a class="btn btn-outline-secondary" routerLink="/workspace/patient">الرئيسية</a
+      ><button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+    </div>
+  </header>
+  @if (messages().length) {
+    <div class="notice error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="notice success" role="status">{{ successMessage() }}</div>
+  }
+  @if (loading()) {
+    <div class="workspace-panel empty-state">جارٍ تحميل الملف…</div>
+  }
+  @if (!loading() && profile(); as item) {
+    <div class="workspace-grid profile-grid">
+      <section class="workspace-panel identity-panel">
+        <div class="profile-image">
+          @if (imageLoading()) {
+            <span>جارٍ تحميل الصورة…</span>
+          } @else if (imageUrl()) {
+            <img [src]="imageUrl()" alt="الصورة الشخصية للمريض" />
+          } @else {
+            <span aria-hidden="true">{{ item.nameAr.charAt(0) }}</span>
+          }
+        </div>
+        <h2>{{ item.nameAr }}</h2>
+        <p class="technical-id">{{ item.patientId }}</p>
+        <dl class="identity-list">
+          <div>
+            <dt>تاريخ الميلاد</dt>
+            <dd>{{ item.dateOfBirth }}</dd>
+          </div>
+          <div>
+            <dt>النوع</dt>
+            <dd>{{ item.gender === 'Male' ? 'ذكر' : 'أنثى' }}</dd>
+          </div>
+        </dl>
+        <p class="context-note">تاريخ الميلاد والنوع للعرض فقط في المرحلة الحالية.</p>
+      </section>
+      <section class="workspace-panel">
+        <div class="section-heading">
+          <div>
+            <span class="step">01</span>
+            <h2>بيانات الملف</h2>
+          </div>
+          <p>بيانات الملف لا تُزامن تلقائياً مع بيانات حساب الدخول.</p>
+        </div>
+        <form class="detail-form" (submit)="saveProfile($event)" novalidate>
+          <label class="form-field"
+            ><span>الاسم بالعربية *</span><input [formField]="profileForm.nameAr"
+          /></label>
+          <label class="form-field"
+            ><span>الاسم بالإنجليزية</span><input dir="ltr" [formField]="profileForm.nameEn"
+          /></label>
+          <label class="form-field"
+            ><span>رقم الهاتف</span><input type="tel" [formField]="profileForm.phoneNumber"
+          /></label>
+          <label class="form-field"
+            ><span>البريد الإلكتروني</span
+            ><input type="email" dir="ltr" [formField]="profileForm.email"
+          /></label>
+          <label class="form-field full"
+            ><span>استبدال الصورة</span
+            ><input type="file" accept="image/*" (change)="profileFileChanged($event)"
+          /></label>
+          @if (canUpdateProfile) {
+            <button class="btn btn-primary full" type="submit" [disabled]="savingProfile()">
+              {{ savingProfile() ? 'جارٍ الحفظ…' : 'حفظ التعديلات' }}
+            </button>
+          }
+        </form>
+      </section>
+    </div>
+
+    @if (canViewContacts || canManageContacts) {
+      <section class="workspace-panel contacts-section">
+        <div class="section-heading">
+          <div>
+            <span class="step">02</span>
+            <h2>جهات الاتصال</h2>
+          </div>
+          <p>للتواصل فقط ولا تمثل عضوية عائلية موثقة أو صلاحية طبية.</p>
+        </div>
+        <div class="contact-layout">
+          <div class="result-list">
+            @for (contact of contacts(); track contact.contactId) {
+              <article class="contact-row">
+                <div>
+                  <strong>{{ contact.nameAr }}</strong>
+                  @if (contact.isPrimary) {
+                    <span class="status-badge primary">أساسية</span>
+                  }
+                  <span>{{ contact.relationshipType }} · {{ contact.phoneNumber }}</span>
+                  @if (contact.linkedPatientId) {
+                    <small>مرتبط بملف Patient، بدون صلاحيات إضافية</small>
+                  }
+                </div>
+                @if (canManageContacts) {
+                  <div class="row-actions">
+                    <button
+                      class="btn btn-sm btn-outline-secondary"
+                      type="button"
+                      (click)="editContact(contact)"
+                    >
+                      تعديل</button
+                    ><button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      [disabled]="!canDelete(contact)"
+                      (click)="deactivateContact(contact)"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                }
+              </article>
+            } @empty {
+              <div class="empty-state">لا توجد جهات اتصال.</div>
+            }
+          </div>
+          @if (canManageContacts) {
+            <form class="detail-form contact-form" (submit)="saveContact($event)" novalidate>
+              <h3>{{ editingContactId() ? 'تعديل جهة اتصال' : 'إضافة جهة اتصال' }}</h3>
+              <label class="form-field"
+                ><span>الاسم بالعربية *</span><input [formField]="contactForm.nameAr"
+              /></label>
+              <label class="form-field"
+                ><span>الاسم بالإنجليزية</span><input dir="ltr" [formField]="contactForm.nameEn"
+              /></label>
+              <label class="form-field"
+                ><span>رقم الهاتف *</span><input type="tel" [formField]="contactForm.phoneNumber"
+              /></label>
+              <label class="form-field"
+                ><span>العلاقة</span
+                ><select [formField]="contactForm.relationshipType">
+                  <option value="Father">أب</option>
+                  <option value="Mother">أم</option>
+                  <option value="Guardian">ولي أمر</option>
+                  <option value="LegalGuardian">وصي قانوني</option>
+                  <option value="Other">أخرى</option>
+                </select></label
+              >
+              <label class="form-field full"
+                ><span>Linked Patient ID (اختياري)</span
+                ><input dir="ltr" [formField]="contactForm.linkedPatientId"
+              /></label>
+              <label class="check-field full"
+                ><input type="checkbox" [formField]="contactForm.isPrimary" /><span
+                  >جهة الاتصال الأساسية</span
+                ></label
+              >
+              <div class="form-actions full">
+                <button class="btn btn-primary" type="submit" [disabled]="savingContact()">
+                  {{ savingContact() ? 'جارٍ الحفظ…' : 'حفظ' }}
+                </button>
+                @if (editingContactId()) {
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    (click)="cancelContactEdit()"
+                  >
+                    إلغاء
+                  </button>
+                }
+              </div>
+            </form>
+          }
+        </div>
+      </section>
+    }
+  }
+</main>

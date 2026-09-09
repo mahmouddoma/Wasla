@@ -58,9 +58,12 @@ export const permissionGuard: CanActivateFn = (route) => {
   const user = session.user();
   if (!user) return router.createUrlTree(['/login']);
   const permission = route.data['permission'];
-  return typeof permission === 'string' && session.hasPermission(permission)
-    ? true
-    : router.createUrlTree([session.destinationFor(user)]);
+  const allowed =
+    typeof permission === 'string'
+      ? session.hasPermission(permission)
+      : Array.isArray(permission) &&
+        permission.some((value) => typeof value === 'string' && session.hasPermission(value));
+  return allowed ? true : router.createUrlTree([session.destinationFor(user)]);
 };
 
 export const anonymousGuard: CanActivateFn = () => {

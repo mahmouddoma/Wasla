@@ -1,0 +1,109 @@
+<section class="management-page">
+  <app-page-header
+    heading="طلبات إثبات العلاقات العائلية"
+    description="راجع هوية الأطراف والأدلة وسجل الطلب بدون الوصول إلى أي بيانات سريرية."
+    icon="requests"
+  >
+    @if (result()) {
+      <div pageHeaderActions class="page-header-actions">
+        <span class="result-count">{{ result()!.totalCount }} طلب</span>
+      </div>
+    }
+  </app-page-header>
+
+  <div class="toolbar">
+    <label
+      >البحث<input
+        type="search"
+        [formField]="searchForm.search"
+        (input)="scheduleSearch()"
+        placeholder="اسم المريض أو رقم الطلب"
+    /></label>
+    <label
+      >الحالة<select [value]="status()" (change)="setFilter('status', $event)">
+        <option value="">الكل</option>
+        <option value="Pending">قيد المراجعة</option>
+        <option value="ModificationRequested">مطلوب تعديل</option>
+        <option value="Approved">معتمد</option>
+        <option value="Rejected">مرفوض</option>
+      </select></label
+    >
+    <label
+      >النوع<select [value]="requestType()" (change)="setFilter('requestType', $event)">
+        <option value="">الكل</option>
+        <option value="CreateFamily">إنشاء عائلة</option>
+        <option value="AddFamilyMember">إضافة عضو</option>
+      </select></label
+    >
+  </div>
+
+  @if (messages().length) {
+    <div class="state error" role="alert">
+      <h2>تعذر تحميل الطلبات</h2>
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+        إعادة المحاولة
+      </button>
+    </div>
+  } @else if (loading() && !result()) {
+    <div class="state" role="status">
+      <span class="loading-indicator" aria-hidden="true"></span>
+      <h2>جارٍ تحميل طلبات العائلة…</h2>
+    </div>
+  } @else if (result(); as page) {
+    @if (page.items.length) {
+      <div class="data-list">
+        <div class="data-header">
+          <span>الأطراف</span><span>النوع</span><span>الحالة</span><span>المراجعة</span
+          ><span>تاريخ الإرسال</span><span></span>
+        </div>
+        @for (item of page.items; track item.requestId) {
+          <article class="data-row">
+            <div class="identity">
+              <a [routerLink]="['/admin/family-relationship-requests', item.requestId]"
+                >{{ item.requesterNameAr }} ← {{ item.targetNameAr }}</a
+              ><small>{{ item.requesterClaimedRole }} ← {{ item.targetClaimedRole }}</small>
+            </div>
+            <div>
+              <span class="mobile-label">النوع</span
+              >{{ item.requestType === 'CreateFamily' ? 'إنشاء عائلة' : 'إضافة عضو' }}
+            </div>
+            <span [class]="'badge-state ' + item.status.toLowerCase()">{{ item.status }}</span>
+            <div><span class="mobile-label">المراجعة</span>#{{ item.currentRevisionNumber }}</div>
+            <time [attr.datetime]="item.submittedOnUtc">{{ formatDate(item.submittedOnUtc) }}</time>
+            <a
+              class="btn btn-outline-secondary"
+              [routerLink]="['/admin/family-relationship-requests', item.requestId]"
+              >مراجعة</a
+            >
+          </article>
+        }
+      </div>
+      <nav class="pagination-bar" aria-label="صفحات طلبات العلاقات العائلية">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() <= 1 || loading()"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          السابق</button
+        ><span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="pageNumber() >= totalPages() || loading()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          التالي
+        </button>
+      </nav>
+    } @else {
+      <div class="state">
+        <h2>لا توجد طلبات مطابقة</h2>
+        <p>غيّر البحث أو عوامل التصفية.</p>
+      </div>
+    }
+  }
+</section>

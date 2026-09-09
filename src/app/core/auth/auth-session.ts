@@ -55,6 +55,9 @@ export class AuthSession {
       if (user.permissions.includes(PERMISSIONS.doctorSpecializationRequestsViewAll)) {
         return '/admin/doctor-specialization-requests';
       }
+      if (user.permissions.includes(PERMISSIONS.familyRelationshipRequestsViewAll)) {
+        return '/admin/family-relationship-requests';
+      }
     }
     if (user.userType === 'Doctor' && !this.hasDoctorOperationalAccess(user)) {
       return '/doctor/onboarding';

@@ -1,0 +1,204 @@
+<section class="family-review-page">
+  <a class="back-link" routerLink="/admin/family-relationship-requests">العودة إلى قائمة الطلبات</a>
+  @if (messages().length) {
+    <div class="form-notice error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+        إعادة التحميل
+      </button>
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="form-notice success" role="status">{{ successMessage() }}</div>
+  }
+  @if (loading() && !details()) {
+    <div class="review-panel loading-state" role="status">جارٍ تحميل تفاصيل الطلب…</div>
+  } @else if (details(); as request) {
+    <header class="review-header">
+      <div>
+        <h1>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h1>
+        <p>
+          {{ request.requestType === 'CreateFamily' ? 'إنشاء عائلة' : 'إضافة عضو' }} · Revision
+          {{ request.currentRevisionNumber }}
+        </p>
+      </div>
+      <span [class]="'review-status ' + request.status.toLowerCase()">{{ request.status }}</span>
+    </header>
+
+    <div class="identity-grid">
+      <section class="review-panel">
+        <h2>مقدم الطلب</h2>
+        <strong>{{ request.requesterNameAr }}</strong>
+        <dl>
+          <div>
+            <dt>Patient ID</dt>
+            <dd>{{ request.requesterPatientId }}</dd>
+          </div>
+          <div>
+            <dt>الدور المطلوب</dt>
+            <dd>{{ request.requesterClaimedRole }}</dd>
+          </div>
+        </dl>
+      </section>
+      <section class="review-panel">
+        <h2>المريض المستهدف</h2>
+        <strong>{{ request.targetNameAr }}</strong>
+        <dl>
+          <div>
+            <dt>Patient ID</dt>
+            <dd>{{ request.targetPatientId }}</dd>
+          </div>
+          <div>
+            <dt>الدور المطلوب</dt>
+            <dd>{{ request.targetClaimedRole }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+
+    @if (request.modificationMessage) {
+      <div class="form-notice info">
+        <strong>آخر تعديل مطلوب</strong>
+        <p>{{ request.modificationMessage }}</p>
+      </div>
+    }
+    @if (request.rejectionReason) {
+      <div class="form-notice error">
+        <strong>سبب الرفض النهائي</strong>
+        <p>{{ request.rejectionReason }}</p>
+      </div>
+    }
+
+    <section class="review-panel">
+      <h2>أعضاء العائلة الحاليون</h2>
+      <div class="member-list">
+        @for (member of request.currentFamilyMembers; track member.patientId) {
+          <article>
+            <strong>{{ member.nameAr }}</strong
+            ><span>{{ member.role }} · {{ member.gender }}</span>
+          </article>
+        } @empty {
+          <p class="empty-copy">لا توجد عضوية عائلية فعالة مرتبطة بالطلب حالياً.</p>
+        }
+      </div>
+    </section>
+
+    <section class="review-panel">
+      <h2>أدلة التحقق حسب النسخة</h2>
+      <div class="document-grid">
+        @for (document of request.documents; track document.documentId) {
+          <button
+            type="button"
+            [disabled]="documentLoadingId() !== ''"
+            (click)="openDocument(document.documentId)"
+          >
+            <strong>{{ document.fileName }}</strong
+            ><span>{{ document.documentType }} · Revision {{ document.revisionNumber }}</span
+            ><small>{{
+              documentLoadingId() === document.documentId ? 'جارٍ الفتح…' : 'فتح بصورة آمنة'
+            }}</small>
+          </button>
+        } @empty {
+          <p class="empty-copy">لا توجد مستندات متاحة.</p>
+        }
+      </div>
+    </section>
+
+    <section class="review-panel">
+      <h2>سجل سير العمل غير القابل للتعديل</h2>
+      <ol class="review-history">
+        @for (item of request.history; track item.occurredOnUtc + item.action) {
+          <li>
+            <div>
+              <strong>{{ item.action }}</strong
+              ><time [attr.datetime]="item.occurredOnUtc">{{ item.occurredOnUtc }}</time>
+            </div>
+            <span>Revision {{ item.revisionNumber }}</span>
+            @if (item.message) {
+              <p>{{ item.message }}</p>
+            }
+          </li>
+        } @empty {
+          <li class="empty-copy">لا يوجد سجل متاح.</li>
+        }
+      </ol>
+    </section>
+
+    @if (isPending()) {
+      <div class="review-actions" aria-label="إجراءات مراجعة الطلب">
+        @if (canRequestModification) {
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            (click)="openAction('modification')"
+          >
+            طلب تعديل
+          </button>
+        }
+        @if (canApprove) {
+          <button class="btn btn-primary" type="button" (click)="openAction('approve')">
+            اعتماد العلاقة
+          </button>
+        }
+        @if (canReject) {
+          <button class="btn btn-danger" type="button" (click)="openAction('reject')">
+            رفض نهائي
+          </button>
+        }
+      </div>
+    }
+  }
+
+  <dialog #reviewDialog class="review-dialog" (cancel)="closeAction()">
+    <form (submit)="confirmAction($event)" novalidate>
+      <header>
+        <div>
+          <h2>{{ actionTitle() }}</h2>
+          <p>
+            @if (action() === 'approve') {
+              سيعيد الخادم التحقق من قيود العائلة قبل الاعتماد.
+            } @else if (action() === 'modification') {
+              سيتمكن المريض أو موظف الاستقبال من رفع revision جديدة.
+            } @else {
+              الرفض نهائي ولن ينشئ أو يغيّر عضوية العائلة.
+            }
+          </p>
+        </div>
+        <button class="dialog-close" type="button" (click)="closeAction()" aria-label="إغلاق">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+      @if (action() !== 'approve') {
+        <label class="form-field"
+          ><span>{{ action() === 'modification' ? 'رسالة التعديل *' : 'سبب الرفض *' }}</span
+          ><textarea rows="5" [formField]="reviewForm.text"></textarea>
+          @if (reviewForm.text().touched() && reviewForm.text().errors().length) {
+            <small class="field-error">{{ reviewForm.text().errors()[0].message }}</small>
+          }
+        </label>
+      }
+      <div class="dialog-actions">
+        <button class="btn btn-outline-secondary" type="button" (click)="closeAction()">
+          إلغاء</button
+        ><button
+          [class]="action() === 'reject' ? 'btn btn-danger' : 'btn btn-primary'"
+          type="submit"
+          [disabled]="submitting()"
+        >
+          {{ submitting() ? 'جارٍ التنفيذ…' : 'تأكيد الإجراء' }}
+        </button>
+      </div>
+    </form>
+  </dialog>
+</section>

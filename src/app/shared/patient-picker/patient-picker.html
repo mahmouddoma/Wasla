@@ -1,0 +1,42 @@
+<section class="picker" [attr.aria-label]="label()">
+  <header>
+    <h2>{{ label() }}</h2>
+    @if (selectedPatient(); as patient) {
+      <span class="selection">تم الاختيار: {{ patient.nameAr }}</span>
+    }
+  </header>
+  <form (submit)="search($event)" novalidate>
+    <label><span>الاسم</span><input [formField]="searchForm.name" /></label>
+    <label><span>الهاتف</span><input type="tel" [formField]="searchForm.phoneNumber" /></label>
+    <label
+      ><span>تاريخ الميلاد</span><input type="date" [formField]="searchForm.dateOfBirth"
+    /></label>
+    <button class="btn btn-outline-secondary" type="submit" [disabled]="loading()">
+      {{ loading() ? 'جارٍ البحث…' : 'بحث' }}
+    </button>
+  </form>
+  @if (message()) {
+    <p class="error" role="alert">{{ message() }}</p>
+  }
+  @if (searched()) {
+    <div class="results" aria-live="polite">
+      @for (patient of results(); track patient.patientId) {
+        <button
+          type="button"
+          [class.selected]="selectedPatient()?.patientId === patient.patientId"
+          (click)="choose(patient)"
+        >
+          <strong>{{ patient.nameAr }}</strong>
+          <span>{{ patient.dateOfBirth }} · {{ patient.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
+          <small>{{
+            patient.phoneNumber || (patient.hasContactPhone ? 'لديه هاتف تواصل' : 'بدون هاتف')
+          }}</small>
+        </button>
+      } @empty {
+        <p class="empty">
+          لا توجد نتائج. يجب اختيار ملف Patient موجود ولا يمكن استخدام contact text.
+        </p>
+      }
+    </div>
+  }
+</section>
