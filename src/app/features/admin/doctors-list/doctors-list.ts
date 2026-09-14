@@ -29,7 +29,8 @@ export interface DoctorsMetrics {
   total: number;
   approved: number;
   pending: number;
-  needsAction: number;
+  rejected: number;
+  suspended: number;
   loaded: boolean;
 }
 
@@ -64,20 +65,21 @@ export class DoctorsList {
   protected readonly pageSize = signal(10);
   protected readonly pageSizeOptions = [10, 20, 50];
   protected readonly result = signal<AdminDoctorsPage | null>(null);
+  protected readonly doctors = computed(() => this.result()?.items ?? []);
   protected readonly isLoading = signal(true);
   protected readonly isMetricsLoading = signal(false);
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
   protected readonly canViewDetails = this.session.hasPermission(PERMISSIONS.doctorsViewDetails);
 
-  protected readonly sortBy = signal<'newest' | 'oldest' | 'name'>('newest');
   protected readonly viewMode = signal<'table' | 'grid'>('table');
 
   protected readonly metrics = signal<DoctorsMetrics>({
     total: 0,
     approved: 0,
     pending: 0,
-    needsAction: 0,
+    rejected: 0,
+    suspended: 0,
     loaded: false,
   });
 
@@ -87,22 +89,6 @@ export class DoctorsList {
       Math.ceil((this.result()?.totalCount ?? 0) / (this.result()?.pageSize ?? this.pageSize())),
     ),
   );
-
-  protected readonly sortedItems = computed<AdminDoctorListItem[]>(() => {
-    const items = this.result()?.items ?? [];
-    const sort = this.sortBy();
-    if (sort === 'name') {
-      return [...items].sort((a, b) => (a.nameAr || '').localeCompare(b.nameAr || '', 'ar'));
-    }
-    if (sort === 'oldest') {
-      return [...items].sort(
-        (a, b) => new Date(a.createdOnUtc).getTime() - new Date(b.createdOnUtc).getTime(),
-      );
-    }
-    return [...items].sort(
-      (a, b) => new Date(b.createdOnUtc).getTime() - new Date(a.createdOnUtc).getTime(),
-    );
-  });
 
   protected readonly visiblePages = computed<(number | '...')[]>(() => {
     const total = this.totalPages();
@@ -205,11 +191,6 @@ export class DoctorsList {
     }
   }
 
-  protected onSortChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    this.sortBy.set(select.value as 'newest' | 'oldest' | 'name');
-  }
-
   protected toggleViewMode(mode: 'table' | 'grid'): void {
     this.viewMode.set(mode);
   }
@@ -283,7 +264,8 @@ export class DoctorsList {
         total,
         approved,
         pending,
-        needsAction: rejected + suspended,
+        rejected,
+        suspended,
         loaded: true,
       });
     } catch {

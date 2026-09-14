@@ -86,7 +86,6 @@ export const TRANSLATIONS: TranslationDictionary = {
   },
   'login.passwordLabel': { ar: 'كلمة المرور', en: 'Password' },
   'login.passwordPlaceholder': { ar: '••••••••', en: '••••••••' },
-  'login.rememberMe': { ar: 'تذكرني في هذا الجهاز', en: 'Remember me on this device' },
   'login.forgotPassword': { ar: 'نسيت كلمة المرور؟', en: 'Forgot password?' },
   'login.submit': { ar: 'تسجيل الدخول', en: 'Sign In' },
   'login.submitting': { ar: 'جارٍ تسجيل الدخول…', en: 'Signing in…' },
@@ -187,16 +186,49 @@ export const TRANSLATIONS: TranslationDictionary = {
   },
 
   // Post-login: Workspace
-  'workspace.secureSession': { ar: 'جلسة آمنة ومتصلة', en: 'Secure & Connected Session' },
-  'workspace.welcome': { ar: 'مرحبًا', en: 'Welcome' },
+  'workspace.secureSession': { ar: 'جلسة آمنة وموثقة', en: 'Secure & Authenticated Session' },
+  'workspace.welcome': { ar: 'مرحبًا بك', en: 'Welcome' },
   'workspace.readyNotice': {
-    ar: 'تم تحميل حسابك وصلاحياتك من وصلة بنجاح. ستظهر وحدات العمل هنا عند ربط Jira الخاصة بها.',
-    en: 'Your account and permissions have loaded successfully from Wasla. Work modules will appear here when connected.',
+    ar: 'تم تحميل بيانات حسابك وصلاحياتك من منصة وصلة بنجاح. يمكنك الوصول المباشر للخدمات والوحدات المتاحة أدناه.',
+    en: 'Your account data and permissions have loaded successfully from Wasla. You can directly access the available services below.',
   },
   'workspace.accountType': { ar: 'نوع الحساب', en: 'Account Type' },
   'workspace.email': { ar: 'البريد الإلكتروني', en: 'Email' },
+  'workspace.phone': { ar: 'رقم الهاتف', en: 'Phone Number' },
+  'workspace.username': { ar: 'اسم المستخدم', en: 'Username' },
+  'workspace.accountInfo': { ar: 'بيانات الحساب', en: 'Account Details' },
+  'workspace.availableModules': { ar: 'الخدمات والوحدات المتاحة', en: 'Available Services & Modules' },
   'workspace.manageDoctorProfile': {
     ar: 'التخصص وموقع الممارسة',
     en: 'Specialty & Practice Location',
   },
+  'workspace.doctorProfileDesc': {
+    ar: 'استكمال بيانات التخصصات الطبية وتحديد مواقع الممارسة والعيادات.',
+    en: 'Complete medical specialties and configure practice locations.',
+  },
+  'workspace.managePatients': { ar: 'إدارة المرضى', en: 'Manage Patients' },
+  'workspace.managePatientsDesc': {
+    ar: 'البحث عن ملفات المرضى وتسجيل المراجعين الجدد ومتابعة السجلات.',
+    en: 'Search patient records and register new clinic visitors.',
+  },
+  'workspace.familyRequests': { ar: 'طلبات العائلة', en: 'Family Requests' },
+  'workspace.familyRequestsDesc': {
+    ar: 'متابعة وتدقيق طلبات ربط العلاقات العائلية المساعدة.',
+    en: 'Review and process assisted family relationship requests.',
+  },
+  'workspace.myHealthProfile': { ar: 'ملفي الصحي', en: 'My Health Profile' },
+  'workspace.myHealthProfileDesc': {
+    ar: 'استعراض التاريخ الطبي والتقارير الصحية والبيانات الشخصية.',
+    en: 'Review medical history, health reports, and personal information.',
+  },
+  'workspace.familyAndRequests': { ar: 'العائلة والطلبات', en: 'Family & Requests' },
+  'workspace.familyAndRequestsDesc': {
+    ar: 'إدارة أفراد العائلة وتقديم ومتابعة طلبات الربط العائلي.',
+    en: 'Manage family members and submit relationship requests.',
+  },
+  'workspace.platformTagline': {
+    ar: 'منصة الرعاية الصحية المتكاملة',
+    en: 'Integrated Healthcare Platform',
+  },
 };
+

@@ -1,11 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormField, form, max, maxLength, min, required, submit } from '@angular/forms/signals';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../core/auth/api-errors';
 import { AuthSession } from '../../core/auth/auth-session';
 import { PERMISSIONS } from '../../core/auth/permissions';
+import { ToastService } from '../../core/notifications/toast.service';
 import { DoctorProfileApi } from '../../core/doctor-profile/doctor-profile-api';
 import {
   DoctorPracticeLocation,
@@ -33,6 +35,8 @@ export class DoctorProfile {
   private readonly api = inject(DoctorProfileApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly toast = inject(ToastService);
 
   protected readonly options = signal<MedicalSpecializationOption[]>([]);
   protected readonly current = signal<DoctorSpecializationsResponse>({ items: [] });
@@ -180,6 +184,23 @@ export class DoctorProfile {
     });
   }
 
+  protected async resolveAddressFromCoordinates(): Promise<void> {
+    const lat = Number(this.locationModel().latitude);
+    const lng = Number(this.locationModel().longitude);
+    if (!lat || !lng || Number.isNaN(lat) || Number.isNaN(lng) || (lat === 0 && lng === 0)) {
+      this.toast.error('يرجى تحديد أو إدخال الإحداثيات أولاً.');
+      return;
+    }
+    this.isLocating.set(true);
+    try {
+      await this.reverseGeocodeAndPopulate(lat, lng);
+    } catch {
+      this.toast.error('تعذر استنتاج العنوان من الإحداثيات.');
+    } finally {
+      this.isLocating.set(false);
+    }
+  }
+
   protected useCurrentLocation(): void {
     if (!this.canManageLocation || this.isLocating()) return;
     if (!navigator.geolocation) {
@@ -188,13 +209,21 @@ export class DoctorProfile {
     }
     this.isLocating.set(true);
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
+      async ({ coords }) => {
+        const lat = Number(coords.latitude.toFixed(6));
+        const lng = Number(coords.longitude.toFixed(6));
         this.locationModel.update((value) => ({
           ...value,
-          latitude: Number(coords.latitude.toFixed(6)),
-          longitude: Number(coords.longitude.toFixed(6)),
+          latitude: lat,
+          longitude: lng,
         }));
-        this.isLocating.set(false);
+        try {
+          await this.reverseGeocodeAndPopulate(lat, lng);
+        } catch {
+          this.toast.success('تم تحديد الإحداثيات بنجاح. يمكنك اختيار المحافظة والمدينة.');
+        } finally {
+          this.isLocating.set(false);
+        }
       },
       () => {
         this.apiMessages.set(['تعذر قراءة موقعك الحالي. يمكنك إدخال الإحداثيات يدويًا.']);
@@ -216,14 +245,90 @@ export class DoctorProfile {
     void this.router.navigate(['/login']);
   }
 
+  protected readonly approvedCount = computed(() => this.current().items.length);
+
+  protected readonly hasValidCoordinates = computed(() => {
+    const lat = Number(this.locationModel().latitude);
+    const lng = Number(this.locationModel().longitude);
+    return Boolean(
+      lat && lng && !Number.isNaN(lat) && !Number.isNaN(lng) && lat !== 0 && lng !== 0,
+    );
+  });
+
+  protected readonly mapEmbedUrl = computed<SafeResourceUrl | null>(() => {
+    const lat = Number(this.locationModel().latitude);
+    const lng = Number(this.locationModel().longitude);
+    if (!lat || !lng || Number.isNaN(lat) || Number.isNaN(lng) || (lat === 0 && lng === 0)) {
+      // Default overview of Egypt / Cairo (30.0444, 31.2357)
+      return this.sanitizer.bypassSecurityTrustResourceUrl(
+        'https://www.openstreetmap.org/export/embed.html?bbox=31.18%2C29.98%2C31.32%2C30.10&layer=mapnik&marker=30.0444%2C31.2357',
+      );
+    }
+    const delta = 0.007;
+    const bbox = `${lng - delta}%2C${lat - delta}%2C${lng + delta}%2C${lat + delta}`;
+    const marker = `${lat}%2C${lng}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(
+      `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}`,
+    );
+  });
+
+  protected readonly googleMapsDirectUrl = computed<string>(() => {
+    const lat = Number(this.locationModel().latitude);
+    const lng = Number(this.locationModel().longitude);
+    if (!lat || !lng) return 'https://maps.google.com';
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  });
+
+  protected readonly requestStatusMeta = computed(() => {
+    const req = this.openRequest();
+    if (!req) return null;
+    const isAr = this.langService.currentLang() === 'ar';
+    switch (req.status) {
+      case 'PendingReview':
+        return {
+          label: isAr ? 'قيد المراجعة الطبية' : 'Pending Review',
+          className: 'status-pending',
+          desc: isAr
+            ? 'الطلب قيد المراجعة حاليًا من قبل الإدارة الطبية ولا يمكن تعديله أثناء المراجعة.'
+            : 'Your proposal is currently under review by the administration.',
+        };
+      case 'ModificationRequested':
+        return {
+          label: isAr ? 'مطلوب تعديل الطلب' : 'Modification Requested',
+          className: 'status-mod',
+          desc:
+            req.latestModificationMessage ||
+            (isAr
+              ? 'يرجى مراجعة الملاحظات وتحديث التخصصات ثم إعادة الإرسال.'
+              : 'Please update requirements and resubmit.'),
+        };
+      default:
+        return {
+          label: req.status,
+          className: 'status-default',
+          desc: '',
+        };
+    }
+  });
+
   private async loadSpecializations(): Promise<void> {
     try {
-      const [options, current] = await Promise.all([
-        firstValueFrom(this.api.specializationOptions()),
-        firstValueFrom(this.api.currentSpecializations()),
-      ]);
+      let options: MedicalSpecializationOption[] = [];
+      try {
+        options = await firstValueFrom(this.api.specializationOptions());
+      } catch (error) {
+        if (!this.isNotFound(error)) this.handleError(error);
+      }
       this.options.set(options);
+
+      let current: DoctorSpecializationsResponse = { items: [] };
+      try {
+        current = await firstValueFrom(this.api.currentSpecializations());
+      } catch (error) {
+        if (!this.isNotFound(error)) this.handleError(error);
+      }
       this.current.set(current);
+
       try {
         const request = await firstValueFrom(this.api.openSpecializationRequest());
         this.openRequest.set(request);
@@ -235,7 +340,7 @@ export class DoctorProfile {
         );
         await this.loadSpecializationHistory();
       } catch (error) {
-        if (!this.isNotFound(error)) throw error;
+        if (!this.isNotFound(error)) this.handleError(error);
         this.openRequest.set(null);
         this.history.set([]);
         this.selected.set(
@@ -246,7 +351,7 @@ export class DoctorProfile {
         );
       }
     } catch (error) {
-      this.handleError(error);
+      if (!this.isNotFound(error)) this.handleError(error);
     }
   }
 
@@ -260,7 +365,12 @@ export class DoctorProfile {
 
   private async loadLocation(): Promise<void> {
     try {
-      this.governorates.set(await firstValueFrom(this.api.governorates()));
+      try {
+        this.governorates.set(await firstValueFrom(this.api.governorates()));
+      } catch (error) {
+        if (!this.isNotFound(error)) this.handleError(error);
+      }
+
       try {
         const location = await firstValueFrom(this.api.practiceLocation());
         this.location.set(location);
@@ -268,11 +378,11 @@ export class DoctorProfile {
         await this.loadCities(location.governorate.id);
         await this.loadAreas(location.city.id);
       } catch (error) {
-        if (!this.isNotFound(error)) throw error;
+        if (!this.isNotFound(error)) this.handleError(error);
         this.location.set(null);
       }
     } catch (error) {
-      this.handleError(error);
+      if (!this.isNotFound(error)) this.handleError(error);
     }
   }
 
@@ -281,7 +391,7 @@ export class DoctorProfile {
     try {
       this.cities.set(await firstValueFrom(this.api.cities(governorateId)));
     } catch (error) {
-      this.handleError(error);
+      if (!this.isNotFound(error)) this.handleError(error);
     } finally {
       this.citiesLoading.set(false);
     }
@@ -292,7 +402,7 @@ export class DoctorProfile {
     try {
       this.areas.set(await firstValueFrom(this.api.areas(cityId)));
     } catch (error) {
-      this.handleError(error);
+      if (!this.isNotFound(error)) this.handleError(error);
     } finally {
       this.areasLoading.set(false);
     }
@@ -310,8 +420,210 @@ export class DoctorProfile {
     this.locationForm().reset();
   }
 
+  private cleanLocationText(str: string | null | undefined): string {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      .replace(/[أإآٱ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/(محافظة|محافظه|مدينة|مدينه|مركز|قسم|حي|منطقة|منطقه|governorate|gov|city|district|qism|markaz)/gi, '')
+      .replace(/^ال/g, '')
+      .replace(/[\s\-_,.\'\"]/g, '');
+  }
+
+  private findBestLocationMatch(
+    candidates: (string | null | undefined)[],
+    options: EgyptLocationOption[],
+  ): EgyptLocationOption | null {
+    const validCandidates = candidates.filter((c): c is string => Boolean(c && c.trim()));
+    if (!validCandidates.length || !options.length) return null;
+
+    // Pass 1: Exact matches
+    for (const cand of validCandidates) {
+      const cleanCand = this.cleanLocationText(cand);
+      if (!cleanCand) continue;
+      for (const opt of options) {
+        const ar = this.cleanLocationText(opt.nameAr);
+        const en = this.cleanLocationText(opt.nameEn);
+        if ((ar && cleanCand === ar) || (en && cleanCand === en)) {
+          return opt;
+        }
+      }
+    }
+
+    // Pass 2: Substring inclusion (length >= 3)
+    for (const cand of validCandidates) {
+      const cleanCand = this.cleanLocationText(cand);
+      if (!cleanCand || cleanCand.length < 3) continue;
+      for (const opt of options) {
+        const ar = this.cleanLocationText(opt.nameAr);
+        const en = this.cleanLocationText(opt.nameEn);
+        if (ar && ar.length >= 3 && (cleanCand.includes(ar) || ar.includes(cleanCand))) {
+          return opt;
+        }
+        if (en && en.length >= 3 && (cleanCand.includes(en) || en.includes(cleanCand))) {
+          return opt;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private async reverseGeocodeAndPopulate(lat: number, lng: number): Promise<void> {
+    const govCandidates: string[] = [];
+    const cityCandidates: string[] = [];
+    const areaCandidates: string[] = [];
+    let placeName: string | null = null;
+    let streetName: string | null = null;
+    let fallbackFullAddress: string | null = null;
+
+    // 1. Try Nominatim (OpenStreetMap)
+    try {
+      const osmUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar,en&addressdetails=1`;
+      const res = await fetch(osmUrl, { headers: { Accept: 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        const a = data.address || {};
+        govCandidates.push(a.state, a.province, a.governorate, a.region, a.county, a.city);
+        cityCandidates.push(
+          a.quarter,
+          a.suburb,
+          a.city_district,
+          a.town,
+          a.city,
+          a.county,
+          a.borough,
+          a.municipality,
+        );
+        areaCandidates.push(
+          a.hamlet,
+          a.neighbourhood,
+          a.suburb,
+          a.quarter,
+          a.village,
+          a.residential,
+          a.district,
+        );
+        placeName = a.shop || a.building || a.amenity || null;
+        streetName = a.road || null;
+        fallbackFullAddress = data.display_name || null;
+      }
+    } catch {
+      // Continue to fallback
+    }
+
+    // 2. If sparse, fallback with BigDataCloud
+    if (!govCandidates.filter(Boolean).length || !cityCandidates.filter(Boolean).length) {
+      try {
+        const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ar`;
+        const res = await fetch(bdcUrl);
+        if (res.ok) {
+          const data = await res.json();
+          govCandidates.push(data.principalSubdivision, data.city);
+          cityCandidates.push(data.locality);
+          if (Array.isArray(data.localityInfo?.informative)) {
+            for (const item of data.localityInfo.informative) {
+              if (item?.name) {
+                cityCandidates.push(item.name);
+                areaCandidates.push(item.name);
+              }
+            }
+          }
+          if (Array.isArray(data.localityInfo?.administrative)) {
+            for (const item of data.localityInfo.administrative) {
+              if (item?.name) {
+                govCandidates.push(item.name);
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore fallback error
+      }
+    }
+
+    // 3. Ensure governorates are loaded
+    if (!this.governorates().length) {
+      try {
+        this.governorates.set(await firstValueFrom(this.api.governorates()));
+      } catch (err) {
+        if (!this.isNotFound(err)) this.handleError(err);
+      }
+    }
+
+    // 4. Match Governorate
+    const matchedGov = this.findBestLocationMatch(govCandidates, this.governorates());
+    if (matchedGov) {
+      this.locationModel.update((v) => ({
+        ...v,
+        governorateId: String(matchedGov.id),
+        cityId: '',
+        areaId: '',
+      }));
+
+      // Load Cities for this governorate
+      await this.loadCities(matchedGov.id);
+
+      // 5. Match City
+      const matchedCity = this.findBestLocationMatch(cityCandidates, this.cities());
+      if (matchedCity) {
+        this.locationModel.update((v) => ({
+          ...v,
+          cityId: String(matchedCity.id),
+          areaId: '',
+        }));
+
+        // Load Areas for this city
+        await this.loadAreas(matchedCity.id);
+
+        // 6. Match Area
+        const matchedArea = this.findBestLocationMatch(areaCandidates, this.areas());
+        if (matchedArea) {
+          this.locationModel.update((v) => ({
+            ...v,
+            areaId: String(matchedArea.id),
+          }));
+        }
+      }
+    }
+
+    // 7. Auto-populate Detailed Address if empty
+    const currentAddress = this.locationModel().detailedAddress.trim();
+    if (!currentAddress) {
+      const addressParts: string[] = [];
+      if (placeName) addressParts.push(placeName);
+      if (streetName && !addressParts.includes(streetName)) addressParts.push(streetName);
+      const autoDetailed =
+        addressParts.join('، ') ||
+        (fallbackFullAddress ? fallbackFullAddress.split('،').slice(0, 3).join('، ') : '');
+      if (autoDetailed) {
+        this.locationModel.update((v) => ({ ...v, detailedAddress: autoDetailed }));
+      }
+    }
+
+    this.locationForm().reset();
+
+    if (matchedGov) {
+      this.toast.success('تم تحديد موقعك واستنتاج المحافظة والمدينة وتعبئة العنوان تلقائيًا.');
+    } else {
+      this.toast.success('تم تحديد الإحداثيات على الخريطة بنجاح.');
+    }
+  }
+
   private isNotFound(error: unknown): boolean {
-    return error instanceof HttpErrorResponse && error.status === 404;
+    if (!(error instanceof HttpErrorResponse)) return false;
+    if (error.status === 404) return true;
+    const parsed = parseApiErrors(error);
+    return parsed.messages.some(
+      (m) =>
+        m.includes('غير موجود') ||
+        m.toLowerCase().includes('not found') ||
+        m.includes('لم يتم العثور'),
+    );
   }
 
   private handleError(error: unknown): void {

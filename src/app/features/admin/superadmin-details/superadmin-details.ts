@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
@@ -6,6 +15,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { SuperAdminsApi } from '../../../core/superadmins/superadmins-api';
 import { SuperAdminRecord } from '../../../core/superadmins/superadmins.models';
+import { isGuid } from '../../../core/validation/guid';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 import { SuperAdminForm, SuperAdminFormSubmission } from '../superadmin-form/superadmin-form';
 
@@ -18,8 +28,6 @@ interface AccountActionDialog {
   danger: boolean;
 }
 
-const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 @Component({
   selector: 'app-superadmin-details',
   imports: [RouterLink, ConfirmationDialog, SuperAdminForm],
@@ -30,14 +38,23 @@ const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 export class SuperAdminDetails {
   private readonly api = inject(SuperAdminsApi);
   private readonly session = inject(AuthSession);
-  private readonly route = inject(ActivatedRoute);
-  private readonly superAdminId = this.route.snapshot.paramMap.get('superAdminId') ?? '';
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly routeSuperAdminId = this.route?.snapshot.paramMap.get('superAdminId') ?? '';
+
+  readonly superAdminIdInput = input<string | null>(null);
+  readonly isDrawer = input(false);
+  readonly closed = output<void>();
+  readonly saved = output<SuperAdminRecord>();
+
+  protected readonly activeSuperAdminId = computed(
+    () => this.superAdminIdInput() || this.routeSuperAdminId,
+  );
 
   protected readonly details = signal<SuperAdminRecord | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly successMessage = signal(
-    this.route.snapshot.queryParamMap.get('status') === 'created'
+    this.route?.snapshot.queryParamMap.get('status') === 'created'
       ? 'تم إنشاء حساب SuperAdmin بنجاح.'
       : '',
   );
@@ -47,6 +64,8 @@ export class SuperAdminDetails {
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
   protected readonly pendingAction = signal<AccountAction | null>(null);
   protected readonly actionMessages = signal<string[]>([]);
+  protected readonly idCopied = signal(false);
+
   protected readonly canUpdate = computed(() => {
     const admin = this.details();
     return (
@@ -129,26 +148,37 @@ export class SuperAdminDetails {
   });
 
   constructor() {
-    if (!GUID_PATTERN.test(this.superAdminId)) {
-      this.isLoading.set(false);
-      this.apiMessages.set(['معرّف المشرف غير صالح. ارجع إلى القائمة واختر الحساب من جديد.']);
-      return;
-    }
-    void this.load();
+    effect(() => {
+      const id = this.activeSuperAdminId();
+      if (!isGuid(id)) {
+        this.isLoading.set(false);
+        this.apiMessages.set(['معرّف المشرف غير صالح. ارجع إلى القائمة واختر الحساب من جديد.']);
+        return;
+      }
+      void this.load();
+    });
   }
 
   protected async load(): Promise<void> {
-    if (!GUID_PATTERN.test(this.superAdminId)) return;
+    const id = this.activeSuperAdminId();
+    if (!isGuid(id)) return;
     this.isLoading.set(true);
     this.apiMessages.set([]);
     try {
-      this.details.set(await firstValueFrom(this.api.details(this.superAdminId)));
+      this.details.set(await firstValueFrom(this.api.details(id)));
     } catch (error) {
       const parsed = parseApiErrors(error);
       this.apiMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  protected copyText(text: string): void {
+    if (!text) return;
+    navigator.clipboard?.writeText(text);
+    this.idCopied.set(true);
+    setTimeout(() => this.idCopied.set(false), 2000);
   }
 
   protected startEditing(): void {
@@ -167,15 +197,18 @@ export class SuperAdminDetails {
   }
 
   protected async update(submission: SuperAdminFormSubmission): Promise<void> {
-    if (submission.mode !== 'update' || !this.canUpdate() || this.isSubmitting()) return;
+    const id = this.activeSuperAdminId();
+    if (submission.mode !== 'update' || !this.canUpdate() || this.isSubmitting() || !isGuid(id))
+      return;
     this.isSubmitting.set(true);
     this.formMessages.set([]);
     this.fieldErrors.set({});
     try {
-      const updated = await firstValueFrom(this.api.update(this.superAdminId, submission.request));
+      const updated = await firstValueFrom(this.api.update(id, submission.request));
       this.details.set(updated);
       this.isEditing.set(false);
       this.successMessage.set('تم تحديث بيانات المشرف بنجاح.');
+      this.saved.emit(updated);
     } catch (error) {
       const parsed = parseApiErrors(error);
       this.formMessages.set(parsed.messages);
@@ -199,14 +232,19 @@ export class SuperAdminDetails {
   }
 
   protected async confirmAction(): Promise<void> {
+    const id = this.activeSuperAdminId();
     const action = this.pendingAction();
-    if (!action || this.isSubmitting()) return;
+    if (!action || this.isSubmitting() || !isGuid(id)) return;
     if (!this.actionAllowed(action)) return;
     this.isSubmitting.set(true);
     this.actionMessages.set([]);
     try {
-      await firstValueFrom(this.api[action](this.superAdminId));
+      await firstValueFrom(this.api[action](id));
       this.details.update((admin) => (admin ? this.applyAction(admin, action) : admin));
+      const currentAdmin = this.details();
+      if (currentAdmin) {
+        this.saved.emit(currentAdmin);
+      }
       this.pendingAction.set(null);
       this.successMessage.set(this.actionSuccessMessage(action));
     } catch (error) {
@@ -250,5 +288,10 @@ export class SuperAdminDetails {
       : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
           dateStyle: 'medium',
         }).format(date);
+  }
+
+  protected getAdminInitial(admin: SuperAdminRecord): string {
+    const name = admin.nameAr?.trim() || admin.nameEn?.trim() || admin.userName?.trim() || '';
+    return name ? name.charAt(0).toUpperCase() : 'م';
   }
 }

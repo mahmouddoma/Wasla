@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
+import { ToastService } from '../../../core/notifications/toast.service';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
@@ -20,6 +21,7 @@ export class Login {
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly toast = inject(ToastService);
   protected readonly model = signal({ identifier: '', password: '' });
   protected readonly loginForm = form(this.model, (field) => {
     required(field.identifier, { message: 'أدخل اسم المستخدم أو البريد الإلكتروني.' });
@@ -29,7 +31,6 @@ export class Login {
   });
   protected readonly isSubmitting = signal(false);
   protected readonly showPassword = signal(false);
-  protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
   protected readonly successStatus = this.route.snapshot.queryParamMap.get('status');
 
@@ -38,12 +39,11 @@ export class Login {
     await submit(this.loginForm, async () => {
       if (this.isSubmitting()) return;
       this.isSubmitting.set(true);
-      this.apiMessages.set([]);
       this.fieldErrors.set({});
       try {
         const login = await firstValueFrom(this.api.login(this.model()));
         if (!this.session.begin(login)) {
-          this.apiMessages.set(['تعذر إنشاء جلسة صالحة من استجابة الخادم.']);
+          this.toast.error('تعذر إنشاء جلسة صالحة من استجابة الخادم.');
           return;
         }
         const user = await firstValueFrom(this.api.currentUser());
@@ -55,7 +55,6 @@ export class Login {
       } catch (error) {
         this.session.clear();
         const parsed = parseApiErrors(error);
-        this.apiMessages.set(parsed.messages);
         this.fieldErrors.set(parsed.fields);
       } finally {
         this.isSubmitting.set(false);

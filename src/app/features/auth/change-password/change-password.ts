@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, maxLength, required, submit, validate } from '@angular/forms/signals';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
@@ -8,14 +8,16 @@ import { AuthSession } from '../../../core/auth/auth-session';
 
 @Component({
   selector: 'app-change-password',
-  imports: [FormField],
+  imports: [FormField, RouterLink],
   templateUrl: './change-password.html',
+  styleUrl: './change-password.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChangePassword {
   private readonly api = inject(AuthApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+
   protected readonly model = signal({ currentPassword: '', newPassword: '', confirmPassword: '' });
   protected readonly passwordForm = form(this.model, (field) => {
     required(field.currentPassword, { message: 'أدخل كلمة المرور الحالية.' });
@@ -32,10 +34,14 @@ export class ChangePassword {
         : { kind: 'passwordMismatch', message: 'تأكيد كلمة المرور غير مطابق.' },
     );
   });
+
   protected readonly isSubmitting = signal(false);
-  protected readonly showPasswords = signal(false);
+  protected readonly showCurrentPassword = signal(false);
+  protected readonly showNewPassword = signal(false);
+  protected readonly showConfirmPassword = signal(false);
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
+
   protected async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.passwordForm, async () => {
@@ -56,10 +62,25 @@ export class ChangePassword {
       }
     });
   }
+
   protected serverError(field: string): string {
     return this.fieldErrors()[field.toLowerCase()]?.[0] ?? '';
   }
-  protected togglePasswords(): void {
-    this.showPasswords.update((visible) => !visible);
+
+  protected toggleShowCurrent(): void {
+    this.showCurrentPassword.update((v) => !v);
+  }
+
+  protected toggleShowNew(): void {
+    this.showNewPassword.update((v) => !v);
+  }
+
+  protected toggleShowConfirm(): void {
+    this.showConfirmPassword.update((v) => !v);
+  }
+
+  protected async onCancelToLogin(): Promise<void> {
+    this.session.clear();
+    await this.router.navigate(['/login']);
   }
 }

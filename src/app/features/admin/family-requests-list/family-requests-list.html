@@ -2,40 +2,79 @@
   <app-page-header
     heading="طلبات إثبات العلاقات العائلية"
     description="راجع هوية الأطراف والأدلة وسجل الطلب بدون الوصول إلى أي بيانات سريرية."
-    icon="requests"
+    icon="family-requests"
   >
-    @if (result()) {
-      <div pageHeaderActions class="page-header-actions">
-        <span class="result-count">{{ result()!.totalCount }} طلب</span>
+    <div pageHeaderDeck class="header-control-grid">
+      <!-- Search Input -->
+      <div class="search-box-wrap">
+        <div class="search-input-box-integrated">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            id="family-req-search-input"
+            type="text"
+            role="searchbox"
+            enterkeyhint="search"
+            autocomplete="off"
+            placeholder="ابحث باسم المريض أو رقم الطلب…"
+            [formField]="searchForm.search"
+            (input)="scheduleSearch()"
+          />
+          @if (model().search) {
+            <button
+              type="button"
+              class="btn-clear-search-integrated"
+              aria-label="مسح البحث"
+              (click)="clearSearch()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          }
+        </div>
       </div>
-    }
-  </app-page-header>
 
-  <div class="toolbar">
-    <label
-      >البحث<input
-        type="search"
-        [formField]="searchForm.search"
-        (input)="scheduleSearch()"
-        placeholder="اسم المريض أو رقم الطلب"
-    /></label>
-    <label
-      >الحالة<select [value]="status()" (change)="setFilter('status', $event)">
-        <option value="">الكل</option>
-        <option value="Pending">قيد المراجعة</option>
-        <option value="ModificationRequested">مطلوب تعديل</option>
-        <option value="Approved">معتمد</option>
-        <option value="Rejected">مرفوض</option>
-      </select></label
-    >
-    <label
-      >النوع<select [value]="requestType()" (change)="setFilter('requestType', $event)">
-        <option value="">الكل</option>
-        <option value="CreateFamily">إنشاء عائلة</option>
-        <option value="AddFamilyMember">إضافة عضو</option>
-      </select></label
-    >
-  </div>
+      <!-- Filters Deck -->
+      <div class="header-filters-deck">
+        <label class="filter-select-integrated">
+          <span class="filter-select-label">الحالة:</span>
+          <select [value]="status()" (change)="setFilter('status', $event)">
+            <option value="">الكل</option>
+            <option value="Pending">قيد المراجعة</option>
+            <option value="ModificationRequested">مطلوب تعديل</option>
+            <option value="Approved">معتمد</option>
+            <option value="Rejected">مرفوض</option>
+          </select>
+        </label>
+
+        <label class="filter-select-integrated">
+          <span class="filter-select-label">النوع:</span>
+          <select [value]="requestType()" (change)="setFilter('requestType', $event)">
+            <option value="">الكل</option>
+            <option value="CreateFamily">إنشاء عائلة</option>
+            <option value="AddFamilyMember">إضافة عضو</option>
+          </select>
+        </label>
+
+        @if (result(); as page) {
+          <div class="kpi-chip kpi-chip--total" title="إجمالي الطلبات">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span class="chip-label">الطلبات</span>
+            <span class="chip-count">{{ page.totalCount }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </app-page-header>
 
   @if (messages().length) {
     <div class="state error" role="alert">

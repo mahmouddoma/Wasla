@@ -59,6 +59,14 @@ export class SpecializationRequestsList {
     }, 350);
   }
 
+  protected clearSearch(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.model.set({ search: '' });
+    this.searchForm().reset();
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
   protected setFilter(filter: 'status' | 'type', event: Event): void {
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (filter === 'status') this.status.set(value as DoctorSpecializationRequestStatus | '');

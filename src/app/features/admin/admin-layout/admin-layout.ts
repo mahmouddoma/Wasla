@@ -1,4 +1,4 @@
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -8,7 +8,7 @@ import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@a
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterLink, RouterOutlet, LanguageSwitcher, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, LanguageSwitcher, TranslatePipe],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,6 +18,10 @@ export class AdminLayout {
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
   protected readonly isSidebarOpen = signal(false);
+  protected readonly isSidebarCollapsed = signal<boolean>(
+    typeof localStorage !== 'undefined' &&
+      localStorage.getItem('wasla_sidebar_collapsed') === 'true',
+  );
   protected readonly user = this.session.user;
   protected readonly canViewDoctors = computed(() =>
     this.session.hasPermission(PERMISSIONS.doctorsViewAll),
@@ -43,7 +47,11 @@ export class AdminLayout {
   });
   protected readonly userInitial = computed(() => {
     const name = this.user()?.userName?.trim();
-    return name ? name.charAt(0).toUpperCase() : 'A';
+    return name ? name.charAt(0).toUpperCase() : '';
+  });
+  protected readonly userRole = computed(() => {
+    const user = this.user();
+    return user?.roles.length ? user.roles.join('، ') : (user?.userType ?? '');
   });
 
   protected logout(): void {
@@ -55,11 +63,17 @@ export class AdminLayout {
     this.isSidebarOpen.update((open) => !open);
   }
 
-  protected closeSidebar(): void {
-    this.isSidebarOpen.set(false);
+  protected toggleSidebarCollapse(): void {
+    this.isSidebarCollapsed.update((collapsed) => {
+      const next = !collapsed;
+      try {
+        localStorage.setItem('wasla_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
   }
 
-  protected isCurrent(path: string): boolean {
-    return this.router.url.startsWith(path);
+  protected closeSidebar(): void {
+    this.isSidebarOpen.set(false);
   }
 }

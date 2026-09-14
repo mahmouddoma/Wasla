@@ -2,22 +2,119 @@
   display: block;
 }
 
-.page-header,
-.page-header__intro,
-.page-header__icon,
-.page-header__actions {
+.page-header {
+  position: relative;
+  overflow: hidden;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid rgba(11, 165, 160, 0.22);
+  border-radius: var(--radius-panel, 16px);
+  box-shadow:
+    0 4px 20px -2px rgba(12, 39, 66, 0.08),
+    0 1px 4px rgba(12, 39, 66, 0.04);
+  transition: all 0.25s ease;
 }
 
-.page-header {
-  min-height: 76px;
-  padding-block: 4px 18px;
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: linear-gradient(
+    to left,
+    var(--wasla-teal-500, #0ba5a0) 0%,
+    var(--wasla-teal-300, #5eead4) 45%,
+    transparent 85%
+  );
+  z-index: 3;
+  pointer-events: none;
+}
+
+:host-context([dir='ltr']) .page-header::before,
+[dir='ltr'] .page-header::before {
+  background: linear-gradient(
+    to right,
+    var(--wasla-teal-500, #0ba5a0) 0%,
+    var(--wasla-teal-300, #5eead4) 45%,
+    transparent 85%
+  );
+}
+
+/* ── Dynamic Medical Background Slideshow ─────────────────── */
+.page-header__bg-carousel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.page-header__bg-slide {
+  position: absolute;
+  inset: -6px;
+  background-size: cover;
+  background-position: left 25%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transform: scale(1.04);
+  transition:
+    opacity 1.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 7s ease-out;
+  filter: saturate(1.12) contrast(1.04);
+}
+
+:host-context([dir='ltr']) .page-header__bg-slide,
+[dir='ltr'] .page-header__bg-slide {
+  background-position: right 25%;
+}
+
+.page-header__bg-slide.active {
+  opacity: 0.50;
+  transform: scale(1);
+}
+
+.page-header__bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 30%,
+    rgba(255, 255, 255, 0.52) 65%,
+    rgba(255, 255, 255, 0.30) 100%
+  );
+  pointer-events: none;
+}
+
+:host-context([dir='ltr']) .page-header__bg-overlay,
+[dir='ltr'] .page-header__bg-overlay {
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 30%,
+    rgba(255, 255, 255, 0.52) 65%,
+    rgba(255, 255, 255, 0.30) 100%
+  );
+}
+
+.page-header__main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
+  min-height: 52px;
 }
 
 .page-header__intro {
+  display: flex;
+  align-items: center;
   min-width: 0;
   gap: 16px;
 }
@@ -26,12 +123,14 @@
   width: 52px;
   height: 52px;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
   justify-content: center;
   border-radius: 14px;
-  color: var(--color-teal-600);
-  background: var(--color-teal-50);
-  border: 1px solid var(--color-teal-100);
-  box-shadow: 0 2px 8px rgba(11, 165, 160, 0.08);
+  color: var(--wasla-teal-700, #097f7b);
+  background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+  border: 1.5px solid rgba(11, 165, 160, 0.28);
+  box-shadow: 0 3px 12px rgba(11, 165, 160, 0.14);
 }
 
 .page-header__icon svg {
@@ -39,7 +138,7 @@
   height: 26px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.85;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -50,23 +149,27 @@
 
 .page-header h1 {
   margin: 0 0 4px;
-  color: var(--color-text-primary);
-  font-size: clamp(1.65rem, 2.5vw, 2.15rem);
-  font-weight: 800;
-  line-height: 1.3;
+  color: var(--wasla-navy-950, #071c30);
+  font-size: clamp(1.5rem, 2.2vw, 1.95rem);
+  font-weight: 850;
+  line-height: 1.25;
   letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
 }
 
 .page-header p {
   max-width: 72ch;
   margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.5;
+  color: var(--wasla-slate, #475569);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
 }
 
 .page-header__actions {
+  display: flex;
+  align-items: center;
   flex: 0 0 auto;
   gap: 12px;
 }
@@ -75,18 +178,88 @@
   display: none;
 }
 
+.page-header__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 18px;
+  border-radius: var(--radius-control, 10px);
+  background: linear-gradient(
+    135deg,
+    var(--wasla-navy-800, #0c2742),
+    var(--wasla-navy-950, #04101d)
+  );
+  border: 1px solid var(--wasla-navy-700, #163d5e);
+  color: #ffffff;
+  font: 800 0.84rem/1 inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(7, 28, 48, 0.16);
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.page-header__action-btn svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+}
+
+.page-header__action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--wasla-teal-500, #0ba5a0);
+  box-shadow: 0 6px 18px rgba(7, 28, 48, 0.22);
+}
+
+.page-header__action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page-header__action-btn svg.spin {
+  animation: page-header-spin 0.85s linear infinite;
+}
+
+@keyframes page-header-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Integrated Deck (Search & KPI Chips) ─────────────────── */
+.page-header__deck,
+.page-header__stats {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--wasla-border-subtle, #eef2f6);
+  padding-top: 14px;
+}
+
+.page-header__deck:empty,
+.page-header__stats:empty {
+  display: none;
+  border-top: 0;
+  padding-top: 0;
+}
+
 @media (max-width: 720px) {
   .page-header {
-    min-height: 0;
-    padding-bottom: 16px;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .page-header__main {
     align-items: flex-start;
     flex-direction: column;
     gap: 14px;
   }
 
   .page-header__icon {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
   }
 
   .page-header__actions {

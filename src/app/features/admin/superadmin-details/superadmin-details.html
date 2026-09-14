@@ -1,127 +1,250 @@
-<section class="details-page">
-  <a class="details-back" routerLink="/admin/superadmins">العودة إلى قائمة المشرفين</a>
+<section class="details-page" [class.is-drawer]="isDrawer()">
+  @if (!isDrawer()) {
+    <a class="details-back" routerLink="/admin/superadmins">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+      <span>العودة إلى قائمة المشرفين</span>
+    </a>
+  }
 
   @if (apiMessages().length && !details()) {
     <div class="details-state error-state" role="alert">
-      <h1>تعذر تحميل بيانات المشرف</h1>
+      <div class="state-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <h2>تعذر تحميل بيانات المشرف</h2>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
       }
-      <div>
-        <a class="btn btn-outline-secondary" routerLink="/admin/superadmins">العودة للقائمة</a>
+      <div class="state-actions">
+        @if (!isDrawer()) {
+          <a class="btn btn-outline-secondary" routerLink="/admin/superadmins">العودة للقائمة</a>
+        }
         <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
       </div>
     </div>
   } @else if (isLoading() && !details()) {
-    <div class="details-state" role="status">
-      <span class="loading-indicator" aria-hidden="true"></span>
-      <h1>جارٍ تحميل بيانات المشرف…</h1>
+    <div class="details-state loading-state" role="status">
+      <div class="clinical-spinner" aria-hidden="true"></div>
+      <h2>جارٍ تحميل بيانات المشرف…</h2>
+      <p>يتم استرجاع السجلات الإدارية وبيانات الحساب من النظام.</p>
     </div>
   } @else if (details(); as admin) {
-    <header class="details-heading">
-      <div>
-        <div class="status-line">
-          <span [class.active]="admin.isActive" [class.inactive]="!admin.isActive">
-            {{ admin.isActive ? 'حساب نشط' : 'حساب غير نشط' }}
-          </span>
-          <span [class.deleted]="admin.isDeleted">
-            {{ admin.isDeleted ? 'سجل محذوف' : 'سجل موجود' }}
-          </span>
-          @if (isLoading()) {
-            <small role="status">جارٍ تحديث البيانات…</small>
+    <!-- Hero Profile Header Card -->
+    <header class="profile-hero-card">
+      <div class="hero-identity-row">
+        <div class="hero-avatar" aria-hidden="true">
+          <span>{{ getAdminInitial(admin) }}</span>
+          @if (admin.isActive && !admin.isDeleted) {
+            <span class="active-badge-dot" title="نشط"></span>
           }
         </div>
-        <h1>{{ admin.nameAr }}</h1>
-        @if (admin.nameEn) {
-          <p lang="en" dir="ltr">{{ admin.nameEn }}</p>
-        }
+
+        <div class="hero-info">
+          <div class="hero-badges-line">
+            <span
+              class="status-pill"
+              [class.pill-active]="admin.isActive && !admin.isDeleted"
+              [class.pill-inactive]="!admin.isActive && !admin.isDeleted"
+              [class.pill-deleted]="admin.isDeleted"
+            >
+              <span class="dot-indicator"></span>
+              {{ admin.isDeleted ? 'سجل محذوف' : admin.isActive ? 'حساب نشط' : 'حساب معطل' }}
+            </span>
+
+            @if (admin.isRootSuperAdmin) {
+              <span class="root-badge" title="حساب Root SuperAdmin محمي">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Master Admin</span>
+              </span>
+            } @else {
+              <span class="role-badge">SuperAdmin</span>
+            }
+
+            @if (isLoading()) {
+              <span class="refreshing-tag" role="status">
+                <span class="mini-spin"></span>
+                جارٍ التحديث…
+              </span>
+            }
+          </div>
+
+          <h1 class="hero-name">{{ admin.nameAr }}</h1>
+          @if (admin.nameEn) {
+            <p class="hero-name-en" lang="en" dir="ltr">{{ admin.nameEn }}</p>
+          }
+          <div class="hero-username" lang="en" dir="ltr">&#64;{{ admin.userName }}</div>
+        </div>
       </div>
-      <div class="heading-actions">
-        @if (canDelete()) {
-          <button
-            class="btn btn-outline-danger"
-            type="button"
-            [disabled]="isLoading() || isSubmitting()"
-            (click)="openAction('delete')"
-          >
-            حذف الحساب
-          </button>
-        }
-        @if (canDeactivate()) {
-          <button
-            class="btn btn-outline-danger"
-            type="button"
-            [disabled]="isLoading() || isSubmitting()"
-            (click)="openAction('deactivate')"
-          >
-            تعطيل الحساب
-          </button>
-        }
-        @if (canActivate()) {
-          <button
-            class="btn btn-primary"
-            type="button"
-            [disabled]="isLoading() || isSubmitting()"
-            (click)="openAction('activate')"
-          >
-            تفعيل الحساب
-          </button>
-        }
-        @if (canRestore()) {
-          <button
-            class="btn btn-primary"
-            type="button"
-            [disabled]="isLoading() || isSubmitting()"
-            (click)="openAction('restore')"
-          >
-            استعادة الحساب
-          </button>
-        }
+
+      <!-- Quick Action Toolbar -->
+      <div class="hero-actions-bar">
         @if (canUpdate() && !isEditing()) {
           <button
-            class="btn btn-outline-secondary"
+            class="btn btn-action-edit"
             type="button"
             [disabled]="isLoading()"
             (click)="startEditing()"
           >
-            تعديل البيانات
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span>تعديل البيانات</span>
+          </button>
+        }
+        @if (canActivate()) {
+          <button
+            class="btn btn-action-activate"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('activate')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>تفعيل الحساب</span>
+          </button>
+        }
+        @if (canDeactivate()) {
+          <button
+            class="btn btn-action-deactivate"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('deactivate')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+            <span>تعطيل الحساب</span>
+          </button>
+        }
+        @if (canDelete()) {
+          <button
+            class="btn btn-action-delete"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('delete')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6" />
+              <path
+                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              />
+            </svg>
+            <span>حذف الحساب</span>
+          </button>
+        }
+        @if (canRestore()) {
+          <button
+            class="btn btn-action-restore"
+            type="button"
+            [disabled]="isLoading() || isSubmitting()"
+            (click)="openAction('restore')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            <span>استعادة الحساب</span>
           </button>
         }
         <button
-          class="btn btn-outline-secondary"
+          class="btn btn-action-reload"
           type="button"
+          title="تحديث البيانات"
           [disabled]="isLoading()"
           (click)="load()"
         >
-          تحديث
+          <svg viewBox="0 0 24 24" [class.spin-active]="isLoading()" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+          <span>تحديث</span>
         </button>
       </div>
     </header>
 
+    <!-- Notices Alerts -->
     @if (admin.isRootSuperAdmin) {
-      <div class="protected-notice" role="status">
-        هذا هو حساب Root SuperAdmin وهو محمي؛ لا تتوفر له أي إجراءات تغيير أو حذف أو استعادة.
+      <div class="system-notice notice-root" role="status">
+        <div class="notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
+        <div class="notice-text">
+          <strong>حساب Root SuperAdmin محمي:</strong> هذا هو حساب المدير التنفيذي الرئيسي للنظام،
+          ولا تتوفر له عمليات التعديل أو التعطيل أو الحذف لضمان أمان النظام.
+        </div>
       </div>
     }
     @if (admin.isDeleted) {
-      <div class="deleted-notice" role="status">
-        هذا السجل محذوف مبدئيًا والحساب معطل. يمكن إعادته للعمل باستخدام استعادة الحساب.
+      <div class="system-notice notice-deleted" role="status">
+        <div class="notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <div class="notice-text">
+          <strong>هذا الحساب محذوف مبدئيًا:</strong> السجل معطل حاليًا عن تسجيل الدخول. يمكنك
+          استخدام زر "استعادة الحساب" بالأعلى لإعادته للخدمة فورًا.
+        </div>
       </div>
     }
     @if (successMessage()) {
-      <div class="success-notice" role="status">{{ successMessage() }}</div>
+      <div class="system-notice notice-success" role="status">
+        <div class="notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div class="notice-text">{{ successMessage() }}</div>
+      </div>
     }
     @if (apiMessages().length) {
-      <div class="error-notice" role="alert">
-        @for (message of apiMessages(); track message) {
-          <p>{{ message }}</p>
-        }
+      <div class="system-notice notice-error" role="alert">
+        <div class="notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <div class="notice-text">
+          @for (message of apiMessages(); track message) {
+            <p>{{ message }}</p>
+          }
+        </div>
       </div>
     }
 
+    <!-- Content: Edit Mode or View Mode -->
     @if (isEditing()) {
-      <section class="details-section edit-section">
-        <h2>تعديل بيانات المشرف</h2>
+      <div class="section-container edit-container">
+        <div class="section-header-row">
+          <div class="section-badge-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="section-title">تعديل بيانات المشرف</h2>
+            <p class="section-desc">تحديث الاسم وبيانات التواصل الخاصة بحساب المشرف</p>
+          </div>
+        </div>
+
         <app-superadmin-form
           mode="update"
           [record]="admin"
@@ -131,47 +254,168 @@
           (saved)="update($event)"
           (cancelled)="cancelEditing()"
         />
-      </section>
+      </div>
     } @else {
-      <section class="details-section">
-        <h2>بيانات الحساب</h2>
-        <dl class="information-grid">
-          <div>
-            <dt>اسم المستخدم</dt>
-            <dd lang="en" dir="ltr">{{ admin.userName }}</dd>
+      <!-- Details Section 1: Account Information -->
+      <div class="section-container">
+        <div class="section-header-row">
+          <div class="section-badge-icon teal" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
           </div>
           <div>
-            <dt>البريد الإلكتروني</dt>
-            <dd lang="en" dir="ltr">{{ admin.email }}</dd>
+            <h2 class="section-title">بيانات الحساب والهوية</h2>
+            <p class="section-desc">المعلومات الشخصية وبيانات التواصل المسجلة في النظام</p>
+          </div>
+        </div>
+
+        <div class="cards-grid">
+          <!-- Card: Username -->
+          <div class="detail-card">
+            <span class="card-label">اسم المستخدم</span>
+            <div class="card-val-row" lang="en" dir="ltr">
+              <span class="symbol-tag">@</span>
+              <strong class="val-text">{{ admin.userName }}</strong>
+            </div>
+          </div>
+
+          <!-- Card: Email -->
+          <div class="detail-card">
+            <span class="card-label">البريد الإلكتروني</span>
+            <div class="card-val-row" lang="en" dir="ltr">
+              <a [href]="'mailto:' + admin.email" class="val-link" [title]="admin.email">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <span>{{ admin.email }}</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Card: Phone -->
+          <div class="detail-card">
+            <span class="card-label">رقم الهاتف</span>
+            <div class="card-val-row" dir="ltr">
+              @if (admin.phoneNumber) {
+                <a [href]="'tel:' + admin.phoneNumber" class="val-link">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                    />
+                  </svg>
+                  <span>{{ admin.phoneNumber }}</span>
+                </a>
+              } @else {
+                <span class="empty-val">غير مسجل</span>
+              }
+            </div>
+          </div>
+
+          <!-- Card: Created On -->
+          <div class="detail-card">
+            <span class="card-label">تاريخ الإنشاء</span>
+            <div class="card-val-row">
+              <svg viewBox="0 0 24 24" class="val-icon" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <span class="val-text">{{ formatDate(admin.createdOnUtc) }}</span>
+            </div>
+          </div>
+
+          <!-- Card: Record Type -->
+          <div class="detail-card">
+            <span class="card-label">نوع السجل</span>
+            <div class="card-val-row">
+              <span class="type-pill" [class.type-root]="admin.isRootSuperAdmin">
+                {{ admin.isRootSuperAdmin ? 'Root SuperAdmin (رئيسي)' : 'SuperAdmin (عادي)' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Card: Login Status -->
+          <div class="detail-card">
+            <span class="card-label">حالة الدخول</span>
+            <div class="card-val-row">
+              <span
+                class="login-pill"
+                [class.allowed]="admin.isActive"
+                [class.forbidden]="!admin.isActive"
+              >
+                {{ admin.isActive ? 'مسموح بتسجيل الدخول' : 'معطل ومحظور' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details Section 2: Technical IDs & Metadata -->
+      <div class="section-container technical-container">
+        <div class="section-header-row">
+          <div class="section-badge-icon navy" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
           </div>
           <div>
-            <dt>رقم الهاتف</dt>
-            <dd dir="ltr">{{ admin.phoneNumber || 'غير مسجل' }}</dd>
+            <h2 class="section-title">معرفات النظام والربط</h2>
+            <p class="section-desc">المعرفات الرقمية الفريدة للربط الداخلي مع منظومة الهوية</p>
           </div>
-          <div>
-            <dt>تاريخ الإنشاء</dt>
-            <dd>{{ formatDate(admin.createdOnUtc) }}</dd>
+        </div>
+
+        <div class="ids-stack">
+          <!-- SuperAdmin ID -->
+          <div class="guid-card-box">
+            <div class="guid-meta">
+              <span class="guid-name">معرف المشرف (SuperAdmin ID)</span>
+              <code class="guid-code" dir="ltr">{{ admin.superAdminId }}</code>
+            </div>
+            <button
+              type="button"
+              class="btn-copy-guid"
+              (click)="copyText(admin.superAdminId)"
+              title="نسخ المعرف"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              <span>نسخ</span>
+            </button>
           </div>
-          <div>
-            <dt>نوع السجل</dt>
-            <dd>{{ admin.isRootSuperAdmin ? 'Root SuperAdmin' : 'SuperAdmin عادي' }}</dd>
+
+          <!-- Application User ID -->
+          <div class="guid-card-box">
+            <div class="guid-meta">
+              <span class="guid-name">معرف حساب المستخدم (ApplicationUser ID)</span>
+              <code class="guid-code" dir="ltr">{{ admin.applicationUserId }}</code>
+            </div>
+            <button
+              type="button"
+              class="btn-copy-guid"
+              (click)="copyText(admin.applicationUserId)"
+              title="نسخ المعرف"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              <span>نسخ</span>
+            </button>
           </div>
-          <div>
-            <dt>حالة الدخول</dt>
-            <dd>{{ admin.isActive ? 'مسموح' : 'معطل' }}</dd>
-          </div>
-          <div>
-            <dt>معرّف SuperAdmin</dt>
-            <dd class="technical-value">{{ admin.superAdminId }}</dd>
-          </div>
-          <div>
-            <dt>معرّف المستخدم</dt>
-            <dd class="technical-value">{{ admin.applicationUserId }}</dd>
-          </div>
-        </dl>
-      </section>
+        </div>
+      </div>
     }
 
+    <!-- Confirmation Dialog -->
     <app-confirmation-dialog
       dialogId="superadmin-account-action-dialog"
       [title]="actionDialog().title"

@@ -46,6 +46,53 @@ export class DoctorOnboarding {
         }).format(date);
   });
 
+  protected readonly statusIllustration = computed(() => {
+    const currentStatus = this.status()?.approvalStatus;
+    switch (currentStatus) {
+      case 'Suspended':
+        return '/SVG-AVATAR/Medical prescription-pana.svg';
+      case 'Pending':
+        return '/SVG-AVATAR/Online Doctor-pana.svg';
+      case 'Approved':
+        return '/SVG-AVATAR/Doctors-cuate.svg';
+      case 'Rejected':
+        return '/SVG-AVATAR/Medicine-pana.svg';
+      default:
+        return '/SVG-AVATAR/Medical prescription-pana.svg';
+    }
+  });
+
+  protected readonly statusBadge = computed(() => {
+    const currentStatus = this.status()?.approvalStatus;
+    switch (currentStatus) {
+      case 'Suspended':
+        return {
+          label: 'حساب معلّق مؤقتًا',
+          tone: 'suspended',
+        };
+      case 'Pending':
+        return {
+          label: 'قيد المراجعة والتدقيق',
+          tone: 'pending',
+        };
+      case 'Approved':
+        return {
+          label: 'حساب معتمد وموثّق',
+          tone: 'approved',
+        };
+      case 'Rejected':
+        return {
+          label: 'طلب غير معتمد',
+          tone: 'rejected',
+        };
+      default:
+        return {
+          label: 'حالة الحساب',
+          tone: 'default',
+        };
+    }
+  });
+
   constructor() {
     void this.load();
   }

@@ -1,19 +1,62 @@
 <section class="management-page">
   <app-page-header
     heading="الأدوار والصلاحيات"
-    description="راجع أدوار النظام وافتح كل دور لإدارة الصلاحيات المسندة إليه."
+    description="راجع أدوار النظام وافتح كل دور لإدارة الصلاحيات المسندة إليه في لوحة جانبية سلسة."
     icon="roles"
   >
-    @if (roles()) {
-      <div pageHeaderActions class="page-header-actions">
-        <span class="result-count">{{ roles()!.length }} دور</span>
+    <div pageHeaderDeck class="header-control-grid">
+      <!-- Search Input -->
+      <div class="search-box-wrap">
+        <div class="search-input-box-integrated">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            id="roles-search-input"
+            type="text"
+            role="searchbox"
+            enterkeyhint="search"
+            autocomplete="off"
+            placeholder="ابحث في أدوار النظام…"
+            [value]="searchText()"
+            (input)="onSearchInput($event)"
+          />
+          @if (searchText()) {
+            <button
+              type="button"
+              class="btn-clear-search-integrated"
+              aria-label="مسح البحث"
+              (click)="clearSearch()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          }
+        </div>
       </div>
-    }
+
+      <!-- Roles Stat Chip -->
+      @if (roles(); as allRoles) {
+        <div class="kpi-chips-cluster" aria-label="إحصائيات الأدوار">
+          <div class="kpi-chip kpi-chip--total" title="إجمالي الأدوار المسجلة في النظام">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="11" rx="2" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+            </svg>
+            <span class="chip-label">أدوار النظام</span>
+            <span class="chip-count">{{ allRoles.length }}</span>
+          </div>
+        </div>
+      }
+    </div>
   </app-page-header>
 
   @if (apiMessages().length) {
     <div class="state error" role="alert">
-      <img class="state-illustration" src="/SVG-AVATAR/Doctors-rafiki.svg" alt="" />
+      <img class="state-illustration" src="/SVG-AVATAR/Doctors-rafiki.svg" alt="" loading="lazy" decoding="async" />
       <h2>تعذر تحميل الأدوار</h2>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
@@ -27,41 +70,78 @@
       <span class="roles-loader" aria-hidden="true"></span>
       <h2>جارٍ تحميل الأدوار…</h2>
     </div>
-  } @else if (roles(); as roleItems) {
+  } @else if (filteredRoles(); as roleItems) {
     @if (roleItems.length) {
-      <div class="roles-list">
-        <div class="roles-list-header" aria-hidden="true">
-          <span>اسم الدور</span><span>النوع</span><span>المعرّف</span><span></span>
+      <div class="data-list roles-list">
+        <div class="data-header" aria-hidden="true">
+          <span>اسم الدور</span>
+          <span>النوع</span>
+          <span>المعرّف</span>
+          <span>الإجراء</span>
         </div>
         @for (role of roleItems; track role.id) {
-          <article class="role-row">
-            <div class="role-name">
-              <a [routerLink]="['/admin/roles', role.id]" lang="en" dir="ltr">{{ role.name }}</a>
+          <article
+            class="data-row role-row clickable-row"
+            (click)="openRoleDrawer(role)"
+            title="انقر لفتح صلاحيات هذا الدور في اللوحة الجانبية"
+          >
+            <div class="role-name identity">
+              <span class="role-name-text" lang="en" dir="ltr">{{ role.name }}</span>
               <small>الاسم كما رجع من النظام</small>
             </div>
             <div class="role-type">
-              <span class="mobile-label">النوع</span>
-              <strong>{{ role.isSystemRole ? 'System Role' : 'Role' }}</strong>
-              @if (role.isSystemRole) {
-                <small>غير قابل لإعادة التسمية أو الحذف</small>
-              }
+              <span class="badge-state" [class.system-role]="role.isSystemRole">
+                {{ role.isSystemRole ? 'System Role' : 'Custom Role' }}
+              </span>
             </div>
             <div class="role-id">
               <span class="mobile-label">المعرّف</span>
               <code>{{ role.id }}</code>
             </div>
-            <a class="btn btn-outline-secondary" [routerLink]="['/admin/roles', role.id]">
-              عرض الصلاحيات
-            </a>
+            <div class="role-actions">
+              <button
+                type="button"
+                class="btn btn-action-drawer"
+                (click)="openRoleDrawer(role); $event.stopPropagation()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span>إدارة الصلاحيات</span>
+              </button>
+            </div>
           </article>
         }
       </div>
     } @else {
       <div class="state">
-        <img class="state-illustration" src="/SVG-AVATAR/Doctors-rafiki.svg" alt="" />
-        <h2>لا توجد أدوار</h2>
-        <p>لم يرجع الخادم أي أدوار متاحة لهذا الحساب.</p>
+        <img class="state-illustration" src="/SVG-AVATAR/Doctors-rafiki.svg" alt="" loading="lazy" decoding="async" />
+        <h2>لا توجد أدوار مطابقة للبحث</h2>
+        <p>لم نعثر على دور مطابق لعبارة "{{ searchText() }}".</p>
       </div>
     }
   }
+
+  <!-- Role Details Slide-over Drawer -->
+  <app-side-drawer
+    [opened]="selectedRole() !== null"
+    [title]="selectedRole() ? 'صلاحيات ' + selectedRole()!.name : 'صلاحيات الدور'"
+    [description]="
+      selectedRole()?.isSystemRole
+        ? 'دور نظام أساسي — استعراض وتحديث الصلاحيات المسندة'
+        : 'دور مخصص — استعراض وتحديث الصلاحيات المسندة'
+    "
+    width="880px"
+    (closed)="closeRoleDrawer()"
+  >
+    @if (selectedRole(); as activeRole) {
+      <app-role-details
+        [roleIdInput]="activeRole.id"
+        [isDrawer]="true"
+        (saved)="handleRoleSaved()"
+        (closed)="closeRoleDrawer()"
+      />
+    }
+  </app-side-drawer>
 </section>

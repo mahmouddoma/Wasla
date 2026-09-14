@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
@@ -11,14 +21,79 @@ import {
   SecurityRole,
   isRootOnlyPermissionName,
 } from '../../../core/security-governance/security-governance.models';
+import { isGuid } from '../../../core/validation/guid';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 
-interface PermissionGroup {
+export interface PermissionGroup {
   name: string;
   permissions: SecurityPermission[];
 }
 
-const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MODULE_ARABIC_NAMES: Record<string, string> = {
+  DoctorOnboarding: 'تأهيل الأطباء',
+  DoctorPracticeBranding: 'الهوية والمظهر للطبيب',
+  DoctorPracticeConfiguration: 'إعدادات ممارسة الطبيب',
+  DoctorPracticeLocation: 'مواقع وعيادات الطبيب',
+  DoctorSpecializationRequests: 'طلبات تخصصات الأطباء',
+  MedicalSpecializations: 'التخصصات الطبية',
+  SuperAdmins: 'إدارة المشرفين',
+  Roles: 'الأدوار والصلاحيات',
+  Permissions: 'كتالوج الصلاحيات',
+  Patients: 'سجلات المرضى',
+  Families: 'العلاقات العائلية',
+  DoctorProfile: 'الملف الشخصي للطبيب',
+  Reception: 'الاستقبال والمواعيد',
+  SecurityGovernance: 'الحوكمة والأمان',
+  DoctorPracticeSchedule: 'جدول مواعيد الطبيب',
+  DoctorPracticeSegments: 'شرائح ممارسة الطبيب',
+  DoctorPracticePricing: 'تسعير ممارسة الطبيب',
+  DoctorPractices: 'ممارسات الأطباء',
+  DoctorSpecializations: 'تخصصات الأطباء',
+  Doctors: 'الأطباء',
+  Specializations: 'التخصصات',
+  PatientContacts: 'جهات اتصال المرضى',
+  PatientProfile: 'ملف المريض',
+  PracticePayments: 'المدفوعات',
+  PracticeQueue: 'قائمة الانتظار',
+  PracticeReservations: 'الحجوزات',
+  PracticeWalkIns: 'الزيارات المباشرة',
+  ReceptionAssignments: 'مهام الاستقبال',
+  ReceptionUsers: 'مستخدمو الاستقبال',
+  RolePermissions: 'صلاحيات الأدوار',
+  FamilyRelationshipRequests: 'طلبات العلاقات العائلية',
+};
+
+const ACTION_ARABIC_NAMES: Record<string, string> = {
+  View: 'عرض',
+  ViewOwn: 'عرض (خاص)',
+  ViewAll: 'عرض الكل',
+  ViewDetails: 'عرض التفاصيل',
+  ViewAssisted: 'عرض مساعد',
+  Manage: 'إدارة',
+  ManageOwn: 'إدارة (خاص)',
+  Create: 'إنشاء',
+  Update: 'تعديل',
+  Delete: 'حذف',
+  Activate: 'تفعيل',
+  ActivateOwn: 'تفعيل (خاص)',
+  Deactivate: 'تعطيل',
+  Suspend: 'إيقاف',
+  Approve: 'موافقة',
+  Reject: 'رفض',
+  Restore: 'استعادة',
+  Record: 'تسجيل',
+  Register: 'تسجيل مريض',
+  SearchBasic: 'بحث أساسي',
+  SubmitOwn: 'إرسال (خاص)',
+  ResubmitOwn: 'إعادة إرسال (خاص)',
+  ResubmitAssisted: 'إعادة إرسال مساعد',
+  RequestModification: 'طلب تعديل',
+  Adjust: 'ضبط',
+};
+
+function splitCamelCase(str: string): string {
+  return str.replace(/([a-z])([A-Z])/g, '$1 $2');
+}
 
 @Component({
   selector: 'app-role-details',
@@ -30,7 +105,13 @@ const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 export class RoleDetails {
   private readonly api = inject(SecurityGovernanceApi);
   private readonly session = inject(AuthSession);
-  private readonly roleId = inject(ActivatedRoute).snapshot.paramMap.get('roleId') ?? '';
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly routeRoleId = this.route?.snapshot.paramMap.get('roleId') ?? '';
+
+  readonly roleIdInput = input<string | null>(null);
+  readonly isDrawer = input(false);
+  readonly closed = output<void>();
+  readonly saved = output<RolePermissionsResponse>();
 
   protected readonly role = signal<SecurityRole | null>(null);
   protected readonly current = signal<RolePermissionsResponse | null>(null);
@@ -44,25 +125,57 @@ export class RoleDetails {
   protected readonly saveMessages = signal<string[]>([]);
   protected readonly successMessage = signal('');
   protected readonly confirmationOpen = signal(false);
+  protected readonly permissionSearch = signal('');
+  protected readonly filterMode = signal<'all' | 'selected' | 'unselected'>('all');
+  protected readonly idCopied = signal(false);
+
   protected readonly canViewCatalog = this.session.hasPermission(PERMISSIONS.permissionsView);
   protected readonly hasManagePermission = this.session.hasPermission(
     PERMISSIONS.rolePermissionsManage,
   );
+
+  protected readonly activeRoleId = computed(() => this.roleIdInput() || this.routeRoleId);
+
   protected readonly hasRootContext = computed(() => {
     const user = this.session.user();
     return user?.userType === 'SuperAdmin' && user.permissions.some(isRootOnlyPermissionName);
   });
+
   protected readonly canManage = computed(() => {
     const role = this.role();
     if (!role || !this.canViewCatalog || !this.hasManagePermission) return false;
     return role.name !== 'SuperAdmin' || this.hasRootContext();
   });
-  protected readonly permissionGroups = computed<PermissionGroup[]>(() => {
+
+  protected readonly totalCatalogCount = computed(() => this.catalog()?.length ?? 0);
+  protected readonly selectedCount = computed(() => this.selectedIds().size);
+  protected readonly unselectedCount = computed(() =>
+    Math.max(0, this.totalCatalogCount() - this.selectedCount()),
+  );
+
+  protected readonly filteredPermissionGroups = computed<PermissionGroup[]>(() => {
+    const query = this.permissionSearch().trim().toLowerCase();
+    const mode = this.filterMode();
+    const selected = this.selectedIds();
     const groups = new Map<string, SecurityPermission[]>();
+
     for (const permission of this.catalog() ?? []) {
+      const isSel = selected.has(permission.id);
+      if (mode === 'selected' && !isSel) continue;
+      if (mode === 'unselected' && isSel) continue;
+
+      if (query) {
+        const matchName = permission.name.toLowerCase().includes(query);
+        const matchId = permission.id.toLowerCase().includes(query);
+        const groupKey = permission.name.split('.')[0] || '';
+        const matchArabic = (MODULE_ARABIC_NAMES[groupKey] || '').toLowerCase().includes(query);
+        if (!matchName && !matchId && !matchArabic) continue;
+      }
+
       const groupName = permission.name.split('.')[0] || 'Other';
       groups.set(groupName, [...(groups.get(groupName) ?? []), permission]);
     }
+
     return [...groups.entries()]
       .sort(([first], [second]) => first.localeCompare(second, 'en'))
       .map(([name, permissions]) => ({
@@ -72,7 +185,7 @@ export class RoleDetails {
         ),
       }));
   });
-  protected readonly selectedCount = computed(() => this.selectedIds().size);
+
   protected readonly isDirty = computed(() => {
     const original = new Set(
       (this.current()?.permissions ?? []).map((permission) => permission.id),
@@ -80,12 +193,14 @@ export class RoleDetails {
     const selected = this.selectedIds();
     return original.size !== selected.size || [...original].some((id) => !selected.has(id));
   });
+
   protected readonly missingCatalogPermissions = computed(() => {
     const catalogIds = new Set((this.catalog() ?? []).map((permission) => permission.id));
     return (this.current()?.permissions ?? []).filter(
       (permission) => !catalogIds.has(permission.id),
     );
   });
+
   protected readonly managementBlockReason = computed(() => {
     if (!this.canViewCatalog)
       return 'لا يملك الحساب صلاحية Permissions.View لتحميل كتالوج الصلاحيات.';
@@ -97,17 +212,30 @@ export class RoleDetails {
     return '';
   });
 
+  private loadedRoleId = '';
+
   constructor() {
-    if (!GUID_PATTERN.test(this.roleId)) {
-      this.isLoading.set(false);
-      this.apiMessages.set(['معرّف الدور غير صالح. ارجع إلى قائمة الأدوار واختر الدور من جديد.']);
-      return;
-    }
-    void this.load();
+    effect(() => {
+      const id = this.activeRoleId();
+      untracked(() => {
+        if (!id) return;
+        if (id === this.loadedRoleId) return;
+        if (!isGuid(id)) {
+          this.isLoading.set(false);
+          this.apiMessages.set([
+            'معرّف الدور غير صالح. ارجع إلى قائمة الأدوار واختر الدور من جديد.',
+          ]);
+          return;
+        }
+        this.loadedRoleId = id;
+        void this.load(id);
+      });
+    });
   }
 
-  protected async load(): Promise<void> {
-    if (!GUID_PATTERN.test(this.roleId)) return;
+  protected async load(targetId?: string): Promise<void> {
+    const id = targetId || this.activeRoleId();
+    if (!id || !isGuid(id)) return;
     this.isLoading.set(true);
     this.notFound.set(false);
     this.apiMessages.set([]);
@@ -115,8 +243,8 @@ export class RoleDetails {
     this.successMessage.set('');
     try {
       const [role, current] = await Promise.all([
-        firstValueFrom(this.api.roleDetails(this.roleId)),
-        firstValueFrom(this.api.rolePermissions(this.roleId)),
+        firstValueFrom(this.api.roleDetails(id)),
+        firstValueFrom(this.api.rolePermissions(id)),
       ]);
       this.role.set(role);
       this.current.set(current);
@@ -154,6 +282,77 @@ export class RoleDetails {
     return this.canManage() && permission.isSystemPermission && !this.isRootOnly(permission);
   }
 
+  protected getModuleArabic(groupName: string): string {
+    return MODULE_ARABIC_NAMES[groupName] || groupName;
+  }
+
+  protected getActionName(permissionName: string): string {
+    const parts = permissionName.split('.');
+    const raw = parts.length > 1 ? parts.slice(1).join('.') : permissionName;
+    return splitCamelCase(raw);
+  }
+
+  protected getActionArabic(permissionName: string): string {
+    const parts = permissionName.split('.');
+    const action = parts.length > 1 ? parts.slice(1).join('.') : permissionName;
+    return ACTION_ARABIC_NAMES[action] || '';
+  }
+
+  protected getGroupSelectedCount(group: PermissionGroup): number {
+    const selected = this.selectedIds();
+    return group.permissions.filter((p) => selected.has(p.id)).length;
+  }
+
+  protected isGroupFullySelected(group: PermissionGroup): boolean {
+    const assignable = group.permissions.filter((p) => this.isAssignable(p));
+    if (!assignable.length) return false;
+    return assignable.every((p) => this.isSelected(p.id));
+  }
+
+  protected toggleGroupSelection(group: PermissionGroup): void {
+    if (!this.canManage() || this.isSaving()) return;
+    const assignable = group.permissions.filter((p) => this.isAssignable(p));
+    const allSelected = this.isGroupFullySelected(group);
+    const next = new Set(this.selectedIds());
+    for (const p of assignable) {
+      if (allSelected) {
+        next.delete(p.id);
+      } else {
+        next.add(p.id);
+      }
+    }
+    this.selectedIds.set(next);
+    this.successMessage.set('');
+  }
+
+  protected selectAllFiltered(): void {
+    if (!this.canManage() || this.isSaving()) return;
+    const next = new Set(this.selectedIds());
+    for (const group of this.filteredPermissionGroups()) {
+      for (const p of group.permissions) {
+        if (this.isAssignable(p)) {
+          next.add(p.id);
+        }
+      }
+    }
+    this.selectedIds.set(next);
+    this.successMessage.set('');
+  }
+
+  protected deselectAllFiltered(): void {
+    if (!this.canManage() || this.isSaving()) return;
+    const next = new Set(this.selectedIds());
+    for (const group of this.filteredPermissionGroups()) {
+      for (const p of group.permissions) {
+        if (this.isAssignable(p)) {
+          next.delete(p.id);
+        }
+      }
+    }
+    this.selectedIds.set(next);
+    this.successMessage.set('');
+  }
+
   protected togglePermission(permission: SecurityPermission, event: Event): void {
     if (!this.isAssignable(permission) || this.isSaving()) return;
     const selected = new Set(this.selectedIds());
@@ -162,6 +361,27 @@ export class RoleDetails {
       : selected.delete(permission.id);
     this.selectedIds.set(selected);
     this.successMessage.set('');
+  }
+
+  protected onSearchInput(event: Event): void {
+    this.permissionSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  protected clearSearch(): void {
+    this.permissionSearch.set('');
+  }
+
+  protected setFilterMode(mode: 'all' | 'selected' | 'unselected'): void {
+    this.filterMode.set(mode);
+  }
+
+  protected copyRoleId(): void {
+    const id = this.role()?.id;
+    if (id && navigator.clipboard) {
+      void navigator.clipboard.writeText(id);
+      this.idCopied.set(true);
+      setTimeout(() => this.idCopied.set(false), 2000);
+    }
   }
 
   protected openConfirmation(): void {
@@ -185,19 +405,21 @@ export class RoleDetails {
   }
 
   protected async save(): Promise<void> {
-    if (!this.canManage() || !this.isDirty() || this.isSaving()) return;
+    const id = this.activeRoleId();
+    if (!id || !this.canManage() || !this.isDirty() || this.isSaving()) return;
     this.isSaving.set(true);
     this.saveMessages.set([]);
     try {
       const response = await firstValueFrom(
-        this.api.replaceRolePermissions(this.roleId, {
+        this.api.replaceRolePermissions(id, {
           permissionIds: [...this.selectedIds()],
         }),
       );
       this.current.set(response);
       this.selectedIds.set(new Set(response.permissions.map((permission) => permission.id)));
       this.confirmationOpen.set(false);
-      this.successMessage.set('تم استبدال صلاحيات الدور ومزامنة الاختيارات من استجابة الخادم.');
+      this.successMessage.set('تم استبدال وحفظ صلاحيات الدور بنجاح.');
+      this.saved.emit(response);
     } catch (error) {
       const parsed = parseApiErrors(error);
       this.saveMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);

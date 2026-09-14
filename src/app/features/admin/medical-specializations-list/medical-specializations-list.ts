@@ -7,20 +7,24 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, form, maxLength } from '@angular/forms/signals';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { MedicalSpecializationsApi } from '../../../core/medical-specializations/medical-specializations-api';
-import { MedicalSpecializationsPage } from '../../../core/medical-specializations/medical-specializations.models';
+import {
+  MedicalSpecialization,
+  MedicalSpecializationsPage,
+} from '../../../core/medical-specializations/medical-specializations.models';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import { MedicalSpecializationDetails } from '../medical-specialization-details/medical-specialization-details';
 
 type BooleanFilter = '' | 'true' | 'false';
 
 @Component({
   selector: 'app-medical-specializations-list',
-  imports: [FormField, RouterLink, PageHeader],
+  imports: [FormField, PageHeader, SideDrawer, MedicalSpecializationDetails],
   templateUrl: './medical-specializations-list.html',
   styleUrls: ['../management-list.css', './medical-specializations-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,6 +50,8 @@ export class MedicalSpecializationsList {
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.pageSize)),
   );
+  protected readonly selectedItem = signal<{ id: string | null; nameAr: string } | null>(null);
+  protected readonly isDrawerOpen = signal(false);
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -60,6 +66,14 @@ export class MedicalSpecializationsList {
       this.pageNumber.set(1);
       void this.load();
     }, 350);
+  }
+
+  protected clearSearch(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.model.set({ search: '' });
+    this.searchForm().reset();
+    this.pageNumber.set(1);
+    void this.load();
   }
 
   protected setFilter(filter: 'active' | 'deleted', event: Event): void {
@@ -104,5 +118,24 @@ export class MedicalSpecializationsList {
 
   private toBoolean(value: BooleanFilter): boolean | undefined {
     return value === '' ? undefined : value === 'true';
+  }
+
+  protected openDrawer(item: { id: string; nameAr: string }): void {
+    this.selectedItem.set(item);
+    this.isDrawerOpen.set(true);
+  }
+
+  protected openCreateDrawer(): void {
+    this.selectedItem.set(null);
+    this.isDrawerOpen.set(true);
+  }
+
+  protected closeDrawer(): void {
+    this.isDrawerOpen.set(false);
+    this.selectedItem.set(null);
+  }
+
+  protected handleSaved(): void {
+    void this.load();
   }
 }

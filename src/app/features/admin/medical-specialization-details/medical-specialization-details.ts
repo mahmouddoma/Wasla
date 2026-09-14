@@ -1,5 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormField, form, max, maxLength, min, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -8,6 +18,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { MedicalSpecializationsApi } from '../../../core/medical-specializations/medical-specializations-api';
 import { MedicalSpecialization } from '../../../core/medical-specializations/medical-specializations.models';
+import { ToastService } from '../../../core/notifications/toast.service';
 
 type LifecycleAction = 'activate' | 'deactivate' | 'delete' | 'restore';
 
@@ -21,11 +32,18 @@ type LifecycleAction = 'activate' | 'deactivate' | 'delete' | 'restore';
 export class MedicalSpecializationDetails {
   private readonly api = inject(MedicalSpecializationsApi);
   private readonly session = inject(AuthSession);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly id = this.route.snapshot.paramMap.get('id');
+  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
+  private readonly routeId = this.route?.snapshot.paramMap.get('id') ?? null;
 
-  protected readonly isCreate = this.id === null;
+  readonly specIdInput = input<string | null>(null);
+  readonly isDrawer = input(false);
+  readonly saved = output<MedicalSpecialization>();
+  readonly closed = output<void>();
+
+  protected readonly activeId = computed(() => this.specIdInput() || this.routeId);
+  protected readonly isCreate = computed(() => this.activeId() === null);
   protected readonly details = signal<MedicalSpecialization | null>(null);
   protected readonly model = signal({
     nameAr: '',
@@ -43,19 +61,42 @@ export class MedicalSpecializationDetails {
     min(field.sortOrder, 0, { message: 'الترتيب لا يمكن أن يكون سالبًا.' });
     max(field.sortOrder, 2147483647, { message: 'قيمة الترتيب غير صالحة.' });
   });
-  protected readonly isLoading = signal(!this.isCreate);
+  protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
   protected readonly canEdit = computed(() =>
-    this.isCreate
+    this.isCreate()
       ? this.session.hasPermission(PERMISSIONS.specializationsCreate)
       : this.session.hasPermission(PERMISSIONS.specializationsUpdate) &&
         this.details()?.isDeleted === false,
   );
 
+  private loadedId = '';
+
   constructor() {
-    if (this.id) void this.load();
+    effect(() => {
+      const id = this.activeId();
+      untracked(() => {
+        if (!id) {
+          this.loadedId = '';
+          this.details.set(null);
+          this.model.set({
+            nameAr: '',
+            nameEn: '',
+            descriptionAr: '',
+            descriptionEn: '',
+            sortOrder: 0,
+          });
+          this.detailsForm().reset();
+          this.clearErrors();
+          return;
+        }
+        if (id === this.loadedId) return;
+        this.loadedId = id;
+        void this.load(id);
+      });
+    });
   }
 
   protected async save(event: Event): Promise<void> {
@@ -65,6 +106,7 @@ export class MedicalSpecializationDetails {
       this.isSubmitting.set(true);
       this.clearErrors();
       const value = this.model();
+      const id = this.activeId();
       const request = {
         nameAr: value.nameAr.trim(),
         nameEn: value.nameEn.trim() || null,
@@ -73,22 +115,34 @@ export class MedicalSpecializationDetails {
         sortOrder: value.sortOrder,
       };
       try {
-        const response = this.isCreate
+        const creating = this.isCreate();
+        const response = creating
           ? await firstValueFrom(this.api.create(request))
           : await firstValueFrom(
-              this.api.update(this.id!, { ...request, rowVersion: this.details()!.rowVersion }),
+              this.api.update(id!, { ...request, rowVersion: this.details()!.rowVersion }),
             );
         this.details.set(response);
-        if (this.isCreate) {
-          await this.router.navigate(['/admin/medical-specializations', response.id], {
-            replaceUrl: true,
-          });
+        this.saved.emit(response);
+        this.toast.success(
+          creating
+            ? 'تمت إضافة التخصص الطبي بنجاح.'
+            : 'تم حفظ تعديلات التخصص الطبي بنجاح.',
+        );
+        if (creating) {
+          if (this.isDrawer()) {
+            this.loadedId = response.id;
+            this.populate(response);
+          } else if (this.router) {
+            await this.router.navigate(['/admin/medical-specializations', response.id], {
+              replaceUrl: true,
+            });
+          }
         } else {
           this.populate(response);
         }
       } catch (error) {
         this.handleError(error);
-        if (error instanceof HttpErrorResponse && error.status === 409 && !this.isCreate) {
+        if (error instanceof HttpErrorResponse && error.status === 409 && !this.isCreate()) {
           await this.load();
         }
       } finally {
@@ -128,6 +182,8 @@ export class MedicalSpecializationDetails {
       );
       this.details.set(response);
       this.populate(response);
+      this.saved.emit(response);
+      this.toast.success(this.lifecycleSuccessMessage(action));
     } catch (error) {
       this.handleError(error);
       if (error instanceof HttpErrorResponse && error.status === 409) await this.load();
@@ -136,16 +192,24 @@ export class MedicalSpecializationDetails {
     }
   }
 
+  protected clientError(
+    field: 'nameAr' | 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'sortOrder',
+  ): string {
+    const f = this.detailsForm[field]();
+    return f.touched() && f.errors().length ? (f.errors()[0] as { message: string }).message : '';
+  }
+
   protected serverError(field: string): string {
     return this.fieldErrors()[field.toLowerCase()]?.[0] ?? '';
   }
 
-  private async load(): Promise<void> {
-    if (!this.id) return;
+  private async load(targetId?: string): Promise<void> {
+    const id = targetId || this.activeId();
+    if (!id) return;
     this.isLoading.set(true);
     this.clearErrors();
     try {
-      const response = await firstValueFrom(this.api.details(this.id));
+      const response = await firstValueFrom(this.api.details(id));
       this.details.set(response);
       this.populate(response);
     } catch (error) {
@@ -175,5 +239,14 @@ export class MedicalSpecializationDetails {
     const parsed = parseApiErrors(error);
     this.apiMessages.set(parsed.messages);
     this.fieldErrors.set(parsed.fields);
+  }
+
+  private lifecycleSuccessMessage(action: LifecycleAction): string {
+    return {
+      activate: 'تم تفعيل التخصص الطبي بنجاح.',
+      deactivate: 'تم تعطيل التخصص الطبي بنجاح.',
+      delete: 'تم حذف التخصص الطبي مبدئيًا.',
+      restore: 'تمت استعادة التخصص الطبي بنجاح.',
+    }[action];
   }
 }

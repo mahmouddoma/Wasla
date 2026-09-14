@@ -4,7 +4,7 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 import { LanguageService } from '../../core/i18n/language.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LanguageSwitcher } from '../../shared/components/language-switcher/language-switcher';
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/core';
 
 @Component({
   selector: 'app-workspace',
@@ -18,6 +18,7 @@ export class Workspace {
   protected readonly user = inject(AuthSession).user;
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+
   protected readonly canManageDoctorProfile =
     this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
     this.session.hasPermission(PERMISSIONS.doctorPracticeLocationManageOwn);
@@ -38,6 +39,40 @@ export class Workspace {
     this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewOwn) ||
     this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsCreate) ||
     this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsResubmitOwn);
+
+  protected readonly hasAnyModules = computed(
+    () =>
+      this.canManageDoctorProfile ||
+      this.canManagePatients ||
+      this.canManageAssistedFamilyRequests ||
+      this.canManagePatientProfile ||
+      this.canManageFamily,
+  );
+
+  protected readonly illustrationPath = computed(() => {
+    const type = this.user()?.userType;
+    if (type === 'Doctor') return '/SVG-AVATAR/Online Doctor-rafiki.svg';
+    if (type === 'Patient') return '/SVG-AVATAR/Medical prescription-rafiki.svg';
+    return '/SVG-AVATAR/Doctors-bro.svg';
+  });
+
+  protected readonly roleBadge = computed(() => {
+    const type = this.user()?.userType;
+    const isAr = this.langService.currentLang() === 'ar';
+    switch (type) {
+      case 'Doctor':
+        return { label: isAr ? 'طبيب ممارس' : 'Practicing Doctor', icon: 'stethoscope' };
+      case 'Reception':
+        return { label: isAr ? 'موظف استقبال' : 'Receptionist', icon: 'desk' };
+      case 'Patient':
+        return { label: isAr ? 'مريض معتمد' : 'Verified Patient', icon: 'user' };
+      case 'SuperAdmin':
+        return { label: isAr ? 'مشرف عام' : 'Super Admin', icon: 'shield' };
+      default:
+        return { label: type ?? '', icon: 'user' };
+    }
+  });
+
   protected logout(): void {
     this.session.clear();
     void this.router.navigate(['/login']);

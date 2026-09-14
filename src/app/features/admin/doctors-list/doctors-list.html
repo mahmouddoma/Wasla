@@ -1,260 +1,57 @@
 <section class="management-page">
-  <!-- Page Header -->
+  <!-- Page Header with Integrated KPI Cards -->
   <app-page-header
     heading="إدارة الأطباء"
     description="إدارة حسابات الأطباء، التراخيص، الاعتماد والتوثيق."
     icon="doctors"
+    actionLabel="تحديث البيانات"
+    actionIcon="refresh"
+    [actionDisabled]="isLoading()"
+    [actionLoading]="isLoading()"
+    (actionClicked)="loadMetrics(); load()"
   >
-    <div pageHeaderActions class="page-header-actions">
-      <button
-        type="button"
-        class="btn btn-primary btn-refresh-header"
-        (click)="loadMetrics(); load()"
-        [disabled]="isLoading()"
-        title="تحديث البيانات"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="17"
-          height="17"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          [class.spin]="isLoading()"
-          aria-hidden="true"
-        >
-          <path
-            d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"
-          />
-        </svg>
-        <span>تحديث البيانات</span>
-      </button>
-    </div>
-  </app-page-header>
-
-  <!-- KPI Metric Cards Row -->
-  <div class="kpi-metrics-grid" role="region" aria-label="مؤشرات أداء الأطباء">
-    <!-- Total Doctors Card -->
-    <button
-      type="button"
-      class="kpi-card kpi-card--total"
-      [class.active]="selectedStatus() === ''"
-      (click)="filterBy('')"
-    >
-      <div class="kpi-card__icon-wrap">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      </div>
-      <div class="kpi-card__content">
-        <span class="kpi-card__value">
-          {{ metrics().loaded ? metrics().total : (result()?.totalCount ?? 0) }}
-        </span>
-        <span class="kpi-card__label">إجمالي الأطباء</span>
-        <span class="kpi-card__sub">جميع الأطباء المسجلين</span>
-      </div>
-    </button>
-
-    <!-- Approved Doctors Card -->
-    <button
-      type="button"
-      class="kpi-card kpi-card--approved"
-      [class.active]="selectedStatus() === 'Approved'"
-      (click)="filterBy('Approved')"
-    >
-      <div class="kpi-card__icon-wrap">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <polyline points="9 12 11 14 15 10" />
-        </svg>
-      </div>
-      <div class="kpi-card__content">
-        <span class="kpi-card__value">
-          {{ metrics().loaded ? metrics().approved : '-' }}
-        </span>
-        <span class="kpi-card__label">معتمد</span>
-        <span class="kpi-card__sub">أطباء معتمدين ونشطين</span>
-      </div>
-    </button>
-
-    <!-- Pending Doctors Card -->
-    <button
-      type="button"
-      class="kpi-card kpi-card--pending"
-      [class.active]="selectedStatus() === 'Pending'"
-      (click)="filterBy('Pending')"
-    >
-      <div class="kpi-card__icon-wrap">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      </div>
-      <div class="kpi-card__content">
-        <span class="kpi-card__value">
-          {{ metrics().loaded ? metrics().pending : '-' }}
-        </span>
-        <span class="kpi-card__label">قيد المراجعة</span>
-        <span class="kpi-card__sub">بانتظار اعتماد الإدارة</span>
-      </div>
-    </button>
-
-    <!-- Needs Action Card -->
-    <button
-      type="button"
-      class="kpi-card kpi-card--action"
-      [class.active]="selectedStatus() === 'Rejected' || selectedStatus() === 'Suspended'"
-      (click)="filterBy(selectedStatus() === 'Rejected' ? 'Suspended' : 'Rejected')"
-    >
-      <div class="kpi-card__icon-wrap">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-      </div>
-      <div class="kpi-card__content">
-        <span class="kpi-card__value">
-          {{ metrics().loaded ? metrics().needsAction : '-' }}
-        </span>
-        <span class="kpi-card__label">يحتاج إجراء</span>
-        <span class="kpi-card__sub">مرفوض أو معلّق الحساب</span>
-      </div>
-    </button>
-  </div>
-
-  <!-- Main Filters & Search Toolbar -->
-  <div class="toolbar-medical-card">
-    <div class="toolbar-row-main">
-      <!-- Search Box -->
-      <div class="search-input-box-enterprise">
-        <svg
-          class="search-icon"
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          id="doctors-search-input"
-          type="search"
-          autocomplete="off"
-          placeholder="ابحث بالاسم، رقم الهاتف، البريد الإلكتروني..."
-          [formField]="filterForm.searchText"
-          (input)="scheduleSearch()"
-        />
-        @if (filterModel().searchText) {
-          <button
-            type="button"
-            class="btn-clear-search-enterprise"
-            aria-label="مسح البحث"
-            (click)="clearSearch()"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        }
-      </div>
-
-      <!-- Filters Dropdowns -->
-      <div class="toolbar-controls-cluster">
-        <!-- Status Dropdown -->
-        <div class="custom-select-wrap">
-          <select
-            class="filter-select"
-            [value]="selectedStatus()"
-            (change)="filterBy($any($event.target).value)"
-            aria-label="تصفية حسب حالة الاعتماد"
-          >
-            <option value="">حالة الاعتماد: الكل</option>
-            <option value="Approved">معتمد</option>
-            <option value="Pending">قيد المراجعة</option>
-            <option value="Rejected">مرفوض</option>
-            <option value="Suspended">معلّق</option>
-          </select>
-          <svg
-            class="select-chevron"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <polyline points="6 9 12 15 18 9" />
+    <!-- Catchy Integrated Controls Deck (Search + Compact Status Chips) -->
+    <div pageHeaderDeck class="header-control-grid">
+      <!-- Search Box & Quick Reset -->
+      <div class="search-box-wrap">
+        <div class="search-input-box-integrated">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
+          <input
+            id="doctors-search-input"
+            type="text"
+            role="searchbox"
+            enterkeyhint="search"
+            autocomplete="off"
+            placeholder="ابحث بالاسم، رقم الهاتف، البريد الإلكتروني..."
+            [formField]="filterForm.searchText"
+            (input)="scheduleSearch()"
+          />
+          @if (filterModel().searchText) {
+            <button
+              type="button"
+              class="btn-clear-search-integrated"
+              aria-label="مسح البحث"
+              (click)="clearSearch()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          }
         </div>
 
-        <!-- Reset Button -->
         @if (hasActiveFilter()) {
           <button
             type="button"
-            class="btn-reset-filters"
+            class="btn-reset-filters-chip"
             (click)="clearAllFilters()"
             title="إعادة ضبط الفلاتر"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
@@ -262,16 +59,113 @@
           </button>
         }
       </div>
-    </div>
 
-    <!-- Field and Search Errors -->
-    @if (filterForm.searchText().touched() && filterForm.searchText().errors().length) {
-      <small class="field-error">{{ filterForm.searchText().errors()[0].message }}</small>
-    }
-    @if (searchError()) {
-      <small class="field-error">{{ searchError() }}</small>
-    }
-  </div>
+      <!-- Compact Catchy KPI Chips -->
+      <div class="kpi-chips-cluster" role="tablist" aria-label="تصفية حسب حالة الأطباء">
+        <!-- Total -->
+        <button
+          type="button"
+          role="tab"
+          class="kpi-chip kpi-chip--total"
+          [class.active]="selectedStatus() === ''"
+          [attr.aria-selected]="selectedStatus() === ''"
+          (click)="filterBy('')"
+          title="عرض جميع الأطباء"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span class="chip-label">الكل</span>
+          <span class="chip-count">{{
+            metrics().loaded ? metrics().total : (result()?.totalCount ?? 0)
+          }}</span>
+        </button>
+
+        <!-- Approved -->
+        <button
+          type="button"
+          role="tab"
+          class="kpi-chip kpi-chip--approved"
+          [class.active]="selectedStatus() === 'Approved'"
+          [attr.aria-selected]="selectedStatus() === 'Approved'"
+          (click)="filterBy('Approved')"
+          title="أطباء معتمدين ونشطين"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <polyline points="9 12 11 14 15 10" />
+          </svg>
+          <span class="chip-label">معتمد</span>
+          <span class="chip-count">{{ metrics().loaded ? metrics().approved : '-' }}</span>
+        </button>
+
+        <!-- Pending -->
+        <button
+          type="button"
+          role="tab"
+          class="kpi-chip kpi-chip--pending"
+          [class.active]="selectedStatus() === 'Pending'"
+          [attr.aria-selected]="selectedStatus() === 'Pending'"
+          (click)="filterBy('Pending')"
+          title="بانتظار اعتماد الإدارة"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span class="chip-label">قيد المراجعة</span>
+          <span class="chip-count">{{ metrics().loaded ? metrics().pending : '-' }}</span>
+        </button>
+
+        <!-- Rejected -->
+        <button
+          type="button"
+          role="tab"
+          class="kpi-chip kpi-chip--rejected"
+          [class.active]="selectedStatus() === 'Rejected'"
+          [attr.aria-selected]="selectedStatus() === 'Rejected'"
+          (click)="filterBy('Rejected')"
+          title="طلبات الأطباء المرفوضة"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+          <span class="chip-label">مرفوض</span>
+          <span class="chip-count">{{ metrics().loaded ? metrics().rejected : '-' }}</span>
+        </button>
+
+        <!-- Suspended -->
+        <button
+          type="button"
+          role="tab"
+          class="kpi-chip kpi-chip--suspended"
+          [class.active]="selectedStatus() === 'Suspended'"
+          [attr.aria-selected]="selectedStatus() === 'Suspended'"
+          (click)="filterBy('Suspended')"
+          title="حسابات الأطباء المعلّقة"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="9" y1="9" x2="9" y2="15" />
+            <line x1="15" y1="9" x2="15" y2="15" />
+          </svg>
+          <span class="chip-label">معلّق</span>
+          <span class="chip-count">{{ metrics().loaded ? metrics().suspended : '-' }}</span>
+        </button>
+      </div>
+    </div>
+  </app-page-header>
+
+  @if (searchError()) {
+    <div class="state error compact-error" role="alert">
+      <small>{{ searchError() }}</small>
+    </div>
+  }
 
   <!-- Meta Header Bar (Results Count, View Toggle, Sorting) -->
   <div class="table-meta-bar">
@@ -288,31 +182,6 @@
     </div>
 
     <div class="meta-end">
-      <!-- Sort Dropdown -->
-      <div class="sort-select-wrap">
-        <select
-          class="sort-select"
-          [value]="sortBy()"
-          (change)="onSortChange($event)"
-          aria-label="ترتيب النتائج"
-        >
-          <option value="newest">ترتيب حسب: الأحدث إضافة</option>
-          <option value="oldest">ترتيب حسب: الأقدم</option>
-          <option value="name">ترتيب حسب: الاسم (أ-ي)</option>
-        </select>
-        <svg
-          class="select-chevron"
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-
       <!-- View Switcher (Table / Grid) -->
       <div class="view-toggle-group" role="group" aria-label="طريقة العرض">
         <button
@@ -370,7 +239,7 @@
   <!-- Main Content Area -->
   @if (apiMessages().length) {
     <div class="state error" role="alert">
-      <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" />
+      <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
       <h2>تعذر تحميل بيانات الأطباء</h2>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
@@ -385,7 +254,7 @@
       <h2>جارٍ فحص وتحديث سجل الأطباء…</h2>
     </div>
   } @else if (result(); as doctorsPage) {
-    @if (sortedItems().length) {
+    @if (doctors().length) {
       @if (viewMode() === 'table') {
         <!-- Enterprise Medical Data Table -->
         <div class="medical-table-card">
@@ -400,7 +269,7 @@
           </div>
 
           <div class="medical-table-body">
-            @for (doctor of sortedItems(); track doctor.doctorId) {
+            @for (doctor of doctors(); track doctor.doctorId) {
               <article class="doctor-row-enterprise">
                 <!-- Col 1: Doctor Identity -->
                 <div class="col-doctor">
@@ -578,7 +447,7 @@
       } @else {
         <!-- Grid View Mode -->
         <div class="doctors-cards-grid">
-          @for (doctor of sortedItems(); track doctor.doctorId) {
+          @for (doctor of doctors(); track doctor.doctorId) {
             <article class="doctor-card-item">
               <div class="card-item-top">
                 <div class="doctor-avatar-circle large">
@@ -748,7 +617,7 @@
     } @else {
       <!-- Empty Search / Filter Results State -->
       <div class="state medical-empty-state">
-        <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" />
+        <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
         <h2>لا توجد نتائج مطابقة</h2>
         <p>
           لم يتم العثور على أي أطباء مسجلين وفق معايير التصفية الحالية. يمكنك تغيير حالة الاعتماد أو

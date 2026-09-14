@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SKIP_ERROR_TOAST } from '../notifications/api-error-toast.interceptor';
 import {
   DoctorPracticeLocation,
   DoctorSpecializationHistoryItem,
@@ -27,11 +28,15 @@ export class DoctorProfileApi {
   }
 
   currentSpecializations(): Observable<DoctorSpecializationsResponse> {
-    return this.http.get<DoctorSpecializationsResponse>(`${this.doctorsUrl}/specializations`);
+    return this.http.get<DoctorSpecializationsResponse>(`${this.doctorsUrl}/specializations`, {
+      context: new HttpContext().set(SKIP_ERROR_TOAST, true),
+    });
   }
 
   openSpecializationRequest(): Observable<DoctorSpecializationRequest> {
-    return this.http.get<DoctorSpecializationRequest>(`${this.doctorsUrl}/specialization-request`);
+    return this.http.get<DoctorSpecializationRequest>(`${this.doctorsUrl}/specialization-request`, {
+      context: new HttpContext().set(SKIP_ERROR_TOAST, true),
+    });
   }
 
   submitSpecializations(
@@ -55,6 +60,9 @@ export class DoctorProfileApi {
   specializationHistory(): Observable<DoctorSpecializationHistoryItem[]> {
     return this.http.get<DoctorSpecializationHistoryItem[]>(
       `${this.doctorsUrl}/specialization-request/history`,
+      {
+        context: new HttpContext().set(SKIP_ERROR_TOAST, true),
+      },
     );
   }
 
@@ -73,7 +81,9 @@ export class DoctorProfileApi {
   }
 
   practiceLocation(): Observable<DoctorPracticeLocation> {
-    return this.http.get<DoctorPracticeLocation>(`${this.doctorsUrl}/practice-location`);
+    return this.http.get<DoctorPracticeLocation>(`${this.doctorsUrl}/practice-location`, {
+      context: new HttpContext().set(SKIP_ERROR_TOAST, true),
+    });
   }
 
   upsertPracticeLocation(

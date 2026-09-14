@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import {
   DoctorSpecializationSelection,
   MedicalSpecializationOption,
@@ -16,9 +16,21 @@ export class SpecializationSelector {
   readonly disabled = input(false);
   readonly selectionChange = output<DoctorSpecializationSelection[]>();
 
+  protected readonly searchTerm = signal('');
+
   protected readonly selectedIds = computed(
     () => new Set(this.selected().map((item) => item.medicalSpecializationId)),
   );
+
+  protected readonly filteredOptions = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    if (!term) return this.options();
+    return this.options().filter(
+      (o) =>
+        o.nameAr.toLowerCase().includes(term) ||
+        (o.nameEn && o.nameEn.toLowerCase().includes(term)),
+    );
+  });
 
   protected isPrimary(id: string): boolean {
     return this.selected().some((item) => item.medicalSpecializationId === id && item.isPrimary);

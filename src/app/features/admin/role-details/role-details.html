@@ -1,183 +1,466 @@
-<section class="role-page">
-  <a class="role-back" routerLink="/admin/roles">العودة إلى قائمة الأدوار</a>
+<section class="role-details-container" [class.is-drawer]="isDrawer()">
+  @if (!isDrawer()) {
+    <a class="role-back-link" routerLink="/admin/roles">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+      <span>العودة إلى قائمة الأدوار</span>
+    </a>
+  }
 
   @if (apiMessages().length && !role()) {
-    <div class="role-state role-error" role="alert">
-      <h1>{{ notFound() ? 'الدور غير موجود' : 'تعذر تحميل بيانات الدور' }}</h1>
+    <div class="role-state role-state-error" role="alert">
+      <div class="state-icon-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <h2>{{ notFound() ? 'الدور غير موجود' : 'تعذر تحميل بيانات الدور' }}</h2>
       @for (message of apiMessages(); track message) {
         <p>{{ message }}</p>
       }
-      <div>
-        <a class="btn btn-outline-secondary" routerLink="/admin/roles">العودة للقائمة</a>
+      <div class="state-actions">
+        @if (!isDrawer()) {
+          <a class="btn btn-outline-secondary" routerLink="/admin/roles">العودة للقائمة</a>
+        }
         @if (!notFound()) {
           <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
         }
       </div>
     </div>
   } @else if (isLoading() && !role()) {
-    <div class="role-state" role="status">
-      <span class="role-loader" aria-hidden="true"></span>
-      <h1>جارٍ تحميل الدور والصلاحيات…</h1>
+    <div class="role-state role-state-loading" role="status">
+      <span class="role-spinner" aria-hidden="true"></span>
+      <h2>جارٍ تحميل بيانات الدور والصلاحيات…</h2>
     </div>
   } @else if (role(); as roleDetails) {
-    <header class="role-heading">
-      <div>
-        <div class="role-status">
-          <span>{{ roleDetails.isSystemRole ? 'System Role' : 'Role' }}</span>
-          @if (roleDetails.isSystemRole) {
-            <small>لا توجد عمليات rename أو delete مدعومة لهذا الدور.</small>
-          }
+    <!-- Role Header Card -->
+    <header class="role-card-header">
+      <div class="role-identity-cluster">
+        <div class="role-avatar-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
         </div>
-        <h1 lang="en" dir="ltr">{{ roleDetails.name }}</h1>
-        <code>{{ roleDetails.id }}</code>
+        <div class="role-meta-info">
+          <div class="role-tags-row">
+            <span class="role-type-pill" [class.is-system]="roleDetails.isSystemRole">
+              @if (roleDetails.isSystemRole) {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>System Role — دور نظام محمي</span>
+              } @else {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4M12 8h.01" />
+                </svg>
+                <span>Custom Role — دور مخصص</span>
+              }
+            </span>
+          </div>
+
+          <h1 class="role-name-heading" lang="en" dir="ltr">{{ roleDetails.name }}</h1>
+
+          <div
+            class="role-guid-chip"
+            (click)="copyRoleId()"
+            [title]="'انقر لنسخ المعرّف: ' + roleDetails.id"
+          >
+            <span class="guid-label">ID:</span>
+            <code class="guid-value">{{ roleDetails.id }}</code>
+            <button type="button" class="btn-copy-guid" aria-label="نسخ المعرف">
+              @if (idCopied()) {
+                <span class="copied-indicator">تم النسخ!</span>
+              } @else {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
       </div>
+
       <button
-        class="btn btn-outline-secondary"
+        class="btn-reload-role"
         type="button"
         [disabled]="isLoading()"
         (click)="load()"
+        title="تحديث بيانات الدور والصلاحيات"
       >
-        تحديث البيانات
+        <svg [class.spin-active]="isLoading()" viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+        <span>تحديث</span>
       </button>
     </header>
 
     @if (successMessage()) {
-      <div class="role-notice success" role="status">{{ successMessage() }}</div>
+      <div class="feedback-banner banner-success" role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        <span>{{ successMessage() }}</span>
+      </div>
     }
+
     @if (apiMessages().length) {
-      <div class="role-notice error" role="alert">
-        @for (message of apiMessages(); track message) {
-          <p>{{ message }}</p>
-        }
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">
-          إعادة المحاولة
-        </button>
-      </div>
-    }
-    @if (catalogMessages().length) {
-      <div class="role-notice error" role="alert">
-        @for (message of catalogMessages(); track message) {
-          <p>{{ message }}</p>
-        }
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">
-          إعادة المحاولة
-        </button>
-      </div>
-    }
-
-    <section class="permissions-section">
-      <header class="permissions-heading">
+      <div class="feedback-banner banner-error" role="alert">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
         <div>
-          <h2>صلاحيات الدور</h2>
-          <p>الاختيار يتم بالمعرّف الأصلي، والحفظ يستبدل كل الربط الحالي دفعة واحدة.</p>
+          @for (message of apiMessages(); track message) {
+            <p>{{ message }}</p>
+          }
         </div>
-        <span>{{ selectedCount() }} محددة</span>
-      </header>
+      </div>
+    }
 
-      @if (managementBlockReason()) {
-        <div class="management-note" role="status">{{ managementBlockReason() }}</div>
-      }
+    @if (catalogMessages().length) {
+      <div class="feedback-banner banner-error" role="alert">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <div>
+          @for (message of catalogMessages(); track message) {
+            <p>{{ message }}</p>
+          }
+        </div>
+      </div>
+    }
 
-      @if (catalog(); as permissionCatalog) {
-        @if (permissionCatalog.length) {
-          <div class="permission-groups">
-            @for (group of permissionGroups(); track group.name) {
-              <section
-                class="permission-group"
-                [attr.aria-labelledby]="'permission-group-' + group.name"
-              >
-                <header>
-                  <h3 [id]="'permission-group-' + group.name" lang="en" dir="ltr">
-                    {{ group.name }}
-                  </h3>
-                  <span>{{ group.permissions.length }} صلاحية</span>
-                </header>
-                <div class="permission-options">
-                  @for (permission of group.permissions; track permission.id) {
-                    <label class="permission-option" [class.restricted]="!isAssignable(permission)">
-                      <input
-                        type="checkbox"
-                        [checked]="isSelected(permission.id)"
-                        [disabled]="!isAssignable(permission) || isSaving()"
-                        (change)="togglePermission(permission, $event)"
-                      />
-                      <span>
-                        <strong lang="en" dir="ltr">{{ permission.name }}</strong>
-                        <code>{{ permission.id }}</code>
-                        @if (isRootOnly(permission)) {
-                          <small
-                            >Root-only effective permission — غير قابلة للإسناد إلى Role.</small
-                          >
-                        } @else if (!permission.isSystemPermission) {
-                          <small>ليست System Permission ولا يمكن إرسالها في عملية الاستبدال.</small>
-                        }
-                      </span>
-                    </label>
-                  }
-                </div>
-              </section>
-            }
+    @if (managementBlockReason()) {
+      <div class="feedback-banner banner-info" role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+        <span>{{ managementBlockReason() }}</span>
+      </div>
+    }
+
+    <!-- Permissions Section Container -->
+    <section class="permissions-manager-card">
+      <!-- Search and Filter Toolbar -->
+      <div class="permissions-toolbar">
+        <div class="toolbar-search-field">
+          <svg class="toolbar-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            role="searchbox"
+            enterkeyhint="search"
+            class="toolbar-search-input"
+            placeholder="ابحث في الصلاحيات أو الأقسام…"
+            [value]="permissionSearch()"
+            (input)="onSearchInput($event)"
+          />
+          @if (permissionSearch()) {
+            <button
+              type="button"
+              class="toolbar-search-clear"
+              (click)="clearSearch()"
+              aria-label="مسح البحث"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          }
+        </div>
+
+        <div class="toolbar-filters-cluster">
+          <div class="filter-pills-group" role="radiogroup" aria-label="تصفية الصلاحيات">
+            <button
+              type="button"
+              class="filter-pill-btn"
+              [class.active]="filterMode() === 'all'"
+              (click)="setFilterMode('all')"
+            >
+              <span>الكل</span>
+              <span class="pill-count">{{ totalCatalogCount() }}</span>
+            </button>
+            <button
+              type="button"
+              class="filter-pill-btn"
+              [class.active]="filterMode() === 'selected'"
+              (click)="setFilterMode('selected')"
+            >
+              <span>المسندة</span>
+              <span class="pill-count highlight-teal">{{ selectedCount() }}</span>
+            </button>
+            <button
+              type="button"
+              class="filter-pill-btn"
+              [class.active]="filterMode() === 'unselected'"
+              (click)="setFilterMode('unselected')"
+            >
+              <span>غير المسندة</span>
+              <span class="pill-count">{{ unselectedCount() }}</span>
+            </button>
           </div>
 
-          @if (missingCatalogPermissions().length) {
-            <div class="missing-permissions" role="status">
-              <strong>صلاحيات مرتبطة وغير موجودة في الكتالوج الحالي</strong>
-              <p>سيتم الاحتفاظ بمعرّفاتها في الطلب حتى يعيد الخادم الحالة النهائية.</p>
-              @for (permission of missingCatalogPermissions(); track permission.id) {
-                <code>{{ permission.name }} — {{ permission.id }}</code>
-              }
+          @if (canManage() && filteredPermissionGroups().length) {
+            <div class="toolbar-bulk-actions">
+              <button
+                type="button"
+                class="btn-bulk-subtle"
+                [disabled]="isSaving()"
+                (click)="selectAllFiltered()"
+                title="تحديد كل الصلاحيات الظاهرة"
+              >
+                تحديد المعروض
+              </button>
+              <button
+                type="button"
+                class="btn-bulk-subtle"
+                [disabled]="isSaving()"
+                (click)="deselectAllFiltered()"
+                title="إلغاء تحديد كل الصلاحيات الظاهرة"
+              >
+                إلغاء تحديد المعروض
+              </button>
             </div>
           }
+        </div>
+      </div>
 
-          <footer class="permissions-actions">
-            <p>أي صلاحية غير موجودة في القائمة المحددة عند الحفظ ستُزال من هذا الدور.</p>
-            <div>
-              <button
-                class="btn btn-outline-secondary"
-                type="button"
-                [disabled]="!isDirty() || isSaving()"
-                (click)="resetSelection()"
-              >
-                إلغاء التغييرات
-              </button>
-              @if (canManage()) {
-                <button
-                  class="btn btn-primary"
-                  type="button"
-                  [disabled]="!isDirty() || isSaving()"
-                  (click)="openConfirmation()"
-                >
-                  حفظ الصلاحيات
+      <!-- Permission Groups List -->
+      @if (catalog(); as permissionCatalog) {
+        @if (permissionCatalog.length) {
+          @if (filteredPermissionGroups(); as groups) {
+            @if (groups.length) {
+              <div class="groups-stack">
+                @for (group of groups; track group.name) {
+                  <article class="permission-group-card">
+                    <!-- Group Header -->
+                    <header class="group-header">
+                      <div class="group-brand-lead">
+                        <div class="group-titles">
+                          <h3 class="group-title-ar">{{ getModuleArabic(group.name) }}</h3>
+                          <span class="group-title-en" lang="en" dir="ltr">{{ group.name }}</span>
+                        </div>
+                      </div>
+
+                      <div class="group-controls">
+                        <div
+                          class="group-selection-badge"
+                          [class.is-full]="isGroupFullySelected(group)"
+                        >
+                          <span class="badge-num">{{ getGroupSelectedCount(group) }}</span>
+                          <span class="badge-sep">من</span>
+                          <span class="badge-total">{{ group.permissions.length }}</span>
+                        </div>
+
+                        @if (canManage()) {
+                          <button
+                            type="button"
+                            class="btn-group-toggle"
+                            [disabled]="isSaving()"
+                            (click)="toggleGroupSelection(group)"
+                          >
+                            {{ isGroupFullySelected(group) ? 'إلغاء تحديد الكل' : 'تحديد الكل' }}
+                          </button>
+                        }
+                      </div>
+                    </header>
+
+                    <!-- Group Permission Items Grid -->
+                    <div class="group-options-grid">
+                      @for (permission of group.permissions; track permission.id) {
+                        <div
+                          class="permission-tile"
+                          [class.is-selected]="isSelected(permission.id)"
+                          [class.is-disabled]="!isAssignable(permission)"
+                        >
+                          <label class="permission-tile-inner">
+                            <div class="checkbox-container">
+                              <input
+                                type="checkbox"
+                                class="native-checkbox"
+                                [checked]="isSelected(permission.id)"
+                                [disabled]="!isAssignable(permission) || isSaving()"
+                                (change)="togglePermission(permission, $event)"
+                              />
+                              <div class="custom-checkbox-box" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            </div>
+
+                            <div class="permission-content-col">
+                              <span class="action-ar-label">{{
+                                getActionArabic(permission.name) || getActionName(permission.name)
+                              }}</span>
+                              <span
+                                class="action-tag"
+                                lang="en"
+                                dir="ltr"
+                                [title]="permission.name"
+                                >{{ getActionName(permission.name) }}</span
+                              >
+
+                              @if (isRootOnly(permission)) {
+                                <span class="restriction-hint root-hint">
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                  </svg>
+                                  <span>صلاحية جذرية Root-only — غير قابلة للإسناد لأي دور</span>
+                                </span>
+                              } @else if (!permission.isSystemPermission) {
+                                <span class="restriction-hint non-system-hint">
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                  </svg>
+                                  <span
+                                    >ليست System Permission — لا يمكن إسنادها عبر الاستبدال</span
+                                  >
+                                </span>
+                              }
+                            </div>
+                          </label>
+                        </div>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            } @else {
+              <div class="empty-permissions-state">
+                <div class="empty-icon-box">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </div>
+                <h3>لا توجد صلاحيات مطابقة للبحث</h3>
+                <p>لم نعثر على أي صلاحيات تطابق عبارة "{{ permissionSearch() }}".</p>
+                <button type="button" class="btn btn-outline-secondary" (click)="clearSearch()">
+                  مسح البحث
                 </button>
-              }
+              </div>
+            }
+          }
+
+          @if (missingCatalogPermissions().length) {
+            <div class="missing-permissions-warning" role="status">
+              <div class="warning-title-row">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
+                  />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <strong>صلاحيات مرتبطة سابقًا ولكنها غير متوفرة في الكتالوج الحالي</strong>
+              </div>
+              <p>
+                سيتم إرسال معرّفاتها تلقائيًا للحفاظ على حالتها ما لم يتم إلغاء الربط من جهة الخادم.
+              </p>
+              <div class="missing-tags-list">
+                @for (permission of missingCatalogPermissions(); track permission.id) {
+                  <span class="missing-tag" lang="en" dir="ltr">{{ permission.name }}</span>
+                }
+              </div>
             </div>
-          </footer>
+          }
         } @else {
-          <div class="permissions-empty">
+          <div class="empty-permissions-state">
             <h3>لا توجد صلاحيات في الكتالوج</h3>
             <p>لم يرجع الخادم أي Permissions متاحة لهذا الحساب.</p>
           </div>
         }
       } @else if (!canViewCatalog) {
-        <div class="current-permissions">
-          <h3>الصلاحيات المسندة حاليًا</h3>
-          @for (permission of current()?.permissions ?? []; track permission.id) {
-            <div>
-              <strong lang="en" dir="ltr">{{ permission.name }}</strong>
-              <code>{{ permission.id }}</code>
-            </div>
-          } @empty {
-            <p>لا توجد صلاحيات مرتبطة بهذا الدور.</p>
-          }
+        <div class="catalog-restricted-view">
+          <h3>الصلاحيات المسندة حاليًا لهذا الدور</h3>
+          <div class="current-tags-wrap">
+            @for (permission of current()?.permissions ?? []; track permission.id) {
+              <div class="current-role-tag">
+                <strong lang="en" dir="ltr">{{ permission.name }}</strong>
+              </div>
+            } @empty {
+              <p class="empty-text">لا توجد صلاحيات مرتبطة بهذا الدور.</p>
+            }
+          </div>
         </div>
       }
     </section>
 
+    <!-- Sticky Bottom Actions Bar -->
+    <footer class="permissions-sticky-footer" [class.is-floating]="isDrawer()">
+      <div class="footer-summary-cluster">
+        <div class="selection-counter-badge">
+          <span class="counter-val">{{ selectedCount() }}</span>
+          <span class="counter-lbl">صلاحية محددة</span>
+        </div>
+        @if (isDirty()) {
+          <span class="dirty-status-badge">
+            <span class="pulse-dot"></span>
+            <span>توجد تعديلات غير محفوظة</span>
+          </span>
+        }
+      </div>
+
+      <div class="footer-actions-cluster">
+        <button
+          type="button"
+          class="btn btn-secondary-subtle"
+          [disabled]="!isDirty() || isSaving()"
+          (click)="resetSelection()"
+        >
+          إلغاء التغييرات
+        </button>
+
+        @if (canManage()) {
+          <button
+            type="button"
+            class="btn btn-save-permissions"
+            [disabled]="!isDirty() || isSaving()"
+            (click)="openConfirmation()"
+          >
+            @if (isSaving()) {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span>جارٍ الحفظ…</span>
+            } @else {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>حفظ الصلاحيات</span>
+            }
+          </button>
+        }
+      </div>
+    </footer>
+
+    <!-- Confirmation Modal Dialog -->
     <app-confirmation-dialog
       dialogId="replace-role-permissions-dialog"
-      title="استبدال صلاحيات الدور"
-      description="سيتم إرسال القائمة المحددة كاملة، وأي ربط حالي غير موجود فيها سيُحذف. راجع الاختيارات قبل المتابعة."
-      confirmLabel="تأكيد الاستبدال"
+      title="استبدال وحفظ صلاحيات الدور"
+      description="سيتم اعتماد وتطبيق القائمة المحددة بالكامل على هذا الدور، وأي صلاحية غير محددة سيتم إزالتها. هل تريد المتابعة؟"
+      confirmLabel="تأكيد وحفظ الصلاحيات"
       [danger]="true"
       [opened]="confirmationOpen()"
       [busy]="isSaving()"

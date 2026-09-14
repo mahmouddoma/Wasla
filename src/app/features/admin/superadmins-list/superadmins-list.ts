@@ -7,7 +7,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, form, maxLength } from '@angular/forms/signals';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
@@ -15,7 +14,10 @@ import { PERMISSIONS } from '../../../core/auth/permissions';
 import { SuperAdminsApi } from '../../../core/superadmins/superadmins-api';
 import { SuperAdminRecord, SuperAdminsPage } from '../../../core/superadmins/superadmins.models';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
+import { SuperAdminDetails } from '../superadmin-details/superadmin-details';
+import { SuperAdminForm, SuperAdminFormSubmission } from '../superadmin-form/superadmin-form';
 
 type ListAction = 'delete' | 'restore';
 
@@ -26,7 +28,14 @@ interface PendingListAction {
 
 @Component({
   selector: 'app-superadmins-list',
-  imports: [FormField, RouterLink, PageHeader, ConfirmationDialog],
+  imports: [
+    FormField,
+    PageHeader,
+    ConfirmationDialog,
+    SideDrawer,
+    SuperAdminForm,
+    SuperAdminDetails,
+  ],
   templateUrl: './superadmins-list.html',
   styleUrls: ['../management-list.css', './superadmins-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,11 +67,25 @@ export class SuperAdminsList {
   protected readonly canCreate = this.session.hasPermission(PERMISSIONS.superAdminsCreate);
   protected readonly canDelete = this.session.hasPermission(PERMISSIONS.superAdminsDelete);
   protected readonly canRestore = this.session.hasPermission(PERMISSIONS.superAdminsRestore);
+  protected readonly isCreateDrawerOpen = signal(false);
+  protected readonly isCreateSubmitting = signal(false);
+  protected readonly createApiMessages = signal<string[]>([]);
+  protected readonly createFieldErrors = signal<Readonly<Record<string, string[]>>>({});
+  protected readonly selectedAdminId = signal<string | null>(null);
   protected readonly totalPages = computed(() =>
     Math.max(
       1,
       Math.ceil((this.result()?.totalCount ?? 0) / (this.result()?.pageSize ?? this.pageSize)),
     ),
+  );
+  protected readonly activeCount = computed(
+    () => this.result()?.items.filter((a) => a.isActive && !a.isDeleted).length ?? 0,
+  );
+  protected readonly rootCount = computed(
+    () => this.result()?.items.filter((a) => a.isRootSuperAdmin).length ?? 0,
+  );
+  protected readonly deletedCount = computed(
+    () => this.result()?.items.filter((a) => a.isDeleted).length ?? 0,
   );
   protected readonly searchError = computed(() => this.fieldErrors()['searchtext']?.[0] ?? '');
   protected readonly actionDialog = computed(() => {
@@ -110,6 +133,58 @@ export class SuperAdminsList {
     this.includeDeleted.set((event.target as HTMLInputElement).checked);
     this.pageNumber.set(1);
     void this.load();
+  }
+
+  protected openCreateDrawer(): void {
+    this.createApiMessages.set([]);
+    this.createFieldErrors.set({});
+    this.isCreateDrawerOpen.set(true);
+  }
+
+  protected closeCreateDrawer(): void {
+    if (this.isCreateSubmitting()) return;
+    this.isCreateDrawerOpen.set(false);
+    this.createApiMessages.set([]);
+    this.createFieldErrors.set({});
+  }
+
+  protected openDetailsDrawer(adminId: string): void {
+    this.selectedAdminId.set(adminId);
+  }
+
+  protected closeDetailsDrawer(): void {
+    this.selectedAdminId.set(null);
+  }
+
+  protected handleDetailsSaved(updated: SuperAdminRecord): void {
+    this.result.update((page) => {
+      if (!page) return page;
+      return {
+        ...page,
+        items: page.items.map((admin) =>
+          admin.superAdminId === updated.superAdminId ? updated : admin,
+        ),
+      };
+    });
+  }
+
+  protected async handleCreateAdmin(submission: SuperAdminFormSubmission): Promise<void> {
+    if (submission.mode !== 'create' || this.isCreateSubmitting()) return;
+    this.isCreateSubmitting.set(true);
+    this.createApiMessages.set([]);
+    this.createFieldErrors.set({});
+    try {
+      await firstValueFrom(this.api.create(submission.request));
+      this.isCreateDrawerOpen.set(false);
+      this.successMessage.set('تم إنشاء حساب المشرف بنجاح.');
+      await this.load();
+    } catch (error) {
+      const parsed = parseApiErrors(error);
+      this.createApiMessages.set(parsed.messages);
+      this.createFieldErrors.set(parsed.fields);
+    } finally {
+      this.isCreateSubmitting.set(false);
+    }
   }
 
   protected goToPage(page: number): void {
@@ -212,6 +287,11 @@ export class SuperAdminsList {
       : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
           dateStyle: 'medium',
         }).format(date);
+  }
+
+  protected getAdminInitial(admin: SuperAdminRecord): string {
+    const name = admin.nameAr?.trim() || admin.nameEn?.trim() || admin.userName?.trim() || '';
+    return name ? name.charAt(0).toUpperCase() : 'م';
   }
 
   private applyActionResult(pending: PendingListAction): void {

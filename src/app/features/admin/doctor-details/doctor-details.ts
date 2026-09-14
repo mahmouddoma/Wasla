@@ -20,6 +20,7 @@ import {
   DoctorMediaType,
 } from '../../../core/admin-doctors/admin-doctors.models';
 import { DoctorApprovalStatus } from '../../../core/doctors/doctor.models';
+import { isGuid } from '../../../core/validation/guid';
 import {
   DoctorDecisionAction,
   DoctorDecisionDialog,
@@ -46,8 +47,6 @@ interface MediaPreview {
   label: string;
   isImage: boolean;
 }
-
-const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 @Component({
   selector: 'app-doctor-details',
@@ -135,7 +134,7 @@ export class DoctorDetails {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.revokeActiveMedia());
-    if (!GUID_PATTERN.test(this.doctorId)) {
+    if (!isGuid(this.doctorId)) {
       this.isLoading.set(false);
       this.apiMessages.set(['معرّف الطبيب غير صالح. ارجع إلى قائمة الأطباء واختر الطبيب من جديد.']);
       return;
@@ -144,7 +143,7 @@ export class DoctorDetails {
   }
 
   protected async load(): Promise<void> {
-    if (!GUID_PATTERN.test(this.doctorId)) return;
+    if (!isGuid(this.doctorId)) return;
     this.isLoading.set(true);
     this.apiMessages.set([]);
     try {
