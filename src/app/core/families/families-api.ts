@@ -1,12 +1,18 @@
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Family,
+  FamilyMember,
+  FamilyRequestDocument,
   FamilyRequestDetails,
+  FamilyRequestHistoryItem,
   FamilyRequestPage,
   FamilyRequestQuery,
+  FamilyRequestStatus,
+  FamilyRequestType,
+  FamilyRole,
   FamilyReviewDecisionRequest,
   FamilyReviewMessageRequest,
   FamilyReviewReasonRequest,
@@ -28,7 +34,9 @@ export class FamiliesApi {
   }
 
   submit(request: SubmitFamilyRequest): Observable<FamilyRequestDetails> {
-    return this.http.post<FamilyRequestDetails>(this.requestsUrl, requestBody(request));
+    return this.detailsRequest(
+      this.http.post<FamilyRequestDetailsResponse>(this.requestsUrl, requestBody(request)),
+    );
   }
 
   requests(query: FamilyRequestQuery): Observable<FamilyRequestPage> {
@@ -38,7 +46,9 @@ export class FamiliesApi {
   }
 
   details(requestId: string): Observable<FamilyRequestDetails> {
-    return this.http.get<FamilyRequestDetails>(`${this.requestsUrl}/${requestId}`);
+    return this.detailsRequest(
+      this.http.get<FamilyRequestDetailsResponse>(`${this.requestsUrl}/${requestId}`),
+    );
   }
 
   document(requestId: string, documentId: string): Observable<HttpResponse<Blob>> {
@@ -46,16 +56,20 @@ export class FamiliesApi {
   }
 
   resubmit(requestId: string, request: ResubmitFamilyRequest): Observable<FamilyRequestDetails> {
-    return this.http.post<FamilyRequestDetails>(
-      `${this.requestsUrl}/${requestId}/resubmit`,
-      revisionBody(request),
+    return this.detailsRequest(
+      this.http.post<FamilyRequestDetailsResponse>(
+        `${this.requestsUrl}/${requestId}/resubmit`,
+        revisionBody(request),
+      ),
     );
   }
 
   submitAssisted(request: SubmitAssistedFamilyRequest): Observable<FamilyRequestDetails> {
     const body = requestBody(request);
     body.append('RequesterPatientId', request.requesterPatientId.trim());
-    return this.http.post<FamilyRequestDetails>(this.assistedUrl, body);
+    return this.detailsRequest(
+      this.http.post<FamilyRequestDetailsResponse>(this.assistedUrl, body),
+    );
   }
 
   assistedRequests(query: FamilyRequestQuery): Observable<FamilyRequestPage> {
@@ -63,7 +77,9 @@ export class FamiliesApi {
   }
 
   assistedDetails(requestId: string): Observable<FamilyRequestDetails> {
-    return this.http.get<FamilyRequestDetails>(`${this.assistedUrl}/${requestId}`);
+    return this.detailsRequest(
+      this.http.get<FamilyRequestDetailsResponse>(`${this.assistedUrl}/${requestId}`),
+    );
   }
 
   assistedDocument(requestId: string, documentId: string): Observable<HttpResponse<Blob>> {
@@ -74,9 +90,11 @@ export class FamiliesApi {
     requestId: string,
     request: ResubmitFamilyRequest,
   ): Observable<FamilyRequestDetails> {
-    return this.http.post<FamilyRequestDetails>(
-      `${this.assistedUrl}/${requestId}/resubmit`,
-      revisionBody(request),
+    return this.detailsRequest(
+      this.http.post<FamilyRequestDetailsResponse>(
+        `${this.assistedUrl}/${requestId}/resubmit`,
+        revisionBody(request),
+      ),
     );
   }
 
@@ -85,7 +103,9 @@ export class FamiliesApi {
   }
 
   adminDetails(requestId: string): Observable<FamilyRequestDetails> {
-    return this.http.get<FamilyRequestDetails>(`${this.adminUrl}/${requestId}`);
+    return this.detailsRequest(
+      this.http.get<FamilyRequestDetailsResponse>(`${this.adminUrl}/${requestId}`),
+    );
   }
 
   adminDocument(requestId: string, documentId: string): Observable<HttpResponse<Blob>> {
@@ -95,8 +115,8 @@ export class FamiliesApi {
   requestModification(
     requestId: string,
     request: FamilyReviewMessageRequest,
-  ): Observable<FamilyRequestDetails> {
-    return this.http.post<FamilyRequestDetails>(
+  ): Observable<void> {
+    return this.http.post<void>(
       `${this.adminUrl}/${requestId}/request-modification`,
       request,
     );
@@ -105,17 +125,105 @@ export class FamiliesApi {
   approve(
     requestId: string,
     request: FamilyReviewDecisionRequest,
-  ): Observable<FamilyRequestDetails> {
-    return this.http.post<FamilyRequestDetails>(`${this.adminUrl}/${requestId}/approve`, request);
+  ): Observable<void> {
+    return this.http.post<void>(`${this.adminUrl}/${requestId}/approve`, request);
   }
 
-  reject(requestId: string, request: FamilyReviewReasonRequest): Observable<FamilyRequestDetails> {
-    return this.http.post<FamilyRequestDetails>(`${this.adminUrl}/${requestId}/reject`, request);
+  reject(requestId: string, request: FamilyReviewReasonRequest): Observable<void> {
+    return this.http.post<void>(`${this.adminUrl}/${requestId}/reject`, request);
   }
 
   private privateDocument(url: string): Observable<HttpResponse<Blob>> {
     return this.http.get(url, { observe: 'response', responseType: 'blob' });
   }
+
+  private detailsRequest(
+    request: Observable<FamilyRequestDetailsResponse>,
+  ): Observable<FamilyRequestDetails> {
+    return request.pipe(map(normalizeFamilyRequestDetails));
+  }
+}
+
+interface FamilyRequestDetailsResponse {
+  request: {
+    requestId: string;
+    requestType: FamilyRequestType;
+    status: FamilyRequestStatus;
+    familyId: string | null;
+    currentRevisionNumber: number;
+    rowVersion: string;
+  };
+  requester: FamilyRequestPartyResponse;
+  target: FamilyRequestPartyResponse;
+  requesterClaimedRole: Exclude<FamilyRole, 'Child'>;
+  targetClaimedRole: FamilyRole;
+  modificationMessage: string | null;
+  rejectionReason: string | null;
+  familyMembers: FamilyMember[];
+  documents: FamilyRequestDocumentResponse[];
+  history: FamilyRequestHistoryResponse[];
+}
+
+interface FamilyRequestPartyResponse {
+  patientId: string;
+  nameAr: string;
+}
+
+interface FamilyRequestDocumentResponse {
+  documentId: string;
+  documentType: string;
+  originalFileName: string;
+  revisionNumber: number;
+  uploadedOnUtc: string;
+}
+
+interface FamilyRequestHistoryResponse {
+  action: string;
+  performedOnUtc: string;
+  messageOrReason: string | null;
+  revisionNumber: number;
+}
+
+function normalizeFamilyRequestDetails(
+  response: FamilyRequestDetailsResponse,
+): FamilyRequestDetails {
+  const submittedOnUtc =
+    response.history.find((item) => item.action === 'Submitted')?.performedOnUtc ??
+    response.documents[0]?.uploadedOnUtc ??
+    '';
+  const documents: FamilyRequestDocument[] = response.documents.map((document) => ({
+    documentId: document.documentId,
+    documentType: document.documentType,
+    fileName: document.originalFileName,
+    revisionNumber: document.revisionNumber,
+  }));
+  const history: FamilyRequestHistoryItem[] = response.history.map((item) => ({
+    action: item.action,
+    occurredOnUtc: item.performedOnUtc,
+    message: item.messageOrReason,
+    revisionNumber: item.revisionNumber,
+  }));
+
+  return {
+    requestId: response.request.requestId,
+    requestType: response.request.requestType,
+    status: response.request.status,
+    requesterPatientId: response.requester.patientId,
+    requesterNameAr: response.requester.nameAr,
+    targetPatientId: response.target.patientId,
+    targetNameAr: response.target.nameAr,
+    requesterClaimedRole: response.requesterClaimedRole,
+    targetClaimedRole: response.targetClaimedRole,
+    currentRevisionNumber: response.request.currentRevisionNumber,
+    submittedOnUtc,
+    rowVersion: response.request.rowVersion,
+    familyId: response.request.familyId,
+    modificationMessage: response.modificationMessage,
+    rejectionReason: response.rejectionReason,
+    currentFamilyMembers: response.familyMembers,
+    documents,
+    history,
+  };
 }
 
 function queryParams(query: FamilyRequestQuery): HttpParams {

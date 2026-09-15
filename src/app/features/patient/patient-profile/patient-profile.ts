@@ -13,6 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
+import { ToastService } from '../../../core/notifications/toast.service';
 import {
   PatientContact,
   PatientProfile as PatientProfileModel,
@@ -24,7 +25,7 @@ import { PatientsApi } from '../../../core/patients/patients-api';
   selector: 'app-patient-profile',
   imports: [FormField, RouterLink],
   templateUrl: './patient-profile.html',
-  styleUrl: '../../healthcare-workspace.css',
+  styleUrl: './patient-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientProfile {
@@ -32,6 +33,9 @@ export class PatientProfile {
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(ToastService);
+
+  protected readonly copiedId = signal(false);
 
   protected readonly profile = signal<PatientProfileModel | null>(null);
   protected readonly contacts = signal<PatientContact[]>([]);
@@ -133,14 +137,20 @@ export class PatientProfile {
         this.profile.set(updated);
         this.profileImage.set(undefined);
         this.successMessage.set('تم حفظ الملف الشخصي وتحديث نسخة البيانات.');
+        this.toast.success('تم حفظ الملف الشخصي وتحديث نسخة البيانات.');
         if (updated.hasProfileImage) await this.loadImage();
       } catch (error) {
-        this.messages.set(flattenErrors(error));
+        const errs = flattenErrors(error);
+        this.messages.set(errs);
+        if (errs.length > 0) {
+          this.toast.error(errs[0]);
+        }
         if (error instanceof HttpErrorResponse && error.status === 409) {
           this.messages.update((items) => [
             ...items,
             'تم تحديث الملف من مكان آخر؛ أُعيد تحميل أحدث نسخة.',
           ]);
+          this.toast.error('تم تحديث الملف من مكان آخر؛ أُعيد تحميل أحدث نسخة.');
           await this.load();
         }
       } finally {
@@ -170,12 +180,21 @@ export class PatientProfile {
 
   protected async saveContact(event: Event): Promise<void> {
     event.preventDefault();
+    const value = this.contactModel();
+    if (!value.nameAr?.trim()) {
+      this.toast.error('اسم جهة الاتصال مطلوب.');
+      return;
+    }
+    if (!value.phoneNumber?.trim()) {
+      this.toast.error('رقم الهاتف مطلوب.');
+      return;
+    }
+
     await submit(this.contactForm, async () => {
       if (!this.canManageContacts || this.savingContact()) return;
       this.savingContact.set(true);
       this.resetFeedback();
       try {
-        const value = this.contactModel();
         const request = {
           ...value,
           nameEn: value.nameEn.trim() || null,
@@ -185,10 +204,18 @@ export class PatientProfile {
         if (contactId) await firstValueFrom(this.api.updateContact(contactId, request));
         else await firstValueFrom(this.api.addContact(request));
         await this.loadContacts();
+        const successMsg = contactId
+          ? 'تم تحديث جهة الاتصال بنجاح.'
+          : 'تمت إضافة جهة الاتصال بنجاح.';
         this.cancelContactEdit();
-        this.successMessage.set(contactId ? 'تم تحديث جهة الاتصال.' : 'تمت إضافة جهة الاتصال.');
+        this.successMessage.set(successMsg);
+        this.toast.success(successMsg);
       } catch (error) {
-        this.messages.set(flattenErrors(error));
+        const errs = flattenErrors(error);
+        this.messages.set(errs);
+        if (errs.length > 0) {
+          this.toast.error(errs[0]);
+        }
       } finally {
         this.savingContact.set(false);
       }
@@ -202,8 +229,13 @@ export class PatientProfile {
       await firstValueFrom(this.api.deactivateContact(contact.contactId));
       await this.loadContacts();
       this.successMessage.set('تم إلغاء جهة الاتصال.');
+      this.toast.success('تم إلغاء جهة الاتصال بنجاح.');
     } catch (error) {
-      this.messages.set(flattenErrors(error));
+      const errs = flattenErrors(error);
+      this.messages.set(errs);
+      if (errs.length > 0) {
+        this.toast.error(errs[0]);
+      }
     }
   }
 
@@ -217,6 +249,30 @@ export class PatientProfile {
 
   protected profileFileChanged(event: Event): void {
     this.profileImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
+  }
+
+  protected clearSelectedFile(fileInput: HTMLInputElement): void {
+    fileInput.value = '';
+    this.profileImage.set(undefined);
+  }
+
+  protected copyPatientId(id: string): void {
+    if (!id) return;
+    navigator.clipboard.writeText(id);
+    this.copiedId.set(true);
+    this.toast.success('تم نسخ معرّف المريض.');
+    setTimeout(() => this.copiedId.set(false), 2000);
+  }
+
+  protected getRelationshipLabel(type: string): string {
+    const map: Record<string, string> = {
+      Father: 'أب',
+      Mother: 'أم',
+      Guardian: 'ولي أمر',
+      LegalGuardian: 'وصي قانوني',
+      Other: 'أخرى',
+    };
+    return map[type] || type;
   }
 
   protected logout(): void {

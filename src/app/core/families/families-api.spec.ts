@@ -5,6 +5,43 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { FamiliesApi } from './families-api';
 
+function familyDetailsResponse(status = 'Pending', currentRevisionNumber = 1) {
+  return {
+    request: {
+      requestId: 'request',
+      requestType: 'CreateFamily',
+      status,
+      familyId: null,
+      currentRevisionNumber,
+      rowVersion: 'AQID',
+    },
+    requester: { patientId: 'requester', nameAr: 'أحمد محمود سالم' },
+    target: { patientId: 'target', nameAr: 'يوسف أحمد سالم' },
+    requesterClaimedRole: 'Father',
+    targetClaimedRole: 'Child',
+    modificationMessage: null,
+    rejectionReason: null,
+    familyMembers: [],
+    documents: [
+      {
+        documentId: 'document',
+        documentType: 'BirthCertificate',
+        originalFileName: 'birth-certificate.pdf',
+        revisionNumber: 1,
+        uploadedOnUtc: '2026-09-15T09:44:10Z',
+      },
+    ],
+    history: [
+      {
+        action: 'Submitted',
+        performedOnUtc: '2026-09-15T09:44:10Z',
+        messageOrReason: null,
+        revisionNumber: 1,
+      },
+    ],
+  };
+}
+
 describe('FamiliesApi', () => {
   let api: FamiliesApi;
   let http: HttpTestingController;
@@ -51,8 +88,8 @@ describe('FamiliesApi', () => {
     expect(body.getAll('EvidenceFiles')).toEqual([file]);
     expect(body.getAll('DocumentTypes')).toEqual(['BirthCertificate']);
     expect(body.has('RequesterPatientId')).toBe(false);
-    request.flush({ requestId: 'request', status: 'Pending' });
-    await result;
+    request.flush(familyDetailsResponse());
+    expect((await result).requestId).toBe('request');
   });
 
   it('lists own requests with server-side filters and pagination', async () => {
@@ -75,8 +112,26 @@ describe('FamiliesApi', () => {
 
   it('loads request details and its secured document blob', async () => {
     const detailsResult = firstValueFrom(api.details('request'));
-    http.expectOne(`${requestsUrl}/request`).flush({ requestId: 'request' });
-    await detailsResult;
+    http.expectOne(`${requestsUrl}/request`).flush(familyDetailsResponse());
+    const details = await detailsResult;
+    expect(details).toMatchObject({
+      requestId: 'request',
+      requestType: 'CreateFamily',
+      status: 'Pending',
+      requesterPatientId: 'requester',
+      requesterNameAr: 'أحمد محمود سالم',
+      targetPatientId: 'target',
+      targetNameAr: 'يوسف أحمد سالم',
+      currentRevisionNumber: 1,
+      submittedOnUtc: '2026-09-15T09:44:10Z',
+      rowVersion: 'AQID',
+    });
+    expect(details.documents[0].fileName).toBe('birth-certificate.pdf');
+    expect(details.history[0]).toMatchObject({
+      action: 'Submitted',
+      occurredOnUtc: '2026-09-15T09:44:10Z',
+      message: null,
+    });
 
     const documentResult = firstValueFrom(api.document('request', 'document'));
     const documentRequest = http.expectOne(`${requestsUrl}/request/documents/document`);
@@ -99,7 +154,7 @@ describe('FamiliesApi', () => {
     expect(request.request.method).toBe('POST');
     expect(body.get('RowVersion')).toBe('AQID');
     expect(body.getAll('EvidenceFiles')).toEqual([file]);
-    request.flush({ requestId: 'request', status: 'Pending', currentRevisionNumber: 2 });
+    request.flush(familyDetailsResponse('Pending', 2));
     await result;
   });
 
@@ -123,7 +178,7 @@ describe('FamiliesApi', () => {
     expect(body.get('RequesterPatientId')).toBe('requester');
     expect(body.get('TargetPatientId')).toBe('target');
     expect(body.has('UserName')).toBe(false);
-    request.flush({ requestId: 'request', status: 'Pending', rowVersion: 'AQID' });
+    request.flush(familyDetailsResponse());
     await result;
   });
 
@@ -144,7 +199,7 @@ describe('FamiliesApi', () => {
     await listResult;
 
     const detailsResult = firstValueFrom(api.assistedDetails('request'));
-    http.expectOne(`${assistedUrl}/request`).flush({ requestId: 'request' });
+    http.expectOne(`${assistedUrl}/request`).flush(familyDetailsResponse());
     await detailsResult;
 
     const documentResult = firstValueFrom(api.assistedDocument('request', 'document'));
@@ -165,7 +220,7 @@ describe('FamiliesApi', () => {
     const request = http.expectOne(`${assistedUrl}/request/resubmit`);
     expect(request.request.method).toBe('POST');
     expect((request.request.body as FormData).get('RowVersion')).toBe('AQID');
-    request.flush({ requestId: 'request', status: 'Pending', currentRevisionNumber: 2 });
+    request.flush(familyDetailsResponse('Pending', 2));
     await result;
   });
 
@@ -187,7 +242,7 @@ describe('FamiliesApi', () => {
     await listResult;
 
     const detailsResult = firstValueFrom(api.adminDetails('request'));
-    http.expectOne(`${adminUrl}/request`).flush({ requestId: 'request' });
+    http.expectOne(`${adminUrl}/request`).flush(familyDetailsResponse());
     await detailsResult;
 
     const documentResult = firstValueFrom(api.adminDocument('request', 'document'));
@@ -197,19 +252,19 @@ describe('FamiliesApi', () => {
     await documentResult;
   });
 
-  it('sends the latest rowVersion for every admin review action', async () => {
+  it('accepts empty success responses and sends the latest rowVersion for admin review actions', async () => {
     const modificationResult = firstValueFrom(
       api.requestModification('request', { message: 'صورة أوضح', rowVersion: 'AQID' }),
     );
     const modification = http.expectOne(`${adminUrl}/request/request-modification`);
     expect(modification.request.body).toEqual({ message: 'صورة أوضح', rowVersion: 'AQID' });
-    modification.flush({ requestId: 'request', status: 'ModificationRequested' });
+    modification.flush(null, { status: 204, statusText: 'No Content' });
     await modificationResult;
 
     const approveResult = firstValueFrom(api.approve('request', { rowVersion: 'BAUG' }));
     const approve = http.expectOne(`${adminUrl}/request/approve`);
     expect(approve.request.body).toEqual({ rowVersion: 'BAUG' });
-    approve.flush({ requestId: 'request', status: 'Approved' });
+    approve.flush(null, { status: 204, statusText: 'No Content' });
     await approveResult;
 
     const rejectResult = firstValueFrom(
@@ -217,7 +272,7 @@ describe('FamiliesApi', () => {
     );
     const reject = http.expectOne(`${adminUrl}/request/reject`);
     expect(reject.request.body).toEqual({ reason: 'الدليل غير كافٍ', rowVersion: 'BwgJ' });
-    reject.flush({ requestId: 'request', status: 'Rejected' });
+    reject.flush(null, { status: 204, statusText: 'No Content' });
     await rejectResult;
   });
 });

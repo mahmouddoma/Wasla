@@ -66,6 +66,8 @@ export class DoctorDetails {
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly mediaStates = signal<Partial<Record<DoctorMediaType, MediaRequestState>>>({});
   protected readonly activeMedia = signal<MediaPreview | null>(null);
+  protected readonly profileImageUrl = signal<string | null>(null);
+  protected readonly isProfileImageLoading = signal(false);
   protected readonly isActionSubmitting = signal(false);
   protected readonly actionMessages = signal<string[]>([]);
   protected readonly actionFieldError = signal('');
@@ -133,7 +135,10 @@ export class DoctorDetails {
   );
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.revokeActiveMedia());
+    inject(DestroyRef).onDestroy(() => {
+      this.revokeActiveMedia();
+      this.revokeProfileImage();
+    });
     if (!isGuid(this.doctorId)) {
       this.isLoading.set(false);
       this.apiMessages.set(['معرّف الطبيب غير صالح. ارجع إلى قائمة الأطباء واختر الطبيب من جديد.']);
@@ -147,7 +152,9 @@ export class DoctorDetails {
     this.isLoading.set(true);
     this.apiMessages.set([]);
     try {
-      this.details.set(await firstValueFrom(this.api.details(this.doctorId)));
+      const doctor = await firstValueFrom(this.api.details(this.doctorId));
+      this.details.set(doctor);
+      void this.loadProfileImage(doctor.hasProfileImage);
     } catch (error) {
       const parsed = parseApiErrors(error);
       this.apiMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
@@ -372,6 +379,34 @@ export class DoctorDetails {
     const media = this.activeMedia();
     if (media) URL.revokeObjectURL(media.url);
     this.activeMedia.set(null);
+  }
+
+  private async loadProfileImage(available: boolean): Promise<void> {
+    if (!available) {
+      this.revokeProfileImage();
+      return;
+    }
+    if (this.profileImageUrl() || this.isProfileImageLoading()) return;
+
+    this.isProfileImageLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.api.media(this.doctorId, 'ProfileImage'));
+      const blob = response.body;
+      const contentType = blob?.type || response.headers.get('Content-Type') || '';
+      if (!blob?.size || !contentType.startsWith('image/')) return;
+
+      this.profileImageUrl.set(URL.createObjectURL(blob));
+    } catch {
+      this.revokeProfileImage();
+    } finally {
+      this.isProfileImageLoading.set(false);
+    }
+  }
+
+  private revokeProfileImage(): void {
+    const url = this.profileImageUrl();
+    if (url) URL.revokeObjectURL(url);
+    this.profileImageUrl.set(null);
   }
 
   private responseFilename(contentDisposition: string | null, fallback: string): string {

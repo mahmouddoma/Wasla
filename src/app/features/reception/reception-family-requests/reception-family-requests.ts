@@ -15,6 +15,10 @@ import {
   FamilyRole,
 } from '../../../core/families/family.models';
 import { openPrivateMedia } from '../../../core/media/private-media';
+import {
+  EVIDENCE_FILE_ACCEPT,
+  getEvidenceFileValidationError,
+} from '../../../core/validation/evidence-files';
 import { PatientSearchItem } from '../../../core/patients/patient.models';
 import { PatientPicker } from '../../../shared/patient-picker/patient-picker';
 
@@ -29,6 +33,7 @@ export class ReceptionFamilyRequests {
   private readonly api = inject(FamiliesApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+  protected readonly evidenceFileAccept = EVIDENCE_FILE_ACCEPT;
   protected readonly requester = signal<PatientSearchItem | null>(null);
   protected readonly target = signal<PatientSearchItem | null>(null);
   protected readonly selectedRequest = signal<FamilyRequestDetails | null>(null);
@@ -97,6 +102,11 @@ export class ReceptionFamilyRequests {
         return;
       }
       const documentTypes = splitTypes(this.requestModel().documentTypes);
+      const fileError = getEvidenceFileValidationError(this.evidenceFiles());
+      if (fileError) {
+        this.messages.set([fileError]);
+        return;
+      }
       if (!this.evidenceFiles().length || documentTypes.length !== this.evidenceFiles().length) {
         this.messages.set(['أرفق دليلاً واحداً على الأقل وحدد نوعاً لكل ملف.']);
         return;
@@ -169,6 +179,11 @@ export class ReceptionFamilyRequests {
     const request = this.selectedRequest();
     if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
     const documentTypes = splitTypes(this.revisionTypes());
+    const fileError = getEvidenceFileValidationError(this.revisionFiles());
+    if (fileError) {
+      this.messages.set([fileError]);
+      return;
+    }
     if (!this.revisionFiles().length || documentTypes.length !== this.revisionFiles().length) {
       this.messages.set(['أرفق أدلة جديدة وحدد نوعاً لكل ملف.']);
       return;
@@ -202,7 +217,17 @@ export class ReceptionFamilyRequests {
   }
 
   protected filesChanged(event: Event, revision = false): void {
-    const files = Array.from((event.currentTarget as HTMLInputElement).files ?? []);
+    const input = event.currentTarget as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    const fileError = getEvidenceFileValidationError(files);
+    this.resetFeedback();
+    if (fileError) {
+      input.value = '';
+      if (revision) this.revisionFiles.set([]);
+      else this.evidenceFiles.set([]);
+      this.messages.set([fileError]);
+      return;
+    }
     if (revision) this.revisionFiles.set(files);
     else this.evidenceFiles.set(files);
   }

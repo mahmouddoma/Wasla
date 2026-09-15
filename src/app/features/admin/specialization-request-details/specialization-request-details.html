@@ -1,182 +1,349 @@
-<section class="request-page">
-  <a class="back-link" routerLink="/admin/doctor-specialization-requests">العودة إلى الطلبات</a>
+<div class="request-container" [class.is-drawer-view]="isDrawer()">
+  @if (!isDrawer()) {
+    <a class="back-link" routerLink="/admin/doctor-specialization-requests">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+      <span>العودة إلى قائمة الطلبات</span>
+    </a>
+  }
+
   @if (apiMessages().length) {
     <div class="form-notice error" role="alert">
-      @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
-      }
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <div class="notice-texts">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
     </div>
   }
+
   @if (isLoading() && !details()) {
-    <div class="panel" role="status">جارٍ تحميل تفاصيل الطلب…</div>
+    <div class="loading-state-box" role="status">
+      <div class="spinner-medical" aria-hidden="true"></div>
+      <p>جارٍ تحميل تفاصيل وبيانات طلب التخصص…</p>
+    </div>
   } @else if (details(); as page) {
-    <header>
-      <div>
-        <p class="eyebrow">
-          {{ page.request.type === 'Initial' ? 'طلب تخصص أول' : 'طلب تغيير تخصص' }} · المراجعة #{{
-            page.request.currentRevisionNumber
-          }}
-        </p>
-        <h1>{{ page.doctorNameAr }}</h1>
-        @if (page.doctorNameEn) {
-          <p lang="en">{{ page.doctorNameEn }}</p>
-        }
-        <a [href]="'mailto:' + page.email">{{ page.email }}</a>
+    <!-- Doctor & Request Profile Banner -->
+    <header class="request-profile-card">
+      <div class="doctor-identity-meta">
+        <div class="doctor-avatar-box">
+          <span>{{ doctorInitials(page.doctorNameAr) }}</span>
+        </div>
+
+        <div class="doctor-info-col">
+          <div class="request-eyebrow">
+            <span class="type-pill">
+              {{ page.request.type === 'Initial' ? 'طلب تخصص أول' : 'طلب تغيير تخصص' }}
+            </span>
+            <span class="sep-dot">·</span>
+            <span class="revision-label">المراجعة #{{ page.request.currentRevisionNumber }}</span>
+          </div>
+
+          <h1 class="doctor-name">{{ page.doctorNameAr }}</h1>
+
+          @if (page.doctorNameEn) {
+            <p class="doctor-name-en" lang="en" dir="ltr">{{ page.doctorNameEn }}</p>
+          }
+
+          <div class="doctor-contact-row">
+            <a [href]="'mailto:' + page.email" class="email-link">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span>{{ page.email }}</span>
+            </a>
+          </div>
+        </div>
       </div>
-      <span [class]="'request-status ' + page.request.status.toLowerCase()">{{
-        page.request.status
-      }}</span>
+
+      <div class="status-box">
+        @switch (page.request.status) {
+          @case ('PendingReview') {
+            <span class="badge-state badge-state--pending">
+              <span class="pulse-ring-dot" aria-hidden="true"></span>
+              <span>قيد المراجعة</span>
+            </span>
+          }
+          @case ('ModificationRequested') {
+            <span class="badge-state badge-state--mod">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>مطلوب تعديل</span>
+            </span>
+          }
+          @case ('Approved') {
+            <span class="badge-state badge-state--approved">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>معتمد</span>
+            </span>
+          }
+          @case ('Rejected') {
+            <span class="badge-state badge-state--rejected">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              <span>مرفوض</span>
+            </span>
+          }
+        }
+      </div>
     </header>
+
     @if (page.request.latestModificationMessage) {
-      <div class="form-notice info">
-        <strong>آخر رسالة تعديل</strong>
-        <p>{{ page.request.latestModificationMessage }}</p>
+      <div class="form-notice info-notice">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+        <div>
+          <strong>آخر ملاحظات تعديل أُرسلت للطبيب:</strong>
+          <p>{{ page.request.latestModificationMessage }}</p>
+        </div>
       </div>
     }
+
+    <!-- Comparison Grid: Proposed vs Current Effective Specializations -->
     <div class="sets-grid">
-      <section class="panel">
-        <h2>التخصصات المعتمدة حاليًا</h2>
-        <p class="hint">لا تتغير أثناء المراجعة.</p>
-        <ul>
-          @for (item of page.currentEffectiveSpecializations; track item.medicalSpecializationId) {
-            <li>
-              <span>{{ item.nameAr }}</span>
+      <!-- Proposed Specializations -->
+      <section class="panel panel-proposed">
+        <div class="panel-heading">
+          <div class="heading-text">
+            <h2>أحدث مقترح للتخصصات</h2>
+            <p class="hint">المراجعة المقدمة حاليًا رقم #{{ page.request.currentRevisionNumber }}</p>
+          </div>
+          <span class="count-pill">{{ page.request.latestRevision.length }} تخصص</span>
+        </div>
+
+        <ul class="specs-list">
+          @for (item of page.request.latestRevision; track item.medicalSpecializationId) {
+            <li class="spec-item" [class.is-primary]="item.isPrimary">
+              <div class="spec-name-box">
+                <span class="spec-name">{{ item.nameAr }}</span>
+                @if (item.nameEn) {
+                  <span class="spec-name-en" lang="en" dir="ltr">{{ item.nameEn }}</span>
+                }
+              </div>
               @if (item.isPrimary) {
-                <strong>أساسي</strong>
+                <span class="badge-primary-chip">تخصص أساسي</span>
+              } @else {
+                <span class="badge-sub-chip">فرعي</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <!-- Current Effective Specializations -->
+      <section class="panel panel-effective">
+        <div class="panel-heading">
+          <div class="heading-text">
+            <h2>التخصصات المعتمدة حاليًا</h2>
+            <p class="hint">التخصصات الفعالة لملف الطبيب ولا تتغير إلا بعد الاعتماد</p>
+          </div>
+          <span class="count-pill">{{ page.currentEffectiveSpecializations.length }} تخصص</span>
+        </div>
+
+        <ul class="specs-list">
+          @for (item of page.currentEffectiveSpecializations; track item.medicalSpecializationId) {
+            <li class="spec-item" [class.is-primary]="item.isPrimary">
+              <div class="spec-name-box">
+                <span class="spec-name">{{ item.nameAr }}</span>
+                @if (item.nameEn) {
+                  <span class="spec-name-en" lang="en" dir="ltr">{{ item.nameEn }}</span>
+                }
+              </div>
+              @if (item.isPrimary) {
+                <span class="badge-primary-chip">تخصص أساسي</span>
+              } @else {
+                <span class="badge-sub-chip">فرعي</span>
               }
             </li>
           } @empty {
-            <li class="empty">لا توجد تخصصات معتمدة بعد.</li>
-          }
-        </ul>
-      </section>
-      <section class="panel">
-        <h2>أحدث مقترح</h2>
-        <p class="hint">المراجعة #{{ page.request.currentRevisionNumber }}</p>
-        <ul>
-          @for (item of page.request.latestRevision; track item.medicalSpecializationId) {
-            <li>
-              <span>{{ item.nameAr }}</span>
-              @if (item.isPrimary) {
-                <strong>أساسي</strong>
-              }
+            <li class="empty-spec-state">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>لا توجد تخصصات معتمدة سابقة للطبيب (هذا طلب تسجيل أول).</span>
             </li>
           }
         </ul>
       </section>
     </div>
+
+    <!-- Review Decision Actions Bar -->
     @if (isPending()) {
-      <div class="review-actions">
-        @if (can('adjust')) {
-          <button class="btn btn-outline-secondary" type="button" (click)="openAction('adjust')">
-            تعديل المقترح
-          </button>
-        }
-        @if (can('modification')) {
-          <button
-            class="btn btn-outline-secondary"
-            type="button"
-            (click)="openAction('modification')"
-          >
-            طلب تعديل من الطبيب
-          </button>
-        }
-        @if (can('approve')) {
-          <button class="btn btn-primary" type="button" (click)="openAction('approve')">
-            اعتماد
-          </button>
-        }
-        @if (can('reject')) {
-          <button class="btn btn-danger" type="button" (click)="openAction('reject')">رفض</button>
-        }
+      <div class="review-actions-bar">
+        <div class="actions-header">
+          <span class="actions-title">إجراءات المراجعة والاعتماد الطبي:</span>
+        </div>
+
+        <div class="actions-buttons">
+          @if (can('approve')) {
+            <button class="btn-decision btn-decision--approve" type="button" (click)="openAction('approve')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>اعتماد المقترح</span>
+            </button>
+          }
+
+          @if (can('modification')) {
+            <button class="btn-decision btn-decision--mod" type="button" (click)="openAction('modification')">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>طلب تعديل من الطبيب</span>
+            </button>
+          }
+
+          @if (can('adjust')) {
+            <button class="btn-decision btn-decision--adjust" type="button" (click)="openAction('adjust')">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              <span>تعديل المقترح إداريًا</span>
+            </button>
+          }
+
+          @if (can('reject')) {
+            <button class="btn-decision btn-decision--reject" type="button" (click)="openAction('reject')">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              <span>رفض الطلب</span>
+            </button>
+          }
+        </div>
       </div>
     }
+
+    <!-- Action Form Modal / Card -->
     @if (action(); as currentAction) {
-      <form class="panel review-form" (submit)="submitAction($event)">
-        <div>
-          <h2>
-            {{
-              currentAction === 'adjust'
-                ? 'تعديل المقترح'
-                : currentAction === 'modification'
-                  ? 'طلب تعديل'
-                  : 'رفض الطلب'
-            }}
-          </h2>
-          <button type="button" aria-label="إغلاق" (click)="closeAction()">×</button>
-        </div>
-        @if (currentAction === 'adjust') {
-          <app-specialization-selector
-            [options]="options()"
-            [selected]="selected()"
-            [disabled]="isSubmitting()"
-            (selectionChange)="selected.set($event)"
-          />
-        }
-        <label class="form-field"
-          ><span>{{ currentAction === 'modification' ? 'الرسالة' : 'السبب' }}</span
-          ><textarea [formField]="textForm.text"></textarea>
-          @if (textForm.text().touched() && textForm.text().errors().length) {
-            <small class="field-error">{{ textForm.text().errors()[0].message }}</small>
+      <div class="action-card-overlay">
+        <form class="action-card" (submit)="submitAction($event)">
+          <div class="action-card-header">
+            <div class="title-cluster">
+              <span class="action-card-tag">
+                {{
+                  currentAction === 'adjust'
+                    ? 'تعديل التخصصات'
+                    : currentAction === 'modification'
+                      ? 'طلب تعديل'
+                      : 'رفض الطلب'
+                }}
+              </span>
+              <h3>
+                {{
+                  currentAction === 'adjust'
+                    ? 'تعديل مقترح التخصصات وإنشاء مراجعة جديدة'
+                    : currentAction === 'modification'
+                      ? 'إرسال ملاحظات للطبيب لتعديل طلبه'
+                      : 'تأكيد رفض طلب التخصص'
+                }}
+              </h3>
+            </div>
+            <button type="button" class="btn-close-action" aria-label="إغلاق" (click)="closeAction()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          @if (currentAction === 'adjust') {
+            <div class="specialization-selector-box">
+              <app-specialization-selector
+                [options]="options()"
+                [selected]="selected()"
+                [disabled]="isSubmitting()"
+                (selectionChange)="selected.set($event)"
+              />
+            </div>
           }
-        </label>
-        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting()">
-          {{ isSubmitting() ? 'جارٍ الإرسال…' : 'تأكيد الإجراء' }}
-        </button>
-      </form>
-    }
-    @if (page.revisions.length) {
-      <section class="panel">
-        <h2>نسخ المقترح</h2>
-        <div class="revisions">
-          @for (revision of page.revisions; track revision.revisionNumber) {
-            <article>
-              <strong>المراجعة #{{ revision.revisionNumber }}</strong>
-              @if (revision.createdOnUtc) {
-                <time [attr.datetime]="revision.createdOnUtc">{{
-                  formatDate(revision.createdOnUtc)
-                }}</time>
+
+          <label class="form-field-card">
+            <span class="field-title">
+              {{ currentAction === 'modification' ? 'رسالة التوجيه وملاحظات التعديل' : 'سبب القرار والملاحظات الإدارية' }}
+            </span>
+            <textarea
+              class="field-textarea"
+              placeholder="اكتب الملاحظات أو سبب القرار بالتفصيل..."
+              rows="4"
+              [formField]="textForm.text"
+            ></textarea>
+            @if (textForm.text().touched() && textForm.text().errors().length) {
+              <small class="field-error-text">{{ textForm.text().errors()[0].message }}</small>
+            }
+          </label>
+
+          <div class="action-card-footer">
+            <button class="btn-cancel" type="button" [disabled]="isSubmitting()" (click)="closeAction()">
+              إلغاء
+            </button>
+            <button class="btn-confirm-action" type="submit" [disabled]="isSubmitting()">
+              @if (isSubmitting()) {
+                <span class="spinner-small" aria-hidden="true"></span>
+                <span>جارٍ الحفظ…</span>
+              } @else {
+                <span>تأكيد الإجراء</span>
               }
-              <ul>
-                @for (item of revision.specializations; track item.medicalSpecializationId) {
-                  <li>
-                    <span>{{ item.nameAr }}</span>
-                    @if (item.isPrimary) {
-                      <strong>أساسي</strong>
-                    }
-                  </li>
-                }
-              </ul>
-            </article>
-          }
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Revision History Timeline -->
+    @if (history().length) {
+      <section class="panel panel-history">
+        <div class="panel-heading">
+          <div class="heading-text">
+            <h2>سجل المراجعات والقرارات السابقة</h2>
+            <p class="hint">تاريخ الحركات والإجراءات الإدارية المتخذة على هذا الطلب</p>
+          </div>
         </div>
+
+        <ol class="history-timeline">
+          @for (item of history(); track item.id) {
+            <li class="timeline-step">
+              <div class="timeline-indicator" aria-hidden="true"></div>
+              <div class="timeline-body">
+                <div class="step-head">
+                  <strong class="action-name">{{ item.action }}</strong>
+                  <time [attr.datetime]="item.performedOnUtc">{{ formatDate(item.performedOnUtc) }}</time>
+                </div>
+                <div class="step-sub">
+                  <span>المراجعة #{{ item.revisionNumber }}</span>
+                  @if (item.previousRevisionNumber !== null) {
+                    <span>· السابقة #{{ item.previousRevisionNumber }}</span>
+                  }
+                </div>
+                @if (item.message) {
+                  <blockquote class="step-message">{{ item.message }}</blockquote>
+                }
+              </div>
+            </li>
+          }
+        </ol>
       </section>
     }
-    <section class="panel">
-      <h2>سجل الطلب</h2>
-      <ol class="timeline">
-        @for (item of history(); track item.id) {
-          <li>
-            <div>
-              <strong>{{ item.action }}</strong
-              ><time [attr.datetime]="item.performedOnUtc">{{
-                formatDate(item.performedOnUtc)
-              }}</time>
-            </div>
-            <p>
-              المراجعة #{{ item.revisionNumber }}
-              @if (item.previousRevisionNumber !== null) {
-                · السابقة #{{ item.previousRevisionNumber }}
-              }
-            </p>
-            @if (item.message) {
-              <blockquote>{{ item.message }}</blockquote>
-            }
-          </li>
-        } @empty {
-          <li class="empty">لا يوجد سجل متاح.</li>
-        }
-      </ol>
-    </section>
   }
-</section>
+</div>

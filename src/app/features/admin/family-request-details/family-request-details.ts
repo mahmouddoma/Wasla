@@ -4,8 +4,12 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   inject,
+  input,
+  output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormField, form, maxLength, required, submit } from '@angular/forms/signals';
@@ -17,6 +21,7 @@ import { PERMISSIONS } from '../../../core/auth/permissions';
 import { FamiliesApi } from '../../../core/families/families-api';
 import { FamilyRequestDetails } from '../../../core/families/family.models';
 import { openPrivateMedia } from '../../../core/media/private-media';
+import { ToastService } from '../../../core/notifications/toast.service';
 
 type ReviewAction = 'modification' | 'approve' | 'reject';
 
@@ -29,15 +34,24 @@ type ReviewAction = 'modification' | 'approve' | 'reject';
 })
 export class FamilyRequestDetailsPage {
   private readonly api = inject(FamiliesApi);
-  private readonly route = inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly session = inject(AuthSession);
+  private readonly toast = inject(ToastService);
   private readonly reviewDialog = viewChild<ElementRef<HTMLDialogElement>>('reviewDialog');
+
+  readonly requestIdInput = input<string | null>(null);
+  readonly isDrawer = input<boolean>(false);
+  readonly closed = output<void>();
+  readonly reviewed = output<void>();
+
+  private readonly routeId = this.route?.snapshot.paramMap.get('requestId') ?? null;
+  protected readonly activeId = computed(() => this.requestIdInput() || this.routeId);
+
   protected readonly details = signal<FamilyRequestDetails | null>(null);
   protected readonly loading = signal(true);
   protected readonly submitting = signal(false);
   protected readonly documentLoadingId = signal('');
   protected readonly messages = signal<string[]>([]);
-  protected readonly successMessage = signal('');
   protected readonly action = signal<ReviewAction>('approve');
   protected readonly reviewModel = signal({ text: '' });
   protected readonly reviewForm = form(this.reviewModel, (field) => {
@@ -55,12 +69,24 @@ export class FamilyRequestDetailsPage {
     PERMISSIONS.familyRelationshipRequestsReject,
   );
 
+  protected readonly copiedText = signal<string | null>(null);
+
   constructor() {
-    void this.load();
+    effect(() => {
+      const id = this.activeId();
+      if (id) {
+        untracked(() => void this.load(id));
+      } else {
+        untracked(() => {
+          this.details.set(null);
+          this.loading.set(false);
+        });
+      }
+    });
   }
 
-  protected async load(): Promise<void> {
-    const requestId = this.route.snapshot.paramMap.get('requestId');
+  protected async load(reqId?: string): Promise<void> {
+    const requestId = reqId || this.activeId();
     if (!requestId) {
       this.messages.set(['معرّف الطلب غير موجود.']);
       this.loading.set(false);
@@ -125,7 +151,6 @@ export class FamilyRequestDetailsPage {
     if (!request || this.submitting() || !this.isPending()) return;
     this.submitting.set(true);
     this.messages.set([]);
-    this.successMessage.set('');
     try {
       const rowVersion = request.rowVersion;
       const action = this.action();
@@ -147,14 +172,15 @@ export class FamilyRequestDetailsPage {
         );
       }
       this.closeAction();
-      this.successMessage.set(
+      this.toast.success(
         action === 'approve'
-          ? 'تم اعتماد الطلب.'
+          ? 'تم اعتماد الطلب بنجاح.'
           : action === 'modification'
-            ? 'تم طلب تعديل؛ الحالة ليست رفضاً نهائياً.'
-            : 'تم رفض الطلب نهائياً بدون تعديل عضوية العائلة.',
+            ? 'تم إرسال طلب التعديل للأطراف المعنية بنجاح.'
+            : 'تم رفض الطلب نهائياً.',
       );
       await this.load();
+      this.reviewed.emit();
     } catch (error) {
       this.messages.set(flattenErrors(error));
       if (error instanceof HttpErrorResponse && error.status === 409) {
@@ -167,6 +193,80 @@ export class FamilyRequestDetailsPage {
       }
     } finally {
       this.submitting.set(false);
+    }
+  }
+
+  protected async copyText(val: string, key = 'id'): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(val);
+      this.copiedText.set(key);
+      setTimeout(() => {
+        if (this.copiedText() === key) this.copiedText.set(null);
+      }, 2000);
+    } catch {
+      // ignore
+    }
+  }
+
+  protected getRoleLabel(role?: string | null): string {
+    if (!role) return '—';
+    const map: Record<string, string> = {
+      Father: 'أب',
+      Mother: 'أم',
+      Child: 'طفل',
+      Guardian: 'ولي أمر',
+      LegalGuardian: 'وصي قانوني',
+      Other: 'أخرى',
+    };
+    return map[role] || role;
+  }
+
+  protected getRequestTypeLabel(type?: string | null): string {
+    if (!type) return 'طلب علاقة';
+    const map: Record<string, string> = {
+      CreateFamily: 'إنشاء عائلة',
+      AddFamilyMember: 'إضافة عضو',
+    };
+    return map[type] || type;
+  }
+
+  protected getStatusLabel(status?: string | null): string {
+    if (!status) return '—';
+    const map: Record<string, string> = {
+      Pending: 'قيد المراجعة',
+      ModificationRequested: 'مطلوب تعديل',
+      Approved: 'معتمد',
+      Rejected: 'مرفوض',
+    };
+    return map[status] || status;
+  }
+
+  protected getActionLabel(action: string): string {
+    const map: Record<string, string> = {
+      Submitted: 'تم تقديم الطلب',
+      Resubmitted: 'تمت إعادة تقديم الطلب',
+      ModificationRequested: 'طلب تعديل من الإدارة',
+      Approved: 'تم الاعتماد والموافقة',
+      Rejected: 'تم رفض الطلب',
+    };
+    return map[action] || action;
+  }
+
+  protected formatDate(value?: string | null): string {
+    if (!value) return '—';
+    try {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime())
+        ? value
+        : new Intl.DateTimeFormat('ar-EG', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(date);
+    } catch {
+      return value;
     }
   }
 }

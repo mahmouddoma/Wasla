@@ -1,264 +1,1028 @@
-<main class="health-workspace" dir="rtl">
-  <header class="workspace-bar">
-    <div>
-      <h1>العائلة وطلبات إثبات العلاقة</h1>
-      <p>العضوية مرتبطة بملف Patient، ولا تعتمد على جهات الاتصال أو ملكية للحساب.</p>
+<main class="patient-family-shell" dir="rtl">
+  <!-- Ambient backdrop lighting -->
+  <div class="ambient-glow-mesh" aria-hidden="true">
+    <div class="ambient-circle circle-teal"></div>
+    <div class="ambient-circle circle-navy"></div>
+  </div>
+
+  <!-- Top Enterprise Floating Header -->
+  <header class="profile-header">
+    <div class="brand-cluster">
+      <img class="profile-logo" src="/images/wasla-mark.png" width="40" height="40" alt="وصلة" />
+      <div class="brand-meta">
+        <span class="brand-name">وصلة</span>
+        <span class="brand-tagline">منظومة الرعاية الصحية الموحدة</span>
+      </div>
     </div>
-    <div class="bar-actions">
-      <a class="btn btn-outline-secondary" routerLink="/patient/profile">الملف وجهات الاتصال</a
-      ><a class="btn btn-outline-secondary" routerLink="/workspace/patient">الرئيسية</a
-      ><button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+
+    <div class="header-actions">
+      <a class="btn-head btn-head-nav" routerLink="/patient/profile">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>الملف وجهات الاتصال</span>
+      </a>
+      <a class="btn-head btn-head-nav" routerLink="/workspace/patient">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span>الرئيسية</span>
+      </a>
+      <button
+        class="btn-head btn-head-logout"
+        type="button"
+        (click)="logout()"
+        title="تسجيل الخروج"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        <span>خروج</span>
+      </button>
     </div>
   </header>
+
+  <!-- Hero Header -->
+  <div class="profile-hero-header">
+    <div class="hero-pill-badge">
+      <svg
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        aria-hidden="true"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      <span>إدارة العائلة والقرابة الرسمية</span>
+    </div>
+    <h1>العائلة وطلبات إثبات العلاقة</h1>
+    <p>العضوية مرتبطة بملف Patient الموثق، ولا تعتمد على جهات الاتصال أو ملكية للحساب.</p>
+  </div>
+
+  <!-- Notice / Feedback Banners -->
   @if (messages().length) {
-    <div class="notice error" role="alert">
-      @for (message of messages(); track message) {
-        <p>{{ message }}</p>
-      }
+    <div class="notice-card notice-error" role="alert">
+      <svg
+        class="notice-icon"
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div class="notice-content">
+        @for (message of messages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
     </div>
   }
   @if (successMessage()) {
-    <div class="notice success" role="status">{{ successMessage() }}</div>
+    <div class="notice-card notice-success" role="status">
+      <svg
+        class="notice-icon"
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <div class="notice-content">
+        <p>{{ successMessage() }}</p>
+      </div>
+    </div>
   }
-  @if (loading()) {
-    <div class="workspace-panel empty-state">جارٍ تحميل بيانات العائلة…</div>
-  }
-  @if (!loading()) {
-    <div class="workspace-grid">
-      <section class="workspace-panel">
-        <div class="section-heading">
-          <div>
-            <span class="step">01</span>
-            <h2>عائلتي</h2>
-          </div>
-          <p>لا يوجد مفهوم Family Owner، ولا تظهر أي بيانات طبية هنا.</p>
-        </div>
-        @if (family(); as item) {
-          <div class="family-summary">
-            <span class="status-badge primary">{{ item.status }}</span
-            ><small>Family ID: {{ item.familyId }}</small>
-          </div>
-          <div class="result-list">
-            @for (member of item.members; track member.patientId) {
-              <article class="contact-row">
-                <div>
-                  <strong>{{ member.nameAr }}</strong
-                  ><span>{{ member.role }} · {{ member.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
-                </div>
-              </article>
-            }
-          </div>
-        } @else {
-          <div class="empty-state">لا توجد عائلة فعالة. يمكنك بدء طلب إنشاء عائلة.</div>
-        }
-      </section>
 
-      @if (canCreateRequest) {
-        <section class="workspace-panel">
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-panel">
+      <div class="loading-ring"></div>
+      <span>جارٍ تحميل بيانات العائلة والطلبات…</span>
+    </div>
+  }
+
+  <!-- Loaded Content -->
+  @if (!loading()) {
+    <div class="content-container">
+      <div class="family-top-grid">
+        <!-- ═══ Section 01: My Family ═══ -->
+        <section class="panel family-panel">
           <div class="section-heading">
-            <div>
-              <span class="step">02</span>
-              <h2>طلب علاقة عائلية</h2>
+            <div class="heading-title-row">
+              <span class="step-pill">01</span>
+              <div>
+                <h2>عائلتي</h2>
+                <p>لا يوجد مفهوم Family Owner، ولا تظهر أي بيانات طبية هنا.</p>
+              </div>
             </div>
-            <p>الإرسال مباشر إلى Pending ويتطلب دليلاً؛ الطفل لا يمكنه بدء الطلب.</p>
           </div>
-          <form class="detail-form" (submit)="submitRequest($event)" novalidate>
-            <label class="form-field"
-              ><span>نوع الطلب</span
-              ><select [formField]="requestForm.requestType">
-                <option value="CreateFamily">إنشاء عائلة</option>
-                <option value="AddFamilyMember">إضافة عضو</option>
-              </select></label
-            >
-            @if (requestModel().requestType === 'AddFamilyMember') {
-              <label class="form-field"
-                ><span>Family ID *</span><input dir="ltr" [formField]="requestForm.familyId"
-              /></label>
-            }
-            <label class="form-field"
-              ><span>Target Patient ID *</span
-              ><input dir="ltr" [formField]="requestForm.targetPatientId"
-            /></label>
-            <label class="form-field"
-              ><span>دور مقدم الطلب</span
-              ><select [formField]="requestForm.requesterClaimedRole">
-                <option value="Father">أب</option>
-                <option value="Mother">أم</option>
-                <option value="Guardian">ولي أمر</option>
-                <option value="LegalGuardian">وصي قانوني</option>
-              </select></label
-            >
-            <label class="form-field"
-              ><span>دور المريض المستهدف</span
-              ><select [formField]="requestForm.targetClaimedRole">
-                <option value="Father">أب</option>
-                <option value="Mother">أم</option>
-                <option value="Child">طفل</option>
-                <option value="Guardian">ولي أمر</option>
-                <option value="LegalGuardian">وصي قانوني</option>
-              </select></label
-            >
-            <label class="form-field"
-              ><span>أنواع المستندات *</span
-              ><input
-                placeholder="BirthCertificate, NationalId"
-                [formField]="requestForm.documentTypes"
-              /><small>افصل الأنواع بفاصلة وبنفس ترتيب الملفات.</small></label
-            >
-            <label class="form-field full"
-              ><span>مستندات الإثبات *</span
-              ><input type="file" multiple (change)="evidenceChanged($event)"
-            /></label>
-            <button class="btn btn-primary full" type="submit" [disabled]="submitting()">
-              {{ submitting() ? 'جارٍ الإرسال…' : 'إرسال الطلب' }}
-            </button>
+
+          @if (family(); as item) {
+            <div class="family-meta-card">
+              <div
+                class="family-id-chip"
+                (click)="copyFamilyId(item.familyId)"
+                title="انقر لنسخ معرّف العائلة"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span dir="ltr">Family ID: {{ item.familyId }}</span>
+                @if (copiedId()) {
+                  <small style="color: var(--wasla-teal-700)">تم النسخ!</small>
+                }
+              </div>
+              <span class="status-badge" [ngClass]="getStatusClass(item.status)">{{
+                getStatusLabel(item.status)
+              }}</span>
+            </div>
+
+            <div class="members-deck">
+              @for (member of item.members; track member.patientId) {
+                <div class="member-row-card">
+                  <div class="member-info">
+                    <div class="member-avatar">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="member-name">{{ member.nameAr }}</h4>
+                    </div>
+                  </div>
+                  <div class="member-badges">
+                    <span class="role-pill">{{ getRoleLabel(member.role) }}</span>
+                    <span class="gender-pill">{{ member.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state-box">
+              <div class="empty-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="26"
+                  height="26"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <h4>لا توجد عائلة مسجلة</h4>
+              <p>لا توجد عائلة فعالة حالياً؛ يمكنك بدء طلب إنشاء عائلة عبر النموذج المجاور.</p>
+            </div>
+          }
+        </section>
+
+        <!-- ═══ Section 02: Family Request Form ═══ -->
+        @if (canCreateRequest) {
+          <section class="panel request-panel">
+            <div class="section-heading">
+              <div class="heading-title-row">
+                <span class="step-pill">02</span>
+                <div>
+                  <h2>طلب علاقة عائلية</h2>
+                  <p>الإرسال مباشر إلى Pending ويتطلب دليلاً؛ الطفل لا يمكنه بدء الطلب.</p>
+                </div>
+              </div>
+            </div>
+
+            <form class="detail-form-grid" (submit)="submitRequest($event)" novalidate>
+              <label class="input-field">
+                <span class="field-title">نوع الطلب</span>
+                <div class="select-box">
+                  <select [formField]="requestForm.requestType">
+                    <option value="CreateFamily">إنشاء عائلة</option>
+                    <option value="AddFamilyMember">إضافة عضو</option>
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </label>
+
+              @if (requestModel().requestType === 'AddFamilyMember') {
+                <label class="input-field">
+                  <span class="field-title"
+                    >معرف العائلة Family ID <span class="required-star">*</span></span
+                  >
+                  <input
+                    class="field-input ltr-text"
+                    dir="ltr"
+                    [formField]="requestForm.familyId"
+                    placeholder="Family UUID"
+                  />
+                </label>
+              }
+
+              <label class="input-field">
+                <span class="field-title"
+                  >Target Patient ID <span class="required-star">*</span></span
+                >
+                <input
+                  class="field-input ltr-text"
+                  dir="ltr"
+                  [formField]="requestForm.targetPatientId"
+                  placeholder="معرف المريض المستهدف"
+                />
+              </label>
+
+              <label class="input-field">
+                <span class="field-title">دور مقدم الطلب</span>
+                <div class="select-box">
+                  <select [formField]="requestForm.requesterClaimedRole">
+                    <option value="Father">أب</option>
+                    <option value="Mother">أم</option>
+                    <option value="Guardian">ولي أمر</option>
+                    <option value="LegalGuardian">وصي قانوني</option>
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </label>
+
+              <label class="input-field">
+                <span class="field-title">دور المريض المستهدف</span>
+                <div class="select-box">
+                  <select [formField]="requestForm.targetClaimedRole">
+                    <option value="Father">أب</option>
+                    <option value="Mother">أم</option>
+                    <option value="Child">طفل</option>
+                    <option value="Guardian">ولي أمر</option>
+                    <option value="LegalGuardian">وصي قانوني</option>
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </label>
+
+              <label class="input-field full-width">
+                <span class="field-title"
+                  >أنواع المستندات <span class="required-star">*</span></span
+                >
+                <input
+                  class="field-input"
+                  placeholder="مثال: BirthCertificate, NationalId"
+                  [formField]="requestForm.documentTypes"
+                />
+                <span class="field-hint">افصل الأنواع بفاصلة وبنفس ترتيب الملفات المرفوعة.</span>
+              </label>
+
+              <!-- Custom Multi-File Dropzone -->
+              <div class="photo-upload-field full-width">
+                <span class="field-title"
+                  >مستندات الإثبات <span class="required-star">*</span></span
+                >
+                <input
+                  #evidenceInput
+                  type="file"
+                  multiple
+                  [accept]="evidenceFileAccept"
+                  class="hidden-file-input"
+                  (change)="evidenceChanged($event)"
+                />
+
+                <div class="upload-dropzone" (click)="evidenceInput.click()">
+                  @if (evidenceFiles().length > 0) {
+                    <div class="selected-files-list">
+                      <div class="selected-files-header">
+                        <span class="files-count-tag"
+                          >تم اختيار {{ evidenceFiles().length }} ملفات</span
+                        >
+                        <button
+                          type="button"
+                          class="btn-clear-files"
+                          (click)="$event.stopPropagation(); clearEvidenceFiles(evidenceInput)"
+                        >
+                          إلغاء التحديد
+                        </button>
+                      </div>
+                      @for (file of evidenceFiles(); track file.name) {
+                        <div class="file-chip">
+                          <span class="file-chip-name">{{ file.name }}</span>
+                          <span class="file-chip-size">{{ (file.size / 1024).toFixed(1) }} KB</span>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="upload-prompt">
+                      <div class="upload-icon-circle">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                      </div>
+                      <div class="upload-text">
+                        <strong>انقر لاختيار مستندات الإثبات</strong>
+                        <small>يمكنك اختيار أكثر من ملف بصيغة PDF أو JPG أو JPEG أو PNG فقط.</small>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div
+                class="full-width"
+                style="display: flex; justify-content: flex-end; margin-top: 6px"
+              >
+                <button class="btn-primary-medical" type="submit" [disabled]="submitting()">
+                  @if (submitting()) {
+                    <span class="btn-spinner"></span>
+                    <span>جارٍ الإرسال…</span>
+                  } @else {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    <span>إرسال الطلب</span>
+                  }
+                </button>
+              </div>
+            </form>
+          </section>
+        }
+      </div>
+
+      <!-- ═══ Section 03: My Requests ═══ -->
+      @if (canViewRequests) {
+        <section class="panel requests-panel">
+          <div class="section-heading">
+            <div class="heading-title-row">
+              <span class="step-pill">03</span>
+              <div>
+                <h2>طلباتي</h2>
+                <p>Modification Requested حالة تحتاج إلى إجراء وتعديل وليست رفضاً نهائياً.</p>
+              </div>
+            </div>
+          </div>
+
+          <form class="filter-form-bar" (submit)="loadRequests(1, $event)">
+            <label class="input-field">
+              <span class="field-title">الحالة</span>
+              <div class="select-box">
+                <select [formField]="filterForm.status">
+                  <option value="">الكل</option>
+                  <option value="Pending">قيد المراجعة (Pending)</option>
+                  <option value="ModificationRequested">
+                    مطلوب تعديل (Modification Requested)
+                  </option>
+                  <option value="Approved">معتمد (Approved)</option>
+                  <option value="Rejected">مرفوض (Rejected)</option>
+                </select>
+                <svg
+                  class="select-arrow"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </label>
+
+            <label class="input-field">
+              <span class="field-title">النوع</span>
+              <div class="select-box">
+                <select [formField]="filterForm.requestType">
+                  <option value="">الكل</option>
+                  <option value="CreateFamily">إنشاء عائلة</option>
+                  <option value="AddFamilyMember">إضافة عضو</option>
+                </select>
+                <svg
+                  class="select-arrow"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </label>
+
+            <button class="btn-filter-apply" type="submit">تطبيق الفلترة</button>
           </form>
+
+          @if (requests(); as page) {
+            <div class="requests-deck">
+              @for (request of page.items; track request.requestId) {
+                <div class="request-entry-card" (click)="openRequest(request.requestId)">
+                  <div class="req-main-info">
+                    <div class="req-icon-box">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="req-target-name">{{ request.targetNameAr }}</h4>
+                      <span class="req-meta-sub">
+                        {{ getRequestTypeLabel(request.requestType) }} · النسخة
+                        {{ request.currentRevisionNumber }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="req-status-cluster">
+                    <span class="status-badge" [ngClass]="getStatusClass(request.status)">
+                      {{ getStatusLabel(request.status) }}
+                    </span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      style="color: var(--wasla-slate)"
+                    >
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              } @empty {
+                <div class="empty-state-box">
+                  <div class="empty-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                  </div>
+                  <h4>لا توجد طلبات مطابقة</h4>
+                  <p>لم يتم العثور على طلبات إثبات علاقة وفق معايير البحث المحددة.</p>
+                </div>
+              }
+            </div>
+
+            <nav class="pager-bar">
+              <button
+                class="pager-btn"
+                type="button"
+                [disabled]="pageNumber() <= 1"
+                (click)="loadRequests(pageNumber() - 1)"
+              >
+                السابق
+              </button>
+              <span class="page-indicator">صفحة {{ page.pageNumber }}</span>
+              <button
+                class="pager-btn"
+                type="button"
+                [disabled]="page.items.length < page.pageSize"
+                (click)="loadRequests(pageNumber() + 1)"
+              >
+                التالي
+              </button>
+            </nav>
+          }
         </section>
       }
     </div>
-
-    @if (canViewRequests) {
-      <section class="workspace-panel requests-section">
-        <div class="section-heading">
-          <div>
-            <span class="step">03</span>
-            <h2>طلباتي</h2>
-          </div>
-          <p>Modification Requested حالة تحتاج إجراء وليست رفضاً.</p>
-        </div>
-        <form class="compact-form" (submit)="loadRequests(1, $event)">
-          <label class="form-field"
-            ><span>الحالة</span
-            ><select [formField]="filterForm.status">
-              <option value="">الكل</option>
-              <option value="Pending">Pending</option>
-              <option value="ModificationRequested">Modification Requested</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select></label
-          >
-          <label class="form-field"
-            ><span>النوع</span
-            ><select [formField]="filterForm.requestType">
-              <option value="">الكل</option>
-              <option value="CreateFamily">إنشاء عائلة</option>
-              <option value="AddFamilyMember">إضافة عضو</option>
-            </select></label
-          >
-          <button class="btn btn-primary" type="submit">تطبيق</button>
-        </form>
-        @if (requests(); as page) {
-          <div class="result-list">
-            @for (request of page.items; track request.requestId) {
-              <button class="request-row" type="button" (click)="openRequest(request.requestId)">
-                <div>
-                  <strong>{{ request.targetNameAr }}</strong
-                  ><span
-                    >{{ request.requestType }} · Revision {{ request.currentRevisionNumber }}</span
-                  >
-                </div>
-                <span
-                  class="status-badge"
-                  [class.action]="request.status === 'ModificationRequested'"
-                  >{{ request.status }}</span
-                >
-              </button>
-            } @empty {
-              <div class="empty-state">لا توجد طلبات مطابقة.</div>
-            }
-          </div>
-          <nav class="pager">
-            <button
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              [disabled]="pageNumber() <= 1"
-              (click)="loadRequests(pageNumber() - 1)"
-            >
-              السابق</button
-            ><span>صفحة {{ page.pageNumber }}</span
-            ><button
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              [disabled]="page.items.length < page.pageSize"
-              (click)="loadRequests(pageNumber() + 1)"
-            >
-              التالي
-            </button>
-          </nav>
-        }
-      </section>
-    }
   }
 
-  @if (selectedRequest(); as request) {
-    <aside class="details-drawer" aria-label="تفاصيل طلب العلاقة">
-      <button class="drawer-close" type="button" (click)="closeDetails()" aria-label="إغلاق">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" />
-        </svg>
-      </button>
-      <span class="status-badge" [class.action]="request.status === 'ModificationRequested'">{{
-        request.status
-      }}</span>
-      <h2>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h2>
-      <p>{{ request.requestType }} · Revision {{ request.currentRevisionNumber }}</p>
-      @if (request.status === 'ModificationRequested') {
-        <div class="notice warning">
-          <strong>التعديل المطلوب</strong>
-          <p>{{ request.modificationMessage }}</p>
+  <!-- ═══ Side Drawer: Request Details ═══ -->
+  <app-side-drawer
+    [opened]="selectedRequest() !== null"
+    [title]="getDrawerTitle(selectedRequest())"
+    [description]="getDrawerDescription(selectedRequest())"
+    width="640px"
+    (closed)="closeDetails()"
+  >
+    @if (selectedRequest(); as request) {
+      <div class="drawer-content-flow">
+        <!-- 1. Request Identity & Status Banner -->
+        <div class="req-hero-card">
+          <div class="req-hero-avatar">
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div class="req-hero-body">
+            <div class="req-hero-eyebrow">
+              <span class="req-type-pill">{{ getRequestTypeLabel(request.requestType) }}</span>
+              <span class="sep-dot">·</span>
+              <span class="req-rev-tag">النسخة رقم {{ request.currentRevisionNumber }}</span>
+            </div>
+            <h3 class="req-hero-name">
+              {{ request.targetNameAr || request.requesterNameAr || 'طلب عائلي' }}
+            </h3>
+            <p class="req-hero-relation">
+              <span
+                >مقدّم الطلب: <strong>{{ request.requesterNameAr || 'المريض' }}</strong> ({{
+                  getRoleLabel(request.requesterClaimedRole)
+                }})</span
+              >
+              <span class="arrow-sep">←</span>
+              <span
+                >الطرف المعني: <strong>{{ request.targetNameAr || '—' }}</strong> ({{
+                  getRoleLabel(request.targetClaimedRole)
+                }})</span
+              >
+            </p>
+          </div>
+          <div class="req-hero-status">
+            <span class="status-badge" [ngClass]="getStatusClass(request.status)">
+              @if (request.status === 'Pending') {
+                <span class="pulse-ring-dot" aria-hidden="true"></span>
+              }
+              {{ getStatusLabel(request.status) }}
+            </span>
+          </div>
         </div>
-      }
-      @if (request.status === 'Rejected') {
-        <div class="notice error">
-          <strong>سبب الرفض</strong>
-          <p>{{ request.rejectionReason }}</p>
+
+        <!-- 2. Rejection or Modification Alert Banner if applicable -->
+        @if (request.status === 'ModificationRequested' && request.modificationMessage) {
+          <div class="drawer-notice drawer-notice-warning">
+            <div class="notice-icon-box">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                ></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div class="notice-text-content">
+              <h4 class="notice-title">التعديل المطلوب من إدارة النظام</h4>
+              <p class="notice-desc">{{ request.modificationMessage }}</p>
+            </div>
+          </div>
+        }
+
+        @if (request.status === 'Rejected' && request.rejectionReason) {
+          <div class="drawer-notice drawer-notice-danger">
+            <div class="notice-icon-box">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div class="notice-text-content">
+              <h4 class="notice-title">سبب رفض الطلب</h4>
+              <p class="notice-desc">{{ request.rejectionReason }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- 3. Key Details Info Grid -->
+        <div class="drawer-section">
+          <h4 class="section-sub-title">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            بيانات ومعرّفات الطلب
+          </h4>
+          <div class="info-metric-grid">
+            <div class="info-metric-card">
+              <span class="metric-label">رقم الطلب (Request ID)</span>
+              <div class="metric-value-row">
+                <code dir="ltr">{{ request.requestId }}</code>
+                <button
+                  type="button"
+                  class="copy-tiny-btn"
+                  (click)="copyText(request.requestId, 'reqId')"
+                  title="نسخ المعرف"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  @if (copiedText() === 'reqId') {
+                    <span class="copied-tooltip">تم النسخ!</span>
+                  }
+                </button>
+              </div>
+            </div>
+
+            @if (request.familyId) {
+              <div class="info-metric-card">
+                <span class="metric-label">معرّف العائلة (Family ID)</span>
+                <div class="metric-value-row">
+                  <code dir="ltr">{{ request.familyId }}</code>
+                  <button
+                    type="button"
+                    class="copy-tiny-btn"
+                    (click)="copyText(request.familyId, 'famId')"
+                    title="نسخ المعرف"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    @if (copiedText() === 'famId') {
+                      <span class="copied-tooltip">تم النسخ!</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+
+            <div class="info-metric-card">
+              <span class="metric-label">تاريخ التقديم</span>
+              <span class="metric-text-val">{{ formatDate(request.submittedOnUtc) }}</span>
+            </div>
+
+            <div class="info-metric-card">
+              <span class="metric-label">معرّف المريض المعني</span>
+              <div class="metric-value-row">
+                <code dir="ltr">{{ request.targetPatientId }}</code>
+                <button
+                  type="button"
+                  class="copy-tiny-btn"
+                  (click)="copyText(request.targetPatientId, 'tarId')"
+                  title="نسخ المعرف"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  @if (copiedText() === 'tarId') {
+                    <span class="copied-tooltip">تم النسخ!</span>
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      }
-      <h3>المستندات حسب النسخة</h3>
-      <div class="document-list">
-        @for (document of request.documents; track document.documentId) {
-          <button type="button" (click)="openDocument(document.documentId)">
-            <strong>{{ document.fileName }}</strong
-            ><span>{{ document.documentType }} · Revision {{ document.revisionNumber }}</span>
-          </button>
-        } @empty {
-          <p>لا توجد مستندات متاحة.</p>
+
+        <!-- 4. Attached Evidence Documents -->
+        <div class="drawer-section">
+          <div class="section-title-between">
+            <h4 class="section-sub-title">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              المستندات والأدلة حسب النسخة
+            </h4>
+            <span class="items-count-tag">{{ request.documents.length }} مستند</span>
+          </div>
+
+          <div class="drawer-docs-list">
+            @for (document of request.documents; track document.documentId) {
+              <div class="doc-card-rich">
+                <div class="doc-card-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div class="doc-card-meta">
+                  <div class="doc-name-row">
+                    <span class="doc-title-text">{{ document.fileName }}</span>
+                    <span class="doc-rev-badge">النسخة #{{ document.revisionNumber }}</span>
+                  </div>
+                  <span class="doc-type-sub">{{ document.documentType }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="btn-view-doc"
+                  (click)="openDocument(document.documentId)"
+                  title="عرض المستند"
+                >
+                  <span>معاينة</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </button>
+              </div>
+            } @empty {
+              <div class="drawer-empty-box">
+                <p>لا توجد مستندات مرفقة بهذا الطلب.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- 5. Audit History Timeline -->
+        <div class="drawer-section">
+          <h4 class="section-sub-title">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            السجل غير القابل للتعديل (Audit Trail)
+          </h4>
+
+          <div class="audit-trail-stream">
+            @for (item of request.history; track item.occurredOnUtc + item.action) {
+              <div class="audit-step-node">
+                <div class="audit-pin">
+                  <span class="audit-dot"></span>
+                </div>
+                <div class="audit-payload">
+                  <div class="audit-header-line">
+                    <span class="audit-action-name">{{ getActionLabel(item.action) }}</span>
+                    <span class="audit-rev-chip">النسخة #{{ item.revisionNumber }}</span>
+                    <time class="audit-timestamp" dir="ltr">{{
+                      formatDate(item.occurredOnUtc)
+                    }}</time>
+                  </div>
+                  @if (item.message) {
+                    <div class="audit-bubble-msg">
+                      <p>{{ item.message }}</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="drawer-empty-box">
+                <p>لا يوجد سجل تدقيق مسجل بعد.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- 6. Resubmit Action Section (ModificationRequested) -->
+        @if (request.status === 'ModificationRequested' && canResubmit) {
+          <div class="drawer-resubmit-card">
+            <div class="resubmit-card-header">
+              <div class="resubmit-badge-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                </svg>
+              </div>
+              <div>
+                <h4>إعادة تقديم الطلب مع المستندات المعدلة</h4>
+                <p>سيتم الاحتفاظ بالنسخ السابقة تلقائياً في سجل التدقيق غير القابل للتعديل.</p>
+              </div>
+            </div>
+
+            <div class="resubmit-fields-stack">
+              <div class="input-field">
+                <span class="field-title">المستندات والأدلة الجديدة</span>
+                <input
+                  #resubmitFileInput
+                  type="file"
+                  multiple
+                  [accept]="evidenceFileAccept"
+                  class="field-input"
+                  style="padding: 8px 12px; height: auto"
+                  (change)="evidenceChanged($event, true)"
+                />
+                <span class="field-hint">اختر ملفات بصيغة PDF أو JPG أو JPEG أو PNG فقط.</span>
+              </div>
+
+              <div class="input-field">
+                <span class="field-title">أنواع المستندات المقابلة (مفصولة بفاصلة)</span>
+                <input
+                  class="field-input"
+                  placeholder="مثال: BirthCertificate, NationalId"
+                  [value]="resubmitDocumentTypes()"
+                  (input)="resubmitTypesChanged($event)"
+                />
+              </div>
+
+              <button
+                class="btn-primary-medical"
+                type="button"
+                style="width: 100%; margin-top: 6px; justify-content: center"
+                [disabled]="submitting() || !resubmitFiles().length"
+                (click)="resubmit()"
+              >
+                @if (submitting()) {
+                  <span class="btn-spinner"></span>
+                  <span>جارٍ رفع المستندات وإعادة التقديم…</span>
+                } @else {
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                  <span>إرسال التعديلات للاعتماد</span>
+                }
+              </button>
+            </div>
+          </div>
         }
       </div>
-      <h3>السجل غير القابل للتعديل</h3>
-      <ol class="history-list">
-        @for (item of request.history; track item.occurredOnUtc + item.action) {
-          <li>
-            <strong>{{ item.action }}</strong
-            ><span>{{ item.occurredOnUtc }}</span>
-            @if (item.message) {
-              <p>{{ item.message }}</p>
-            }
-          </li>
-        }
-      </ol>
-      @if (request.status === 'ModificationRequested' && canResubmit) {
-        <div class="resubmit-box">
-          <h3>إعادة الإرسال</h3>
-          <p>الأدلة السابقة ستظل ظاهرة في السجل.</p>
-          <label class="form-field"
-            ><span>أدلة جديدة</span
-            ><input type="file" multiple (change)="evidenceChanged($event, true)" /></label
-          ><label class="form-field"
-            ><span>أنواع المستندات</span
-            ><input
-              placeholder="BirthCertificate, NationalId"
-              (input)="resubmitTypesChanged($event)" /></label
-          ><button
-            class="btn btn-primary"
-            type="button"
-            [disabled]="submitting()"
-            (click)="resubmit()"
-          >
-            إعادة الإرسال
-          </button>
-        </div>
-      }
-    </aside>
-  }
+    }
+  </app-side-drawer>
 </main>

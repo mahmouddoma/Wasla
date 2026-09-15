@@ -1,204 +1,496 @@
-<section class="family-review-page">
-  <a class="back-link" routerLink="/admin/family-relationship-requests">العودة إلى قائمة الطلبات</a>
+<div class="family-review-container" [class.is-drawer-view]="isDrawer()">
+  @if (!isDrawer()) {
+    <a class="back-link" routerLink="/admin/family-relationship-requests">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+      <span>العودة إلى قائمة الطلبات</span>
+    </a>
+  }
+
   @if (messages().length) {
     <div class="form-notice error" role="alert">
-      @for (message of messages(); track message) {
-        <p>{{ message }}</p>
-      }
-      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <div class="notice-texts">
+        @for (message of messages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+      <button class="btn-retry" type="button" (click)="load()">
         إعادة التحميل
       </button>
     </div>
   }
-  @if (successMessage()) {
-    <div class="form-notice success" role="status">{{ successMessage() }}</div>
-  }
+
   @if (loading() && !details()) {
-    <div class="review-panel loading-state" role="status">جارٍ تحميل تفاصيل الطلب…</div>
+    <div class="loading-state-box" role="status">
+      <div class="spinner-medical" aria-hidden="true"></div>
+      <p>جارٍ تحميل تفاصيل وبيانات طلب العلاقة العائلية…</p>
+    </div>
   } @else if (details(); as request) {
-    <header class="review-header">
-      <div>
-        <h1>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h1>
-        <p>
-          {{ request.requestType === 'CreateFamily' ? 'إنشاء عائلة' : 'إضافة عضو' }} · Revision
-          {{ request.currentRevisionNumber }}
-        </p>
+    <!-- ═══ Request & Parties Profile Banner ═══ -->
+    <header class="request-profile-card">
+      <div class="request-identity-meta">
+        <div class="request-avatar-box">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+
+        <div class="request-info-col">
+          <div class="request-eyebrow">
+            <span class="type-pill">
+              {{ getRequestTypeLabel(request.requestType) }}
+            </span>
+            <span class="sep-dot">·</span>
+            <span class="revision-label">النسخة #{{ request.currentRevisionNumber }}</span>
+          </div>
+
+          <h1 class="request-parties-title">
+            {{ request.requesterNameAr }}
+            <span class="arrow-between">←</span>
+            {{ request.targetNameAr }}
+          </h1>
+
+          <div class="roles-subtitle">
+            <span>مقدم الطلب: <strong>{{ getRoleLabel(request.requesterClaimedRole) }}</strong></span>
+            <span class="sep-dot">·</span>
+            <span>المريض المستهدف: <strong>{{ getRoleLabel(request.targetClaimedRole) }}</strong></span>
+          </div>
+        </div>
       </div>
-      <span [class]="'review-status ' + request.status.toLowerCase()">{{ request.status }}</span>
+
+      <div class="status-box">
+        @switch (request.status) {
+          @case ('Pending') {
+            <span class="badge-state badge-state--pending">
+              <span class="pulse-ring-dot" aria-hidden="true"></span>
+              <span>قيد المراجعة</span>
+            </span>
+          }
+          @case ('ModificationRequested') {
+            <span class="badge-state badge-state--mod">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>مطلوب تعديل</span>
+            </span>
+          }
+          @case ('Approved') {
+            <span class="badge-state badge-state--approved">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>معتمد</span>
+            </span>
+          }
+          @case ('Rejected') {
+            <span class="badge-state badge-state--rejected">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              <span>مرفوض</span>
+            </span>
+          }
+        }
+      </div>
     </header>
 
-    <div class="identity-grid">
-      <section class="review-panel">
-        <h2>مقدم الطلب</h2>
-        <strong>{{ request.requesterNameAr }}</strong>
-        <dl>
-          <div>
-            <dt>Patient ID</dt>
-            <dd>{{ request.requesterPatientId }}</dd>
+    <!-- ═══ Parties Detail Deck ═══ -->
+    <div class="parties-deck">
+      <!-- Requester Card -->
+      <section class="party-card">
+        <div class="party-card-header">
+          <div class="party-avatar-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
           </div>
           <div>
-            <dt>الدور المطلوب</dt>
-            <dd>{{ request.requesterClaimedRole }}</dd>
+            <span class="party-badge-role">مقدم الطلب</span>
+            <h3 class="party-name">{{ request.requesterNameAr }}</h3>
           </div>
-        </dl>
+        </div>
+
+        <div class="party-data-list">
+          <div class="party-data-row">
+            <span class="data-key">الدور المطلوب</span>
+            <span class="data-pill-role">{{ getRoleLabel(request.requesterClaimedRole) }}</span>
+          </div>
+          <div class="party-data-row">
+            <span class="data-key">معرّف المريض (Patient ID)</span>
+            <div class="code-copy-cluster">
+              <code dir="ltr">{{ request.requesterPatientId }}</code>
+              <button
+                type="button"
+                class="copy-btn-tiny"
+                (click)="copyText(request.requesterPatientId, 'reqPId')"
+                title="نسخ معرّف المريض"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                @if (copiedText() === 'reqPId') {
+                  <span class="copied-toast">تم النسخ!</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
-      <section class="review-panel">
-        <h2>المريض المستهدف</h2>
-        <strong>{{ request.targetNameAr }}</strong>
-        <dl>
-          <div>
-            <dt>Patient ID</dt>
-            <dd>{{ request.targetPatientId }}</dd>
+
+      <!-- Target Patient Card -->
+      <section class="party-card">
+        <div class="party-card-header">
+          <div class="party-avatar-icon target-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <line x1="19" y1="8" x2="19" y2="14" />
+              <line x1="22" y1="11" x2="16" y2="11" />
+            </svg>
           </div>
           <div>
-            <dt>الدور المطلوب</dt>
-            <dd>{{ request.targetClaimedRole }}</dd>
+            <span class="party-badge-role">المريض المستهدف</span>
+            <h3 class="party-name">{{ request.targetNameAr }}</h3>
           </div>
-        </dl>
+        </div>
+
+        <div class="party-data-list">
+          <div class="party-data-row">
+            <span class="data-key">الدور المطلوب</span>
+            <span class="data-pill-role">{{ getRoleLabel(request.targetClaimedRole) }}</span>
+          </div>
+          <div class="party-data-row">
+            <span class="data-key">معرّف المريض (Patient ID)</span>
+            <div class="code-copy-cluster">
+              <code dir="ltr">{{ request.targetPatientId }}</code>
+              <button
+                type="button"
+                class="copy-btn-tiny"
+                (click)="copyText(request.targetPatientId, 'tarPId')"
+                title="نسخ معرّف المريض"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                @if (copiedText() === 'tarPId') {
+                  <span class="copied-toast">تم النسخ!</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
 
+    <!-- ═══ Modification or Rejection Notice Banners ═══ -->
     @if (request.modificationMessage) {
-      <div class="form-notice info">
-        <strong>آخر تعديل مطلوب</strong>
-        <p>{{ request.modificationMessage }}</p>
+      <div class="review-notice-banner warning-banner">
+        <div class="notice-badge-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
+        <div class="notice-body">
+          <h4>التعديل المطلوب من الإدارة</h4>
+          <p>{{ request.modificationMessage }}</p>
+        </div>
       </div>
     }
+
     @if (request.rejectionReason) {
-      <div class="form-notice error">
-        <strong>سبب الرفض النهائي</strong>
-        <p>{{ request.rejectionReason }}</p>
+      <div class="review-notice-banner danger-banner">
+        <div class="notice-badge-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <div class="notice-body">
+          <h4>سبب الرفض النهائي</h4>
+          <p>{{ request.rejectionReason }}</p>
+        </div>
       </div>
     }
 
-    <section class="review-panel">
-      <h2>أعضاء العائلة الحاليون</h2>
-      <div class="member-list">
+    <!-- ═══ Current Family Members Section ═══ -->
+    <section class="review-card-section">
+      <div class="section-head-bar">
+        <h3 class="section-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          أعضاء العائلة الحاليون
+        </h3>
+        @if (request.familyId) {
+          <div class="family-id-chip-admin">
+            <span dir="ltr">Family ID: {{ request.familyId }}</span>
+            <button
+              type="button"
+              class="copy-btn-tiny"
+              (click)="copyText(request.familyId, 'famId')"
+              title="نسخ معرّف العائلة"
+            >
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              @if (copiedText() === 'famId') {
+                <span class="copied-toast">تم!</span>
+              }
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="members-stream">
         @for (member of request.currentFamilyMembers; track member.patientId) {
-          <article>
-            <strong>{{ member.nameAr }}</strong
-            ><span>{{ member.role }} · {{ member.gender }}</span>
-          </article>
-        } @empty {
-          <p class="empty-copy">لا توجد عضوية عائلية فعالة مرتبطة بالطلب حالياً.</p>
-        }
-      </div>
-    </section>
-
-    <section class="review-panel">
-      <h2>أدلة التحقق حسب النسخة</h2>
-      <div class="document-grid">
-        @for (document of request.documents; track document.documentId) {
-          <button
-            type="button"
-            [disabled]="documentLoadingId() !== ''"
-            (click)="openDocument(document.documentId)"
-          >
-            <strong>{{ document.fileName }}</strong
-            ><span>{{ document.documentType }} · Revision {{ document.revisionNumber }}</span
-            ><small>{{
-              documentLoadingId() === document.documentId ? 'جارٍ الفتح…' : 'فتح بصورة آمنة'
-            }}</small>
-          </button>
-        } @empty {
-          <p class="empty-copy">لا توجد مستندات متاحة.</p>
-        }
-      </div>
-    </section>
-
-    <section class="review-panel">
-      <h2>سجل سير العمل غير القابل للتعديل</h2>
-      <ol class="review-history">
-        @for (item of request.history; track item.occurredOnUtc + item.action) {
-          <li>
-            <div>
-              <strong>{{ item.action }}</strong
-              ><time [attr.datetime]="item.occurredOnUtc">{{ item.occurredOnUtc }}</time>
+          <div class="member-chip-card">
+            <div class="member-mini-avatar">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </div>
-            <span>Revision {{ item.revisionNumber }}</span>
-            @if (item.message) {
-              <p>{{ item.message }}</p>
-            }
-          </li>
+            <div class="member-info-col">
+              <strong class="member-name">{{ member.nameAr }}</strong>
+              <span class="member-meta-sub">{{ getRoleLabel(member.role) }} · {{ member.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
+            </div>
+          </div>
         } @empty {
-          <li class="empty-copy">لا يوجد سجل متاح.</li>
+          <div class="empty-panel-box">
+            <p>لا توجد عضوية عائلية سابقة فعالة مرتبطة بالطلب حالياً (طلب إنشاء جديد).</p>
+          </div>
         }
-      </ol>
+      </div>
     </section>
 
+    <!-- ═══ Evidence Documents Section ═══ -->
+    <section class="review-card-section">
+      <div class="section-head-bar">
+        <h3 class="section-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          أدلة التحقق والمستندات حسب النسخة
+        </h3>
+        <span class="counter-badge">{{ request.documents.length }} مستند</span>
+      </div>
+
+      <div class="documents-deck">
+        @for (document of request.documents; track document.documentId) {
+          <div class="doc-card-admin">
+            <div class="doc-file-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            </div>
+
+            <div class="doc-meta-col">
+              <div class="doc-title-row">
+                <strong class="doc-file-name" [title]="document.fileName">{{ document.fileName }}</strong>
+                <span class="doc-rev-tag">النسخة #{{ document.revisionNumber }}</span>
+              </div>
+              <span class="doc-type-text">{{ document.documentType }}</span>
+            </div>
+
+            <button
+              type="button"
+              class="btn-open-doc"
+              [disabled]="documentLoadingId() !== ''"
+              (click)="openDocument(document.documentId)"
+              title="فتح ومعاينة المستند بصورة آمنة"
+            >
+              @if (documentLoadingId() === document.documentId) {
+                <span class="btn-spinner-tiny"></span>
+                <span>جارٍ الفتح…</span>
+              } @else {
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>معاينة آمنة</span>
+              }
+            </button>
+          </div>
+        } @empty {
+          <div class="empty-panel-box">
+            <p>لا توجد مستندات أو أدلة مرفقة بهذا الطلب.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ═══ Audit History Timeline ═══ -->
+    <section class="review-card-section">
+      <div class="section-head-bar">
+        <h3 class="section-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          سجل سير العمل غير القابل للتعديل (Audit Trail)
+        </h3>
+      </div>
+
+      <div class="admin-timeline">
+        @for (item of request.history; track item.occurredOnUtc + item.action) {
+          <div class="timeline-step">
+            <div class="timeline-bullet">
+              <span class="bullet-dot"></span>
+            </div>
+            <div class="timeline-card">
+              <div class="step-head">
+                <div class="step-name-rev">
+                  <strong class="action-name">{{ getActionLabel(item.action) }}</strong>
+                  <span class="rev-chip">النسخة #{{ item.revisionNumber }}</span>
+                </div>
+                <time class="step-time" dir="ltr">{{ formatDate(item.occurredOnUtc) }}</time>
+              </div>
+              @if (item.message) {
+                <div class="step-msg-bubble">
+                  <p>{{ item.message }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-panel-box">
+            <p>لا يوجد سجل تدقيق مسجل لهذا الطلب حتى الآن.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ═══ Review Actions Toolbar ═══ -->
     @if (isPending()) {
-      <div class="review-actions" aria-label="إجراءات مراجعة الطلب">
+      <div class="review-bottom-dock" aria-label="إجراءات مراجعة الطلب">
         @if (canRequestModification) {
           <button
-            class="btn btn-outline-secondary"
+            class="btn-decision btn-decision--mod"
             type="button"
             (click)="openAction('modification')"
           >
-            طلب تعديل
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span>طلب تعديل</span>
           </button>
         }
         @if (canApprove) {
-          <button class="btn btn-primary" type="button" (click)="openAction('approve')">
-            اعتماد العلاقة
+          <button
+            class="btn-decision btn-decision--approve"
+            type="button"
+            (click)="openAction('approve')"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>اعتماد العلاقة</span>
           </button>
         }
         @if (canReject) {
-          <button class="btn btn-danger" type="button" (click)="openAction('reject')">
-            رفض نهائي
+          <button
+            class="btn-decision btn-decision--reject"
+            type="button"
+            (click)="openAction('reject')"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            <span>رفض نهائي</span>
           </button>
         }
       </div>
     }
   }
 
+  <!-- ═══ Review Modal Dialog ═══ -->
   <dialog #reviewDialog class="review-dialog" (cancel)="closeAction()">
     <form (submit)="confirmAction($event)" novalidate>
-      <header>
-        <div>
+      <header class="dialog-header">
+        <div class="dialog-title-col">
           <h2>{{ actionTitle() }}</h2>
           <p>
             @if (action() === 'approve') {
-              سيعيد الخادم التحقق من قيود العائلة قبل الاعتماد.
+              سيعيد الخادم التحقق من قيود العائلة قبل الاعتماد النهائي وإتمام الربط.
             } @else if (action() === 'modification') {
-              سيتمكن المريض أو موظف الاستقبال من رفع revision جديدة.
+              سيتم إشعار مقدم الطلب لإرسال نسخة (Revision) جديدة ومستندات معدلة.
             } @else {
-              الرفض نهائي ولن ينشئ أو يغيّر عضوية العائلة.
+              الرفض نهائي ولن يتم إنشاء أو تعديل أي عضوية عائلية في النظام.
             }
           </p>
         </div>
-        <button class="dialog-close" type="button" (click)="closeAction()" aria-label="إغلاق">
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M18 6 6 18M6 6l12 12" />
+        <button class="dialog-close-btn" type="button" (click)="closeAction()" aria-label="إغلاق">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </header>
+
       @if (action() !== 'approve') {
-        <label class="form-field"
-          ><span>{{ action() === 'modification' ? 'رسالة التعديل *' : 'سبب الرفض *' }}</span
-          ><textarea rows="5" [formField]="reviewForm.text"></textarea>
-          @if (reviewForm.text().touched() && reviewForm.text().errors().length) {
-            <small class="field-error">{{ reviewForm.text().errors()[0].message }}</small>
-          }
-        </label>
+        <div class="dialog-body">
+          <label class="input-field">
+            <span class="field-title">
+              {{ action() === 'modification' ? 'ملاحظات ورسالة التعديل المطلوبة' : 'سبب الرفض النهائي' }}
+              <span class="required-star">*</span>
+            </span>
+            <textarea
+              rows="4"
+              class="field-input textarea-input"
+              placeholder="اكتب التوجيهات أو أسباب القرار بالتفصيل…"
+              [formField]="reviewForm.text"
+            ></textarea>
+            @if (reviewForm.text().touched() && reviewForm.text().errors().length) {
+              <span class="field-error-msg">{{ reviewForm.text().errors()[0].message }}</span>
+            }
+          </label>
+        </div>
       }
-      <div class="dialog-actions">
-        <button class="btn btn-outline-secondary" type="button" (click)="closeAction()">
-          إلغاء</button
-        ><button
-          [class]="action() === 'reject' ? 'btn btn-danger' : 'btn btn-primary'"
+
+      <footer class="dialog-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeAction()">
+          إلغاء
+        </button>
+        <button
+          [class]="action() === 'reject' ? 'btn-confirm-danger' : 'btn-confirm-primary'"
           type="submit"
           [disabled]="submitting()"
         >
-          {{ submitting() ? 'جارٍ التنفيذ…' : 'تأكيد الإجراء' }}
+          @if (submitting()) {
+            <span class="btn-spinner-tiny"></span>
+            <span>جارٍ التنفيذ…</span>
+          } @else {
+            <span>تأكيد الإجراء</span>
+          }
         </button>
-      </div>
+      </footer>
     </form>
   </dialog>
-</section>
+</div>

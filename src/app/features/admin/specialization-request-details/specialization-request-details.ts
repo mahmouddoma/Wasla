@@ -1,11 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormField, form, maxLength, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
+import { ToastService } from '../../../core/notifications/toast.service';
 import { DoctorSpecializationRequestsApi } from '../../../core/doctor-specialization-requests/doctor-specialization-requests-api';
 import { DoctorSpecializationRequestDetails } from '../../../core/doctor-specialization-requests/doctor-specialization-requests.models';
 import {
@@ -29,8 +40,16 @@ export class SpecializationRequestDetailsPage {
   private readonly api = inject(DoctorSpecializationRequestsApi);
   private readonly catalogApi = inject(MedicalSpecializationsApi);
   private readonly session = inject(AuthSession);
-  private readonly requestId = inject(ActivatedRoute).snapshot.paramMap.get('requestId')!;
+  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly routeId = this.route?.snapshot.paramMap.get('requestId') ?? null;
 
+  readonly requestIdInput = input<string | null>(null);
+  readonly isDrawer = input<boolean>(false);
+  readonly closed = output<void>();
+  readonly reviewed = output<void>();
+
+  protected readonly activeId = computed(() => this.requestIdInput() || this.routeId);
   protected readonly details = signal<DoctorSpecializationRequestDetails | null>(null);
   protected readonly history = signal<DoctorSpecializationHistoryItem[]>([]);
   protected readonly options = signal<MedicalSpecializationOption[]>([]);
@@ -46,8 +65,24 @@ export class SpecializationRequestDetailsPage {
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly isPending = computed(() => this.details()?.request.status === 'PendingReview');
 
+  private loadedId = '';
+
   constructor() {
-    void this.load();
+    effect(() => {
+      const id = this.activeId();
+      untracked(() => {
+        if (!id) {
+          this.loadedId = '';
+          this.details.set(null);
+          this.history.set([]);
+          this.selected.set([]);
+          return;
+        }
+        if (id === this.loadedId) return;
+        this.loadedId = id;
+        void this.load(id);
+      });
+    });
   }
 
   protected can(action: ReviewAction): boolean {
@@ -93,11 +128,13 @@ export class SpecializationRequestDetailsPage {
     });
   }
 
-  protected async load(): Promise<void> {
+  protected async load(id?: string): Promise<void> {
+    const targetId = id || this.activeId();
+    if (!targetId) return;
     this.isLoading.set(true);
     this.apiMessages.set([]);
     try {
-      const details = await firstValueFrom(this.api.details(this.requestId));
+      const details = await firstValueFrom(this.api.details(targetId));
       this.details.set(details);
       this.selected.set(
         details.request.latestRevision.map(({ medicalSpecializationId, isPrimary }) => ({
@@ -105,7 +142,7 @@ export class SpecializationRequestDetailsPage {
           isPrimary,
         })),
       );
-      const tasks: Promise<void>[] = [this.loadHistory()];
+      const tasks: Promise<void>[] = [this.loadHistory(targetId)];
       if (this.can('adjust')) tasks.push(this.loadCatalog());
       await Promise.all(tasks);
     } catch (error) {
@@ -122,9 +159,19 @@ export class SpecializationRequestDetailsPage {
       : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
   }
 
+  protected doctorInitials(nameAr: string): string {
+    if (!nameAr) return 'ط';
+    const clean = nameAr.replace(/^(دكتور|د\.|أ\.د|أستاذ دكتور)\s+/i, '').trim();
+    const parts = clean.split(/\s+/);
+    if (!parts.length || !parts[0]) return 'ط';
+    if (parts.length === 1) return parts[0].slice(0, 2);
+    return `${parts[0][0]}${parts[1][0]}`;
+  }
+
   private async execute(action: ReviewAction): Promise<void> {
+    const targetId = this.activeId();
     const details = this.details();
-    if (!details || !this.can(action) || this.isSubmitting()) return;
+    if (!targetId || !details || !this.can(action) || this.isSubmitting()) return;
     if (
       action === 'adjust' &&
       (!this.selected().length || this.selected().filter((x) => x.isPrimary).length !== 1)
@@ -139,33 +186,38 @@ export class SpecializationRequestDetailsPage {
     try {
       if (action === 'adjust') {
         await firstValueFrom(
-          this.api.adjust(this.requestId, {
+          this.api.adjust(targetId, {
             specializations: this.selected(),
             reason: text,
             rowVersion,
           }),
         );
+        this.toast.success('تم إنشاء مراجعة جديدة لمقترح التخصصات بنجاح.');
       } else if (action === 'modification') {
         await firstValueFrom(
-          this.api.requestModification(this.requestId, { message: text, rowVersion }),
+          this.api.requestModification(targetId, { message: text, rowVersion }),
         );
+        this.toast.success('تم إرسال طلب التعديل إلى الطبيب بنجاح.');
       } else if (action === 'approve') {
-        await firstValueFrom(this.api.approve(this.requestId, { rowVersion }));
+        await firstValueFrom(this.api.approve(targetId, { rowVersion }));
+        this.toast.success('تم اعتماد مقترح التخصصات وتحديث تخصصات الطبيب بنجاح.');
       } else {
-        await firstValueFrom(this.api.reject(this.requestId, { reason: text, rowVersion }));
+        await firstValueFrom(this.api.reject(targetId, { reason: text, rowVersion }));
+        this.toast.success('تم رفض طلب التخصص بنجاح.');
       }
       this.action.set(null);
-      await this.load();
+      await this.load(targetId);
+      this.reviewed.emit();
     } catch (error) {
       this.handleError(error);
-      if (error instanceof HttpErrorResponse && error.status === 409) await this.load();
+      if (error instanceof HttpErrorResponse && error.status === 409) await this.load(targetId);
     } finally {
       this.isSubmitting.set(false);
     }
   }
 
-  private async loadHistory(): Promise<void> {
-    this.history.set(await firstValueFrom(this.api.history(this.requestId)));
+  private async loadHistory(requestId: string): Promise<void> {
+    this.history.set(await firstValueFrom(this.api.history(requestId)));
   }
 
   private async loadCatalog(): Promise<void> {

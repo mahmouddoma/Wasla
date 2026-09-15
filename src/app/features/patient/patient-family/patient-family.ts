@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, required, submit } from '@angular/forms/signals';
@@ -9,6 +10,11 @@ import { PERMISSIONS } from '../../../core/auth/permissions';
 import { FamiliesApi } from '../../../core/families/families-api';
 import { openPrivateMedia } from '../../../core/media/private-media';
 import {
+  EVIDENCE_FILE_ACCEPT,
+  getEvidenceFileValidationError,
+} from '../../../core/validation/evidence-files';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import {
   Family,
   FamilyRequestDetails,
   FamilyRequestPage,
@@ -19,15 +25,18 @@ import {
 
 @Component({
   selector: 'app-patient-family',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, NgClass, SideDrawer],
   templateUrl: './patient-family.html',
-  styleUrl: '../../healthcare-workspace.css',
+  styleUrl: './patient-family.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientFamily {
   private readonly api = inject(FamiliesApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+
+  protected readonly copiedId = signal(false);
+  protected readonly evidenceFileAccept = EVIDENCE_FILE_ACCEPT;
 
   protected readonly family = signal<Family | null>(null);
   protected readonly requests = signal<FamilyRequestPage | null>(null);
@@ -115,6 +124,11 @@ export class PatientFamily {
         if (!this.evidenceFiles().length) this.messages.set(['أرفق مستند إثبات واحداً على الأقل.']);
         return;
       }
+      const fileError = getEvidenceFileValidationError(this.evidenceFiles());
+      if (fileError) {
+        this.messages.set([fileError]);
+        return;
+      }
       const documentTypes = splitTypes(this.requestModel().documentTypes);
       if (documentTypes.length !== this.evidenceFiles().length) {
         this.messages.set(['يجب إدخال نوع واحد مقابل كل ملف مرفق.']);
@@ -145,6 +159,11 @@ export class PatientFamily {
     const request = this.selectedRequest();
     if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
     const documentTypes = splitTypes(this.resubmitDocumentTypes());
+    const fileError = getEvidenceFileValidationError(this.resubmitFiles());
+    if (fileError) {
+      this.messages.set([fileError]);
+      return;
+    }
     if (!this.resubmitFiles().length || documentTypes.length !== this.resubmitFiles().length) {
       this.messages.set(['أرفق أدلة جديدة وحدد نوعاً واحداً لكل ملف.']);
       return;
@@ -190,13 +209,140 @@ export class PatientFamily {
   }
 
   protected evidenceChanged(event: Event, resubmit = false): void {
-    const files = Array.from((event.currentTarget as HTMLInputElement).files ?? []);
+    const input = event.currentTarget as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    const fileError = getEvidenceFileValidationError(files);
+    this.resetFeedback();
+    if (fileError) {
+      input.value = '';
+      if (resubmit) this.resubmitFiles.set([]);
+      else this.evidenceFiles.set([]);
+      this.messages.set([fileError]);
+      return;
+    }
     if (resubmit) this.resubmitFiles.set(files);
     else this.evidenceFiles.set(files);
   }
 
+  protected copyFamilyId(id: string): void {
+    if (!id) return;
+    navigator.clipboard.writeText(id);
+    this.copiedId.set(true);
+    setTimeout(() => this.copiedId.set(false), 2000);
+  }
+
+  protected clearEvidenceFiles(input: HTMLInputElement): void {
+    input.value = '';
+    this.evidenceFiles.set([]);
+  }
+
+  protected clearResubmitFiles(input: HTMLInputElement): void {
+    input.value = '';
+    this.resubmitFiles.set([]);
+  }
+
   protected resubmitTypesChanged(event: Event): void {
     this.resubmitDocumentTypes.set((event.currentTarget as HTMLInputElement).value);
+  }
+
+  protected getStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      Pending: 'قيد المراجعة',
+      ModificationRequested: 'مطلوب تعديل',
+      Approved: 'معتمد',
+      Rejected: 'مرفوض',
+    };
+    return map[status] || status;
+  }
+
+  protected getStatusClass(status: string): string {
+    switch (status) {
+      case 'Approved':
+        return 'status-approved';
+      case 'ModificationRequested':
+        return 'status-action';
+      case 'Pending':
+        return 'status-pending';
+      case 'Rejected':
+        return 'status-rejected';
+      default:
+        return '';
+    }
+  }
+
+  protected getRequestTypeLabel(type: string): string {
+    const map: Record<string, string> = {
+      CreateFamily: 'إنشاء عائلة',
+      AddFamilyMember: 'إضافة عضو',
+    };
+    return map[type] || type;
+  }
+
+  protected getRoleLabel(role: string): string {
+    const map: Record<string, string> = {
+      Father: 'أب',
+      Mother: 'أم',
+      Child: 'طفل',
+      Guardian: 'ولي أمر',
+      LegalGuardian: 'وصي قانوني',
+      Other: 'أخرى',
+    };
+    return map[role] || role;
+  }
+
+  protected readonly copiedText = signal<string | null>(null);
+
+  protected async copyText(val: string, key = 'id'): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(val);
+      this.copiedText.set(key);
+      setTimeout(() => {
+        if (this.copiedText() === key) this.copiedText.set(null);
+      }, 2000);
+    } catch {
+      // ignore clipboard error
+    }
+  }
+
+  protected getDrawerTitle(request: FamilyRequestDetails | null): string {
+    if (!request) return 'تفاصيل الطلب';
+    return request.requestType === 'CreateFamily'
+      ? 'تفاصيل طلب إنشاء عائلة'
+      : 'تفاصيل طلب إضافة عضو للعائلة';
+  }
+
+  protected getDrawerDescription(request: FamilyRequestDetails | null): string {
+    if (!request) return '';
+    const name = request.targetNameAr || request.requesterNameAr || '';
+    return `النسخة #${request.currentRevisionNumber}${name ? ' · ' + name : ''}`;
+  }
+
+  protected getActionLabel(action: string): string {
+    const map: Record<string, string> = {
+      Submitted: 'تم تقديم الطلب',
+      Resubmitted: 'تمت إعادة تقديم الطلب',
+      ModificationRequested: 'طلب تعديل من الإدارة',
+      Approved: 'تم الاعتماد والموافقة',
+      Rejected: 'تم رفض الطلب',
+    };
+    return map[action] || action;
+  }
+
+  protected formatDate(dateStr?: string | null): string {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return new Intl.DateTimeFormat('ar-EG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(d);
+    } catch {
+      return dateStr;
+    }
   }
 
   protected closeDetails(): void {

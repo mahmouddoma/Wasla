@@ -101,22 +101,31 @@
         @for (item of page.items; track item.requestId) {
           <article class="data-row">
             <div class="identity">
-              <a [routerLink]="['/admin/family-relationship-requests', item.requestId]"
-                >{{ item.requesterNameAr }} ← {{ item.targetNameAr }}</a
-              ><small>{{ item.requesterClaimedRole }} ← {{ item.targetClaimedRole }}</small>
+              <button
+                type="button"
+                class="row-title-btn"
+                (click)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
+              >
+                {{ item.requesterNameAr }} ← {{ item.targetNameAr }}
+              </button>
+              <small>{{ item.requesterClaimedRole }} ← {{ item.targetClaimedRole }}</small>
             </div>
             <div>
-              <span class="mobile-label">النوع</span
-              >{{ item.requestType === 'CreateFamily' ? 'إنشاء عائلة' : 'إضافة عضو' }}
+              <span class="mobile-label">النوع</span>
+              {{ item.requestType === 'CreateFamily' ? 'إنشاء عائلة' : 'إضافة عضو' }}
             </div>
-            <span [class]="'badge-state ' + item.status.toLowerCase()">{{ item.status }}</span>
+            <span [class]="'badge-state ' + item.status.toLowerCase()">
+              {{ item.status === 'Pending' ? 'قيد المراجعة' : item.status === 'ModificationRequested' ? 'مطلوب تعديل' : item.status === 'Approved' ? 'معتمد' : 'مرفوض' }}
+            </span>
             <div><span class="mobile-label">المراجعة</span>#{{ item.currentRevisionNumber }}</div>
             <time [attr.datetime]="item.submittedOnUtc">{{ formatDate(item.submittedOnUtc) }}</time>
-            <a
+            <button
+              type="button"
               class="btn btn-outline-secondary"
-              [routerLink]="['/admin/family-relationship-requests', item.requestId]"
-              >مراجعة</a
+              (click)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
             >
+              مراجعة
+            </button>
           </article>
         }
       </div>
@@ -127,9 +136,10 @@
           [disabled]="pageNumber() <= 1 || loading()"
           (click)="goToPage(pageNumber() - 1)"
         >
-          السابق</button
-        ><span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span
-        ><button
+          السابق
+        </button>
+        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
+        <button
           class="btn btn-outline-secondary"
           type="button"
           [disabled]="pageNumber() >= totalPages() || loading()"
@@ -145,4 +155,22 @@
       </div>
     }
   }
+
+  <!-- Family Relationship Request Review Slide-over Side Drawer -->
+  <app-side-drawer
+    [opened]="selectedRequestId() !== null"
+    [title]="'مراجعة: ' + (selectedRequestTitle() || 'طلب علاقة عائلية')"
+    description="مراجعة أطراف الطلب ومطابقة الأدلة المرفقة واتخاذ قرار الاعتماد أو طلب التعديل أو الرفض."
+    width="820px"
+    (closed)="closeReviewDrawer()"
+  >
+    @if (selectedRequestId(); as reqId) {
+      <app-family-request-details
+        [requestIdInput]="reqId"
+        [isDrawer]="true"
+        (reviewed)="handleReviewSaved()"
+        (closed)="closeReviewDrawer()"
+      />
+    }
+  </app-side-drawer>
 </section>

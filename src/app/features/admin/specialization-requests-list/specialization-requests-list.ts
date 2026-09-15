@@ -7,7 +7,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, form, maxLength } from '@angular/forms/signals';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { DoctorSpecializationRequestsApi } from '../../../core/doctor-specialization-requests/doctor-specialization-requests-api';
@@ -17,10 +16,17 @@ import {
   DoctorSpecializationRequestType,
 } from '../../../core/doctor-profile/doctor-profile.models';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import { SpecializationRequestDetailsPage } from '../specialization-request-details/specialization-request-details';
 
 @Component({
   selector: 'app-specialization-requests-list',
-  imports: [FormField, RouterLink, PageHeader],
+  imports: [
+    FormField,
+    PageHeader,
+    SideDrawer,
+    SpecializationRequestDetailsPage,
+  ],
   templateUrl: './specialization-requests-list.html',
   styleUrls: ['../management-list.css', './specialization-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,8 +46,16 @@ export class SpecializationRequestsList {
   protected readonly result = signal<DoctorSpecializationRequestsPage | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly apiMessages = signal<string[]>([]);
+  protected readonly selectedRequestId = signal<string | null>(null);
+  protected readonly selectedDoctorName = signal<string>('');
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.pageSize)),
+  );
+
+  protected readonly hasActiveFilter = computed(() =>
+    Boolean(
+      this.status() !== 'PendingReview' || this.type() !== '' || this.model().search.trim() !== '',
+    ),
   );
 
   constructor() {
@@ -67,11 +81,51 @@ export class SpecializationRequestsList {
     void this.load();
   }
 
+  protected clearAllFilters(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.model.set({ search: '' });
+    this.searchForm().reset();
+    this.status.set('');
+    this.type.set('');
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected filterByStatus(status: DoctorSpecializationRequestStatus | ''): void {
+    if (this.status() === status) return;
+    this.status.set(status);
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
   protected setFilter(filter: 'status' | 'type', event: Event): void {
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (filter === 'status') this.status.set(value as DoctorSpecializationRequestStatus | '');
     else this.type.set(value as DoctorSpecializationRequestType | '');
     this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected doctorInitials(nameAr: string): string {
+    if (!nameAr) return 'ط';
+    const clean = nameAr.replace(/^(دكتور|د\.|أ\.د|أستاذ دكتور)\s+/i, '').trim();
+    const parts = clean.split(/\s+/);
+    if (!parts.length || !parts[0]) return 'ط';
+    if (parts.length === 1) return parts[0].slice(0, 2);
+    return `${parts[0][0]}${parts[1][0]}`;
+  }
+
+  protected openReviewDrawer(requestId: string, doctorName: string): void {
+    this.selectedRequestId.set(requestId);
+    this.selectedDoctorName.set(doctorName);
+  }
+
+  protected closeReviewDrawer(): void {
+    this.selectedRequestId.set(null);
+    this.selectedDoctorName.set('');
+  }
+
+  protected handleReviewSaved(): void {
     void this.load();
   }
 

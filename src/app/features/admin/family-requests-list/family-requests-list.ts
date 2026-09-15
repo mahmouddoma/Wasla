@@ -7,7 +7,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, form, maxLength } from '@angular/forms/signals';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { FamiliesApi } from '../../../core/families/families-api';
@@ -17,10 +16,12 @@ import {
   FamilyRequestType,
 } from '../../../core/families/family.models';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import { FamilyRequestDetailsPage } from '../family-request-details/family-request-details';
 
 @Component({
   selector: 'app-family-requests-list',
-  imports: [FormField, RouterLink, PageHeader],
+  imports: [FormField, PageHeader, SideDrawer, FamilyRequestDetailsPage],
   templateUrl: './family-requests-list.html',
   styleUrls: ['../management-list.css', './family-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,6 +41,8 @@ export class FamilyRequestsList {
   protected readonly result = signal<FamilyRequestPage | null>(null);
   protected readonly loading = signal(true);
   protected readonly messages = signal<string[]>([]);
+  protected readonly selectedRequestId = signal<string | null>(null);
+  protected readonly selectedRequestTitle = signal<string>('');
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.pageSize)),
   );
@@ -48,6 +51,20 @@ export class FamilyRequestsList {
     inject(DestroyRef).onDestroy(() => {
       if (this.searchTimer) clearTimeout(this.searchTimer);
     });
+    void this.load();
+  }
+
+  protected openReviewDrawer(requestId: string, title?: string): void {
+    this.selectedRequestId.set(requestId);
+    this.selectedRequestTitle.set(title || 'طلب علاقة عائلية');
+  }
+
+  protected closeReviewDrawer(): void {
+    this.selectedRequestId.set(null);
+    this.selectedRequestTitle.set('');
+  }
+
+  protected handleReviewSaved(): void {
     void this.load();
   }
 
