@@ -19,6 +19,26 @@ describe('AuthApi password recovery', () => {
 
   afterEach(() => http.verify());
 
+  it('loads the complete current-user session from auth/me', async () => {
+    const result = firstValueFrom(api.currentUser());
+    const request = http.expectOne(`${environment.apiBaseUrl}/api/v1/auth/me`);
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      applicationUserId: 'user-id',
+      userName: 'doctor1',
+      email: 'doctor@example.com',
+      phoneNumber: '01000000000',
+      userType: 'Doctor',
+      roles: ['Doctor'],
+      permissions: ['DoctorOnboarding.ViewOwn'],
+      isFirstLogin: false,
+      doctorId: 'doctor-id',
+      patientId: null,
+    });
+
+    expect((await result).doctorId).toBe('doctor-id');
+  });
+
   it('posts requestId and otp only when verifying an OTP', async () => {
     const body = {
       requestId: '1bbac680-bda0-4cb0-b531-7cc1d61e22b6',

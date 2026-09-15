@@ -1,0 +1,215 @@
+<section class="catalog-layout">
+  <header class="catalog-heading">
+    <h2>الشرائح والتسعير</h2>
+    <p>
+      الشريحة تحدد الأولوية والحصة، ونوع الزيارة يحدد المعنى التجاري فقط. مدة الموعد مصدرها الجدول.
+    </p>
+  </header>
+
+  @if (messages().length) {
+    <div class="catalog-feedback" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+
+  @if (canViewSegments() || canManageSegments()) {
+    <section class="catalog-section">
+      <div class="section-title">
+        <h3>شرائح المرضى</h3>
+        <span>{{ segments().length }} شريحة</span>
+      </div>
+      @if (canManageSegments()) {
+        <form class="catalog-form" (submit)="saveSegment($event)" novalidate>
+          <label class="form-field"
+            ><span>الاسم بالعربية</span><input [formField]="segmentForm.nameAr"
+          /></label>
+          <label class="form-field"
+            ><span>الاسم بالإنجليزية</span><input dir="ltr" [formField]="segmentForm.nameEn"
+          /></label>
+          <label class="form-field"
+            ><span>الأولوية</span><input type="number" [formField]="segmentForm.priority"
+          /></label>
+          <label class="form-field"
+            ><span>الحصة اليومية المحجوزة</span
+            ><input
+              inputmode="numeric"
+              placeholder="بدون حصة"
+              [formField]="segmentForm.reservedDailyQuota"
+          /></label>
+          <label class="form-field"
+            ><span>تحرير الحصة قبل الموعد بالدقائق</span
+            ><input
+              inputmode="numeric"
+              placeholder="غير محدد"
+              [formField]="segmentForm.quotaReleaseBeforeMinutes"
+          /></label>
+          @if (editingSegmentId(); as id) {
+            @if (!segments().find((segment) => segment.id === id)?.isDefault) {
+              <label class="check-field"
+                ><input type="checkbox" [formField]="segmentForm.isActive" /><span
+                  >الشريحة نشطة</span
+                ></label
+              >
+            } @else {
+              <p class="protected-copy">الشريحة الافتراضية تظل نشطة دائمًا.</p>
+            }
+          }
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" [disabled]="activeAction() === 'segment'">
+              {{ editingSegmentId() ? 'حفظ الشريحة' : 'إضافة شريحة' }}
+            </button>
+            @if (editingSegmentId()) {
+              <button class="btn btn-outline-secondary" type="button" (click)="cancelSegmentEdit()">
+                إلغاء
+              </button>
+            }
+          </div>
+        </form>
+      }
+      <div class="catalog-list" aria-live="polite">
+        @for (segment of segments(); track segment.id) {
+          <article>
+            <div>
+              <strong>{{ segment.nameAr }}</strong>
+              @if (segment.nameEn) {
+                <small dir="ltr">{{ segment.nameEn }}</small>
+              }
+            </div>
+            <div class="item-meta">
+              <span>{{
+                segment.isDefault ? 'افتراضية ومحمية' : segment.isActive ? 'نشطة' : 'غير نشطة'
+              }}</span
+              ><span>الأولوية {{ segment.priority }}</span
+              ><span>{{
+                segment.reservedDailyQuota === null
+                  ? 'بدون حصة'
+                  : 'حصة ' + segment.reservedDailyQuota
+              }}</span>
+            </div>
+            @if (canManageSegments()) {
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                (click)="editSegment(segment)"
+              >
+                تعديل
+              </button>
+            }
+          </article>
+        } @empty {
+          <p class="empty-copy">{{ isLoading() ? 'جارٍ التحميل…' : 'لا توجد شرائح.' }}</p>
+        }
+      </div>
+    </section>
+  }
+
+  @if (canViewPricing() || canManagePricing()) {
+    <section class="catalog-section">
+      <div class="section-title">
+        <h3>أنواع الزيارة</h3>
+        <span>المدة تُدار من الجدول</span>
+      </div>
+      @if (editingVisitTypeId()) {
+        <form class="catalog-form compact-form" (submit)="saveVisitType($event)" novalidate>
+          <label class="form-field"
+            ><span>الاسم بالعربية</span><input [formField]="visitTypeForm.nameAr"
+          /></label>
+          <label class="form-field"
+            ><span>الاسم بالإنجليزية</span><input dir="ltr" [formField]="visitTypeForm.nameEn"
+          /></label>
+          <label class="check-field"
+            ><input type="checkbox" [formField]="visitTypeForm.isActive" /><span
+              >نوع الزيارة نشط</span
+            ></label
+          >
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">حفظ</button
+            ><button
+              class="btn btn-outline-secondary"
+              type="button"
+              (click)="editingVisitTypeId.set(null)"
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      }
+      <div class="catalog-list">
+        @for (item of visitTypes(); track item.id) {
+          <article>
+            <div>
+              <strong>{{ item.nameAr }}</strong
+              ><small dir="ltr">{{ item.type }} · {{ item.nameEn || '—' }}</small>
+            </div>
+            <div class="item-meta">
+              <span>{{ item.isActive ? 'نشط' : 'غير نشط' }}</span>
+            </div>
+            @if (canManagePricing()) {
+              <button class="btn btn-outline-secondary" type="button" (click)="editVisitType(item)">
+                تعديل الاسم والحالة
+              </button>
+            }
+          </article>
+        } @empty {
+          <p class="empty-copy">لا توجد أنواع زيارة.</p>
+        }
+      </div>
+    </section>
+
+    <section class="catalog-section">
+      <div class="section-title">
+        <h3>مصفوفة الأسعار</h3>
+        <span>Practice + Segment + Visit Type</span>
+      </div>
+      @if (canManagePricing()) {
+        <form class="price-form" (submit)="addPrice($event)" novalidate>
+          <label class="form-field"
+            ><span>الشريحة</span
+            ><select [formField]="priceForm.segmentId">
+              <option value="">اختر</option>
+              @for (segment of segments(); track segment.id) {
+                <option [value]="segment.id">{{ segment.nameAr }}</option>
+              }
+            </select></label
+          >
+          <label class="form-field"
+            ><span>نوع الزيارة</span
+            ><select [formField]="priceForm.visitTypeId">
+              <option value="">اختر</option>
+              @for (item of visitTypes(); track item.id) {
+                <option [value]="item.id">{{ item.nameAr }}</option>
+              }
+            </select></label
+          >
+          <label class="form-field"
+            ><span>السعر</span><input type="number" [formField]="priceForm.price"
+          /></label>
+          <button class="btn btn-primary" type="submit" [disabled]="activeAction() === 'price'">
+            إضافة السعر
+          </button>
+        </form>
+      }
+      <div class="price-table">
+        @for (item of prices(); track item.id) {
+          <div>
+            <strong>{{ segmentName(item.segmentId) }}</strong
+            ><span>{{ visitTypeName(item.visitTypeId) }}</span
+            ><b>{{ item.price }} ج.م</b>
+            @if (canManagePricing()) {
+              <span class="row-actions"
+                ><button type="button" (click)="changePrice(item)">تعديل</button
+                ><button type="button" class="danger-link" (click)="deletePrice(item)">
+                  حذف
+                </button></span
+              >
+            }
+          </div>
+        } @empty {
+          <p class="empty-copy">لا توجد أسعار معرفة. لن نفترض سعرًا افتراضيًا.</p>
+        }
+      </div>
+    </section>
+  }
+</section>

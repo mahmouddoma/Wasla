@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import {
   FormField,
@@ -13,13 +14,17 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
+import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
+import { PERMISSIONS } from '../../../core/auth/permissions';
 import {
   PagedResponse,
   PatientRelationshipType,
   PatientSearchItem,
 } from '../../../core/patients/patient.models';
 import { PatientsApi } from '../../../core/patients/patients-api';
+import { ReceptionPractice } from '../../../core/reception/reception-practice.models';
+import { ReceptionPracticesApi } from '../../../core/reception/reception-practices-api';
 
 @Component({
   selector: 'app-reception-patients',
@@ -30,6 +35,8 @@ import { PatientsApi } from '../../../core/patients/patients-api';
 })
 export class ReceptionPatients {
   private readonly api = inject(PatientsApi);
+  private readonly authApi = inject(AuthApi);
+  private readonly practicesApi = inject(ReceptionPracticesApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
@@ -85,6 +92,15 @@ export class ReceptionPatients {
   protected readonly isCreating = signal(false);
   protected readonly isSearching = signal(false);
   protected readonly pageNumber = signal(1);
+  protected readonly practices = signal<ReceptionPractice[]>([]);
+  protected readonly selectedPracticeId = signal('');
+  protected readonly isLoadingPractices = signal(false);
+  protected readonly canSearch = this.session.hasPermission(PERMISSIONS.patientsSearchBasic);
+  protected readonly canRegister = this.session.hasPermission(PERMISSIONS.patientsRegister);
+
+  constructor() {
+    if (this.canSearch) void this.loadPractices();
+  }
 
   protected async createPatient(event: Event): Promise<void> {
     event.preventDefault();
@@ -128,6 +144,10 @@ export class ReceptionPatients {
 
   protected async search(pageNumber = 1, event?: Event): Promise<void> {
     event?.preventDefault();
+    if (!this.selectedPracticeId()) {
+      this.messages.set(['اختر العيادة التي تعمل عليها قبل البحث.']);
+      return;
+    }
     await submit(this.searchForm, async () => {
       if (this.isSearching()) return;
       this.isSearching.set(true);
@@ -135,10 +155,19 @@ export class ReceptionPatients {
       try {
         this.pageNumber.set(pageNumber);
         this.results.set(
-          await firstValueFrom(this.api.search({ ...this.searchModel(), pageNumber })),
+          await firstValueFrom(
+            this.api.search({
+              ...this.searchModel(),
+              doctorPracticeId: this.selectedPracticeId(),
+              pageNumber,
+            }),
+          ),
         );
       } catch (error) {
         this.messages.set(flattenErrors(error));
+        if (error instanceof HttpErrorResponse && error.status === 403) {
+          await this.refreshAccessContext();
+        }
       } finally {
         this.isSearching.set(false);
       }
@@ -153,6 +182,18 @@ export class ReceptionPatients {
     this.profileImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
   }
 
+  protected practiceChanged(event: Event): void {
+    this.selectedPracticeId.set((event.currentTarget as HTMLSelectElement).value);
+    this.results.set(null);
+    this.selectedPatientId.set('');
+    this.messages.set([]);
+  }
+
+  protected selectedPracticeAllows(permission: string): boolean {
+    const practice = this.practices().find((item) => item.id === this.selectedPracticeId());
+    return practice?.permissionCodes.includes(permission) ?? false;
+  }
+
   protected logout(): void {
     this.session.clear();
     void this.router.navigate(['/login']);
@@ -165,6 +206,41 @@ export class ReceptionPatients {
   private clearFeedback(): void {
     this.messages.set([]);
     this.createdPatientId.set('');
+  }
+
+  private async loadPractices(): Promise<void> {
+    this.isLoadingPractices.set(true);
+    try {
+      const practices = (await firstValueFrom(this.practicesApi.list())).filter(
+        (practice) => practice.isActive,
+      );
+      this.practices.set(practices);
+      const current = this.selectedPracticeId();
+      if (!practices.some((practice) => practice.id === current)) {
+        this.selectedPracticeId.set(practices.length === 1 ? practices[0].id : '');
+        this.results.set(null);
+      }
+    } catch (error) {
+      this.practices.set([]);
+      this.selectedPracticeId.set('');
+      this.messages.set(flattenErrors(error));
+    } finally {
+      this.isLoadingPractices.set(false);
+    }
+  }
+
+  private async refreshAccessContext(): Promise<void> {
+    try {
+      const user = await firstValueFrom(this.authApi.currentUser());
+      this.session.complete(user);
+      if (!user.permissions.includes(PERMISSIONS.patientsSearchBasic)) {
+        await this.router.navigate([this.session.destinationFor(user)]);
+        return;
+      }
+    } catch {
+      return;
+    }
+    await this.loadPractices();
   }
 }
 

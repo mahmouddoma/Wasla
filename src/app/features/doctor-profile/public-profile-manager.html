@@ -1,0 +1,87 @@
+@if (canView || canUpdate) {
+  <section class="public-profile-panel" aria-labelledby="public-profile-heading">
+    <header>
+      <h2 id="public-profile-heading">الملف العام</h2>
+      <p>النبذة والمؤهلات تظهر مباشرة للزوار، بدون مسار اعتماد إداري.</p>
+    </header>
+    @if (messages().length) {
+      <div class="profile-feedback" role="alert">
+        @for (message of messages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+    }
+    @if (isLoading()) {
+      <p class="loading-copy">جارٍ تحميل الملف العام…</p>
+    } @else {
+      @if (profile()) {
+        <form class="bio-editor" (submit)="saveBio($event)" novalidate>
+          <label
+            ><span>النبذة العامة</span
+            ><textarea
+              rows="6"
+              placeholder="اكتب نبذة مهنية واضحة كنص عادي…"
+              [formField]="bioForm.bio"
+            ></textarea
+            ><small>{{ bioModel().bio.length }} / 2000</small></label
+          >
+          @if (canUpdate) {
+            <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
+              حفظ النبذة
+            </button>
+          }
+        </form>
+      }
+      <div class="qualifications-layout">
+        @if (canUpdate) {
+          <form class="qualification-form" (submit)="saveQualification($event)" novalidate>
+            <h3>{{ editingQualificationId() ? 'تعديل المؤهل' : 'إضافة مؤهل' }}</h3>
+            <label class="form-field"
+              ><span>الاسم بالعربية</span><input [formField]="qualificationForm.nameAr" /></label
+            ><label class="form-field"
+              ><span>الاسم بالإنجليزية</span
+              ><input dir="ltr" [formField]="qualificationForm.nameEn" /></label
+            ><label class="form-field"
+              ><span>ترتيب العرض</span
+              ><input type="number" [formField]="qualificationForm.displayOrder"
+            /></label>
+            <div class="qualification-actions">
+              <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
+                {{ editingQualificationId() ? 'حفظ التعديل' : 'إضافة المؤهل' }}
+              </button>
+              @if (editingQualificationId()) {
+                <button class="btn-head" type="button" (click)="cancelQualificationEdit()">
+                  إلغاء
+                </button>
+              }
+            </div>
+          </form>
+        }
+        <div class="qualification-list">
+          <h3>المؤهلات</h3>
+          @for (item of qualifications(); track item.id) {
+            <article>
+              <div>
+                <strong>{{ item.nameAr }}</strong>
+                @if (item.nameEn) {
+                  <span dir="ltr">{{ item.nameEn }}</span>
+                }
+                <small>الترتيب {{ item.displayOrder }}</small>
+              </div>
+              @if (canUpdate) {
+                <div>
+                  <button type="button" (click)="editQualification(item)">تعديل</button
+                  ><button class="danger" type="button" (click)="deleteQualification(item)">
+                    حذف
+                  </button>
+                </div>
+              }
+            </article>
+          } @empty {
+            <p>لا توجد مؤهلات مسجلة.</p>
+          }
+        </div>
+      </div>
+    }
+  </section>
+}

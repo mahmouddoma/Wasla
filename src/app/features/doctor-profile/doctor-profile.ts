@@ -22,10 +22,18 @@ import { SpecializationSelector } from '../../shared/specialization-selector/spe
 import { LanguageService } from '../../core/i18n/language.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LanguageSwitcher } from '../../shared/components/language-switcher/language-switcher';
+import { PublicProfileManager } from './public-profile-manager';
 
 @Component({
   selector: 'app-doctor-profile',
-  imports: [FormField, RouterLink, SpecializationSelector, LanguageSwitcher, TranslatePipe],
+  imports: [
+    FormField,
+    RouterLink,
+    SpecializationSelector,
+    LanguageSwitcher,
+    TranslatePipe,
+    PublicProfileManager,
+  ],
   templateUrl: './doctor-profile.html',
   styleUrl: './doctor-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,8 +69,10 @@ export class DoctorProfile {
     required(field.areaId, { message: 'اختر المنطقة.' });
     required(field.detailedAddress, { message: 'العنوان التفصيلي مطلوب.' });
     maxLength(field.detailedAddress, 500, { message: 'الحد الأقصى 500 حرف.' });
+    required(field.latitude, { message: 'خط العرض مطلوب.' });
     min(field.latitude, -90, { message: 'خط العرض يجب أن يكون بين -90 و90.' });
     max(field.latitude, 90, { message: 'خط العرض يجب أن يكون بين -90 و90.' });
+    required(field.longitude, { message: 'خط الطول مطلوب.' });
     min(field.longitude, -180, { message: 'خط الطول يجب أن يكون بين -180 و180.' });
     max(field.longitude, 180, { message: 'خط الطول يجب أن يكون بين -180 و180.' });
   });
@@ -162,6 +172,7 @@ export class DoctorProfile {
       this.isLocationSubmitting.set(true);
       this.apiMessages.set([]);
       try {
+        const isUpdate = this.location() !== null;
         const response = await firstValueFrom(
           this.api.upsertPracticeLocation({
             governorateId: Number(this.locationModel().governorateId),
@@ -175,9 +186,15 @@ export class DoctorProfile {
         );
         this.location.set(response);
         this.populateLocation(response);
+        this.toast.success(
+          isUpdate ? 'تم تحديث موقع الممارسة بنجاح.' : 'تم إنشاء موقع الممارسة بنجاح.',
+        );
       } catch (error) {
         this.handleError(error);
-        if (error instanceof HttpErrorResponse && error.status === 409) await this.loadLocation();
+        if (error instanceof HttpErrorResponse && error.status === 409) {
+          await this.loadLocation();
+          this.toast.error('تم تحديث بيانات الموقع من الخادم. راجعها ثم أعد الحفظ.');
+        }
       } finally {
         this.isLocationSubmitting.set(false);
       }
@@ -378,8 +395,22 @@ export class DoctorProfile {
         await this.loadCities(location.governorate.id);
         await this.loadAreas(location.city.id);
       } catch (error) {
-        if (!this.isNotFound(error)) this.handleError(error);
-        this.location.set(null);
+        if (this.isNotFound(error)) {
+          this.location.set(null);
+          this.locationModel.set({
+            governorateId: '',
+            cityId: '',
+            areaId: '',
+            detailedAddress: '',
+            latitude: 0,
+            longitude: 0,
+          });
+          this.cities.set([]);
+          this.areas.set([]);
+          this.locationForm().reset();
+        } else {
+          this.handleError(error);
+        }
       }
     } catch (error) {
       if (!this.isNotFound(error)) this.handleError(error);
@@ -429,7 +460,10 @@ export class DoctorProfile {
       .replace(/[أإآٱ]/g, 'ا')
       .replace(/ة/g, 'ه')
       .replace(/ى/g, 'ي')
-      .replace(/(محافظة|محافظه|مدينة|مدينه|مركز|قسم|حي|منطقة|منطقه|governorate|gov|city|district|qism|markaz)/gi, '')
+      .replace(
+        /(محافظة|محافظه|مدينة|مدينه|مركز|قسم|حي|منطقة|منطقه|governorate|gov|city|district|qism|markaz)/gi,
+        '',
+      )
       .replace(/^ال/g, '')
       .replace(/[\s\-_,.\'\"]/g, '');
   }

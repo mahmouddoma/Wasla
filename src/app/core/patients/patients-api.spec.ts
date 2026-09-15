@@ -61,6 +61,18 @@ describe('PatientsApi', () => {
     await result;
   });
 
+  it('sends the selected doctor practice for reception-scoped search', async () => {
+    const result = firstValueFrom(
+      api.search({ doctorPracticeId: 'practice-1', pageNumber: 1, pageSize: 20 }),
+    );
+    const request = http.expectOne(
+      `${url}/search?${new URLSearchParams({ pageNumber: '1', pageSize: '20', doctorPracticeId: 'practice-1' })}`,
+    );
+    expect(request.request.params.get('doctorPracticeId')).toBe('practice-1');
+    request.flush({ items: [], pageNumber: 1, pageSize: 20, totalCount: 0 });
+    await result;
+  });
+
   it('loads the current profile without a patient id', async () => {
     const result = firstValueFrom(api.profile());
     const request = http.expectOne(`${url}/me`);

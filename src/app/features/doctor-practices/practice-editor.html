@@ -1,0 +1,86 @@
+<section class="management-section">
+  <div class="management-heading">
+    <div>
+      <h2>{{ practice() ? 'بيانات العيادة والموقع' : 'إنشاء عيادة جديدة' }}</h2>
+      <p>
+        {{
+          practice()
+            ? 'عدّل الاسم والموقع باستخدام أحدث نسخة محفوظة.'
+            : 'تبدأ العيادة غير نشطة حتى تكتمل الهوية البصرية والإعدادات المطلوبة.'
+        }}
+      </p>
+    </div>
+  </div>
+
+  @if (messages().length) {
+    <div class="section-feedback error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+
+  <form class="management-form" (submit)="save($event)" novalidate>
+    <label class="form-field">
+      <span>اسم العيادة بالعربية *</span>
+      <input [formField]="editorForm.nameAr" autocomplete="organization" />
+    </label>
+    <label class="form-field">
+      <span>اسم العيادة بالإنجليزية</span>
+      <input dir="ltr" [formField]="editorForm.nameEn" autocomplete="organization" />
+    </label>
+    <label class="form-field">
+      <span>المحافظة *</span>
+      <select [formField]="editorForm.governorateId" (change)="governorateChanged($event)">
+        <option value="">اختر المحافظة</option>
+        @for (item of governorates(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-field">
+      <span>المدينة *</span>
+      <select [formField]="editorForm.cityId" (change)="cityChanged($event)">
+        <option value="">اختر المدينة</option>
+        @for (item of cities(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-field">
+      <span>المنطقة *</span>
+      <select [formField]="editorForm.areaId">
+        <option value="">اختر المنطقة</option>
+        @for (item of areas(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-field field-wide">
+      <span>العنوان التفصيلي *</span>
+      <input [formField]="editorForm.detailedAddress" autocomplete="street-address" />
+    </label>
+    <label class="form-field">
+      <span>خط العرض *</span>
+      <input type="number" step="any" dir="ltr" [formField]="editorForm.latitude" />
+    </label>
+    <label class="form-field">
+      <span>خط الطول *</span>
+      <input type="number" step="any" dir="ltr" [formField]="editorForm.longitude" />
+    </label>
+    @if (editorForm().touched() && editorForm().errors().length) {
+      <div class="section-feedback error field-full" role="alert">
+        راجع الحقول المطلوبة وقيم الموقع.
+      </div>
+    }
+    <div class="form-actions field-full">
+      <button
+        class="btn btn-primary"
+        type="submit"
+        [disabled]="isSubmitting() || isLoadingLocations()"
+      >
+        {{ isSubmitting() ? 'جارٍ الحفظ…' : practice() ? 'حفظ بيانات العيادة' : 'إنشاء العيادة' }}
+      </button>
+    </div>
+  </form>
+</section>

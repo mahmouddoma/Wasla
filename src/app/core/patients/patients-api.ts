@@ -48,6 +48,9 @@ export class PatientsApi {
     let params = new HttpParams()
       .set('pageNumber', query.pageNumber)
       .set('pageSize', query.pageSize);
+    if (query.doctorPracticeId?.trim()) {
+      params = params.set('doctorPracticeId', query.doctorPracticeId.trim());
+    }
     if (query.phoneNumber?.trim()) params = params.set('phoneNumber', query.phoneNumber.trim());
     if (query.name?.trim()) params = params.set('name', query.name.trim());
     if (query.dateOfBirth) params = params.set('dateOfBirth', query.dateOfBirth);

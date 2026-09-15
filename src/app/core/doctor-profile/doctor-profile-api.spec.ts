@@ -86,4 +86,32 @@ describe('DoctorProfileApi', () => {
     request.flush({ id: 'location' });
     await result;
   });
+
+  it('manages public bio and qualifications with rowVersions', async () => {
+    const profile = firstValueFrom(api.publicProfile());
+    http.expectOne(`${doctorUrl}/profile`).flush({ doctorId: 'doctor-1', bio: null, rowVersion: 'AQID' });
+    await profile;
+    const bio = firstValueFrom(api.updateBio('نبذة', 'AQID'));
+    const bioRequest = http.expectOne(`${doctorUrl}/profile/bio`);
+    expect(bioRequest.request.body).toEqual({ bio: 'نبذة', rowVersion: 'AQID' });
+    bioRequest.flush({ doctorId: 'doctor-1', bio: 'نبذة', rowVersion: 'BAUG' });
+    await bio;
+
+    const list = firstValueFrom(api.qualifications());
+    http.expectOne(`${doctorUrl}/qualifications`).flush([]);
+    await list;
+    const body = { nameAr: 'زمالة القلب', nameEn: 'Cardiology Fellowship', displayOrder: 1 };
+    const add = firstValueFrom(api.addQualification(body));
+    http.expectOne(`${doctorUrl}/qualifications`).flush({ id: 'q-1', ...body, rowVersion: 'AQID' });
+    await add;
+    const update = firstValueFrom(api.updateQualification('q/1', { ...body, rowVersion: 'AQID' }));
+    http.expectOne(`${doctorUrl}/qualifications/q%2F1`).flush({});
+    await update;
+    const remove = firstValueFrom(api.deleteQualification('q/1', 'BAUG'));
+    const removeRequest = http.expectOne(`${doctorUrl}/qualifications/q%2F1`);
+    expect(removeRequest.request.method).toBe('DELETE');
+    expect(removeRequest.request.body).toEqual({ rowVersion: 'BAUG' });
+    removeRequest.flush(null);
+    await remove;
+  });
 });

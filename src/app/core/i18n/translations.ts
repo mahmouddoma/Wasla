@@ -197,7 +197,10 @@ export const TRANSLATIONS: TranslationDictionary = {
   'workspace.phone': { ar: 'رقم الهاتف', en: 'Phone Number' },
   'workspace.username': { ar: 'اسم المستخدم', en: 'Username' },
   'workspace.accountInfo': { ar: 'بيانات الحساب', en: 'Account Details' },
-  'workspace.availableModules': { ar: 'الخدمات والوحدات المتاحة', en: 'Available Services & Modules' },
+  'workspace.availableModules': {
+    ar: 'الخدمات والوحدات المتاحة',
+    en: 'Available Services & Modules',
+  },
   'workspace.manageDoctorProfile': {
     ar: 'التخصص وموقع الممارسة',
     en: 'Specialty & Practice Location',
@@ -205,6 +208,11 @@ export const TRANSLATIONS: TranslationDictionary = {
   'workspace.doctorProfileDesc': {
     ar: 'استكمال بيانات التخصصات الطبية وتحديد مواقع الممارسة والعيادات.',
     en: 'Complete medical specialties and configure practice locations.',
+  },
+  'workspace.myPractices': { ar: 'عياداتي', en: 'My Practices' },
+  'workspace.myPracticesDesc': {
+    ar: 'عرض العيادات المسجلة وحالة التشغيل وتفاصيل الموقع لكل عيادة.',
+    en: 'View registered practices, operating status, and location details.',
   },
   'workspace.managePatients': { ar: 'إدارة المرضى', en: 'Manage Patients' },
   'workspace.managePatientsDesc': {
@@ -231,4 +239,3 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Integrated Healthcare Platform',
   },
 };
-

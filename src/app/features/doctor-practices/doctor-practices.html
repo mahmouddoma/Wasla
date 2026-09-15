@@ -1,0 +1,212 @@
+<main class="health-workspace" dir="rtl">
+  <header class="workspace-bar">
+    <div>
+      <h1>{{ isCreate ? 'إنشاء عيادة جديدة' : practiceId ? 'إدارة العيادة' : 'عياداتي' }}</h1>
+      <p>
+        {{
+          isCreate
+            ? 'أدخل بيانات العيادة وموقعها، ثم أكمل الإعدادات والهوية قبل التفعيل.'
+            : practiceId
+              ? 'إدارة مستقلة لبيانات العيادة وتشغيلها وجدولها وشرائحها.'
+              : 'كل العيادات التابعة لحسابك مع حالة التشغيل وبيانات الموقع.'
+        }}
+      </p>
+    </div>
+    <div class="bar-actions">
+      @if (practiceId || isCreate) {
+        <a class="btn btn-outline-secondary" routerLink="/doctor/practices">كل العيادات</a>
+      }
+      <a class="btn btn-outline-secondary" routerLink="/workspace/doctor">الرئيسية</a>
+      <button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+    </div>
+  </header>
+
+  @if (messages().length) {
+    <div class="notice error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+
+  <section class="workspace-panel practices-panel" aria-live="polite">
+    @if (isLoading()) {
+      <div class="empty-state">جارٍ تحميل بيانات العيادة…</div>
+    } @else if (isNotFound()) {
+      <div class="empty-state">
+        <strong>العيادة غير موجودة</strong>
+        <p>قد تكون حُذفت أو لم تعد متاحة لحسابك.</p>
+        <a class="btn btn-outline-secondary" routerLink="/doctor/practices">العودة للعيادات</a>
+      </div>
+    } @else if (isForbidden()) {
+      <div class="empty-state">
+        <strong>ليس لديك صلاحية لهذه العيادة</strong>
+        <p>الخادم رفض الوصول؛ لا يمكن إدارة عيادة لا تتبع حساب الطبيب الحالي.</p>
+        <a class="btn btn-outline-secondary" routerLink="/doctor/practices">العودة للعيادات</a>
+      </div>
+    } @else if (isCreate) {
+      <app-practice-editor (saved)="practiceSaved($event)" />
+    } @else if (selectedPractice(); as practice) {
+      <div class="practice-summary">
+        <div>
+          <span class="practice-status" [class.inactive]="!practice.isActive">
+            {{ practice.isActive ? 'نشطة' : 'غير نشطة' }}
+          </span>
+          <h2>{{ practice.nameAr }}</h2>
+          @if (practice.nameEn) {
+            <p dir="ltr">{{ practice.nameEn }}</p>
+          }
+        </div>
+        <div class="readiness-summary">
+          <span>{{ practice.hasLogo ? 'الشعار متاح' : 'الشعار غير مرفوع' }}</span>
+          <small>نشطة لا تعني متاحة للحجز؛ الإتاحة يحكمها الإعداد والجدول.</small>
+        </div>
+      </div>
+
+      <nav class="practice-tabs" aria-label="أقسام إدارة العيادة">
+        <button
+          type="button"
+          [class.active]="activeSection() === 'overview'"
+          [attr.aria-current]="activeSection() === 'overview' ? 'page' : null"
+          (click)="selectSection('overview')"
+        >
+          البيانات الأساسية
+        </button>
+        @if (
+          canActivate ||
+          canViewConfiguration ||
+          canManageConfiguration ||
+          canViewBranding ||
+          canManageBranding
+        ) {
+          <button
+            type="button"
+            [class.active]="activeSection() === 'operations'"
+            [attr.aria-current]="activeSection() === 'operations' ? 'page' : null"
+            (click)="selectSection('operations')"
+          >
+            التشغيل والهوية
+          </button>
+        }
+        @if (canViewSchedule || canManageSchedule) {
+          <button
+            type="button"
+            [class.active]="activeSection() === 'schedule'"
+            [attr.aria-current]="activeSection() === 'schedule' ? 'page' : null"
+            (click)="selectSection('schedule')"
+          >
+            الجدول
+          </button>
+        }
+        @if (canViewSegments || canManageSegments || canViewPricing || canManagePricing) {
+          <button
+            type="button"
+            [class.active]="activeSection() === 'segments'"
+            [attr.aria-current]="activeSection() === 'segments' ? 'page' : null"
+            (click)="selectSection('segments')"
+          >
+            الشرائح والتسعير
+          </button>
+        }
+      </nav>
+
+      <div class="practice-section-content">
+        @switch (activeSection()) {
+          @case ('overview') {
+            @if (canManage) {
+              <app-practice-editor [practice]="practice" (saved)="practiceSaved($event)" />
+            } @else {
+              <dl class="practice-data">
+                <div>
+                  <dt>النطاق الجغرافي</dt>
+                  <dd>{{ locationLabel(practice) || 'غير مسجل' }}</dd>
+                </div>
+                <div>
+                  <dt>العنوان التفصيلي</dt>
+                  <dd>{{ practice.location.detailedAddress || 'غير مسجل' }}</dd>
+                </div>
+                <div>
+                  <dt>خط العرض</dt>
+                  <dd dir="ltr">{{ practice.location.latitude ?? '—' }}</dd>
+                </div>
+                <div>
+                  <dt>خط الطول</dt>
+                  <dd dir="ltr">{{ practice.location.longitude ?? '—' }}</dd>
+                </div>
+              </dl>
+            }
+          }
+          @case ('operations') {
+            <app-practice-operations
+              [practice]="practice"
+              [canActivate]="canActivate"
+              [canViewConfiguration]="canViewConfiguration"
+              [canManageConfiguration]="canManageConfiguration"
+              [canViewBranding]="canViewBranding"
+              [canManageBranding]="canManageBranding"
+              (practiceChanged)="practiceSaved($event)"
+            />
+          }
+          @case ('schedule') {
+            <app-practice-schedule [practiceId]="practice.id" [canManage]="canManageSchedule" />
+          }
+          @case ('segments') {
+            <app-practice-segments
+              [practiceId]="practice.id"
+              [canViewSegments]="canViewSegments"
+              [canManageSegments]="canManageSegments"
+              [canViewPricing]="canViewPricing"
+              [canManagePricing]="canManagePricing"
+            />
+          }
+        }
+      </div>
+    } @else {
+      <div class="list-heading">
+        <div>
+          <h2>قائمة العيادات</h2>
+          <p>{{ practices().length }} عيادة مسجلة</p>
+        </div>
+        @if (canManage) {
+          <a class="btn btn-primary" routerLink="/doctor/practices/new">إنشاء عيادة</a>
+        }
+      </div>
+
+      <div class="practice-list">
+        @for (practice of practices(); track practice.id) {
+          <article class="practice-card">
+            <div class="practice-card-heading">
+              <div>
+                <span class="practice-status" [class.inactive]="!practice.isActive">
+                  {{ practice.isActive ? 'نشطة' : 'غير نشطة' }}
+                </span>
+                <h2>{{ practice.nameAr }}</h2>
+                @if (practice.nameEn) {
+                  <p dir="ltr">{{ practice.nameEn }}</p>
+                }
+              </div>
+              <span class="logo-status">{{ practice.hasLogo ? 'شعار متاح' : 'بدون شعار' }}</span>
+            </div>
+            <p class="practice-location">
+              {{ locationLabel(practice) || 'لم يكتمل النطاق الجغرافي' }}
+            </p>
+            <p class="practice-address">
+              {{ practice.location.detailedAddress || 'العنوان غير مسجل' }}
+            </p>
+            <a class="btn btn-outline-secondary" [routerLink]="['/doctor/practices', practice.id]"
+              >إدارة العيادة</a
+            >
+          </article>
+        } @empty {
+          <div class="empty-state">
+            <strong>لا توجد عيادات مسجلة</strong>
+            <p>ابدأ بإنشاء العيادة الأولى، ثم أكمل الإعدادات والهوية قبل التفعيل.</p>
+            @if (canManage) {
+              <a class="btn btn-primary" routerLink="/doctor/practices/new">إنشاء عيادة</a>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+</main>

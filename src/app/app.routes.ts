@@ -12,6 +12,20 @@ import { PERMISSIONS } from './core/auth/permissions';
 
 export const routes: Routes = [
   {
+    path: 'doctors',
+    loadComponent: () =>
+      import('./features/public-doctors/public-doctors').then((m) => m.PublicDoctors),
+    title: 'ابحث عن طبيب | وصلة',
+  },
+  {
+    path: 'doctors/:doctorId',
+    loadComponent: () =>
+      import('./features/public-doctor-details/public-doctor-details').then(
+        (m) => m.PublicDoctorDetailsPage,
+      ),
+    title: 'تفاصيل الطبيب | وصلة',
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./features/auth/auth-layout/auth-layout').then((m) => m.AuthLayout),
@@ -68,11 +82,59 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'doctor/practices',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: { permission: PERMISSIONS.doctorPracticesViewOwn },
+    loadComponent: () =>
+      import('./features/doctor-practices/doctor-practices').then((m) => m.DoctorPractices),
+    title: 'عياداتي | وصلة',
+  },
+  {
+    path: 'doctor/practices/new',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: { permission: PERMISSIONS.doctorPracticesManageOwn },
+    loadComponent: () =>
+      import('./features/doctor-practices/doctor-practices').then((m) => m.DoctorPractices),
+    title: 'إنشاء عيادة | وصلة',
+  },
+  {
+    path: 'doctor/practices/:practiceId',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: { permission: PERMISSIONS.doctorPracticesViewOwn },
+    loadComponent: () =>
+      import('./features/doctor-practices/doctor-practices').then((m) => m.DoctorPractices),
+    title: 'تفاصيل العيادة | وصلة',
+  },
+  {
     path: 'doctor/profile',
     canActivate: [authenticatedGuard, doctorProfileGuard],
     loadComponent: () =>
       import('./features/doctor-profile/doctor-profile').then((m) => m.DoctorProfile),
     title: 'التخصص وموقع الممارسة | وصلة',
+  },
+  {
+    path: 'doctor/receptions',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: { permission: PERMISSIONS.receptionUsersViewOwn },
+    loadComponent: () =>
+      import('./features/doctor-receptions/doctor-receptions').then((m) => m.DoctorReceptions),
+    title: 'فريق الاستقبال | وصلة',
+  },
+  {
+    path: 'doctor/receptions/new',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: { permission: PERMISSIONS.receptionUsersManageOwn },
+    loadComponent: () =>
+      import('./features/doctor-receptions/doctor-receptions').then((m) => m.DoctorReceptions),
+    title: 'إنشاء حساب استقبال | وصلة',
+  },
+  {
+    path: 'doctor/receptions/:receptionId',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: { permission: PERMISSIONS.receptionUsersViewOwn },
+    loadComponent: () =>
+      import('./features/doctor-receptions/doctor-receptions').then((m) => m.DoctorReceptions),
+    title: 'تفاصيل الاستقبال | وصلة',
   },
   {
     path: 'doctor/onboarding',

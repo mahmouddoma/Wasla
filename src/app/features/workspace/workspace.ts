@@ -22,6 +22,12 @@ export class Workspace {
   protected readonly canManageDoctorProfile =
     this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
     this.session.hasPermission(PERMISSIONS.doctorPracticeLocationManageOwn);
+  protected readonly canViewDoctorPractices = this.session.hasPermission(
+    PERMISSIONS.doctorPracticesViewOwn,
+  );
+  protected readonly canViewReceptionUsers = this.session.hasPermission(
+    PERMISSIONS.receptionUsersViewOwn,
+  );
   protected readonly canManagePatients =
     this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
     this.session.hasPermission(PERMISSIONS.patientsRegister);
@@ -43,6 +49,8 @@ export class Workspace {
   protected readonly hasAnyModules = computed(
     () =>
       this.canManageDoctorProfile ||
+      this.canViewDoctorPractices ||
+      this.canViewReceptionUsers ||
       this.canManagePatients ||
       this.canManageAssistedFamilyRequests ||
       this.canManagePatientProfile ||

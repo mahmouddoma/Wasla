@@ -1,0 +1,168 @@
+<main class="details-shell" dir="rtl">
+  <header class="details-header">
+    <a routerLink="/doctors" class="brand">وصلة</a><a routerLink="/doctors">العودة للبحث</a>
+  </header>
+  @if (messages().length) {
+    <div class="details-error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+  @if (isLoading()) {
+    <p class="page-state">جارٍ تحميل ملف الطبيب…</p>
+  } @else if (notFound()) {
+    <div class="page-state">
+      <strong>الطبيب غير متاح للعامة</strong><a routerLink="/doctors">البحث عن طبيب آخر</a>
+    </div>
+  } @else if (doctor(); as item) {
+    <section class="doctor-profile">
+      <div class="doctor-identity">
+        @if (item.profileImageUrl && !doctorImageBroken()) {
+          <img
+            [src]="item.profileImageUrl"
+            [alt]="'صورة ' + item.nameAr"
+            (error)="doctorImageBroken.set(true)"
+          />
+        } @else {
+          <span aria-hidden="true">{{ item.nameAr.charAt(0) }}</span>
+        }
+        <div>
+          <h1>{{ item.nameAr }}</h1>
+          @if (item.nameEn) {
+            <p dir="ltr">{{ item.nameEn }}</p>
+          }
+          <ul>
+            @for (specialization of item.specializations; track specialization.id) {
+              <li>{{ specialization.nameAr }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+      @if (item.bio) {
+        <p class="bio">{{ item.bio }}</p>
+      }
+      @if (item.qualifications.length) {
+        <div class="qualifications">
+          <h2>المؤهلات</h2>
+          <ul>
+            @for (qualification of item.qualifications; track qualification.id) {
+              <li>
+                <strong>{{ qualification.nameAr }}</strong>
+                @if (qualification.nameEn) {
+                  <span dir="ltr">{{ qualification.nameEn }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+    <section class="practices">
+      <header>
+        <h2>العيادات والمواعيد</h2>
+        <p>اختر عيادة متاحة، ثم يومًا وموعدًا من القوائم التي يرجعها الخادم.</p>
+      </header>
+      <div class="practice-list">
+        @for (practice of item.practices; track practice.id) {
+          <article [class.selected]="selectedPractice()?.id === practice.id">
+            @if (practice.logoUrl && !brokenLogos().includes(practice.id)) {
+              <img
+                [src]="practice.logoUrl"
+                [alt]="'شعار ' + practice.nameAr"
+                (error)="logoFailed(practice.id)"
+              />
+            } @else {
+              <span class="logo-placeholder" aria-hidden="true">{{
+                practice.nameAr.charAt(0)
+              }}</span>
+            }
+            <div>
+              <h3>{{ practice.nameAr }}</h3>
+              <p>
+                {{ practice.governorate?.nameAr }} · {{ practice.city?.nameAr }} ·
+                {{ practice.area?.nameAr }}
+              </p>
+              <address>{{ practice.detailedAddress }}</address>
+              <b>{{
+                practice.publicSearchPrice === null
+                  ? 'السعر غير محدد'
+                  : practice.publicSearchPrice + ' ج.م'
+              }}</b>
+            </div>
+            <button
+              type="button"
+              [disabled]="!practice.isBookable"
+              (click)="choosePractice(practice)"
+            >
+              {{ practice.isBookable ? 'اختيار العيادة' : 'غير متاحة للحجز' }}
+            </button>
+          </article>
+        }
+      </div>
+    </section>
+    @if (selectedPractice()) {
+      <section class="booking-flow">
+        <h2>اختيار الموعد</h2>
+        @if (bookingLoading()) {
+          <p>جارٍ تحميل الإتاحة…</p>
+        }
+        <div class="booking-step">
+          <h3>الأيام المتاحة</h3>
+          <div class="choice-grid">
+            @for (date of dates(); track date.date) {
+              <button
+                type="button"
+                [class.active]="selectedDate() === date.date"
+                (click)="chooseDate(date.date)"
+              >
+                {{ date.date }}
+              </button>
+            } @empty {
+              <p>لا توجد أيام متاحة خلال الثلاثين يومًا القادمة.</p>
+            }
+          </div>
+        </div>
+        @if (selectedDate()) {
+          <div class="booking-step">
+            <h3>المواعيد المتاحة</h3>
+            <div class="choice-grid">
+              @for (slot of slots(); track slot.date + slot.time) {
+                <button
+                  type="button"
+                  [class.active]="selectedTime() === slot.time"
+                  (click)="chooseSlot(slot.time)"
+                >
+                  {{ slot.time }}
+                </button>
+              } @empty {
+                <p>لا توجد أوقات متاحة لهذا اليوم.</p>
+              }
+            </div>
+          </div>
+        }
+        @if (options(); as booking) {
+          <div class="booking-step">
+            <h3>نوع الزيارة والسعر</h3>
+            <div class="booking-options">
+              @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
+                <section>
+                  <strong>{{ visitType.nameAr }}</strong>
+                  @for (segment of visitType.segments; track segment.segmentId) {
+                    <div>
+                      <span>{{ segment.nameAr }}{{ segment.isDefault ? ' · الافتراضية' : '' }}</span
+                      ><b>{{ segment.price }} ج.م</b>
+                    </div>
+                  }
+                </section>
+              } @empty {
+                <p>لم تعد هناك خيارات حجز صالحة لهذا الموعد.</p>
+              }
+            </div>
+            <p class="review-note">هذه مراجعة للسعر فقط؛ إنشاء الحجز غير متاح في هذه المرحلة.</p>
+          </div>
+        }
+      </section>
+    }
+  }
+</main>

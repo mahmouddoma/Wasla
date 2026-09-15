@@ -4,6 +4,30 @@ export interface MedicalSpecializationOption {
   nameEn: string | null;
 }
 
+export interface DoctorPublicProfile {
+  doctorId: string;
+  bio: string | null;
+  rowVersion: string;
+}
+
+export interface DoctorQualification {
+  id: string;
+  nameAr: string;
+  nameEn: string | null;
+  displayOrder: number;
+  rowVersion: string;
+}
+
+export interface WriteDoctorQualificationRequest {
+  nameAr: string;
+  nameEn: string | null;
+  displayOrder: number;
+}
+
+export interface UpdateDoctorQualificationRequest extends WriteDoctorQualificationRequest {
+  rowVersion: string;
+}
+
 export interface DoctorSpecializationSelection {
   medicalSpecializationId: string;
   isPrimary: boolean;

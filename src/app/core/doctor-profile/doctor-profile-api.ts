@@ -5,6 +5,8 @@ import { environment } from '../../../environments/environment';
 import { SKIP_ERROR_TOAST } from '../notifications/api-error-toast.interceptor';
 import {
   DoctorPracticeLocation,
+  DoctorPublicProfile,
+  DoctorQualification,
   DoctorSpecializationHistoryItem,
   DoctorSpecializationRequest,
   DoctorSpecializationsResponse,
@@ -12,7 +14,9 @@ import {
   MedicalSpecializationOption,
   ResubmitDoctorSpecializationsRequest,
   SubmitDoctorSpecializationsRequest,
+  UpdateDoctorQualificationRequest,
   UpsertDoctorPracticeLocationRequest,
+  WriteDoctorQualificationRequest,
 } from './doctor-profile.models';
 
 @Injectable({ providedIn: 'root' })
@@ -90,5 +94,41 @@ export class DoctorProfileApi {
     request: UpsertDoctorPracticeLocationRequest,
   ): Observable<DoctorPracticeLocation> {
     return this.http.put<DoctorPracticeLocation>(`${this.doctorsUrl}/practice-location`, request);
+  }
+
+  publicProfile(): Observable<DoctorPublicProfile> {
+    return this.http.get<DoctorPublicProfile>(`${this.doctorsUrl}/profile`);
+  }
+
+  updateBio(bio: string | null, rowVersion: string): Observable<DoctorPublicProfile> {
+    return this.http.put<DoctorPublicProfile>(`${this.doctorsUrl}/profile/bio`, {
+      bio,
+      rowVersion,
+    });
+  }
+
+  qualifications(): Observable<DoctorQualification[]> {
+    return this.http.get<DoctorQualification[]>(`${this.doctorsUrl}/qualifications`);
+  }
+
+  addQualification(request: WriteDoctorQualificationRequest): Observable<DoctorQualification> {
+    return this.http.post<DoctorQualification>(`${this.doctorsUrl}/qualifications`, request);
+  }
+
+  updateQualification(
+    qualificationId: string,
+    request: UpdateDoctorQualificationRequest,
+  ): Observable<DoctorQualification> {
+    return this.http.put<DoctorQualification>(
+      `${this.doctorsUrl}/qualifications/${encodeURIComponent(qualificationId)}`,
+      request,
+    );
+  }
+
+  deleteQualification(qualificationId: string, rowVersion: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.doctorsUrl}/qualifications/${encodeURIComponent(qualificationId)}`,
+      { body: { rowVersion } },
+    );
   }
 }

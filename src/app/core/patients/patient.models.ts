@@ -22,6 +22,7 @@ export interface CreatePatientResponse {
 }
 
 export interface PatientSearchQuery {
+  doctorPracticeId?: string;
   phoneNumber?: string;
   name?: string;
   dateOfBirth?: string;

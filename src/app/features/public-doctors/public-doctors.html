@@ -1,0 +1,151 @@
+<main class="discovery-shell" dir="rtl">
+  <header class="discovery-header">
+    <a routerLink="/doctors" class="brand">وصلة</a
+    ><a routerLink="/login" class="login-link">تسجيل الدخول</a>
+  </header>
+  <section class="search-intro">
+    <h1>ابحث عن طبيبك والموعد المناسب</h1>
+    <p>النتائج مرتبة من الخادم حسب الشعبية ثم أقرب موعد، وتعرض كل العيادات النشطة لكل طبيب.</p>
+  </section>
+  <form class="search-panel" (submit)="$event.preventDefault(); search()">
+    <label
+      ><span>الاسم</span
+      ><input
+        type="search"
+        placeholder="اسم الطبيب"
+        [value]="filters().searchText"
+        (input)="updateFilter('searchText', $event)"
+    /></label>
+    <label
+      ><span>التخصص</span
+      ><select
+        [value]="filters().specializationId"
+        (change)="updateFilter('specializationId', $event)"
+      >
+        <option value="">كل التخصصات</option>
+        @for (item of specializations(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select></label
+    >
+    <label
+      ><span>المحافظة</span
+      ><select [value]="filters().governorateId" (change)="governorateChanged($event)">
+        <option value="">كل المحافظات</option>
+        @for (item of governorates(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select></label
+    >
+    <label
+      ><span>المدينة</span
+      ><select [value]="filters().cityId" (change)="cityChanged($event)">
+        <option value="">كل المدن</option>
+        @for (item of cities(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select></label
+    >
+    <label
+      ><span>المنطقة</span
+      ><select [value]="filters().areaId" (change)="updateFilter('areaId', $event)">
+        <option value="">كل المناطق</option>
+        @for (item of areas(); track item.id) {
+          <option [value]="item.id">{{ item.nameAr }}</option>
+        }
+      </select></label
+    >
+    <button type="submit">بحث</button>
+  </form>
+  @if (messages().length) {
+    <div class="search-error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <button type="button" (click)="search(result().pageNumber)">إعادة المحاولة</button>
+    </div>
+  }
+  <section class="results" aria-live="polite">
+    <div class="results-heading">
+      <h2>الأطباء</h2>
+      <span>{{ result().totalCount }} نتيجة</span>
+    </div>
+    @if (isLoading()) {
+      <p class="empty-result">جارٍ البحث…</p>
+    }
+    @for (doctor of result().items; track doctor.doctorId) {
+      <article class="doctor-result">
+        <div class="doctor-heading">
+          @if (doctor.profileImageUrl && !brokenImages().includes(doctor.doctorId)) {
+            <img
+              [src]="doctor.profileImageUrl"
+              [alt]="'صورة ' + doctor.nameAr"
+              (error)="imageFailed(doctor.doctorId)"
+            />
+          } @else {
+            <span class="image-placeholder" aria-hidden="true">{{ doctor.nameAr.charAt(0) }}</span>
+          }
+          <div>
+            <h3>{{ doctor.nameAr }}</h3>
+            @if (doctor.nameEn) {
+              <p dir="ltr">{{ doctor.nameEn }}</p>
+            }
+            <ul>
+              @for (specialization of doctor.specializations; track specialization.id) {
+                <li>{{ specialization.nameAr }}</li>
+              }
+            </ul>
+          </div>
+          <a [routerLink]="['/doctors', doctor.doctorId]">عرض الملف والمواعيد</a>
+        </div>
+        <div class="practice-results">
+          @for (practice of doctor.practices; track practice.id) {
+            <section>
+              <div>
+                <strong>{{ practice.nameAr }}</strong
+                ><span>{{ practice.governorate?.nameAr }} · {{ practice.city?.nameAr }}</span>
+              </div>
+              <div>
+                <b>{{
+                  practice.publicSearchPrice === null
+                    ? 'السعر غير محدد'
+                    : practice.publicSearchPrice + ' ج.م'
+                }}</b
+                ><span>{{
+                  practice.nextAvailableSlotDate
+                    ? practice.nextAvailableSlotDate + ' · ' + practice.nextAvailableSlotTime
+                    : 'لا يوجد موعد متاح'
+                }}</span
+                ><small [class.ready]="practice.isBookable">{{
+                  practice.isBookable ? 'متاحة للحجز' : 'غير متاحة للحجز'
+                }}</small>
+              </div>
+            </section>
+          }
+        </div>
+      </article>
+    } @empty {
+      @if (!isLoading()) {
+        <p class="empty-result">لا توجد نتائج مطابقة. غيّر معايير البحث وحاول مجددًا.</p>
+      }
+    }
+    @if (result().totalCount) {
+      <nav class="pagination" aria-label="صفحات النتائج">
+        <button
+          type="button"
+          [disabled]="result().pageNumber <= 1"
+          (click)="search(result().pageNumber - 1)"
+        >
+          السابق</button
+        ><span>صفحة {{ result().pageNumber }} من {{ totalPages() }}</span
+        ><button
+          type="button"
+          [disabled]="result().pageNumber >= totalPages()"
+          (click)="search(result().pageNumber + 1)"
+        >
+          التالي
+        </button>
+      </nav>
+    }
+  </section>
+</main>

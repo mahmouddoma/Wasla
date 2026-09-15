@@ -1,0 +1,180 @@
+<section class="operations-layout">
+  @if (messages().length) {
+    <div class="operation-feedback" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+
+  @if (canActivate()) {
+    <section class="operation-section status-section">
+      <div>
+        <h2>حالة التشغيل</h2>
+        <p>
+          {{
+            practice().isActive
+              ? 'العيادة نشطة حاليًا. الإيقاف لا يحذفها ولا يحذف تاريخها.'
+              : 'العيادة غير نشطة. أكمل الإعدادات والهوية والشعار قبل التفعيل.'
+          }}
+        </p>
+      </div>
+      <button
+        class="btn"
+        [class.btn-outline-danger]="practice().isActive"
+        [class.btn-primary]="!practice().isActive"
+        type="button"
+        [disabled]="activeAction() === 'status'"
+        (click)="toggleStatus()"
+      >
+        {{ practice().isActive ? 'إيقاف العيادة' : 'تفعيل العيادة' }}
+      </button>
+    </section>
+  }
+
+  @if (canViewConfiguration() || canManageConfiguration()) {
+    <section class="operation-section">
+      <div class="operation-heading">
+        <div>
+          <h2>الإعدادات التشغيلية</h2>
+          <p>القيم مستقلة لهذه العيادة ولا تغيّر الجداول الحالية بأثر رجعي.</p>
+        </div>
+      </div>
+      @if (configuration(); as config) {
+        @if (canManageConfiguration()) {
+          <form class="config-form" (submit)="saveConfiguration($event)" novalidate>
+            <label class="toggle-field">
+              <input type="checkbox" [formField]="configForm.allowOnlineBooking" />
+              <span>السماح بالحجز الإلكتروني</span>
+            </label>
+            <label class="toggle-field">
+              <input type="checkbox" [formField]="configForm.allowWalkIn" />
+              <span>السماح بالحضور دون حجز</span>
+            </label>
+            <label class="form-field">
+              <span>مدة الموعد الافتراضية بالدقائق</span>
+              <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
+            </label>
+            <label class="form-field">
+              <span>مهلة تسجيل الحضور بالدقائق</span>
+              <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
+            </label>
+            <label class="form-field">
+              <span>مهلة الإلغاء الذاتي بالدقائق</span>
+              <input type="number" [formField]="configForm.patientSelfCancellationCutoffMinutes" />
+            </label>
+            <label class="form-field">
+              <span>الحد الأقصى للمرضى يوميًا</span>
+              <input
+                inputmode="numeric"
+                [formField]="configForm.maximumDailyPatients"
+                placeholder="بدون حد"
+              />
+            </label>
+            <label class="form-field">
+              <span>أقصى محاولات نداء التذكرة</span>
+              <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
+            </label>
+            <label class="form-field">
+              <span>المنطقة الزمنية</span>
+              <input dir="ltr" [formField]="configForm.timeZoneId" />
+            </label>
+            <div class="form-actions config-actions">
+              <button
+                class="btn btn-primary"
+                type="submit"
+                [disabled]="activeAction() === 'configuration'"
+              >
+                حفظ الإعدادات
+              </button>
+            </div>
+          </form>
+        } @else {
+          <dl class="config-summary">
+            <div>
+              <dt>الحجز الإلكتروني</dt>
+              <dd>{{ config.allowOnlineBooking ? 'مسموح' : 'غير مسموح' }}</dd>
+            </div>
+            <div>
+              <dt>الحضور دون حجز</dt>
+              <dd>{{ config.allowWalkIn ? 'مسموح' : 'غير مسموح' }}</dd>
+            </div>
+            <div>
+              <dt>مدة الموعد</dt>
+              <dd>{{ config.defaultSlotDurationMinutes }} دقيقة</dd>
+            </div>
+            <div>
+              <dt>الحد اليومي</dt>
+              <dd>{{ config.maximumDailyPatients ?? 'بدون حد' }}</dd>
+            </div>
+            <div>
+              <dt>المنطقة الزمنية</dt>
+              <dd dir="ltr">{{ config.timeZoneId }}</dd>
+            </div>
+          </dl>
+        }
+      } @else if (isLoading()) {
+        <p class="loading-copy">جارٍ تحميل الإعدادات…</p>
+      }
+    </section>
+  }
+
+  @if (canViewBranding() || canManageBranding()) {
+    <section class="operation-section">
+      <div class="operation-heading">
+        <div>
+          <h2>الهوية البصرية</h2>
+          <p>شعار العيادة منفصل عن صورة الطبيب، ووجوده شرط للتفعيل.</p>
+        </div>
+      </div>
+      @if (branding(); as theme) {
+        <div class="branding-workspace">
+          <div class="logo-preview" [class.empty]="!logoPreviewUrl()">
+            @if (logoPreviewUrl(); as logoUrl) {
+              <img [src]="logoUrl" alt="شعار العيادة" />
+            } @else {
+              <span>لا يوجد شعار</span>
+            }
+          </div>
+          <div class="branding-controls">
+            <span class="logo-availability" [class.ready]="theme.hasLogo">
+              {{ theme.hasLogo ? 'الشعار موجود' : 'الشعار غير مرفوع' }}
+            </span>
+            @if (canManageBranding()) {
+              <form class="branding-form" (submit)="saveBranding($event)" novalidate>
+                <label class="form-field"><span>اللون الأساسي</span><input dir="ltr" placeholder="#008C8C" [formField]="brandingForm.primaryColor" /></label>
+                <label class="form-field"><span>اللون الثانوي</span><input dir="ltr" placeholder="#0B2942" [formField]="brandingForm.secondaryColor" /></label>
+                <label class="form-field"><span>لون الخلفية</span><input dir="ltr" placeholder="#FFFFFF" [formField]="brandingForm.backgroundColor" /></label>
+                <label class="form-field"><span>لون النص</span><input dir="ltr" placeholder="#102A43" [formField]="brandingForm.textColor" /></label>
+                <button class="btn btn-primary" type="submit" [disabled]="activeAction() === 'branding'">حفظ الألوان</button>
+              </form>
+              <div class="logo-actions">
+                <label class="file-picker">
+                  <span>{{ theme.hasLogo ? 'اختيار شعار بديل' : 'اختيار شعار' }}</span>
+                  <input type="file" accept="image/*" (change)="chooseLogo($event)" />
+                </label>
+                <button class="btn btn-primary" type="button" [disabled]="!selectedLogo() || activeAction() === 'logo'" (click)="uploadLogo()">رفع الشعار</button>
+                <button class="btn btn-outline-danger" type="button" [disabled]="practice().isActive || !theme.hasLogo || activeAction() === 'logo'" (click)="removeLogo()">حذف الشعار</button>
+              </div>
+              @if (selectedLogo(); as file) {
+                <p class="action-hint" dir="ltr">{{ file.name }}</p>
+              }
+              @if (practice().isActive && theme.hasLogo) {
+                <p class="action-hint">أوقف العيادة أولًا قبل حذف الشعار.</p>
+              }
+            } @else {
+              <div class="color-list" aria-label="ألوان هوية العيادة">
+                <span><i [style.background-color]="theme.primaryColor"></i><code>{{ theme.primaryColor || 'افتراضي' }}</code></span>
+                <span><i [style.background-color]="theme.secondaryColor"></i><code>{{ theme.secondaryColor || 'افتراضي' }}</code></span>
+                <span><i [style.background-color]="theme.backgroundColor"></i><code>{{ theme.backgroundColor || 'افتراضي' }}</code></span>
+                <span><i [style.background-color]="theme.textColor"></i><code>{{ theme.textColor || 'افتراضي' }}</code></span>
+              </div>
+            }
+          </div>
+        </div>
+      } @else if (isLoading()) {
+        <p class="loading-copy">جارٍ تحميل الهوية…</p>
+      }
+    </section>
+  }
+</section>

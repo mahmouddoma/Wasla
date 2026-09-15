@@ -1,0 +1,216 @@
+<section class="schedule-shell">
+  <div class="schedule-heading">
+    <div>
+      <h2>جدول العيادة</h2>
+      <p>فترات العمل الأسبوعية منفصلة عن الاستثناءات الخاصة بتاريخ محدد.</p>
+    </div>
+  </div>
+
+  @if (messages().length) {
+    <div class="schedule-feedback" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message }}</p>
+      }
+    </div>
+  }
+
+  <section class="effective-preview">
+    <div>
+      <h3>الجدول الفعلي ليوم محدد</h3>
+      <p>يعرض النتيجة النهائية بعد الفترات والاستثناءات والفترات المحجوبة.</p>
+    </div>
+    <div class="preview-controls">
+      <input type="date" [value]="effectiveDate()" (change)="effectiveDateChanged($event)" />
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="activeAction() === 'effective'"
+        (click)="loadEffective()"
+      >
+        عرض اليوم
+      </button>
+    </div>
+    <div class="effective-list" aria-live="polite">
+      @for (period of effectivePeriods(); track period.startTime + period.endTime) {
+        <article>
+          <strong dir="ltr">{{ period.startTime }} — {{ period.endTime }}</strong>
+          <span>{{ period.slotDurationMinutes }} دقيقة للموعد</span>
+          <small dir="ltr">{{ period.slotStarts.join(' · ') || 'لا توجد بدايات مواعيد' }}</small>
+        </article>
+      } @empty {
+        <p class="empty-copy">لا توجد فترات عمل فعلية في هذا اليوم.</p>
+      }
+    </div>
+  </section>
+
+  <div class="schedule-columns">
+    <section>
+      <div class="subsection-heading">
+        <h3>الفترات الأسبوعية</h3>
+        <span>{{ schedule().periods.length }}</span>
+      </div>
+      <div class="record-list">
+        @for (period of schedule().periods; track period.id) {
+          <article class="schedule-record">
+            <div>
+              <strong>{{ dayLabel(period.dayOfWeek) }}</strong>
+              <span dir="ltr">{{ period.startTime }} — {{ period.endTime }}</span>
+              <small>{{ period.slotDurationMinutes }} دقيقة</small>
+            </div>
+            @if (canManage()) {
+              <div class="record-actions">
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  (click)="editPeriod(period)"
+                >
+                  تعديل
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  [disabled]="activeAction() === 'period-' + period.id"
+                  (click)="deletePeriod(period)"
+                >
+                  حذف
+                </button>
+              </div>
+            }
+          </article>
+        } @empty {
+          <p class="empty-copy">لا توجد فترات أسبوعية مسجلة.</p>
+        }
+      </div>
+
+      @if (canManage()) {
+        <form class="schedule-form" (submit)="savePeriod($event)" novalidate>
+          <h4>{{ editingPeriod() ? 'تعديل فترة العمل' : 'إضافة فترة عمل' }}</h4>
+          <label class="form-field">
+            <span>اليوم</span>
+            <select [formField]="periodForm.dayOfWeek">
+              @for (day of days; track day.value) {
+                <option [value]="day.value">{{ day.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="form-field">
+            <span>البداية</span>
+            <input type="time" [formField]="periodForm.startTime" />
+          </label>
+          <label class="form-field">
+            <span>النهاية</span>
+            <input type="time" [formField]="periodForm.endTime" />
+          </label>
+          <label class="form-field">
+            <span>مدة الموعد بالدقائق</span>
+            <input type="number" [formField]="periodForm.slotDurationMinutes" />
+          </label>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" [disabled]="activeAction() === 'period'">
+              {{ editingPeriod() ? 'حفظ التعديل' : 'إضافة الفترة' }}
+            </button>
+            @if (editingPeriod()) {
+              <button class="btn btn-outline-secondary" type="button" (click)="cancelPeriodEdit()">
+                إلغاء
+              </button>
+            }
+          </div>
+        </form>
+      }
+    </section>
+
+    <section>
+      <div class="subsection-heading">
+        <h3>استثناءات التواريخ</h3>
+        <span>{{ schedule().exceptions.length }}</span>
+      </div>
+      <div class="record-list">
+        @for (exception of schedule().exceptions; track exception.id) {
+          <article class="schedule-record">
+            <div>
+              <strong>{{ exceptionLabel(exception.type) }}</strong>
+              <span>{{ exception.date }}</span>
+              @if (exception.startTime && exception.endTime) {
+                <small dir="ltr">{{ exception.startTime }} — {{ exception.endTime }}</small>
+              }
+            </div>
+            @if (canManage()) {
+              <div class="record-actions">
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  (click)="editException(exception)"
+                >
+                  تعديل
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  [disabled]="activeAction() === 'exception-' + exception.id"
+                  (click)="deleteException(exception)"
+                >
+                  حذف
+                </button>
+              </div>
+            }
+          </article>
+        } @empty {
+          <p class="empty-copy">لا توجد استثناءات مسجلة.</p>
+        }
+      </div>
+
+      @if (canManage()) {
+        <form class="schedule-form" (submit)="saveException($event)" novalidate>
+          <h4>{{ editingException() ? 'تعديل الاستثناء' : 'إضافة استثناء' }}</h4>
+          <label class="form-field">
+            <span>التاريخ</span>
+            <input type="date" [formField]="exceptionForm.date" />
+          </label>
+          <label class="form-field">
+            <span>النوع</span>
+            <select [formField]="exceptionForm.type">
+              <option value="DayOff">يوم إجازة</option>
+              <option value="Vacation">عطلة</option>
+              <option value="CustomWorkingHours">ساعات عمل مخصصة</option>
+              <option value="BlockedTimeRange">فترة محجوبة</option>
+            </select>
+          </label>
+          @if (exceptionNeedsTimes()) {
+            <label class="form-field">
+              <span>البداية</span>
+              <input type="time" [formField]="exceptionForm.startTime" />
+            </label>
+            <label class="form-field">
+              <span>النهاية</span>
+              <input type="time" [formField]="exceptionForm.endTime" />
+            </label>
+          }
+          @if (exceptionNeedsDuration()) {
+            <label class="form-field">
+              <span>مدة الموعد بالدقائق</span>
+              <input type="number" [formField]="exceptionForm.slotDurationMinutes" />
+            </label>
+          }
+          <div class="form-actions">
+            <button
+              class="btn btn-primary"
+              type="submit"
+              [disabled]="activeAction() === 'exception'"
+            >
+              {{ editingException() ? 'حفظ التعديل' : 'إضافة الاستثناء' }}
+            </button>
+            @if (editingException()) {
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                (click)="cancelExceptionEdit()"
+              >
+                إلغاء
+              </button>
+            }
+          </div>
+        </form>
+      }
+    </section>
+  </div>
+</section>
