@@ -8,6 +8,15 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
+  'receptions.permissionsUnavailable': { ar: 'تعذر الربط: الخادم يتطلب تحديد صلاحيات، ولا توجد قائمة صلاحيات متاحة لهذا الحساب. يلزم توفير قائمة صلاحيات الاستقبال من الخادم لإتمام أول ربط.', en: 'Assignment unavailable: the server requires permissions, but no permission list is available for this account. A reception permission catalog must be provided by the server to create the first assignment.' },
+  'receptions.choosePermission': { ar: 'اختر صلاحية واحدة على الأقل.', en: 'Select at least one permission.' },
+  'receptions.choosePractice': { ar: 'اختر العيادة المراد الربط بها.', en: 'Select a practice to assign.' },
+  'schedule.invalidPeriod': { ar: 'أكمل وقت البداية والنهاية، بما في ذلك AM/PM، وحدد مدة موعد بين 1 و1440 دقيقة.', en: 'Complete the start and end times, including AM/PM, and enter a slot duration between 1 and 1440 minutes.' },
+  'schedule.invalidException': { ar: 'أكمل تاريخ الاستثناء ونوعه قبل الحفظ.', en: 'Complete the exception date and type before saving.' },
+  'schedule.invalidTimeOrder': { ar: 'وقت النهاية يجب أن يكون بعد وقت البداية.', en: 'The end time must be after the start time.' },
+  'schedule.mutationFailed': { ar: 'تعذر حفظ التغيير في جدول المواعيد. راجع البيانات وحاول مرة أخرى.', en: 'Unable to save the schedule change. Check the details and try again.' },
+  'schedule.periodAdded': { ar: 'تمت إضافة فترة العمل.', en: 'Working period added.' },
+  'schedule.periodUpdated': { ar: 'تم تحديث فترة العمل.', en: 'Working period updated.' },
   // Common & Navigation
   'common.appName': { ar: 'وصلة', en: 'Wasla' },
   'common.platformSubtitle': {

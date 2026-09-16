@@ -14,30 +14,39 @@ import {
   ReceptionAssignmentPermission,
 } from '../../core/doctor-receptions/doctor-reception.models';
 import { DoctorReceptionsApi } from '../../core/doctor-receptions/doctor-receptions-api';
+import { LanguageService } from '../../core/i18n/language.service';
 import { ToastService } from '../../core/notifications/toast.service';
+import { LanguageSwitcher } from '../../shared/components/language-switcher/language-switcher';
+import { SideDrawer } from '../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-doctor-receptions',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, LanguageSwitcher, SideDrawer],
   templateUrl: './doctor-receptions.html',
-  styleUrls: ['../healthcare-workspace.css', './doctor-receptions.css'],
+  styleUrl: './doctor-receptions.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorReceptions {
+  protected readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorReceptionsApi);
   private readonly practicesApi = inject(DoctorPracticesApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
+
   protected readonly receptionId = this.route.snapshot.paramMap.get('receptionId');
   protected readonly isCreate = this.route.snapshot.routeConfig?.path === 'doctor/receptions/new';
+  protected readonly isCreateDrawerOpen = signal(this.isCreate);
+  protected readonly showPassword = signal(false);
+
   protected readonly canManageUsers = this.session.hasPermission(
     PERMISSIONS.receptionUsersManageOwn,
   );
   protected readonly canManageAssignments = this.session.hasPermission(
     PERMISSIONS.receptionAssignmentsManageOwn,
   );
+
   protected readonly receptions = signal<DoctorReception[]>([]);
   protected readonly reception = signal<DoctorReception | null>(null);
   protected readonly practices = signal<DoctorPractice[]>([]);
@@ -49,12 +58,22 @@ export class DoctorReceptions {
   protected readonly selectedPracticeId = signal('');
   protected readonly selectedPermissionIds = signal<string[]>([]);
   protected readonly editingAssignmentId = signal<string | null>(null);
+
+  protected readonly totalAssignmentsCount = computed(() =>
+    this.receptions().reduce((sum, item) => sum + item.assignments.length, 0),
+  );
+  protected readonly activeReceptionsCount = computed(
+    () => this.receptions().filter((item) => item.assignments.some((a) => a.isActive)).length,
+  );
+
   protected readonly permissionOptions = computed(() => {
     const map = new Map<string, ReceptionAssignmentPermission>();
-    for (const assignment of this.reception()?.assignments ?? [])
+    for (const assignment of this.reception()?.assignments ?? []) {
       for (const permission of assignment.permissions) map.set(permission.id, permission);
+    }
     return [...map.values()].sort((a, b) => a.code.localeCompare(b.code));
   });
+
   protected readonly userModel = signal({
     userName: '',
     email: '',
@@ -63,6 +82,7 @@ export class DoctorReceptions {
     nameAr: '',
     nameEn: '',
   });
+
   protected readonly userForm = form(this.userModel, (field) => {
     required(field.userName, { message: 'اسم المستخدم مطلوب.' });
     required(field.email, { message: 'البريد الإلكتروني مطلوب.' });
@@ -74,6 +94,17 @@ export class DoctorReceptions {
 
   constructor() {
     void this.load();
+  }
+
+  protected openCreateDrawer(): void {
+    this.isCreateDrawerOpen.set(true);
+  }
+
+  protected closeCreateDrawer(): void {
+    this.isCreateDrawerOpen.set(false);
+    if (this.isCreate) {
+      void this.router.navigate(['/doctor/receptions']);
+    }
   }
 
   protected async create(event: Event): Promise<void> {
@@ -93,7 +124,8 @@ export class DoctorReceptions {
             nameEn: value.nameEn.trim() || null,
           }),
         );
-        this.toast.success('تم إنشاء حساب الاستقبال. يمكنك الآن ربطه بالعيادات.');
+        this.isCreateDrawerOpen.set(false);
+        this.toast.success('تم إنشاء حساب موظف الاستقبال. يمكنك الآن ربطه بالعيادات.');
         await this.router.navigate(['/doctor/receptions', created.id]);
       } catch (error) {
         this.setErrors(error);
@@ -123,39 +155,50 @@ export class DoctorReceptions {
 
   protected async saveAssignment(): Promise<void> {
     const current = this.reception();
-    if (!current || this.isSubmitting() || !this.selectedPermissionIds().length) {
-      this.messages.set(['اختر صلاحية واحدة على الأقل.']);
+    if (!current || this.isSubmitting() || !this.canManageAssignments) return;
+    if ((this.editingAssignmentId() || this.permissionOptions().length) && !this.selectedPermissionIds().length) {
+      const message = this.langService.t(
+        this.permissionOptions().length
+          ? 'receptions.choosePermission'
+          : 'receptions.permissionsUnavailable',
+      );
+      this.messages.set([message]);
+      this.toast.error(message);
       return;
     }
     if (!this.editingAssignmentId() && !this.selectedPracticeId()) {
-      this.messages.set(['اختر العيادة.']);
+      const message = this.langService.t('receptions.choosePractice');
+      this.messages.set([message]);
+      this.toast.error(message);
       return;
     }
     this.isSubmitting.set(true);
     this.messages.set([]);
     try {
       const editing = current.assignments.find((item) => item.id === this.editingAssignmentId());
-      if (editing)
+      if (editing) {
         await firstValueFrom(
           this.api.updateAssignment(current.id, editing.id, {
             permissionIds: this.selectedPermissionIds(),
             rowVersion: editing.rowVersion,
           }),
         );
-      else
+      } else {
         await firstValueFrom(
           this.api.assign(current.id, {
             doctorPracticeId: this.selectedPracticeId(),
             permissionIds: this.selectedPermissionIds(),
           }),
         );
+      }
       await this.loadDetails(current.id);
       this.cancelAssignmentEdit();
       this.toast.success(editing ? 'تم تحديث صلاحيات الربط.' : 'تم ربط موظف الاستقبال بالعيادة.');
     } catch (error) {
       this.setErrors(error);
-      if (error instanceof HttpErrorResponse && error.status === 409)
+      if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.loadDetails(current.id);
+      }
     } finally {
       this.isSubmitting.set(false);
     }
@@ -164,23 +207,38 @@ export class DoctorReceptions {
   protected async toggleAssignment(assignment: DoctorReceptionAssignment): Promise<void> {
     const current = this.reception();
     if (!current || this.isSubmitting()) return;
-    if (assignment.isActive && !window.confirm('تعطيل وصول موظف الاستقبال لهذه العيادة فقط؟'))
+    if (assignment.isActive && !window.confirm('تعطيل وصول موظف الاستقبال لهذه العيادة فقط؟')) {
       return;
+    }
     this.isSubmitting.set(true);
     try {
       const request = { rowVersion: assignment.rowVersion };
-      if (assignment.isActive)
+      if (assignment.isActive) {
         await firstValueFrom(this.api.deactivateAssignment(current.id, assignment.id, request));
-      else await firstValueFrom(this.api.activateAssignment(current.id, assignment.id, request));
+      } else {
+        await firstValueFrom(this.api.activateAssignment(current.id, assignment.id, request));
+      }
       await this.loadDetails(current.id);
-      this.toast.success(assignment.isActive ? 'تم تعطيل الربط فقط.' : 'تم تفعيل الربط.');
+      this.toast.success(assignment.isActive ? 'تم تعطيل الربط.' : 'تم تفعيل الربط.');
     } catch (error) {
       this.setErrors(error);
-      if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 409))
+      if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 409)) {
         await this.loadDetails(current.id);
+      }
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  protected getPermissionLabel(code: string): string {
+    const labels: Record<string, string> = {
+      'DoctorReception.Queue.Call': 'نداء التذاكر والمرضى',
+      'DoctorReception.Queue.CheckIn': 'تسجيل حضور المرضى',
+      'DoctorReception.Bookings.Manage': 'إدارة وحجز المواعيد',
+      'DoctorReception.Patients.View': 'عرض بيانات المرضى',
+      'DoctorReception.Queue.View': 'متابعة طابور الانتظار',
+    };
+    return labels[code] || code;
   }
 
   protected logout(): void {
@@ -191,10 +249,14 @@ export class DoctorReceptions {
   private async load(): Promise<void> {
     this.isLoading.set(true);
     try {
-      if (this.receptionId) await this.loadDetails(this.receptionId);
-      else if (!this.isCreate) this.receptions.set(await firstValueFrom(this.api.list()));
-      if (this.receptionId && this.canManageAssignments)
+      if (this.receptionId) {
+        await this.loadDetails(this.receptionId);
+      } else {
+        this.receptions.set(await firstValueFrom(this.api.list()));
+      }
+      if (this.canManageAssignments) {
         this.practices.set(await firstValueFrom(this.practicesApi.list()));
+      }
     } catch (error) {
       this.setErrors(error);
     } finally {
@@ -205,6 +267,7 @@ export class DoctorReceptions {
   private async loadDetails(id: string): Promise<void> {
     this.reception.set(await firstValueFrom(this.api.details(id)));
   }
+
   private setErrors(error: unknown): void {
     if (error instanceof HttpErrorResponse) {
       this.notFound.set(error.status === 404);

@@ -1,77 +1,331 @@
-<main class="health-workspace" dir="rtl">
-  <header class="workspace-bar">
-    <div>
-      <h1>{{ isCreate ? 'إنشاء عيادة جديدة' : practiceId ? 'إدارة العيادة' : 'عياداتي' }}</h1>
-      <p>
-        {{
-          isCreate
-            ? 'أدخل بيانات العيادة وموقعها، ثم أكمل الإعدادات والهوية قبل التفعيل.'
-            : practiceId
-              ? 'إدارة مستقلة لبيانات العيادة وتشغيلها وجدولها وشرائحها.'
-              : 'كل العيادات التابعة لحسابك مع حالة التشغيل وبيانات الموقع.'
-        }}
-      </p>
+<main class="practices-shell" [dir]="langService.dir()">
+  <!-- Ambient backdrop lighting -->
+  <div class="ambient-glow-mesh" aria-hidden="true">
+    <div class="ambient-circle circle-teal"></div>
+    <div class="ambient-circle circle-navy"></div>
+  </div>
+
+  <!-- Top Enterprise Floating Header -->
+  <header class="profile-header">
+    <div class="brand-cluster">
+      <img
+        class="profile-logo"
+        src="/images/wasla-mark.png"
+        width="1254"
+        height="1254"
+        alt="وصلة"
+      />
+      <div class="brand-meta">
+        <span class="brand-name">وصلة</span>
+        <span class="brand-tagline">منظومة الرعاية الصحية الموحدة</span>
+      </div>
     </div>
-    <div class="bar-actions">
-      @if (practiceId || isCreate) {
-        <a class="btn btn-outline-secondary" routerLink="/doctor/practices">كل العيادات</a>
+
+    <div class="header-actions">
+      <app-language-switcher variant="header" />
+
+      @if (practiceId) {
+        <a class="btn-head btn-head-nav" routerLink="/doctor/practices">
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <span>كل العيادات</span>
+        </a>
       }
-      <a class="btn btn-outline-secondary" routerLink="/workspace/doctor">الرئيسية</a>
-      <button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+
+      <a class="btn-head btn-head-nav" routerLink="/workspace/doctor">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span>مساحة العمل</span>
+      </a>
+
+      <button
+        class="btn-head btn-head-logout"
+        type="button"
+        (click)="logout()"
+        title="تسجيل الخروج"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        <span>خروج</span>
+      </button>
     </div>
   </header>
 
+  <!-- Notification Banner -->
   @if (messages().length) {
-    <div class="notice error" role="alert">
-      @for (message of messages(); track message) {
-        <p>{{ message }}</p>
-      }
+    <div class="notice-banner error" role="alert">
+      <svg
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div class="notice-content">
+        @for (message of messages(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
     </div>
   }
 
-  <section class="workspace-panel practices-panel" aria-live="polite">
-    @if (isLoading()) {
-      <div class="empty-state">جارٍ تحميل بيانات العيادة…</div>
-    } @else if (isNotFound()) {
-      <div class="empty-state">
-        <strong>العيادة غير موجودة</strong>
-        <p>قد تكون حُذفت أو لم تعد متاحة لحسابك.</p>
-        <a class="btn btn-outline-secondary" routerLink="/doctor/practices">العودة للعيادات</a>
+  <!-- Page Hero Header (Shown on list and create views; detail view uses integrated practice-detail-hero) -->
+  @if (!practiceId) {
+    <section class="hero-section">
+      <div class="hero-main">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>منظومة إدارة العيادات والممارسات</span>
+        </div>
+        <h1 class="hero-title">عياداتي ومراكز الخدمة</h1>
+        <p class="hero-subtitle">
+          جميع العيادات والمراكز التابعة لحسابك مع متابعة حالة النشاط والجاهزية لاستقبال الحجوزات.
+        </p>
       </div>
-    } @else if (isForbidden()) {
-      <div class="empty-state">
-        <strong>ليس لديك صلاحية لهذه العيادة</strong>
-        <p>الخادم رفض الوصول؛ لا يمكن إدارة عيادة لا تتبع حساب الطبيب الحالي.</p>
-        <a class="btn btn-outline-secondary" routerLink="/doctor/practices">العودة للعيادات</a>
-      </div>
-    } @else if (isCreate) {
-      <app-practice-editor (saved)="practiceSaved($event)" />
-    } @else if (selectedPractice(); as practice) {
-      <div class="practice-summary">
-        <div>
-          <span class="practice-status" [class.inactive]="!practice.isActive">
-            {{ practice.isActive ? 'نشطة' : 'غير نشطة' }}
-          </span>
-          <h2>{{ practice.nameAr }}</h2>
-          @if (practice.nameEn) {
-            <p dir="ltr">{{ practice.nameEn }}</p>
+
+      <div class="hero-actions">
+        <!-- Quick Stats Chips -->
+        <div class="stats-strip">
+          <div class="stat-pill">
+            <span class="stat-num">{{ practices().length }}</span>
+            <span class="stat-lbl">إجمالي العيادات</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-num text-teal">{{ activeCount() }}</span>
+            <span class="stat-lbl">عيادات نشطة</span>
+          </div>
+          @if (inactiveCount() > 0) {
+            <div class="stat-pill">
+              <span class="stat-num text-muted">{{ inactiveCount() }}</span>
+              <span class="stat-lbl">بانتظار التفعيل</span>
+            </div>
           }
         </div>
-        <div class="readiness-summary">
-          <span>{{ practice.hasLogo ? 'الشعار متاح' : 'الشعار غير مرفوع' }}</span>
-          <small>نشطة لا تعني متاحة للحجز؛ الإتاحة يحكمها الإعداد والجدول.</small>
+
+        @if (canManage) {
+          <button type="button" class="btn-create-practice" (click)="openCreateDrawer()">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>إنشاء عيادة جديدة</span>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Main Container -->
+  <section class="practices-content" aria-live="polite">
+    @if (isLoading()) {
+      <div class="state-card loading-card">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>جارٍ تحميل بيانات العيادات…</p>
+      </div>
+    } @else if (isNotFound()) {
+      <div class="state-card error-card">
+        <div class="state-icon error-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h2>العيادة المطلوبة غير موجودة</h2>
+        <p>قد تكون حُذفت أو تم نقلها أو لم تعد متاحة لحسابك الحالي.</p>
+        <a class="btn-back-link" routerLink="/doctor/practices">العودة لقائمة العيادات</a>
+      </div>
+    } @else if (isForbidden()) {
+      <div class="state-card error-card">
+        <div class="state-icon error-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2>ليس لديك صلاحية الوصول لهذه العيادة</h2>
+        <p>الخادم رفض الطلب؛ لا يمكن إدارة عيادة لا تتبع حساب الطبيب الحالي.</p>
+        <a class="btn-back-link" routerLink="/doctor/practices">العودة لقائمة العيادات</a>
+      </div>
+    } @else if (selectedPractice(); as practice) {
+      <!-- Detail Mode: Practice Card Summary -->
+      <div class="practice-detail-hero">
+        <div class="practice-detail-main">
+          <div class="practice-detail-avatar">
+            <svg
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+            </svg>
+          </div>
+          <div class="practice-detail-meta">
+            <div class="detail-badge-group">
+              <a
+                class="breadcrumb-back"
+                routerLink="/doctor/practices"
+                title="العودة لقائمة العيادات"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  aria-hidden="true"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>عياداتي ومراكز الخدمة</span>
+              </a>
+              <span class="breadcrumb-sep" aria-hidden="true">/</span>
+              <span
+                class="status-pill"
+                [class.active]="practice.isActive"
+                [class.inactive]="!practice.isActive"
+              >
+                <span class="pulse-dot"></span>
+                {{ practice.isActive ? 'نشطة ومفعلة' : 'غير نشطة' }}
+              </span>
+              <span class="logo-chip" [class.has-logo]="practice.hasLogo">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span>{{ practice.hasLogo ? 'شعار العيادة متاح' : 'بدون شعار' }}</span>
+              </span>
+            </div>
+            <h1 class="practice-detail-name">{{ practice.nameAr }}</h1>
+            @if (practice.nameEn) {
+              <p class="practice-detail-en" dir="ltr">{{ practice.nameEn }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="practice-detail-side">
+          <div class="readiness-note">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span
+              >الحالة "نشطة" لا تعني متاحة للحجز آلياً؛ الإتاحة الفعلية يحكمها اكتمال الجدول
+              والشرائح المسجلة.</span
+            >
+          </div>
         </div>
       </div>
 
-      <nav class="practice-tabs" aria-label="أقسام إدارة العيادة">
+      <!-- Segmented Navigation Tabs -->
+      <nav class="practice-nav-tabs" aria-label="أقسام إدارة العيادة">
         <button
           type="button"
+          class="nav-tab-btn"
           [class.active]="activeSection() === 'overview'"
           [attr.aria-current]="activeSection() === 'overview' ? 'page' : null"
           (click)="selectSection('overview')"
         >
-          البيانات الأساسية
+          <svg
+            viewBox="0 0 24 24"
+            width="17"
+            height="17"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>البيانات الأساسية</span>
         </button>
+
         @if (
           canActivate ||
           canViewConfiguration ||
@@ -81,55 +335,100 @@
         ) {
           <button
             type="button"
+            class="nav-tab-btn"
             [class.active]="activeSection() === 'operations'"
             [attr.aria-current]="activeSection() === 'operations' ? 'page' : null"
             (click)="selectSection('operations')"
           >
-            التشغيل والهوية
+            <svg
+              viewBox="0 0 24 24"
+              width="17"
+              height="17"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+              ></path>
+            </svg>
+            <span>التشغيل والهوية البصرية</span>
           </button>
         }
+
         @if (canViewSchedule || canManageSchedule) {
           <button
             type="button"
+            class="nav-tab-btn"
             [class.active]="activeSection() === 'schedule'"
             [attr.aria-current]="activeSection() === 'schedule' ? 'page' : null"
             (click)="selectSection('schedule')"
           >
-            الجدول
+            <svg
+              viewBox="0 0 24 24"
+              width="17"
+              height="17"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>جدول المواعيد</span>
           </button>
         }
+
         @if (canViewSegments || canManageSegments || canViewPricing || canManagePricing) {
           <button
             type="button"
+            class="nav-tab-btn"
             [class.active]="activeSection() === 'segments'"
             [attr.aria-current]="activeSection() === 'segments' ? 'page' : null"
             (click)="selectSection('segments')"
           >
-            الشرائح والتسعير
+            <svg
+              viewBox="0 0 24 24"
+              width="17"
+              height="17"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+              ></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <span>الشرائح والتسعير</span>
           </button>
         }
       </nav>
 
-      <div class="practice-section-content">
+      <!-- Tab Content Surface -->
+      <div class="surface-panel practice-tab-content">
         @switch (activeSection()) {
           @case ('overview') {
             @if (canManage) {
               <app-practice-editor [practice]="practice" (saved)="practiceSaved($event)" />
             } @else {
-              <dl class="practice-data">
-                <div>
+              <dl class="practice-data-grid">
+                <div class="data-item">
                   <dt>النطاق الجغرافي</dt>
                   <dd>{{ locationLabel(practice) || 'غير مسجل' }}</dd>
                 </div>
-                <div>
+                <div class="data-item">
                   <dt>العنوان التفصيلي</dt>
                   <dd>{{ practice.location.detailedAddress || 'غير مسجل' }}</dd>
                 </div>
-                <div>
+                <div class="data-item">
                   <dt>خط العرض</dt>
                   <dd dir="ltr">{{ practice.location.latitude ?? '—' }}</dd>
                 </div>
-                <div>
+                <div class="data-item">
                   <dt>خط الطول</dt>
                   <dd dir="ltr">{{ practice.location.longitude ?? '—' }}</dd>
                 </div>
@@ -162,51 +461,175 @@
         }
       </div>
     } @else {
-      <div class="list-heading">
-        <div>
-          <h2>قائمة العيادات</h2>
-          <p>{{ practices().length }} عيادة مسجلة</p>
-        </div>
-        @if (canManage) {
-          <a class="btn btn-primary" routerLink="/doctor/practices/new">إنشاء عيادة</a>
-        }
-      </div>
-
-      <div class="practice-list">
+      <!-- List Mode: Responsive Cards Grid -->
+      <div class="practices-grid">
         @for (practice of practices(); track practice.id) {
           <article class="practice-card">
-            <div class="practice-card-heading">
-              <div>
-                <span class="practice-status" [class.inactive]="!practice.isActive">
-                  {{ practice.isActive ? 'نشطة' : 'غير نشطة' }}
-                </span>
-                <h2>{{ practice.nameAr }}</h2>
+            <!-- Card Top Header -->
+            <div class="card-head">
+              <div class="practice-avatar">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+                </svg>
+              </div>
+
+              <div class="card-title-meta">
+                <div class="badge-row">
+                  <span
+                    class="status-pill"
+                    [class.active]="practice.isActive"
+                    [class.inactive]="!practice.isActive"
+                  >
+                    <span class="pulse-dot"></span>
+                    {{ practice.isActive ? 'نشطة' : 'غير نشطة' }}
+                  </span>
+                  <span class="logo-chip" [class.has-logo]="practice.hasLogo">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    <span>{{ practice.hasLogo ? 'الشعار متاح' : 'بدون شعار' }}</span>
+                  </span>
+                </div>
+                <h2 class="card-practice-title">{{ practice.nameAr }}</h2>
                 @if (practice.nameEn) {
-                  <p dir="ltr">{{ practice.nameEn }}</p>
+                  <p class="card-practice-en" dir="ltr">{{ practice.nameEn }}</p>
                 }
               </div>
-              <span class="logo-status">{{ practice.hasLogo ? 'شعار متاح' : 'بدون شعار' }}</span>
             </div>
-            <p class="practice-location">
-              {{ locationLabel(practice) || 'لم يكتمل النطاق الجغرافي' }}
-            </p>
-            <p class="practice-address">
-              {{ practice.location.detailedAddress || 'العنوان غير مسجل' }}
-            </p>
-            <a class="btn btn-outline-secondary" [routerLink]="['/doctor/practices', practice.id]"
-              >إدارة العيادة</a
-            >
+
+            <!-- Card Body Info -->
+            <div class="card-body-details">
+              <div class="detail-row">
+                <div class="row-icon location-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                </div>
+                <span class="row-text location-label">
+                  {{ locationLabel(practice) || 'لم يكتمل النطاق الجغرافي' }}
+                </span>
+              </div>
+
+              <div class="detail-row">
+                <div class="row-icon address-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                </div>
+                <span class="row-text address-label">
+                  {{ practice.location.detailedAddress || 'العنوان التفصيلي غير مسجل' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Card Action Footer -->
+            <div class="card-footer-action">
+              <a class="btn-manage-card" [routerLink]="['/doctor/practices', practice.id]">
+                <span>إدارة العيادة</span>
+                <svg
+                  class="arrow-svg"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.3"
+                >
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </a>
+            </div>
           </article>
         } @empty {
-          <div class="empty-state">
-            <strong>لا توجد عيادات مسجلة</strong>
-            <p>ابدأ بإنشاء العيادة الأولى، ثم أكمل الإعدادات والهوية قبل التفعيل.</p>
+          <div class="state-card empty-card">
+            <div class="state-icon empty-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="36"
+                height="36"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+              </svg>
+            </div>
+            <h2>لا توجد عيادات مسجلة حتى الآن</h2>
+            <p>
+              ابدأ بإنشاء أول عيادة أو مركز طبي لتتمكن من ضبط أوقات العمل، وتعيين فريق الاستقبال،
+              وتحديد الأسعار واستقبال الحجوزات.
+            </p>
             @if (canManage) {
-              <a class="btn btn-primary" routerLink="/doctor/practices/new">إنشاء عيادة</a>
+              <button type="button" class="btn-create-practice" (click)="openCreateDrawer()">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  aria-hidden="true"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>إنشاء عيادة جديدة الآن</span>
+              </button>
             }
           </div>
         }
       </div>
     }
   </section>
+
+  <!-- Create Practice Side Drawer -->
+  <app-side-drawer
+    [opened]="isCreateDrawerOpen()"
+    title="إنشاء عيادة جديدة"
+    description="أدخل بيانات العيادة ونطاقها الجغرافي لبدء تهيئتها وتفعيلها"
+    width="680px"
+    (closed)="closeCreateDrawer()"
+  >
+    @if (isCreateDrawerOpen()) {
+      <app-practice-editor
+        [isDrawer]="true"
+        (saved)="practiceSaved($event)"
+        (cancelled)="closeCreateDrawer()"
+      />
+    }
+  </app-side-drawer>
 </main>

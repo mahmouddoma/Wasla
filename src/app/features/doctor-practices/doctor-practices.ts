@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../core/auth/api-errors';
@@ -7,6 +7,9 @@ import { AuthSession } from '../../core/auth/auth-session';
 import { PERMISSIONS } from '../../core/auth/permissions';
 import { DoctorPractice } from '../../core/doctor-practices/doctor-practice.models';
 import { DoctorPracticesApi } from '../../core/doctor-practices/doctor-practices-api';
+import { LanguageService } from '../../core/i18n/language.service';
+import { LanguageSwitcher } from '../../shared/components/language-switcher/language-switcher';
+import { SideDrawer } from '../../shared/components/side-drawer/side-drawer';
 import { PracticeEditor } from './practice-editor';
 import { PracticeOperations } from './practice-operations';
 import { PracticeSchedule } from './practice-schedule';
@@ -16,18 +19,33 @@ type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
 
 @Component({
   selector: 'app-doctor-practices',
-  imports: [RouterLink, PracticeEditor, PracticeOperations, PracticeSchedule, PracticeSegments],
+  imports: [
+    RouterLink,
+    PracticeEditor,
+    PracticeOperations,
+    PracticeSchedule,
+    PracticeSegments,
+    SideDrawer,
+    LanguageSwitcher,
+  ],
   templateUrl: './doctor-practices.html',
-  styleUrls: ['../healthcare-workspace.css', './doctor-practices.css'],
+  styleUrl: './doctor-practices.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorPractices {
+  protected readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorPracticesApi);
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
   protected readonly practices = signal<DoctorPractice[]>([]);
+  protected readonly activeCount = computed(
+    () => this.practices().filter((p) => p.isActive).length,
+  );
+  protected readonly inactiveCount = computed(
+    () => this.practices().filter((p) => !p.isActive).length,
+  );
   protected readonly selectedPractice = signal<DoctorPractice | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly messages = signal<string[]>([]);
@@ -35,6 +53,7 @@ export class DoctorPractices {
   protected readonly isForbidden = signal(false);
   protected readonly practiceId = this.route.snapshot.paramMap.get('practiceId');
   protected readonly isCreate = this.route.snapshot.routeConfig?.path === 'doctor/practices/new';
+  protected readonly isCreateDrawerOpen = signal(this.isCreate);
   protected readonly activeSection = signal<PracticeSection>(
     parseSection(this.route.snapshot.fragment),
   );
@@ -80,8 +99,18 @@ export class DoctorPractices {
     }
 
     if (this.practiceId) void this.loadDetails();
-    else if (!this.isCreate) void this.loadList();
-    else this.isLoading.set(false);
+    else void this.loadList();
+  }
+
+  protected openCreateDrawer(): void {
+    this.isCreateDrawerOpen.set(true);
+  }
+
+  protected closeCreateDrawer(): void {
+    this.isCreateDrawerOpen.set(false);
+    if (this.isCreate) {
+      void this.router.navigate(['/doctor/practices']);
+    }
   }
 
   protected selectSection(section: PracticeSection): void {
@@ -135,7 +164,8 @@ export class DoctorPractices {
   }
 
   protected practiceSaved(practice: DoctorPractice): void {
-    if (this.isCreate) {
+    if (this.isCreate || this.isCreateDrawerOpen()) {
+      this.isCreateDrawerOpen.set(false);
       void this.router.navigate(['/doctor/practices', practice.id], { fragment: 'operations' });
       return;
     }

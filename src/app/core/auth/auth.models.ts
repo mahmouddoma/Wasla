@@ -95,7 +95,7 @@ export interface ApiProblemDetails {
   detail?: string;
   traceId?: string;
   correlationId?: string;
-  errors?: ApiErrorItem[];
+  errors?: ApiErrorItem[] | Record<string, string[]>;
 }
 export interface AuthSessionState {
   accessToken: string;

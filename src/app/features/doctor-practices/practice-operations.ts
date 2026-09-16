@@ -184,6 +184,23 @@ export class PracticeOperations implements OnInit, OnDestroy {
     this.selectedLogo.set((event.currentTarget as HTMLInputElement).files?.[0] ?? null);
   }
 
+  protected onColorPicked(
+    field: 'primaryColor' | 'secondaryColor' | 'backgroundColor' | 'textColor',
+    event: Event,
+  ): void {
+    const input = event.target as HTMLInputElement;
+    if (!input?.value) return;
+    const hex = input.value.toUpperCase();
+    this.brandingModel.update((model) => ({ ...model, [field]: hex }));
+  }
+
+  protected getValidHex(value: string | undefined | null, fallback: string): string {
+    if (value && /^#[0-9A-Fa-f]{6}$/.test(value.trim())) {
+      return value.trim();
+    }
+    return fallback;
+  }
+
   protected async saveBranding(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.brandingForm, async () => {

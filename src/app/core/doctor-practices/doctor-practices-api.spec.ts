@@ -30,6 +30,36 @@ describe('DoctorPracticesApi', () => {
 
   afterEach(() => http.verify());
 
+  it('maps flat location identifiers and bilingual names from the details response', async () => {
+    const result = firstValueFrom(api.details('practice-1'));
+    http.expectOne(`${url}/practice-1`).flush({
+      ...practice,
+      location: {
+        governorateId: 1,
+        governorateNameAr: 'القاهرة',
+        governorateNameEn: 'Cairo',
+        cityId: 1028,
+        cityNameAr: 'قسم مصرالجديدة',
+        cityNameEn: 'Misr al-Gadida',
+        areaId: 10280003,
+        areaNameAr: 'المنتزة',
+        areaNameEn: 'Al-Montazah',
+        detailedAddress: '٢٤ شارع الخليفة المأمون',
+        latitude: 30.0876,
+        longitude: 31.309,
+      },
+    });
+
+    expect((await result).location).toEqual({
+      governorate: { id: 1, nameAr: 'القاهرة', nameEn: 'Cairo' },
+      city: { id: 1028, nameAr: 'قسم مصرالجديدة', nameEn: 'Misr al-Gadida' },
+      area: { id: 10280003, nameAr: 'المنتزة', nameEn: 'Al-Montazah' },
+      detailedAddress: '٢٤ شارع الخليفة المأمون',
+      latitude: 30.0876,
+      longitude: 31.309,
+    });
+  });
+
   it('loads the list and authoritative details endpoint', async () => {
     const listResult = firstValueFrom(api.list());
     http.expectOne(url).flush([practice, { ...practice, id: 'practice-2', rowVersion: 'BAUG' }]);
@@ -286,15 +316,13 @@ describe('DoctorPracticesApi', () => {
       quotaReleaseBeforeMinutes: 60,
     };
     const addSegment = firstValueFrom(api.addSegment('practice-1', segmentBody));
-    http
-      .expectOne(`${url}/practice-1/segments`)
-      .flush({
-        id: 'segment-2',
-        ...segmentBody,
-        isDefault: false,
-        isActive: true,
-        rowVersion: 'AQID',
-      });
+    http.expectOne(`${url}/practice-1/segments`).flush({
+      id: 'segment-2',
+      ...segmentBody,
+      isDefault: false,
+      isActive: true,
+      rowVersion: 'AQID',
+    });
     await addSegment;
     const updateSegment = firstValueFrom(
       api.updateSegment('practice-1', 'segment-2', {

@@ -35,6 +35,8 @@ export class PracticeSegments implements OnInit {
   protected readonly messages = signal<string[]>([]);
   protected readonly editingSegmentId = signal<string | null>(null);
   protected readonly editingVisitTypeId = signal<string | null>(null);
+  protected readonly isAddingPrice = signal(false);
+  protected readonly isAddingSegment = signal(false);
   protected readonly segmentModel = signal({
     nameAr: '',
     nameEn: '',
@@ -66,8 +68,14 @@ export class PracticeSegments implements OnInit {
     await this.load();
   }
 
+  protected openAddSegment(): void {
+    this.cancelSegmentEdit();
+    this.isAddingSegment.set(true);
+  }
+
   protected editSegment(segment: DoctorPracticeSegment): void {
     this.editingSegmentId.set(segment.id);
+    this.isAddingSegment.set(true);
     this.segmentModel.set({
       nameAr: segment.nameAr,
       nameEn: segment.nameEn ?? '',
@@ -81,6 +89,7 @@ export class PracticeSegments implements OnInit {
 
   protected cancelSegmentEdit(): void {
     this.editingSegmentId.set(null);
+    this.isAddingSegment.set(false);
     this.segmentModel.set({
       nameAr: '',
       nameEn: '',
@@ -90,6 +99,18 @@ export class PracticeSegments implements OnInit {
       isActive: true,
     });
     this.segmentForm().reset();
+  }
+
+  protected openAddPrice(): void {
+    this.isAddingPrice.set(true);
+    this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
+    this.priceForm().reset();
+  }
+
+  protected closeAddPrice(): void {
+    this.isAddingPrice.set(false);
+    this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
+    this.priceForm().reset();
   }
 
   protected async saveSegment(event: Event): Promise<void> {
@@ -183,6 +204,7 @@ export class PracticeSegments implements OnInit {
         await this.loadPrices();
         this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
         this.priceForm().reset();
+        this.isAddingPrice.set(false);
         this.toast.success('تمت إضافة السعر.');
       } catch (error) {
         await this.handleMutationError(error, this.loadPrices.bind(this));

@@ -26,7 +26,9 @@ import { ToastService } from '../../core/notifications/toast.service';
 })
 export class PracticeEditor implements OnInit {
   readonly practice = input<DoctorPractice | null>(null);
+  readonly isDrawer = input(false);
   readonly saved = output<DoctorPractice>();
+  readonly cancelled = output<void>();
 
   private readonly api = inject(DoctorPracticesApi);
   private readonly locationApi = inject(DoctorProfileApi);

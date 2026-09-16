@@ -14,6 +14,7 @@ import {
 } from '../../core/doctor-practices/doctor-practice.models';
 import { DoctorPracticesApi } from '../../core/doctor-practices/doctor-practices-api';
 import { ToastService } from '../../core/notifications/toast.service';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-practice-schedule',
@@ -28,6 +29,7 @@ export class PracticeSchedule implements OnInit {
 
   private readonly api = inject(DoctorPracticesApi);
   private readonly toast = inject(ToastService);
+  private readonly language = inject(LanguageService);
 
   protected readonly schedule = signal<DoctorPracticeSchedule>({ periods: [], exceptions: [] });
   protected readonly effectivePeriods = signal<EffectiveSchedulePeriod[]>([]);
@@ -37,6 +39,7 @@ export class PracticeSchedule implements OnInit {
   protected readonly isLoading = signal(true);
   protected readonly activeAction = signal<string | null>(null);
   protected readonly messages = signal<string[]>([]);
+  protected readonly periodFeedback = signal<string | null>(null);
   protected readonly periodModel = signal({
     dayOfWeek: 'Sunday' as PracticeDayOfWeek,
     startTime: '',
@@ -62,19 +65,61 @@ export class PracticeSchedule implements OnInit {
     required(field.type);
   });
 
-  protected readonly days: ReadonlyArray<{ value: PracticeDayOfWeek; label: string }> = [
-    { value: 'Saturday', label: 'السبت' },
-    { value: 'Sunday', label: 'الأحد' },
-    { value: 'Monday', label: 'الاثنين' },
-    { value: 'Tuesday', label: 'الثلاثاء' },
-    { value: 'Wednesday', label: 'الأربعاء' },
-    { value: 'Thursday', label: 'الخميس' },
-    { value: 'Friday', label: 'الجمعة' },
+  protected readonly isPeriodModalOpen = signal(false);
+  protected readonly isExceptionModalOpen = signal(false);
+
+  // 12-Hour picker signals
+  protected readonly hoursList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+  protected readonly minutesList = ['00', '15', '30', '45'] as const;
+
+  protected readonly startHour = signal<number>(5);
+  protected readonly startMinute = signal<string>('00');
+  protected readonly startPeriod = signal<'AM' | 'PM'>('PM');
+
+  protected readonly endHour = signal<number>(10);
+  protected readonly endMinute = signal<string>('00');
+  protected readonly endPeriod = signal<'AM' | 'PM'>('PM');
+
+  protected readonly days: ReadonlyArray<{
+    value: PracticeDayOfWeek;
+    label: string;
+    short: string;
+  }> = [
+    { value: 'Saturday', label: 'السبت', short: 'سبت' },
+    { value: 'Sunday', label: 'الأحد', short: 'أحد' },
+    { value: 'Monday', label: 'الاثنين', short: 'اثنين' },
+    { value: 'Tuesday', label: 'الثلاثاء', short: 'ثلاثاء' },
+    { value: 'Wednesday', label: 'الأربعاء', short: 'أربعاء' },
+    { value: 'Thursday', label: 'الخميس', short: 'خميس' },
+    { value: 'Friday', label: 'الجمعة', short: 'جمعة' },
   ];
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.loadSchedule(), this.loadEffective()]);
     this.isLoading.set(false);
+  }
+
+  protected formatTime(time: string | null | undefined): string {
+    if (!time) return '';
+    const parts = time.split(':');
+    if (parts.length < 2) return time;
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    if (isNaN(hours)) return time;
+    const isArabic = this.language.currentLang() === 'ar';
+    const period = hours >= 12 ? (isArabic ? 'م' : 'PM') : isArabic ? 'ص' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const paddedHours = hours < 10 ? `0${hours}` : `${hours}`;
+    return `${paddedHours}:${minutes} ${period}`;
+  }
+
+  protected getPeriodsForDay(day: PracticeDayOfWeek): DoctorPracticeSchedulePeriod[] {
+    return this.schedule().periods.filter((p) => p.dayOfWeek === day);
+  }
+
+  protected get activeDaysCount(): number {
+    return new Set(this.schedule().periods.map((p) => p.dayOfWeek)).size;
   }
 
   protected dayLabel(value: PracticeDayOfWeek): string {
@@ -118,8 +163,111 @@ export class PracticeSchedule implements OnInit {
     }
   }
 
+  // 12-Hour Converter Helpers
+  private to24Hour(hour: number, minute: string, period: 'AM' | 'PM'): string {
+    let h = hour % 12;
+    if (period === 'PM') h += 12;
+    const hh = h < 10 ? `0${h}` : `${h}`;
+    return `${hh}:${minute}`;
+  }
+
+  private parseTo12Hour(time24: string): { hour: number; minute: string; period: 'AM' | 'PM' } {
+    if (!time24) return { hour: 5, minute: '00', period: 'PM' };
+    const parts = time24.split(':');
+    let h = parseInt(parts[0], 10) || 0;
+    const m = parts[1] ? parts[1].slice(0, 2) : '00';
+    const period: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return { hour: h, minute: m, period };
+  }
+
+  protected setStartHour(h: number | string): void {
+    this.startHour.set(Number(h));
+    this.syncStartToModel();
+  }
+
+  protected setStartMinute(m: string): void {
+    this.startMinute.set(m);
+    this.syncStartToModel();
+  }
+
+  protected setStartPeriod(p: 'AM' | 'PM'): void {
+    this.startPeriod.set(p);
+    this.syncStartToModel();
+  }
+
+  protected setEndHour(h: number | string): void {
+    this.endHour.set(Number(h));
+    this.syncEndToModel();
+  }
+
+  protected setEndMinute(m: string): void {
+    this.endMinute.set(m);
+    this.syncEndToModel();
+  }
+
+  protected setEndPeriod(p: 'AM' | 'PM'): void {
+    this.endPeriod.set(p);
+    this.syncEndToModel();
+  }
+
+  private syncStartToModel(): void {
+    const time24 = this.to24Hour(this.startHour(), this.startMinute(), this.startPeriod());
+    this.periodModel.update((m) => ({ ...m, startTime: time24 }));
+  }
+
+  private syncEndToModel(): void {
+    const time24 = this.to24Hour(this.endHour(), this.endMinute(), this.endPeriod());
+    this.periodModel.update((m) => ({ ...m, endTime: time24 }));
+  }
+
+  protected applyPreset(start: string, end: string, duration = 30): void {
+    const s = this.parseTo12Hour(start);
+    this.startHour.set(s.hour);
+    this.startMinute.set(s.minute);
+    this.startPeriod.set(s.period);
+
+    const e = this.parseTo12Hour(end);
+    this.endHour.set(e.hour);
+    this.endMinute.set(e.minute);
+    this.endPeriod.set(e.period);
+
+    this.periodModel.update((m) => ({
+      ...m,
+      startTime: start,
+      endTime: end,
+      slotDurationMinutes: duration,
+    }));
+  }
+
+  // Modal actions
+  protected openAddPeriodModal(day?: PracticeDayOfWeek): void {
+    this.cancelPeriodEdit();
+    if (day) {
+      this.periodModel.update((m) => ({ ...m, dayOfWeek: day }));
+    }
+    this.applyPreset('17:00', '22:00', 30);
+    this.isPeriodModalOpen.set(true);
+  }
+
+  protected closePeriodModal(): void {
+    this.cancelPeriodEdit();
+    this.isPeriodModalOpen.set(false);
+  }
+
   protected editPeriod(period: DoctorPracticeSchedulePeriod): void {
     this.editingPeriod.set(period);
+    const s = this.parseTo12Hour(period.startTime);
+    this.startHour.set(s.hour);
+    this.startMinute.set(s.minute);
+    this.startPeriod.set(s.period);
+
+    const e = this.parseTo12Hour(period.endTime);
+    this.endHour.set(e.hour);
+    this.endMinute.set(e.minute);
+    this.endPeriod.set(e.period);
+
     this.periodModel.set({
       dayOfWeek: period.dayOfWeek,
       startTime: period.startTime,
@@ -127,10 +275,13 @@ export class PracticeSchedule implements OnInit {
       slotDurationMinutes: period.slotDurationMinutes,
     });
     this.periodForm().reset();
+    this.isPeriodModalOpen.set(true);
   }
 
   protected cancelPeriodEdit(): void {
+    this.periodFeedback.set(null);
     this.editingPeriod.set(null);
+    this.isPeriodModalOpen.set(false);
     this.periodModel.set({
       dayOfWeek: 'Sunday',
       startTime: '',
@@ -140,13 +291,60 @@ export class PracticeSchedule implements OnInit {
     this.periodForm().reset();
   }
 
+  protected openAddExceptionModal(): void {
+    this.cancelExceptionEdit();
+    this.isExceptionModalOpen.set(true);
+  }
+
+  protected closeExceptionModal(): void {
+    this.cancelExceptionEdit();
+    this.isExceptionModalOpen.set(false);
+  }
+
+  protected editException(exception: DoctorPracticeScheduleException): void {
+    this.editingException.set(exception);
+    this.exceptionModel.set({
+      date: exception.date,
+      type: exception.type,
+      startTime: exception.startTime ?? '',
+      endTime: exception.endTime ?? '',
+      slotDurationMinutes: exception.slotDurationMinutes ?? 30,
+    });
+    this.exceptionForm().reset();
+    this.isExceptionModalOpen.set(true);
+  }
+
+  protected cancelExceptionEdit(): void {
+    this.editingException.set(null);
+    this.isExceptionModalOpen.set(false);
+    this.exceptionModel.set({
+      date: '',
+      type: 'DayOff',
+      startTime: '',
+      endTime: '',
+      slotDurationMinutes: 30,
+    });
+    this.exceptionForm().reset();
+  }
+
   protected async savePeriod(event: Event): Promise<void> {
     event.preventDefault();
+    if (this.activeAction()) return;
+    this.periodFeedback.set(null);
+    if (this.periodForm().invalid()) {
+      await submit(this.periodForm, async () => {});
+      const message = this.language.t('schedule.invalidPeriod');
+      this.periodFeedback.set(message);
+      this.toast.error(message);
+      return;
+    }
     await submit(this.periodForm, async () => {
       if (this.activeAction()) return;
       const value = this.periodModel();
       if (value.startTime >= value.endTime) {
-        this.messages.set(['وقت النهاية يجب أن يكون بعد وقت البداية.']);
+        const message = this.language.t('schedule.invalidTimeOrder');
+        this.periodFeedback.set(message);
+        this.toast.error(message);
         return;
       }
 
@@ -166,7 +364,9 @@ export class PracticeSchedule implements OnInit {
         }
         this.cancelPeriodEdit();
         await this.refreshScheduleViews();
-        this.toast.success(editing ? 'تم تحديث فترة العمل.' : 'تمت إضافة فترة العمل.');
+        this.toast.success(
+          this.language.t(editing ? 'schedule.periodUpdated' : 'schedule.periodAdded'),
+        );
       } catch (error) {
         await this.handleMutationError(error);
       } finally {
@@ -192,36 +392,23 @@ export class PracticeSchedule implements OnInit {
     }
   }
 
-  protected editException(exception: DoctorPracticeScheduleException): void {
-    this.editingException.set(exception);
-    this.exceptionModel.set({
-      date: exception.date,
-      type: exception.type,
-      startTime: exception.startTime ?? '',
-      endTime: exception.endTime ?? '',
-      slotDurationMinutes: exception.slotDurationMinutes ?? 30,
-    });
-    this.exceptionForm().reset();
-  }
-
-  protected cancelExceptionEdit(): void {
-    this.editingException.set(null);
-    this.exceptionModel.set({
-      date: '',
-      type: 'DayOff',
-      startTime: '',
-      endTime: '',
-      slotDurationMinutes: 30,
-    });
-    this.exceptionForm().reset();
-  }
-
   protected async saveException(event: Event): Promise<void> {
     event.preventDefault();
+    if (this.activeAction()) return;
+    if (this.exceptionForm().invalid()) {
+      await submit(this.exceptionForm, async () => {});
+      const message = this.language.t('schedule.invalidException');
+      this.messages.set([message]);
+      this.toast.error(message);
+      return;
+    }
     await submit(this.exceptionForm, async () => {
       if (this.activeAction()) return;
       const request = this.exceptionRequest();
-      if (!request) return;
+      if (!request) {
+        this.toast.error(this.messages().join(' '));
+        return;
+      }
 
       this.activeAction.set('exception');
       this.messages.set([]);
@@ -302,7 +489,9 @@ export class PracticeSchedule implements OnInit {
   }
 
   private async handleMutationError(error: unknown): Promise<void> {
-    this.messages.set(flattenErrors(error));
+    const messages = flattenErrors(error);
+    this.messages.set(messages);
+    this.toast.error(messages.join(' ') || this.language.t('schedule.mutationFailed'));
     if (error instanceof HttpErrorResponse && [404, 409].includes(error.status)) {
       this.cancelPeriodEdit();
       this.cancelExceptionEdit();

@@ -19,11 +19,23 @@ export interface DoctorPractice {
   rowVersion: string;
 }
 
+export interface DoctorPracticeLocationResponse extends Partial<DoctorPracticeLocationSummary> {
+  governorateId?: number | null;
+  governorateNameAr?: string | null;
+  governorateNameEn?: string | null;
+  cityId?: number | null;
+  cityNameAr?: string | null;
+  cityNameEn?: string | null;
+  areaId?: number | null;
+  areaNameAr?: string | null;
+  areaNameEn?: string | null;
+}
+
 export interface DoctorPracticeResponse {
   id: string;
   nameAr: string;
   nameEn?: string | null;
-  location?: Partial<DoctorPracticeLocationSummary> | null;
+  location?: DoctorPracticeLocationResponse | null;
   governorate?: EgyptLocationOption | null;
   city?: EgyptLocationOption | null;
   area?: EgyptLocationOption | null;

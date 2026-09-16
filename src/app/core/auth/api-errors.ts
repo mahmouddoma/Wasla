@@ -20,7 +20,17 @@ export function parseApiErrors(error: unknown): ParsedApiErrors {
   const fields: Record<string, string[]> = {};
   const messages: string[] = [];
   const codes: string[] = [];
-  for (const item of problem?.errors ?? []) {
+  const errors = problem?.errors;
+  if (errors && !Array.isArray(errors)) {
+    for (const [source, items] of Object.entries(errors)) {
+      if (Array.isArray(items)) {
+        fields[source.split('.').at(-1)!.toLowerCase()] = items.filter(
+          (message): message is string => typeof message === 'string',
+        );
+      }
+    }
+  }
+  for (const item of Array.isArray(errors) ? errors : []) {
     if (item.code) codes.push(item.code);
     if (!item.message) continue;
     if (item.source) {

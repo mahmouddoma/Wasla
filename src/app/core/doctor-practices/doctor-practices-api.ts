@@ -31,6 +31,7 @@ import {
   WriteDoctorPracticeSegmentRequest,
 } from './doctor-practice.models';
 import { SKIP_ERROR_TOAST } from '../notifications/api-error-toast.interceptor';
+import { EgyptLocationOption } from '../doctor-profile/doctor-profile.models';
 
 @Injectable({ providedIn: 'root' })
 export class DoctorPracticesApi {
@@ -288,9 +289,25 @@ function normalizePractice(item: DoctorPracticeResponse): DoctorPractice {
     nameAr: item.nameAr,
     nameEn: item.nameEn ?? null,
     location: {
-      governorate: location.governorate ?? item.governorate ?? null,
-      city: location.city ?? item.city ?? null,
-      area: location.area ?? item.area ?? null,
+      governorate:
+        locationOption(
+          location.governorateId,
+          location.governorateNameAr,
+          location.governorateNameEn,
+        ) ??
+        location.governorate ??
+        item.governorate ??
+        null,
+      city:
+        locationOption(location.cityId, location.cityNameAr, location.cityNameEn) ??
+        location.city ??
+        item.city ??
+        null,
+      area:
+        locationOption(location.areaId, location.areaNameAr, location.areaNameEn) ??
+        location.area ??
+        item.area ??
+        null,
       detailedAddress: location.detailedAddress ?? item.detailedAddress ?? '',
       latitude: location.latitude ?? item.latitude ?? null,
       longitude: location.longitude ?? item.longitude ?? null,
@@ -299,4 +316,12 @@ function normalizePractice(item: DoctorPracticeResponse): DoctorPractice {
     hasLogo: item.hasLogo,
     rowVersion: item.rowVersion,
   };
+}
+
+function locationOption(
+  id: number | null | undefined,
+  nameAr: string | null | undefined,
+  nameEn: string | null | undefined,
+): EgyptLocationOption | null {
+  return id == null ? null : { id, nameAr: nameAr ?? '', nameEn: nameEn ?? '' };
 }

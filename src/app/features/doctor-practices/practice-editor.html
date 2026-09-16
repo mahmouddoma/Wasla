@@ -1,16 +1,18 @@
-<section class="management-section">
-  <div class="management-heading">
-    <div>
-      <h2>{{ practice() ? 'بيانات العيادة والموقع' : 'إنشاء عيادة جديدة' }}</h2>
-      <p>
-        {{
-          practice()
-            ? 'عدّل الاسم والموقع باستخدام أحدث نسخة محفوظة.'
-            : 'تبدأ العيادة غير نشطة حتى تكتمل الهوية البصرية والإعدادات المطلوبة.'
-        }}
-      </p>
+<section class="management-section" [class.drawer-mode]="isDrawer()">
+  @if (!isDrawer()) {
+    <div class="management-heading">
+      <div>
+        <h2>{{ practice() ? 'بيانات العيادة والموقع' : 'إنشاء عيادة جديدة' }}</h2>
+        <p>
+          {{
+            practice()
+              ? 'عدّل الاسم والموقع باستخدام أحدث نسخة محفوظة.'
+              : 'تبدأ العيادة غير نشطة حتى تكتمل الهوية البصرية والإعدادات المطلوبة.'
+          }}
+        </p>
+      </div>
     </div>
-  </div>
+  }
 
   @if (messages().length) {
     <div class="section-feedback error" role="alert">
@@ -23,11 +25,20 @@
   <form class="management-form" (submit)="save($event)" novalidate>
     <label class="form-field">
       <span>اسم العيادة بالعربية *</span>
-      <input [formField]="editorForm.nameAr" autocomplete="organization" />
+      <input
+        [formField]="editorForm.nameAr"
+        autocomplete="organization"
+        placeholder="مثال: عيادة د. أحمد حسن للباطنة"
+      />
     </label>
     <label class="form-field">
       <span>اسم العيادة بالإنجليزية</span>
-      <input dir="ltr" [formField]="editorForm.nameEn" autocomplete="organization" />
+      <input
+        dir="ltr"
+        [formField]="editorForm.nameEn"
+        autocomplete="organization"
+        placeholder="e.g. Dr. Ahmed Hassan Clinic"
+      />
     </label>
     <label class="form-field">
       <span>المحافظة *</span>
@@ -58,15 +69,31 @@
     </label>
     <label class="form-field field-wide">
       <span>العنوان التفصيلي *</span>
-      <input [formField]="editorForm.detailedAddress" autocomplete="street-address" />
+      <input
+        [formField]="editorForm.detailedAddress"
+        autocomplete="street-address"
+        placeholder="اسم الشارع، رقم العقار، الدور، علامة مميزة"
+      />
     </label>
     <label class="form-field">
       <span>خط العرض *</span>
-      <input type="number" step="any" dir="ltr" [formField]="editorForm.latitude" />
+      <input
+        type="number"
+        step="any"
+        dir="ltr"
+        [formField]="editorForm.latitude"
+        placeholder="30.0876"
+      />
     </label>
     <label class="form-field">
       <span>خط الطول *</span>
-      <input type="number" step="any" dir="ltr" [formField]="editorForm.longitude" />
+      <input
+        type="number"
+        step="any"
+        dir="ltr"
+        [formField]="editorForm.longitude"
+        placeholder="31.3090"
+      />
     </label>
     @if (editorForm().touched() && editorForm().errors().length) {
       <div class="section-feedback error field-full" role="alert">
@@ -81,6 +108,16 @@
       >
         {{ isSubmitting() ? 'جارٍ الحفظ…' : practice() ? 'حفظ بيانات العيادة' : 'إنشاء العيادة' }}
       </button>
+      @if (isDrawer()) {
+        <button
+          class="btn btn-secondary"
+          type="button"
+          [disabled]="isSubmitting()"
+          (click)="cancelled.emit()"
+        >
+          إلغاء
+        </button>
+      }
     </div>
   </form>
 </section>

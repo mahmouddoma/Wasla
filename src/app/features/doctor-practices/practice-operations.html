@@ -7,85 +7,365 @@
     </div>
   }
 
-  @if (canActivate()) {
-    <section class="operation-section status-section">
-      <div>
-        <h2>حالة التشغيل</h2>
-        <p>
+  <!-- ── Top Grid: حالة التشغيل جنباً إلى جنب مع الهوية البصرية ── -->
+  <div class="operations-top-grid">
+    <!-- ── حالة التشغيل والجاهزية ── -->
+    @if (canActivate()) {
+      <section class="operation-card status-card">
+        <div class="card-header">
+          <div class="header-title-group">
+            <span
+              class="status-indicator-dot"
+              [class.active]="practice().isActive"
+              [class.inactive]="!practice().isActive"
+              aria-hidden="true"
+            ></span>
+            <h2>حالة التشغيل</h2>
+          </div>
+          <span
+            class="status-badge"
+            [class.active]="practice().isActive"
+            [class.inactive]="!practice().isActive"
+          >
+            {{ practice().isActive ? 'نشطة ومفعلة' : 'غير نشطة' }}
+          </span>
+        </div>
+
+        <p class="card-desc">
           {{
             practice().isActive
-              ? 'العيادة نشطة حاليًا. الإيقاف لا يحذفها ولا يحذف تاريخها.'
-              : 'العيادة غير نشطة. أكمل الإعدادات والهوية والشعار قبل التفعيل.'
+              ? 'العيادة نشطة ومتاحة لإدارة المواعيد وتوزيع التذاكر واستقبال المرضى.'
+              : 'العيادة غير نشطة. يشترط اكتمال الهوية ورفع الشعار قبل التفعيل.'
           }}
         </p>
-      </div>
-      <button
-        class="btn"
-        [class.btn-outline-danger]="practice().isActive"
-        [class.btn-primary]="!practice().isActive"
-        type="button"
-        [disabled]="activeAction() === 'status'"
-        (click)="toggleStatus()"
-      >
-        {{ practice().isActive ? 'إيقاف العيادة' : 'تفعيل العيادة' }}
-      </button>
-    </section>
-  }
 
+        <!-- مؤشرات الجاهزية -->
+        <div class="readiness-indicators">
+          <div class="readiness-item" [class.ready]="branding()?.hasLogo">
+            <span class="readiness-icon" aria-hidden="true">
+              @if (branding()?.hasLogo) {
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              }
+            </span>
+            <span>{{ branding()?.hasLogo ? 'شعار العيادة مرفوع' : 'الشعار غير مرفوع (شرط للتفعيل)' }}</span>
+          </div>
+
+          @if (configuration(); as config) {
+            <div class="readiness-item ready">
+              <span class="readiness-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+              <span>مدة الكشف الافتراضية: {{ config.defaultSlotDurationMinutes }} دقيقة</span>
+            </div>
+          }
+        </div>
+
+        <div class="status-action-row">
+          <button
+            class="btn btn-status-toggle"
+            [class.btn-outline-danger]="practice().isActive"
+            [class.btn-primary]="!practice().isActive"
+            type="button"
+            [disabled]="activeAction() === 'status'"
+            (click)="toggleStatus()"
+          >
+            {{
+              activeAction() === 'status'
+                ? 'جارٍ التحديث…'
+                : practice().isActive
+                  ? 'إيقاف تشغيل العيادة'
+                  : 'تفعيل العيادة الآن'
+            }}
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- ── الهوية البصرية والشعار بجانب حالة التشغيل ── -->
+    @if (canViewBranding() || canManageBranding()) {
+      <section class="operation-card branding-card">
+        <div class="card-header">
+          <div>
+            <h2>الهوية البصرية</h2>
+            <p class="card-desc-compact">شعار العيادة وألوان الواجهة (الشعار شرط للتفعيل)</p>
+          </div>
+          @if (branding(); as theme) {
+            <span class="logo-status-chip" [class.ready]="theme.hasLogo">
+              {{ theme.hasLogo ? 'الشعار متوفر' : 'الشعار غير متوفر' }}
+            </span>
+          }
+        </div>
+
+        @if (branding(); as theme) {
+          <div class="branding-content-grid">
+            <!-- الشعار والمعاينة -->
+            <div class="logo-col">
+              <div class="logo-preview-box" [class.empty]="!logoPreviewUrl()">
+                @if (logoPreviewUrl(); as logoUrl) {
+                  <img [src]="logoUrl" alt="شعار العيادة" />
+                } @else {
+                  <div class="empty-logo-msg">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    <span>لا يوجد شعار</span>
+                  </div>
+                }
+              </div>
+
+              @if (canManageBranding()) {
+                <div class="logo-action-buttons">
+                  <label class="btn-file-select" title="اختر ملف صورة للشعار">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <span>{{ theme.hasLogo ? 'شعار بديل' : 'اختيار شعار' }}</span>
+                    <input type="file" accept="image/*" (change)="chooseLogo($event)" />
+                  </label>
+
+                  @if (selectedLogo()) {
+                    <button
+                      class="btn btn-primary btn-sm"
+                      type="button"
+                      [disabled]="activeAction() === 'logo'"
+                      (click)="uploadLogo()"
+                    >
+                      {{ activeAction() === 'logo' ? 'جارٍ الرفع…' : 'رفع الشعار' }}
+                    </button>
+                  }
+
+                  @if (theme.hasLogo) {
+                    <button
+                      class="btn btn-outline-danger btn-sm"
+                      type="button"
+                      [disabled]="practice().isActive || activeAction() === 'logo'"
+                      (click)="removeLogo()"
+                      [title]="practice().isActive ? 'أوقف العيادة أولًا قبل حذف الشعار' : 'حذف الشعار'"
+                    >
+                      حذف
+                    </button>
+                  }
+                </div>
+
+                @if (selectedLogo(); as file) {
+                  <span class="file-name-tag" dir="ltr">{{ file.name }}</span>
+                }
+              }
+            </div>
+
+            <!-- ألوان الهوية مع ميزة الـ Color Picker -->
+            <div class="colors-col">
+              @if (canManageBranding()) {
+                <form class="branding-color-form" (submit)="saveBranding($event)" novalidate>
+                  <div class="color-inputs-grid">
+                    <!-- اللون الأساسي -->
+                    <div class="color-control-unit">
+                      <span class="color-unit-title">اللون الأساسي</span>
+                      <div class="color-picker-box">
+                        <label
+                          class="color-swatch-box"
+                          [style.background-color]="brandingModel().primaryColor || '#008C8C'"
+                          title="انقر لفتح البوب اب واختيار اللون الأساسي"
+                        >
+                          <input
+                            type="color"
+                            class="native-color-picker"
+                            [value]="getValidHex(brandingModel().primaryColor, '#008C8C')"
+                            (input)="onColorPicked('primaryColor', $event)"
+                            aria-label="اختيار اللون الأساسي"
+                          />
+                        </label>
+                        <input
+                          class="color-hex-input"
+                          dir="ltr"
+                          placeholder="#008C8C"
+                          [formField]="brandingForm.primaryColor"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- اللون الثانوي -->
+                    <div class="color-control-unit">
+                      <span class="color-unit-title">اللون الثانوي</span>
+                      <div class="color-picker-box">
+                        <label
+                          class="color-swatch-box"
+                          [style.background-color]="brandingModel().secondaryColor || '#0B2942'"
+                          title="انقر لفتح البوب اب واختيار اللون الثانوي"
+                        >
+                          <input
+                            type="color"
+                            class="native-color-picker"
+                            [value]="getValidHex(brandingModel().secondaryColor, '#0B2942')"
+                            (input)="onColorPicked('secondaryColor', $event)"
+                            aria-label="اختيار اللون الثانوي"
+                          />
+                        </label>
+                        <input
+                          class="color-hex-input"
+                          dir="ltr"
+                          placeholder="#0B2942"
+                          [formField]="brandingForm.secondaryColor"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- لون الخلفية -->
+                    <div class="color-control-unit">
+                      <span class="color-unit-title">لون الخلفية</span>
+                      <div class="color-picker-box">
+                        <label
+                          class="color-swatch-box"
+                          [style.background-color]="brandingModel().backgroundColor || '#FFFFFF'"
+                          title="انقر لفتح البوب اب واختيار لون الخلفية"
+                        >
+                          <input
+                            type="color"
+                            class="native-color-picker"
+                            [value]="getValidHex(brandingModel().backgroundColor, '#FFFFFF')"
+                            (input)="onColorPicked('backgroundColor', $event)"
+                            aria-label="اختيار لون الخلفية"
+                          />
+                        </label>
+                        <input
+                          class="color-hex-input"
+                          dir="ltr"
+                          placeholder="#FFFFFF"
+                          [formField]="brandingForm.backgroundColor"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- لون النص -->
+                    <div class="color-control-unit">
+                      <span class="color-unit-title">لون النص</span>
+                      <div class="color-picker-box">
+                        <label
+                          class="color-swatch-box"
+                          [style.background-color]="brandingModel().textColor || '#102A43'"
+                          title="انقر لفتح البوب اب واختيار لون النص"
+                        >
+                          <input
+                            type="color"
+                            class="native-color-picker"
+                            [value]="getValidHex(brandingModel().textColor, '#102A43')"
+                            (input)="onColorPicked('textColor', $event)"
+                            aria-label="اختيار لون النص"
+                          />
+                        </label>
+                        <input
+                          class="color-hex-input"
+                          dir="ltr"
+                          placeholder="#102A43"
+                          [formField]="brandingForm.textColor"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="save-colors-row">
+                    <button
+                      class="btn btn-primary btn-save-colors"
+                      type="submit"
+                      [disabled]="activeAction() === 'branding'"
+                    >
+                      {{ activeAction() === 'branding' ? 'جارٍ الحفظ…' : 'حفظ الألوان' }}
+                    </button>
+                  </div>
+                </form>
+              } @else {
+                <div class="color-list" aria-label="ألوان هوية العيادة">
+                  <span><i [style.background-color]="theme.primaryColor"></i><code>{{ theme.primaryColor || 'افتراضي' }}</code></span>
+                  <span><i [style.background-color]="theme.secondaryColor"></i><code>{{ theme.secondaryColor || 'افتراضي' }}</code></span>
+                  <span><i [style.background-color]="theme.backgroundColor"></i><code>{{ theme.backgroundColor || 'افتراضي' }}</code></span>
+                  <span><i [style.background-color]="theme.textColor"></i><code>{{ theme.textColor || 'افتراضي' }}</code></span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else if (isLoading()) {
+          <p class="loading-copy">جارٍ تحميل الهوية…</p>
+        }
+      </section>
+    }
+  </div>
+
+  <!-- ── الإعدادات التشغيلية ── -->
   @if (canViewConfiguration() || canManageConfiguration()) {
-    <section class="operation-section">
-      <div class="operation-heading">
+    <section class="operation-card config-card">
+      <div class="card-header">
         <div>
           <h2>الإعدادات التشغيلية</h2>
-          <p>القيم مستقلة لهذه العيادة ولا تغيّر الجداول الحالية بأثر رجعي.</p>
+          <p class="card-desc-compact">القيم مستقلة لهذه العيادة ولا تغيّر الجداول الحالية بأثر رجعي.</p>
         </div>
       </div>
+
       @if (configuration(); as config) {
         @if (canManageConfiguration()) {
           <form class="config-form" (submit)="saveConfiguration($event)" novalidate>
-            <label class="toggle-field">
-              <input type="checkbox" [formField]="configForm.allowOnlineBooking" />
-              <span>السماح بالحجز الإلكتروني</span>
-            </label>
-            <label class="toggle-field">
-              <input type="checkbox" [formField]="configForm.allowWalkIn" />
-              <span>السماح بالحضور دون حجز</span>
-            </label>
-            <label class="form-field">
-              <span>مدة الموعد الافتراضية بالدقائق</span>
-              <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
-            </label>
-            <label class="form-field">
-              <span>مهلة تسجيل الحضور بالدقائق</span>
-              <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
-            </label>
-            <label class="form-field">
-              <span>مهلة الإلغاء الذاتي بالدقائق</span>
-              <input type="number" [formField]="configForm.patientSelfCancellationCutoffMinutes" />
-            </label>
-            <label class="form-field">
-              <span>الحد الأقصى للمرضى يوميًا</span>
-              <input
-                inputmode="numeric"
-                [formField]="configForm.maximumDailyPatients"
-                placeholder="بدون حد"
-              />
-            </label>
-            <label class="form-field">
-              <span>أقصى محاولات نداء التذكرة</span>
-              <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
-            </label>
-            <label class="form-field">
-              <span>المنطقة الزمنية</span>
-              <input dir="ltr" [formField]="configForm.timeZoneId" />
-            </label>
+            <div class="config-toggles-bar">
+              <label class="toggle-field">
+                <input type="checkbox" [formField]="configForm.allowOnlineBooking" />
+                <span>السماح بالحجز الإلكتروني</span>
+              </label>
+              <label class="toggle-field">
+                <input type="checkbox" [formField]="configForm.allowWalkIn" />
+                <span>السماح بالحضور دون حجز</span>
+              </label>
+            </div>
+
+            <div class="config-inputs-grid">
+              <label class="form-field">
+                <span>مدة الموعد الافتراضية (بالدقائق)</span>
+                <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
+              </label>
+              <label class="form-field">
+                <span>مهلة تسجيل الحضور (بالدقائق)</span>
+                <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
+              </label>
+              <label class="form-field">
+                <span>مهلة الإلغاء الذاتي (بالدقائق)</span>
+                <input type="number" [formField]="configForm.patientSelfCancellationCutoffMinutes" />
+              </label>
+              <label class="form-field">
+                <span>الحد الأقصى للمرضى يوميًا</span>
+                <input
+                  inputmode="numeric"
+                  [formField]="configForm.maximumDailyPatients"
+                  placeholder="بدون حد"
+                />
+              </label>
+              <label class="form-field">
+                <span>أقصى محاولات نداء التذكرة</span>
+                <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
+              </label>
+              <label class="form-field">
+                <span>المنطقة الزمنية</span>
+                <input dir="ltr" [formField]="configForm.timeZoneId" />
+              </label>
+            </div>
+
             <div class="form-actions config-actions">
               <button
                 class="btn btn-primary"
                 type="submit"
                 [disabled]="activeAction() === 'configuration'"
               >
-                حفظ الإعدادات
+                {{ activeAction() === 'configuration' ? 'جارٍ الحفظ…' : 'حفظ الإعدادات' }}
               </button>
             </div>
           </form>
@@ -115,65 +395,6 @@
         }
       } @else if (isLoading()) {
         <p class="loading-copy">جارٍ تحميل الإعدادات…</p>
-      }
-    </section>
-  }
-
-  @if (canViewBranding() || canManageBranding()) {
-    <section class="operation-section">
-      <div class="operation-heading">
-        <div>
-          <h2>الهوية البصرية</h2>
-          <p>شعار العيادة منفصل عن صورة الطبيب، ووجوده شرط للتفعيل.</p>
-        </div>
-      </div>
-      @if (branding(); as theme) {
-        <div class="branding-workspace">
-          <div class="logo-preview" [class.empty]="!logoPreviewUrl()">
-            @if (logoPreviewUrl(); as logoUrl) {
-              <img [src]="logoUrl" alt="شعار العيادة" />
-            } @else {
-              <span>لا يوجد شعار</span>
-            }
-          </div>
-          <div class="branding-controls">
-            <span class="logo-availability" [class.ready]="theme.hasLogo">
-              {{ theme.hasLogo ? 'الشعار موجود' : 'الشعار غير مرفوع' }}
-            </span>
-            @if (canManageBranding()) {
-              <form class="branding-form" (submit)="saveBranding($event)" novalidate>
-                <label class="form-field"><span>اللون الأساسي</span><input dir="ltr" placeholder="#008C8C" [formField]="brandingForm.primaryColor" /></label>
-                <label class="form-field"><span>اللون الثانوي</span><input dir="ltr" placeholder="#0B2942" [formField]="brandingForm.secondaryColor" /></label>
-                <label class="form-field"><span>لون الخلفية</span><input dir="ltr" placeholder="#FFFFFF" [formField]="brandingForm.backgroundColor" /></label>
-                <label class="form-field"><span>لون النص</span><input dir="ltr" placeholder="#102A43" [formField]="brandingForm.textColor" /></label>
-                <button class="btn btn-primary" type="submit" [disabled]="activeAction() === 'branding'">حفظ الألوان</button>
-              </form>
-              <div class="logo-actions">
-                <label class="file-picker">
-                  <span>{{ theme.hasLogo ? 'اختيار شعار بديل' : 'اختيار شعار' }}</span>
-                  <input type="file" accept="image/*" (change)="chooseLogo($event)" />
-                </label>
-                <button class="btn btn-primary" type="button" [disabled]="!selectedLogo() || activeAction() === 'logo'" (click)="uploadLogo()">رفع الشعار</button>
-                <button class="btn btn-outline-danger" type="button" [disabled]="practice().isActive || !theme.hasLogo || activeAction() === 'logo'" (click)="removeLogo()">حذف الشعار</button>
-              </div>
-              @if (selectedLogo(); as file) {
-                <p class="action-hint" dir="ltr">{{ file.name }}</p>
-              }
-              @if (practice().isActive && theme.hasLogo) {
-                <p class="action-hint">أوقف العيادة أولًا قبل حذف الشعار.</p>
-              }
-            } @else {
-              <div class="color-list" aria-label="ألوان هوية العيادة">
-                <span><i [style.background-color]="theme.primaryColor"></i><code>{{ theme.primaryColor || 'افتراضي' }}</code></span>
-                <span><i [style.background-color]="theme.secondaryColor"></i><code>{{ theme.secondaryColor || 'افتراضي' }}</code></span>
-                <span><i [style.background-color]="theme.backgroundColor"></i><code>{{ theme.backgroundColor || 'افتراضي' }}</code></span>
-                <span><i [style.background-color]="theme.textColor"></i><code>{{ theme.textColor || 'افتراضي' }}</code></span>
-              </div>
-            }
-          </div>
-        </div>
-      } @else if (isLoading()) {
-        <p class="loading-copy">جارٍ تحميل الهوية…</p>
       }
     </section>
   }
