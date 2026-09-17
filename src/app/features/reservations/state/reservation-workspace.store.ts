@@ -74,6 +74,7 @@ export class ReservationWorkspaceStore {
   readonly time = signal('');
   readonly messages = signal<string[]>([]);
   readonly loading = signal(false);
+  readonly listFailed = signal(false);
   readonly detailLoading = signal(false);
   readonly bookingLoading = signal(false);
   readonly busy = signal(false);
@@ -91,7 +92,8 @@ export class ReservationWorkspaceStore {
   readonly canView = computed(() => this.allowed('View'));
   readonly canCreate = computed(
     () =>
-      (this.actor() === 'Reception' || (this.actor() === 'Patient' && this.patients().length > 0)) &&
+      (this.actor() === 'Reception' ||
+        (this.actor() === 'Patient' && this.patients().length > 0)) &&
       this.allowed('Create'),
   );
   readonly canRegisterPatient = computed(
@@ -192,12 +194,14 @@ export class ReservationWorkspaceStore {
     if (!this.canView() || (this.scoped() && !this.practiceId())) return;
     const sequence = ++this.listSequence;
     this.loading.set(true);
+    this.listFailed.set(false);
     this.messages.set([]);
     try {
       const page = await firstValueFrom(this.api.list(this.scope(), this.listQuery()));
       if (sequence === this.listSequence) this.page.set(page);
     } catch (error) {
       if (sequence === this.listSequence) {
+        this.listFailed.set(true);
         this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
         await this.failure(error);
       }

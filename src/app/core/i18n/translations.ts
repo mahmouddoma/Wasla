@@ -49,6 +49,14 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'لا توجد حجوزات مطابقة لمعايير البحث.',
     en: 'No reservations match the search criteria.',
   },
+  'reservations.loadFailed': {
+    ar: 'تعذّر تحميل الحجوزات.',
+    en: 'Reservations could not be loaded.',
+  },
+  'reservations.loadFailedHelp': {
+    ar: 'فشل طلب تحميل البيانات. أعد المحاولة، وإذا استمرت المشكلة تواصل مع الدعم.',
+    en: 'The data request failed. Retry, and contact support if the problem persists.',
+  },
   'reservations.pagination': { ar: 'التنقل بين الصفحات', en: 'Pagination' },
   'reservations.previous': { ar: 'السابق', en: 'Previous' },
   'reservations.next': { ar: 'التالي', en: 'Next' },
@@ -2902,6 +2910,21 @@ export const TRANSLATIONS: TranslationDictionary = {
   'discovery.search': { ar: 'بحث', en: 'Search' },
   'discovery.currency': { ar: 'ج.م', en: 'EGP' },
   'discovery.of': { ar: 'من', en: 'of' },
+  'discovery.heroBadge': { ar: 'الأطباء والعيادات المعتمدة', en: 'Verified Doctors & Clinics' },
+  'discovery.clearFilters': { ar: 'إعادة ضبط الفلاتر', en: 'Reset filters' },
+  'discovery.emptyHint': {
+    ar: 'جرّب البحث باسم الطبيب مباشرة، أو اختر تخصصًا أو محافظة أخرى.',
+    en: 'Try searching by doctor name directly, or choose another specialization or governorate.',
+  },
+  'discovery.verifiedDoctor': { ar: 'طبيب معتمد', en: 'Verified Doctor' },
+  'discovery.bookOnline': { ar: 'حجز موعد', en: 'Book appointment' },
+  'discovery.viewClinics': { ar: 'عرض العيادات', en: 'View clinics' },
+  'discovery.noClinics': {
+    ar: 'لا توجد عيادات مسجلة حالياً',
+    en: 'No clinics registered currently',
+  },
+  'discovery.clinicsCount': { ar: 'عيادات متاحة', en: 'clinics available' },
+  'discovery.priceFrom': { ar: 'يبدأ من', en: 'From' },
   'doctor.specializationsInvalid': {
     ar: 'اختر تخصصًا واحدًا على الأقل وحدد تخصصًا أساسيًا واحدًا فقط.',
     en: 'Select at least one specialization and exactly one primary specialization.',
@@ -3299,4 +3322,56 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Our technical support team is available via support@wasla.health or our hotline 19000.',
   },
   'footer.closeModal': { ar: 'إغلاق', en: 'Close' },
+  'permissions.patientsRegister': {
+    ar: 'تسجيل المرضى الجدد',
+    en: 'Register New Patients',
+  },
+  'permissions.patientsSearchBasic': {
+    ar: 'البحث في سجلات المرضى',
+    en: 'Search Patient Records',
+  },
+  'permissions.practicePaymentsRecord': {
+    ar: 'تسجيل المدفوعات والتحصيل',
+    en: 'Record Practice Payments',
+  },
+  'permissions.practiceQueueManage': {
+    ar: 'إدارة طابور الانتظار والنداء',
+    en: 'Manage Waiting Queue',
+  },
+  'permissions.practiceReservationsCancel': {
+    ar: 'إلغاء الحجوزات',
+    en: 'Cancel Reservations',
+  },
+  'permissions.practiceReservationsCreate': {
+    ar: 'إنشاء حجز جديد',
+    en: 'Create Reservations',
+  },
+  'permissions.practiceReservationsReschedule': {
+    ar: 'إعادة جدولة المواعيد',
+    en: 'Reschedule Appointments',
+  },
+  'permissions.practiceReservationsRestoreNoShow': {
+    ar: 'استعادة حالات عدم الحضور',
+    en: 'Restore No-Show Bookings',
+  },
+  'permissions.practiceReservationsView': {
+    ar: 'عرض جدول الحجوزات',
+    en: 'View Practice Reservations',
+  },
+  'permissions.practiceWalkInsCreate': {
+    ar: 'تسجيل الدخول المباشر (بدون موعد)',
+    en: 'Register Walk-in Patients',
+  },
+  'permissions.practiceReservationsManage': {
+    ar: 'إدارة الحجوزات والمواعيد',
+    en: 'Manage Reservations',
+  },
+  'permissions.selectAll': {
+    ar: 'تحديد الكل',
+    en: 'Select All',
+  },
+  'permissions.deselectAll': {
+    ar: 'إلغاء التحديد',
+    en: 'Deselect All',
+  },
 };

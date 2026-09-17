@@ -69,28 +69,30 @@ export class DoctorReceptions {
     () => this.receptions().filter((item) => item.assignments.some((a) => a.isActive)).length,
   );
 
-  protected readonly permissionOptions = computed(() => {
-    const editingId = this.editingAssignmentId();
-    if (editingId) {
-      // Editing mode: show only the permissions already on this specific assignment
-      const assignment = this.reception()?.assignments.find((a) => a.id === editingId);
-      const map = new Map<string, ReceptionAssignmentPermission>();
-      for (const permission of assignment?.permissions ?? []) map.set(permission.id, permission);
-      // Merge with all available permissions so newly-granted ones are also selectable
-      for (const permission of this.availablePermissions()) {
-        if (!map.has(permission.id)) map.set(permission.id, permission);
-      }
-      return [...map.values()].sort((a, b) => a.code.localeCompare(b.code));
-    }
-    // Creation mode: show all available permissions from the backend catalogue
-    return [...this.availablePermissions()].sort((a, b) => a.code.localeCompare(b.code));
-  });
+  protected readonly permissionOptions = computed(() =>
+    [...this.availablePermissions()].sort((a, b) => a.code.localeCompare(b.code)),
+  );
 
   protected readonly hasSelectedPermissions = computed(() => {
     const available = new Set(this.permissionOptions().map((permission) => permission.id));
     const selected = this.selectedPermissionIds();
     return selected.length > 0 && selected.every((id) => available.has(id));
   });
+
+  protected readonly isAllPermissionsSelected = computed(() => {
+    const options = this.permissionOptions();
+    const selected = this.selectedPermissionIds();
+    return options.length > 0 && selected.length === options.length;
+  });
+
+  protected selectAllPermissions(): void {
+    const allIds = this.permissionOptions().map((permission) => permission.id);
+    this.selectedPermissionIds.set(allIds);
+  }
+
+  protected clearAllPermissions(): void {
+    this.selectedPermissionIds.set([]);
+  }
 
   protected readonly userModel = signal({
     userName: '',
@@ -162,7 +164,10 @@ export class DoctorReceptions {
   protected editAssignment(assignment: DoctorReceptionAssignment): void {
     this.editingAssignmentId.set(assignment.id);
     this.selectedPracticeId.set(assignment.doctorPracticeId);
-    this.selectedPermissionIds.set(assignment.permissions.map((item) => item.id));
+    const assignableIds = new Set(this.permissionOptions().map((item) => item.id));
+    this.selectedPermissionIds.set(
+      assignment.permissions.filter((item) => assignableIds.has(item.id)).map((item) => item.id),
+    );
   }
 
   protected cancelAssignmentEdit(): void {
@@ -288,6 +293,21 @@ export class DoctorReceptions {
       'DoctorReception.Bookings.Manage': this.langService.t('ui.full.605'),
       'DoctorReception.Patients.View': this.langService.t('ui.full.606'),
       'DoctorReception.Queue.View': this.langService.t('ui.full.607'),
+      'Patients.Register': this.langService.t('permissions.patientsRegister'),
+      'Patients.SearchBasic': this.langService.t('permissions.patientsSearchBasic'),
+      'PracticePayments.Record': this.langService.t('permissions.practicePaymentsRecord'),
+      'PracticeQueue.Manage': this.langService.t('permissions.practiceQueueManage'),
+      'PracticeReservations.Cancel': this.langService.t('permissions.practiceReservationsCancel'),
+      'PracticeReservations.Create': this.langService.t('permissions.practiceReservationsCreate'),
+      'PracticeReservations.Reschedule': this.langService.t(
+        'permissions.practiceReservationsReschedule',
+      ),
+      'PracticeReservations.RestoreNoShow': this.langService.t(
+        'permissions.practiceReservationsRestoreNoShow',
+      ),
+      'PracticeReservations.View': this.langService.t('permissions.practiceReservationsView'),
+      'PracticeWalkIns.Create': this.langService.t('permissions.practiceWalkInsCreate'),
+      'PracticeReservations.Manage': this.langService.t('permissions.practiceReservationsManage'),
     };
     return labels[code] || code;
   }
@@ -306,31 +326,11 @@ export class DoctorReceptions {
         this.receptions.set(await firstValueFrom(this.api.list()));
       }
       if (this.canManageAssignments) {
-        // On the detail page the list is not loaded yet, so fetch it in parallel
-        // with practices to discover all known permissions from existing assignments.
-        const fetchList = this.receptionId
-          ? firstValueFrom(this.api.list())
-          : Promise.resolve(this.receptions());
-        const [practices, allReceptions] = await Promise.all([
+        const [practices] = await Promise.all([
           firstValueFrom(this.practicesApi.list()),
-          fetchList,
+          this.loadPermissions(),
         ]);
         this.practices.set(practices);
-        // Collect the union of all permissions that exist across every assignment
-        // in the system. These are the permissions available to grant.
-        const permMap = new Map<string, ReceptionAssignmentPermission>();
-        const sources = [
-          ...allReceptions,
-          ...(this.reception() ? [this.reception()!] : []),
-        ];
-        for (const rec of sources) {
-          for (const assignment of rec.assignments) {
-            for (const perm of assignment.permissions) {
-              permMap.set(perm.id, perm);
-            }
-          }
-        }
-        this.availablePermissions.set([...permMap.values()]);
       }
     } catch (error) {
       this.setErrors(error);
@@ -341,6 +341,16 @@ export class DoctorReceptions {
 
   private async loadDetails(id: string): Promise<void> {
     this.reception.set(await firstValueFrom(this.api.details(id)));
+  }
+
+  private async loadPermissions(): Promise<void> {
+    try {
+      this.availablePermissions.set(await firstValueFrom(this.api.listPermissions()));
+    } catch {
+      this.availablePermissions.set([]);
+      this.messages.set(['receptions.permissionsUnavailable']);
+      this.toast.error('receptions.permissionsUnavailable');
+    }
   }
 
   private setErrors(error: unknown): void {

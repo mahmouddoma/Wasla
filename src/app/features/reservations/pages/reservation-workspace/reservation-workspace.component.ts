@@ -7,9 +7,10 @@ import {
   viewChild,
   ElementRef,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import {
   ReservationActor,
   ReservationLabel,
@@ -18,12 +19,14 @@ import {
 import { ReservationWorkspaceStore } from '../../state/reservation-workspace.store';
 import { ReservationDetailsComponent } from '../../components/reservation-details/reservation-details.component';
 import { ReservationEditorComponent } from '../../components/reservation-editor/reservation-editor.component';
+import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
 import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 @Component({
   selector: 'app-reservation-workspace',
   imports: [
     TranslatePipe,
     RouterLink,
+    LanguageSwitcher,
     ReservationDetailsComponent,
     ReservationEditorComponent,
     PlatformFooter,
@@ -37,7 +40,23 @@ export class ReservationWorkspaceComponent implements OnInit {
   readonly store = inject(ReservationWorkspaceStore);
   readonly language = inject(LanguageService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly session = inject(AuthSession, { optional: true });
   private readonly drawer = viewChild<ElementRef<HTMLDialogElement>>('drawer');
+
+  logout(): void {
+    this.session?.clear?.();
+    void this.router.navigate(['/login']);
+  }
+
+  statusClass(code: string): string {
+    const lower = (code || '').toLowerCase();
+    if (lower.includes('confirm') || lower.includes('active')) return 'status-confirmed';
+    if (lower.includes('complete') || lower.includes('convert')) return 'status-completed';
+    if (lower.includes('cancel') || lower.includes('noshow')) return 'status-cancelled';
+    if (lower.includes('pend') || lower.includes('wait')) return 'status-pending';
+    return 'status-neutral';
+  }
   constructor() {
     afterRenderEffect(() => {
       const dialog = this.drawer()?.nativeElement;

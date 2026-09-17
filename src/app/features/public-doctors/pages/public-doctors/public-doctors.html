@@ -1,151 +1,455 @@
 <main class="discovery-shell" [dir]="language.dir()">
-  <header class="discovery-header">
-    <a routerLink="/doctors" class="brand">{{ 'discovery.brand' | t }}</a
-    ><a routerLink="/login" class="login-link">{{ 'discovery.login' | t }}</a>
+  <!-- Ambient backdrop glow mesh -->
+  <div class="ambient-glow-mesh" aria-hidden="true">
+    <div class="ambient-circle circle-teal"></div>
+    <div class="ambient-circle circle-navy"></div>
+  </div>
+
+  <!-- Enterprise Navbar -->
+  <header class="discovery-navbar">
+    <a routerLink="/doctors" class="brand-cluster" [attr.aria-label]="'discovery.brand' | t">
+      <img
+        class="brand-logo"
+        src="/images/wasla-mark.png"
+        width="42"
+        height="42"
+        [alt]="'common.appName' | t"
+      />
+      <div class="brand-meta">
+        <span class="brand-name">{{ 'common.appName' | t }}</span>
+        <span class="brand-tagline">{{ 'common.platform' | t }}</span>
+      </div>
+    </a>
+
+    <div class="navbar-actions">
+      <app-language-switcher variant="header" />
+
+      @if (authSession.token()) {
+        <a class="nav-btn nav-btn-secondary" [routerLink]="userWorkspaceLink()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span>{{ 'common.workspace' | t }}</span>
+        </a>
+      } @else {
+        <a class="nav-btn nav-btn-primary" routerLink="/login">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          <span>{{ 'discovery.login' | t }}</span>
+        </a>
+      }
+    </div>
   </header>
-  <section class="search-intro">
-    <h1>{{ 'discovery.title' | t }}</h1>
-    <p>{{ 'discovery.description' | t }}</p>
+
+  <!-- Hero Section -->
+  <section class="discovery-hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>{{ 'discovery.heroBadge' | t }}</span>
+      </div>
+      <h1>{{ 'discovery.title' | t }}</h1>
+      <p class="hero-description">{{ 'discovery.description' | t }}</p>
+    </div>
+
+    <div class="hero-illustration-wrap" aria-hidden="true">
+      <img
+        class="hero-illustration"
+        src="/SVG-AVATAR/Online Doctor-amico.svg"
+        alt=""
+        width="220"
+        height="220"
+      />
+    </div>
   </section>
-  <form class="search-panel" (submit)="$event.preventDefault(); search()">
-    <label
-      ><span>{{ 'discovery.name' | t }}</span
-      ><input
-        type="search"
-        [placeholder]="'discovery.namePlaceholder' | t"
-        [value]="filters().searchText"
-        (input)="updateFilter('searchText', $event)"
-    /></label>
-    <label
-      ><span>{{ 'discovery.specialization' | t }}</span
-      ><select
-        [value]="filters().specializationId"
-        (change)="updateFilter('specializationId', $event)"
-      >
-        <option value="">{{ 'discovery.allSpecializations' | t }}</option>
-        @for (item of specializations(); track item.id) {
-          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+
+  <!-- Search & Filters Surface -->
+  <section class="search-section" [attr.aria-label]="'discovery.search' | t">
+    <form class="search-panel" (submit)="$event.preventDefault(); search(1)">
+      <!-- 1. Doctor Name -->
+      <div class="field-item">
+        <label for="doctor-search-input">
+          <span class="field-label">{{ 'discovery.name' | t }}</span>
+        </label>
+        <div class="control-wrap">
+          <svg class="control-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            id="doctor-search-input"
+            type="search"
+            class="field-control"
+            [placeholder]="'discovery.namePlaceholder' | t"
+            [value]="filters().searchText"
+            (input)="updateFilter('searchText', $event)"
+          />
+        </div>
+      </div>
+
+      <!-- 2. Specialization -->
+      <div class="field-item">
+        <label for="doctor-specialization-select">
+          <span class="field-label">{{ 'discovery.specialization' | t }}</span>
+        </label>
+        <div class="control-wrap select-wrap">
+          <svg class="control-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+          <select
+            id="doctor-specialization-select"
+            class="field-control field-select"
+            [value]="filters().specializationId"
+            (change)="updateFilter('specializationId', $event)"
+          >
+            <option value="">{{ 'discovery.allSpecializations' | t }}</option>
+            @for (item of specializations(); track item.id) {
+              <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+            }
+          </select>
+          <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- 3. Governorate -->
+      <div class="field-item">
+        <label for="doctor-governorate-select">
+          <span class="field-label">{{ 'discovery.governorate' | t }}</span>
+        </label>
+        <div class="control-wrap select-wrap">
+          <svg class="control-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <select
+            id="doctor-governorate-select"
+            class="field-control field-select"
+            [value]="filters().governorateId"
+            (change)="governorateChanged($event)"
+          >
+            <option value="">{{ 'discovery.allGovernorates' | t }}</option>
+            @for (item of governorates(); track item.id) {
+              <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+            }
+          </select>
+          <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- 4. City -->
+      <div class="field-item">
+        <label for="doctor-city-select">
+          <span class="field-label">{{ 'discovery.city' | t }}</span>
+        </label>
+        <div class="control-wrap select-wrap">
+          <svg class="control-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+            <path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" />
+          </svg>
+          <select
+            id="doctor-city-select"
+            class="field-control field-select"
+            [value]="filters().cityId"
+            [disabled]="!filters().governorateId"
+            (change)="cityChanged($event)"
+          >
+            <option value="">{{ 'discovery.allCities' | t }}</option>
+            @for (item of cities(); track item.id) {
+              <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+            }
+          </select>
+          <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- 5. Area -->
+      <div class="field-item">
+        <label for="doctor-area-select">
+          <span class="field-label">{{ 'discovery.area' | t }}</span>
+        </label>
+        <div class="control-wrap select-wrap">
+          <svg class="control-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+            <line x1="8" y1="2" x2="8" y2="18" />
+            <line x1="16" y1="6" x2="16" y2="22" />
+          </svg>
+          <select
+            id="doctor-area-select"
+            class="field-control field-select"
+            [value]="filters().areaId"
+            [disabled]="!filters().cityId"
+            (change)="updateFilter('areaId', $event)"
+          >
+            <option value="">{{ 'discovery.allAreas' | t }}</option>
+            @for (item of areas(); track item.id) {
+              <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+            }
+          </select>
+          <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Search Actions -->
+      <div class="search-actions">
+        <button type="submit" class="btn-search-submit" [disabled]="isLoading()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span>{{ 'discovery.search' | t }}</span>
+        </button>
+
+        @if (hasActiveFilters()) {
+          <button type="button" class="btn-search-reset" (click)="resetFilters()" [title]="'discovery.clearFilters' | t">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            <span>{{ 'discovery.clearFilters' | t }}</span>
+          </button>
         }
-      </select></label
-    >
-    <label
-      ><span>{{ 'discovery.governorate' | t }}</span
-      ><select [value]="filters().governorateId" (change)="governorateChanged($event)">
-        <option value="">{{ 'discovery.allGovernorates' | t }}</option>
-        @for (item of governorates(); track item.id) {
-          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
-        }
-      </select></label
-    >
-    <label
-      ><span>{{ 'discovery.city' | t }}</span
-      ><select [value]="filters().cityId" (change)="cityChanged($event)">
-        <option value="">{{ 'discovery.allCities' | t }}</option>
-        @for (item of cities(); track item.id) {
-          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
-        }
-      </select></label
-    >
-    <label
-      ><span>{{ 'discovery.area' | t }}</span
-      ><select [value]="filters().areaId" (change)="updateFilter('areaId', $event)">
-        <option value="">{{ 'discovery.allAreas' | t }}</option>
-        @for (item of areas(); track item.id) {
-          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
-        }
-      </select></label
-    >
-    <button type="submit">{{ 'discovery.search' | t }}</button>
-  </form>
+      </div>
+    </form>
+  </section>
+
+  <!-- Error Alert -->
   @if (messages().length) {
     <div class="search-error" role="alert">
-      @for (message of messages(); track message) {
-        <p>{{ message | t }}</p>
-      }
-      <button type="button" (click)="search(result().pageNumber)">{{ 'discovery.retry' | t }}</button>
+      <svg class="error-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <div class="error-content">
+        @for (message of messages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+      <button type="button" class="btn-error-retry" (click)="search(result().pageNumber)">{{ 'discovery.retry' | t }}</button>
     </div>
   }
-  <section class="results" aria-live="polite">
+
+  <!-- Results Section -->
+  <section class="results-container" aria-live="polite">
     <div class="results-heading">
-      <h2>{{ 'discovery.doctors' | t }}</h2>
-      <span>{{ result().totalCount }} {{ 'discovery.results' | t }}</span>
+      <div class="heading-title-group">
+        <h2>{{ 'discovery.doctors' | t }}</h2>
+        <span class="results-count-badge">{{ result().totalCount }} {{ 'discovery.results' | t }}</span>
+      </div>
     </div>
+
+    <!-- Shimmer Skeletons during Loading -->
     @if (isLoading()) {
-      <p class="empty-result">{{ 'discovery.loading' | t }}</p>
-    }
-    @for (doctor of result().items; track doctor.doctorId) {
-      <article class="doctor-result">
-        <div class="doctor-heading">
-          @if (doctor.profileImageUrl && !brokenImages().includes(doctor.doctorId)) {
-            <img
-              [src]="doctor.profileImageUrl"
-              [alt]="language.t('discovery.photo') + ' ' + (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr)"
-              (error)="imageFailed(doctor.doctorId)"
-            />
-          } @else {
-            <span class="image-placeholder" aria-hidden="true">{{ (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr).charAt(0) }}</span>
-          }
-          <div>
-            <h3>{{ language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</h3>
-            @if (doctor.nameEn) {
-              <p [dir]="language.isRtl() ? 'ltr' : 'rtl'">{{ language.isRtl() ? doctor.nameEn : doctor.nameAr }}</p>
-            }
-            <ul>
-              @for (specialization of doctor.specializations; track specialization.id) {
-                <li>{{ language.isRtl() ? specialization.nameAr : (specialization.nameEn || specialization.nameAr) }}</li>
-              }
-            </ul>
-          </div>
-          <a [routerLink]="['/doctors', doctor.doctorId]">{{ 'discovery.profile' | t }}</a>
-        </div>
-        <div class="practice-results">
-          @for (practice of doctor.practices; track practice.id) {
-            <section>
-              <div>
-                <strong>{{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}</strong
-                ><span>{{ language.isRtl() ? practice.governorate?.nameAr : practice.governorate?.nameEn || practice.governorate?.nameAr }} · {{ language.isRtl() ? practice.city?.nameAr : practice.city?.nameEn || practice.city?.nameAr }}</span>
+      <div class="skeletons-wrapper" aria-hidden="true">
+        @for (item of [1, 2, 3]; track item) {
+          <div class="skeleton-card">
+            <div class="skeleton-header">
+              <div class="skeleton-avatar"></div>
+              <div class="skeleton-lines">
+                <div class="skeleton-line title"></div>
+                <div class="skeleton-line sub"></div>
+                <div class="skeleton-line pill"></div>
               </div>
-              <div>
-                <b>{{
-                  practice.publicSearchPrice === null
-                    ? language.t('discovery.priceUnavailable')
-                    : practice.publicSearchPrice + ' ' + language.t('discovery.currency')
-                }}</b
-                ><span>{{
-                  practice.nextAvailableSlotDate
-                    ? practice.nextAvailableSlotDate + ' · ' + practice.nextAvailableSlotTime
-                    : language.t('discovery.noAppointment')
-                }}</span
-                ><small [class.ready]="practice.isBookable && practice.onlineBookingEnabled !== false">{{
-                  practice.isBookable && practice.onlineBookingEnabled !== false ? language.t('discovery.bookable') : language.t('discovery.unbookable')
-                }}</small>
+            </div>
+            <div class="skeleton-body">
+              <div class="skeleton-practice"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Doctors List -->
+    @for (doctor of result().items; track doctor.doctorId) {
+      <article class="doctor-card doctor-result">
+        <div class="doctor-heading">
+          <div class="avatar-container">
+            @if (doctor.profileImageUrl && !brokenImages().includes(doctor.doctorId)) {
+              <img
+                class="doctor-avatar"
+                [src]="doctor.profileImageUrl"
+                [alt]="language.t('discovery.photo') + ' ' + (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr)"
+                (error)="imageFailed(doctor.doctorId)"
+              />
+            } @else {
+              <span class="image-placeholder" aria-hidden="true">{{ (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr).charAt(0) }}</span>
+            }
+            <span class="verified-indicator" [title]="'discovery.verifiedDoctor' | t">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+          </div>
+
+          <div class="doctor-identity">
+            <div class="doctor-names">
+              <h3>{{ language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</h3>
+              @if (doctor.nameEn) {
+                <span class="doctor-en-name" [dir]="language.isRtl() ? 'ltr' : 'rtl'">
+                  {{ language.isRtl() ? doctor.nameEn : doctor.nameAr }}
+                </span>
+              }
+            </div>
+
+            @if (doctor.specializations.length) {
+              <ul class="specializations-list">
+                @for (specialization of doctor.specializations; track specialization.id) {
+                  <li class="specialization-tag">
+                    {{ language.isRtl() ? specialization.nameAr : (specialization.nameEn || specialization.nameAr) }}
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="doctor-profile-link-wrap">
+            <a class="btn-view-profile" [routerLink]="['/doctors', doctor.doctorId]">
+              <span>{{ 'discovery.profile' | t }}</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Practices List for Doctor -->
+        <div class="practices-surface practice-results">
+          @for (practice of doctor.practices; track practice.id) {
+            <section class="practice-item">
+              <div class="practice-info">
+                <div class="practice-name-row">
+                  <svg class="practice-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+                  </svg>
+                  <strong>{{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}</strong>
+                </div>
+
+                <div class="practice-location">
+                  <svg class="loc-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <span>
+                    {{ language.isRtl() ? practice.governorate?.nameAr : practice.governorate?.nameEn || practice.governorate?.nameAr }}
+                    ·
+                    {{ language.isRtl() ? practice.city?.nameAr : practice.city?.nameEn || practice.city?.nameAr }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="practice-meta">
+                <div class="price-wrap">
+                  <span class="price-tag">
+                    {{
+                      practice.publicSearchPrice === null
+                        ? language.t('discovery.priceUnavailable')
+                        : practice.publicSearchPrice + ' ' + language.t('discovery.currency')
+                    }}
+                  </span>
+                </div>
+
+                <div class="slot-wrap">
+                  <span class="slot-badge">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    {{
+                      practice.nextAvailableSlotDate
+                        ? practice.nextAvailableSlotDate + ' · ' + practice.nextAvailableSlotTime
+                        : language.t('discovery.noAppointment')
+                    }}
+                  </span>
+                </div>
+
+                <div class="booking-status-wrap">
+                  <span class="status-pill" [class.ready]="practice.isBookable && practice.onlineBookingEnabled !== false">
+                    {{
+                      practice.isBookable && practice.onlineBookingEnabled !== false
+                        ? language.t('discovery.bookable')
+                        : language.t('discovery.unbookable')
+                    }}
+                  </span>
+                </div>
               </div>
             </section>
+          } @empty {
+            <p class="no-practices-hint">{{ 'discovery.noClinics' | t }}</p>
           }
         </div>
-</article>
+      </article>
     } @empty {
       @if (!isLoading()) {
-        <p class="empty-result">{{ 'discovery.empty' | t }}</p>
+        <div class="empty-state-card">
+          <img
+            class="empty-illustration"
+            src="/SVG-AVATAR/Doctors-rafiki (1).svg"
+            alt=""
+            aria-hidden="true"
+            width="170"
+            height="170"
+          />
+          <p class="empty-title">{{ 'discovery.empty' | t }}</p>
+          <p class="empty-subtitle">{{ 'discovery.emptyHint' | t }}</p>
+          @if (hasActiveFilters()) {
+            <button type="button" class="btn-empty-reset" (click)="resetFilters()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>{{ 'discovery.clearFilters' | t }}</span>
+            </button>
+          }
+        </div>
       }
     }
+
+    <!-- Pagination -->
     @if (result().totalCount) {
-      <nav class="pagination" [attr.aria-label]="'discovery.pages' | t">
+      <nav class="pagination-nav" [attr.aria-label]="'discovery.pages' | t">
         <button
           type="button"
+          class="btn-page btn-page-prev"
           [disabled]="result().pageNumber <= 1"
           (click)="search(result().pageNumber - 1)"
         >
-          {{ 'discovery.previous' | t }}</button
-        ><span>{{ 'discovery.page' | t }} {{ result().pageNumber }} {{ 'discovery.of' | t }} {{ totalPages() }}</span
-        ><button
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span>{{ 'discovery.previous' | t }}</span>
+        </button>
+
+        <span class="page-indicator">
+          {{ 'discovery.page' | t }} <strong>{{ result().pageNumber }}</strong> {{ 'discovery.of' | t }} <strong>{{ totalPages() }}</strong>
+        </span>
+
+        <button
           type="button"
+          class="btn-page btn-page-next"
           [disabled]="result().pageNumber >= totalPages()"
           (click)="search(result().pageNumber + 1)"
         >
-          {{ 'discovery.next' | t }}
+          <span>{{ 'discovery.next' | t }}</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </nav>
     }
   </section>
+
+  <!-- Platform Footer -->
+  <app-platform-footer />
 </main>

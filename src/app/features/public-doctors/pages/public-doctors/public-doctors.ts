@@ -4,6 +4,9 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
+import { AuthSession } from '../../../../core/auth/auth-session';
+import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
+import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 import { DoctorProfileApi } from '../../../../domains/doctor-profile';
 import { EgyptLocationOption } from '../../../../domains/doctor-profile';
 import { PublicDiscoveryApi } from '../../../../domains/public-discovery';
@@ -14,15 +17,17 @@ import {
 
 @Component({
   selector: 'app-public-doctors',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PlatformFooter],
   templateUrl: './public-doctors.html',
   styleUrl: './public-doctors.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicDoctors {
   protected readonly language = inject(LanguageService);
+  protected readonly authSession = inject(AuthSession);
   private readonly api = inject(PublicDiscoveryApi);
   private readonly locationsApi = inject(DoctorProfileApi);
+
   protected readonly specializations = signal<PublicSpecialization[]>([]);
   protected readonly governorates = signal<EgyptLocationOption[]>([]);
   protected readonly cities = signal<EgyptLocationOption[]>([]);
@@ -46,6 +51,16 @@ export class PublicDoctors {
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.result().totalCount / this.result().pageSize)),
   );
+  protected readonly hasActiveFilters = computed(() => {
+    const f = this.filters();
+    return Boolean(
+      f.searchText.trim() || f.specializationId || f.governorateId || f.cityId || f.areaId,
+    );
+  });
+  protected readonly userWorkspaceLink = computed(() => {
+    const user = this.authSession.session()?.user;
+    return user ? this.authSession.destinationFor(user) : '/workspace';
+  });
 
   constructor() {
     void this.initialize();
@@ -55,6 +70,7 @@ export class PublicDoctors {
     const value = (event.currentTarget as HTMLInputElement | HTMLSelectElement).value;
     this.filters.update((filters) => ({ ...filters, [key]: value }));
   }
+
   protected async governorateChanged(event: Event): Promise<void> {
     this.updateFilter('governorateId', event);
     this.filters.update((value) => ({ ...value, cityId: '', areaId: '' }));
@@ -63,6 +79,7 @@ export class PublicDoctors {
     const id = Number(this.filters().governorateId);
     if (id) this.cities.set(await firstValueFrom(this.locationsApi.cities(id)));
   }
+
   protected async cityChanged(event: Event): Promise<void> {
     this.updateFilter('cityId', event);
     this.filters.update((value) => ({ ...value, areaId: '' }));
@@ -70,6 +87,20 @@ export class PublicDoctors {
     const id = Number(this.filters().cityId);
     if (id) this.areas.set(await firstValueFrom(this.locationsApi.areas(id)));
   }
+
+  protected async resetFilters(): Promise<void> {
+    this.filters.set({
+      searchText: '',
+      specializationId: '',
+      governorateId: '',
+      cityId: '',
+      areaId: '',
+    });
+    this.cities.set([]);
+    this.areas.set([]);
+    await this.search(1);
+  }
+
   protected async search(pageNumber = 1): Promise<void> {
     this.isLoading.set(true);
     this.messages.set([]);
@@ -95,9 +126,11 @@ export class PublicDoctors {
       this.isLoading.set(false);
     }
   }
+
   protected imageFailed(doctorId: string): void {
     this.brokenImages.update((ids) => [...new Set([...ids, doctorId])]);
   }
+
   private async initialize(): Promise<void> {
     try {
       const [specializations, governorates] = await Promise.all([
@@ -113,6 +146,7 @@ export class PublicDoctors {
     await this.search();
   }
 }
+
 function numberOrUndefined(value: string): number | undefined {
   const number = Number(value);
   return number ? number : undefined;
