@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -18,17 +20,19 @@ import {
   PatientContact,
   PatientProfile as PatientProfileModel,
   PatientRelationshipType,
-} from '../../../core/patients/patient.models';
-import { PatientsApi } from '../../../core/patients/patients-api';
+} from '../../../domains/patients';
+import { PatientsApi } from '../../../domains/patients';
+import { PlatformFooter } from '../../../shared/components/platform-footer/platform-footer';
 
 @Component({
   selector: 'app-patient-profile',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe, PlatformFooter],
   templateUrl: './patient-profile.html',
   styleUrl: './patient-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientProfile {
+  protected readonly uiLanguage = inject(LanguageService);
   private readonly api = inject(PatientsApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
@@ -43,10 +47,10 @@ export class PatientProfile {
   protected readonly imageLoading = signal(false);
   protected readonly profileModel = signal({ nameAr: '', nameEn: '', phoneNumber: '', email: '' });
   protected readonly profileForm = form(this.profileModel, (field) => {
-    required(field.nameAr, { message: 'الاسم بالعربية مطلوب.' });
+    required(field.nameAr, { message: 'validation.nameArRequired' });
     maxLength(field.nameAr, 200);
     maxLength(field.nameEn, 200);
-    email(field.email, { message: 'صيغة البريد الإلكتروني غير صحيحة.' });
+    email(field.email, { message: 'validation.emailFormat' });
   });
   protected readonly contactModel = signal({
     nameAr: '',
@@ -57,8 +61,8 @@ export class PatientProfile {
     isPrimary: false,
   });
   protected readonly contactForm = form(this.contactModel, (field) => {
-    required(field.nameAr, { message: 'اسم جهة الاتصال مطلوب.' });
-    required(field.phoneNumber, { message: 'رقم الهاتف مطلوب.' });
+    required(field.nameAr, { message: 'validation.contactName' });
+    required(field.phoneNumber, { message: 'validation.phoneRequired' });
   });
   protected readonly editingContactId = signal('');
   protected readonly profileImage = signal<File | undefined>(undefined);
@@ -121,7 +125,7 @@ export class PatientProfile {
         (this.canViewContacts || this.canManageContacts) &&
         !this.usablePrimaryContacts()
       ) {
-        this.messages.set(['لا يمكن إزالة هاتف المريض بدون جهة اتصال أساسية صالحة.']);
+        this.messages.set([this.uiLanguage.t('ui.full.701')]);
         return;
       }
       this.savingProfile.set(true);
@@ -136,8 +140,8 @@ export class PatientProfile {
         );
         this.profile.set(updated);
         this.profileImage.set(undefined);
-        this.successMessage.set('تم حفظ الملف الشخصي وتحديث نسخة البيانات.');
-        this.toast.success('تم حفظ الملف الشخصي وتحديث نسخة البيانات.');
+        this.successMessage.set(this.uiLanguage.t('patient.profileSaved'));
+        this.toast.success(this.uiLanguage.t('patient.profileSaved'));
         if (updated.hasProfileImage) await this.loadImage();
       } catch (error) {
         const errs = flattenErrors(error);
@@ -146,11 +150,8 @@ export class PatientProfile {
           this.toast.error(errs[0]);
         }
         if (error instanceof HttpErrorResponse && error.status === 409) {
-          this.messages.update((items) => [
-            ...items,
-            'تم تحديث الملف من مكان آخر؛ أُعيد تحميل أحدث نسخة.',
-          ]);
-          this.toast.error('تم تحديث الملف من مكان آخر؛ أُعيد تحميل أحدث نسخة.');
+          this.messages.update((items) => [...items, this.uiLanguage.t('patient.profileConflict')]);
+          this.toast.error(this.uiLanguage.t('patient.profileConflict'));
           await this.load();
         }
       } finally {
@@ -182,11 +183,11 @@ export class PatientProfile {
     event.preventDefault();
     const value = this.contactModel();
     if (!value.nameAr?.trim()) {
-      this.toast.error('اسم جهة الاتصال مطلوب.');
+      this.toast.error(this.uiLanguage.t('validation.contactName'));
       return;
     }
     if (!value.phoneNumber?.trim()) {
-      this.toast.error('رقم الهاتف مطلوب.');
+      this.toast.error(this.uiLanguage.t('validation.phoneRequired'));
       return;
     }
 
@@ -205,8 +206,8 @@ export class PatientProfile {
         else await firstValueFrom(this.api.addContact(request));
         await this.loadContacts();
         const successMsg = contactId
-          ? 'تم تحديث جهة الاتصال بنجاح.'
-          : 'تمت إضافة جهة الاتصال بنجاح.';
+          ? this.uiLanguage.t('ui.full.702')
+          : this.uiLanguage.t('ui.full.703');
         this.cancelContactEdit();
         this.successMessage.set(successMsg);
         this.toast.success(successMsg);
@@ -223,13 +224,21 @@ export class PatientProfile {
   }
 
   protected async deactivateContact(contact: PatientContact): Promise<void> {
-    if (!this.canDelete(contact) || !confirm(`إلغاء جهة الاتصال ${contact.nameAr}؟`)) return;
+    if (
+      !this.canDelete(contact) ||
+      !confirm(
+        this.uiLanguage.t('patient.confirmDeactivateContact', {
+          name: this.uiLanguage.isRtl() ? contact.nameAr : contact.nameEn || contact.nameAr,
+        }),
+      )
+    )
+      return;
     this.resetFeedback();
     try {
       await firstValueFrom(this.api.deactivateContact(contact.contactId));
       await this.loadContacts();
-      this.successMessage.set('تم إلغاء جهة الاتصال.');
-      this.toast.success('تم إلغاء جهة الاتصال بنجاح.');
+      this.successMessage.set(this.uiLanguage.t('ui.full.704'));
+      this.toast.success(this.uiLanguage.t('ui.full.705'));
     } catch (error) {
       const errs = flattenErrors(error);
       this.messages.set(errs);
@@ -260,17 +269,17 @@ export class PatientProfile {
     if (!id) return;
     navigator.clipboard.writeText(id);
     this.copiedId.set(true);
-    this.toast.success('تم نسخ معرّف المريض.');
+    this.toast.success(this.uiLanguage.t('ui.full.706'));
     setTimeout(() => this.copiedId.set(false), 2000);
   }
 
   protected getRelationshipLabel(type: string): string {
     const map: Record<string, string> = {
-      Father: 'أب',
-      Mother: 'أم',
-      Guardian: 'ولي أمر',
-      LegalGuardian: 'وصي قانوني',
-      Other: 'أخرى',
+      Father: this.uiLanguage.t('family.father'),
+      Mother: this.uiLanguage.t('family.mother'),
+      Guardian: this.uiLanguage.t('family.guardian'),
+      LegalGuardian: this.uiLanguage.t('family.legalGuardian'),
+      Other: this.uiLanguage.t('common.other'),
     };
     return map[type] || type;
   }

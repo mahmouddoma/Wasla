@@ -1,15 +1,15 @@
 <section class="details-page">
   <!-- Breadcrumb -->
-  <a class="details-back" routerLink="/admin/doctors">
+  @if (!isDrawer()) { <a class="details-back" routerLink="/admin/doctors">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
-    العودة إلى قائمة الأطباء
-  </a>
+    {{ 'doctor.backList' | t }}
+  </a> }
 
   <!-- Loading State -->
   @if (isLoading() && !details()) {
     <div class="details-state" role="status">
       <span class="loading-ring" aria-hidden="true"></span>
-      <h1>جارٍ تحميل بيانات الطبيب…</h1>
+      <h1>{{ 'doctor.loading' | t }}</h1>
     </div>
   }
 
@@ -25,13 +25,13 @@
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
       </div>
-      <h1>تعذر تحميل بيانات الطبيب</h1>
+      <h1>{{ 'doctor.loadFailed' | t }}</h1>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <div class="state-actions">
-        <a class="btn btn-outline-secondary" routerLink="/admin/doctors">العودة للقائمة</a>
-        <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+        <a class="btn btn-outline-secondary" routerLink="/admin/doctors">{{ 'common.backToList' | t }}</a>
+        <button class="btn btn-primary" type="button" (click)="load()">{{ 'discovery.retry' | t }}</button>
       </div>
     </div>
 
@@ -46,7 +46,7 @@
               <img
                 class="avatar-photo"
                 [src]="imageUrl"
-                [alt]="'صورة ' + doctor.nameAr"
+                [alt]="uiLanguage.t('discovery.photo') + ' ' + doctor.nameAr"
                 width="76"
                 height="76"
                 decoding="async"
@@ -55,7 +55,7 @@
               <span class="avatar-initials" aria-hidden="true">{{ doctorInitials() }}</span>
             }
             @if (isProfileImageLoading()) {
-              <span class="avatar-loading" role="status" aria-label="جارٍ تحميل صورة الطبيب">
+              <span class="avatar-loading" role="status" [attr.aria-label]="'doctor.photoLoading' | t">
                 <span aria-hidden="true"></span>
               </span>
             }
@@ -79,11 +79,11 @@
             @if (isLoading()) {
               <span class="refreshing-badge" role="status">
                 <span class="refreshing-dot" aria-hidden="true"></span>
-                جارٍ تحديث البيانات…
+                {{ 'common.refreshing' | t }}
               </span>
             }
           </div>
-          <h1>{{ doctor.nameAr }}</h1>
+          <h1>{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</h1>
           @if (doctor.nameEn) {
             <p class="hero-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</p>
           }
@@ -104,7 +104,7 @@
               <line x1="10" y1="15" x2="10" y2="9" />
               <line x1="14" y1="15" x2="14" y2="9" />
             </svg>
-            تعليق الحساب
+            {{ 'doctor.suspend' | t }}
           </button>
         }
         @if (canReactivate()) {
@@ -117,7 +117,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            إعادة التفعيل
+            {{ 'doctor.reactivate' | t }}
           </button>
         }
         @if (canReject()) {
@@ -132,7 +132,7 @@
               <line x1="15" y1="9" x2="9" y2="15" />
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
-            رفض الطلب
+            {{ 'common.rejectRequest' | t }}
           </button>
         }
         @if (canApprove()) {
@@ -145,13 +145,13 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            اعتماد الطبيب
+            {{ 'doctor.approve' | t }}
           </button>
         }
         <button
           class="btn-refresh"
           type="button"
-          aria-label="تحديث بيانات الطبيب"
+          [attr.aria-label]="'doctor.update' | t"
           [disabled]="isLoading()"
           (click)="load()"
         >
@@ -168,7 +168,7 @@
     @if (apiMessages().length) {
       <div class="page-notice" role="alert">
         @for (message of apiMessages(); track message) {
-          <p>{{ message }}</p>
+          <p>{{ message | t }}</p>
         }
       </div>
     }
@@ -186,39 +186,39 @@
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
-            <h2>البيانات الأساسية</h2>
+            <h2>{{ 'common.basicData' | t }}</h2>
           </header>
           <dl class="information-grid">
             <div class="info-field">
-              <dt>اسم المستخدم</dt>
+              <dt>{{ 'workspace.username' | t }}</dt>
               <dd>{{ doctor.userName }}</dd>
             </div>
             <div class="info-field">
-              <dt>البريد الإلكتروني</dt>
+              <dt>{{ 'workspace.email' | t }}</dt>
               <dd class="field-ltr">{{ doctor.email }}</dd>
             </div>
             <div class="info-field">
-              <dt>رقم الهاتف</dt>
+              <dt>{{ 'workspace.phone' | t }}</dt>
               <dd dir="ltr">{{ doctor.phone }}</dd>
             </div>
             <div class="info-field">
-              <dt>النوع</dt>
+              <dt>{{ 'register.gender' | t }}</dt>
               <dd>{{ genderLabel(doctor.gender) }}</dd>
             </div>
             <div class="info-field">
-              <dt>تاريخ الميلاد</dt>
+              <dt>{{ 'register.dob' | t }}</dt>
               <dd>{{ formatDate(doctor.dateOfBirth) }}</dd>
             </div>
             <div class="info-field">
-              <dt>العمر</dt>
-              <dd>{{ doctor.age }} سنة</dd>
+              <dt>{{ 'common.age' | t }}</dt>
+              <dd>{{ doctor.age }} {{ 'common.years' | t }}</dd>
             </div>
             <div class="info-field">
-              <dt>الرقم القومي</dt>
-              <dd>{{ doctor.nationalId || 'غير مسجل' }}</dd>
+              <dt>{{ 'common.nationalId' | t }}</dt>
+              <dd>{{ doctor.nationalId || uiLanguage.t('common.notRegistered') }}</dd>
             </div>
             <div class="info-field">
-              <dt>معرّف الطبيب</dt>
+              <dt>{{ 'doctor.id' | t }}</dt>
               <dd class="technical-value">{{ doctor.doctorId }}</dd>
             </div>
           </dl>
@@ -232,47 +232,47 @@
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
-            <h2>سجل الحالة والقرارات</h2>
+            <h2>{{ 'doctor.decisionHistory' | t }}</h2>
           </header>
           <dl class="information-grid governance-grid">
             <div class="info-field">
-              <dt>تاريخ الاعتماد</dt>
+              <dt>{{ 'common.approvalDate' | t }}</dt>
               <dd>{{ formatDate(doctor.approvedOnUtc) }}</dd>
             </div>
             <div class="info-field">
-              <dt>تم الاعتماد بواسطة</dt>
+              <dt>{{ 'common.approvedBy' | t }}</dt>
               <dd class="technical-value">
-                {{ doctor.approvedByApplicationUserId || 'غير مسجل' }}
+                {{ doctor.approvedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
               </dd>
             </div>
             <div class="info-field">
-              <dt>تاريخ الرفض</dt>
+              <dt>{{ 'common.rejectedOn' | t }}</dt>
               <dd>{{ formatDate(doctor.rejectedOnUtc) }}</dd>
             </div>
             <div class="info-field">
-              <dt>تم الرفض بواسطة</dt>
+              <dt>{{ 'common.rejectedBy' | t }}</dt>
               <dd class="technical-value">
-                {{ doctor.rejectedByApplicationUserId || 'غير مسجل' }}
+                {{ doctor.rejectedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
               </dd>
             </div>
             <div class="info-field">
-              <dt>تاريخ التعليق</dt>
+              <dt>{{ 'common.suspendedOn' | t }}</dt>
               <dd>{{ formatDate(doctor.suspendedOnUtc) }}</dd>
             </div>
             <div class="info-field">
-              <dt>تم التعليق بواسطة</dt>
+              <dt>{{ 'common.suspendedBy' | t }}</dt>
               <dd class="technical-value">
-                {{ doctor.suspendedByApplicationUserId || 'غير مسجل' }}
+                {{ doctor.suspendedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
               </dd>
             </div>
             <div class="info-field">
-              <dt>تاريخ إعادة التفعيل</dt>
+              <dt>{{ 'common.reactivatedOn' | t }}</dt>
               <dd>{{ formatDate(doctor.reactivatedOnUtc) }}</dd>
             </div>
             <div class="info-field">
-              <dt>أعيد التفعيل بواسطة</dt>
+              <dt>{{ 'common.reactivatedBy' | t }}</dt>
               <dd class="technical-value">
-                {{ doctor.reactivatedByApplicationUserId || 'غير مسجل' }}
+                {{ doctor.reactivatedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
               </dd>
             </div>
           </dl>
@@ -287,7 +287,7 @@
                 </svg>
               </div>
               <div>
-                <strong>سبب الرفض</strong>
+                <strong>{{ 'common.rejectionReason' | t }}</strong>
                 <p>{{ doctor.rejectionReason }}</p>
               </div>
             </div>
@@ -303,7 +303,7 @@
                 </svg>
               </div>
               <div>
-                <strong>سبب التعليق</strong>
+                <strong>{{ 'common.suspensionReason' | t }}</strong>
                 <p>{{ doctor.suspensionReason }}</p>
               </div>
             </div>
@@ -321,13 +321,13 @@
             </svg>
           </div>
           <div class="card-header-text">
-            <h2>مستندات التحقق</h2>
+            <h2>{{ 'doctor.verificationDocuments' | t }}</h2>
             <p class="docs-subtitle">
-              <span>{{ documentsAvailableCount() }}</span> / {{ documents().length }} متاحة
+              <span>{{ documentsAvailableCount() }}</span> / {{ documents().length }} {{ 'common.available' | t }}
             </p>
           </div>
         </header>
-        <p class="docs-notice">المعاينة بطلب آمن ومصادق عليه من الخادم.</p>
+        <p class="docs-notice">{{ 'doctor.securePreview' | t }}</p>
         <div class="documents-list">
           @for (document of documents(); track document.type) {
             <div class="document-item">
@@ -367,7 +367,7 @@
                   [class.doc-status--available]="document.available"
                   [class.doc-status--missing]="!document.available"
                 >
-                  {{ document.available ? 'متاح للمراجعة' : 'غير مرفوع' }}
+                  {{ document.available ? uiLanguage.t('ui.expressions.19') : uiLanguage.t('ui.expressions.20') }}
                 </span>
               </div>
               <button
@@ -384,7 +384,7 @@
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 }
-                {{ mediaState(document.type).loading ? 'جارٍ الفتح…' : 'معاينة' }}
+                {{ mediaState(document.type).loading ? uiLanguage.t('review.opening') : uiLanguage.t('ui.full.649') }}
               </button>
               @if (mediaState(document.type).error) {
                 <p class="document-error" role="alert">{{ mediaState(document.type).error }}</p>
@@ -422,12 +422,23 @@
       [fieldError]="actionFieldError()"
       (confirmed)="suspend($event)"
       (dismissed)="dismissDecision('suspend')"
-    />
+    >
+      @if (suspensionImpact(); as impact) {
+        <section class="suspension-impact" role="status">
+          <h3>{{ 'doctor.suspensionImpact' | t }} · {{ impact.futureActiveReservationsCount }}</h3>
+          <p>{{ 'doctor.suspensionImpactHelp' | t }}</p>
+          <p dir="ltr">{{ impact.earliestAppointmentUtc }} — {{ impact.latestAppointmentUtc }}</p>
+          <ul>@for (practice of impact.practices; track practice.doctorPracticeId) {
+            <li>{{ uiLanguage.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }} · {{ practice.futureActiveReservationsCount }}</li>
+          }</ul>
+        </section>
+      }
+    </app-doctor-decision-dialog>
     <app-confirmation-dialog
       dialogId="reactivate-doctor-dialog"
-      title="إعادة تفعيل الطبيب"
-      description="سيعود حساب الطبيب إلى حالة معتمد ويمكنه استخدام الصلاحيات التشغيلية التي يمنحها له النظام."
-      confirmLabel="تأكيد إعادة التفعيل"
+      [title]="'doctor.reactivateAccount' | t"
+      [description]="'doctor.reactivateInstructions' | t"
+      [confirmLabel]="'doctor.confirmReactivate' | t"
       [opened]="reactivateDialogOpen()"
       [busy]="isActionSubmitting()"
       [messages]="actionMessages()"
@@ -444,7 +455,7 @@
           <h2 id="media-dialog-title">{{ media.label }}</h2>
           <p>{{ media.filename }}</p>
         </div>
-        <button type="button" aria-label="إغلاق المعاينة" (click)="closeMedia()">
+        <button type="button" [attr.aria-label]="'common.closePreview' | t" (click)="closeMedia()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
         </button>
       </header>
@@ -455,15 +466,15 @@
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5m-5 4h5" />
           </svg>
-          <p>هذا الملف ليس صورة. افتحه في نافذة جديدة لعرضه باستخدام العارض المناسب.</p>
+          <p>{{ 'common.nonImagePreview' | t }}</p>
         }
       </div>
       <footer>
         <button class="btn btn-outline-secondary" type="button" (click)="closeMedia()">
-          إغلاق
+          {{ 'common.close' | t }}
         </button>
         <a class="btn btn-primary" [href]="media.url" target="_blank" rel="noopener noreferrer"
-          >فتح الملف</a
+          >{{ 'common.openFile' | t }}</a
         >
       </footer>
     }

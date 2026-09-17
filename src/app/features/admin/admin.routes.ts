@@ -11,7 +11,7 @@ export const ADMIN_ROUTES: Routes = [
       import('./family-request-details/family-request-details').then(
         (m) => m.FamilyRequestDetailsPage,
       ),
-    title: 'مراجعة طلب علاقة عائلية | وصلة',
+    title: 'routes.familyReview',
   },
   {
     path: 'family-relationship-requests',
@@ -19,7 +19,7 @@ export const ADMIN_ROUTES: Routes = [
     data: { permission: PERMISSIONS.familyRelationshipRequestsViewAll },
     loadComponent: () =>
       import('./family-requests-list/family-requests-list').then((m) => m.FamilyRequestsList),
-    title: 'طلبات العلاقات العائلية | وصلة',
+    title: 'routes.familyRequests',
   },
   {
     path: 'doctor-specialization-requests/:requestId',
@@ -29,7 +29,7 @@ export const ADMIN_ROUTES: Routes = [
       import('./specialization-request-details/specialization-request-details').then(
         (m) => m.SpecializationRequestDetailsPage,
       ),
-    title: 'مراجعة طلب التخصص | وصلة',
+    title: 'routes.specializationReview',
   },
   {
     path: 'doctor-specialization-requests',
@@ -39,7 +39,7 @@ export const ADMIN_ROUTES: Routes = [
       import('./specialization-requests-list/specialization-requests-list').then(
         (m) => m.SpecializationRequestsList,
       ),
-    title: 'طلبات تخصصات الأطباء | وصلة',
+    title: 'routes.specializationRequests',
   },
   {
     path: 'medical-specializations/create',
@@ -49,7 +49,7 @@ export const ADMIN_ROUTES: Routes = [
       import('./medical-specialization-details/medical-specialization-details').then(
         (m) => m.MedicalSpecializationDetails,
       ),
-    title: 'إضافة تخصص طبي | وصلة',
+    title: 'routes.specializationCreate',
   },
   {
     path: 'medical-specializations/:id',
@@ -59,7 +59,7 @@ export const ADMIN_ROUTES: Routes = [
       import('./medical-specialization-details/medical-specialization-details').then(
         (m) => m.MedicalSpecializationDetails,
       ),
-    title: 'تفاصيل التخصص الطبي | وصلة',
+    title: 'routes.specializationDetails',
   },
   {
     path: 'medical-specializations',
@@ -69,21 +69,21 @@ export const ADMIN_ROUTES: Routes = [
       import('./medical-specializations-list/medical-specializations-list').then(
         (m) => m.MedicalSpecializationsList,
       ),
-    title: 'التخصصات الطبية | وصلة',
+    title: 'routes.specializations',
   },
   {
     path: 'roles/:roleId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.rolesView },
     loadComponent: () => import('./role-details/role-details').then((m) => m.RoleDetails),
-    title: 'صلاحيات الدور | وصلة',
+    title: 'routes.rolePermissions',
   },
   {
     path: 'roles',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.rolesView },
     loadComponent: () => import('./roles-list/roles-list').then((m) => m.RolesList),
-    title: 'الأدوار والصلاحيات | وصلة',
+    title: 'routes.roles',
   },
   {
     path: 'superadmins/create',
@@ -91,7 +91,7 @@ export const ADMIN_ROUTES: Routes = [
     data: { permission: PERMISSIONS.superAdminsCreate },
     loadComponent: () =>
       import('./superadmin-create/superadmin-create').then((m) => m.SuperAdminCreate),
-    title: 'إنشاء مشرف | وصلة',
+    title: 'routes.createAdmin',
   },
   {
     path: 'superadmins/:superAdminId',
@@ -99,7 +99,7 @@ export const ADMIN_ROUTES: Routes = [
     data: { permission: PERMISSIONS.superAdminsViewDetails },
     loadComponent: () =>
       import('./superadmin-details/superadmin-details').then((m) => m.SuperAdminDetails),
-    title: 'تفاصيل المشرف | وصلة',
+    title: 'routes.adminDetails',
   },
   {
     path: 'superadmins',
@@ -107,21 +107,21 @@ export const ADMIN_ROUTES: Routes = [
     data: { permission: PERMISSIONS.superAdminsViewAll },
     loadComponent: () =>
       import('./superadmins-list/superadmins-list').then((m) => m.SuperAdminsList),
-    title: 'إدارة المشرفين | وصلة',
+    title: 'routes.admins',
   },
   {
     path: 'doctors/:doctorId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.doctorsViewDetails },
     loadComponent: () => import('./doctor-details/doctor-details').then((m) => m.DoctorDetails),
-    title: 'تفاصيل الطبيب | وصلة',
+    title: 'routes.doctorDetails',
   },
   {
     path: 'doctors',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.doctorsViewAll },
     loadComponent: () => import('./doctors-list/doctors-list').then((m) => m.DoctorsList),
-    title: 'إدارة الأطباء | وصلة',
+    title: 'routes.doctors',
   },
   { path: '', pathMatch: 'full', redirectTo: 'doctors' },
 ];

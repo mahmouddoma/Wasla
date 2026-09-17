@@ -4,7 +4,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="m9 18 6-6-6-6" />
       </svg>
-      <span>العودة إلى قائمة المشرفين</span>
+      <span>{{ 'admin.backToSuperadmins' | t }}</span>
     </a>
   }
 
@@ -17,22 +17,22 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2>تعذر تحميل بيانات المشرف</h2>
+      <h2>{{ 'ui.full.129' | t }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <div class="state-actions">
         @if (!isDrawer()) {
-          <a class="btn btn-outline-secondary" routerLink="/admin/superadmins">العودة للقائمة</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/superadmins">{{ 'common.backToList' | t }}</a>
         }
-        <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+        <button class="btn btn-primary" type="button" (click)="load()">{{ 'discovery.retry' | t }}</button>
       </div>
     </div>
   } @else if (isLoading() && !details()) {
     <div class="details-state loading-state" role="status">
       <div class="clinical-spinner" aria-hidden="true"></div>
-      <h2>جارٍ تحميل بيانات المشرف…</h2>
-      <p>يتم استرجاع السجلات الإدارية وبيانات الحساب من النظام.</p>
+      <h2>{{ 'ui.full.130' | t }}</h2>
+      <p>{{ 'ui.full.131' | t }}</p>
     </div>
   } @else if (details(); as admin) {
     <!-- Hero Profile Header Card -->
@@ -41,7 +41,7 @@
         <div class="hero-avatar" aria-hidden="true">
           <span>{{ getAdminInitial(admin) }}</span>
           @if (admin.isActive && !admin.isDeleted) {
-            <span class="active-badge-dot" title="نشط"></span>
+            <span class="active-badge-dot" [title]="'common.active' | t"></span>
           }
         </div>
 
@@ -54,29 +54,29 @@
               [class.pill-deleted]="admin.isDeleted"
             >
               <span class="dot-indicator"></span>
-              {{ admin.isDeleted ? 'سجل محذوف' : admin.isActive ? 'حساب نشط' : 'حساب معطل' }}
+              {{ admin.isDeleted ? uiLanguage.t('ui.expressions.111') : admin.isActive ? uiLanguage.t('ui.expressions.112') : uiLanguage.t('ui.expressions.113') }}
             </span>
 
             @if (admin.isRootSuperAdmin) {
-              <span class="root-badge" title="حساب Root SuperAdmin محمي">
+              <span class="root-badge" [title]="'ui.full.132' | t">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
-                <span>Master Admin</span>
+                <span>{{ 'admin.rootAdministrator' | t }}</span>
               </span>
             } @else {
-              <span class="role-badge">SuperAdmin</span>
+              <span class="role-badge">{{ 'admin.standardAdministrator' | t }}</span>
             }
 
             @if (isLoading()) {
               <span class="refreshing-tag" role="status">
                 <span class="mini-spin"></span>
-                جارٍ التحديث…
+                {{ 'common.updating' | t }}
               </span>
             }
           </div>
 
-          <h1 class="hero-name">{{ admin.nameAr }}</h1>
+          <h1 class="hero-name">{{ uiLanguage.isRtl() ? admin.nameAr : admin.nameEn || admin.nameAr }}</h1>
           @if (admin.nameEn) {
             <p class="hero-name-en" lang="en" dir="ltr">{{ admin.nameEn }}</p>
           }
@@ -97,7 +97,7 @@
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
-            <span>تعديل البيانات</span>
+            <span>{{ 'ui.full.133' | t }}</span>
           </button>
         }
         @if (canActivate()) {
@@ -110,7 +110,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span>تفعيل الحساب</span>
+            <span>{{ 'ui.full.134' | t }}</span>
           </button>
         }
         @if (canDeactivate()) {
@@ -124,7 +124,7 @@
               <circle cx="12" cy="12" r="10" />
               <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
             </svg>
-            <span>تعطيل الحساب</span>
+            <span>{{ 'ui.full.135' | t }}</span>
           </button>
         }
         @if (canDelete()) {
@@ -140,7 +140,7 @@
                 d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
               />
             </svg>
-            <span>حذف الحساب</span>
+            <span>{{ 'admin.deleteAccount' | t }}</span>
           </button>
         }
         @if (canRestore()) {
@@ -154,13 +154,13 @@
               <polyline points="1 4 1 10 7 10" />
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
             </svg>
-            <span>استعادة الحساب</span>
+            <span>{{ 'admin.restoreAccount' | t }}</span>
           </button>
         }
         <button
           class="btn btn-action-reload"
           type="button"
-          title="تحديث البيانات"
+          [title]="'common.refreshData' | t"
           [disabled]="isLoading()"
           (click)="load()"
         >
@@ -168,7 +168,7 @@
             <polyline points="23 4 23 10 17 10" />
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
           </svg>
-          <span>تحديث</span>
+          <span>{{ 'common.update' | t }}</span>
         </button>
       </div>
     </header>
@@ -182,8 +182,7 @@
           </svg>
         </div>
         <div class="notice-text">
-          <strong>حساب Root SuperAdmin محمي:</strong> هذا هو حساب المدير التنفيذي الرئيسي للنظام،
-          ولا تتوفر له عمليات التعديل أو التعطيل أو الحذف لضمان أمان النظام.
+          <strong>{{ 'ui.full.136' | t }}</strong> {{ 'ui.full.137' | t }}
         </div>
       </div>
     }
@@ -197,8 +196,7 @@
           </svg>
         </div>
         <div class="notice-text">
-          <strong>هذا الحساب محذوف مبدئيًا:</strong> السجل معطل حاليًا عن تسجيل الدخول. يمكنك
-          استخدام زر "استعادة الحساب" بالأعلى لإعادته للخدمة فورًا.
+          <strong>{{ 'ui.full.138' | t }}</strong> {{ 'ui.full.139' | t }}
         </div>
       </div>
     }
@@ -223,7 +221,7 @@
         </div>
         <div class="notice-text">
           @for (message of apiMessages(); track message) {
-            <p>{{ message }}</p>
+            <p>{{ message | t }}</p>
           }
         </div>
       </div>
@@ -240,8 +238,8 @@
             </svg>
           </div>
           <div>
-            <h2 class="section-title">تعديل بيانات المشرف</h2>
-            <p class="section-desc">تحديث الاسم وبيانات التواصل الخاصة بحساب المشرف</p>
+            <h2 class="section-title">{{ 'ui.full.140' | t }}</h2>
+            <p class="section-desc">{{ 'ui.full.141' | t }}</p>
           </div>
         </div>
 
@@ -266,15 +264,15 @@
             </svg>
           </div>
           <div>
-            <h2 class="section-title">بيانات الحساب والهوية</h2>
-            <p class="section-desc">المعلومات الشخصية وبيانات التواصل المسجلة في النظام</p>
+            <h2 class="section-title">{{ 'ui.full.142' | t }}</h2>
+            <p class="section-desc">{{ 'ui.full.143' | t }}</p>
           </div>
         </div>
 
         <div class="cards-grid">
           <!-- Card: Username -->
           <div class="detail-card">
-            <span class="card-label">اسم المستخدم</span>
+            <span class="card-label">{{ 'workspace.username' | t }}</span>
             <div class="card-val-row" lang="en" dir="ltr">
               <span class="symbol-tag">@</span>
               <strong class="val-text">{{ admin.userName }}</strong>
@@ -283,7 +281,7 @@
 
           <!-- Card: Email -->
           <div class="detail-card">
-            <span class="card-label">البريد الإلكتروني</span>
+            <span class="card-label">{{ 'workspace.email' | t }}</span>
             <div class="card-val-row" lang="en" dir="ltr">
               <a [href]="'mailto:' + admin.email" class="val-link" [title]="admin.email">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -299,7 +297,7 @@
 
           <!-- Card: Phone -->
           <div class="detail-card">
-            <span class="card-label">رقم الهاتف</span>
+            <span class="card-label">{{ 'workspace.phone' | t }}</span>
             <div class="card-val-row" dir="ltr">
               @if (admin.phoneNumber) {
                 <a [href]="'tel:' + admin.phoneNumber" class="val-link">
@@ -311,14 +309,14 @@
                   <span>{{ admin.phoneNumber }}</span>
                 </a>
               } @else {
-                <span class="empty-val">غير مسجل</span>
+                <span class="empty-val">{{ 'common.notRegistered' | t }}</span>
               }
             </div>
           </div>
 
           <!-- Card: Created On -->
           <div class="detail-card">
-            <span class="card-label">تاريخ الإنشاء</span>
+            <span class="card-label">{{ 'common.createdAt' | t }}</span>
             <div class="card-val-row">
               <svg viewBox="0 0 24 24" class="val-icon" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -332,24 +330,24 @@
 
           <!-- Card: Record Type -->
           <div class="detail-card">
-            <span class="card-label">نوع السجل</span>
+            <span class="card-label">{{ 'ui.full.144' | t }}</span>
             <div class="card-val-row">
               <span class="type-pill" [class.type-root]="admin.isRootSuperAdmin">
-                {{ admin.isRootSuperAdmin ? 'Root SuperAdmin (رئيسي)' : 'SuperAdmin (عادي)' }}
+                {{ admin.isRootSuperAdmin ? uiLanguage.t('ui.expressions.114') : uiLanguage.t('ui.expressions.115') }}
               </span>
             </div>
           </div>
 
           <!-- Card: Login Status -->
           <div class="detail-card">
-            <span class="card-label">حالة الدخول</span>
+            <span class="card-label">{{ 'ui.full.145' | t }}</span>
             <div class="card-val-row">
               <span
                 class="login-pill"
                 [class.allowed]="admin.isActive"
                 [class.forbidden]="!admin.isActive"
               >
-                {{ admin.isActive ? 'مسموح بتسجيل الدخول' : 'معطل ومحظور' }}
+                {{ admin.isActive ? uiLanguage.t('ui.expressions.116') : uiLanguage.t('ui.expressions.117') }}
               </span>
             </div>
           </div>
@@ -366,8 +364,8 @@
             </svg>
           </div>
           <div>
-            <h2 class="section-title">معرفات النظام والربط</h2>
-            <p class="section-desc">المعرفات الرقمية الفريدة للربط الداخلي مع منظومة الهوية</p>
+            <h2 class="section-title">{{ 'ui.full.146' | t }}</h2>
+            <p class="section-desc">{{ 'ui.full.147' | t }}</p>
           </div>
         </div>
 
@@ -375,40 +373,40 @@
           <!-- SuperAdmin ID -->
           <div class="guid-card-box">
             <div class="guid-meta">
-              <span class="guid-name">معرف المشرف (SuperAdmin ID)</span>
+              <span class="guid-name">{{ 'ui.full.148' | t }}</span>
               <code class="guid-code" dir="ltr">{{ admin.superAdminId }}</code>
             </div>
             <button
               type="button"
               class="btn-copy-guid"
               (click)="copyText(admin.superAdminId)"
-              title="نسخ المعرف"
+              [title]="'common.copyId' | t"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
-              <span>نسخ</span>
+              <span>{{ 'common.copy' | t }}</span>
             </button>
           </div>
 
           <!-- Application User ID -->
           <div class="guid-card-box">
             <div class="guid-meta">
-              <span class="guid-name">معرف حساب المستخدم (ApplicationUser ID)</span>
+              <span class="guid-name">{{ 'ui.full.149' | t }}</span>
               <code class="guid-code" dir="ltr">{{ admin.applicationUserId }}</code>
             </div>
             <button
               type="button"
               class="btn-copy-guid"
               (click)="copyText(admin.applicationUserId)"
-              title="نسخ المعرف"
+              [title]="'common.copyId' | t"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
-              <span>نسخ</span>
+              <span>{{ 'common.copy' | t }}</span>
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { LanguageService } from '../i18n/language.service';
 
 export type ToastKind = 'success' | 'error';
 
@@ -10,6 +11,7 @@ export interface ToastMessage {
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
+  private readonly language = inject(LanguageService);
   private readonly state = signal<ToastMessage[]>([]);
   private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
   private nextId = 0;
@@ -25,7 +27,7 @@ export class ToastService {
   }
 
   private show(kind: ToastKind, message: string, duration: number): void {
-    const normalizedMessage = message.trim();
+    const normalizedMessage = this.language.t(message).trim();
     if (!normalizedMessage) return;
 
     const duplicate = this.state().find(

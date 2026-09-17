@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -18,8 +20,8 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { FamiliesApi } from '../../../core/families/families-api';
-import { FamilyRequestDetails } from '../../../core/families/family.models';
+import { FamiliesApi } from '../../../domains/families';
+import { FamilyRequestDetails } from '../../../domains/families';
 import { openPrivateMedia } from '../../../core/media/private-media';
 import { ToastService } from '../../../core/notifications/toast.service';
 
@@ -27,12 +29,14 @@ type ReviewAction = 'modification' | 'approve' | 'reject';
 
 @Component({
   selector: 'app-family-request-details',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe],
   templateUrl: './family-request-details.html',
   styleUrl: './family-request-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FamilyRequestDetailsPage {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(FamiliesApi);
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly session = inject(AuthSession);
@@ -55,8 +59,8 @@ export class FamilyRequestDetailsPage {
   protected readonly action = signal<ReviewAction>('approve');
   protected readonly reviewModel = signal({ text: '' });
   protected readonly reviewForm = form(this.reviewModel, (field) => {
-    required(field.text, { message: 'اكتب الرسالة أو سبب الرفض.' });
-    maxLength(field.text, 2000, { message: 'الحد الأقصى 2000 حرف.' });
+    required(field.text, { message: 'review.reasonRequired' });
+    maxLength(field.text, 2000, { message: 'validation.max2000' });
   });
   protected readonly isPending = computed(() => this.details()?.status === 'Pending');
   protected readonly canRequestModification = this.session.hasPermission(
@@ -88,7 +92,7 @@ export class FamilyRequestDetailsPage {
   protected async load(reqId?: string): Promise<void> {
     const requestId = reqId || this.activeId();
     if (!requestId) {
-      this.messages.set(['معرّف الطلب غير موجود.']);
+      this.messages.set([this.uiLanguage.t('review.requestIdMissing')]);
       this.loading.set(false);
       return;
     }
@@ -140,9 +144,9 @@ export class FamilyRequestDetailsPage {
 
   protected actionTitle(): string {
     return {
-      modification: 'طلب تعديل على المستندات',
-      approve: 'اعتماد العلاقة العائلية',
-      reject: 'رفض الطلب نهائياً',
+      modification: this.uiLanguage.t('review.requestDocumentChanges'),
+      approve: this.uiLanguage.t('review.approveFamily'),
+      reject: this.uiLanguage.t('review.rejectFinally'),
     }[this.action()];
   }
 
@@ -174,10 +178,10 @@ export class FamilyRequestDetailsPage {
       this.closeAction();
       this.toast.success(
         action === 'approve'
-          ? 'تم اعتماد الطلب بنجاح.'
+          ? this.uiLanguage.t('review.approved')
           : action === 'modification'
-            ? 'تم إرسال طلب التعديل للأطراف المعنية بنجاح.'
-            : 'تم رفض الطلب نهائياً.',
+            ? this.uiLanguage.t('review.changesSent')
+            : this.uiLanguage.t('review.rejected'),
       );
       await this.load();
       this.reviewed.emit();
@@ -188,7 +192,7 @@ export class FamilyRequestDetailsPage {
         await this.load();
         this.messages.update((items) => [
           ...items,
-          'راجع أحدث حالة وRowVersion قبل اتخاذ قرار جديد؛ لم تتم إعادة المحاولة تلقائياً.',
+          this.uiLanguage.t('review.concurrencyHelp'),
         ]);
       }
     } finally {
@@ -211,21 +215,21 @@ export class FamilyRequestDetailsPage {
   protected getRoleLabel(role?: string | null): string {
     if (!role) return '—';
     const map: Record<string, string> = {
-      Father: 'أب',
-      Mother: 'أم',
-      Child: 'طفل',
-      Guardian: 'ولي أمر',
-      LegalGuardian: 'وصي قانوني',
-      Other: 'أخرى',
+      Father: this.uiLanguage.t('family.father'),
+      Mother: this.uiLanguage.t('family.mother'),
+      Child: this.uiLanguage.t('family.child'),
+      Guardian: this.uiLanguage.t('family.guardian'),
+      LegalGuardian: this.uiLanguage.t('family.legalGuardian'),
+      Other: this.uiLanguage.t('common.other'),
     };
     return map[role] || role;
   }
 
   protected getRequestTypeLabel(type?: string | null): string {
-    if (!type) return 'طلب علاقة';
+    if (!type) return this.uiLanguage.t('review.relationshipRequest');
     const map: Record<string, string> = {
-      CreateFamily: 'إنشاء عائلة',
-      AddFamilyMember: 'إضافة عضو',
+      CreateFamily: this.uiLanguage.t('family.create'),
+      AddFamilyMember: this.uiLanguage.t('family.addMember'),
     };
     return map[type] || type;
   }
@@ -233,21 +237,21 @@ export class FamilyRequestDetailsPage {
   protected getStatusLabel(status?: string | null): string {
     if (!status) return '—';
     const map: Record<string, string> = {
-      Pending: 'قيد المراجعة',
-      ModificationRequested: 'مطلوب تعديل',
-      Approved: 'معتمد',
-      Rejected: 'مرفوض',
+      Pending: this.uiLanguage.t('common.pendingReview'),
+      ModificationRequested: this.uiLanguage.t('common.modificationRequested'),
+      Approved: this.uiLanguage.t('common.approved'),
+      Rejected: this.uiLanguage.t('common.rejected'),
     };
     return map[status] || status;
   }
 
   protected getActionLabel(action: string): string {
     const map: Record<string, string> = {
-      Submitted: 'تم تقديم الطلب',
-      Resubmitted: 'تمت إعادة تقديم الطلب',
-      ModificationRequested: 'طلب تعديل من الإدارة',
-      Approved: 'تم الاعتماد والموافقة',
-      Rejected: 'تم رفض الطلب',
+      Submitted: this.uiLanguage.t('requests.submittedStatus'),
+      Resubmitted: this.uiLanguage.t('requests.resubmittedStatus'),
+      ModificationRequested: this.uiLanguage.t('requests.adminChangesStatus'),
+      Approved: this.uiLanguage.t('requests.approvedStatus'),
+      Rejected: this.uiLanguage.t('requests.rejectedStatus'),
     };
     return map[action] || action;
   }
@@ -258,7 +262,7 @@ export class FamilyRequestDetailsPage {
       const date = new Date(value);
       return Number.isNaN(date.getTime())
         ? value
-        : new Intl.DateTimeFormat('ar-EG', {
+        : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

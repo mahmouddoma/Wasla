@@ -1,0 +1,129 @@
+import { NgOptimizedImage } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { parseApiErrors } from '../../../../core/auth/api-errors';
+import { AuthApi } from '../../../../core/auth/auth-api';
+import { AuthSession } from '../../../../core/auth/auth-session';
+import { PERMISSIONS } from '../../../../core/auth/permissions';
+import { DoctorApi } from '../../../../domains/doctors';
+import { DoctorOnboardingStatus } from '../../../../domains/doctors';
+
+import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
+
+@Component({
+  selector: 'app-doctor-onboarding',
+  imports: [NgOptimizedImage, RouterLink, LanguageSwitcher, TranslatePipe],
+  templateUrl: './doctor-onboarding.html',
+  styleUrl: './doctor-onboarding.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DoctorOnboarding {
+  readonly langService = inject(LanguageService);
+  private readonly doctorApi = inject(DoctorApi);
+  private readonly authApi = inject(AuthApi);
+  private readonly session = inject(AuthSession);
+  private readonly router = inject(Router);
+
+  protected readonly status = signal<DoctorOnboardingStatus | null>(null);
+  protected readonly isLoading = signal(true);
+  protected readonly apiMessages = signal<string[]>([]);
+  protected readonly canManageProfile = computed(
+    () =>
+      this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
+      this.session.hasPermission(PERMISSIONS.doctorPracticeLocationManageOwn),
+  );
+  protected readonly approvedOn = computed(() => {
+    const value = this.status()?.approvedOnUtc;
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? ''
+      : new Intl.DateTimeFormat(this.langService.currentLang() === 'en' ? 'en' : 'ar-EG', {
+          dateStyle: 'long',
+        }).format(date);
+  });
+
+  protected readonly statusIllustration = computed(() => {
+    const currentStatus = this.status()?.approvalStatus;
+    switch (currentStatus) {
+      case 'Suspended':
+        return '/SVG-AVATAR/Medical prescription-pana.svg';
+      case 'Pending':
+        return '/SVG-AVATAR/Online Doctor-pana.svg';
+      case 'Approved':
+        return '/SVG-AVATAR/Doctors-cuate.svg';
+      case 'Rejected':
+        return '/SVG-AVATAR/Medicine-pana.svg';
+      default:
+        return '/SVG-AVATAR/Medical prescription-pana.svg';
+    }
+  });
+
+  protected readonly statusBadge = computed(() => {
+    const currentStatus = this.status()?.approvalStatus;
+    switch (currentStatus) {
+      case 'Suspended':
+        return {
+          label: this.langService.t('ui.full.284'),
+          tone: 'suspended',
+        };
+      case 'Pending':
+        return {
+          label: this.langService.t('ui.full.285'),
+          tone: 'pending',
+        };
+      case 'Approved':
+        return {
+          label: this.langService.t('ui.full.286'),
+          tone: 'approved',
+        };
+      case 'Rejected':
+        return {
+          label: this.langService.t('ui.full.287'),
+          tone: 'rejected',
+        };
+      default:
+        return {
+          label: this.langService.t('ui.full.288'),
+          tone: 'default',
+        };
+    }
+  });
+
+  constructor() {
+    void this.load();
+  }
+
+  protected async load(): Promise<void> {
+    if (this.isLoading() && this.status()) return;
+    this.isLoading.set(true);
+    this.apiMessages.set([]);
+    try {
+      const status = await firstValueFrom(this.doctorApi.onboardingStatus());
+      this.status.set(status);
+      if (status.approvalStatus === 'Approved') await this.openDoctorArea();
+    } catch (error) {
+      const parsed = parseApiErrors(error);
+      this.apiMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  protected logout(): void {
+    this.session.clear();
+    void this.router.navigate(['/login']);
+  }
+
+  private async openDoctorArea(): Promise<void> {
+    const user = await firstValueFrom(this.authApi.currentUser());
+    this.session.complete(user);
+    const destination = this.session.destinationFor(user);
+    if (destination !== '/doctor/onboarding') {
+      await this.router.navigateByUrl(destination, { replaceUrl: true });
+    }
+  }
+}

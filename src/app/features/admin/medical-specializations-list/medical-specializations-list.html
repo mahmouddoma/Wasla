@@ -1,9 +1,9 @@
 <section class="management-page">
   <app-page-header
-    heading="التخصصات الطبية"
-    description="إدارة دليل التخصصات المتاح للأطباء أثناء إعداد الحساب."
+    [heading]="'admin.navSpecializations' | t"
+    [description]="'roles.specializationDirectoryHelp' | t"
     icon="specializations"
-    actionLabel="إضافة تخصص"
+    [actionLabel]="'roles.addSpecialization' | t"
     [actionPermission]="canCreate"
     (actionClicked)="openCreateDrawer()"
   >
@@ -21,7 +21,7 @@
             role="searchbox"
             enterkeyhint="search"
             autocomplete="off"
-            placeholder="ابحث بالاسم العربي أو الإنجليزي…"
+            [placeholder]="'roles.searchNames' | t"
             [formField]="searchForm.search"
             (input)="scheduleSearch()"
           />
@@ -29,7 +29,7 @@
             <button
               type="button"
               class="btn-clear-search-integrated"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
               (click)="clearSearch()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -44,29 +44,29 @@
       <!-- Filters Deck -->
       <div class="header-filters-deck">
         <label class="filter-select-integrated">
-          <span class="filter-select-label">حالة الإتاحة:</span>
+          <span class="filter-select-label">{{ 'roles.availabilityPrefix' | t }}</span>
           <select [value]="activeFilter()" (change)="setFilter('active', $event)">
-            <option value="">الكل</option>
-            <option value="true">نشط</option>
-            <option value="false">غير نشط</option>
+            <option value="">{{ 'common.all' | t }}</option>
+            <option value="true">{{ 'common.active' | t }}</option>
+            <option value="false">{{ 'common.inactiveShort' | t }}</option>
           </select>
         </label>
 
         <label class="filter-select-integrated">
-          <span class="filter-select-label">حالة الحذف:</span>
+          <span class="filter-select-label">{{ 'roles.deletionPrefix' | t }}</span>
           <select [value]="deletedFilter()" (change)="setFilter('deleted', $event)">
-            <option value="false">غير محذوف</option>
-            <option value="true">محذوف</option>
-            <option value="">الكل</option>
+            <option value="false">{{ 'roles.notDeleted' | t }}</option>
+            <option value="true">{{ 'common.deleted' | t }}</option>
+            <option value="">{{ 'common.all' | t }}</option>
           </select>
         </label>
 
         @if (result(); as page) {
-          <div class="kpi-chip kpi-chip--total" title="إجمالي التخصصات">
+          <div class="kpi-chip kpi-chip--total" [title]="'roles.totalSpecializations' | t">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 12h4l2.2-6 4.2 12 2.1-6H21" />
             </svg>
-            <span class="chip-label">التخصصات</span>
+            <span class="chip-label">{{ 'specializations.title' | t }}</span>
             <span class="chip-count">{{ page.totalCount }}</span>
           </div>
         }
@@ -77,18 +77,18 @@
   @if (apiMessages().length) {
     <div class="state error" role="alert">
       <img class="state-illustration" src="/SVG-AVATAR/Medicine-cuate.svg" alt="" loading="lazy" decoding="async" />
-      <h2>تعذر تحميل التخصصات</h2>
+      <h2>{{ 'roles.specializationsLoadFailed' | t }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <button class="btn btn-outline-secondary mt-3" type="button" (click)="load()">
-        إعادة المحاولة
+        {{ 'discovery.retry' | t }}
       </button>
     </div>
   } @else if (isLoading() && !result()) {
     <div class="state" role="status">
       <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>جارٍ تحميل التخصصات…</h2>
+      <h2>{{ 'roles.loadingSpecializations' | t }}</h2>
     </div>
   } @else if (result(); as page) {
     @if (page.items.length) {
@@ -102,7 +102,7 @@
             tabindex="0"
             (keydown.enter)="openDrawer(item)"
             (keydown.space)="openDrawer(item); $event.preventDefault()"
-            title="انقر لفتح تفاصيل {{ item.nameAr }}"
+            title="انقر لفتح تفاصيل {{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}"
           >
             <!-- Card Top: Icon + Sort Order Badge -->
             <div class="spec-card__top">
@@ -115,15 +115,15 @@
                 </svg>
               </div>
 
-              <div class="spec-card__order-badge" title="ترتيب العرض">
-                <span class="order-label">الترتيب</span>
+              <div class="spec-card__order-badge" [title]="'common.displayOrder' | t">
+                <span class="order-label">{{ 'common.order' | t }}</span>
                 <span class="order-val">{{ item.sortOrder }}</span>
               </div>
             </div>
 
             <!-- Card Body: Arabic & English Names -->
             <div class="spec-card__body">
-              <h3 class="spec-card__title">{{ item.nameAr }}</h3>
+              <h3 class="spec-card__title">{{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}</h3>
               @if (item.nameEn) {
                 <span class="spec-card__subtitle" lang="en" dir="ltr">{{ item.nameEn }}</span>
               }
@@ -134,10 +134,10 @@
               <div class="spec-card__badges">
                 <span class="spec-status-pill" [class.is-active]="item.isActive">
                   <span class="status-dot"></span>
-                  {{ item.isActive ? 'نشط' : 'غير نشط' }}
+                  {{ item.isActive ? uiLanguage.t('common.active') : uiLanguage.t('common.inactiveShort') }}
                 </span>
                 @if (item.isDeleted) {
-                  <span class="spec-status-pill is-deleted"> محذوف </span>
+                  <span class="spec-status-pill is-deleted"> {{ 'common.deleted' | t }} </span>
                 }
               </div>
 
@@ -145,9 +145,9 @@
                 type="button"
                 class="spec-card__action-btn"
                 (click)="openDrawer(item); $event.stopPropagation()"
-                title="عرض وتعديل التفاصيل"
+                [title]="'roles.viewEditDetails' | t"
               >
-                <span>التفاصيل</span>
+                <span>{{ 'common.details' | t }}</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="m15 18-6-6 6-6" />
                 </svg>
@@ -157,30 +157,30 @@
         }
       </div>
 
-      <nav class="pagination-bar" aria-label="صفحات التخصصات">
+      <nav class="pagination-bar" [attr.aria-label]="'roles.specializationPages' | t">
         <button
           class="btn btn-outline-secondary"
           type="button"
           [disabled]="pageNumber() <= 1 || isLoading()"
           (click)="goToPage(pageNumber() - 1)"
         >
-          السابق
+          {{ 'discovery.previous' | t }}
         </button>
-        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
+        <span>{{ 'discovery.page' | t }} {{ pageNumber() }} {{ 'discovery.of' | t }} {{ totalPages() }}</span>
         <button
           class="btn btn-outline-secondary"
           type="button"
           [disabled]="pageNumber() >= totalPages() || isLoading()"
           (click)="goToPage(pageNumber() + 1)"
         >
-          التالي
+          {{ 'discovery.next' | t }}
         </button>
       </nav>
     } @else {
       <div class="state">
         <img class="state-illustration" src="/SVG-AVATAR/Medicine-cuate.svg" alt="" loading="lazy" decoding="async" />
-        <h2>لا توجد تخصصات مطابقة</h2>
-        <p>غيّر عوامل البحث أو الفلترة.</p>
+        <h2>{{ 'roles.noSpecializations' | t }}</h2>
+        <p>{{ 'roles.changeFilters' | t }}</p>
       </div>
     }
   }
@@ -188,11 +188,11 @@
   <!-- Specialization Details Side Drawer -->
   <app-side-drawer
     [opened]="isDrawerOpen()"
-    [title]="selectedItem()?.id ? 'تفاصيل ' + selectedItem()!.nameAr : 'إضافة تخصص جديد'"
+    [title]="selectedItem()?.id ? uiLanguage.t('ui.expressions.33') + ' ' + selectedItem()!.nameAr : uiLanguage.t('ui.expressions.34')"
     [description]="
       selectedItem()?.id
-        ? 'عرض وتعديل بيانات وحالة التخصص الطبي'
-        : 'إدخال بيانات تخصص طبي جديد في النظام'
+        ? uiLanguage.t('ui.expressions.35')
+        : uiLanguage.t('ui.expressions.36')
     "
     width="640px"
     (closed)="closeDrawer()"

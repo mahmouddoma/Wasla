@@ -1,5 +1,8 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import {
   FormField,
   email,
@@ -21,22 +24,26 @@ import {
   PagedResponse,
   PatientRelationshipType,
   PatientSearchItem,
-} from '../../../core/patients/patient.models';
-import { PatientsApi } from '../../../core/patients/patients-api';
-import { ReceptionPractice } from '../../../core/reception/reception-practice.models';
-import { ReceptionPracticesApi } from '../../../core/reception/reception-practices-api';
+} from '../../../domains/patients';
+import { PatientsApi } from '../../../domains/patients';
+import { ReceptionPracticeContext } from '../../../domains/reception-practices';
+
+import { PlatformFooter } from '../../../shared/components/platform-footer/platform-footer';
 
 @Component({
   selector: 'app-reception-patients',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe, PlatformFooter],
   templateUrl: './reception-patients.html',
-  styleUrl: '../../healthcare-workspace.css',
+  styleUrls: ['../../healthcare-workspace.css', './reception-patients.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReceptionPatients {
+  private readonly toast = inject(ToastService);
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(PatientsApi);
   private readonly authApi = inject(AuthApi);
-  private readonly practicesApi = inject(ReceptionPracticesApi);
+  private readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
@@ -53,24 +60,24 @@ export class ReceptionPatients {
     primaryContactLinkedPatientId: '',
   });
   protected readonly createForm = form(this.createModel, (field) => {
-    required(field.nameAr, { message: 'الاسم بالعربية مطلوب.' });
-    maxLength(field.nameAr, 200, { message: 'الحد الأقصى للاسم 200 حرف.' });
-    maxLength(field.nameEn, 200, { message: 'الحد الأقصى للاسم 200 حرف.' });
-    required(field.dateOfBirth, { message: 'تاريخ الميلاد مطلوب.' });
+    required(field.nameAr, { message: 'validation.nameArRequired' });
+    maxLength(field.nameAr, 200, { message: 'validation.nameLength' });
+    maxLength(field.nameEn, 200, { message: 'validation.nameLength' });
+    required(field.dateOfBirth, { message: 'ui.full.757' });
     validate(field.dateOfBirth, ({ value }) => {
       if (!value()) return undefined;
       return new Date(`${value()}T00:00:00`) > today()
-        ? { kind: 'futureDate', message: 'تاريخ الميلاد لا يمكن أن يكون في المستقبل.' }
+        ? { kind: 'futureDate', message: 'validation.birthFuture' }
         : undefined;
     });
-    required(field.gender, { message: 'النوع مطلوب.' });
-    email(field.email, { message: 'صيغة البريد الإلكتروني غير صحيحة.' });
+    required(field.gender, { message: 'ui.full.758' });
+    email(field.email, { message: 'validation.emailFormat' });
     required(field.primaryContactNameAr, {
-      message: 'اسم جهة الاتصال الأساسية مطلوب عند عدم وجود هاتف للمريض.',
+      message: 'ui.full.759',
       when: ({ valueOf }) => !valueOf(field.phoneNumber).trim(),
     });
     required(field.primaryContactPhoneNumber, {
-      message: 'هاتف جهة الاتصال الأساسية مطلوب عند عدم وجود هاتف للمريض.',
+      message: 'ui.full.760',
       when: ({ valueOf }) => !valueOf(field.phoneNumber).trim(),
     });
   });
@@ -92,14 +99,18 @@ export class ReceptionPatients {
   protected readonly isCreating = signal(false);
   protected readonly isSearching = signal(false);
   protected readonly pageNumber = signal(1);
-  protected readonly practices = signal<ReceptionPractice[]>([]);
-  protected readonly selectedPracticeId = signal('');
-  protected readonly isLoadingPractices = signal(false);
+  protected readonly practices = this.practiceContext.practices;
+  protected readonly selectedPracticeId = this.practiceContext.currentPracticeId;
   protected readonly canSearch = this.session.hasPermission(PERMISSIONS.patientsSearchBasic);
   protected readonly canRegister = this.session.hasPermission(PERMISSIONS.patientsRegister);
 
   constructor() {
-    if (this.canSearch) void this.loadPractices();
+    if (this.canSearch && !this.practices().length) void this.loadPractices();
+    effect(() => {
+      this.selectedPracticeId();
+      this.results.set(null);
+      this.selectedPatientId.set('');
+    });
   }
 
   protected async createPatient(event: Event): Promise<void> {
@@ -119,6 +130,7 @@ export class ReceptionPatients {
           }),
         );
         this.createdPatientId.set(response.patientId);
+        this.toast.success(this.uiLanguage.t('patient.registered'));
         this.selectedPatientId.set(response.patientId);
         this.createModel.set({
           nameAr: '',
@@ -144,25 +156,28 @@ export class ReceptionPatients {
 
   protected async search(pageNumber = 1, event?: Event): Promise<void> {
     event?.preventDefault();
-    if (!this.selectedPracticeId()) {
-      this.messages.set(['اختر العيادة التي تعمل عليها قبل البحث.']);
+    if (
+      !this.selectedPracticeId() ||
+      !this.selectedPracticeAllows(PERMISSIONS.patientsSearchBasic)
+    ) {
+      this.messages.set([this.uiLanguage.t('ui.full.761')]);
       return;
     }
     await submit(this.searchForm, async () => {
       if (this.isSearching()) return;
       this.isSearching.set(true);
       this.clearFeedback();
+      const practiceId = this.selectedPracticeId();
       try {
         this.pageNumber.set(pageNumber);
-        this.results.set(
-          await firstValueFrom(
-            this.api.search({
-              ...this.searchModel(),
-              doctorPracticeId: this.selectedPracticeId(),
-              pageNumber,
-            }),
-          ),
+        const result = await firstValueFrom(
+          this.api.search({
+            ...this.searchModel(),
+            doctorPracticeId: practiceId,
+            pageNumber,
+          }),
         );
+        if (this.selectedPracticeId() === practiceId) this.results.set(result);
       } catch (error) {
         this.messages.set(flattenErrors(error));
         if (error instanceof HttpErrorResponse && error.status === 403) {
@@ -182,16 +197,8 @@ export class ReceptionPatients {
     this.profileImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
   }
 
-  protected practiceChanged(event: Event): void {
-    this.selectedPracticeId.set((event.currentTarget as HTMLSelectElement).value);
-    this.results.set(null);
-    this.selectedPatientId.set('');
-    this.messages.set([]);
-  }
-
   protected selectedPracticeAllows(permission: string): boolean {
-    const practice = this.practices().find((item) => item.id === this.selectedPracticeId());
-    return practice?.permissionCodes.includes(permission) ?? false;
+    return this.practiceContext.allows(permission);
   }
 
   protected logout(): void {
@@ -209,24 +216,8 @@ export class ReceptionPatients {
   }
 
   private async loadPractices(): Promise<void> {
-    this.isLoadingPractices.set(true);
-    try {
-      const practices = (await firstValueFrom(this.practicesApi.list())).filter(
-        (practice) => practice.isActive,
-      );
-      this.practices.set(practices);
-      const current = this.selectedPracticeId();
-      if (!practices.some((practice) => practice.id === current)) {
-        this.selectedPracticeId.set(practices.length === 1 ? practices[0].id : '');
-        this.results.set(null);
-      }
-    } catch (error) {
-      this.practices.set([]);
-      this.selectedPracticeId.set('');
-      this.messages.set(flattenErrors(error));
-    } finally {
-      this.isLoadingPractices.set(false);
-    }
+    await this.practiceContext.refresh();
+    this.messages.set(this.practiceContext.messages());
   }
 
   private async refreshAccessContext(): Promise<void> {

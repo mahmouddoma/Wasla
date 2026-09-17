@@ -1,0 +1,181 @@
+<footer class="platform-footer" [dir]="langService.dir()" role="contentinfo">
+  <div class="footer-inner">
+    <!-- Top Main Row: Brand, Nav Links & Trust Badges -->
+    <div class="footer-main-row">
+      <!-- Brand & Mission Cluster -->
+      <div class="footer-brand-cluster">
+        <div class="brand-badge-wrap">
+          <img
+            class="footer-logo"
+            src="/images/wasla-mark.png"
+            width="36"
+            height="36"
+            [alt]="'common.appName' | t"
+          />
+          <div class="brand-text">
+            <div class="brand-headline">
+              <span class="brand-name">{{ 'common.appName' | t }}</span>
+              <span class="brand-sub-badge">{{ 'workspace.platformTagline' | t }}</span>
+            </div>
+            <p class="brand-tagline">{{ 'footer.tagline' | t }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Platform Navigation Links (Interactive Modals) -->
+      <nav class="footer-nav" [attr.aria-label]="'common.appName' | t">
+        <button
+          class="footer-nav-btn"
+          type="button"
+          (click)="openModal('privacy', $event)"
+        >
+          {{ 'footer.privacyPolicy' | t }}
+        </button>
+        <span class="footer-nav-divider" aria-hidden="true">•</span>
+        <button
+          class="footer-nav-btn"
+          type="button"
+          (click)="openModal('terms', $event)"
+        >
+          {{ 'footer.termsOfUse' | t }}
+        </button>
+        <span class="footer-nav-divider" aria-hidden="true">•</span>
+        <button
+          class="footer-nav-btn"
+          type="button"
+          (click)="openModal('help', $event)"
+        >
+          {{ 'footer.helpCenter' | t }}
+        </button>
+      </nav>
+
+      <!-- Trust Badges: Live Health Status & Security -->
+      <div class="footer-trust-cluster">
+        <!-- Live System Status -->
+        <div class="trust-pill status-pill" title="{{ 'footer.systemStatus' | t }}">
+          <span class="pulse-indicator" aria-hidden="true">
+            <span class="pulse-dot"></span>
+          </span>
+          <span class="trust-label">{{ 'footer.systemStatus' | t }}</span>
+        </div>
+
+        <!-- Security / Compliance Badge -->
+        <div class="trust-pill security-pill" title="{{ 'footer.securityBadge' | t }}">
+          <svg
+            class="trust-icon"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <polyline points="9 12 11 14 15 10" />
+          </svg>
+          <span class="trust-label">{{ 'footer.securityBadge' | t }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Secondary Bar: Copyright & Platform Version -->
+    <div class="footer-bottom-bar">
+      <div class="copyright-wrap">
+        <p class="copyright-text">
+          {{ 'footer.copyright' | t }}
+        </p>
+      </div>
+
+      <div class="meta-wrap">
+        <span class="compliance-badge">{{ 'footer.hipaaCompliant' | t }}</span>
+        <span class="meta-sep" aria-hidden="true">•</span>
+        <span class="version-label">{{ 'footer.version' | t }} {{ version }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Platform Information Modal Dialog -->
+  @if (activeModal()) {
+    <div
+      class="footer-modal-backdrop"
+      (click)="closeModal()"
+      role="presentation"
+    >
+      <div
+        class="footer-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-labelledby]="'footer-modal-title'"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-icon-badge" aria-hidden="true">
+              @switch (activeModal()) {
+                @case ('privacy') {
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                }
+                @case ('terms') {
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                }
+                @case ('help') {
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                }
+              }
+            </span>
+            <h3 id="footer-modal-title" class="modal-title">
+              @switch (activeModal()) {
+                @case ('privacy') { {{ 'footer.modalPrivacyTitle' | t }} }
+                @case ('terms') { {{ 'footer.modalTermsTitle' | t }} }
+                @case ('help') { {{ 'footer.modalHelpTitle' | t }} }
+              }
+            </h3>
+          </div>
+          <button
+            class="modal-close-btn"
+            type="button"
+            (click)="closeModal()"
+            title="{{ 'footer.closeModal' | t }}"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-text">
+            @switch (activeModal()) {
+              @case ('privacy') { {{ 'footer.modalPrivacyBody' | t }} }
+              @case ('terms') { {{ 'footer.modalTermsBody' | t }} }
+              @case ('help') { {{ 'footer.modalHelpBody' | t }} }
+            }
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-btn-confirm" type="button" (click)="closeModal()">
+            {{ 'footer.closeModal' | t }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</footer>

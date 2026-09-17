@@ -1,2 +1,26 @@
+@if (session.user()?.userType === 'Reception') {
+  <section class="reception-context" [dir]="language.dir()">
+    <label for="reception-current-practice">{{ 'ui.full.742' | t }}</label>
+    <select
+      id="reception-current-practice"
+      [value]="practiceContext.currentPracticeId()"
+      [disabled]="practiceContext.isLoading() || !practiceContext.practices().length"
+      (change)="selectPractice($event)"
+    >
+      <option value="">{{ 'receptions.choosePractice' | t }}</option>
+      @for (practice of practiceContext.practices(); track practice.id) {
+        <option [value]="practice.id">
+          {{
+            (language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr) ||
+              ('ui.full.762' | t)
+          }}
+        </option>
+      }
+    </select>
+    @for (message of practiceContext.messages(); track $index) {
+      <p role="alert">{{ message | t }}</p>
+    }
+  </section>
+}
 <router-outlet />
 <app-toast-container />

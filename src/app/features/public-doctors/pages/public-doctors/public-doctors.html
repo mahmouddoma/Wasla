@@ -1,0 +1,151 @@
+<main class="discovery-shell" [dir]="language.dir()">
+  <header class="discovery-header">
+    <a routerLink="/doctors" class="brand">{{ 'discovery.brand' | t }}</a
+    ><a routerLink="/login" class="login-link">{{ 'discovery.login' | t }}</a>
+  </header>
+  <section class="search-intro">
+    <h1>{{ 'discovery.title' | t }}</h1>
+    <p>{{ 'discovery.description' | t }}</p>
+  </section>
+  <form class="search-panel" (submit)="$event.preventDefault(); search()">
+    <label
+      ><span>{{ 'discovery.name' | t }}</span
+      ><input
+        type="search"
+        [placeholder]="'discovery.namePlaceholder' | t"
+        [value]="filters().searchText"
+        (input)="updateFilter('searchText', $event)"
+    /></label>
+    <label
+      ><span>{{ 'discovery.specialization' | t }}</span
+      ><select
+        [value]="filters().specializationId"
+        (change)="updateFilter('specializationId', $event)"
+      >
+        <option value="">{{ 'discovery.allSpecializations' | t }}</option>
+        @for (item of specializations(); track item.id) {
+          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+        }
+      </select></label
+    >
+    <label
+      ><span>{{ 'discovery.governorate' | t }}</span
+      ><select [value]="filters().governorateId" (change)="governorateChanged($event)">
+        <option value="">{{ 'discovery.allGovernorates' | t }}</option>
+        @for (item of governorates(); track item.id) {
+          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+        }
+      </select></label
+    >
+    <label
+      ><span>{{ 'discovery.city' | t }}</span
+      ><select [value]="filters().cityId" (change)="cityChanged($event)">
+        <option value="">{{ 'discovery.allCities' | t }}</option>
+        @for (item of cities(); track item.id) {
+          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+        }
+      </select></label
+    >
+    <label
+      ><span>{{ 'discovery.area' | t }}</span
+      ><select [value]="filters().areaId" (change)="updateFilter('areaId', $event)">
+        <option value="">{{ 'discovery.allAreas' | t }}</option>
+        @for (item of areas(); track item.id) {
+          <option [value]="item.id">{{ language.isRtl() ? item.nameAr : (item.nameEn || item.nameAr) }}</option>
+        }
+      </select></label
+    >
+    <button type="submit">{{ 'discovery.search' | t }}</button>
+  </form>
+  @if (messages().length) {
+    <div class="search-error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message | t }}</p>
+      }
+      <button type="button" (click)="search(result().pageNumber)">{{ 'discovery.retry' | t }}</button>
+    </div>
+  }
+  <section class="results" aria-live="polite">
+    <div class="results-heading">
+      <h2>{{ 'discovery.doctors' | t }}</h2>
+      <span>{{ result().totalCount }} {{ 'discovery.results' | t }}</span>
+    </div>
+    @if (isLoading()) {
+      <p class="empty-result">{{ 'discovery.loading' | t }}</p>
+    }
+    @for (doctor of result().items; track doctor.doctorId) {
+      <article class="doctor-result">
+        <div class="doctor-heading">
+          @if (doctor.profileImageUrl && !brokenImages().includes(doctor.doctorId)) {
+            <img
+              [src]="doctor.profileImageUrl"
+              [alt]="language.t('discovery.photo') + ' ' + (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr)"
+              (error)="imageFailed(doctor.doctorId)"
+            />
+          } @else {
+            <span class="image-placeholder" aria-hidden="true">{{ (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr).charAt(0) }}</span>
+          }
+          <div>
+            <h3>{{ language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</h3>
+            @if (doctor.nameEn) {
+              <p [dir]="language.isRtl() ? 'ltr' : 'rtl'">{{ language.isRtl() ? doctor.nameEn : doctor.nameAr }}</p>
+            }
+            <ul>
+              @for (specialization of doctor.specializations; track specialization.id) {
+                <li>{{ language.isRtl() ? specialization.nameAr : (specialization.nameEn || specialization.nameAr) }}</li>
+              }
+            </ul>
+          </div>
+          <a [routerLink]="['/doctors', doctor.doctorId]">{{ 'discovery.profile' | t }}</a>
+        </div>
+        <div class="practice-results">
+          @for (practice of doctor.practices; track practice.id) {
+            <section>
+              <div>
+                <strong>{{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}</strong
+                ><span>{{ language.isRtl() ? practice.governorate?.nameAr : practice.governorate?.nameEn || practice.governorate?.nameAr }} · {{ language.isRtl() ? practice.city?.nameAr : practice.city?.nameEn || practice.city?.nameAr }}</span>
+              </div>
+              <div>
+                <b>{{
+                  practice.publicSearchPrice === null
+                    ? language.t('discovery.priceUnavailable')
+                    : practice.publicSearchPrice + ' ' + language.t('discovery.currency')
+                }}</b
+                ><span>{{
+                  practice.nextAvailableSlotDate
+                    ? practice.nextAvailableSlotDate + ' · ' + practice.nextAvailableSlotTime
+                    : language.t('discovery.noAppointment')
+                }}</span
+                ><small [class.ready]="practice.isBookable && practice.onlineBookingEnabled !== false">{{
+                  practice.isBookable && practice.onlineBookingEnabled !== false ? language.t('discovery.bookable') : language.t('discovery.unbookable')
+                }}</small>
+              </div>
+            </section>
+          }
+        </div>
+</article>
+    } @empty {
+      @if (!isLoading()) {
+        <p class="empty-result">{{ 'discovery.empty' | t }}</p>
+      }
+    }
+    @if (result().totalCount) {
+      <nav class="pagination" [attr.aria-label]="'discovery.pages' | t">
+        <button
+          type="button"
+          [disabled]="result().pageNumber <= 1"
+          (click)="search(result().pageNumber - 1)"
+        >
+          {{ 'discovery.previous' | t }}</button
+        ><span>{{ 'discovery.page' | t }} {{ result().pageNumber }} {{ 'discovery.of' | t }} {{ totalPages() }}</span
+        ><button
+          type="button"
+          [disabled]="result().pageNumber >= totalPages()"
+          (click)="search(result().pageNumber + 1)"
+        >
+          {{ 'discovery.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+</main>

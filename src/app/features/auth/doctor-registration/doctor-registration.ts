@@ -1,3 +1,5 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import {
   FormField,
@@ -26,6 +28,9 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorRegistration {
+  private readonly toast = inject(ToastService);
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(AuthApi);
   private readonly router = inject(Router);
   protected readonly model = signal({
@@ -40,32 +45,32 @@ export class DoctorRegistration {
     gender: '' as Gender | '',
   });
   protected readonly registrationForm = form(this.model, (field) => {
-    required(field.userName, { message: 'أدخل اسم المستخدم.' });
-    maxLength(field.userName, 100, { message: 'الحد الأقصى 100 حرف.' });
-    required(field.email, { message: 'أدخل البريد الإلكتروني.' });
-    email(field.email, { message: 'أدخل بريدًا إلكترونيًا صالحًا.' });
-    maxLength(field.email, 200, { message: 'الحد الأقصى للبريد الإلكتروني 200 حرف.' });
-    required(field.phoneNumber, { message: 'أدخل رقم الهاتف.' });
-    maxLength(field.phoneNumber, 30, { message: 'الحد الأقصى لرقم الهاتف 30 حرفًا.' });
-    required(field.password, { message: 'أدخل كلمة المرور.' });
-    maxLength(field.password, 4096, { message: 'كلمة المرور أطول من الحد المسموح.' });
-    required(field.confirmPassword, { message: 'أكّد كلمة المرور.' });
-    maxLength(field.confirmPassword, 4096, { message: 'تأكيد كلمة المرور أطول من الحد المسموح.' });
+    required(field.userName, { message: 'validation.usernameRequired' });
+    maxLength(field.userName, 100, { message: 'validation.max100' });
+    required(field.email, { message: 'validation.emailRequired' });
+    email(field.email, { message: 'validation.emailValid' });
+    maxLength(field.email, 200, { message: 'validation.emailLength' });
+    required(field.phoneNumber, { message: 'validation.phoneRequired' });
+    maxLength(field.phoneNumber, 30, { message: 'validation.phoneLength' });
+    required(field.password, { message: 'validation.passwordRequired' });
+    maxLength(field.password, 4096, { message: 'validation.passwordLength' });
+    required(field.confirmPassword, { message: 'validation.confirmPasswordRequired' });
+    maxLength(field.confirmPassword, 4096, { message: 'changePassword.confirmTooLong' });
     validate(field.confirmPassword, ({ value, valueOf }) =>
       value() === valueOf(field.password)
         ? undefined
-        : { kind: 'passwordMismatch', message: 'تأكيد كلمة المرور غير مطابق.' },
+        : { kind: 'passwordMismatch', message: 'changePassword.mismatch' },
     );
-    required(field.nameAr, { message: 'أدخل الاسم بالعربية.' });
-    maxLength(field.nameAr, 200, { message: 'الحد الأقصى للاسم 200 حرف.' });
-    maxLength(field.nameEn, 200, { message: 'الحد الأقصى للاسم 200 حرف.' });
-    required(field.dateOfBirth, { message: 'أدخل تاريخ الميلاد.' });
+    required(field.nameAr, { message: 'validation.nameArEnter' });
+    maxLength(field.nameAr, 200, { message: 'validation.nameLength' });
+    maxLength(field.nameEn, 200, { message: 'validation.nameLength' });
+    required(field.dateOfBirth, { message: 'validation.birthDateRequired' });
     validate(field.dateOfBirth, ({ value }) =>
       isFutureDate(value())
-        ? { kind: 'futureDate', message: 'تاريخ الميلاد لا يمكن أن يكون في المستقبل.' }
+        ? { kind: 'futureDate', message: 'validation.birthFuture' }
         : undefined,
     );
-    required(field.gender, { message: 'اختر النوع.' });
+    required(field.gender, { message: 'validation.genderRequired' });
   });
   protected readonly profileImage = signal<File | undefined>(undefined);
   protected readonly personalIdFrontImage = signal<File | undefined>(undefined);
@@ -86,7 +91,7 @@ export class DoctorRegistration {
         !this.personalIdBackImage() ||
         !this.syndicateCardFrontImage()
       ) {
-        this.filesError.set('أرفق الوجهين الأمامي والخلفي للهوية والوجه الأمامي لبطاقة النقابة.');
+        this.filesError.set(this.uiLanguage.t('ui.full.241'));
         return;
       }
       if (this.isSubmitting()) return;
@@ -105,6 +110,7 @@ export class DoctorRegistration {
             syndicateCardBackImage: this.syndicateCardBackImage(),
           }),
         );
+        this.toast.success(this.uiLanguage.t('auth.doctorRegistered'));
         await this.router.navigate(['/login'], { queryParams: { status: 'doctor-registered' } });
       } catch (error) {
         const parsed = parseApiErrors(error);

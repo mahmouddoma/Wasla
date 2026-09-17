@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,12 +17,14 @@ export type DoctorDecisionAction = 'approve' | 'reject' | 'suspend';
 
 @Component({
   selector: 'app-doctor-decision-dialog',
-  imports: [FormField],
+  imports: [FormField, TranslatePipe],
   templateUrl: './doctor-decision-dialog.html',
   styleUrl: './doctor-decision-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorDecisionDialog {
+  protected readonly uiLanguage = inject(LanguageService);
+
   action = input<DoctorDecisionAction>('approve');
   opened = input(false);
   busy = input(false);
@@ -39,41 +43,41 @@ export class DoctorDecisionDialog {
           kind: 'required',
           message:
             this.action() === 'approve'
-              ? 'أدخل الرقم القومي للطبيب.'
+              ? 'doctor.nationalIdRequired'
               : this.action() === 'reject'
-                ? 'أدخل سبب الرفض.'
-                : 'أدخل سبب تعليق الحساب.',
+                ? 'doctor.rejectionRequired'
+                : 'doctor.suspensionRequired',
         };
       }
       const maximum = this.action() === 'approve' ? 100 : 1000;
       return value().length <= maximum
         ? undefined
-        : { kind: 'maxLength', message: `الحد الأقصى ${maximum} حرف.` };
+        : { kind: 'maxLength', message: 'validation.maximumCharacters' };
     });
   });
   protected readonly headingId = computed(() => `${this.action()}-doctor-dialog-title`);
   protected readonly title = computed(
     () =>
       ({
-        approve: 'اعتماد حساب الطبيب',
-        reject: 'رفض طلب الطبيب',
-        suspend: 'تعليق حساب الطبيب',
+        approve: this.uiLanguage.t('doctor.approveAccount'),
+        reject: this.uiLanguage.t('doctor.rejectApplication'),
+        suspend: this.uiLanguage.t('doctor.suspendAccount'),
       })[this.action()],
   );
   protected readonly description = computed(
     () =>
       ({
-        approve: 'أدخل الرقم القومي بعد التأكد من المستندات. سيصبح الحساب معتمدًا فور نجاح الطلب.',
-        reject: 'اكتب سببًا واضحًا؛ سيظهر هذا السبب للطبيب في شاشة متابعة طلبه.',
-        suspend: 'اكتب سبب التعليق بوضوح. لن يُعامل الطبيب كحساب تشغيلي معتمد بعد نجاح الطلب.',
+        approve: this.uiLanguage.t('doctor.approvalInstructions'),
+        reject: this.uiLanguage.t('doctor.rejectionInstructions'),
+        suspend: this.uiLanguage.t('doctor.suspensionInstructions'),
       })[this.action()],
   );
   protected readonly fieldLabel = computed(
-    () => ({ approve: 'الرقم القومي', reject: 'سبب الرفض', suspend: 'سبب التعليق' })[this.action()],
+    () => ({ approve: this.uiLanguage.t('common.nationalId'), reject: this.uiLanguage.t('common.rejectionReason'), suspend: this.uiLanguage.t('common.suspensionReason') })[this.action()],
   );
   protected readonly confirmLabel = computed(
     () =>
-      ({ approve: 'تأكيد الاعتماد', reject: 'تأكيد الرفض', suspend: 'تأكيد التعليق' })[
+      ({ approve: this.uiLanguage.t('doctor.confirmApproval'), reject: this.uiLanguage.t('doctor.confirmRejection'), suspend: this.uiLanguage.t('doctor.confirmSuspension') })[
         this.action()
       ],
   );

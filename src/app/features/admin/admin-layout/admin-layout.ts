@@ -23,6 +23,9 @@ export class AdminLayout {
       localStorage.getItem('wasla_sidebar_collapsed') === 'true',
   );
   protected readonly user = this.session.user;
+  protected readonly canViewReservations = computed(() =>
+    this.session.hasPermission('Reservations.ViewAdministrative'),
+  );
   protected readonly canViewDoctors = computed(() =>
     this.session.hasPermission(PERMISSIONS.doctorsViewAll),
   );
@@ -51,7 +54,9 @@ export class AdminLayout {
   });
   protected readonly userRole = computed(() => {
     const user = this.user();
-    return user?.roles.length ? user.roles.join('، ') : (user?.userType ?? '');
+    return user?.roles.length
+      ? user.roles.join(this.langService.t('ui.full.0'))
+      : (user?.userType ?? '');
   });
 
   protected logout(): void {

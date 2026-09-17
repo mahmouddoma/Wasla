@@ -1,0 +1,179 @@
+<main class="details-shell" [dir]="uiLanguage.dir()">
+  <header class="details-header">
+    <a routerLink="/doctors" class="brand">{{ 'common.appName' | t }}</a
+    ><a routerLink="/doctors">{{ 'booking.backToSearch' | t }}</a>
+  </header>
+  @if (messages().length) {
+    <div class="details-error" role="alert">
+      @for (message of messages(); track message) {
+        <p>{{ message | t }}</p>
+      }
+    </div>
+  }
+  @if (isLoading()) {
+    <p class="page-state">{{ 'booking.loadingDoctor' | t }}</p>
+  } @else if (notFound()) {
+    <div class="page-state">
+      <strong>{{ 'booking.doctorUnavailable' | t }}</strong><a routerLink="/doctors">{{ 'booking.findAnotherDoctor' | t }}</a>
+    </div>
+  } @else if (doctor(); as item) {
+    <section class="doctor-profile">
+      <div class="doctor-identity">
+        @if (item.profileImageUrl && !doctorImageBroken()) {
+          <img
+            [src]="item.profileImageUrl"
+            [alt]="uiLanguage.t('discovery.photo') + ' ' + (uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr)"
+            (error)="doctorImageBroken.set(true)"
+          />
+        } @else {
+          <span aria-hidden="true">{{ (uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr).charAt(0) }}</span>
+        }
+        <div>
+          <h1>{{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}</h1>
+          @if (item.nameEn) {
+            <p [dir]="uiLanguage.isRtl() ? 'ltr' : 'rtl'">{{ uiLanguage.isRtl() ? item.nameEn : item.nameAr }}</p>
+          }
+          <ul>
+            @for (specialization of item.specializations; track specialization.id) {
+              <li>{{ uiLanguage.isRtl() ? specialization.nameAr : specialization.nameEn || specialization.nameAr }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+      @if (item.bio) {
+        <p class="bio">{{ item.bio }}</p>
+      }
+      @if (item.qualifications.length) {
+        <div class="qualifications">
+          <h2>{{ 'doctor.qualifications' | t }}</h2>
+          <ul>
+            @for (qualification of item.qualifications; track qualification.id) {
+              <li>
+                <strong>{{ uiLanguage.isRtl() ? qualification.nameAr : qualification.nameEn || qualification.nameAr }}</strong>
+                @if (qualification.nameEn) {
+                  <span [dir]="uiLanguage.isRtl() ? 'ltr' : 'rtl'">{{ uiLanguage.isRtl() ? qualification.nameEn : qualification.nameAr }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+    <section class="practices">
+      <header>
+        <h2>{{ 'booking.practicesAndTimes' | t }}</h2>
+        <p>{{ 'booking.choosePracticeHelp' | t }}</p>
+      </header>
+      <div class="practice-list">
+        @for (practice of item.practices; track practice.id) {
+          <article [class.selected]="selectedPractice()?.id === practice.id">
+            @if (practice.logoUrl && !brokenLogos().includes(practice.id)) {
+              <img
+                [src]="practice.logoUrl"
+                [alt]="uiLanguage.t('booking.logo') + ' ' + (uiLanguage.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr)"
+                (error)="logoFailed(practice.id)"
+              />
+            } @else {
+              <span class="logo-placeholder" aria-hidden="true">{{
+                (uiLanguage.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr).charAt(0)
+              }}</span>
+            }
+            <div>
+              <h3>{{ uiLanguage.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}</h3>
+              @if (practice.governorate || practice.city || practice.area) { <p>
+                {{ uiLanguage.isRtl() ? practice.governorate?.nameAr : practice.governorate?.nameEn || practice.governorate?.nameAr }} · {{ uiLanguage.isRtl() ? practice.city?.nameAr : practice.city?.nameEn || practice.city?.nameAr }} ·
+                {{ uiLanguage.isRtl() ? practice.area?.nameAr : practice.area?.nameEn || practice.area?.nameAr }}
+              </p> }
+              <address>{{ practice.detailedAddress }}</address>
+              <b>{{
+                practice.publicSearchPrice === null
+                  ? uiLanguage.t('discovery.priceUnavailable')
+                  : practice.publicSearchPrice + ' ' + uiLanguage.t('discovery.currency')
+              }}</b>
+            </div>
+            <button
+              type="button"
+              [disabled]="!practice.isBookable || practice.onlineBookingEnabled === false"
+              [attr.aria-pressed]="selectedPractice()?.id === practice.id"
+              (click)="choosePractice(practice)"
+            >
+              {{ practice.isBookable ? uiLanguage.t('booking.choosePractice') : uiLanguage.t('discovery.unbookable') }}
+            </button>
+            @if (practice.bookingDisabledReason) { <p role="status">{{ practice.bookingDisabledReason | t }}</p> }
+</article>
+        }
+      </div>
+    </section>
+    @if (selectedPractice()) {
+      <section class="booking-flow">
+        <h2>{{ 'booking.chooseTime' | t }}</h2>
+        @if (bookingLoading()) {
+          <p>{{ 'booking.loadingAvailability' | t }}</p>
+        }
+        <div class="booking-step">
+          <h3>{{ 'booking.availableDays' | t }}</h3>
+          <div class="choice-grid">
+            @for (date of dates(); track date.date) {
+              <button
+                type="button"
+                [class.active]="selectedDate() === date.date"
+                [attr.aria-pressed]="selectedDate() === date.date"
+                [disabled]="!date.isAvailable"
+                dir="ltr"
+                (click)="chooseDate(date.date)"
+              >
+                {{ date.date }}
+              </button>
+            } @empty {
+              @if (!bookingLoading()) { <p>{{ 'booking.noDays' | t }}</p> }
+            }
+          </div>
+        </div>
+        @if (selectedDate()) {
+          <div class="booking-step">
+            <h3>{{ 'booking.availableTimes' | t }}</h3>
+            <div class="choice-grid">
+              @for (slot of slots(); track slot.date + slot.time) {
+                <button
+                  type="button"
+                  [class.active]="selectedTime() === slot.time"
+                  [attr.aria-pressed]="selectedTime() === slot.time"
+                  dir="ltr"
+                  (click)="chooseSlot(slot.time)"
+                >
+                  {{ slot.time }}
+                </button>
+              } @empty {
+                @if (!bookingLoading()) { <p>{{ 'booking.noTimes' | t }}</p> }
+              }
+            </div>
+          </div>
+        }
+        @if (options(); as booking) {
+          <div class="booking-step">
+            <h3>{{ 'booking.visitAndPrice' | t }}</h3>
+            <div class="booking-options">
+              @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
+              @if (visitType.type !== 'FollowUp') {
+                <section>
+                  <strong>{{ uiLanguage.isRtl() ? visitType.nameAr : visitType.nameEn || visitType.nameAr }}</strong>
+                  @for (segment of visitType.segments; track segment.segmentId) {
+                    <div>
+                      <span>{{ uiLanguage.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr }}{{ segment.isDefault ? ' ' + uiLanguage.t('booking.defaultSuffix') : '' }}</span
+                      ><b>{{ segment.price }} {{ 'discovery.currency' | t }}</b>
+                      <a class="btn btn-primary" [routerLink]="['/patient/reservations']" [queryParams]="{practiceId:selectedPractice()?.id,date:selectedDate(),time:selectedTime(),segmentId:segment.segmentId,visitTypeId:visitType.visitTypeId}">{{ 'reservations.book' | t }}</a>
+                    </div>
+                  }
+                </section>
+              }
+              } @empty {
+                <p>{{ 'booking.optionsUnavailable' | t }}</p>
+              }
+            </div>
+            <p class="review-note">{{ 'booking.priceReviewOnly' | t }}</p>
+          </div>
+        }
+      </section>
+    }
+  }
+</main>

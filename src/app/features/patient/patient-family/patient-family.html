@@ -1,4 +1,4 @@
-<main class="patient-family-shell" dir="rtl">
+<main class="patient-family-shell" [dir]="uiLanguage.dir()">
   <!-- Ambient backdrop lighting -->
   <div class="ambient-glow-mesh" aria-hidden="true">
     <div class="ambient-circle circle-teal"></div>
@@ -8,10 +8,10 @@
   <!-- Top Enterprise Floating Header -->
   <header class="profile-header">
     <div class="brand-cluster">
-      <img class="profile-logo" src="/images/wasla-mark.png" width="40" height="40" alt="وصلة" />
+      <img class="profile-logo" src="/images/wasla-mark.png" width="40" height="40" [alt]="'common.appName' | t" />
       <div class="brand-meta">
-        <span class="brand-name">وصلة</span>
-        <span class="brand-tagline">منظومة الرعاية الصحية الموحدة</span>
+        <span class="brand-name">{{ 'common.appName' | t }}</span>
+        <span class="brand-tagline">{{ 'common.platform' | t }}</span>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
           <circle cx="12" cy="7" r="4"></circle>
         </svg>
-        <span>الملف وجهات الاتصال</span>
+        <span>{{ 'ui.full.608' | t }}</span>
       </a>
       <a class="btn-head btn-head-nav" routerLink="/workspace/patient">
         <svg
@@ -44,13 +44,13 @@
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
-        <span>الرئيسية</span>
+        <span>{{ 'common.home' | t }}</span>
       </a>
       <button
         class="btn-head btn-head-logout"
         type="button"
         (click)="logout()"
-        title="تسجيل الخروج"
+        [title]="'common.logout' | t"
       >
         <svg
           viewBox="0 0 24 24"
@@ -65,7 +65,7 @@
           <polyline points="16 17 21 12 16 7" />
           <line x1="21" y1="12" x2="9" y2="12" />
         </svg>
-        <span>خروج</span>
+        <span>{{ 'common.exit' | t }}</span>
       </button>
     </div>
   </header>
@@ -87,35 +87,13 @@
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
-      <span>إدارة العائلة والقرابة الرسمية</span>
+      <span>{{ 'ui.full.609' | t }}</span>
     </div>
-    <h1>العائلة وطلبات إثبات العلاقة</h1>
-    <p>العضوية مرتبطة بملف Patient الموثق، ولا تعتمد على جهات الاتصال أو ملكية للحساب.</p>
+    <h1>{{ 'ui.full.610' | t }}</h1>
+    <p>{{ 'ui.full.611' | t }}</p>
   </div>
 
   <!-- Notice / Feedback Banners -->
-  @if (messages().length) {
-    <div class="notice-card notice-error" role="alert">
-      <svg
-        class="notice-icon"
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <div class="notice-content">
-        @for (message of messages(); track message) {
-          <p>{{ message }}</p>
-        }
-      </div>
-    </div>
-  }
   @if (successMessage()) {
     <div class="notice-card notice-success" role="status">
       <svg
@@ -140,7 +118,7 @@
   @if (loading()) {
     <div class="loading-panel">
       <div class="loading-ring"></div>
-      <span>جارٍ تحميل بيانات العائلة والطلبات…</span>
+      <span>{{ 'ui.full.612' | t }}</span>
     </div>
   }
 
@@ -154,8 +132,8 @@
             <div class="heading-title-row">
               <span class="step-pill">01</span>
               <div>
-                <h2>عائلتي</h2>
-                <p>لا يوجد مفهوم Family Owner، ولا تظهر أي بيانات طبية هنا.</p>
+                <h2>{{ 'ui.full.613' | t }}</h2>
+                <p>{{ 'ui.full.614' | t }}</p>
               </div>
             </div>
           </div>
@@ -165,7 +143,7 @@
               <div
                 class="family-id-chip"
                 (click)="copyFamilyId(item.familyId)"
-                title="انقر لنسخ معرّف العائلة"
+                [title]="'ui.full.615' | t"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -178,9 +156,9 @@
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
-                <span dir="ltr">Family ID: {{ item.familyId }}</span>
+                <span dir="ltr">{{ 'common.familyIdPrefix' | t }} {{ item.familyId }}</span>
                 @if (copiedId()) {
-                  <small style="color: var(--wasla-teal-700)">تم النسخ!</small>
+                  <small style="color: var(--wasla-teal-700)">{{ 'common.copied' | t }}</small>
                 }
               </div>
               <span class="status-badge" [ngClass]="getStatusClass(item.status)">{{
@@ -206,12 +184,12 @@
                       </svg>
                     </div>
                     <div>
-                      <h4 class="member-name">{{ member.nameAr }}</h4>
+                      <h4 class="member-name">{{ uiLanguage.isRtl() ? member.nameAr : member.nameEn || member.nameAr }}</h4>
                     </div>
                   </div>
                   <div class="member-badges">
                     <span class="role-pill">{{ getRoleLabel(member.role) }}</span>
-                    <span class="gender-pill">{{ member.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
+                    <span class="gender-pill">{{ member.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
                   </div>
                 </div>
               }
@@ -233,8 +211,8 @@
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
               </div>
-              <h4>لا توجد عائلة مسجلة</h4>
-              <p>لا توجد عائلة فعالة حالياً؛ يمكنك بدء طلب إنشاء عائلة عبر النموذج المجاور.</p>
+              <h4>{{ 'ui.full.616' | t }}</h4>
+              <p>{{ 'ui.full.617' | t }}</p>
             </div>
           }
         </section>
@@ -246,19 +224,19 @@
               <div class="heading-title-row">
                 <span class="step-pill">02</span>
                 <div>
-                  <h2>طلب علاقة عائلية</h2>
-                  <p>الإرسال مباشر إلى Pending ويتطلب دليلاً؛ الطفل لا يمكنه بدء الطلب.</p>
+                  <h2>{{ 'family.relationshipRequest' | t }}</h2>
+                  <p>{{ 'ui.full.618' | t }}</p>
                 </div>
               </div>
             </div>
 
             <form class="detail-form-grid" (submit)="submitRequest($event)" novalidate>
               <label class="input-field">
-                <span class="field-title">نوع الطلب</span>
+                <span class="field-title">{{ 'common.requestType' | t }}</span>
                 <div class="select-box">
                   <select [formField]="requestForm.requestType">
-                    <option value="CreateFamily">إنشاء عائلة</option>
-                    <option value="AddFamilyMember">إضافة عضو</option>
+                    <option value="CreateFamily">{{ 'family.create' | t }}</option>
+                    <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
                   </select>
                   <svg
                     class="select-arrow"
@@ -277,37 +255,37 @@
               @if (requestModel().requestType === 'AddFamilyMember') {
                 <label class="input-field">
                   <span class="field-title"
-                    >معرف العائلة Family ID <span class="required-star">*</span></span
+                    >{{ 'ui.full.619' | t }} <span class="required-star">*</span></span
                   >
                   <input
                     class="field-input ltr-text"
                     dir="ltr"
                     [formField]="requestForm.familyId"
-                    placeholder="Family UUID"
+                    [placeholder]="'family.idPlaceholder' | t"
                   />
                 </label>
               }
 
               <label class="input-field">
                 <span class="field-title"
-                  >Target Patient ID <span class="required-star">*</span></span
+                  >{{ 'family.targetPatientPlaceholder' | t }} <span class="required-star">*</span></span
                 >
                 <input
                   class="field-input ltr-text"
                   dir="ltr"
                   [formField]="requestForm.targetPatientId"
-                  placeholder="معرف المريض المستهدف"
+                  [placeholder]="'ui.full.620' | t"
                 />
               </label>
 
               <label class="input-field">
-                <span class="field-title">دور مقدم الطلب</span>
+                <span class="field-title">{{ 'family.requesterRole' | t }}</span>
                 <div class="select-box">
                   <select [formField]="requestForm.requesterClaimedRole">
-                    <option value="Father">أب</option>
-                    <option value="Mother">أم</option>
-                    <option value="Guardian">ولي أمر</option>
-                    <option value="LegalGuardian">وصي قانوني</option>
+                    <option value="Father">{{ 'family.father' | t }}</option>
+                    <option value="Mother">{{ 'family.mother' | t }}</option>
+                    <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                    <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
                   </select>
                   <svg
                     class="select-arrow"
@@ -324,14 +302,14 @@
               </label>
 
               <label class="input-field">
-                <span class="field-title">دور المريض المستهدف</span>
+                <span class="field-title">{{ 'family.targetRole' | t }}</span>
                 <div class="select-box">
                   <select [formField]="requestForm.targetClaimedRole">
-                    <option value="Father">أب</option>
-                    <option value="Mother">أم</option>
-                    <option value="Child">طفل</option>
-                    <option value="Guardian">ولي أمر</option>
-                    <option value="LegalGuardian">وصي قانوني</option>
+                    <option value="Father">{{ 'family.father' | t }}</option>
+                    <option value="Mother">{{ 'family.mother' | t }}</option>
+                    <option value="Child">{{ 'family.child' | t }}</option>
+                    <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                    <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
                   </select>
                   <svg
                     class="select-arrow"
@@ -349,20 +327,20 @@
 
               <label class="input-field full-width">
                 <span class="field-title"
-                  >أنواع المستندات <span class="required-star">*</span></span
+                  >{{ 'family.documentTypes' | t }} <span class="required-star">*</span></span
                 >
                 <input
                   class="field-input"
-                  placeholder="مثال: BirthCertificate, NationalId"
+                  [placeholder]="'family.documentTypesExample' | t"
                   [formField]="requestForm.documentTypes"
                 />
-                <span class="field-hint">افصل الأنواع بفاصلة وبنفس ترتيب الملفات المرفوعة.</span>
+                <span class="field-hint">{{ 'ui.full.621' | t }}</span>
               </label>
 
               <!-- Custom Multi-File Dropzone -->
               <div class="photo-upload-field full-width">
                 <span class="field-title"
-                  >مستندات الإثبات <span class="required-star">*</span></span
+                  >{{ 'ui.full.622' | t }} <span class="required-star">*</span></span
                 >
                 <input
                   #evidenceInput
@@ -378,20 +356,20 @@
                     <div class="selected-files-list">
                       <div class="selected-files-header">
                         <span class="files-count-tag"
-                          >تم اختيار {{ evidenceFiles().length }} ملفات</span
+                          >{{ 'ui.full.623' | t }} {{ evidenceFiles().length }} {{ 'ui.full.624' | t }}</span
                         >
                         <button
                           type="button"
                           class="btn-clear-files"
                           (click)="$event.stopPropagation(); clearEvidenceFiles(evidenceInput)"
                         >
-                          إلغاء التحديد
+                          {{ 'common.clearSelection' | t }}
                         </button>
                       </div>
                       @for (file of evidenceFiles(); track file.name) {
                         <div class="file-chip">
                           <span class="file-chip-name">{{ file.name }}</span>
-                          <span class="file-chip-size">{{ (file.size / 1024).toFixed(1) }} KB</span>
+                          <span class="file-chip-size">{{ (file.size / 1024).toFixed(1) }} {{ 'ui.full.680' | t }}</span>
                         </div>
                       }
                     </div>
@@ -412,8 +390,8 @@
                         </svg>
                       </div>
                       <div class="upload-text">
-                        <strong>انقر لاختيار مستندات الإثبات</strong>
-                        <small>يمكنك اختيار أكثر من ملف بصيغة PDF أو JPG أو JPEG أو PNG فقط.</small>
+                        <strong>{{ 'ui.full.625' | t }}</strong>
+                        <small>{{ 'ui.full.626' | t }}</small>
                       </div>
                     </div>
                   }
@@ -427,7 +405,7 @@
                 <button class="btn-primary-medical" type="submit" [disabled]="submitting()">
                   @if (submitting()) {
                     <span class="btn-spinner"></span>
-                    <span>جارٍ الإرسال…</span>
+                    <span>{{ 'ui.full.627' | t }}</span>
                   } @else {
                     <svg
                       viewBox="0 0 24 24"
@@ -440,7 +418,7 @@
                       <line x1="22" y1="2" x2="11" y2="13"></line>
                       <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                     </svg>
-                    <span>إرسال الطلب</span>
+                    <span>{{ 'ui.full.628' | t }}</span>
                   }
                 </button>
               </div>
@@ -456,24 +434,24 @@
             <div class="heading-title-row">
               <span class="step-pill">03</span>
               <div>
-                <h2>طلباتي</h2>
-                <p>Modification Requested حالة تحتاج إلى إجراء وتعديل وليست رفضاً نهائياً.</p>
+                <h2>{{ 'ui.full.629' | t }}</h2>
+                <p>{{ 'ui.full.630' | t }}</p>
               </div>
             </div>
           </div>
 
           <form class="filter-form-bar" (submit)="loadRequests(1, $event)">
             <label class="input-field">
-              <span class="field-title">الحالة</span>
+              <span class="field-title">{{ 'common.status' | t }}</span>
               <div class="select-box">
                 <select [formField]="filterForm.status">
-                  <option value="">الكل</option>
-                  <option value="Pending">قيد المراجعة (Pending)</option>
+                  <option value="">{{ 'common.all' | t }}</option>
+                  <option [value]="'family.pendingFilter' | t">{{ 'ui.full.631' | t }}</option>
                   <option value="ModificationRequested">
-                    مطلوب تعديل (Modification Requested)
+                    {{ 'ui.full.632' | t }}
                   </option>
-                  <option value="Approved">معتمد (Approved)</option>
-                  <option value="Rejected">مرفوض (Rejected)</option>
+                  <option [value]="'family.approvedFilter' | t">{{ 'ui.full.633' | t }}</option>
+                  <option [value]="'family.rejectedFilter' | t">{{ 'ui.full.634' | t }}</option>
                 </select>
                 <svg
                   class="select-arrow"
@@ -490,12 +468,12 @@
             </label>
 
             <label class="input-field">
-              <span class="field-title">النوع</span>
+              <span class="field-title">{{ 'register.gender' | t }}</span>
               <div class="select-box">
                 <select [formField]="filterForm.requestType">
-                  <option value="">الكل</option>
-                  <option value="CreateFamily">إنشاء عائلة</option>
-                  <option value="AddFamilyMember">إضافة عضو</option>
+                  <option value="">{{ 'common.all' | t }}</option>
+                  <option value="CreateFamily">{{ 'family.create' | t }}</option>
+                  <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
                 </select>
                 <svg
                   class="select-arrow"
@@ -511,7 +489,7 @@
               </div>
             </label>
 
-            <button class="btn-filter-apply" type="submit">تطبيق الفلترة</button>
+            <button class="btn-filter-apply" type="submit">{{ 'ui.full.635' | t }}</button>
           </form>
 
           @if (requests(); as page) {
@@ -537,7 +515,7 @@
                     <div>
                       <h4 class="req-target-name">{{ request.targetNameAr }}</h4>
                       <span class="req-meta-sub">
-                        {{ getRequestTypeLabel(request.requestType) }} · النسخة
+                        {{ getRequestTypeLabel(request.requestType) }} {{ 'ui.full.636' | t }}
                         {{ request.currentRevisionNumber }}
                       </span>
                     </div>
@@ -575,8 +553,8 @@
                       <line x1="8" y1="12" x2="16" y2="12"></line>
                     </svg>
                   </div>
-                  <h4>لا توجد طلبات مطابقة</h4>
-                  <p>لم يتم العثور على طلبات إثبات علاقة وفق معايير البحث المحددة.</p>
+                  <h4>{{ 'requests.noMatches' | t }}</h4>
+                  <p>{{ 'ui.full.637' | t }}</p>
                 </div>
               }
             </div>
@@ -588,16 +566,16 @@
                 [disabled]="pageNumber() <= 1"
                 (click)="loadRequests(pageNumber() - 1)"
               >
-                السابق
+                {{ 'discovery.previous' | t }}
               </button>
-              <span class="page-indicator">صفحة {{ page.pageNumber }}</span>
+              <span class="page-indicator">{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
               <button
                 class="pager-btn"
                 type="button"
                 [disabled]="page.items.length < page.pageSize"
                 (click)="loadRequests(pageNumber() + 1)"
               >
-                التالي
+                {{ 'discovery.next' | t }}
               </button>
             </nav>
           }
@@ -637,20 +615,20 @@
             <div class="req-hero-eyebrow">
               <span class="req-type-pill">{{ getRequestTypeLabel(request.requestType) }}</span>
               <span class="sep-dot">·</span>
-              <span class="req-rev-tag">النسخة رقم {{ request.currentRevisionNumber }}</span>
+              <span class="req-rev-tag">{{ 'ui.full.638' | t }} {{ request.currentRevisionNumber }}</span>
             </div>
             <h3 class="req-hero-name">
-              {{ request.targetNameAr || request.requesterNameAr || 'طلب عائلي' }}
+              {{ request.targetNameAr || request.requesterNameAr || uiLanguage.t('ui.expressions.206') }}
             </h3>
             <p class="req-hero-relation">
               <span
-                >مقدّم الطلب: <strong>{{ request.requesterNameAr || 'المريض' }}</strong> ({{
+                >{{ 'ui.full.639' | t }} <strong>{{ request.requesterNameAr || uiLanguage.t('ui.expressions.207') }}</strong> ({{
                   getRoleLabel(request.requesterClaimedRole)
                 }})</span
               >
               <span class="arrow-sep">←</span>
               <span
-                >الطرف المعني: <strong>{{ request.targetNameAr || '—' }}</strong> ({{
+                >{{ 'ui.full.640' | t }} <strong>{{ request.targetNameAr || '—' }}</strong> ({{
                   getRoleLabel(request.targetClaimedRole)
                 }})</span
               >
@@ -686,7 +664,7 @@
               </svg>
             </div>
             <div class="notice-text-content">
-              <h4 class="notice-title">التعديل المطلوب من إدارة النظام</h4>
+              <h4 class="notice-title">{{ 'ui.full.641' | t }}</h4>
               <p class="notice-desc">{{ request.modificationMessage }}</p>
             </div>
           </div>
@@ -709,7 +687,7 @@
               </svg>
             </div>
             <div class="notice-text-content">
-              <h4 class="notice-title">سبب رفض الطلب</h4>
+              <h4 class="notice-title">{{ 'ui.full.642' | t }}</h4>
               <p class="notice-desc">{{ request.rejectionReason }}</p>
             </div>
           </div>
@@ -731,18 +709,18 @@
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            بيانات ومعرّفات الطلب
+            {{ 'ui.full.643' | t }}
           </h4>
           <div class="info-metric-grid">
             <div class="info-metric-card">
-              <span class="metric-label">رقم الطلب (Request ID)</span>
+              <span class="metric-label">{{ 'ui.full.644' | t }}</span>
               <div class="metric-value-row">
                 <code dir="ltr">{{ request.requestId }}</code>
                 <button
                   type="button"
                   class="copy-tiny-btn"
                   (click)="copyText(request.requestId, 'reqId')"
-                  title="نسخ المعرف"
+                  [title]="'common.copyId' | t"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -756,7 +734,7 @@
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
                   @if (copiedText() === 'reqId') {
-                    <span class="copied-tooltip">تم النسخ!</span>
+                    <span class="copied-tooltip">{{ 'common.copied' | t }}</span>
                   }
                 </button>
               </div>
@@ -764,14 +742,14 @@
 
             @if (request.familyId) {
               <div class="info-metric-card">
-                <span class="metric-label">معرّف العائلة (Family ID)</span>
+                <span class="metric-label">{{ 'ui.full.645' | t }}</span>
                 <div class="metric-value-row">
                   <code dir="ltr">{{ request.familyId }}</code>
                   <button
                     type="button"
                     class="copy-tiny-btn"
                     (click)="copyText(request.familyId, 'famId')"
-                    title="نسخ المعرف"
+                    [title]="'common.copyId' | t"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -785,7 +763,7 @@
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                     @if (copiedText() === 'famId') {
-                      <span class="copied-tooltip">تم النسخ!</span>
+                      <span class="copied-tooltip">{{ 'common.copied' | t }}</span>
                     }
                   </button>
                 </div>
@@ -793,19 +771,19 @@
             }
 
             <div class="info-metric-card">
-              <span class="metric-label">تاريخ التقديم</span>
+              <span class="metric-label">{{ 'ui.full.646' | t }}</span>
               <span class="metric-text-val">{{ formatDate(request.submittedOnUtc) }}</span>
             </div>
 
             <div class="info-metric-card">
-              <span class="metric-label">معرّف المريض المعني</span>
+              <span class="metric-label">{{ 'ui.full.647' | t }}</span>
               <div class="metric-value-row">
                 <code dir="ltr">{{ request.targetPatientId }}</code>
                 <button
                   type="button"
                   class="copy-tiny-btn"
                   (click)="copyText(request.targetPatientId, 'tarId')"
-                  title="نسخ المعرف"
+                  [title]="'common.copyId' | t"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -819,7 +797,7 @@
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
                   @if (copiedText() === 'tarId') {
-                    <span class="copied-tooltip">تم النسخ!</span>
+                    <span class="copied-tooltip">{{ 'common.copied' | t }}</span>
                   }
                 </button>
               </div>
@@ -844,9 +822,9 @@
                 <line x1="16" y1="13" x2="8" y2="13"></line>
                 <line x1="16" y1="17" x2="8" y2="17"></line>
               </svg>
-              المستندات والأدلة حسب النسخة
+              {{ 'ui.full.648' | t }}
             </h4>
-            <span class="items-count-tag">{{ request.documents.length }} مستند</span>
+            <span class="items-count-tag">{{ request.documents.length }} {{ 'common.document' | t }}</span>
           </div>
 
           <div class="drawer-docs-list">
@@ -868,17 +846,17 @@
                 <div class="doc-card-meta">
                   <div class="doc-name-row">
                     <span class="doc-title-text">{{ document.fileName }}</span>
-                    <span class="doc-rev-badge">النسخة #{{ document.revisionNumber }}</span>
+                    <span class="doc-rev-badge">{{ 'common.revisionPrefix' | t }}{{ document.revisionNumber }}</span>
                   </div>
-                  <span class="doc-type-sub">{{ document.documentType }}</span>
+                  <span class="doc-type-sub">{{ uiLanguage.label('documentType', document.documentType) }}</span>
                 </div>
                 <button
                   type="button"
                   class="btn-view-doc"
                   (click)="openDocument(document.documentId)"
-                  title="عرض المستند"
+                  [title]="'ui.full.650' | t"
                 >
-                  <span>معاينة</span>
+                  <span>{{ 'ui.full.649' | t }}</span>
                   <svg
                     viewBox="0 0 24 24"
                     width="14"
@@ -895,7 +873,7 @@
               </div>
             } @empty {
               <div class="drawer-empty-box">
-                <p>لا توجد مستندات مرفقة بهذا الطلب.</p>
+                <p>{{ 'ui.full.651' | t }}</p>
               </div>
             }
           </div>
@@ -915,7 +893,7 @@
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
-            السجل غير القابل للتعديل (Audit Trail)
+            {{ 'ui.full.652' | t }}
           </h4>
 
           <div class="audit-trail-stream">
@@ -927,21 +905,21 @@
                 <div class="audit-payload">
                   <div class="audit-header-line">
                     <span class="audit-action-name">{{ getActionLabel(item.action) }}</span>
-                    <span class="audit-rev-chip">النسخة #{{ item.revisionNumber }}</span>
+                    <span class="audit-rev-chip">{{ 'common.revisionPrefix' | t }}{{ item.revisionNumber }}</span>
                     <time class="audit-timestamp" dir="ltr">{{
                       formatDate(item.occurredOnUtc)
                     }}</time>
                   </div>
                   @if (item.message) {
                     <div class="audit-bubble-msg">
-                      <p>{{ item.message }}</p>
+                      <p>{{ item.message | t }}</p>
                     </div>
                   }
                 </div>
               </div>
             } @empty {
               <div class="drawer-empty-box">
-                <p>لا يوجد سجل تدقيق مسجل بعد.</p>
+                <p>{{ 'ui.full.653' | t }}</p>
               </div>
             }
           </div>
@@ -964,14 +942,14 @@
                 </svg>
               </div>
               <div>
-                <h4>إعادة تقديم الطلب مع المستندات المعدلة</h4>
-                <p>سيتم الاحتفاظ بالنسخ السابقة تلقائياً في سجل التدقيق غير القابل للتعديل.</p>
+                <h4>{{ 'ui.full.654' | t }}</h4>
+                <p>{{ 'ui.full.655' | t }}</p>
               </div>
             </div>
 
             <div class="resubmit-fields-stack">
               <div class="input-field">
-                <span class="field-title">المستندات والأدلة الجديدة</span>
+                <span class="field-title">{{ 'ui.full.656' | t }}</span>
                 <input
                   #resubmitFileInput
                   type="file"
@@ -981,14 +959,14 @@
                   style="padding: 8px 12px; height: auto"
                   (change)="evidenceChanged($event, true)"
                 />
-                <span class="field-hint">اختر ملفات بصيغة PDF أو JPG أو JPEG أو PNG فقط.</span>
+                <span class="field-hint">{{ 'ui.full.657' | t }}</span>
               </div>
 
               <div class="input-field">
-                <span class="field-title">أنواع المستندات المقابلة (مفصولة بفاصلة)</span>
+                <span class="field-title">{{ 'ui.full.658' | t }}</span>
                 <input
                   class="field-input"
-                  placeholder="مثال: BirthCertificate, NationalId"
+                  [placeholder]="'family.documentTypesExample' | t"
                   [value]="resubmitDocumentTypes()"
                   (input)="resubmitTypesChanged($event)"
                 />
@@ -1003,7 +981,7 @@
               >
                 @if (submitting()) {
                   <span class="btn-spinner"></span>
-                  <span>جارٍ رفع المستندات وإعادة التقديم…</span>
+                  <span>{{ 'ui.full.659' | t }}</span>
                 } @else {
                   <svg
                     viewBox="0 0 24 24"
@@ -1016,7 +994,7 @@
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                   </svg>
-                  <span>إرسال التعديلات للاعتماد</span>
+                  <span>{{ 'ui.full.660' | t }}</span>
                 }
               </button>
             </div>
@@ -1025,4 +1003,7 @@
       </div>
     }
   </app-side-drawer>
+
+  <!-- Enterprise Platform Footer -->
+  <app-platform-footer />
 </main>

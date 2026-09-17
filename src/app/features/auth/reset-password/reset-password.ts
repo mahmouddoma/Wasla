@@ -1,3 +1,6 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormField, form, maxLength, required, submit, validate } from '@angular/forms/signals';
@@ -9,12 +12,15 @@ import { PasswordRecoverySession } from '../../../core/auth/password-recovery-se
 
 @Component({
   selector: 'app-reset-password',
-  imports: [FormField],
+  imports: [FormField, TranslatePipe],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ResetPassword {
+  private readonly toast = inject(ToastService);
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(AuthApi);
   private readonly recovery = inject(PasswordRecoverySession);
   private readonly router = inject(Router);
@@ -24,18 +30,18 @@ export class ResetPassword {
   protected readonly grant = this.recovery.grant;
   protected readonly model = signal({ newPassword: '', confirmPassword: '' });
   protected readonly passwordForm = form(this.model, (field) => {
-    required(field.newPassword, { message: 'أدخل كلمة المرور الجديدة.' });
+    required(field.newPassword, { message: 'changePassword.newRequired' });
     maxLength(field.newPassword, 4096, {
-      message: 'كلمة المرور الجديدة أطول من الحد المسموح.',
+      message: 'changePassword.newTooLong',
     });
-    required(field.confirmPassword, { message: 'أكّد كلمة المرور الجديدة.' });
+    required(field.confirmPassword, { message: 'changePassword.confirmRequired' });
     maxLength(field.confirmPassword, 4096, {
-      message: 'تأكيد كلمة المرور أطول من الحد المسموح.',
+      message: 'changePassword.confirmTooLong',
     });
     validate(field.confirmPassword, ({ value, valueOf }) =>
       value() === valueOf(field.newPassword)
         ? undefined
-        : { kind: 'passwordMismatch', message: 'تأكيد كلمة المرور غير مطابق.' },
+        : { kind: 'passwordMismatch', message: 'changePassword.mismatch' },
     );
   });
   protected readonly expiresAt = computed(() => {
@@ -44,7 +50,7 @@ export class ResetPassword {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? ''
-      : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
           hour: 'numeric',
           minute: '2-digit',
         }).format(date);
@@ -89,6 +95,7 @@ export class ResetPassword {
           }),
         );
         this.recovery.clear();
+        this.toast.success(this.uiLanguage.t('auth.passwordResetComplete'));
         await this.router.navigate(['/login'], {
           queryParams: { status: 'password-reset' },
           replaceUrl: true,

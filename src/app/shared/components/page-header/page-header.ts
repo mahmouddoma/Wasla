@@ -31,7 +31,7 @@ export class PageHeader {
   readonly actionDisabled = input(false);
   readonly actionLoading = input(false);
   readonly actionPermission = input(true);
-  readonly actionRouterLink = input<string | any[] | null>(null);
+  readonly actionRouterLink = input<string | readonly unknown[] | null>(null);
   readonly actionClicked = output<void>();
 
   protected readonly bgImages: readonly string[] = [

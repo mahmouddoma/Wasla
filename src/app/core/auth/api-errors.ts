@@ -11,7 +11,7 @@ export interface ParsedApiErrors {
 export function parseApiErrors(error: unknown): ParsedApiErrors {
   if (!(error instanceof HttpErrorResponse))
     return {
-      messages: ['تعذر إكمال الطلب. حاول مرة أخرى.'],
+      messages: ['common.requestFailed'],
       fields: {},
       codes: [],
       status: 0,
@@ -48,7 +48,7 @@ function isProblemDetails(value: unknown): value is ApiProblemDetails {
   return typeof value === 'object' && value !== null;
 }
 function connectionMessage(status: number): string {
-  if (status === 0) return 'تعذر الاتصال بالخدمة. تحقق من الشبكة ثم حاول مرة أخرى.';
-  if (status === 429) return 'تم إرسال محاولات كثيرة. انتظر قليلًا قبل المحاولة مرة أخرى.';
-  return 'تعذر إكمال الطلب. حاول مرة أخرى.';
+  if (status === 0) return 'errors.network';
+  if (status === 429) return 'errors.rateLimit';
+  return 'common.requestFailed';
 }

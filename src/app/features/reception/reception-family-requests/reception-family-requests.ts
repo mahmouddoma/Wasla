@@ -1,3 +1,6 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormField, form, max, maxLength, min, required, submit } from '@angular/forms/signals';
@@ -6,30 +9,33 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { FamiliesApi } from '../../../core/families/families-api';
+import { FamiliesApi } from '../../../domains/families';
 import {
   FamilyRequestDetails,
   FamilyRequestPage,
   FamilyRequestStatus,
   FamilyRequestType,
   FamilyRole,
-} from '../../../core/families/family.models';
+} from '../../../domains/families';
 import { openPrivateMedia } from '../../../core/media/private-media';
 import {
   EVIDENCE_FILE_ACCEPT,
   getEvidenceFileValidationError,
 } from '../../../core/validation/evidence-files';
-import { PatientSearchItem } from '../../../core/patients/patient.models';
-import { PatientPicker } from '../../../shared/patient-picker/patient-picker';
-
+import { PatientSearchItem } from '../../../domains/patients';
+import { PatientPicker } from '../components/patient-picker/patient-picker';
 @Component({
   selector: 'app-reception-family-requests',
-  imports: [FormField, RouterLink, PatientPicker],
+  imports: [FormField, RouterLink, PatientPicker, TranslatePipe],
   templateUrl: './reception-family-requests.html',
   styleUrls: ['../../healthcare-workspace.css', './reception-family-requests.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReceptionFamilyRequests {
+  private readonly toast = inject(ToastService);
+
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(FamiliesApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
@@ -47,10 +53,10 @@ export class ReceptionFamilyRequests {
   });
   protected readonly requestForm = form(this.requestModel, (field) => {
     required(field.familyId, {
-      message: 'Family ID مطلوب لإضافة عضو.',
+      message: 'family.idRequired',
       when: ({ valueOf }) => valueOf(field.requestType) === 'AddFamilyMember',
     });
-    required(field.documentTypes, { message: 'حدد نوعاً لكل مستند.' });
+    required(field.documentTypes, { message: 'ui.full.731' });
   });
   protected readonly filterModel = signal({
     search: '',
@@ -59,7 +65,7 @@ export class ReceptionFamilyRequests {
     pageSize: 20,
   });
   protected readonly filterForm = form(this.filterModel, (field) => {
-    maxLength(field.search, 200, { message: 'الحد الأقصى للبحث 200 حرف.' });
+    maxLength(field.search, 200, { message: 'validation.searchLength' });
     min(field.pageSize, 1);
     max(field.pageSize, 100);
   });
@@ -94,21 +100,21 @@ export class ReceptionFamilyRequests {
       const requester = this.requester();
       const target = this.target();
       if (!requester || !target) {
-        this.messages.set(['اختر مقدم الطلب والمريض المستهدف من نتائج البحث.']);
+        this.messages.set([this.uiLanguage.t('ui.full.732')]);
         return;
       }
       if (requester.patientId === target.patientId) {
-        this.messages.set(['مقدم الطلب والمريض المستهدف يجب أن يكونا ملفين مختلفين.']);
+        this.messages.set([this.uiLanguage.t('ui.full.733')]);
         return;
       }
       const documentTypes = splitTypes(this.requestModel().documentTypes);
-      const fileError = getEvidenceFileValidationError(this.evidenceFiles());
+      const fileError = getEvidenceFileValidationError(this.evidenceFiles(), this.uiLanguage.currentLang());
       if (fileError) {
         this.messages.set([fileError]);
         return;
       }
       if (!this.evidenceFiles().length || documentTypes.length !== this.evidenceFiles().length) {
-        this.messages.set(['أرفق دليلاً واحداً على الأقل وحدد نوعاً لكل ملف.']);
+        this.messages.set([this.uiLanguage.t('ui.full.734')]);
         return;
       }
       this.submitting.set(true);
@@ -124,7 +130,8 @@ export class ReceptionFamilyRequests {
           }),
         );
         this.selectedRequest.set(details);
-        this.successMessage.set('تم تقديم الطلب للمراجعة بحالة Pending؛ لم تتم الموافقة عليه.');
+        this.successMessage.set(this.uiLanguage.t('family.assistedSubmitted'));
+        this.toast.success(this.successMessage());
         await this.loadRequests(1);
       } catch (error) {
         this.messages.set(flattenErrors(error));
@@ -179,13 +186,13 @@ export class ReceptionFamilyRequests {
     const request = this.selectedRequest();
     if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
     const documentTypes = splitTypes(this.revisionTypes());
-    const fileError = getEvidenceFileValidationError(this.revisionFiles());
+    const fileError = getEvidenceFileValidationError(this.revisionFiles(), this.uiLanguage.currentLang());
     if (fileError) {
       this.messages.set([fileError]);
       return;
     }
     if (!this.revisionFiles().length || documentTypes.length !== this.revisionFiles().length) {
-      this.messages.set(['أرفق أدلة جديدة وحدد نوعاً لكل ملف.']);
+      this.messages.set([this.uiLanguage.t('ui.full.735')]);
       return;
     }
     this.submitting.set(true);
@@ -200,7 +207,8 @@ export class ReceptionFamilyRequests {
           }),
         ),
       );
-      this.successMessage.set('تم حفظ revision جديدة وإعادة الطلب إلى Pending.');
+      this.successMessage.set(this.uiLanguage.t('family.assistedResubmitted'));
+      this.toast.success(this.successMessage());
       await this.loadRequests(this.pageNumber());
     } catch (error) {
       this.messages.set(flattenErrors(error));
@@ -208,7 +216,7 @@ export class ReceptionFamilyRequests {
         await this.openRequest(request.requestId);
         this.messages.update((items) => [
           ...items,
-          'تم تحميل أحدث نسخة. راجعها قبل إعادة المحاولة.',
+          this.uiLanguage.t('ui.full.736'),
         ]);
       }
     } finally {
@@ -219,7 +227,7 @@ export class ReceptionFamilyRequests {
   protected filesChanged(event: Event, revision = false): void {
     const input = event.currentTarget as HTMLInputElement;
     const files = Array.from(input.files ?? []);
-    const fileError = getEvidenceFileValidationError(files);
+    const fileError = getEvidenceFileValidationError(files, this.uiLanguage.currentLang());
     this.resetFeedback();
     if (fileError) {
       input.value = '';

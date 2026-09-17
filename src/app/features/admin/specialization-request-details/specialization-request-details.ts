@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -17,26 +19,28 @@ import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { ToastService } from '../../../core/notifications/toast.service';
-import { DoctorSpecializationRequestsApi } from '../../../core/doctor-specialization-requests/doctor-specialization-requests-api';
-import { DoctorSpecializationRequestDetails } from '../../../core/doctor-specialization-requests/doctor-specialization-requests.models';
+import { DoctorSpecializationRequestsApi } from '../services/doctor-specialization-requests';
+import { DoctorSpecializationRequestDetails } from '../services/doctor-specialization-requests';
 import {
   DoctorSpecializationHistoryItem,
   DoctorSpecializationSelection,
   MedicalSpecializationOption,
-} from '../../../core/doctor-profile/doctor-profile.models';
-import { MedicalSpecializationsApi } from '../../../core/medical-specializations/medical-specializations-api';
-import { SpecializationSelector } from '../../../shared/specialization-selector/specialization-selector';
+} from '../../../domains/doctor-profile';
+import { MedicalSpecializationsApi } from '../services/medical-specializations';
+import { SpecializationSelector } from '../../../domains/doctor-profile';
 
 type ReviewAction = 'adjust' | 'modification' | 'approve' | 'reject';
 
 @Component({
   selector: 'app-specialization-request-details',
-  imports: [FormField, RouterLink, SpecializationSelector],
+  imports: [FormField, RouterLink, SpecializationSelector, TranslatePipe],
   templateUrl: './specialization-request-details.html',
   styleUrl: './specialization-request-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SpecializationRequestDetailsPage {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(DoctorSpecializationRequestsApi);
   private readonly catalogApi = inject(MedicalSpecializationsApi);
   private readonly session = inject(AuthSession);
@@ -57,8 +61,8 @@ export class SpecializationRequestDetailsPage {
   protected readonly action = signal<ReviewAction | null>(null);
   protected readonly textModel = signal({ text: '' });
   protected readonly textForm = form(this.textModel, (field) => {
-    required(field.text, { message: 'السبب أو الرسالة مطلوبة.' });
-    maxLength(field.text, 2000, { message: 'الحد الأقصى 2000 حرف.' });
+    required(field.text, { message: 'ui.full.96' });
+    maxLength(field.text, 2000, { message: 'validation.max2000' });
   });
   protected readonly isLoading = signal(true);
   protected readonly isSubmitting = signal(false);
@@ -100,7 +104,7 @@ export class SpecializationRequestDetailsPage {
   protected openAction(action: ReviewAction): void {
     if (!this.can(action)) return;
     if (action === 'approve') {
-      if (confirm('اعتماد أحدث مقترح واستبدال التخصصات الفعالة للطبيب؟')) void this.execute(action);
+      if (confirm(this.uiLanguage.t('ui.full.97'))) void this.execute(action);
       return;
     }
     this.textModel.set({ text: '' });
@@ -118,9 +122,9 @@ export class SpecializationRequestDetailsPage {
       const action = this.action();
       if (!action) return;
       const message = {
-        adjust: 'تأكيد إنشاء مراجعة جديدة للمقترح مع بقاء الطلب قيد المراجعة؟',
-        modification: 'تأكيد إرسال طلب التعديل إلى الطبيب؟',
-        reject: 'تأكيد رفض الطلب مع الحفاظ على التخصصات الفعالة الحالية؟',
+        adjust: this.uiLanguage.t('ui.full.98'),
+        modification: this.uiLanguage.t('ui.full.99'),
+        reject: this.uiLanguage.t('ui.full.100'),
         approve: '',
       }[action];
       if (message && !confirm(message)) return;
@@ -156,14 +160,14 @@ export class SpecializationRequestDetailsPage {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
   }
 
   protected doctorInitials(nameAr: string): string {
-    if (!nameAr) return 'ط';
+    if (!nameAr) return this.uiLanguage.t('common.doctorInitial');
     const clean = nameAr.replace(/^(دكتور|د\.|أ\.د|أستاذ دكتور)\s+/i, '').trim();
     const parts = clean.split(/\s+/);
-    if (!parts.length || !parts[0]) return 'ط';
+    if (!parts.length || !parts[0]) return this.uiLanguage.t('common.doctorInitial');
     if (parts.length === 1) return parts[0].slice(0, 2);
     return `${parts[0][0]}${parts[1][0]}`;
   }
@@ -176,7 +180,7 @@ export class SpecializationRequestDetailsPage {
       action === 'adjust' &&
       (!this.selected().length || this.selected().filter((x) => x.isPrimary).length !== 1)
     ) {
-      this.apiMessages.set(['اختر تخصصًا واحدًا على الأقل وحدد تخصصًا أساسيًا واحدًا فقط.']);
+      this.apiMessages.set([this.uiLanguage.t('doctor.specializationsInvalid')]);
       return;
     }
     this.isSubmitting.set(true);
@@ -192,18 +196,18 @@ export class SpecializationRequestDetailsPage {
             rowVersion,
           }),
         );
-        this.toast.success('تم إنشاء مراجعة جديدة لمقترح التخصصات بنجاح.');
+        this.toast.success(this.uiLanguage.t('ui.full.101'));
       } else if (action === 'modification') {
         await firstValueFrom(
           this.api.requestModification(targetId, { message: text, rowVersion }),
         );
-        this.toast.success('تم إرسال طلب التعديل إلى الطبيب بنجاح.');
+        this.toast.success(this.uiLanguage.t('ui.full.102'));
       } else if (action === 'approve') {
         await firstValueFrom(this.api.approve(targetId, { rowVersion }));
-        this.toast.success('تم اعتماد مقترح التخصصات وتحديث تخصصات الطبيب بنجاح.');
+        this.toast.success(this.uiLanguage.t('ui.full.103'));
       } else {
         await firstValueFrom(this.api.reject(targetId, { reason: text, rowVersion }));
-        this.toast.success('تم رفض طلب التخصص بنجاح.');
+        this.toast.success(this.uiLanguage.t('ui.full.104'));
       }
       this.action.set(null);
       await this.load(targetId);

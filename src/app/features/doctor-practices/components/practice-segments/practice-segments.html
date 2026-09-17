@@ -1,0 +1,559 @@
+<section class="pricing-dashboard" [dir]="uiLanguage.dir()">
+  <!-- Section Heading -->
+  <header class="pricing-heading">
+    <div>
+      <div class="heading-badge">
+        <span class="badge-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </span>
+        <span>{{ 'ui.full.428' | t }}</span>
+      </div>
+      <h2>{{ 'ui.full.429' | t }}</h2>
+      <p>
+        {{ 'ui.full.430' | t }}
+      </p>
+    </div>
+  </header>
+
+  <!-- Error / Message Alerts -->
+  @if (messages().length) {
+    <div class="pricing-alert error" role="alert">
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div>
+        @for (message of messages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- 2-Column Responsive Dashboard Grid -->
+  <div class="pricing-dashboard-grid">
+    <!-- ── COLUMN 1: Clinic Pricing Board (لائحة أسعار العيادة) ── -->
+    @if (canViewPricing() || canManagePricing()) {
+      <div class="board-column main-pricing-column">
+        <div class="board-card">
+          <!-- Column Header -->
+          <div class="card-head">
+            <div class="head-title">
+              <div class="title-with-pill">
+                <h3>{{ 'ui.full.431' | t }}</h3>
+                <span class="count-pill">{{ prices().length }} {{ 'ui.full.432' | t }}</span>
+              </div>
+              <p class="head-desc">{{ 'ui.full.433' | t }}</p>
+            </div>
+
+            @if (canManagePricing() && !isAddingPrice()) {
+              <button type="button" class="btn-action-primary" (click)="openAddPrice()">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>{{ 'ui.full.434' | t }}</span>
+              </button>
+            }
+          </div>
+
+          <!-- Add Price Inline Form -->
+          @if (canManagePricing() && isAddingPrice()) {
+            <div class="inline-editor-card">
+              <div class="editor-header">
+                <h4>{{ 'ui.full.435' | t }}</h4>
+                <span class="editor-note">{{ 'ui.full.436' | t }}</span>
+              </div>
+
+              <form class="editor-form-grid" (submit)="addPrice($event)" novalidate>
+                <label class="form-field">
+                  <span class="field-label">{{ 'ui.full.437' | t }}</span>
+                  <select class="field-select" [formField]="priceForm.segmentId">
+                    <option value="">{{ 'ui.full.438' | t }}</option>
+                    @for (segment of segments(); track segment.id) {
+                      <option [value]="segment.id">
+                        {{ uiLanguage.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr }} {{ segment.isDefault ? uiLanguage.t('ui.expressions.176') : '' }}
+                      </option>
+                    }
+                  </select>
+                </label>
+
+                <label class="form-field">
+                  <span class="field-label">{{ 'ui.full.439' | t }}</span>
+                  <select class="field-select" [formField]="priceForm.visitTypeId">
+                    <option value="">{{ 'ui.full.440' | t }}</option>
+                    @for (item of visitTypes(); track item.id) {
+                      <option [value]="item.id">{{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="form-field">
+                  <span class="field-label">{{ 'ui.full.441' | t }}</span>
+                  <div class="price-input-wrapper">
+                    <input
+                      type="number"
+                      [placeholder]="'ui.full.442' | t"
+                      class="field-input"
+                      [formField]="priceForm.price"
+                    />
+                    <span class="currency-tag">{{ 'discovery.currency' | t }}</span>
+                  </div>
+                </label>
+
+                <div class="editor-actions full-width">
+                  <button class="btn-save" type="submit" [disabled]="activeAction() === 'price'">
+                    {{ activeAction() === 'price' ? uiLanguage.t('common.saving') : uiLanguage.t('ui.expressions.177') }}
+                  </button>
+                  <button class="btn-cancel" type="button" (click)="closeAddPrice()">{{ 'common.cancel' | t }}</button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <!-- Visual Prices Grid -->
+          <div class="prices-visual-grid" aria-live="polite">
+            @for (item of prices(); track item.id) {
+              <article class="price-item-card">
+                <div class="price-item-top">
+                  <div class="service-badge">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span class="service-name">{{ visitTypeName(item.visitTypeId) }}</span>
+                  </div>
+
+                  <span class="category-pill">
+                    <span class="cat-dot"></span>
+                    {{ segmentName(item.segmentId) }}
+                  </span>
+                </div>
+
+                <div class="price-amount-display">
+                  <span class="price-number">{{ item.price }}</span>
+                  <span class="price-currency">{{ 'ui.full.443' | t }}</span>
+                </div>
+
+                @if (canManagePricing()) {
+                  <div class="price-item-actions">
+                    <button
+                      type="button"
+                      class="btn-price-edit"
+                      (click)="changePrice(item)"
+                      [title]="'ui.full.445' | t"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>{{ 'ui.full.444' | t }}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn-price-delete"
+                      (click)="deletePrice(item)"
+                      [title]="'ui.full.446' | t"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        ></path>
+                      </svg>
+                      <span>{{ 'common.delete' | t }}</span>
+                    </button>
+                  </div>
+                }
+              </article>
+            } @empty {
+              <div class="empty-state-box">
+                <div class="empty-state-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="32"
+                    height="32"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <h4>{{ 'ui.full.447' | t }}</h4>
+                <p>
+                  {{ 'ui.full.448' | t }}
+                </p>
+                @if (canManagePricing() && !isAddingPrice()) {
+                  <button type="button" class="btn-action-primary" (click)="openAddPrice()">
+                    {{ 'ui.full.449' | t }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ── COLUMN 2: Patient Categories & Services (الفئات والخدمات) ── -->
+    <div class="board-column side-management-column">
+      <!-- 1. Patient Categories Block -->
+      @if (canViewSegments() || canManageSegments()) {
+        <div class="board-card">
+          <div class="card-head">
+            <div class="head-title">
+              <div class="title-with-pill">
+                <h3>{{ 'ui.full.450' | t }}</h3>
+                <span class="count-pill">{{ segments().length }} {{ 'ui.full.451' | t }}</span>
+              </div>
+              <p class="head-desc">
+                {{ 'ui.full.452' | t }}
+              </p>
+            </div>
+
+            @if (canManageSegments() && !isAddingSegment()) {
+              <button type="button" class="btn-action-subtle" (click)="openAddSegment()">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>{{ 'ui.full.453' | t }}</span>
+              </button>
+            }
+          </div>
+
+          <!-- Add / Edit Segment Form -->
+          @if (canManageSegments() && isAddingSegment()) {
+            <div class="inline-editor-card">
+              <div class="editor-header">
+                <h4>{{ editingSegmentId() ? uiLanguage.t('ui.full.469') : uiLanguage.t('ui.expressions.178') }}</h4>
+              </div>
+
+              <form class="editor-form-grid compact" (submit)="saveSegment($event)" novalidate>
+                <label class="form-field full-width">
+                  <span class="field-label">{{ 'ui.full.454' | t }}</span>
+                  <input
+                    [placeholder]="'ui.full.455' | t"
+                    class="field-input"
+                    [formField]="segmentForm.nameAr"
+                  />
+                </label>
+
+                <label class="form-field full-width">
+                  <span class="field-label">{{ 'register.fullNameEn' | t }}</span>
+                  <input
+                    dir="ltr"
+                    [placeholder]="'practice.englishSegmentExample' | t"
+                    class="field-input"
+                    [formField]="segmentForm.nameEn"
+                  />
+                </label>
+
+                <label class="form-field">
+                  <span class="field-label">{{ 'ui.full.456' | t }}</span>
+                  <input type="number" class="field-input" [formField]="segmentForm.priority" />
+                  <small class="field-hint">{{ 'ui.full.457' | t }}</small>
+                </label>
+
+                <label class="form-field">
+                  <span class="field-label">{{ 'ui.full.458' | t }}</span>
+                  <input
+                    inputmode="numeric"
+                    [placeholder]="'ui.full.459' | t"
+                    class="field-input"
+                    [formField]="segmentForm.reservedDailyQuota"
+                  />
+                  <small class="field-hint">{{ 'ui.full.460' | t }}</small>
+                </label>
+
+                <label class="form-field full-width">
+                  <span class="field-label">{{ 'ui.full.461' | t }}</span>
+                  <input
+                    inputmode="numeric"
+                    [placeholder]="'ui.full.462' | t"
+                    class="field-input"
+                    [formField]="segmentForm.quotaReleaseBeforeMinutes"
+                  />
+                  <small class="field-hint">{{ 'ui.full.463' | t }}</small>
+                </label>
+
+                @if (editingSegmentId(); as id) {
+                  @if (!segments().find((segment) => segment.id === id)?.isDefault) {
+                    <label class="check-field full-width">
+                      <input type="checkbox" [formField]="segmentForm.isActive" />
+                      <span>{{ 'ui.full.464' | t }}</span>
+                    </label>
+                  } @else {
+                    <div class="info-callout full-width">
+                      <span>{{ 'ui.full.465' | t }}</span>
+                    </div>
+                  }
+                }
+
+                <div class="editor-actions full-width">
+                  <button class="btn-save" type="submit" [disabled]="activeAction() === 'segment'">
+                    {{
+                      activeAction() === 'segment'
+                        ? uiLanguage.t('common.saving')
+                        : editingSegmentId()
+                          ? uiLanguage.t('common.saveChanges')
+                          : uiLanguage.t('ui.expressions.179')
+                    }}
+                  </button>
+                  <button class="btn-cancel" type="button" (click)="cancelSegmentEdit()">
+                    {{ 'common.cancel' | t }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <!-- Categories List -->
+          <div class="categories-list">
+            @for (segment of segments(); track segment.id) {
+              <div class="category-card" [class.default-category]="segment.isDefault">
+                <div class="category-main">
+                  <div class="category-name-group">
+                    <strong class="cat-name">{{ uiLanguage.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr }}</strong>
+                    @if (segment.nameEn) {
+                      <span class="cat-en-name" dir="ltr">{{ segment.nameEn }}</span>
+                    }
+                  </div>
+
+                  <div class="category-badges">
+                    @if (segment.isDefault) {
+                      <span class="badge-tag default-tag">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="12"
+                          height="12"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                        >
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span>{{ 'ui.full.466' | t }}</span>
+                      </span>
+                    } @else {
+                      <span
+                        class="badge-tag"
+                        [class.active-tag]="segment.isActive"
+                        [class.inactive-tag]="!segment.isActive"
+                      >
+                        {{ segment.isActive ? uiLanguage.t('ui.expressions.12') : uiLanguage.t('ui.expressions.13') }}
+                      </span>
+                    }
+
+                    <span class="badge-tag priority-tag">{{ 'ui.full.467' | t }} {{ segment.priority }}</span>
+
+                    @if (segment.reservedDailyQuota !== null) {
+                      <span class="badge-tag quota-tag">
+                        {{ segment.reservedDailyQuota }} {{ 'ui.full.468' | t }}
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                @if (canManageSegments()) {
+                  <button
+                    type="button"
+                    class="btn-icon-edit"
+                    (click)="editSegment(segment)"
+                    [title]="'ui.full.469' | t"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="15"
+                      height="15"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>{{ 'common.edit' | t }}</span>
+                  </button>
+                }
+              </div>
+            } @empty {
+              <p class="empty-note">
+                {{ isLoading() ? uiLanguage.t('ui.expressions.180') : uiLanguage.t('ui.expressions.181') }}
+              </p>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- 2. Visit Types (خدمات الكشف) Block -->
+      @if (canViewPricing() || canManagePricing()) {
+        <div class="board-card">
+          <div class="card-head">
+            <div class="head-title">
+              <div class="title-with-pill">
+                <h3>{{ 'ui.full.470' | t }}</h3>
+                <span class="count-pill">{{ visitTypes().length }} {{ 'ui.full.471' | t }}</span>
+              </div>
+              <p class="head-desc">{{ 'ui.full.472' | t }}</p>
+            </div>
+          </div>
+
+          <!-- Edit Visit Type Form -->
+          @if (editingVisitTypeId()) {
+            <div class="inline-editor-card">
+              <div class="editor-header">
+                <h4>{{ 'ui.full.473' | t }}</h4>
+              </div>
+
+              <form class="editor-form-grid compact" (submit)="saveVisitType($event)" novalidate>
+                <label class="form-field full-width">
+                  <span class="field-label">{{ 'ui.full.474' | t }}</span>
+                  <input class="field-input" [formField]="visitTypeForm.nameAr" />
+                </label>
+
+                <label class="form-field full-width">
+                  <span class="field-label">{{ 'register.fullNameEn' | t }}</span>
+                  <input dir="ltr" class="field-input" [formField]="visitTypeForm.nameEn" />
+                </label>
+
+                <label class="check-field full-width">
+                  <input type="checkbox" [formField]="visitTypeForm.isActive" />
+                  <span>{{ 'ui.full.475' | t }}</span>
+                </label>
+
+                <div class="editor-actions full-width">
+                  <button class="btn-save" type="submit">{{ 'common.save' | t }}</button>
+                  <button class="btn-cancel" type="button" (click)="editingVisitTypeId.set(null)">
+                    {{ 'common.cancel' | t }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <!-- Visit Types List -->
+          <div class="visit-types-list">
+            @for (item of visitTypes(); track item.id) {
+              <div class="visit-type-card">
+                <div class="visit-type-info">
+                  <div class="service-icon-box">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <strong class="service-title">{{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}</strong>
+                    <div class="service-meta">
+                      <span class="service-type-code" dir="ltr">{{ item.type }}</span>
+                      @if (item.nameEn) {
+                        <span class="service-type-en" dir="ltr">· {{ item.nameEn }}</span>
+                      }
+                      <span
+                        class="status-dot-text"
+                        [class.active-text]="item.isActive"
+                        [class.inactive-text]="!item.isActive"
+                      >
+                        · {{ item.isActive ? uiLanguage.t('common.available') : uiLanguage.t('ui.expressions.13') }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                @if (canManagePricing()) {
+                  <button
+                    type="button"
+                    class="btn-icon-edit"
+                    (click)="editVisitType(item)"
+                    [title]="'ui.full.476' | t"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="15"
+                      height="15"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>{{ 'common.edit' | t }}</span>
+                  </button>
+                }
+              </div>
+            } @empty {
+              <p class="empty-note">{{ 'ui.full.477' | t }}</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

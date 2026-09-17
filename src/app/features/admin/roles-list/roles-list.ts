@@ -1,20 +1,24 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
-import { SecurityGovernanceApi } from '../../../core/security-governance/security-governance-api';
-import { SecurityRole } from '../../../core/security-governance/security-governance.models';
+import { SecurityGovernanceApi } from '../services/security-governance/security-governance-api';
+import { SecurityRole } from '../services/security-governance/security-governance.models';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { RoleDetails } from '../role-details/role-details';
 
 @Component({
   selector: 'app-roles-list',
-  imports: [PageHeader, SideDrawer, RoleDetails],
+  imports: [PageHeader, SideDrawer, RoleDetails, TranslatePipe],
   templateUrl: './roles-list.html',
   styleUrls: ['../management-list.css', './roles-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RolesList {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(SecurityGovernanceApi);
   protected readonly roles = signal<SecurityRole[] | null>(null);
   protected readonly searchText = signal('');

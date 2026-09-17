@@ -1,0 +1,255 @@
+<main class="workspace" [attr.dir]="language.dir()">
+  <header class="page-header">
+    <div>
+      <a [routerLink]="back()">{{ 'reservations.workspace' | t }}</a>
+      <h1>{{ 'reservations.title' | t }}</h1>
+      <p>{{ 'reservations.subtitle' | t }}</p>
+    </div>
+    <div class="actions">
+      <button type="button" (click)="language.toggleLanguage()">
+        {{ 'reservations.language' | t }}</button
+      ><button type="button" (click)="store.loadList()" [disabled]="store.loading()">
+        {{ 'reservations.refresh' | t }}
+      </button>
+      @if (store.canCreate() && store.practiceId()) {
+        <button class="primary" (click)="store.openEditor('create')">
+          {{ 'reservations.create' | t }}
+        </button>
+      }
+    </div>
+  </header>
+  @if (store.actor() === 'Doctor') {
+    <label class="practice-picker"
+      >{{ 'reservations.practice' | t
+      }}<select [value]="store.practiceId()" (change)="practice($event)" [disabled]="store.busy()">
+        <option value="">{{ 'reservations.choose' | t }}</option>
+        @for (p of store.practices(); track p.id) {
+          <option [value]="p.id">{{ label(p) }}</option>
+        }
+      </select></label
+    >
+  }
+  @if (store.actor() === 'Patient' && !store.practiceId()) {
+    <a routerLink="/doctors">{{ 'reservations.findDoctor' | t }}</a>
+  }
+  @if (store.canView()) {
+    <section class="filters" [attr.aria-label]="'reservations.filters' | t">
+      @if (store.actor() === 'Patient') {
+        <label
+          >{{ 'reservations.view' | t
+          }}<select (change)="setFilter('view', $event)">
+            @for (v of ['Upcoming', 'History', 'All']; track v) {
+              <option [value]="v">{{ 'reservations.' + v | t }}</option>
+            }
+          </select></label
+        ><label
+          >{{ 'reservations.patient' | t
+          }}<select (change)="setFilter('patientId', $event)">
+            <option value="">{{ 'reservations.All' | t }}</option>
+            @for (p of viewPatients(); track p[0]) {
+              <option [value]="p[0]">{{ label(p[1]) }}</option>
+            }
+          </select></label
+        >
+      } @else {
+        <label
+          >{{ 'reservations.search' | t
+          }}<input type="search" (change)="setFilter('search', $event)"
+        /></label>
+      }
+      <label
+        >{{ 'reservations.status' | t
+        }}<select (change)="setFilter('status', $event)">
+          <option value="">{{ 'reservations.All' | t }}</option>
+          @for (s of store.filters()?.statuses || store.metadata()?.statuses || []; track s.code) {
+            <option [value]="s.code">{{ label(s) }}</option>
+          }
+        </select></label
+      >
+      <label
+        >{{ 'reservations.from' | t
+        }}<input type="date" dir="ltr" (change)="setFilter('fromDate', $event)" /></label
+      ><label
+        >{{ 'reservations.to' | t
+        }}<input type="date" dir="ltr" (change)="setFilter('toDate', $event)"
+      /></label>
+      @if (store.actor() !== 'Patient') {
+        <label
+          >{{ 'reservations.source' | t
+          }}<select (change)="setFilter('bookingSource', $event)">
+            <option value="">{{ 'reservations.All' | t }}</option>
+            @for (
+              s of store.filters()?.bookingSources || store.metadata()?.bookingSources || [];
+              track s.code
+            ) {
+              <option [value]="s.code">{{ label(s) }}</option>
+            }
+          </select></label
+        >
+      }
+      @if (store.scoped()) {
+        <label
+          >{{ 'reservations.segment' | t
+          }}<select (change)="setFilter('segmentId', $event)">
+            <option value="">{{ 'reservations.All' | t }}</option>
+            @for (s of store.filters()?.segments || []; track s.id) {
+              <option [value]="s.id">{{ label(s) }}</option>
+            }
+          </select></label
+        ><label
+          >{{ 'reservations.late' | t
+          }}<select (change)="setFilter('isLate', $event)">
+            <option value="">{{ 'reservations.All' | t }}</option>
+            <option value="true">{{ 'reservations.lateOnly' | t }}</option>
+            <option value="false">{{ 'reservations.onTime' | t }}</option>
+          </select></label
+        >
+      }
+      @if (store.actor() === 'Admin') {
+        <label
+          >{{ 'reservations.doctorId' | t
+          }}<input dir="ltr" (change)="setFilter('doctorId', $event)" /></label
+        ><label
+          >{{ 'reservations.practiceId' | t
+          }}<input dir="ltr" (change)="setFilter('practiceId', $event)"
+        /></label>
+      }
+    </section>
+  }
+  @if (store.loading()) {
+    <p role="status">{{ 'reservations.loading' | t }}</p>
+  } @else if (store.canView()) {
+    @if (summary().length) {
+      <dl class="summary">
+        @for (item of summary(); track item[0]) {
+          <div>
+            <dt>{{ status(item[0]) }}</dt>
+            <dd>{{ item[1] }}</dd>
+          </div>
+        }
+      </dl>
+    }
+    <div class="table-scroll">
+      <table>
+        <caption>
+          {{
+            'reservations.title' | t
+          }}
+          ·
+          {{
+            store.page().totalCount
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th>{{ 'reservations.reference' | t }}</th>
+            <th>{{ 'reservations.patient' | t }}</th>
+            <th>{{ 'reservations.practice' | t }}</th>
+            <th>{{ 'reservations.appointment' | t }}</th>
+            <th>{{ 'reservations.status' | t }}</th>
+            <th>{{ 'reservations.inspect' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of store.page().items; track r.reservationId) {
+            <tr>
+              <td dir="ltr">{{ r.reference }}</td>
+              <td>{{ label(r.patient) }}</td>
+              <td>{{ label(r.practice) }}</td>
+              <td dir="ltr">
+                {{ r.appointment.businessDate }} ·
+                {{ r.appointment.scheduledTime || r.appointment.slotStartTime }}
+              </td>
+              <td>
+                <span class="status-cell">
+                  <span>{{ status(r.status) }}</span>
+                  @if (r.isLate) {
+                    <span class="badge-late">{{ 'reservations.late' | t }}</span>
+                  }
+                </span>
+              </td>
+              <td>
+                <button (click)="store.inspect(r.reservationId)">
+                  {{ 'reservations.inspect' | t }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">{{ 'reservations.empty' | t }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <nav class="pagination" [attr.aria-label]="'reservations.pagination' | t">
+      <button (click)="page(-1)" [disabled]="store.page().pageNumber <= 1">
+        {{ 'reservations.previous' | t }}</button
+      ><span>{{ store.page().pageNumber }}</span
+      ><button
+        (click)="page(1)"
+        [disabled]="store.page().pageNumber * store.page().pageSize >= store.page().totalCount"
+      >
+        {{ 'reservations.next' | t }}
+      </button>
+    </nav>
+  }
+  @if (store.detail() || store.detailLoading() || store.editor()) {
+    <dialog
+      #drawer
+      class="drawer"
+      (cancel)="cancelDialog($event)"
+      [attr.aria-labelledby]="
+        store.editor()
+          ? 'reservation-editor-heading'
+          : store.detail()
+            ? 'reservation-details-heading'
+            : 'reservation-loading-heading'
+      "
+    >
+      <button class="drawer-close" (click)="store.close()" [disabled]="store.busy()">
+        {{ 'reservations.close' | t }}
+      </button>
+      @if (store.editor(); as mode) {
+        <app-reservation-editor
+          [mode]="mode"
+          [provider]="store.actor() !== 'Patient'"
+          [reception]="store.actor() === 'Reception'"
+          [canSearch]="store.reception.allows('Patients.SearchBasic')"
+          [canRegister]="store.canRegisterPatient()"
+          [patients]="store.patients()"
+          [dates]="store.dates()"
+          [slots]="store.slots()"
+          [options]="store.options()"
+          [reasons]="reasons()"
+          [date]="store.date()"
+          [time]="store.time()"
+          [busy]="store.busy()"
+          [loading]="store.bookingLoading()"
+          (dateChange)="store.chooseDate($event)"
+          (timeChange)="store.chooseTime($event)"
+          (search)="store.searchPatients($event)"
+          (save)="store.save($event)"
+        />
+      } @else if (store.detail(); as r) {
+        <app-reservation-details
+          [reservation]="r"
+          [administrative]="store.actor() === 'Admin'"
+          [statuses]="store.metadata()?.statuses || []"
+          [bookingSources]="store.metadata()?.bookingSources || []"
+          [canCancel]="store.canCancel()"
+          [canReschedule]="store.canReschedule()"
+          [canRestore]="store.canRestore()"
+          (action)="store.openEditor($event)"
+        />
+      } @else {
+        <p id="reservation-loading-heading" role="status">{{ 'reservations.loading' | t }}</p>
+      }
+      @for (message of store.messages(); track $index) {
+        <p role="alert">{{ message | t }}</p>
+      }
+    </dialog>
+  }
+
+  <app-platform-footer />
+</main>

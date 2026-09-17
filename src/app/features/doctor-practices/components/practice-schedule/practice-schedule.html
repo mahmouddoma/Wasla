@@ -1,0 +1,803 @@
+<section class="schedule-shell" [dir]="language.dir()">
+  <!-- Section Heading -->
+  <header class="schedule-heading">
+    <div>
+      <div class="heading-badge">
+        <span class="badge-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </span>
+        <span>{{ 'ui.full.362' | t }}</span>
+      </div>
+      <h2>{{ 'ui.full.363' | t }}</h2>
+      <p>
+        {{ 'ui.full.364' | t }}
+      </p>
+    </div>
+  </header>
+
+  <!-- Global Feedback Alerts -->
+  @if (messages().length) {
+    <div class="schedule-feedback-banner" role="alert">
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div>
+        @for (message of messages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Dashboard 2-Column Responsive Grid -->
+  <div class="schedule-dashboard-grid">
+    <!-- Main Column: 7-Day Weekly Timetable (Strips) -->
+    <main class="weekly-schedule-column">
+      <div class="column-header">
+        <div class="header-title-meta">
+          <h3>{{ 'ui.full.365' | t }}</h3>
+          <span class="stats-counter-pill">
+            <span class="pulse-dot"></span>
+            {{ activeDaysCount }} {{ 'ui.full.366' | t }}
+          </span>
+        </div>
+
+        @if (canManage()) {
+          <button type="button" class="btn-action-primary" (click)="openAddPeriodModal()">
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>{{ 'ui.full.367' | t }}</span>
+          </button>
+        }
+      </div>
+
+      <!-- 7-Day Weekly Strips (Compact, Fast, No-Scroll) -->
+      <div class="week-strips-container">
+        @for (day of days; track day.value) {
+          @let dayPeriods = getPeriodsForDay(day.value);
+          <div
+            class="week-day-strip"
+            [class.is-working]="dayPeriods.length > 0"
+            [class.is-off]="dayPeriods.length === 0"
+          >
+            <!-- Day Label Cluster -->
+            <div class="strip-day-meta">
+              <span class="strip-day-short">{{ day.short }}</span>
+              <strong class="strip-day-name">{{ day.label }}</strong>
+            </div>
+
+            <!-- Periods Content Area -->
+            <div class="strip-periods-area">
+              @if (dayPeriods.length > 0) {
+                <div class="strip-periods-list">
+                  @for (period of dayPeriods; track period.id) {
+                    <!-- Standard schedule-record class kept for test harness selectors -->
+                    <div class="schedule-record strip-period-badge">
+                      <div class="time-cluster" dir="ltr">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <strong class="time-main-text"
+                          >{{ formatTime(period.startTime) }} —
+                          {{ formatTime(period.endTime) }}</strong
+                        >
+                        <span class="time-raw-note"
+                          >({{ period.startTime }} — {{ period.endTime }})</span
+                        >
+                      </div>
+
+                      <span class="duration-chip">
+                        {{ period.slotDurationMinutes }} {{ 'practice.minutesPerSlot' | t }}
+                      </span>
+
+                      @if (canManage()) {
+                        <div class="period-btn-group">
+                          <button
+                            class="btn-icon-strip edit-btn"
+                            type="button"
+                            (click)="editPeriod(period)"
+                            [title]="'ui.full.368' | t"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="12"
+                              height="12"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path
+                                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                              ></path>
+                              <path
+                                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                              ></path>
+                            </svg>
+                            <span>{{ 'common.edit' | t }}</span>
+                          </button>
+                          <button
+                            class="btn-icon-strip delete-btn"
+                            type="button"
+                            [disabled]="activeAction() === 'period-' + period.id"
+                            (click)="deletePeriod(period)"
+                            [title]="'ui.full.369' | t"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="12"
+                              height="12"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path
+                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                              ></path>
+                            </svg>
+                            <span>{{ 'common.delete' | t }}</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="strip-off-status">
+                  <span class="off-badge">{{ 'ui.full.370' | t }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Strip Quick Action -->
+            <div class="strip-side-action">
+              @if (canManage() && dayPeriods.length === 0) {
+                <button
+                  type="button"
+                  class="btn-strip-add"
+                  (click)="openAddPeriodModal(day.value)"
+                  [title]="'ui.full.372' | t"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="13"
+                    height="13"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>{{ 'ui.full.371' | t }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </main>
+
+    <!-- Side Column: Daily Inspector & Exceptions (38%) -->
+    <aside class="schedule-side-column">
+      <!-- Widget 1: Daily Schedule Inspector -->
+      <section class="side-widget-card inspector-widget">
+        <header class="widget-header">
+          <div class="widget-title-meta">
+            <div class="widget-icon">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <div>
+              <h4>{{ 'ui.full.373' | t }}</h4>
+              <p>{{ 'ui.full.374' | t }}</p>
+            </div>
+          </div>
+        </header>
+
+        <div class="inspector-controls">
+          <label class="inspector-date-label">
+            <input
+              type="date"
+              class="field-input date-input"
+              [value]="effectiveDate()"
+              (change)="effectiveDateChanged($event)"
+            />
+          </label>
+          <button
+            class="btn-inspect"
+            type="button"
+            [disabled]="activeAction() === 'effective'"
+            (click)="loadEffective()"
+          >
+            {{ 'ui.full.375' | t }}
+          </button>
+        </div>
+
+        <div class="effective-results" aria-live="polite">
+          @for (period of effectivePeriods(); track period.startTime + period.endTime) {
+            <div class="effective-period-box">
+              <div class="period-box-header">
+                <span class="effective-time-range" dir="ltr">
+                  {{ formatTime(period.startTime) }} — {{ formatTime(period.endTime) }}
+                </span>
+                <span class="effective-duration-tag">
+                  {{ period.slotDurationMinutes }} {{ 'practice.minutesPerSlot' | t }}
+                </span>
+              </div>
+
+              <div class="slots-section">
+                <span class="slots-title">{{ 'ui.full.376' | t }}</span>
+                <div class="slot-chips-list">
+                  @for (slot of period.slotStarts; track slot) {
+                    <span class="slot-chip" dir="ltr">{{ formatTime(slot) }}</span>
+                  } @empty {
+                    <span class="no-slots-note">{{ 'ui.full.377' | t }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-inspector-state">
+              <svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+              <p>{{ 'ui.full.378' | t }}</p>
+              <small>{{ 'ui.full.379' | t }}</small>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Widget 2: Exceptions & Holidays -->
+      <section class="side-widget-card exceptions-widget">
+        <header class="widget-header">
+          <div class="widget-title-meta">
+            <div class="widget-icon icon-amber">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                ></polygon>
+              </svg>
+            </div>
+            <div>
+              <h4>{{ 'ui.full.380' | t }}</h4>
+              <p>{{ 'ui.full.381' | t }}</p>
+            </div>
+          </div>
+
+          <div class="widget-actions">
+            <span class="exceptions-count-badge">{{ schedule().exceptions.length }}</span>
+            @if (canManage()) {
+              <button
+                type="button"
+                class="btn-action-subtle"
+                (click)="openAddExceptionModal()"
+                [title]="'ui.full.383' | t"
+              >
+                {{ 'ui.full.382' | t }}
+              </button>
+            }
+          </div>
+        </header>
+
+        <!-- Exceptions List -->
+        <div class="exceptions-list">
+          @for (exception of schedule().exceptions; track exception.id) {
+            <article class="exception-item-card">
+              <div class="exception-main-meta">
+                <div class="exception-type-row">
+                  <span
+                    class="exception-type-pill"
+                    [class.type-off]="exception.type === 'DayOff' || exception.type === 'Vacation'"
+                  >
+                    {{ exceptionLabel(exception.type) }}
+                  </span>
+                  <span class="exception-date-text" dir="ltr">{{ exception.date }}</span>
+                </div>
+                @if (exception.startTime && exception.endTime) {
+                  <span class="exception-hours-note" dir="ltr">
+                    {{ formatTime(exception.startTime) }} — {{ formatTime(exception.endTime) }}
+                  </span>
+                }
+              </div>
+
+              @if (canManage()) {
+                <div class="exception-actions">
+                  <button
+                    class="btn-icon-strip edit-btn"
+                    type="button"
+                    (click)="editException(exception)"
+                    [title]="'ui.full.384' | t"
+                  >
+                    {{ 'common.edit' | t }}
+                  </button>
+                  <button
+                    class="btn-icon-strip delete-btn"
+                    type="button"
+                    [disabled]="activeAction() === 'exception-' + exception.id"
+                    (click)="deleteException(exception)"
+                    [title]="'ui.full.385' | t"
+                  >
+                    {{ 'common.delete' | t }}
+                  </button>
+                </div>
+              }
+            </article>
+          } @empty {
+            <div class="empty-subtle-box">
+              <p>{{ 'ui.full.386' | t }}</p>
+              <small>{{ 'ui.full.387' | t }}</small>
+            </div>
+          }
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL POPUP: Add/Edit Working Period with 12-Hour Picker & Presets      -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  @if (canManage() && isPeriodModalOpen()) {
+    <div
+      class="schedule-overlay"
+      [class.is-open]="isPeriodModalOpen()"
+      (pointerdown)="$event.target === $event.currentTarget ? closePeriodModal() : null"
+    >
+      <div
+        class="schedule-dialog"
+        appModalFocus
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="language.t('schedule.periodDialog')"
+        (keydown.escape)="$event.stopPropagation(); closePeriodModal()"
+      >
+        <header class="modal-header">
+          <div class="modal-title-cluster">
+            <div class="modal-icon-tag">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">
+                {{
+                  editingPeriod()
+                    ? language.t('ui.expressions.169')
+                    : language.t('ui.expressions.170')
+                }}
+              </h3>
+              <p class="modal-subtitle">
+                {{ 'ui.full.388' | t }}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-modal-close"
+            (click)="closePeriodModal()"
+            [title]="'common.close' | t"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </header>
+
+        <form class="schedule-form modal-form" (submit)="savePeriod($event)" novalidate>
+          <!-- Quick Presets Strip -->
+          <div class="presets-section">
+            <span class="presets-label">{{ 'ui.full.389' | t }}</span>
+            <div class="presets-chips">
+              <button type="button" class="preset-chip" (click)="applyPreset('17:00', '22:00', 30)">
+                {{ 'ui.full.390' | t }}
+              </button>
+              <button type="button" class="preset-chip" (click)="applyPreset('16:00', '21:00', 30)">
+                {{ 'ui.full.391' | t }}
+              </button>
+              <button type="button" class="preset-chip" (click)="applyPreset('09:00', '14:00', 30)">
+                {{ 'ui.full.392' | t }}
+              </button>
+              <button type="button" class="preset-chip" (click)="applyPreset('10:00', '18:00', 30)">
+                {{ 'ui.full.393' | t }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Day Selector -->
+          <div class="modal-field-row">
+            <label class="form-field">
+              <span class="field-label">{{ 'ui.full.394' | t }}</span>
+              <div class="select-wrapper">
+                <select class="field-select" [formField]="periodForm.dayOfWeek">
+                  @for (day of days; track day.value) {
+                    <option [value]="day.value">{{ day.label }}</option>
+                  }
+                </select>
+              </div>
+            </label>
+
+            <label class="form-field">
+              <span class="field-label">{{ 'practice.slotDuration' | t }}</span>
+              <input
+                type="number"
+                class="field-input"
+                [formField]="periodForm.slotDurationMinutes"
+                placeholder="30"
+              />
+            </label>
+          </div>
+
+          <!-- 12-Hour Interactive Time Selectors -->
+          <div class="time-pickers-block">
+            <!-- Start Time 12h Picker -->
+            <div class="time-picker-card">
+              <div class="time-card-header">
+                <span class="time-badge-label">{{ 'ui.full.395' | t }}</span>
+                <strong class="time-preview-badge" dir="ltr">{{
+                  formatTime(periodModel().startTime) || language.t('ui.expressions.171')
+                }}</strong>
+              </div>
+              <div class="time-select-inputs">
+                <div class="select-group">
+                  <span class="sub-label">{{ 'practice.hour' | t }}</span>
+                  <select
+                    class="field-select select-sm"
+                    #startHourControl
+                    (change)="setStartHour(startHourControl.value)"
+                  >
+                    @for (h of hoursList; track h) {
+                      <option [value]="h" [selected]="h === startHour()">{{ h }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="select-group">
+                  <span class="sub-label">{{ 'practice.minute' | t }}</span>
+                  <select
+                    class="field-select select-sm"
+                    #startMinuteControl
+                    (change)="setStartMinute(startMinuteControl.value)"
+                  >
+                    @for (m of minutesList; track m) {
+                      <option [value]="m" [selected]="m === startMinute()">:{{ m }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="select-group">
+                  <span class="sub-label">{{ 'practice.period' | t }}</span>
+                  <div class="period-toggle-pills">
+                    <button
+                      type="button"
+                      class="toggle-pill"
+                      [class.active]="startPeriod() === 'PM'"
+                      (click)="setStartPeriod('PM')"
+                    >
+                      {{ 'common.pm' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="toggle-pill"
+                      [class.active]="startPeriod() === 'AM'"
+                      (click)="setStartPeriod('AM')"
+                    >
+                      {{ 'common.am' | t }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- End Time 12h Picker -->
+            <div class="time-picker-card">
+              <div class="time-card-header">
+                <span class="time-badge-label">{{ 'ui.full.396' | t }}</span>
+                <strong class="time-preview-badge" dir="ltr">{{
+                  formatTime(periodModel().endTime) || language.t('ui.expressions.172')
+                }}</strong>
+              </div>
+              <div class="time-select-inputs">
+                <div class="select-group">
+                  <span class="sub-label">{{ 'practice.hour' | t }}</span>
+                  <select
+                    class="field-select select-sm"
+                    #endHourControl
+                    (change)="setEndHour(endHourControl.value)"
+                  >
+                    @for (h of hoursList; track h) {
+                      <option [value]="h" [selected]="h === endHour()">{{ h }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="select-group">
+                  <span class="sub-label">{{ 'practice.minute' | t }}</span>
+                  <select
+                    class="field-select select-sm"
+                    #endMinuteControl
+                    (change)="setEndMinute(endMinuteControl.value)"
+                  >
+                    @for (m of minutesList; track m) {
+                      <option [value]="m" [selected]="m === endMinute()">:{{ m }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="select-group">
+                  <span class="sub-label">{{ 'practice.period' | t }}</span>
+                  <div class="period-toggle-pills">
+                    <button
+                      type="button"
+                      class="toggle-pill"
+                      [class.active]="endPeriod() === 'PM'"
+                      (click)="setEndPeriod('PM')"
+                    >
+                      {{ 'common.pm' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="toggle-pill"
+                      [class.active]="endPeriod() === 'AM'"
+                      (click)="setEndPeriod('AM')"
+                    >
+                      {{ 'common.am' | t }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          @if (periodFeedback(); as message) {
+            <div class="schedule-feedback inline-feedback" role="alert">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>{{ message | t }}</span>
+            </div>
+          }
+
+          <footer class="modal-actions-row">
+            <button class="btn-modal-save" type="submit" [disabled]="activeAction() === 'period'">
+              {{
+                editingPeriod()
+                  ? language.t('common.saveChanges')
+                  : language.t('ui.expressions.173')
+              }}
+            </button>
+            <button class="btn-modal-cancel" type="button" (click)="closePeriodModal()">
+              {{ 'common.cancel' | t }}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL POPUP: Add/Edit Schedule Exception                                -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  @if (canManage() && isExceptionModalOpen()) {
+    <div
+      class="schedule-overlay"
+      [class.is-open]="isExceptionModalOpen()"
+      (pointerdown)="$event.target === $event.currentTarget ? closeExceptionModal() : null"
+    >
+      <div
+        class="schedule-dialog"
+        appModalFocus
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="language.t('schedule.exceptionDialog')"
+        (keydown.escape)="$event.stopPropagation(); closeExceptionModal()"
+      >
+        <header class="modal-header">
+          <div class="modal-title-cluster">
+            <div class="modal-icon-tag icon-amber">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                ></polygon>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">
+                {{
+                  editingException() ? language.t('ui.full.384') : language.t('ui.expressions.174')
+                }}
+              </h3>
+              <p class="modal-subtitle">
+                {{ 'ui.full.397' | t }}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-modal-close"
+            (click)="closeExceptionModal()"
+            [title]="'common.close' | t"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </header>
+
+        <form class="schedule-form modal-form" (submit)="saveException($event)" novalidate>
+          <div class="modal-fields-grid">
+            <label class="form-field">
+              <span class="field-label">{{ 'ui.full.398' | t }}</span>
+              <input type="date" class="field-input" [formField]="exceptionForm.date" />
+            </label>
+
+            <label class="form-field">
+              <span class="field-label">{{ 'ui.full.399' | t }}</span>
+              <div class="select-wrapper">
+                <select class="field-select" [formField]="exceptionForm.type">
+                  <option value="DayOff">{{ 'practice.dayOff' | t }}</option>
+                  <option value="Vacation">{{ 'schedule.vacation' | t }}</option>
+                  <option value="CustomWorkingHours">{{ 'schedule.customHours' | t }}</option>
+                  <option value="BlockedTimeRange">{{ 'schedule.blockedRange' | t }}</option>
+                </select>
+              </div>
+            </label>
+
+            @if (exceptionNeedsTimes()) {
+              <label class="form-field">
+                <span class="field-label">{{ 'ui.full.400' | t }}</span>
+                <input
+                  type="time"
+                  dir="ltr"
+                  class="field-input"
+                  [formField]="exceptionForm.startTime"
+                />
+              </label>
+              <label class="form-field">
+                <span class="field-label">{{ 'ui.full.401' | t }}</span>
+                <input
+                  type="time"
+                  dir="ltr"
+                  class="field-input"
+                  [formField]="exceptionForm.endTime"
+                />
+              </label>
+            }
+
+            @if (exceptionNeedsDuration()) {
+              <label class="form-field">
+                <span class="field-label">{{ 'practice.slotDuration' | t }}</span>
+                <input
+                  type="number"
+                  class="field-input"
+                  [formField]="exceptionForm.slotDurationMinutes"
+                  placeholder="30"
+                />
+              </label>
+            }
+          </div>
+
+          <footer class="modal-actions-row">
+            <button
+              class="btn-modal-save"
+              type="submit"
+              [disabled]="activeAction() === 'exception'"
+            >
+              {{
+                editingException()
+                  ? language.t('profile.saveQualification')
+                  : language.t('ui.expressions.175')
+              }}
+            </button>
+            <button class="btn-modal-cancel" type="button" (click)="closeExceptionModal()">
+              {{ 'common.cancel' | t }}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+</section>
+
+<app-reservation-conflicts [conflict]="reservationImpact()" [practiceId]="practiceId()" />

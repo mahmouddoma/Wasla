@@ -55,6 +55,8 @@ export class AuthSession {
       if (user.permissions.includes(PERMISSIONS.doctorSpecializationRequestsViewAll)) {
         return '/admin/doctor-specialization-requests';
       }
+      if (user.permissions.includes('Reservations.ViewAdministrative'))
+        return '/admin/reservations';
       if (user.permissions.includes(PERMISSIONS.familyRelationshipRequestsViewAll)) {
         return '/admin/family-relationship-requests';
       }

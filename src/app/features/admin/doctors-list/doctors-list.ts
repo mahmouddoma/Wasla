@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,20 +7,22 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormField, form, maxLength } from '@angular/forms/signals';
-import { RouterLink } from '@angular/router';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { AdminDoctorsApi } from '../../../core/admin-doctors/admin-doctors-api';
+import { AdminDoctorsApi } from '../services/admin-doctors';
 import {
   AdminDoctorListItem,
   AdminDoctorsPage,
-} from '../../../core/admin-doctors/admin-doctors.models';
-import { DoctorApprovalStatus } from '../../../core/doctors/doctor.models';
+} from '../services/admin-doctors';
+import { DoctorApprovalStatus } from '../../../domains/doctors';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { firstValueFrom } from 'rxjs';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import { DoctorDetails } from '../doctor-details/doctor-details';
 
 export interface StatusOption {
   value: DoctorApprovalStatus | '';
@@ -36,28 +40,30 @@ export interface DoctorsMetrics {
 
 @Component({
   selector: 'app-doctors-list',
-  imports: [FormField, RouterLink, PageHeader],
+  imports: [FormField, PageHeader, TranslatePipe, SideDrawer, DoctorDetails],
   templateUrl: './doctors-list.html',
   styleUrls: ['../management-list.css', './doctors-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorsList {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(AdminDoctorsApi);
   private readonly session = inject(AuthSession);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private loadSequence = 0;
 
-  protected readonly statusOptions: readonly StatusOption[] = [
-    { value: '', label: 'الكل' },
-    { value: 'Approved', label: 'معتمد' },
-    { value: 'Pending', label: 'قيد المراجعة' },
-    { value: 'Rejected', label: 'مرفوض' },
-    { value: 'Suspended', label: 'معلّق' },
-  ];
+  protected get statusOptions(): readonly StatusOption[] { return [
+    { value: '', label: this.uiLanguage.t('common.all') },
+    { value: 'Approved', label: this.uiLanguage.t('common.approved') },
+    { value: 'Pending', label: this.uiLanguage.t('common.pendingReview') },
+    { value: 'Rejected', label: this.uiLanguage.t('common.rejected') },
+    { value: 'Suspended', label: this.uiLanguage.t('common.suspended') },
+  ]; }
 
   protected readonly filterModel = signal({ searchText: '' });
   protected readonly filterForm = form(this.filterModel, (field) => {
-    maxLength(field.searchText, 200, { message: 'الحد الأقصى للبحث 200 حرف.' });
+    maxLength(field.searchText, 200, { message: 'validation.searchLength' });
   });
 
   protected readonly selectedStatus = signal<DoctorApprovalStatus | ''>('');
@@ -71,6 +77,15 @@ export class DoctorsList {
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
   protected readonly canViewDetails = this.session.hasPermission(PERMISSIONS.doctorsViewDetails);
+  protected readonly selectedDoctor = signal<AdminDoctorListItem | null>(null);
+  protected readonly doctorReview = viewChild(DoctorDetails);
+  protected openDoctor(doctor: AdminDoctorListItem): void {
+    if (this.canViewDetails && !this.doctorReview()?.busy()) this.selectedDoctor.set(doctor);
+  }
+  protected closeDoctorDrawer(): void {
+    if (!this.doctorReview()?.busy()) this.selectedDoctor.set(null);
+  }
+  protected async doctorReviewed(): Promise<void> { await this.load(); }
 
   protected readonly viewMode = signal<'table' | 'grid'>('table');
 
@@ -155,7 +170,7 @@ export class DoctorsList {
 
   protected doctorInitials(doctor: AdminDoctorListItem): string {
     const name = doctor.nameAr?.trim() || doctor.nameEn?.trim() || '';
-    if (!name) return 'د';
+    if (!name) return this.uiLanguage.t('ui.full.6');
     const parts = name.split(/\s+/);
     if (parts.length >= 2) {
       return parts[0].charAt(0) + ' ' + parts[1].charAt(0);
@@ -283,7 +298,7 @@ export class DoctorsList {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',

@@ -45,13 +45,21 @@ export class LanguageService {
     this.setLanguage(this.currentLang() === 'ar' ? 'en' : 'ar');
   }
 
-  t(key: string): string {
+  t(key: string, parameters: Readonly<Record<string, string | number>> = {}): string {
     const lang = this.currentLang();
     const entry = TRANSLATIONS[key];
     if (!entry) {
       return key;
     }
-    return entry[lang] || entry['ar'] || key;
+    return (entry[lang] || key).replace(/\{(\w+)\}/g, (token, name: string) =>
+      parameters[name] === undefined ? token : String(parameters[name]),
+    );
+  }
+
+  label(namespace: string, value: string | null | undefined): string {
+    if (!value) return '';
+    const key = `${namespace}.${value}`;
+    return TRANSLATIONS[key] ? this.t(key) : value;
   }
 
   private resolveInitialLanguage(): SupportedLang {

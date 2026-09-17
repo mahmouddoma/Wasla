@@ -4,7 +4,7 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
         <path d="m9 18 6-6-6-6" />
       </svg>
-      <span>العودة إلى قائمة الطلبات</span>
+      <span>{{ 'requests.back' | t }}</span>
     </a>
   }
 
@@ -17,11 +17,11 @@
       </svg>
       <div class="notice-texts">
         @for (message of messages(); track message) {
-          <p>{{ message }}</p>
+          <p>{{ message | t }}</p>
         }
       </div>
       <button class="btn-retry" type="button" (click)="load()">
-        إعادة التحميل
+        {{ 'review.reload' | t }}
       </button>
     </div>
   }
@@ -29,7 +29,7 @@
   @if (loading() && !details()) {
     <div class="loading-state-box" role="status">
       <div class="spinner-medical" aria-hidden="true"></div>
-      <p>جارٍ تحميل تفاصيل وبيانات طلب العلاقة العائلية…</p>
+      <p>{{ 'review.familyLoading' | t }}</p>
     </div>
   } @else if (details(); as request) {
     <!-- ═══ Request & Parties Profile Banner ═══ -->
@@ -50,7 +50,7 @@
               {{ getRequestTypeLabel(request.requestType) }}
             </span>
             <span class="sep-dot">·</span>
-            <span class="revision-label">النسخة #{{ request.currentRevisionNumber }}</span>
+            <span class="revision-label">{{ 'common.revisionPrefix' | t }}{{ request.currentRevisionNumber }}</span>
           </div>
 
           <h1 class="request-parties-title">
@@ -60,9 +60,9 @@
           </h1>
 
           <div class="roles-subtitle">
-            <span>مقدم الطلب: <strong>{{ getRoleLabel(request.requesterClaimedRole) }}</strong></span>
+            <span>{{ 'review.applicantPrefix' | t }} <strong>{{ getRoleLabel(request.requesterClaimedRole) }}</strong></span>
             <span class="sep-dot">·</span>
-            <span>المريض المستهدف: <strong>{{ getRoleLabel(request.targetClaimedRole) }}</strong></span>
+            <span>{{ 'review.targetPrefix' | t }} <strong>{{ getRoleLabel(request.targetClaimedRole) }}</strong></span>
           </div>
         </div>
       </div>
@@ -72,7 +72,7 @@
           @case ('Pending') {
             <span class="badge-state badge-state--pending">
               <span class="pulse-ring-dot" aria-hidden="true"></span>
-              <span>قيد المراجعة</span>
+              <span>{{ 'common.pendingReview' | t }}</span>
             </span>
           }
           @case ('ModificationRequested') {
@@ -81,7 +81,7 @@
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              <span>مطلوب تعديل</span>
+              <span>{{ 'common.modificationRequested' | t }}</span>
             </span>
           }
           @case ('Approved') {
@@ -89,7 +89,7 @@
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              <span>معتمد</span>
+              <span>{{ 'common.approved' | t }}</span>
             </span>
           }
           @case ('Rejected') {
@@ -98,7 +98,7 @@
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-              <span>مرفوض</span>
+              <span>{{ 'common.rejected' | t }}</span>
             </span>
           }
         }
@@ -117,32 +117,32 @@
             </svg>
           </div>
           <div>
-            <span class="party-badge-role">مقدم الطلب</span>
+            <span class="party-badge-role">{{ 'requests.applicant' | t }}</span>
             <h3 class="party-name">{{ request.requesterNameAr }}</h3>
           </div>
         </div>
 
         <div class="party-data-list">
           <div class="party-data-row">
-            <span class="data-key">الدور المطلوب</span>
+            <span class="data-key">{{ 'requests.requestedRole' | t }}</span>
             <span class="data-pill-role">{{ getRoleLabel(request.requesterClaimedRole) }}</span>
           </div>
           <div class="party-data-row">
-            <span class="data-key">معرّف المريض (Patient ID)</span>
+            <span class="data-key">{{ 'patients.patientId' | t }}</span>
             <div class="code-copy-cluster">
               <code dir="ltr">{{ request.requesterPatientId }}</code>
               <button
                 type="button"
                 class="copy-btn-tiny"
                 (click)="copyText(request.requesterPatientId, 'reqPId')"
-                title="نسخ معرّف المريض"
+                [title]="'patients.copyId' | t"
               >
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
                 @if (copiedText() === 'reqPId') {
-                  <span class="copied-toast">تم النسخ!</span>
+                  <span class="copied-toast">{{ 'common.copied' | t }}</span>
                 }
               </button>
             </div>
@@ -162,32 +162,32 @@
             </svg>
           </div>
           <div>
-            <span class="party-badge-role">المريض المستهدف</span>
+            <span class="party-badge-role">{{ 'requests.targetPatient' | t }}</span>
             <h3 class="party-name">{{ request.targetNameAr }}</h3>
           </div>
         </div>
 
         <div class="party-data-list">
           <div class="party-data-row">
-            <span class="data-key">الدور المطلوب</span>
+            <span class="data-key">{{ 'requests.requestedRole' | t }}</span>
             <span class="data-pill-role">{{ getRoleLabel(request.targetClaimedRole) }}</span>
           </div>
           <div class="party-data-row">
-            <span class="data-key">معرّف المريض (Patient ID)</span>
+            <span class="data-key">{{ 'patients.patientId' | t }}</span>
             <div class="code-copy-cluster">
               <code dir="ltr">{{ request.targetPatientId }}</code>
               <button
                 type="button"
                 class="copy-btn-tiny"
                 (click)="copyText(request.targetPatientId, 'tarPId')"
-                title="نسخ معرّف المريض"
+                [title]="'patients.copyId' | t"
               >
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
                 @if (copiedText() === 'tarPId') {
-                  <span class="copied-toast">تم النسخ!</span>
+                  <span class="copied-toast">{{ 'common.copied' | t }}</span>
                 }
               </button>
             </div>
@@ -207,7 +207,7 @@
           </svg>
         </div>
         <div class="notice-body">
-          <h4>التعديل المطلوب من الإدارة</h4>
+          <h4>{{ 'review.requestedChanges' | t }}</h4>
           <p>{{ request.modificationMessage }}</p>
         </div>
       </div>
@@ -223,7 +223,7 @@
           </svg>
         </div>
         <div class="notice-body">
-          <h4>سبب الرفض النهائي</h4>
+          <h4>{{ 'requests.finalRejectionReason' | t }}</h4>
           <p>{{ request.rejectionReason }}</p>
         </div>
       </div>
@@ -239,23 +239,23 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          أعضاء العائلة الحاليون
+          {{ 'review.currentFamilyMembers' | t }}
         </h3>
         @if (request.familyId) {
           <div class="family-id-chip-admin">
-            <span dir="ltr">Family ID: {{ request.familyId }}</span>
+            <span dir="ltr">{{ 'common.familyIdPrefix' | t }} {{ request.familyId }}</span>
             <button
               type="button"
               class="copy-btn-tiny"
               (click)="copyText(request.familyId, 'famId')"
-              title="نسخ معرّف العائلة"
+              [title]="'review.copyFamilyId' | t"
             >
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
               @if (copiedText() === 'famId') {
-                <span class="copied-toast">تم!</span>
+                <span class="copied-toast">{{ 'review.done' | t }}</span>
               }
             </button>
           </div>
@@ -272,13 +272,13 @@
               </svg>
             </div>
             <div class="member-info-col">
-              <strong class="member-name">{{ member.nameAr }}</strong>
-              <span class="member-meta-sub">{{ getRoleLabel(member.role) }} · {{ member.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
+              <strong class="member-name">{{ uiLanguage.isRtl() ? member.nameAr : member.nameEn || member.nameAr }}</strong>
+              <span class="member-meta-sub">{{ getRoleLabel(member.role) }} · {{ member.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
             </div>
           </div>
         } @empty {
           <div class="empty-panel-box">
-            <p>لا توجد عضوية عائلية سابقة فعالة مرتبطة بالطلب حالياً (طلب إنشاء جديد).</p>
+            <p>{{ 'review.newFamilyHelp' | t }}</p>
           </div>
         }
       </div>
@@ -294,9 +294,9 @@
             <line x1="16" y1="13" x2="8" y2="13" />
             <line x1="16" y1="17" x2="8" y2="17" />
           </svg>
-          أدلة التحقق والمستندات حسب النسخة
+          {{ 'review.evidenceByRevision' | t }}
         </h3>
-        <span class="counter-badge">{{ request.documents.length }} مستند</span>
+        <span class="counter-badge">{{ request.documents.length }} {{ 'common.document' | t }}</span>
       </div>
 
       <div class="documents-deck">
@@ -312,9 +312,9 @@
             <div class="doc-meta-col">
               <div class="doc-title-row">
                 <strong class="doc-file-name" [title]="document.fileName">{{ document.fileName }}</strong>
-                <span class="doc-rev-tag">النسخة #{{ document.revisionNumber }}</span>
+                <span class="doc-rev-tag">{{ 'common.revisionPrefix' | t }}{{ document.revisionNumber }}</span>
               </div>
-              <span class="doc-type-text">{{ document.documentType }}</span>
+              <span class="doc-type-text">{{ uiLanguage.label('documentType', document.documentType) }}</span>
             </div>
 
             <button
@@ -322,23 +322,23 @@
               class="btn-open-doc"
               [disabled]="documentLoadingId() !== ''"
               (click)="openDocument(document.documentId)"
-              title="فتح ومعاينة المستند بصورة آمنة"
+              [title]="'review.secureDocumentPreview' | t"
             >
               @if (documentLoadingId() === document.documentId) {
                 <span class="btn-spinner-tiny"></span>
-                <span>جارٍ الفتح…</span>
+                <span>{{ 'review.opening' | t }}</span>
               } @else {
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
-                <span>معاينة آمنة</span>
+                <span>{{ 'review.securePreview' | t }}</span>
               }
             </button>
           </div>
         } @empty {
           <div class="empty-panel-box">
-            <p>لا توجد مستندات أو أدلة مرفقة بهذا الطلب.</p>
+            <p>{{ 'review.noEvidence' | t }}</p>
           </div>
         }
       </div>
@@ -352,7 +352,7 @@
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          سجل سير العمل غير القابل للتعديل (Audit Trail)
+          {{ 'review.auditTrail' | t }}
         </h3>
       </div>
 
@@ -366,20 +366,20 @@
               <div class="step-head">
                 <div class="step-name-rev">
                   <strong class="action-name">{{ getActionLabel(item.action) }}</strong>
-                  <span class="rev-chip">النسخة #{{ item.revisionNumber }}</span>
+                  <span class="rev-chip">{{ 'common.revisionPrefix' | t }}{{ item.revisionNumber }}</span>
                 </div>
                 <time class="step-time" dir="ltr">{{ formatDate(item.occurredOnUtc) }}</time>
               </div>
               @if (item.message) {
                 <div class="step-msg-bubble">
-                  <p>{{ item.message }}</p>
+                  <p>{{ item.message | t }}</p>
                 </div>
               }
             </div>
           </div>
         } @empty {
           <div class="empty-panel-box">
-            <p>لا يوجد سجل تدقيق مسجل لهذا الطلب حتى الآن.</p>
+            <p>{{ 'review.noAuditTrail' | t }}</p>
           </div>
         }
       </div>
@@ -387,7 +387,7 @@
 
     <!-- ═══ Review Actions Toolbar ═══ -->
     @if (isPending()) {
-      <div class="review-bottom-dock" aria-label="إجراءات مراجعة الطلب">
+      <div class="review-bottom-dock" [attr.aria-label]="'review.actions' | t">
         @if (canRequestModification) {
           <button
             class="btn-decision btn-decision--mod"
@@ -398,7 +398,7 @@
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
-            <span>طلب تعديل</span>
+            <span>{{ 'requests.requestChanges' | t }}</span>
           </button>
         }
         @if (canApprove) {
@@ -410,7 +410,7 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span>اعتماد العلاقة</span>
+            <span>{{ 'review.approveRelationship' | t }}</span>
           </button>
         }
         @if (canReject) {
@@ -423,7 +423,7 @@
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-            <span>رفض نهائي</span>
+            <span>{{ 'review.finalRejection' | t }}</span>
           </button>
         }
       </div>
@@ -438,15 +438,15 @@
           <h2>{{ actionTitle() }}</h2>
           <p>
             @if (action() === 'approve') {
-              سيعيد الخادم التحقق من قيود العائلة قبل الاعتماد النهائي وإتمام الربط.
+              {{ 'review.approvalHelp' | t }}
             } @else if (action() === 'modification') {
-              سيتم إشعار مقدم الطلب لإرسال نسخة (Revision) جديدة ومستندات معدلة.
+              {{ 'review.changesHelp' | t }}
             } @else {
-              الرفض نهائي ولن يتم إنشاء أو تعديل أي عضوية عائلية في النظام.
+              {{ 'review.rejectionHelp' | t }}
             }
           </p>
         </div>
-        <button class="dialog-close-btn" type="button" (click)="closeAction()" aria-label="إغلاق">
+        <button class="dialog-close-btn" type="button" (click)="closeAction()" [attr.aria-label]="'common.close' | t">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -458,17 +458,17 @@
         <div class="dialog-body">
           <label class="input-field">
             <span class="field-title">
-              {{ action() === 'modification' ? 'ملاحظات ورسالة التعديل المطلوبة' : 'سبب الرفض النهائي' }}
+              {{ action() === 'modification' ? uiLanguage.t('ui.expressions.23') : uiLanguage.t('requests.finalRejectionReason') }}
               <span class="required-star">*</span>
             </span>
             <textarea
               rows="4"
               class="field-input textarea-input"
-              placeholder="اكتب التوجيهات أو أسباب القرار بالتفصيل…"
+              [placeholder]="'review.decisionPlaceholder' | t"
               [formField]="reviewForm.text"
             ></textarea>
             @if (reviewForm.text().touched() && reviewForm.text().errors().length) {
-              <span class="field-error-msg">{{ reviewForm.text().errors()[0].message }}</span>
+              <span class="field-error-msg">{{ (reviewForm.text().errors()[0].message ?? '') | t }}</span>
             }
           </label>
         </div>
@@ -476,7 +476,7 @@
 
       <footer class="dialog-footer">
         <button class="btn btn-secondary" type="button" (click)="closeAction()">
-          إلغاء
+          {{ 'common.cancel' | t }}
         </button>
         <button
           [class]="action() === 'reject' ? 'btn-confirm-danger' : 'btn-confirm-primary'"
@@ -485,9 +485,9 @@
         >
           @if (submitting()) {
             <span class="btn-spinner-tiny"></span>
-            <span>جارٍ التنفيذ…</span>
+            <span>{{ 'review.executing' | t }}</span>
           } @else {
-            <span>تأكيد الإجراء</span>
+            <span>{{ 'common.confirmAction' | t }}</span>
           }
         </button>
       </footer>

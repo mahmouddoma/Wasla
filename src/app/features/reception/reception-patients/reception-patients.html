@@ -1,25 +1,29 @@
-<main class="health-workspace" dir="rtl">
+<main class="health-workspace" [dir]="uiLanguage.dir()">
   <header class="workspace-bar">
     <div>
-      <h1>البحث وإنشاء ملف مريض</h1>
-      <p>الملف الصحي مستقل عن حساب تسجيل الدخول، ولن يتم دمج النتائج المتشابهة تلقائياً.</p>
+      <h1>{{ 'ui.full.737' | t }}</h1>
+      <p>{{ 'ui.full.738' | t }}</p>
     </div>
     <div class="bar-actions">
-      <a class="btn btn-outline-secondary" routerLink="/workspace/reception">الرئيسية</a>
-      <button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+      <a class="btn btn-outline-secondary" routerLink="/workspace/reception">{{
+        'common.home' | t
+      }}</a>
+      <button class="btn btn-outline-secondary" type="button" (click)="logout()">
+        {{ 'common.exit' | t }}
+      </button>
     </div>
   </header>
 
   @if (messages().length) {
     <div class="notice error" role="alert">
       @for (message of messages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
     </div>
   }
   @if (createdPatientId()) {
     <div class="notice success" role="status">
-      تم إنشاء الملف بنجاح. Patient ID: <strong>{{ createdPatientId() }}</strong>
+      {{ 'ui.full.739' | t }} <strong>{{ createdPatientId() }}</strong>
     </div>
   }
 
@@ -29,40 +33,21 @@
         <div class="section-heading">
           <div>
             <span class="step">01</span>
-            <h2>ابحث أولاً</h2>
+            <h2>{{ 'ui.full.740' | t }}</h2>
           </div>
-          <p>البحث يتم من الخادم، وقد يظهر أكثر من مريض بنفس رقم الهاتف.</p>
+          <p>{{ 'ui.full.741' | t }}</p>
         </div>
-        <label class="form-field practice-context">
-          <span>العيادة الحالية *</span>
-          <select
-            [value]="selectedPracticeId()"
-            [disabled]="isLoadingPractices()"
-            (change)="practiceChanged($event)"
-          >
-            <option value="">
-              {{ isLoadingPractices() ? 'جارٍ تحميل العيادات…' : 'اختر العيادة' }}
-            </option>
-            @for (practice of practices(); track practice.id) {
-              <option [value]="practice.id">
-                {{ practice.nameAr
-                }}{{ practice.doctorNameAr ? ' — ' + practice.doctorNameAr : '' }}
-              </option>
-            }
-          </select>
-          <small>يُعاد التحقق من صلاحيتك داخل العيادة مع كل عملية بحث.</small>
-        </label>
         <form class="compact-form" (submit)="search(1, $event)" novalidate>
           <label class="form-field">
-            <span>الاسم</span>
+            <span>{{ 'discovery.name' | t }}</span>
             <input [formField]="searchForm.name" autocomplete="off" />
           </label>
           <label class="form-field">
-            <span>رقم الهاتف</span>
+            <span>{{ 'workspace.phone' | t }}</span>
             <input type="tel" [formField]="searchForm.phoneNumber" autocomplete="off" />
           </label>
           <label class="form-field">
-            <span>تاريخ الميلاد</span>
+            <span>{{ 'register.dob' | t }}</span>
             <input type="date" [formField]="searchForm.dateOfBirth" />
           </label>
           <button
@@ -74,7 +59,9 @@
               !selectedPracticeAllows('Patients.SearchBasic')
             "
           >
-            {{ isSearching() ? 'جارٍ البحث…' : 'بحث' }}
+            {{
+              isSearching() ? uiLanguage.t('discovery.loading') : uiLanguage.t('discovery.search')
+            }}
           </button>
         </form>
 
@@ -90,34 +77,40 @@
                 <strong>{{ displayName(patient) }}</strong>
                 <span
                   >{{ patient.dateOfBirth }} ·
-                  {{ patient.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span
+                  {{
+                    patient.gender === 'Male'
+                      ? uiLanguage.t('register.male')
+                      : uiLanguage.t('register.female')
+                  }}</span
                 >
                 <small>{{
                   patient.phoneNumber ||
-                    (patient.hasContactPhone ? 'هاتف جهة اتصال متاح' : 'لا يوجد هاتف')
+                    (patient.hasContactPhone
+                      ? uiLanguage.t('ui.expressions.218')
+                      : uiLanguage.t('ui.full.195'))
                 }}</small>
               </button>
             } @empty {
-              <div class="empty-state">لا توجد نتائج مطابقة. يمكنك إنشاء ملف جديد.</div>
+              <div class="empty-state">{{ 'ui.full.744' | t }}</div>
             }
           </div>
-          <nav class="pager" aria-label="صفحات نتائج البحث">
+          <nav class="pager" [attr.aria-label]="'ui.full.745' | t">
             <button
               class="btn btn-sm btn-outline-secondary"
               type="button"
               [disabled]="pageNumber() <= 1"
               (click)="search(pageNumber() - 1)"
             >
-              السابق
+              {{ 'discovery.previous' | t }}
             </button>
-            <span>صفحة {{ page.pageNumber }}</span>
+            <span>{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
             <button
               class="btn btn-sm btn-outline-secondary"
               type="button"
               [disabled]="page.items.length < page.pageSize"
               (click)="search(pageNumber() + 1)"
             >
-              التالي
+              {{ 'discovery.next' | t }}
             </button>
           </nav>
         }
@@ -129,78 +122,89 @@
         <div class="section-heading">
           <div>
             <span class="step">02</span>
-            <h2>إنشاء ملف جديد</h2>
+            <h2>{{ 'ui.full.746' | t }}</h2>
           </div>
-          <p>لا يتم إنشاء Username أو Password في هذا التدفق.</p>
+          <p>{{ 'ui.full.747' | t }}</p>
         </div>
         <form class="detail-form" (submit)="createPatient($event)" novalidate>
           <label class="form-field"
-            ><span>الاسم بالعربية *</span><input [formField]="createForm.nameAr"
+            ><span>{{ 'ui.full.748' | t }}</span
+            ><input [formField]="createForm.nameAr"
           /></label>
           <label class="form-field"
-            ><span>الاسم بالإنجليزية</span><input dir="ltr" [formField]="createForm.nameEn"
+            ><span>{{ 'common.nameEn' | t }}</span
+            ><input dir="ltr" [formField]="createForm.nameEn"
           /></label>
           <label class="form-field"
-            ><span>تاريخ الميلاد *</span><input type="date" [formField]="createForm.dateOfBirth"
+            ><span>{{ 'ui.full.749' | t }}</span
+            ><input type="date" [formField]="createForm.dateOfBirth"
           /></label>
           <label class="form-field"
-            ><span>النوع *</span
+            ><span>{{ 'ui.full.750' | t }}</span
             ><select [formField]="createForm.gender">
-              <option value="">اختر</option>
-              <option value="Male">ذكر</option>
-              <option value="Female">أنثى</option>
+              <option value="">{{ 'ui.full.751' | t }}</option>
+              <option value="Male">{{ 'register.male' | t }}</option>
+              <option value="Female">{{ 'register.female' | t }}</option>
             </select></label
           >
           <label class="form-field"
-            ><span>رقم الهاتف</span><input type="tel" [formField]="createForm.phoneNumber"
+            ><span>{{ 'workspace.phone' | t }}</span
+            ><input type="tel" [formField]="createForm.phoneNumber"
           /></label>
           <label class="form-field"
-            ><span>البريد الإلكتروني</span
+            ><span>{{ 'workspace.email' | t }}</span
             ><input type="email" dir="ltr" [formField]="createForm.email"
           /></label>
           <label class="form-field full"
-            ><span>الصورة الشخصية</span
+            ><span>{{ 'common.profilePhoto' | t }}</span
             ><input type="file" accept="image/*" (change)="fileChanged($event)"
           /></label>
 
           <fieldset class="contact-fields full">
             <legend>
-              جهة الاتصال الأساسية {{ createModel().phoneNumber.trim() ? '(اختيارية)' : '*' }}
+              {{ 'ui.full.752' | t }}
+              {{ createModel().phoneNumber.trim() ? uiLanguage.t('ui.full.265') : '*' }}
             </legend>
-            <p>مطلوبة عند غياب هاتف المريض. بيانات تواصل فقط؛ لا تمنح صلاحية عائلية أو طبية.</p>
+            <p>{{ 'ui.full.753' | t }}</p>
             <div class="detail-form">
               <label class="form-field"
-                ><span>الاسم بالعربية</span><input [formField]="createForm.primaryContactNameAr"
+                ><span>{{ 'register.fullNameAr' | t }}</span
+                ><input [formField]="createForm.primaryContactNameAr"
               /></label>
               <label class="form-field"
-                ><span>رقم الهاتف</span
+                ><span>{{ 'workspace.phone' | t }}</span
                 ><input type="tel" [formField]="createForm.primaryContactPhoneNumber"
               /></label>
               <label class="form-field"
-                ><span>صلة القرابة</span
+                ><span>{{ 'ui.full.754' | t }}</span
                 ><select [formField]="createForm.primaryContactRelationshipType">
-                  <option value="Father">أب</option>
-                  <option value="Mother">أم</option>
-                  <option value="Guardian">ولي أمر</option>
-                  <option value="LegalGuardian">وصي قانوني</option>
-                  <option value="Other">أخرى</option>
+                  <option value="Father">{{ 'family.father' | t }}</option>
+                  <option value="Mother">{{ 'family.mother' | t }}</option>
+                  <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                  <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
+                  <option value="Other">{{ 'common.other' | t }}</option>
                 </select></label
               >
               <label class="form-field"
-                ><span>Patient ID مرتبط (اختياري)</span
+                ><span>{{ 'ui.full.755' | t }}</span
                 ><input dir="ltr" [formField]="createForm.primaryContactLinkedPatientId"
               /></label>
             </div>
           </fieldset>
 
           @if (createForm().touched() && createForm().errors().length) {
-            <div class="notice error full">راجع الحقول المطلوبة والقيم المدخلة.</div>
+            <div class="notice error full">{{ 'ui.full.756' | t }}</div>
           }
           <button class="btn btn-primary full" type="submit" [disabled]="isCreating()">
-            {{ isCreating() ? 'جارٍ الإنشاء…' : 'إنشاء ملف المريض' }}
+            {{
+              isCreating() ? uiLanguage.t('ui.expressions.219') : uiLanguage.t('ui.expressions.220')
+            }}
           </button>
         </form>
       </section>
     }
   </div>
+
+  <!-- Enterprise Platform Footer -->
+  <app-platform-footer />
 </main>

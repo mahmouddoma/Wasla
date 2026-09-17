@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,30 +11,32 @@ import {
 import { FormField, form, maxLength } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
-import { FamiliesApi } from '../../../core/families/families-api';
+import { FamiliesApi } from '../../../domains/families';
 import {
   FamilyRequestPage,
   FamilyRequestStatus,
   FamilyRequestType,
-} from '../../../core/families/family.models';
+} from '../../../domains/families';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { FamilyRequestDetailsPage } from '../family-request-details/family-request-details';
 
 @Component({
   selector: 'app-family-requests-list',
-  imports: [FormField, PageHeader, SideDrawer, FamilyRequestDetailsPage],
+  imports: [FormField, PageHeader, SideDrawer, FamilyRequestDetailsPage, TranslatePipe],
   templateUrl: './family-requests-list.html',
   styleUrls: ['../management-list.css', './family-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FamilyRequestsList {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(FamiliesApi);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private loadSequence = 0;
   protected readonly model = signal({ search: '' });
   protected readonly searchForm = form(this.model, (field) => {
-    maxLength(field.search, 200, { message: 'الحد الأقصى للبحث 200 حرف.' });
+    maxLength(field.search, 200, { message: 'validation.searchLength' });
   });
   protected readonly status = signal<FamilyRequestStatus | ''>('Pending');
   protected readonly requestType = signal<FamilyRequestType | ''>('');
@@ -56,7 +60,7 @@ export class FamilyRequestsList {
 
   protected openReviewDrawer(requestId: string, title?: string): void {
     this.selectedRequestId.set(requestId);
-    this.selectedRequestTitle.set(title || 'طلب علاقة عائلية');
+    this.selectedRequestTitle.set(title || this.uiLanguage.t('family.relationshipRequest'));
   }
 
   protected closeReviewDrawer(): void {
@@ -128,7 +132,7 @@ export class FamilyRequestsList {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date);
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', { dateStyle: 'medium' }).format(date);
   }
 }
 

@@ -21,11 +21,17 @@
         [title]="'common.home' | t"
       >
         <div class="brand-logo-icon">
-          <img src="/images/logo-light.png" width="40" height="40" alt="وصلة" decoding="async" />
+          <img
+            src="/images/logo-light.png"
+            width="40"
+            height="40"
+            [alt]="'common.appName' | t"
+            decoding="async"
+          />
         </div>
         <div class="brand-text-block">
-          <strong class="brand-app-name">منصة وصلة</strong>
-          <span class="brand-app-tagline">لرعاية أفضل لحياة صحية</span>
+          <strong class="brand-app-name">{{ 'common.waslaPlatform' | t }}</strong>
+          <span class="brand-app-tagline">{{ 'common.betterCare' | t }}</span>
         </div>
       </a>
 
@@ -34,8 +40,16 @@
         type="button"
         class="btn-sidebar-collapse"
         (click)="toggleSidebarCollapse()"
-        [attr.aria-label]="isSidebarCollapsed() ? 'توسيع القائمة' : 'طي القائمة'"
-        [title]="isSidebarCollapsed() ? 'توسيع القائمة' : 'طي القائمة'"
+        [attr.aria-label]="
+          isSidebarCollapsed()
+            ? langService.t('ui.expressions.7')
+            : langService.t('ui.expressions.8')
+        "
+        [title]="
+          isSidebarCollapsed()
+            ? langService.t('ui.expressions.7')
+            : langService.t('ui.expressions.8')
+        "
       >
         <svg
           viewBox="0 0 24 24"
@@ -58,7 +72,7 @@
         type="button"
         class="btn-sidebar-close"
         (click)="closeSidebar()"
-        aria-label="إغلاق القائمة"
+        [attr.aria-label]="'common.closeMenu' | t"
       >
         <svg
           viewBox="0 0 24 24"
@@ -78,6 +92,11 @@
 
     <!-- Navigation List -->
     <nav class="sidebar-nav">
+      @if (canViewReservations()) {
+        <a routerLink="/admin/reservations" class="sidebar-nav-item" (click)="closeSidebar()">{{
+          'reservations.title' | t
+        }}</a>
+      }
       @if (canViewDoctors()) {
         <a
           routerLink="/admin/doctors"
@@ -220,7 +239,7 @@
           routerLinkActive="active"
           ariaCurrentWhenActive="page"
           class="sidebar-nav-item"
-          title="طلبات العلاقات العائلية"
+          [title]="'family.requests' | t"
           (click)="closeSidebar()"
         >
           <!-- Lucide: users -->
@@ -238,7 +257,7 @@
             <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          <span class="nav-text">طلبات العلاقات العائلية</span>
+          <span class="nav-text">{{ 'family.requests' | t }}</span>
         </a>
       }
     </nav>
@@ -280,7 +299,7 @@
           type="button"
           class="btn-mobile-menu"
           (click)="toggleSidebar()"
-          aria-label="فتح القائمة الجانبية"
+          [attr.aria-label]="'common.openSidebar' | t"
         >
           <svg
             viewBox="0 0 24 24"

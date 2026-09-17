@@ -1,0 +1,502 @@
+<main class="workspace-shell" [dir]="langService.dir()">
+  <!-- Ambient backdrop lighting -->
+  <div class="ambient-glow-mesh" aria-hidden="true">
+    <div class="ambient-circle circle-teal"></div>
+    <div class="ambient-circle circle-navy"></div>
+  </div>
+
+  <!-- Top Enterprise Header -->
+  <header class="workspace-header">
+    <div class="brand-cluster">
+      <img
+        class="workspace-logo"
+        src="/images/wasla-mark.png"
+        width="1254"
+        height="1254"
+        [alt]="'common.appName' | t"
+      />
+      <div class="brand-meta">
+        <span class="brand-name">{{ 'common.appName' | t }}</span>
+        <span class="brand-tagline">{{ 'workspace.platformTagline' | t }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <app-language-switcher variant="header" />
+      <button
+        class="btn-head btn-head-logout"
+        type="button"
+        (click)="logout()"
+        title="{{ 'common.logout' | t }}"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        <span>{{ 'common.logout' | t }}</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace-content">
+    <!-- Hero Profile Card -->
+    <section class="workspace-hero-card">
+      <div class="hero-layout">
+        <!-- Text & Details Section -->
+        <div class="hero-body">
+          <div class="hero-badges">
+            <span class="connected-status">
+              <i aria-hidden="true"></i>
+              <span>{{ 'workspace.secureSession' | t }}</span>
+            </span>
+            @if (roleBadge().label) {
+              <span class="role-pill">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>{{ roleBadge().label }}</span>
+              </span>
+            }
+          </div>
+
+          <div class="hero-title-group">
+            <h1>
+              {{ 'workspace.welcome' | t }}{{ 'ui.full.0' | t }}
+              <span class="user-highlight">{{ user()?.userName }}</span>
+            </h1>
+            <p class="hero-desc">{{ 'workspace.readyNotice' | t }}</p>
+          </div>
+
+          <!-- Account Details Strip -->
+          <div class="details-strip">
+            <div class="detail-cell">
+              <div class="detail-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <div class="detail-meta">
+                <span class="detail-label">{{ 'workspace.accountType' | t }}</span>
+                <span class="detail-value">{{ roleBadge().label || user()?.userType }}</span>
+              </div>
+            </div>
+
+            <div class="detail-cell">
+              <div class="detail-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <div class="detail-meta">
+                <span class="detail-label">{{ 'workspace.email' | t }}</span>
+                <span class="detail-value ltr-text">{{ user()?.email || '—' }}</span>
+              </div>
+            </div>
+
+            @if (user()?.phoneNumber) {
+              <div class="detail-cell">
+                <div class="detail-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                    />
+                  </svg>
+                </div>
+                <div class="detail-meta">
+                  <span class="detail-label">{{ 'workspace.phone' | t }}</span>
+                  <span class="detail-value ltr-text">{{ user()?.phoneNumber }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Illustration Column -->
+        <div class="hero-visual">
+          <div class="visual-wrapper">
+            <img
+              [src]="illustrationPath()"
+              [alt]="'workspace.illustrationAlt' | t"
+              class="visual-img"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Available Modules Section -->
+    @if (hasAnyModules()) {
+      <section class="workspace-modules-section">
+        <div class="section-title-wrap">
+          <div class="title-with-pill">
+            <h2>{{ 'workspace.availableModules' | t }}</h2>
+            <span class="badge-count">
+              {{
+                (canManageDoctorProfile ? 1 : 0) +
+                  (reservationPath() ? 1 : 0) +
+                  (canViewDoctorPractices ? 1 : 0) +
+                  (canViewReceptionUsers ? 1 : 0) +
+                  (canManagePatients ? 1 : 0) +
+                  (canManageAssistedFamilyRequests ? 1 : 0) +
+                  (canManagePatientProfile ? 1 : 0) +
+                  (canManageFamily ? 1 : 0)
+              }}
+            </span>
+          </div>
+        </div>
+
+        <div class="modules-grid">
+          @if (reservationPath()) {
+            <a class="module-card" [routerLink]="reservationPath()">
+              <div class="module-icon-wrap icon-teal">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'reservations.title' | t }}</h3>
+                <p>{{ 'reservations.subtitle' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+          @if (canManageDoctorProfile) {
+            <a class="module-card" routerLink="/doctor/profile">
+              <div class="module-icon-wrap icon-teal">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"
+                  />
+                  <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
+                  <circle cx="20" cy="10" r="2" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'workspace.manageDoctorProfile' | t }}</h3>
+                <p>{{ 'workspace.doctorProfileDesc' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+
+          @if (canViewDoctorPractices) {
+            <a class="module-card" routerLink="/doctor/practices">
+              <div class="module-icon-wrap icon-blue">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 21h18" />
+                  <path d="M5 21V8l7-5 7 5v13" />
+                  <path d="M9 21v-6h6v6" />
+                  <path d="M9 10h.01M15 10h.01" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'workspace.myPractices' | t }}</h3>
+                <p>{{ 'workspace.myPracticesDesc' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+
+          @if (canViewReceptionUsers) {
+            <a class="module-card" routerLink="/doctor/receptions">
+              <div class="module-icon-wrap icon-teal" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M19 8v6M22 11h-6" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'common.receptionTeam' | t }}</h3>
+                <p>{{ 'ui.full.763' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+
+          @if (canManagePatients) {
+            <a class="module-card" routerLink="/reception/patients">
+              <div class="module-icon-wrap icon-blue">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'workspace.managePatients' | t }}</h3>
+                <p>{{ 'workspace.managePatientsDesc' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+
+          @if (canManageAssistedFamilyRequests) {
+            <a class="module-card" routerLink="/reception/family-requests">
+              <div class="module-icon-wrap icon-amber">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'workspace.familyRequests' | t }}</h3>
+                <p>{{ 'workspace.familyRequestsDesc' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+
+          @if (canManagePatientProfile) {
+            <a class="module-card" routerLink="/patient/profile">
+              <div class="module-icon-wrap icon-teal">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'workspace.myHealthProfile' | t }}</h3>
+                <p>{{ 'workspace.myHealthProfileDesc' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+
+          @if (canManageFamily) {
+            <a class="module-card" routerLink="/patient/family">
+              <div class="module-icon-wrap icon-blue">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="module-info">
+                <h3>{{ 'workspace.familyAndRequests' | t }}</h3>
+                <p>{{ 'workspace.familyAndRequestsDesc' | t }}</p>
+              </div>
+              <div class="module-action-arrow" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            </a>
+          }
+        </div>
+      </section>
+    }
+  </div>
+
+  <!-- Enterprise Platform Footer -->
+  <app-platform-footer />
+</main>

@@ -1,7 +1,7 @@
 <section class="management-page">
   <app-page-header
-    heading="طلبات إثبات العلاقات العائلية"
-    description="راجع هوية الأطراف والأدلة وسجل الطلب بدون الوصول إلى أي بيانات سريرية."
+    [heading]="'review.familyRequests' | t"
+    [description]="'review.familyPrivacyHelp' | t"
     icon="family-requests"
   >
     <div pageHeaderDeck class="header-control-grid">
@@ -18,7 +18,7 @@
             role="searchbox"
             enterkeyhint="search"
             autocomplete="off"
-            placeholder="ابحث باسم المريض أو رقم الطلب…"
+            [placeholder]="'review.patientSearch' | t"
             [formField]="searchForm.search"
             (input)="scheduleSearch()"
           />
@@ -26,7 +26,7 @@
             <button
               type="button"
               class="btn-clear-search-integrated"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
               (click)="clearSearch()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -41,34 +41,34 @@
       <!-- Filters Deck -->
       <div class="header-filters-deck">
         <label class="filter-select-integrated">
-          <span class="filter-select-label">الحالة:</span>
+          <span class="filter-select-label">{{ 'common.statusLabel' | t }}</span>
           <select [value]="status()" (change)="setFilter('status', $event)">
-            <option value="">الكل</option>
-            <option value="Pending">قيد المراجعة</option>
-            <option value="ModificationRequested">مطلوب تعديل</option>
-            <option value="Approved">معتمد</option>
-            <option value="Rejected">مرفوض</option>
+            <option value="">{{ 'common.all' | t }}</option>
+            <option [value]="'family.pendingFilter' | t">{{ 'common.pendingReview' | t }}</option>
+            <option value="ModificationRequested">{{ 'common.modificationRequested' | t }}</option>
+            <option [value]="'family.approvedFilter' | t">{{ 'common.approved' | t }}</option>
+            <option [value]="'family.rejectedFilter' | t">{{ 'common.rejected' | t }}</option>
           </select>
         </label>
 
         <label class="filter-select-integrated">
-          <span class="filter-select-label">النوع:</span>
+          <span class="filter-select-label">{{ 'common.typeLabel' | t }}</span>
           <select [value]="requestType()" (change)="setFilter('requestType', $event)">
-            <option value="">الكل</option>
-            <option value="CreateFamily">إنشاء عائلة</option>
-            <option value="AddFamilyMember">إضافة عضو</option>
+            <option value="">{{ 'common.all' | t }}</option>
+            <option value="CreateFamily">{{ 'family.create' | t }}</option>
+            <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
           </select>
         </label>
 
         @if (result(); as page) {
-          <div class="kpi-chip kpi-chip--total" title="إجمالي الطلبات">
+          <div class="kpi-chip kpi-chip--total" [title]="'review.totalRequests' | t">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span class="chip-label">الطلبات</span>
+            <span class="chip-label">{{ 'review.requests' | t }}</span>
             <span class="chip-count">{{ page.totalCount }}</span>
           </div>
         }
@@ -78,25 +78,25 @@
 
   @if (messages().length) {
     <div class="state error" role="alert">
-      <h2>تعذر تحميل الطلبات</h2>
+      <h2>{{ 'review.requestsLoadFailed' | t }}</h2>
       @for (message of messages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <button class="btn btn-outline-secondary" type="button" (click)="load()">
-        إعادة المحاولة
+        {{ 'discovery.retry' | t }}
       </button>
     </div>
   } @else if (loading() && !result()) {
     <div class="state" role="status">
       <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>جارٍ تحميل طلبات العائلة…</h2>
+      <h2>{{ 'review.loadingFamilyRequests' | t }}</h2>
     </div>
   } @else if (result(); as page) {
     @if (page.items.length) {
       <div class="data-list">
         <div class="data-header">
-          <span>الأطراف</span><span>النوع</span><span>الحالة</span><span>المراجعة</span
-          ><span>تاريخ الإرسال</span><span></span>
+          <span>{{ 'review.parties' | t }}</span><span>{{ 'register.gender' | t }}</span><span>{{ 'common.status' | t }}</span><span>{{ 'common.review' | t }}</span
+          ><span>{{ 'requests.submittedAt' | t }}</span><span></span>
         </div>
         @for (item of page.items; track item.requestId) {
           <article class="data-row">
@@ -111,47 +111,47 @@
               <small>{{ item.requesterClaimedRole }} ← {{ item.targetClaimedRole }}</small>
             </div>
             <div>
-              <span class="mobile-label">النوع</span>
-              {{ item.requestType === 'CreateFamily' ? 'إنشاء عائلة' : 'إضافة عضو' }}
+              <span class="mobile-label">{{ 'register.gender' | t }}</span>
+              {{ item.requestType === 'CreateFamily' ? uiLanguage.t('family.create') : uiLanguage.t('family.addMember') }}
             </div>
             <span [class]="'badge-state ' + item.status.toLowerCase()">
-              {{ item.status === 'Pending' ? 'قيد المراجعة' : item.status === 'ModificationRequested' ? 'مطلوب تعديل' : item.status === 'Approved' ? 'معتمد' : 'مرفوض' }}
+              {{ item.status === 'Pending' ? uiLanguage.t('common.pendingReview') : item.status === 'ModificationRequested' ? uiLanguage.t('common.modificationRequested') : item.status === 'Approved' ? uiLanguage.t('common.approved') : uiLanguage.t('common.rejected') }}
             </span>
-            <div><span class="mobile-label">المراجعة</span>#{{ item.currentRevisionNumber }}</div>
+            <div><span class="mobile-label">{{ 'common.review' | t }}</span>#{{ item.currentRevisionNumber }}</div>
             <time [attr.datetime]="item.submittedOnUtc">{{ formatDate(item.submittedOnUtc) }}</time>
             <button
               type="button"
               class="btn btn-outline-secondary"
               (click)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
             >
-              مراجعة
+              {{ 'review.inspect' | t }}
             </button>
           </article>
         }
       </div>
-      <nav class="pagination-bar" aria-label="صفحات طلبات العلاقات العائلية">
+      <nav class="pagination-bar" [attr.aria-label]="'review.familyPages' | t">
         <button
           class="btn btn-outline-secondary"
           type="button"
           [disabled]="pageNumber() <= 1 || loading()"
           (click)="goToPage(pageNumber() - 1)"
         >
-          السابق
+          {{ 'discovery.previous' | t }}
         </button>
-        <span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span>
+        <span>{{ 'discovery.page' | t }} {{ pageNumber() }} {{ 'discovery.of' | t }} {{ totalPages() }}</span>
         <button
           class="btn btn-outline-secondary"
           type="button"
           [disabled]="pageNumber() >= totalPages() || loading()"
           (click)="goToPage(pageNumber() + 1)"
         >
-          التالي
+          {{ 'discovery.next' | t }}
         </button>
       </nav>
     } @else {
       <div class="state">
-        <h2>لا توجد طلبات مطابقة</h2>
-        <p>غيّر البحث أو عوامل التصفية.</p>
+        <h2>{{ 'requests.noMatches' | t }}</h2>
+        <p>{{ 'review.changeFilters' | t }}</p>
       </div>
     }
   }
@@ -159,8 +159,8 @@
   <!-- Family Relationship Request Review Slide-over Side Drawer -->
   <app-side-drawer
     [opened]="selectedRequestId() !== null"
-    [title]="'مراجعة: ' + (selectedRequestTitle() || 'طلب علاقة عائلية')"
-    description="مراجعة أطراف الطلب ومطابقة الأدلة المرفقة واتخاذ قرار الاعتماد أو طلب التعديل أو الرفض."
+    [title]="uiLanguage.t('ui.expressions.24') + ' ' + (selectedRequestTitle() || uiLanguage.t('family.relationshipRequest'))"
+    [description]="'review.familyDecisionHelp' | t"
     width="820px"
     (closed)="closeReviewDrawer()"
   >

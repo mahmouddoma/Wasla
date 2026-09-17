@@ -1,7 +1,7 @@
 <section class="management-page">
   <app-page-header
-    heading="الأدوار والصلاحيات"
-    description="راجع أدوار النظام وافتح كل دور لإدارة الصلاحيات المسندة إليه في لوحة جانبية سلسة."
+    [heading]="'admin.navRoles' | t"
+    [description]="'ui.full.72' | t"
     icon="roles"
   >
     <div pageHeaderDeck class="header-control-grid">
@@ -18,7 +18,7 @@
             role="searchbox"
             enterkeyhint="search"
             autocomplete="off"
-            placeholder="ابحث في أدوار النظام…"
+            [placeholder]="'ui.full.68' | t"
             [value]="searchText()"
             (input)="onSearchInput($event)"
           />
@@ -26,7 +26,7 @@
             <button
               type="button"
               class="btn-clear-search-integrated"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
               (click)="clearSearch()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -40,13 +40,13 @@
 
       <!-- Roles Stat Chip -->
       @if (roles(); as allRoles) {
-        <div class="kpi-chips-cluster" aria-label="إحصائيات الأدوار">
-          <div class="kpi-chip kpi-chip--total" title="إجمالي الأدوار المسجلة في النظام">
+        <div class="kpi-chips-cluster" [attr.aria-label]="'ui.full.71' | t">
+          <div class="kpi-chip kpi-chip--total" [title]="'ui.full.70' | t">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="4" y="10" width="16" height="11" rx="2" />
               <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
             </svg>
-            <span class="chip-label">أدوار النظام</span>
+            <span class="chip-label">{{ 'ui.full.69' | t }}</span>
             <span class="chip-count">{{ allRoles.length }}</span>
           </div>
         </div>
@@ -57,45 +57,45 @@
   @if (apiMessages().length) {
     <div class="state error" role="alert">
       <img class="state-illustration" src="/SVG-AVATAR/Doctors-rafiki.svg" alt="" loading="lazy" decoding="async" />
-      <h2>تعذر تحميل الأدوار</h2>
+      <h2>{{ 'ui.full.73' | t }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <button class="btn btn-outline-secondary" type="button" (click)="load()">
-        إعادة المحاولة
+        {{ 'discovery.retry' | t }}
       </button>
     </div>
   } @else if (isLoading() && !roles()) {
     <div class="state" role="status">
       <span class="roles-loader" aria-hidden="true"></span>
-      <h2>جارٍ تحميل الأدوار…</h2>
+      <h2>{{ 'ui.full.74' | t }}</h2>
     </div>
   } @else if (filteredRoles(); as roleItems) {
     @if (roleItems.length) {
       <div class="data-list roles-list">
         <div class="data-header" aria-hidden="true">
-          <span>اسم الدور</span>
-          <span>النوع</span>
-          <span>المعرّف</span>
-          <span>الإجراء</span>
+          <span>{{ 'ui.full.75' | t }}</span>
+          <span>{{ 'register.gender' | t }}</span>
+          <span>{{ 'common.identifier' | t }}</span>
+          <span>{{ 'ui.full.76' | t }}</span>
         </div>
         @for (role of roleItems; track role.id) {
           <article
             class="data-row role-row clickable-row"
             (click)="openRoleDrawer(role)"
-            title="انقر لفتح صلاحيات هذا الدور في اللوحة الجانبية"
+            [title]="'ui.full.79' | t"
           >
             <div class="role-name identity">
               <span class="role-name-text" lang="en" dir="ltr">{{ role.name }}</span>
-              <small>الاسم كما رجع من النظام</small>
+              <small>{{ 'ui.full.77' | t }}</small>
             </div>
             <div class="role-type">
               <span class="badge-state" [class.system-role]="role.isSystemRole">
-                {{ role.isSystemRole ? 'System Role' : 'Custom Role' }}
+                {{ (role.isSystemRole ? 'roles.systemRole' : 'roles.customRole') | t }}
               </span>
             </div>
             <div class="role-id">
-              <span class="mobile-label">المعرّف</span>
+              <span class="mobile-label">{{ 'common.identifier' | t }}</span>
               <code>{{ role.id }}</code>
             </div>
             <div class="role-actions">
@@ -108,7 +108,7 @@
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
-                <span>إدارة الصلاحيات</span>
+                <span>{{ 'ui.full.78' | t }}</span>
               </button>
             </div>
           </article>
@@ -117,8 +117,8 @@
     } @else {
       <div class="state">
         <img class="state-illustration" src="/SVG-AVATAR/Doctors-rafiki.svg" alt="" loading="lazy" decoding="async" />
-        <h2>لا توجد أدوار مطابقة للبحث</h2>
-        <p>لم نعثر على دور مطابق لعبارة "{{ searchText() }}".</p>
+        <h2>{{ 'ui.full.80' | t }}</h2>
+        <p>{{ 'ui.full.81' | t }}{{ searchText() }}".</p>
       </div>
     }
   }
@@ -126,11 +126,11 @@
   <!-- Role Details Slide-over Drawer -->
   <app-side-drawer
     [opened]="selectedRole() !== null"
-    [title]="selectedRole() ? 'صلاحيات ' + selectedRole()!.name : 'صلاحيات الدور'"
+    [title]="selectedRole() ? uiLanguage.t('ui.expressions.98') + ' ' + selectedRole()!.name : uiLanguage.t('ui.expressions.99')"
     [description]="
       selectedRole()?.isSystemRole
-        ? 'دور نظام أساسي — استعراض وتحديث الصلاحيات المسندة'
-        : 'دور مخصص — استعراض وتحديث الصلاحيات المسندة'
+        ? uiLanguage.t('ui.expressions.100')
+        : uiLanguage.t('ui.expressions.101')
     "
     width="880px"
     (closed)="closeRoleDrawer()"

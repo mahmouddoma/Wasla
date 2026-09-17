@@ -1,0 +1,1031 @@
+<main class="receptions-shell" [dir]="langService.dir()">
+  <!-- Ambient backdrop lighting -->
+  <div class="ambient-glow-mesh" aria-hidden="true">
+    <div class="ambient-circle circle-teal"></div>
+    <div class="ambient-circle circle-navy"></div>
+  </div>
+
+  <!-- Top Enterprise Floating Header -->
+  <header class="profile-header">
+    <div class="brand-cluster">
+      <img
+        class="profile-logo"
+        src="/images/wasla-mark.png"
+        width="1254"
+        height="1254"
+        [alt]="'common.appName' | t"
+      />
+      <div class="brand-meta">
+        <span class="brand-name">{{ 'common.appName' | t }}</span>
+        <span class="brand-tagline">{{ 'common.platform' | t }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <app-language-switcher variant="header" />
+
+      @if (receptionId) {
+        <a class="btn-head btn-head-nav" routerLink="/doctor/receptions">
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <span>{{ 'ui.full.560' | t }}</span>
+        </a>
+      }
+
+      <a class="btn-head btn-head-nav" routerLink="/doctor/practices">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+        </svg>
+        <span>{{ 'workspace.myPractices' | t }}</span>
+      </a>
+
+      <a class="btn-head btn-head-nav" routerLink="/workspace/doctor">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span>{{ 'common.workspace' | t }}</span>
+      </a>
+
+      <button
+        class="btn-head btn-head-logout"
+        type="button"
+        (click)="logout()"
+        [title]="'common.logout' | t"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        <span>{{ 'common.exit' | t }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  @if (messages().length) {
+    <div class="notice-banner error" role="alert">
+      <svg
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div class="notice-content">
+        @for (message of messages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Page Hero Header (Shown on list view; detail view uses integrated reception-detail-hero) -->
+  @if (!receptionId) {
+    <section class="hero-section">
+      <div class="hero-main">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>{{ 'ui.full.561' | t }}</span>
+        </div>
+        <h1 class="hero-title">{{ 'common.receptionTeam' | t }}</h1>
+        <p class="hero-subtitle">
+          {{ 'ui.full.562' | t }}
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <!-- Quick Stats Chips -->
+        <div class="stats-strip">
+          <div class="stat-pill">
+            <span class="stat-num">{{ receptions().length }}</span>
+            <span class="stat-lbl">{{ 'ui.full.563' | t }}</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-num text-teal">{{ totalAssignmentsCount() }}</span>
+            <span class="stat-lbl">{{ 'ui.full.564' | t }}</span>
+          </div>
+          @if (activeReceptionsCount() > 0) {
+            <div class="stat-pill">
+              <span class="stat-num text-muted">{{ activeReceptionsCount() }}</span>
+              <span class="stat-lbl">{{ 'ui.full.565' | t }}</span>
+            </div>
+          }
+        </div>
+
+        @if (canManageUsers) {
+          <button type="button" class="btn-create-reception" (click)="openCreateDrawer()">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>{{ 'ui.full.566' | t }}</span>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Main Container -->
+  <section class="receptions-content" aria-live="polite">
+    @if (isLoading()) {
+      <div class="state-card loading-card">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>{{ 'ui.full.567' | t }}</p>
+      </div>
+    } @else if (notFound()) {
+      <div class="state-card error-card">
+        <div class="state-icon error-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h2>{{ 'ui.full.568' | t }}</h2>
+        <p>{{ 'ui.full.569' | t }}</p>
+        <a class="btn-back-link" routerLink="/doctor/receptions">{{ 'common.backTeam' | t }}</a>
+      </div>
+    } @else if (forbidden()) {
+      <div class="state-card error-card">
+        <div class="state-icon error-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2>{{ 'ui.full.570' | t }}</h2>
+        <p>{{ 'ui.full.571' | t }}</p>
+        <a class="btn-back-link" routerLink="/doctor/receptions">{{ 'common.backTeam' | t }}</a>
+      </div>
+    } @else if (reception(); as item) {
+      <!-- Detail Mode: Reception Staff Profile & Clinic Assignments -->
+      <div class="reception-detail-hero">
+        <div class="reception-detail-main">
+          <div class="reception-detail-avatar">
+            <svg
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div class="reception-detail-meta">
+            <div class="detail-badge-group">
+              <a
+                class="breadcrumb-back"
+                routerLink="/doctor/receptions"
+                [title]="'common.backTeam' | t"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  aria-hidden="true"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>{{ 'common.receptionTeam' | t }}</span>
+              </a>
+              <span class="breadcrumb-sep" aria-hidden="true">/</span>
+              <span
+                class="status-pill"
+                [class.active]="item.assignments.some((a) => a.isActive)"
+                [class.inactive]="!item.assignments.some((a) => a.isActive)"
+              >
+                <span class="pulse-dot"></span>
+                {{
+                  item.assignments.some((a) => a.isActive)
+                    ? langService.t('ui.expressions.197')
+                    : langService.t('ui.expressions.198')
+                }}
+              </span>
+              <span class="assignments-chip">
+                {{ item.assignments.length }}
+                {{
+                  item.assignments.length === 1
+                    ? langService.t('ui.expressions.15')
+                    : langService.t('ui.expressions.16')
+                }}
+              </span>
+            </div>
+            <h1 class="reception-detail-name">
+              {{ langService.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
+            </h1>
+            @if (item.nameEn) {
+              <p class="reception-detail-en" dir="ltr">{{ item.nameEn }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="reception-contact-strip">
+          <div class="contact-pill">
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+              />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            <span dir="ltr">{{ item.email }}</span>
+          </div>
+          @if (item.phoneNumber) {
+            <div class="contact-pill">
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                />
+              </svg>
+              <span dir="ltr">{{ item.phoneNumber }}</span>
+            </div>
+          }
+          <div class="contact-pill">
+            <span class="username-tag" dir="ltr">&#64;{{ item.userName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Grid: Linked Clinics & Assignment Editor -->
+      <div class="detail-workspace-grid">
+        <!-- ── العمود الأول: العيادات المرتبطة ── -->
+        <section class="detail-panel linked-practices-panel">
+          <div class="panel-header">
+            <div>
+              <h2>{{ 'ui.full.572' | t }}</h2>
+              <p class="panel-subtitle">
+                {{ 'ui.full.573' | t }}
+              </p>
+            </div>
+            <span class="count-badge">{{ item.assignments.length }}</span>
+          </div>
+
+          <div class="assignments-list">
+            @for (assignment of item.assignments; track assignment.id) {
+              <article class="assignment-card" [class.inactive]="!assignment.isActive">
+                <div class="assignment-card-head">
+                  <div class="assignment-clinic-info">
+                    <div class="clinic-icon-circle">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="clinic-name">
+                        {{ assignment.practiceNameAr || assignment.doctorPracticeId }}
+                      </h3>
+                      <span class="clinic-status-tag" [class.active]="assignment.isActive">
+                        {{
+                          assignment.isActive
+                            ? langService.t('ui.expressions.199')
+                            : langService.t('ui.expressions.200')
+                        }}
+                      </span>
+                    </div>
+                  </div>
+
+                  @if (canManageAssignments) {
+                    <div class="assignment-quick-actions">
+                      <button
+                        class="btn btn-outline-secondary btn-sm"
+                        type="button"
+                        (click)="editAssignment(assignment)"
+                        [title]="'ui.full.575' | t"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="13"
+                          height="13"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path
+                            d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          ></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>{{ 'ui.full.574' | t }}</span>
+                      </button>
+
+                      <button
+                        class="btn btn-sm"
+                        [class.btn-outline-danger]="assignment.isActive"
+                        [class.btn-primary]="!assignment.isActive"
+                        type="button"
+                        [disabled]="isSubmitting()"
+                        (click)="toggleAssignment(assignment)"
+                      >
+                        {{
+                          assignment.isActive
+                            ? langService.t('common.deactivate')
+                            : langService.t('common.activate')
+                        }}
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                <div class="assignment-permissions-row">
+                  <span class="perm-title">{{ 'ui.full.576' | t }}</span>
+                  <div class="perm-chips-wrap">
+                    @for (permission of assignment.permissions; track permission.id) {
+                      <span class="perm-chip">
+                        {{ getPermissionLabel(permission.code) }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </article>
+            } @empty {
+              <div class="empty-assignments-box">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+                </svg>
+                <p>{{ 'ui.full.577' | t }}</p>
+                <span class="empty-hint">{{ 'ui.full.578' | t }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- ── العمود الثاني: محرر وتعديل الربط ── -->
+        @if (canManageAssignments) {
+          <section class="detail-panel assignment-editor-panel">
+            <div class="panel-header">
+              <div>
+                <h2>
+                  {{
+                    editingAssignmentId()
+                      ? langService.t('ui.expressions.201')
+                      : langService.t('ui.expressions.202')
+                  }}
+                </h2>
+                <p class="panel-subtitle">
+                  {{
+                    editingAssignmentId()
+                      ? langService.t('ui.expressions.203')
+                      : langService.t('ui.expressions.204')
+                  }}
+                </p>
+              </div>
+            </div>
+
+            <form class="assignment-form" (submit)="$event.preventDefault(); saveAssignment()">
+              @if (!editingAssignmentId()) {
+                <label class="form-field">
+                  <span>{{ 'ui.full.579' | t }}</span>
+                  <select
+                    [value]="selectedPracticeId()"
+                    #practiceControl
+                    (change)="selectedPracticeId.set(practiceControl.value)"
+                  >
+                    <option value="">{{ 'ui.full.580' | t }}</option>
+                    @for (practice of practices(); track practice.id) {
+                      <option [value]="practice.id">
+                        {{
+                          langService.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr
+                        }}
+                      </option>
+                    }
+                  </select>
+                </label>
+              }
+
+              <div class="permissions-section">
+                <div class="permissions-header">
+                  <span>{{ 'ui.full.581' | t }}</span>
+                  <span class="perm-note">{{ 'ui.full.582' | t }}</span>
+                </div>
+
+                <div class="permissions-grid">
+                  @for (permission of permissionOptions(); track permission.id) {
+                    <label
+                      class="permission-card"
+                      [class.selected]="selectedPermissionIds().includes(permission.id)"
+                    >
+                      <input
+                        type="checkbox"
+                        class="sr-only-chk"
+                        [checked]="selectedPermissionIds().includes(permission.id)"
+                        #permissionControl
+                        (change)="togglePermission(permission.id, permissionControl.checked)"
+                      />
+                      <div class="chk-box">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="11"
+                          height="11"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="3"
+                        >
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                      <div class="permission-meta">
+                        <span class="perm-name">{{ getPermissionLabel(permission.code) }}</span>
+                        <code class="perm-code" dir="ltr">{{ permission.code }}</code>
+                      </div>
+                    </label>
+                  } @empty {
+                    <div
+                      class="permissions-empty-hint"
+                      id="assignment-permissions-help"
+                      role="status"
+                    >
+                      <p>
+                        {{ langService.t('receptions.permissionsUnavailable') }}
+                      </p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="form-actions-row">
+                <button
+                  class="btn btn-primary"
+                  type="submit"
+                  [disabled]="
+                    isSubmitting() ||
+                    !hasSelectedPermissions() ||
+                    (!editingAssignmentId() && !selectedPracticeId())
+                  "
+                  [attr.aria-describedby]="
+                    !permissionOptions().length ? 'assignment-permissions-help' : null
+                  "
+                >
+                  {{
+                    isSubmitting()
+                      ? langService.t('common.saving')
+                      : editingAssignmentId()
+                        ? langService.t('roles.savePermissions')
+                        : langService.t('ui.expressions.205')
+                  }}
+                </button>
+
+                @if (editingAssignmentId()) {
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    (click)="cancelAssignmentEdit()"
+                  >
+                    {{ 'common.cancel' | t }}
+                  </button>
+                }
+              </div>
+            </form>
+          </section>
+        }
+      </div>
+    } @else {
+      <!-- List Mode: Staff Cards Grid -->
+      <div class="receptions-grid">
+        @for (item of receptions(); track item.id) {
+          <article class="reception-card">
+            <div class="reception-card-header">
+              <div class="reception-avatar">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <div class="reception-meta">
+                <h2 class="reception-name">
+                  {{ langService.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
+                </h2>
+                <span class="reception-username" dir="ltr">&#64;{{ item.userName }}</span>
+              </div>
+              <span
+                class="assignments-count-badge"
+                [class.has-assignments]="item.assignments.length > 0"
+              >
+                {{ item.assignments.length }}
+                {{
+                  item.assignments.length === 1
+                    ? langService.t('ui.expressions.15')
+                    : langService.t('ui.expressions.16')
+                }}
+              </span>
+            </div>
+
+            <div class="reception-card-body">
+              <div class="info-row">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <span dir="ltr">{{ item.email }}</span>
+              </div>
+              @if (item.phoneNumber) {
+                <div class="info-row">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                    />
+                  </svg>
+                  <span dir="ltr">{{ item.phoneNumber }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="reception-card-footer">
+              <a class="btn-manage-reception" [routerLink]="['/doctor/receptions', item.id]">
+                <span>{{ 'ui.full.583' | t }}</span>
+                <svg
+                  class="arrow-svg"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.3"
+                >
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </a>
+            </div>
+          </article>
+        } @empty {
+          <div class="state-card empty-card">
+            <div class="state-icon empty-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="36"
+                height="36"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <h2>{{ 'ui.full.584' | t }}</h2>
+            <p>
+              {{ 'ui.full.585' | t }}
+            </p>
+            @if (canManageUsers) {
+              <button type="button" class="btn-create-reception" (click)="openCreateDrawer()">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>{{ 'ui.full.586' | t }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- ── Create Reception Side Drawer (ينزلق كـ سايدبار مش صفحة جديدة) ── -->
+  <app-side-drawer
+    [opened]="isCreateDrawerOpen()"
+    [title]="'ui.full.592' | t"
+    [description]="'ui.full.593' | t"
+    width="640px"
+    (closed)="closeCreateDrawer()"
+  >
+    @if (isCreateDrawerOpen()) {
+      @if (messages().length) {
+        <div class="form-notice-banner" role="alert">
+          <div class="notice-icon-wrap" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div class="notice-messages">
+            @for (message of messages(); track message) {
+              <p>{{ message | t }}</p>
+            }
+          </div>
+        </div>
+      }
+
+      <form class="admin-drawer-form" (submit)="create($event)" novalidate>
+        <!-- ── القسم الأول: البيانات الأساسية والحساب ── -->
+        <div class="form-section-card">
+          <div class="section-title-bar">
+            <div class="section-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <div class="section-meta">
+              <h3>{{ 'account.basicDetails' | t }}</h3>
+              <p>{{ 'account.identityDescription' | t }}</p>
+            </div>
+          </div>
+
+          <div class="section-fields-grid">
+            <div class="form-field-group full-span">
+              <label class="field-label">
+                <span>{{ 'workspace.username' | t }}</span>
+                <span class="required-star" aria-hidden="true">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <span class="field-prefix-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
+                  </svg>
+                </span>
+                <input
+                  dir="ltr"
+                  autocomplete="username"
+                  [placeholder]="'ui.full.587' | t"
+                  [formField]="userForm.userName"
+                />
+              </div>
+              <small class="field-hint">{{ 'account.usernameHelp' | t }}</small>
+            </div>
+
+            <div class="form-field-group half-span">
+              <label class="field-label">
+                <span>{{ 'register.fullNameAr' | t }}</span>
+                <span class="required-star" aria-hidden="true">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <span class="field-prefix-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+                <input
+                  autocomplete="name"
+                  [placeholder]="'common.fullName' | t"
+                  [formField]="userForm.nameAr"
+                />
+              </div>
+            </div>
+
+            <div class="form-field-group half-span">
+              <label class="field-label">
+                <span>{{ 'common.nameEn' | t }}</span>
+                <span class="optional-pill">{{ 'common.optional' | t }}</span>
+              </label>
+              <div class="input-icon-wrap">
+                <span class="field-prefix-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  </svg>
+                </span>
+                <input
+                  dir="ltr"
+                  autocomplete="name"
+                  [placeholder]="'common.englishNamePlaceholder' | t"
+                  [formField]="userForm.nameEn"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── القسم الثاني: معلومات التواصل ── -->
+        <div class="form-section-card">
+          <div class="section-title-bar">
+            <div class="section-icon icon-teal" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </div>
+            <div class="section-meta">
+              <h3>{{ 'account.contactTitle' | t }}</h3>
+              <p>{{ 'account.contactDescription' | t }}</p>
+            </div>
+          </div>
+
+          <div class="section-fields-grid">
+            <div class="form-field-group half-span">
+              <label class="field-label">
+                <span>{{ 'workspace.email' | t }}</span>
+                <span class="required-star" aria-hidden="true">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <span class="field-prefix-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                    />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <input
+                  dir="ltr"
+                  type="email"
+                  autocomplete="email"
+                  [placeholder]="'reception.emailExample' | t"
+                  [formField]="userForm.email"
+                />
+              </div>
+            </div>
+
+            <div class="form-field-group half-span">
+              <label class="field-label">
+                <span>{{ 'workspace.phone' | t }}</span>
+                <span class="optional-pill">{{ 'common.optional' | t }}</span>
+              </label>
+              <div class="input-icon-wrap">
+                <span class="field-prefix-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  dir="ltr"
+                  autocomplete="tel"
+                  [placeholder]="'common.phoneExample' | t"
+                  [formField]="userForm.phoneNumber"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── القسم الثالث: بيانات الأمان وكلمة المرور ── -->
+        <div class="form-section-card">
+          <div class="section-title-bar">
+            <div class="section-icon icon-navy" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <div class="section-meta">
+              <h3>{{ 'account.securityTitle' | t }}</h3>
+              <p>{{ 'ui.full.588' | t }}</p>
+            </div>
+          </div>
+
+          <div class="section-fields-grid">
+            <div class="form-field-group full-span">
+              <label class="field-label">
+                <span>{{ 'account.initialPassword' | t }}</span>
+                <span class="optional-pill">{{ 'common.optional' | t }}</span>
+              </label>
+              <div class="input-icon-wrap has-toggle">
+                <span class="field-prefix-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  dir="ltr"
+                  autocomplete="new-password"
+                  [placeholder]="'login.passwordPlaceholder' | t"
+                  [formField]="userForm.temporaryPassword"
+                />
+                <button
+                  type="button"
+                  class="btn-toggle-pw"
+                  (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="
+                    showPassword()
+                      ? langService.t('changePassword.hide')
+                      : langService.t('changePassword.show')
+                  "
+                >
+                  @if (showPassword()) {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                      ></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  } @else {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  }
+                </button>
+              </div>
+              <small class="field-hint">{{ 'ui.full.589' | t }}</small>
+            </div>
+          </div>
+        </div>
+
+        @if (userForm().touched() && userForm().errors().length) {
+          <div class="form-notice-banner" role="alert">
+            <div class="notice-icon-wrap" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div class="notice-messages">
+              <p>{{ 'ui.full.590' | t }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- ── شريط الإجراءات السفلي (Drawer Action Footer) ── -->
+        <div class="drawer-action-footer">
+          <button
+            class="btn-drawer-cancel"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="closeCreateDrawer()"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+          <button class="btn-drawer-submit" type="submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span>{{ 'common.savingApproval' | t }}</span>
+            } @else {
+              <svg viewBox="0 0 24 24" class="btn-icon" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="20" y1="8" x2="20" y2="14" />
+                <line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              <span>{{ 'ui.full.591' | t }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </app-side-drawer>
+
+  <!-- Enterprise Platform Footer -->
+  <app-platform-footer />
+</main>

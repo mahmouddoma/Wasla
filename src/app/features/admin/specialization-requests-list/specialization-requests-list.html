@@ -1,7 +1,7 @@
 <section class="management-page">
   <app-page-header
-    heading="طلبات تخصصات الأطباء"
-    description="مراجعة واعتماد مقترحات تخصصات الأطباء والتحقق من التخصصات الأساسية والفرعية."
+    [heading]="'specializations.requestsTitle' | t"
+    [description]="'ui.full.112' | t"
     icon="requests"
   >
     <div pageHeaderDeck class="header-control-grid">
@@ -18,7 +18,7 @@
             role="searchbox"
             enterkeyhint="search"
             autocomplete="off"
-            placeholder="ابحث باسم الطبيب أو البريد الإلكتروني…"
+            [placeholder]="'ui.full.105' | t"
             [formField]="searchForm.search"
             (input)="scheduleSearch()"
           />
@@ -26,7 +26,7 @@
             <button
               type="button"
               class="btn-clear-search-integrated"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
               (click)="clearSearch()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -42,19 +42,19 @@
             type="button"
             class="btn-reset-filters-chip"
             (click)="clearAllFilters()"
-            title="إعادة ضبط الفلاتر"
+            [title]="'common.resetFilters' | t"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
-            <span>إعادة تعيين</span>
+            <span>{{ 'common.reset' | t }}</span>
           </button>
         }
       </div>
 
       <!-- Quick KPI Status Filter Tabs -->
-      <div class="kpi-chips-cluster" role="tablist" aria-label="تصفية حسب حالة طلب التخصص">
+      <div class="kpi-chips-cluster" role="tablist" [attr.aria-label]="'ui.full.111' | t">
         <!-- All -->
         <button
           type="button"
@@ -63,14 +63,14 @@
           [class.active]="status() === ''"
           [attr.aria-selected]="status() === ''"
           (click)="filterByStatus('')"
-          title="عرض جميع الطلبات"
+          [title]="'ui.full.106' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3" />
             <rect x="9" y="3" width="6" height="4" rx="1" />
             <path d="m8 14 2.2 2.2L16 10.5" />
           </svg>
-          <span class="chip-label">الكل</span>
+          <span class="chip-label">{{ 'common.all' | t }}</span>
         </button>
 
         <!-- Pending Review -->
@@ -81,10 +81,10 @@
           [class.active]="status() === 'PendingReview'"
           [attr.aria-selected]="status() === 'PendingReview'"
           (click)="filterByStatus('PendingReview')"
-          title="طلبات قيد المراجعة الطبية"
+          [title]="'ui.full.107' | t"
         >
           <span class="live-pulse-dot" aria-hidden="true"></span>
-          <span class="chip-label">قيد المراجعة</span>
+          <span class="chip-label">{{ 'common.pendingReview' | t }}</span>
         </button>
 
         <!-- Modification Requested -->
@@ -95,13 +95,13 @@
           [class.active]="status() === 'ModificationRequested'"
           [attr.aria-selected]="status() === 'ModificationRequested'"
           (click)="filterByStatus('ModificationRequested')"
-          title="طلبات مطلوب تعديلها من الطبيب"
+          [title]="'ui.full.108' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
-          <span class="chip-label">مطلوب تعديل</span>
+          <span class="chip-label">{{ 'common.modificationRequested' | t }}</span>
         </button>
 
         <!-- Approved -->
@@ -112,13 +112,13 @@
           [class.active]="status() === 'Approved'"
           [attr.aria-selected]="status() === 'Approved'"
           (click)="filterByStatus('Approved')"
-          title="طلبات معتمدة"
+          [title]="'ui.full.109' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             <polyline points="9 12 11 14 15 10" />
           </svg>
-          <span class="chip-label">معتمد</span>
+          <span class="chip-label">{{ 'common.approved' | t }}</span>
         </button>
 
         <!-- Rejected -->
@@ -129,23 +129,23 @@
           [class.active]="status() === 'Rejected'"
           [attr.aria-selected]="status() === 'Rejected'"
           (click)="filterByStatus('Rejected')"
-          title="طلبات مرفوضة"
+          [title]="'ui.full.110' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
             <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
-          <span class="chip-label">مرفوض</span>
+          <span class="chip-label">{{ 'common.rejected' | t }}</span>
         </button>
 
         <!-- Request Type Selector -->
         <label class="filter-select-integrated">
-          <span class="filter-select-label">النوع:</span>
+          <span class="filter-select-label">{{ 'common.typeLabel' | t }}</span>
           <select [value]="type()" (change)="setFilter('type', $event)">
-            <option value="">الكل</option>
-            <option value="Initial">طلب أول</option>
-            <option value="Change">تغيير تخصص</option>
+            <option value="">{{ 'common.all' | t }}</option>
+            <option value="Initial">{{ 'common.initialRequest' | t }}</option>
+            <option value="Change">{{ 'specializations.change' | t }}</option>
           </select>
         </label>
       </div>
@@ -156,12 +156,12 @@
   <div class="table-meta-bar">
     <div class="meta-start">
       <span class="meta-count-text">
-        <strong>{{ result()?.totalCount ?? 0 }}</strong> طلب تخصص
+        <strong>{{ result()?.totalCount ?? 0 }}</strong> {{ 'ui.full.113' | t }}
       </span>
       @if (isLoading()) {
         <span class="live-update-pill">
           <span class="pulse-dot" aria-hidden="true"></span>
-          <span>جارٍ التحديث…</span>
+          <span>{{ 'common.updating' | t }}</span>
         </span>
       }
     </div>
@@ -182,7 +182,7 @@
             <line x1="12" y1="16" x2="12" y2="12" />
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
-          <span>تتطلب مراجعة واعتماد الإدارة الطبية</span>
+          <span>{{ 'ui.full.114' | t }}</span>
         </span>
       </div>
     }
@@ -198,15 +198,15 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2>تعذر تحميل قائمة طلبات التخصص</h2>
+      <h2>{{ 'ui.full.115' | t }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <button class="btn btn-outline-secondary" type="button" (click)="load()">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
         </svg>
-        <span>إعادة المحاولة</span>
+        <span>{{ 'discovery.retry' | t }}</span>
       </button>
     </div>
   } @else if (isLoading() && !result()) {
@@ -220,7 +220,7 @@
           <path d="m8 14 2.2 2.2L16 10.5" />
         </svg>
       </div>
-      <h2>جارٍ تحميل طلبات التخصص…</h2>
+      <h2>{{ 'ui.full.116' | t }}</h2>
     </div>
   } @else if (result(); as page) {
     @if (page.items.length) {
@@ -228,12 +228,12 @@
       <div class="requests-table-card">
         <div class="table-scroll-container">
           <div class="table-header-row" aria-hidden="true">
-            <span class="th-col th-doctor">الطبيب</span>
-            <span class="th-col th-type">نوع الطلب</span>
-            <span class="th-col th-status">الحالة</span>
-            <span class="th-col th-revision">المراجعة</span>
-            <span class="th-col th-date">تاريخ الإرسال</span>
-            <span class="th-col th-actions">الإجراءات</span>
+            <span class="th-col th-doctor">{{ 'common.theDoctor' | t }}</span>
+            <span class="th-col th-type">{{ 'common.requestType' | t }}</span>
+            <span class="th-col th-status">{{ 'common.status' | t }}</span>
+            <span class="th-col th-revision">{{ 'common.review' | t }}</span>
+            <span class="th-col th-date">{{ 'requests.submittedAt' | t }}</span>
+            <span class="th-col th-actions">{{ 'common.actions' | t }}</span>
           </div>
 
           <div class="table-body">
@@ -280,7 +280,7 @@
 
                 <!-- Col 2: Request Type -->
                 <div class="col-type">
-                  <span class="mobile-label">النوع:</span>
+                  <span class="mobile-label">{{ 'common.typeLabel' | t }}</span>
                   @if (item.type === 'Initial') {
                     <span class="badge-type badge-type--initial">
                       <svg
@@ -296,7 +296,7 @@
                           points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
                         />
                       </svg>
-                      <span>طلب أول</span>
+                      <span>{{ 'common.initialRequest' | t }}</span>
                     </span>
                   } @else {
                     <span class="badge-type badge-type--change">
@@ -315,19 +315,19 @@
                         <line x1="15" y1="15" x2="21" y2="21" />
                         <line x1="4" y1="4" x2="9" y2="9" />
                       </svg>
-                      <span>تغيير تخصص</span>
+                      <span>{{ 'specializations.change' | t }}</span>
                     </span>
                   }
                 </div>
 
                 <!-- Col 3: Status -->
                 <div class="col-status">
-                  <span class="mobile-label">الحالة:</span>
+                  <span class="mobile-label">{{ 'common.statusLabel' | t }}</span>
                   @switch (item.status) {
                     @case ('PendingReview') {
                       <span class="badge-state badge-state--pending">
                         <span class="state-dot" aria-hidden="true"></span>
-                        <span>قيد المراجعة</span>
+                        <span>{{ 'common.pendingReview' | t }}</span>
                       </span>
                     }
                     @case ('ModificationRequested') {
@@ -344,7 +344,7 @@
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                        <span>مطلوب تعديل</span>
+                        <span>{{ 'common.modificationRequested' | t }}</span>
                       </span>
                     }
                     @case ('Approved') {
@@ -360,7 +360,7 @@
                         >
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <span>معتمد</span>
+                        <span>{{ 'common.approved' | t }}</span>
                       </span>
                     }
                     @case ('Rejected') {
@@ -377,7 +377,7 @@
                           <line x1="18" y1="6" x2="6" y2="18" />
                           <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
-                        <span>مرفوض</span>
+                        <span>{{ 'common.rejected' | t }}</span>
                       </span>
                     }
                   }
@@ -385,15 +385,15 @@
 
                 <!-- Col 4: Revision Number -->
                 <div class="col-revision">
-                  <span class="mobile-label">المراجعة:</span>
-                  <span class="revision-pill" title="رقم مراجعة الطلب"
+                  <span class="mobile-label">{{ 'ui.full.117' | t }}</span>
+                  <span class="revision-pill" [title]="'ui.full.118' | t"
                     >#{{ item.currentRevisionNumber }}</span
                   >
                 </div>
 
                 <!-- Col 5: Submitted Date -->
                 <div class="col-date">
-                  <span class="mobile-label">تاريخ الإرسال:</span>
+                  <span class="mobile-label">{{ 'ui.full.119' | t }}</span>
                   <div class="date-pill">
                     <svg
                       viewBox="0 0 24 24"
@@ -421,9 +421,9 @@
                     type="button"
                     class="btn-review-action"
                     (click)="openReviewDrawer(item.requestId, item.doctorNameAr)"
-                    title="مراجعة مقترح التخصصات واتخاذ القرار في القائمة الجانبية"
+                    [title]="'ui.full.120' | t"
                   >
-                    <span>المراجعة</span>
+                    <span>{{ 'common.review' | t }}</span>
                     <svg
                       viewBox="0 0 24 24"
                       width="14"
@@ -445,7 +445,7 @@
 
       <!-- Modern Pagination Bar -->
       @if (totalPages() > 1) {
-        <nav class="modern-pagination" aria-label="صفحات طلبات التخصص">
+        <nav class="modern-pagination" [attr.aria-label]="'ui.full.121' | t">
           <button
             class="btn btn-page-nav"
             type="button"
@@ -463,13 +463,13 @@
             >
               <path d="m9 18 6-6-6-6" />
             </svg>
-            <span>السابق</span>
+            <span>{{ 'discovery.previous' | t }}</span>
           </button>
 
           <div class="page-indicator">
-            <span>صفحة</span>
+            <span>{{ 'discovery.page' | t }}</span>
             <strong>{{ pageNumber() }}</strong>
-            <span>من</span>
+            <span>{{ 'discovery.of' | t }}</span>
             <strong>{{ totalPages() }}</strong>
           </div>
 
@@ -479,7 +479,7 @@
             [disabled]="pageNumber() >= totalPages() || isLoading()"
             (click)="goToPage(pageNumber() + 1)"
           >
-            <span>التالي</span>
+            <span>{{ 'discovery.next' | t }}</span>
             <svg
               viewBox="0 0 24 24"
               width="15"
@@ -504,8 +504,8 @@
           loading="lazy"
           decoding="async"
         />
-        <h2>لا توجد طلبات تخصص مطابقة</h2>
-        <p>لم نتمكن من العثور على أي طلبات تخصص تطابق معايير البحث أو الفلترة المحددة.</p>
+        <h2>{{ 'ui.full.122' | t }}</h2>
+        <p>{{ 'ui.full.123' | t }}</p>
         @if (hasActiveFilter()) {
           <button class="btn btn-reset-empty" type="button" (click)="clearAllFilters()">
             <svg
@@ -520,7 +520,7 @@
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
-            <span>إعادة تعيين الفلاتر والبحث</span>
+            <span>{{ 'ui.full.124' | t }}</span>
           </button>
         }
       </div>
@@ -530,8 +530,8 @@
   <!-- Specialization Request Review Slide-over Side Drawer -->
   <app-side-drawer
     [opened]="selectedRequestId() !== null"
-    [title]="'مراجعة طلب تخصص: ' + (selectedDoctorName() || 'الطبيب')"
-    description="مراجعة واعتماد أو رفض مقترح التخصصات الطبية للطبيب وإرسال الملاحظات."
+    [title]="uiLanguage.t('ui.expressions.110') + ' ' + (selectedDoctorName() || uiLanguage.t('common.theDoctor'))"
+    [description]="'ui.full.125' | t"
     width="820px"
     (closed)="closeReviewDrawer()"
   >

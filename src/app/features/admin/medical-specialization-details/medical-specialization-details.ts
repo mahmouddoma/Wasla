@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -16,20 +18,22 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { MedicalSpecializationsApi } from '../../../core/medical-specializations/medical-specializations-api';
-import { MedicalSpecialization } from '../../../core/medical-specializations/medical-specializations.models';
+import { MedicalSpecializationsApi } from '../services/medical-specializations';
+import { MedicalSpecialization } from '../services/medical-specializations';
 import { ToastService } from '../../../core/notifications/toast.service';
 
 type LifecycleAction = 'activate' | 'deactivate' | 'delete' | 'restore';
 
 @Component({
   selector: 'app-medical-specialization-details',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe],
   templateUrl: './medical-specialization-details.html',
   styleUrl: './medical-specialization-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MedicalSpecializationDetails {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(MedicalSpecializationsApi);
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
@@ -53,13 +57,13 @@ export class MedicalSpecializationDetails {
     sortOrder: 0,
   });
   protected readonly detailsForm = form(this.model, (field) => {
-    required(field.nameAr, { message: 'الاسم العربي مطلوب.' });
-    maxLength(field.nameAr, 200, { message: 'الحد الأقصى 200 حرف.' });
-    maxLength(field.nameEn, 200, { message: 'الحد الأقصى 200 حرف.' });
-    maxLength(field.descriptionAr, 1000, { message: 'الحد الأقصى 1000 حرف.' });
-    maxLength(field.descriptionEn, 1000, { message: 'الحد الأقصى 1000 حرف.' });
-    min(field.sortOrder, 0, { message: 'الترتيب لا يمكن أن يكون سالبًا.' });
-    max(field.sortOrder, 2147483647, { message: 'قيمة الترتيب غير صالحة.' });
+    required(field.nameAr, { message: 'review.nameArRequired' });
+    maxLength(field.nameAr, 200, { message: 'validation.length200' });
+    maxLength(field.nameEn, 200, { message: 'validation.length200' });
+    maxLength(field.descriptionAr, 1000, { message: 'validation.max1000' });
+    maxLength(field.descriptionEn, 1000, { message: 'validation.max1000' });
+    min(field.sortOrder, 0, { message: 'review.orderNonnegative' });
+    max(field.sortOrder, 2147483647, { message: 'review.invalidOrder' });
   });
   protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
@@ -125,8 +129,8 @@ export class MedicalSpecializationDetails {
         this.saved.emit(response);
         this.toast.success(
           creating
-            ? 'تمت إضافة التخصص الطبي بنجاح.'
-            : 'تم حفظ تعديلات التخصص الطبي بنجاح.',
+            ? this.uiLanguage.t('review.specializationAdded')
+            : this.uiLanguage.t('review.specializationSaved'),
         );
         if (creating) {
           if (this.isDrawer()) {
@@ -171,9 +175,9 @@ export class MedicalSpecializationDetails {
   protected async lifecycle(action: LifecycleAction): Promise<void> {
     const item = this.details();
     if (!item || !this.can(action) || this.isSubmitting()) return;
-    const labels = { activate: 'تفعيل', deactivate: 'تعطيل', delete: 'حذف', restore: 'استعادة' };
-    const warning = action === 'delete' ? 'الحذف مبدئي ويمكن استعادته لاحقًا.' : '';
-    if (!confirm(`تأكيد ${labels[action]} التخصص؟ ${warning}`)) return;
+    const labels = { activate: this.uiLanguage.t('common.activate'), deactivate: this.uiLanguage.t('common.deactivate'), delete: this.uiLanguage.t('common.delete'), restore: this.uiLanguage.t('common.restore') };
+    const warning = action === 'delete' ? this.uiLanguage.t('review.softDeleteHelp') : '';
+    if (!confirm(this.uiLanguage.t('admin.confirmSpecializationAction', { action: labels[action], warning }))) return;
     this.isSubmitting.set(true);
     this.clearErrors();
     try {
@@ -243,10 +247,10 @@ export class MedicalSpecializationDetails {
 
   private lifecycleSuccessMessage(action: LifecycleAction): string {
     return {
-      activate: 'تم تفعيل التخصص الطبي بنجاح.',
-      deactivate: 'تم تعطيل التخصص الطبي بنجاح.',
-      delete: 'تم حذف التخصص الطبي مبدئيًا.',
-      restore: 'تمت استعادة التخصص الطبي بنجاح.',
+      activate: this.uiLanguage.t('review.specializationActivated'),
+      deactivate: this.uiLanguage.t('review.specializationDeactivated'),
+      delete: this.uiLanguage.t('review.specializationDeleted'),
+      restore: this.uiLanguage.t('review.specializationRestored'),
     }[action];
   }
 }

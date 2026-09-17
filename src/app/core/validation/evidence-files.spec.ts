@@ -21,4 +21,10 @@ describe('evidence file validation', () => {
   it('rejects a file without an extension', () => {
     expect(getEvidenceFileValidationError([new File(['proof'], 'document')])).not.toBeNull();
   });
+
+  it('reports unsupported files in English while preserving the filename', () => {
+    expect(getEvidenceFileValidationError([new File(['proof'], 'scan.jfif')], 'en')).toBe(
+      'File "scan.jfif" is unsupported. Allowed formats: PDF, JPG, JPEG, PNG.',
+    );
+  });
 });

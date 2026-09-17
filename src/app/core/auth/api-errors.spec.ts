@@ -38,9 +38,7 @@ describe('parseApiErrors', () => {
     expect(result.fields).toEqual({ permissionids: ['Invalid permission.'] });
   });
 
-  it('keeps the fallback message for network errors', () => {
-    expect(parseApiErrors(new HttpErrorResponse({ status: 0 })).messages[0]).toContain(
-      'تعذر الاتصال',
-    );
+  it('returns a language-independent fallback key for network errors', () => {
+    expect(parseApiErrors(new HttpErrorResponse({ status: 0 })).messages).toEqual(['errors.network']);
   });
 });

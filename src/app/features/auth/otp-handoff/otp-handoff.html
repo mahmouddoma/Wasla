@@ -1,16 +1,16 @@
 <div class="auth-form-wrap">
-  <a class="back-link" routerLink="/forgot-password">استخدام بريد إلكتروني آخر</a>
+  <a class="back-link" routerLink="/forgot-password">{{ 'ui.full.253' | t }}</a>
   <div class="sent-mark" aria-hidden="true">
     <svg viewBox="0 0 24 24">
       <path d="M4 6h16v12H4zM4 7l8 6 8-6" />
     </svg>
   </div>
   <header class="auth-form-heading">
-    <h1>أدخل رمز التحقق</h1>
+    <h1>{{ 'ui.full.254' | t }}</h1>
     <p>
       {{
         challenge()?.message ||
-          'إذا كان البريد مسجلًا، ستصلك رسالة تحتوي على رمز التحقق المكوّن من 6 أرقام.'
+          uiLanguage.t('ui.expressions.126')
       }}
     </p>
   </header>
@@ -18,20 +18,20 @@
   @if (apiMessages().length) {
     <div class="form-notice error" role="alert">
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
     </div>
   }
 
   @if (challengeUnavailable()) {
     <div class="form-notice info" role="status">
-      لم يعد هذا الرمز صالحًا للاستخدام. ابدأ الاستعادة من جديد للحصول على رمز جديد.
+      {{ 'ui.full.255' | t }}
     </div>
   }
 
   <form class="auth-form" (submit)="onSubmit($event)" novalidate>
     <label class="form-field">
-      <span>رمز التحقق</span>
+      <span>{{ 'ui.full.256' | t }}</span>
       <input
         class="otp-input"
         type="text"
@@ -43,7 +43,7 @@
         (input)="normalizeOtp($event)"
       />
       @if (otpForm.otp().touched() && otpForm.otp().errors().length) {
-        <small class="field-error">{{ otpForm.otp().errors()[0].message }}</small>
+        <small class="field-error">{{ (otpForm.otp().errors()[0].message ?? '') | t }}</small>
       }
       @if (serverError()) {
         <small class="field-error">{{ serverError() }}</small>
@@ -55,12 +55,12 @@
       type="submit"
       [disabled]="isSubmitting() || isResending() || challengeUnavailable()"
     >
-      {{ isSubmitting() ? 'جارٍ التحقق…' : 'تأكيد الرمز' }}
+      {{ isSubmitting() ? uiLanguage.t('ui.expressions.127') : uiLanguage.t('ui.expressions.128') }}
     </button>
   </form>
 
   <div class="otp-actions">
-    <span>لم يصلك الرمز؟</span>
+    <span>{{ 'ui.full.257' | t }}</span>
     <button
       type="button"
       [disabled]="isResending() || isSubmitting() || resendCooldown() > 0"
@@ -68,10 +68,10 @@
     >
       {{
         isResending()
-          ? 'جارٍ إعادة الإرسال…'
+          ? uiLanguage.t('ui.expressions.129')
           : resendCooldown() > 0
-            ? 'إعادة الإرسال خلال ' + resendCooldown() + ' ث'
-            : 'إعادة الإرسال'
+            ? uiLanguage.t('ui.expressions.130') + ' ' + resendCooldown() + ' ' + uiLanguage.t('ui.expressions.131')
+            : uiLanguage.t('common.resubmit')
       }}
     </button>
   </div>

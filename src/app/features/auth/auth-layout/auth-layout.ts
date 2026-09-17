@@ -36,60 +36,60 @@ export class AuthLayout implements OnInit {
   readonly activeSlideIndex = signal(0);
   readonly isPaused = signal(false);
 
-  readonly slides: StorySlide[] = [
+   get slides(): StorySlide[] { return [
     {
       id: 1,
-      tag: 'استشارات ورعاية متصلة',
-      title: 'رعاية صحية ذكية\nبين يديك على مدار الساعة.',
-      description: 'تواصل مع نخبة المتخصصين، وشارك تاريخك الطبي ومتابع رعايتك بسهولة وأمان.',
+      tag: this.langService.t('ui.full.208'),
+      title: this.langService.t('ui.full.209'),
+      description: this.langService.t('story.paragraph'),
       image: '/SVG-AVATAR/Online Doctor-pana.svg',
-      imageAlt: 'استشارة طبية فورية وتواصل مباشر',
+      imageAlt: this.langService.t('ui.full.210'),
       benefits: [
-        { label: 'مرضى أكثر سعادة' },
-        { label: 'بيانات أكثر أماناً' },
-        { label: 'خدمات أسرع ورعاية أفضل' },
+        { label: this.langService.t('auth.happierPatients') },
+        { label: this.langService.t('ui.full.211') },
+        { label: this.langService.t('auth.fasterCare') },
       ],
     },
     {
       id: 2,
-      tag: 'سجل صحي رقمي موحد',
-      title: 'تاريخك الطبي مستمر،\nأينما كانت رعايتك.',
-      description: 'نربط المريض والطبيب وفريق الرعاية في ملف صحي موحد وآمن أينما ذهبت.',
+      tag: this.langService.t('ui.full.212'),
+      title: this.langService.t('ui.full.213'),
+      description: this.langService.t('ui.full.214'),
       image: '/SVG-AVATAR/Doctors-pana.svg',
-      imageAlt: 'أطباء وفريق الرعاية الصحية في وصلة',
+      imageAlt: this.langService.t('ui.full.215'),
       benefits: [
-        { label: 'مرضى أكثر سعادة' },
-        { label: 'بيانات أكثر أمانًا' },
-        { label: 'خدمات أسرع ورعاية أفضل' },
+        { label: this.langService.t('auth.happierPatients') },
+        { label: this.langService.t('ui.full.216') },
+        { label: this.langService.t('auth.fasterCare') },
       ],
     },
     {
       id: 3,
-      tag: 'أمان وسلامة دوائية',
-      title: 'روشتات إلكترونية\nوفحوصات منظمة بدقة.',
-      description: 'سجل وصفاتك الدوائية وتحاليلك في مكان واحد، لتجنب التضارب الدوائي وحماية صحتك.',
+      tag: this.langService.t('ui.full.217'),
+      title: this.langService.t('ui.full.218'),
+      description: this.langService.t('ui.full.219'),
       image: '/SVG-AVATAR/Medical prescription-pana.svg',
-      imageAlt: 'روشتات ووصفات علاجية رقمية',
+      imageAlt: this.langService.t('ui.full.220'),
       benefits: [
-        { label: 'وصفات إلكترونية آمنة' },
-        { label: 'تحاليل منظمة' },
-        { label: 'تجنب التضارب الدوائي' },
+        { label: this.langService.t('ui.full.221') },
+        { label: this.langService.t('ui.full.222') },
+        { label: this.langService.t('ui.full.223') },
       ],
     },
     {
       id: 4,
-      tag: 'متابعة دورية مستمرة',
-      title: 'خطط علاجية مخصصة\nورحلة شفاء متكاملة.',
-      description: 'ذكاء تنظيمي يساعدك على الالتزام بالعلاج ومتابعة مؤشراتك الحيوية بانتظام.',
+      tag: this.langService.t('ui.full.224'),
+      title: this.langService.t('ui.full.225'),
+      description: this.langService.t('ui.full.226'),
       image: '/SVG-AVATAR/Medicine-pana.svg',
-      imageAlt: 'متابعة دورية وتكامل علاجي',
+      imageAlt: this.langService.t('ui.full.227'),
       benefits: [
-        { label: 'خطة علاج شخصية' },
-        { label: 'تذكير بالأدوية' },
-        { label: 'مؤشرات حيوية لحظية' },
+        { label: this.langService.t('ui.full.228') },
+        { label: this.langService.t('ui.full.229') },
+        { label: this.langService.t('ui.full.230') },
       ],
     },
-  ];
+  ]; }
 
   ngOnInit(): void {
     this.startAutoSlide();

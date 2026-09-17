@@ -1,0 +1,87 @@
+@if (canView || canUpdate) {
+  <section class="public-profile-panel" aria-labelledby="public-profile-heading">
+    <header>
+      <h2 id="public-profile-heading">{{ 'profile.publicTitle' | t }}</h2>
+      <p>{{ 'profile.publicHelp' | t }}</p>
+    </header>
+    @if (messages().length) {
+      <div class="profile-feedback" role="alert">
+        @for (message of messages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    }
+    @if (isLoading()) {
+      <p class="loading-copy">{{ 'profile.loading' | t }}</p>
+    } @else {
+      @if (profile()) {
+        <form class="bio-editor" (submit)="saveBio($event)" novalidate>
+          <label
+            ><span>{{ 'profile.bio' | t }}</span
+            ><textarea
+              rows="6"
+              [placeholder]="'profile.bioPlaceholder' | t"
+              [formField]="bioForm.bio"
+            ></textarea
+            ><small>{{ bioModel().bio.length }} / 2000</small></label
+          >
+          @if (canUpdate) {
+            <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
+              {{ 'profile.saveBio' | t }}
+            </button>
+          }
+        </form>
+      }
+      <div class="qualifications-layout">
+        @if (canUpdate) {
+          <form class="qualification-form" (submit)="saveQualification($event)" novalidate>
+            <h3>{{ editingQualificationId() ? uiLanguage.t('profile.editQualification') : uiLanguage.t('profile.newQualification') }}</h3>
+            <label class="form-field"
+              ><span>{{ 'profile.qualificationNameAr' | t }}</span><input [formField]="qualificationForm.nameAr" /></label
+            ><label class="form-field"
+              ><span>{{ 'profile.qualificationNameEn' | t }}</span
+              ><input dir="ltr" [formField]="qualificationForm.nameEn" /></label
+            ><label class="form-field"
+              ><span>{{ 'common.displayOrder' | t }}</span
+              ><input type="number" [formField]="qualificationForm.displayOrder"
+            /></label>
+            <div class="qualification-actions">
+              <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
+                {{ editingQualificationId() ? uiLanguage.t('profile.saveQualification') : uiLanguage.t('profile.addQualification') }}
+              </button>
+              @if (editingQualificationId()) {
+                <button class="btn-head" type="button" (click)="cancelQualificationEdit()">
+                  {{ 'common.cancel' | t }}
+                </button>
+              }
+            </div>
+          </form>
+        }
+        <div class="qualification-list">
+          <h3>{{ 'doctor.qualifications' | t }}</h3>
+          @for (item of qualifications(); track item.id) {
+            <article>
+              <div>
+                <strong>{{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}</strong>
+                @if (item.nameEn) {
+                  <span [dir]="uiLanguage.isRtl() ? 'ltr' : 'rtl'">{{ uiLanguage.isRtl() ? item.nameEn : item.nameAr }}</span>
+                }
+                <small>{{ 'common.order' | t }} {{ item.displayOrder }}</small>
+              </div>
+              @if (canUpdate) {
+                <div>
+                  <button type="button" (click)="editQualification(item)">{{ 'common.edit' | t }}</button
+                  ><button class="danger" type="button" (click)="deleteQualification(item)">
+                    {{ 'common.delete' | t }}
+                  </button>
+                </div>
+              }
+            </article>
+          } @empty {
+            <p>{{ 'profile.noQualifications' | t }}</p>
+          }
+        </div>
+      </div>
+    }
+  </section>
+}

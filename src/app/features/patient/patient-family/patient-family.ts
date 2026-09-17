@@ -1,3 +1,6 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
@@ -7,12 +10,13 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { FamiliesApi } from '../../../core/families/families-api';
+import { FamiliesApi } from '../../../domains/families';
 import { openPrivateMedia } from '../../../core/media/private-media';
 import {
   EVIDENCE_FILE_ACCEPT,
   getEvidenceFileValidationError,
 } from '../../../core/validation/evidence-files';
+import { PlatformFooter } from '../../../shared/components/platform-footer/platform-footer';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import {
   Family,
@@ -21,16 +25,20 @@ import {
   FamilyRequestStatus,
   FamilyRequestType,
   FamilyRole,
-} from '../../../core/families/family.models';
+} from '../../../domains/families';
 
 @Component({
   selector: 'app-patient-family',
-  imports: [FormField, RouterLink, NgClass, SideDrawer],
+  imports: [FormField, RouterLink, NgClass, SideDrawer, TranslatePipe, PlatformFooter],
   templateUrl: './patient-family.html',
   styleUrl: './patient-family.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientFamily {
+  private readonly toast = inject(ToastService);
+
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(FamiliesApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
@@ -56,12 +64,12 @@ export class PatientFamily {
     documentTypes: '',
   });
   protected readonly requestForm = form(this.requestModel, (field) => {
-    required(field.targetPatientId, { message: 'ملف المريض المستهدف مطلوب.' });
+    required(field.targetPatientId, { message: 'ui.full.661' });
     required(field.familyId, {
-      message: 'Family ID مطلوب لإضافة عضو.',
+      message: 'family.idRequired',
       when: ({ valueOf }) => valueOf(field.requestType) === 'AddFamilyMember',
     });
-    required(field.documentTypes, { message: 'نوع مستند لكل ملف مطلوب.' });
+    required(field.documentTypes, { message: 'ui.full.662' });
   });
   protected readonly evidenceFiles = signal<File[]>([]);
   protected readonly resubmitFiles = signal<File[]>([]);
@@ -121,17 +129,17 @@ export class PatientFamily {
     event.preventDefault();
     await submit(this.requestForm, async () => {
       if (this.submitting() || !this.evidenceFiles().length) {
-        if (!this.evidenceFiles().length) this.messages.set(['أرفق مستند إثبات واحداً على الأقل.']);
+        if (!this.evidenceFiles().length) this.messages.set([this.uiLanguage.t('ui.full.663')]);
         return;
       }
-      const fileError = getEvidenceFileValidationError(this.evidenceFiles());
+      const fileError = getEvidenceFileValidationError(this.evidenceFiles(), this.uiLanguage.currentLang());
       if (fileError) {
         this.messages.set([fileError]);
         return;
       }
       const documentTypes = splitTypes(this.requestModel().documentTypes);
       if (documentTypes.length !== this.evidenceFiles().length) {
-        this.messages.set(['يجب إدخال نوع واحد مقابل كل ملف مرفق.']);
+        this.messages.set([this.uiLanguage.t('ui.full.664')]);
         return;
       }
       this.submitting.set(true);
@@ -145,9 +153,11 @@ export class PatientFamily {
           }),
         );
         this.selectedRequest.set(details);
-        this.successMessage.set('تم إرسال الطلب وأصبح Pending.');
+        this.successMessage.set(this.uiLanguage.t('family.submitted'));
+      this.toast.success(this.successMessage());
         await this.loadRequests(1);
       } catch (error) {
+
         this.messages.set(flattenErrors(error));
       } finally {
         this.submitting.set(false);
@@ -159,13 +169,13 @@ export class PatientFamily {
     const request = this.selectedRequest();
     if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
     const documentTypes = splitTypes(this.resubmitDocumentTypes());
-    const fileError = getEvidenceFileValidationError(this.resubmitFiles());
+    const fileError = getEvidenceFileValidationError(this.resubmitFiles(), this.uiLanguage.currentLang());
     if (fileError) {
       this.messages.set([fileError]);
       return;
     }
     if (!this.resubmitFiles().length || documentTypes.length !== this.resubmitFiles().length) {
-      this.messages.set(['أرفق أدلة جديدة وحدد نوعاً واحداً لكل ملف.']);
+      this.messages.set([this.uiLanguage.t('ui.full.665')]);
       return;
     }
     this.submitting.set(true);
@@ -181,15 +191,17 @@ export class PatientFamily {
       this.selectedRequest.set(updated);
       this.resubmitFiles.set([]);
       this.resubmitDocumentTypes.set('');
-      this.successMessage.set('تم إنشاء revision جديدة وإعادة الطلب إلى Pending.');
+      this.successMessage.set(this.uiLanguage.t('family.resubmitted'));
+      this.toast.success(this.successMessage());
       await this.loadRequests(this.pageNumber());
     } catch (error) {
+
       this.messages.set(flattenErrors(error));
       if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.openRequest(request.requestId);
         this.messages.update((items) => [
           ...items,
-          'تم تحميل أحدث RowVersion؛ راجع التفاصيل ثم أعد المحاولة.',
+          this.uiLanguage.t('ui.full.666'),
         ]);
       }
     } finally {
@@ -211,7 +223,7 @@ export class PatientFamily {
   protected evidenceChanged(event: Event, resubmit = false): void {
     const input = event.currentTarget as HTMLInputElement;
     const files = Array.from(input.files ?? []);
-    const fileError = getEvidenceFileValidationError(files);
+    const fileError = getEvidenceFileValidationError(files, this.uiLanguage.currentLang());
     this.resetFeedback();
     if (fileError) {
       input.value = '';
@@ -247,10 +259,10 @@ export class PatientFamily {
 
   protected getStatusLabel(status: string): string {
     const map: Record<string, string> = {
-      Pending: 'قيد المراجعة',
-      ModificationRequested: 'مطلوب تعديل',
-      Approved: 'معتمد',
-      Rejected: 'مرفوض',
+      Pending: this.uiLanguage.t('common.pendingReview'),
+      ModificationRequested: this.uiLanguage.t('common.modificationRequested'),
+      Approved: this.uiLanguage.t('common.approved'),
+      Rejected: this.uiLanguage.t('common.rejected'),
     };
     return map[status] || status;
   }
@@ -272,20 +284,20 @@ export class PatientFamily {
 
   protected getRequestTypeLabel(type: string): string {
     const map: Record<string, string> = {
-      CreateFamily: 'إنشاء عائلة',
-      AddFamilyMember: 'إضافة عضو',
+      CreateFamily: this.uiLanguage.t('family.create'),
+      AddFamilyMember: this.uiLanguage.t('family.addMember'),
     };
     return map[type] || type;
   }
 
   protected getRoleLabel(role: string): string {
     const map: Record<string, string> = {
-      Father: 'أب',
-      Mother: 'أم',
-      Child: 'طفل',
-      Guardian: 'ولي أمر',
-      LegalGuardian: 'وصي قانوني',
-      Other: 'أخرى',
+      Father: this.uiLanguage.t('family.father'),
+      Mother: this.uiLanguage.t('family.mother'),
+      Child: this.uiLanguage.t('family.child'),
+      Guardian: this.uiLanguage.t('family.guardian'),
+      LegalGuardian: this.uiLanguage.t('family.legalGuardian'),
+      Other: this.uiLanguage.t('common.other'),
     };
     return map[role] || role;
   }
@@ -305,25 +317,25 @@ export class PatientFamily {
   }
 
   protected getDrawerTitle(request: FamilyRequestDetails | null): string {
-    if (!request) return 'تفاصيل الطلب';
+    if (!request) return this.uiLanguage.t('common.requestDetails');
     return request.requestType === 'CreateFamily'
-      ? 'تفاصيل طلب إنشاء عائلة'
-      : 'تفاصيل طلب إضافة عضو للعائلة';
+      ? this.uiLanguage.t('ui.full.667')
+      : this.uiLanguage.t('ui.full.668');
   }
 
   protected getDrawerDescription(request: FamilyRequestDetails | null): string {
     if (!request) return '';
     const name = request.targetNameAr || request.requesterNameAr || '';
-    return `النسخة #${request.currentRevisionNumber}${name ? ' · ' + name : ''}`;
+    return `${this.uiLanguage.t('patient.requestVersion', { version: request.currentRevisionNumber })}${name ? ' · ' + name : ''}`;
   }
 
   protected getActionLabel(action: string): string {
     const map: Record<string, string> = {
-      Submitted: 'تم تقديم الطلب',
-      Resubmitted: 'تمت إعادة تقديم الطلب',
-      ModificationRequested: 'طلب تعديل من الإدارة',
-      Approved: 'تم الاعتماد والموافقة',
-      Rejected: 'تم رفض الطلب',
+      Submitted: this.uiLanguage.t('requests.submittedStatus'),
+      Resubmitted: this.uiLanguage.t('requests.resubmittedStatus'),
+      ModificationRequested: this.uiLanguage.t('requests.adminChangesStatus'),
+      Approved: this.uiLanguage.t('requests.approvedStatus'),
+      Rejected: this.uiLanguage.t('requests.rejectedStatus'),
     };
     return map[action] || action;
   }
@@ -333,7 +345,7 @@ export class PatientFamily {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return new Intl.DateTimeFormat('ar-EG', {
+      return new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

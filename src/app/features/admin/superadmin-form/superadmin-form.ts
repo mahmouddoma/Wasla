@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal , inject} from '@angular/core';
 import {
   FormField,
   email,
@@ -12,7 +14,7 @@ import {
   CreateSuperAdminRequest,
   SuperAdminRecord,
   UpdateSuperAdminRequest,
-} from '../../../core/superadmins/superadmins.models';
+} from '../services/superadmins';
 
 export type SuperAdminFormSubmission =
   | { mode: 'create'; request: CreateSuperAdminRequest }
@@ -40,12 +42,14 @@ const EMPTY_MODEL: SuperAdminFormModel = {
 
 @Component({
   selector: 'app-superadmin-form',
-  imports: [FormField],
+  imports: [FormField, TranslatePipe],
   templateUrl: './superadmin-form.html',
   styleUrl: './superadmin-form.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuperAdminForm {
+  protected readonly uiLanguage = inject(LanguageService);
+
   mode = input<'create' | 'update'>('create');
   record = input<SuperAdminRecord | null>(null);
   busy = input(false);
@@ -60,32 +64,32 @@ export class SuperAdminForm {
   protected readonly adminForm = form(this.model, (field) => {
     validate(field.userName, ({ value }) => {
       if (this.mode() === 'update') return undefined;
-      return value().trim() ? undefined : { kind: 'required', message: 'أدخل اسم المستخدم.' };
+      return value().trim() ? undefined : { kind: 'required', message: 'validation.usernameRequired' };
     });
-    maxLength(field.userName, 100, { message: 'الحد الأقصى لاسم المستخدم 100 حرف.' });
-    required(field.email, { message: 'أدخل البريد الإلكتروني.' });
-    email(field.email, { message: 'أدخل بريدًا إلكترونيًا صالحًا.' });
-    maxLength(field.email, 200, { message: 'الحد الأقصى للبريد الإلكتروني 200 حرف.' });
-    maxLength(field.phoneNumber, 30, { message: 'الحد الأقصى لرقم الهاتف 30 حرفًا.' });
-    required(field.nameAr, { message: 'أدخل الاسم بالعربية.' });
-    maxLength(field.nameAr, 200, { message: 'الحد الأقصى للاسم بالعربية 200 حرف.' });
-    maxLength(field.nameEn, 200, { message: 'الحد الأقصى للاسم بالإنجليزية 200 حرف.' });
+    maxLength(field.userName, 100, { message: 'ui.full.171' });
+    required(field.email, { message: 'validation.emailRequired' });
+    email(field.email, { message: 'validation.emailValid' });
+    maxLength(field.email, 200, { message: 'validation.emailLength' });
+    maxLength(field.phoneNumber, 30, { message: 'validation.phoneLength' });
+    required(field.nameAr, { message: 'validation.nameArEnter' });
+    maxLength(field.nameAr, 200, { message: 'ui.full.172' });
+    maxLength(field.nameEn, 200, { message: 'ui.full.173' });
     validate(field.initialPassword, ({ value }) => {
       if (this.mode() === 'update') return undefined;
-      return value() ? undefined : { kind: 'required', message: 'أدخل كلمة المرور الأولية.' };
+      return value() ? undefined : { kind: 'required', message: 'ui.full.174' };
     });
     maxLength(field.initialPassword, 4096, {
-      message: 'كلمة المرور الأولية أطول من الحد المسموح.',
+      message: 'ui.full.175',
     });
     validate(field.confirmPassword, ({ value, valueOf }) => {
       if (this.mode() === 'update') return undefined;
-      if (!value()) return { kind: 'required', message: 'أكّد كلمة المرور الأولية.' };
+      if (!value()) return { kind: 'required', message: 'ui.full.176' };
       return value() === valueOf(field.initialPassword)
         ? undefined
-        : { kind: 'passwordMismatch', message: 'تأكيد كلمة المرور غير مطابق.' };
+        : { kind: 'passwordMismatch', message: 'changePassword.mismatch' };
     });
     maxLength(field.confirmPassword, 4096, {
-      message: 'تأكيد كلمة المرور أطول من الحد المسموح.',
+      message: 'changePassword.confirmTooLong',
     });
   });
 

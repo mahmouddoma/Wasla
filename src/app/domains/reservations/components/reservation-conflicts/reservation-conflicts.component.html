@@ -1,0 +1,20 @@
+@if (conflict(); as impact) {
+  <section class="reservation-conflict" role="alert">
+    <h3>{{ 'reservations.conflictTitle' | t }} · {{ impact.affectedReservationsCount }}</h3>
+    <p>{{ 'reservations.conflictHelp' | t }}</p>
+    <ul>
+      @for (item of impact.affectedReservations; track item.reservationId) {
+        <li>
+          <span dir="ltr"
+            >{{ item.reference }} · {{ item.businessDate }} · {{ item.scheduledTime }}</span
+          >
+          <a
+            [routerLink]="['/doctor/reservations']"
+            [queryParams]="{ practiceId: practiceId(), reservationId: item.reservationId }"
+            >{{ 'reservations.inspect' | t }}</a
+          >
+        </li>
+      }
+    </ul>
+  </section>
+}

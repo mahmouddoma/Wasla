@@ -4,7 +4,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="m9 18 6-6-6-6" />
       </svg>
-      <span>العودة إلى قائمة الأدوار</span>
+      <span>{{ 'roles.back' | t }}</span>
     </a>
   }
 
@@ -17,23 +17,23 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2>{{ notFound() ? 'الدور غير موجود' : 'تعذر تحميل بيانات الدور' }}</h2>
+      <h2>{{ notFound() ? uiLanguage.t('ui.expressions.37') : uiLanguage.t('ui.expressions.38') }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <div class="state-actions">
         @if (!isDrawer()) {
-          <a class="btn btn-outline-secondary" routerLink="/admin/roles">العودة للقائمة</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/roles">{{ 'common.backToList' | t }}</a>
         }
         @if (!notFound()) {
-          <button class="btn btn-primary" type="button" (click)="load()">إعادة المحاولة</button>
+          <button class="btn btn-primary" type="button" (click)="load()">{{ 'discovery.retry' | t }}</button>
         }
       </div>
     </div>
   } @else if (isLoading() && !role()) {
     <div class="role-state role-state-loading" role="status">
       <span class="role-spinner" aria-hidden="true"></span>
-      <h2>جارٍ تحميل بيانات الدور والصلاحيات…</h2>
+      <h2>{{ 'roles.loadingPermissions' | t }}</h2>
     </div>
   } @else if (role(); as roleDetails) {
     <!-- Role Header Card -->
@@ -52,13 +52,13 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
-                <span>System Role — دور نظام محمي</span>
+                <span>{{ 'roles.systemRole' | t }}</span>
               } @else {
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 16v-4M12 8h.01" />
                 </svg>
-                <span>Custom Role — دور مخصص</span>
+                <span>{{ 'roles.customRole' | t }}</span>
               }
             </span>
           </div>
@@ -68,13 +68,13 @@
           <div
             class="role-guid-chip"
             (click)="copyRoleId()"
-            [title]="'انقر لنسخ المعرّف: ' + roleDetails.id"
+            [title]="uiLanguage.t('ui.expressions.39') + ' ' + roleDetails.id"
           >
-            <span class="guid-label">ID:</span>
+            <span class="guid-label">{{ 'common.idLabel' | t }}</span>
             <code class="guid-value">{{ roleDetails.id }}</code>
-            <button type="button" class="btn-copy-guid" aria-label="نسخ المعرف">
+            <button type="button" class="btn-copy-guid" [attr.aria-label]="'common.copyId' | t">
               @if (idCopied()) {
-                <span class="copied-indicator">تم النسخ!</span>
+                <span class="copied-indicator">{{ 'common.copied' | t }}</span>
               } @else {
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -91,13 +91,13 @@
         type="button"
         [disabled]="isLoading()"
         (click)="load()"
-        title="تحديث بيانات الدور والصلاحيات"
+        [title]="'roles.refreshPermissions' | t"
       >
         <svg [class.spin-active]="isLoading()" viewBox="0 0 24 24" aria-hidden="true">
           <polyline points="23 4 23 10 17 10" />
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
         </svg>
-        <span>تحديث</span>
+        <span>{{ 'common.update' | t }}</span>
       </button>
     </header>
 
@@ -120,7 +120,7 @@
         </svg>
         <div>
           @for (message of apiMessages(); track message) {
-            <p>{{ message }}</p>
+            <p>{{ message | t }}</p>
           }
         </div>
       </div>
@@ -135,7 +135,7 @@
         </svg>
         <div>
           @for (message of catalogMessages(); track message) {
-            <p>{{ message }}</p>
+            <p>{{ message | t }}</p>
           }
         </div>
       </div>
@@ -166,7 +166,7 @@
             role="searchbox"
             enterkeyhint="search"
             class="toolbar-search-input"
-            placeholder="ابحث في الصلاحيات أو الأقسام…"
+            [placeholder]="'roles.searchPermissions' | t"
             [value]="permissionSearch()"
             (input)="onSearchInput($event)"
           />
@@ -175,7 +175,7 @@
               type="button"
               class="toolbar-search-clear"
               (click)="clearSearch()"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -186,14 +186,14 @@
         </div>
 
         <div class="toolbar-filters-cluster">
-          <div class="filter-pills-group" role="radiogroup" aria-label="تصفية الصلاحيات">
+          <div class="filter-pills-group" role="radiogroup" [attr.aria-label]="'roles.filterPermissions' | t">
             <button
               type="button"
               class="filter-pill-btn"
               [class.active]="filterMode() === 'all'"
               (click)="setFilterMode('all')"
             >
-              <span>الكل</span>
+              <span>{{ 'common.all' | t }}</span>
               <span class="pill-count">{{ totalCatalogCount() }}</span>
             </button>
             <button
@@ -202,7 +202,7 @@
               [class.active]="filterMode() === 'selected'"
               (click)="setFilterMode('selected')"
             >
-              <span>المسندة</span>
+              <span>{{ 'roles.assigned' | t }}</span>
               <span class="pill-count highlight-teal">{{ selectedCount() }}</span>
             </button>
             <button
@@ -211,7 +211,7 @@
               [class.active]="filterMode() === 'unselected'"
               (click)="setFilterMode('unselected')"
             >
-              <span>غير المسندة</span>
+              <span>{{ 'roles.unassigned' | t }}</span>
               <span class="pill-count">{{ unselectedCount() }}</span>
             </button>
           </div>
@@ -223,18 +223,18 @@
                 class="btn-bulk-subtle"
                 [disabled]="isSaving()"
                 (click)="selectAllFiltered()"
-                title="تحديد كل الصلاحيات الظاهرة"
+                [title]="'roles.selectAllVisible' | t"
               >
-                تحديد المعروض
+                {{ 'roles.selectVisible' | t }}
               </button>
               <button
                 type="button"
                 class="btn-bulk-subtle"
                 [disabled]="isSaving()"
                 (click)="deselectAllFiltered()"
-                title="إلغاء تحديد كل الصلاحيات الظاهرة"
+                [title]="'roles.deselectAllVisible' | t"
               >
-                إلغاء تحديد المعروض
+                {{ 'roles.deselectVisible' | t }}
               </button>
             </div>
           }
@@ -264,7 +264,7 @@
                           [class.is-full]="isGroupFullySelected(group)"
                         >
                           <span class="badge-num">{{ getGroupSelectedCount(group) }}</span>
-                          <span class="badge-sep">من</span>
+                          <span class="badge-sep">{{ 'discovery.of' | t }}</span>
                           <span class="badge-total">{{ group.permissions.length }}</span>
                         </div>
 
@@ -275,7 +275,7 @@
                             [disabled]="isSaving()"
                             (click)="toggleGroupSelection(group)"
                           >
-                            {{ isGroupFullySelected(group) ? 'إلغاء تحديد الكل' : 'تحديد الكل' }}
+                            {{ isGroupFullySelected(group) ? uiLanguage.t('ui.expressions.40') : uiLanguage.t('ui.expressions.41') }}
                           </button>
                         }
                       </div>
@@ -324,7 +324,7 @@
                                     <line x1="12" y1="8" x2="12" y2="12" />
                                     <line x1="12" y1="16" x2="12.01" y2="16" />
                                   </svg>
-                                  <span>صلاحية جذرية Root-only — غير قابلة للإسناد لأي دور</span>
+                                  <span>{{ 'roles.rootOnly' | t }}</span>
                                 </span>
                               } @else if (!permission.isSystemPermission) {
                                 <span class="restriction-hint non-system-hint">
@@ -334,7 +334,7 @@
                                     <line x1="12" y1="16" x2="12.01" y2="16" />
                                   </svg>
                                   <span
-                                    >ليست System Permission — لا يمكن إسنادها عبر الاستبدال</span
+                                    >{{ 'roles.notSystemPermission' | t }}</span
                                   >
                                 </span>
                               }
@@ -354,10 +354,10 @@
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
                 </div>
-                <h3>لا توجد صلاحيات مطابقة للبحث</h3>
-                <p>لم نعثر على أي صلاحيات تطابق عبارة "{{ permissionSearch() }}".</p>
+                <h3>{{ 'roles.noMatchingPermissions' | t }}</h3>
+                <p>{{ 'ui.full.7' | t }}{{ permissionSearch() }}".</p>
                 <button type="button" class="btn btn-outline-secondary" (click)="clearSearch()">
-                  مسح البحث
+                  {{ 'common.clearSearch' | t }}
                 </button>
               </div>
             }
@@ -373,10 +373,10 @@
                   <line x1="12" y1="9" x2="12" y2="13" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <strong>صلاحيات مرتبطة سابقًا ولكنها غير متوفرة في الكتالوج الحالي</strong>
+                <strong>{{ 'roles.legacyPermissions' | t }}</strong>
               </div>
               <p>
-                سيتم إرسال معرّفاتها تلقائيًا للحفاظ على حالتها ما لم يتم إلغاء الربط من جهة الخادم.
+                {{ 'roles.preserveLegacyHelp' | t }}
               </p>
               <div class="missing-tags-list">
                 @for (permission of missingCatalogPermissions(); track permission.id) {
@@ -387,20 +387,20 @@
           }
         } @else {
           <div class="empty-permissions-state">
-            <h3>لا توجد صلاحيات في الكتالوج</h3>
-            <p>لم يرجع الخادم أي Permissions متاحة لهذا الحساب.</p>
+            <h3>{{ 'roles.emptyCatalog' | t }}</h3>
+            <p>{{ 'roles.emptyCatalogHelp' | t }}</p>
           </div>
         }
       } @else if (!canViewCatalog) {
         <div class="catalog-restricted-view">
-          <h3>الصلاحيات المسندة حاليًا لهذا الدور</h3>
+          <h3>{{ 'roles.currentPermissions' | t }}</h3>
           <div class="current-tags-wrap">
             @for (permission of current()?.permissions ?? []; track permission.id) {
               <div class="current-role-tag">
                 <strong lang="en" dir="ltr">{{ permission.name }}</strong>
               </div>
             } @empty {
-              <p class="empty-text">لا توجد صلاحيات مرتبطة بهذا الدور.</p>
+              <p class="empty-text">{{ 'roles.noAssignedPermissions' | t }}</p>
             }
           </div>
         </div>
@@ -412,12 +412,12 @@
       <div class="footer-summary-cluster">
         <div class="selection-counter-badge">
           <span class="counter-val">{{ selectedCount() }}</span>
-          <span class="counter-lbl">صلاحية محددة</span>
+          <span class="counter-lbl">{{ 'roles.selectedPermission' | t }}</span>
         </div>
         @if (isDirty()) {
           <span class="dirty-status-badge">
             <span class="pulse-dot"></span>
-            <span>توجد تعديلات غير محفوظة</span>
+            <span>{{ 'roles.unsavedChanges' | t }}</span>
           </span>
         }
       </div>
@@ -429,7 +429,7 @@
           [disabled]="!isDirty() || isSaving()"
           (click)="resetSelection()"
         >
-          إلغاء التغييرات
+          {{ 'roles.discardChanges' | t }}
         </button>
 
         @if (canManage()) {
@@ -441,14 +441,14 @@
           >
             @if (isSaving()) {
               <span class="btn-spinner" aria-hidden="true"></span>
-              <span>جارٍ الحفظ…</span>
+              <span>{{ 'common.saving' | t }}</span>
             } @else {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                 <polyline points="17 21 17 13 7 13 7 21" />
                 <polyline points="7 3 7 8 15 8" />
               </svg>
-              <span>حفظ الصلاحيات</span>
+              <span>{{ 'roles.savePermissions' | t }}</span>
             }
           </button>
         }
@@ -458,9 +458,9 @@
     <!-- Confirmation Modal Dialog -->
     <app-confirmation-dialog
       dialogId="replace-role-permissions-dialog"
-      title="استبدال وحفظ صلاحيات الدور"
-      description="سيتم اعتماد وتطبيق القائمة المحددة بالكامل على هذا الدور، وأي صلاحية غير محددة سيتم إزالتها. هل تريد المتابعة؟"
-      confirmLabel="تأكيد وحفظ الصلاحيات"
+      [title]="'roles.replacePermissions' | t"
+      [description]="'roles.replaceConfirmation' | t"
+      [confirmLabel]="'roles.confirmSave' | t"
       [danger]="true"
       [opened]="confirmationOpen()"
       [busy]="isSaving()"

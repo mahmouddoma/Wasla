@@ -1,10 +1,10 @@
 <section class="management-page">
   <!-- Page Header with Integrated KPI Cards -->
   <app-page-header
-    heading="إدارة الأطباء"
-    description="إدارة حسابات الأطباء، التراخيص، الاعتماد والتوثيق."
+    [heading]="'admin.navDoctors' | t"
+    [description]="'admin.doctorsHelp' | t"
     icon="doctors"
-    actionLabel="تحديث البيانات"
+    [actionLabel]="'common.refreshData' | t"
     actionIcon="refresh"
     [actionDisabled]="isLoading()"
     [actionLoading]="isLoading()"
@@ -25,7 +25,7 @@
             role="searchbox"
             enterkeyhint="search"
             autocomplete="off"
-            placeholder="ابحث بالاسم، رقم الهاتف، البريد الإلكتروني..."
+            [placeholder]="'doctor.searchPlaceholder' | t"
             [formField]="filterForm.searchText"
             (input)="scheduleSearch()"
           />
@@ -33,7 +33,7 @@
             <button
               type="button"
               class="btn-clear-search-integrated"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
               (click)="clearSearch()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -49,19 +49,19 @@
             type="button"
             class="btn-reset-filters-chip"
             (click)="clearAllFilters()"
-            title="إعادة ضبط الفلاتر"
+            [title]="'common.resetFilters' | t"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
-            <span>إعادة تعيين</span>
+            <span>{{ 'common.reset' | t }}</span>
           </button>
         }
       </div>
 
       <!-- Compact Catchy KPI Chips -->
-      <div class="kpi-chips-cluster" role="tablist" aria-label="تصفية حسب حالة الأطباء">
+      <div class="kpi-chips-cluster" role="tablist" [attr.aria-label]="'doctor.filterStatus' | t">
         <!-- Total -->
         <button
           type="button"
@@ -70,7 +70,7 @@
           [class.active]="selectedStatus() === ''"
           [attr.aria-selected]="selectedStatus() === ''"
           (click)="filterBy('')"
-          title="عرض جميع الأطباء"
+          [title]="'doctor.showAll' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -78,7 +78,7 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          <span class="chip-label">الكل</span>
+          <span class="chip-label">{{ 'common.all' | t }}</span>
           <span class="chip-count">{{
             metrics().loaded ? metrics().total : (result()?.totalCount ?? 0)
           }}</span>
@@ -92,13 +92,13 @@
           [class.active]="selectedStatus() === 'Approved'"
           [attr.aria-selected]="selectedStatus() === 'Approved'"
           (click)="filterBy('Approved')"
-          title="أطباء معتمدين ونشطين"
+          [title]="'doctor.activeApproved' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             <polyline points="9 12 11 14 15 10" />
           </svg>
-          <span class="chip-label">معتمد</span>
+          <span class="chip-label">{{ 'common.approved' | t }}</span>
           <span class="chip-count">{{ metrics().loaded ? metrics().approved : '-' }}</span>
         </button>
 
@@ -110,13 +110,13 @@
           [class.active]="selectedStatus() === 'Pending'"
           [attr.aria-selected]="selectedStatus() === 'Pending'"
           (click)="filterBy('Pending')"
-          title="بانتظار اعتماد الإدارة"
+          [title]="'doctor.awaitingApproval' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          <span class="chip-label">قيد المراجعة</span>
+          <span class="chip-label">{{ 'common.pendingReview' | t }}</span>
           <span class="chip-count">{{ metrics().loaded ? metrics().pending : '-' }}</span>
         </button>
 
@@ -128,14 +128,14 @@
           [class.active]="selectedStatus() === 'Rejected'"
           [attr.aria-selected]="selectedStatus() === 'Rejected'"
           (click)="filterBy('Rejected')"
-          title="طلبات الأطباء المرفوضة"
+          [title]="'doctor.rejectedApplications' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
             <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
-          <span class="chip-label">مرفوض</span>
+          <span class="chip-label">{{ 'common.rejected' | t }}</span>
           <span class="chip-count">{{ metrics().loaded ? metrics().rejected : '-' }}</span>
         </button>
 
@@ -147,14 +147,14 @@
           [class.active]="selectedStatus() === 'Suspended'"
           [attr.aria-selected]="selectedStatus() === 'Suspended'"
           (click)="filterBy('Suspended')"
-          title="حسابات الأطباء المعلّقة"
+          [title]="'doctor.suspendedAccounts' | t"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="9" y1="9" x2="9" y2="15" />
             <line x1="15" y1="9" x2="15" y2="15" />
           </svg>
-          <span class="chip-label">معلّق</span>
+          <span class="chip-label">{{ 'common.suspended' | t }}</span>
           <span class="chip-count">{{ metrics().loaded ? metrics().suspended : '-' }}</span>
         </button>
       </div>
@@ -171,25 +171,25 @@
   <div class="table-meta-bar">
     <div class="meta-start">
       <span class="meta-count-text">
-        <strong>{{ result()?.totalCount ?? 0 }}</strong> طبيب
+        <strong>{{ result()?.totalCount ?? 0 }}</strong> {{ 'common.doctor' | t }}
       </span>
       @if (isLoading()) {
         <span class="live-update-pill">
           <span class="pulse-dot" aria-hidden="true"></span>
-          <span>جارٍ التحديث…</span>
+          <span>{{ 'common.updating' | t }}</span>
         </span>
       }
     </div>
 
     <div class="meta-end">
       <!-- View Switcher (Table / Grid) -->
-      <div class="view-toggle-group" role="group" aria-label="طريقة العرض">
+      <div class="view-toggle-group" role="group" [attr.aria-label]="'admin.viewMode' | t">
         <button
           type="button"
           class="view-toggle-btn"
           [class.active]="viewMode() === 'table'"
           (click)="toggleViewMode('table')"
-          title="عرض جدولي"
+          [title]="'admin.tableView' | t"
         >
           <svg
             viewBox="0 0 24 24"
@@ -214,7 +214,7 @@
           class="view-toggle-btn"
           [class.active]="viewMode() === 'grid'"
           (click)="toggleViewMode('grid')"
-          title="عرض بطاقات"
+          [title]="'admin.cardView' | t"
         >
           <svg
             viewBox="0 0 24 24"
@@ -240,18 +240,18 @@
   @if (apiMessages().length) {
     <div class="state error" role="alert">
       <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
-      <h2>تعذر تحميل بيانات الأطباء</h2>
+      <h2>{{ 'admin.doctorsLoadFailed' | t }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <button class="btn btn-outline-secondary" type="button" (click)="load()">
-        إعادة المحاولة
+        {{ 'discovery.retry' | t }}
       </button>
     </div>
   } @else if (isLoading() && !result()) {
     <div class="state" role="status">
       <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>جارٍ فحص وتحديث سجل الأطباء…</h2>
+      <h2>{{ 'admin.doctorsRefreshing' | t }}</h2>
     </div>
   } @else if (result(); as doctorsPage) {
     @if (doctors().length) {
@@ -259,13 +259,13 @@
         <!-- Enterprise Medical Data Table -->
         <div class="medical-table-card">
           <div class="medical-table-header" aria-hidden="true">
-            <span class="col-head col-head--doctor">الطبيب</span>
-            <span class="col-head col-head--contact">بيانات التواصل</span>
-            <span class="col-head col-head--license">الترخيص والمستندات</span>
-            <span class="col-head col-head--progress">اكتمال الملف</span>
-            <span class="col-head col-head--status">حالة الاعتماد</span>
-            <span class="col-head col-head--date">آخر تحديث</span>
-            <span class="col-head col-head--action">الإجراءات</span>
+            <span class="col-head col-head--doctor">{{ 'common.theDoctor' | t }}</span>
+            <span class="col-head col-head--contact">{{ 'common.contactDetails' | t }}</span>
+            <span class="col-head col-head--license">{{ 'admin.licenseAndDocuments' | t }}</span>
+            <span class="col-head col-head--progress">{{ 'common.profileCompletion' | t }}</span>
+            <span class="col-head col-head--status">{{ 'doctor.onboardingStatus' | t }}</span>
+            <span class="col-head col-head--date">{{ 'admin.lastUpdate' | t }}</span>
+            <span class="col-head col-head--action">{{ 'common.actions' | t }}</span>
           </div>
 
           <div class="medical-table-body">
@@ -276,7 +276,7 @@
                   <div class="doctor-avatar-circle">
                     <span>{{ doctorInitials(doctor) }}</span>
                     @if (doctor.approvalStatus === 'Approved') {
-                      <span class="verified-indicator" title="طبيب معتمد وموثق">
+                      <span class="verified-indicator" [title]="'admin.approvedVerifiedDoctor' | t">
                         <svg
                           viewBox="0 0 24 24"
                           width="9"
@@ -293,14 +293,14 @@
 
                   <div class="doctor-name-cluster">
                     @if (canViewDetails) {
-                      <a
+                      <button type="button"
                         class="doctor-title-link"
-                        [routerLink]="['/admin/doctors', doctor.doctorId]"
+                        (click)="openDoctor(doctor)"
                       >
-                        {{ doctor.nameAr }}
-                      </a>
+                        {{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
+                      </button>
                     } @else {
-                      <strong class="doctor-title-text">{{ doctor.nameAr }}</strong>
+                      <strong class="doctor-title-text">{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</strong>
                     }
 
                     <div class="doctor-sub-cluster">
@@ -314,11 +314,11 @@
 
                 <!-- Col 2: Contact Info -->
                 <div class="col-contact">
-                  <span class="mobile-col-label">التواصل:</span>
+                  <span class="mobile-col-label">{{ 'common.contactPrefix' | t }}</span>
                   <a
                     class="contact-pill-link"
                     [href]="'mailto:' + doctor.email"
-                    title="إرسال بريد إلكتروني"
+                    [title]="'admin.sendEmail' | t"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -353,13 +353,13 @@
                     <span>{{ doctor.phone }}</span>
                   </a>
                   <span class="demographics-line"
-                    >{{ doctor.age }} سنة · {{ doctor.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span
+                    >{{ doctor.age }} {{ 'ui.full.5' | t }} {{ doctor.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span
                   >
                 </div>
 
                 <!-- Col 3: License & Documents -->
                 <div class="col-license">
-                  <span class="mobile-col-label">المستندات:</span>
+                  <span class="mobile-col-label">{{ 'admin.documentsPrefix' | t }}</span>
                   <div class="license-status-line">
                     <span
                       class="license-dot"
@@ -369,7 +369,7 @@
                     ></span>
                     <span class="license-text">
                       {{
-                        doctor.hasSyndicateFront ? 'بطاقة النقابة مرفوعة' : 'بانتظار بطاقة النقابة'
+                        doctor.hasSyndicateFront ? uiLanguage.t('ui.expressions.21') : uiLanguage.t('ui.expressions.22')
                       }}
                     </span>
                   </div>
@@ -385,13 +385,13 @@
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
-                    <span>{{ availableDocuments(doctor) }} من 5 وثائق</span>
+                    <span>{{ availableDocuments(doctor) }} {{ 'admin.outOfFiveDocuments' | t }}</span>
                   </span>
                 </div>
 
                 <!-- Col 4: Completion Progress Bar -->
                 <div class="col-progress">
-                  <span class="mobile-col-label">اكتمال الملف:</span>
+                  <span class="mobile-col-label">{{ 'admin.completionPrefix' | t }}</span>
                   <div class="progress-bar-wrap">
                     <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
                     <div
@@ -411,7 +411,7 @@
 
                 <!-- Col 5: Approval Status Badge -->
                 <div class="col-status">
-                  <span class="mobile-col-label">حالة الاعتماد:</span>
+                  <span class="mobile-col-label">{{ 'admin.approvalPrefix' | t }}</span>
                   <span
                     class="enterprise-status-badge"
                     [class]="'status--' + doctor.approvalStatus.toLowerCase()"
@@ -423,7 +423,7 @@
 
                 <!-- Col 6: Date -->
                 <div class="col-date">
-                  <span class="mobile-col-label">تاريخ التسجيل:</span>
+                  <span class="mobile-col-label">{{ 'admin.registeredPrefix' | t }}</span>
                   <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">
                     {{ formatDate(doctor.createdOnUtc) }}
                   </time>
@@ -432,12 +432,12 @@
                 <!-- Col 7: Actions -->
                 <div class="col-action">
                   @if (canViewDetails) {
-                    <a
+                    <button type="button"
                       class="btn-inspect-enterprise"
-                      [routerLink]="['/admin/doctors', doctor.doctorId]"
+                      (click)="openDoctor(doctor)"
                     >
-                      <span>عرض الملف</span>
-                    </a>
+                      <span>{{ 'common.viewProfile' | t }}</span>
+                    </button>
                   }
                 </div>
               </article>
@@ -453,7 +453,7 @@
                 <div class="doctor-avatar-circle large">
                   <span>{{ doctorInitials(doctor) }}</span>
                   @if (doctor.approvalStatus === 'Approved') {
-                    <span class="verified-indicator" title="طبيب معتمد">
+                    <span class="verified-indicator" [title]="'admin.approvedDoctor' | t">
                       <svg
                         viewBox="0 0 24 24"
                         width="10"
@@ -471,9 +471,9 @@
                   <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
                   <h3 class="card-doctor-name">
                     @if (canViewDetails) {
-                      <a [routerLink]="['/admin/doctors', doctor.doctorId]">{{ doctor.nameAr }}</a>
+                      <button type="button" (click)="openDoctor(doctor)">{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</button>
                     } @else {
-                      {{ doctor.nameAr }}
+                      {{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
                     }
                   </h3>
                   @if (doctor.nameEn) {
@@ -491,15 +491,15 @@
 
               <div class="card-item-body">
                 <div class="card-data-row">
-                  <span class="card-row-label">التواصل</span>
+                  <span class="card-row-label">{{ 'review.contact' | t }}</span>
                   <span class="card-row-value field-ltr">{{ doctor.phone }}</span>
                 </div>
                 <div class="card-data-row">
-                  <span class="card-row-label">المستندات المرفوعة</span>
+                  <span class="card-row-label">{{ 'review.uploadedDocuments' | t }}</span>
                   <span class="card-row-value">{{ availableDocuments(doctor) }} / 5</span>
                 </div>
                 <div class="card-data-row">
-                  <span class="card-row-label">اكتمال الملف</span>
+                  <span class="card-row-label">{{ 'common.profileCompletion' | t }}</span>
                   <div class="progress-bar-wrap">
                     <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
                     <div class="progress-track">
@@ -515,12 +515,12 @@
               <div class="card-item-footer">
                 <time class="date-time-text">{{ formatDate(doctor.createdOnUtc) }}</time>
                 @if (canViewDetails) {
-                  <a
+                  <button type="button"
                     class="btn-inspect-enterprise"
-                    [routerLink]="['/admin/doctors', doctor.doctorId]"
+                    (click)="openDoctor(doctor)"
                   >
-                    <span>عرض الملف</span>
-                  </a>
+                    <span>{{ 'common.viewProfile' | t }}</span>
+                  </button>
                 }
               </div>
             </article>
@@ -529,25 +529,25 @@
       }
 
       <!-- Numbered Enterprise Pagination Bar -->
-      <nav class="pagination-bar-enterprise" aria-label="صفحات قائمة الأطباء">
+      <nav class="pagination-bar-enterprise" [attr.aria-label]="'review.doctorPages' | t">
         <!-- Range Indicator -->
         <div class="pagination-info">
           <span
-            >عرض {{ pageItemRange().start }} - {{ pageItemRange().end }} من
-            {{ pageItemRange().total }} طبيب</span
+            >{{ 'common.view' | t }} {{ pageItemRange().start }} - {{ pageItemRange().end }} {{ 'discovery.of' | t }}
+            {{ pageItemRange().total }} {{ 'common.doctor' | t }}</span
           >
           <div class="page-size-picker">
-            <span>عرض</span>
+            <span>{{ 'common.view' | t }}</span>
             <select
               [value]="pageSize()"
               (change)="onPageSizeChange($event)"
-              aria-label="عدد العناصر بالصفحة"
+              [attr.aria-label]="'review.pageSize' | t"
             >
               @for (size of pageSizeOptions; track size) {
                 <option [value]="size">{{ size }}</option>
               }
             </select>
-            <span>في الصفحة</span>
+            <span>{{ 'review.perPage' | t }}</span>
           </div>
         </div>
 
@@ -559,7 +559,7 @@
             type="button"
             [disabled]="pageNumber() <= 1 || isLoading()"
             (click)="goToPage(pageNumber() - 1)"
-            aria-label="الصفحة السابقة"
+            [attr.aria-label]="'review.previousPage' | t"
           >
             <svg
               viewBox="0 0 24 24"
@@ -597,7 +597,7 @@
             type="button"
             [disabled]="pageNumber() >= totalPages() || isLoading()"
             (click)="goToPage(pageNumber() + 1)"
-            aria-label="الصفحة التالية"
+            [attr.aria-label]="'review.nextPage' | t"
           >
             <svg
               viewBox="0 0 24 24"
@@ -618,18 +618,28 @@
       <!-- Empty Search / Filter Results State -->
       <div class="state medical-empty-state">
         <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
-        <h2>لا توجد نتائج مطابقة</h2>
+        <h2>{{ 'common.noMatches' | t }}</h2>
         <p>
-          لم يتم العثور على أي أطباء مسجلين وفق معايير التصفية الحالية. يمكنك تغيير حالة الاعتماد أو
-          مسح عبارة البحث لعرض المزيد من الأطباء.
+          {{ 'review.noDoctorsHelp' | t }}
         </p>
 
         @if (hasActiveFilter()) {
           <button class="btn btn-outline-secondary" type="button" (click)="clearAllFilters()">
-            إعادة ضبط البحث والتصفية
+            {{ 'review.resetSearch' | t }}
           </button>
         }
       </div>
     }
   }
+<app-side-drawer
+  [opened]="selectedDoctor() !== null"
+  [title]="selectedDoctor()?.nameAr || uiLanguage.t('common.theDoctor')"
+  [busy]="doctorReview()?.busy() ?? false"
+  width="960px"
+  (closed)="closeDoctorDrawer()"
+>
+  @if (selectedDoctor(); as selected) {
+    <app-doctor-details [doctorIdInput]="selected.doctorId" [isDrawer]="true" (reviewed)="doctorReviewed()" />
+  }
+</app-side-drawer>
 </section>

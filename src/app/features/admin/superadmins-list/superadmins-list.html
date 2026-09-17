@@ -1,10 +1,10 @@
 <section class="management-page">
   <!-- Page Header with Integrated Stats -->
   <app-page-header
-    heading="إدارة المشرفين"
-    description="إدارة حسابات المشرفين وصلاحيات الوصول للنظام."
+    [heading]="'admin.navSuperAdmins' | t"
+    [description]="'ui.full.185' | t"
     icon="admins"
-    actionLabel="مشرف جديد"
+    [actionLabel]="'ui.full.186' | t"
     [actionPermission]="canCreate"
     (actionClicked)="openCreateDrawer()"
   >
@@ -23,7 +23,7 @@
             role="searchbox"
             enterkeyhint="search"
             autocomplete="off"
-            placeholder="ابحث بالاسم، اسم المستخدم، أو البريد…"
+            [placeholder]="'ui.full.177' | t"
             [formField]="filterForm.searchText"
             (input)="scheduleSearch()"
           />
@@ -31,7 +31,7 @@
             <button
               type="button"
               class="btn-clear-search-integrated"
-              aria-label="مسح البحث"
+              [attr.aria-label]="'common.clearSearch' | t"
               (click)="clearSearch()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -42,7 +42,7 @@
           }
         </div>
 
-        <label class="switch-toggle-label" for="deleted-toggle-input" title="عرض السجلات المحذوفة">
+        <label class="switch-toggle-label" for="deleted-toggle-input" [title]="'ui.full.179' | t">
           <div class="switch-toggle">
             <input
               type="checkbox"
@@ -52,37 +52,37 @@
             />
             <span class="switch-slider"></span>
           </div>
-          <span class="switch-text">المحذوفة</span>
+          <span class="switch-text">{{ 'ui.full.178' | t }}</span>
         </label>
       </div>
 
       <!-- Compact Catchy KPI Chips -->
       @if (result(); as adminsPage) {
-        <div class="kpi-chips-cluster" aria-label="ملخص إحصائيات المشرفين">
-          <div class="kpi-chip kpi-chip--total" title="إجمالي المشرفين المسجلين">
+        <div class="kpi-chips-cluster" [attr.aria-label]="'ui.full.184' | t">
+          <div class="kpi-chip kpi-chip--total" [title]="'ui.full.181' | t">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span class="chip-label">المشرفين</span>
+            <span class="chip-label">{{ 'ui.full.180' | t }}</span>
             <span class="chip-count">{{ adminsPage.totalCount }}</span>
           </div>
 
-          <div class="kpi-chip kpi-chip--approved" title="الحسابات النشطة">
+          <div class="kpi-chip kpi-chip--approved" [title]="'ui.full.182' | t">
             <span class="live-pulse-dot" aria-hidden="true"></span>
-            <span class="chip-label">نشط</span>
+            <span class="chip-label">{{ 'common.active' | t }}</span>
             <span class="chip-count">{{ activeCount() }}</span>
           </div>
 
-          <div class="kpi-chip kpi-chip--root" title="حساب رئيسي محمي">
+          <div class="kpi-chip kpi-chip--root" [title]="'admin.protectedAccount' | t">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" />
               <circle cx="12" cy="10" r="2.2" />
               <path d="M8.8 16c.7-1.6 1.8-2.4 3.2-2.4s2.5.8 3.2 2.4" />
             </svg>
-            <span class="chip-label">محمي</span>
+            <span class="chip-label">{{ 'ui.full.183' | t }}</span>
             <span class="chip-count">{{ rootCount() }}</span>
           </div>
         </div>
@@ -117,15 +117,15 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2>تعذر تحميل قائمة المشرفين</h2>
+      <h2>{{ 'ui.full.187' | t }}</h2>
       @for (message of apiMessages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
       <button class="btn btn-outline-secondary" type="button" (click)="load()">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
         </svg>
-        <span>إعادة المحاولة</span>
+        <span>{{ 'discovery.retry' | t }}</span>
       </button>
     </div>
   } @else if (isLoading() && !result()) {
@@ -137,8 +137,8 @@
           <path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" />
         </svg>
       </div>
-      <h2>جارٍ جلب بيانات المشرفين…</h2>
-      <p>يتم الآن فحص الصلاحيات واسترجاع السجلات الطبية المسجلة.</p>
+      <h2>{{ 'ui.full.188' | t }}</h2>
+      <p>{{ 'ui.full.189' | t }}</p>
     </div>
   } @else if (result(); as adminsPage) {
     <!-- Data List Card -->
@@ -148,17 +148,17 @@
           <span class="result-count-badge">
             <span class="count-number">{{ adminsPage.totalCount }}</span>
             <span class="count-text">{{
-              adminsPage.totalCount === 1 ? 'مشرف مسجل' : 'مشرفين مسجلين'
+              adminsPage.totalCount === 1 ? uiLanguage.t('ui.expressions.118') : uiLanguage.t('ui.expressions.119')
             }}</span>
           </span>
           @if (includeDeleted()) {
-            <span class="deleted-mode-badge">يتضمن السجلات المحذوفة</span>
+            <span class="deleted-mode-badge">{{ 'ui.full.190' | t }}</span>
           }
         </div>
         @if (isLoading()) {
           <div class="refresh-indicator">
             <span class="refresh-spinner"></span>
-            <span>جارٍ تحديث النتائج…</span>
+            <span>{{ 'ui.full.191' | t }}</span>
           </div>
         }
       </div>
@@ -166,11 +166,11 @@
       @if (adminsPage.items.length) {
         <div class="admins-table-wrapper">
           <div class="table-header-row" aria-hidden="true">
-            <span class="th-col th-identity">المشرف</span>
-            <span class="th-col th-contact">بيانات التواصل</span>
-            <span class="th-col th-status">الحالة والنظام</span>
-            <span class="th-col th-date">تاريخ الإنشاء</span>
-            <span class="th-col th-action">الإجراءات</span>
+            <span class="th-col th-identity">{{ 'ui.full.192' | t }}</span>
+            <span class="th-col th-contact">{{ 'common.contactDetails' | t }}</span>
+            <span class="th-col th-status">{{ 'ui.full.193' | t }}</span>
+            <span class="th-col th-date">{{ 'common.createdAt' | t }}</span>
+            <span class="th-col th-action">{{ 'common.actions' | t }}</span>
           </div>
 
           <div class="table-body">
@@ -185,7 +185,7 @@
                   <div class="admin-avatar-box" [class.is-root]="admin.isRootSuperAdmin">
                     <span class="avatar-letter">{{ getAdminInitial(admin) }}</span>
                     @if (admin.isRootSuperAdmin) {
-                      <span class="root-crown" title="حساب رئيسي">
+                      <span class="root-crown" [title]="'ui.full.194' | t">
                         <svg viewBox="0 0 24 24">
                           <polygon
                             points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
@@ -202,13 +202,13 @@
                           class="admin-name-link btn-link-reset"
                           (click)="openDetailsDrawer(admin.superAdminId)"
                         >
-                          {{ admin.nameAr }}
+                          {{ uiLanguage.isRtl() ? admin.nameAr : admin.nameEn || admin.nameAr }}
                         </button>
                       } @else {
-                        <strong class="admin-name-text">{{ admin.nameAr }}</strong>
+                        <strong class="admin-name-text">{{ uiLanguage.isRtl() ? admin.nameAr : admin.nameEn || admin.nameAr }}</strong>
                       }
                       @if (admin.isRootSuperAdmin) {
-                        <span class="root-tag">Master</span>
+                        <span class="root-tag">{{ 'admin.rootShort' | t }}</span>
                       }
                     </div>
                     @if (admin.nameEn) {
@@ -220,7 +220,7 @@
 
                 <!-- Contact Information -->
                 <div class="col-contact">
-                  <span class="mobile-label">التواصل:</span>
+                  <span class="mobile-label">{{ 'common.contactPrefix' | t }}</span>
                   <div class="contact-pill-stack">
                     <a
                       [href]="'mailto:' + admin.email"
@@ -256,7 +256,7 @@
                             d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
                           />
                         </svg>
-                        <span class="contact-text">لا يوجد هاتف</span>
+                        <span class="contact-text">{{ 'ui.full.195' | t }}</span>
                       </span>
                     }
                   </div>
@@ -264,31 +264,31 @@
 
                 <!-- Status & Root Indicators -->
                 <div class="col-status">
-                  <span class="mobile-label">الحالة:</span>
+                  <span class="mobile-label">{{ 'common.statusLabel' | t }}</span>
                   <div class="status-stack">
                     @if (admin.isDeleted) {
                       <span class="badge-pill badge-deleted">
                         <span class="pill-dot"></span>
-                        <span>محذوف</span>
+                        <span>{{ 'common.deleted' | t }}</span>
                       </span>
-                      <small class="status-subtext warning-sub">قابل للاستعادة</small>
+                      <small class="status-subtext warning-sub">{{ 'ui.full.196' | t }}</small>
                     } @else if (admin.isActive) {
                       <span class="badge-pill badge-active">
                         <span class="pill-dot"></span>
-                        <span>نشط</span>
+                        <span>{{ 'common.active' | t }}</span>
                       </span>
                       @if (admin.isRootSuperAdmin) {
                         <span class="badge-pill badge-root-shield">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                           </svg>
-                          <span>حساب رئيسي محمي</span>
+                          <span>{{ 'admin.protectedAccount' | t }}</span>
                         </span>
                       }
                     } @else {
                       <span class="badge-pill badge-inactive">
                         <span class="pill-dot"></span>
-                        <span>غير نشط</span>
+                        <span>{{ 'common.inactiveShort' | t }}</span>
                       </span>
                     }
                   </div>
@@ -296,7 +296,7 @@
 
                 <!-- Created Date -->
                 <div class="col-date">
-                  <span class="mobile-label">تاريخ الإنشاء:</span>
+                  <span class="mobile-label">{{ 'ui.full.197' | t }}</span>
                   <div class="date-pill">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -317,7 +317,7 @@
                       <button
                         class="btn btn-action-delete"
                         type="button"
-                        title="حذف الحساب"
+                        [title]="'admin.deleteAccount' | t"
                         [disabled]="isActionSubmitting()"
                         (click)="openAction('delete', admin)"
                       >
@@ -327,14 +327,14 @@
                             d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
                           />
                         </svg>
-                        <span>حذف</span>
+                        <span>{{ 'common.delete' | t }}</span>
                       </button>
                     }
                     @if (canRestoreRecord(admin)) {
                       <button
                         class="btn btn-action-restore"
                         type="button"
-                        title="استعادة الحساب"
+                        [title]="'admin.restoreAccount' | t"
                         [disabled]="isActionSubmitting()"
                         (click)="openAction('restore', admin)"
                       >
@@ -342,7 +342,7 @@
                           <polyline points="1 4 1 10 7 10" />
                           <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                         </svg>
-                        <span>استعادة</span>
+                        <span>{{ 'common.restore' | t }}</span>
                       </button>
                     }
                     @if (canViewDetails) {
@@ -350,9 +350,9 @@
                         type="button"
                         class="btn btn-action-details"
                         (click)="openDetailsDrawer(admin.superAdminId)"
-                        title="عرض الملف والتفاصيل"
+                        [title]="'ui.full.198' | t"
                       >
-                        <span>التفاصيل</span>
+                        <span>{{ 'common.details' | t }}</span>
                         <svg viewBox="0 0 24 24" class="arrow-icon" aria-hidden="true">
                           <path d="m15 18-6-6 6-6" />
                         </svg>
@@ -367,7 +367,7 @@
 
         <!-- Pagination -->
         @if (totalPages() > 1) {
-          <nav class="modern-pagination" aria-label="صفحات قائمة المشرفين">
+          <nav class="modern-pagination" [attr.aria-label]="'ui.full.199' | t">
             <button
               class="btn btn-page-nav"
               type="button"
@@ -375,12 +375,12 @@
               (click)="goToPage(pageNumber() - 1)"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-              <span>السابق</span>
+              <span>{{ 'discovery.previous' | t }}</span>
             </button>
             <div class="page-indicator">
-              <span>صفحة</span>
+              <span>{{ 'discovery.page' | t }}</span>
               <strong>{{ pageNumber() }}</strong>
-              <span>من</span>
+              <span>{{ 'discovery.of' | t }}</span>
               <strong>{{ totalPages() }}</strong>
             </div>
             <button
@@ -389,7 +389,7 @@
               [disabled]="pageNumber() >= totalPages() || isLoading()"
               (click)="goToPage(pageNumber() + 1)"
             >
-              <span>التالي</span>
+              <span>{{ 'discovery.next' | t }}</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
             </button>
           </nav>
@@ -404,8 +404,8 @@
             loading="lazy"
             decoding="async"
           />
-          <h2>لا توجد نتائج مطابقة</h2>
-          <p>لم نتمكن من العثور على أي حسابات مشرفين تطابق معايير البحث الحالية.</p>
+          <h2>{{ 'common.noMatches' | t }}</h2>
+          <p>{{ 'ui.full.200' | t }}</p>
           @if (filterModel().searchText) {
             <button class="btn btn-clear-search" type="button" (click)="clearSearch()">
               <svg
@@ -422,7 +422,7 @@
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-              <span>مسح البحث والعودة</span>
+              <span>{{ 'ui.full.201' | t }}</span>
             </button>
           }
         </div>
@@ -448,8 +448,8 @@
   <app-side-drawer
     [opened]="isCreateDrawerOpen()"
     [busy]="isCreateSubmitting()"
-    title="إنشاء حساب مشرف جديد"
-    description="إضافة حساب مشرف جديد وتعيين بيانات الاعتماد الأولية والصلاحيات."
+    [title]="'ui.full.202' | t"
+    [description]="'ui.full.203' | t"
     (closed)="closeCreateDrawer()"
   >
     <app-superadmin-form
@@ -465,8 +465,8 @@
   <!-- SuperAdmin Details Slide-over Side Drawer -->
   <app-side-drawer
     [opened]="selectedAdminId() !== null"
-    title="ملف وتفاصيل المشرف"
-    description="استعراض بيانات حساب المشرف، الصلاحيات، وإدارة حالة الحساب."
+    [title]="'ui.full.204' | t"
+    [description]="'ui.full.205' | t"
     width="680px"
     (closed)="closeDetailsDrawer()"
   >

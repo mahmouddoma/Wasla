@@ -1,20 +1,24 @@
-<main class="health-workspace" dir="rtl">
+<main class="health-workspace" [dir]="uiLanguage.dir()">
   <header class="workspace-bar">
     <div>
-      <h1>طلبات إثبات العلاقة بمساعدة الاستقبال</h1>
-      <p>قدّم الطلب نيابة عن مرضى موجودين. الإرسال يبدأ المراجعة ولا يعني الموافقة.</p>
+      <h1>{{ 'ui.full.710' | t }}</h1>
+      <p>{{ 'ui.full.711' | t }}</p>
     </div>
     <div class="bar-actions">
-      <a class="btn btn-outline-secondary" routerLink="/reception/patients">بحث المرضى</a>
-      <a class="btn btn-outline-secondary" routerLink="/workspace/reception">الرئيسية</a>
-      <button class="btn btn-outline-secondary" type="button" (click)="logout()">خروج</button>
+      <a class="btn btn-outline-secondary" routerLink="/reception/patients">{{ 'ui.full.712' | t }}</a>
+      <a class="btn btn-outline-secondary" routerLink="/workspace/reception">{{
+        'common.home' | t
+      }}</a>
+      <button class="btn btn-outline-secondary" type="button" (click)="logout()">
+        {{ 'common.exit' | t }}
+      </button>
     </div>
   </header>
 
   @if (messages().length) {
     <div class="notice error" role="alert">
       @for (message of messages(); track message) {
-        <p>{{ message }}</p>
+        <p>{{ message | t }}</p>
       }
     </div>
   }
@@ -25,64 +29,67 @@
   @if (canCreate) {
     <section class="workspace-panel assisted-create">
       <div class="section-heading">
-        <div><h2>إنشاء طلب للمراجعة</h2></div>
-        <p>يجب اختيار الطرفين من Patient Search؛ بيانات contact وحدها لا تكفي.</p>
+        <div><h2>{{ 'ui.full.713' | t }}</h2></div>
+        <p>{{ 'ui.full.714' | t }}</p>
       </div>
       <div class="picker-grid">
-        <app-patient-picker label="مقدم الطلب" (selected)="requester.set($event)" />
-        <app-patient-picker label="المريض المستهدف" (selected)="target.set($event)" />
+        <app-patient-picker [label]="'requests.applicant' | t" (selected)="requester.set($event)" />
+        <app-patient-picker
+          [label]="'requests.targetPatient' | t"
+          (selected)="target.set($event)"
+        />
       </div>
       <form class="detail-form assisted-form" (submit)="submitRequest($event)" novalidate>
         <label class="form-field"
-          ><span>نوع الطلب</span
+          ><span>{{ 'common.requestType' | t }}</span
           ><select [formField]="requestForm.requestType">
-            <option value="CreateFamily">إنشاء عائلة</option>
-            <option value="AddFamilyMember">إضافة عضو</option>
+            <option value="CreateFamily">{{ 'family.create' | t }}</option>
+            <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
           </select></label
         >
         @if (requestModel().requestType === 'AddFamilyMember') {
           <label class="form-field"
-            ><span>Family ID *</span><input dir="ltr" [formField]="requestForm.familyId"
+            ><span>{{ 'family.idRequiredLabel' | t }}</span><input dir="ltr" [formField]="requestForm.familyId"
           /></label>
         }
         <label class="form-field"
-          ><span>دور مقدم الطلب</span
+          ><span>{{ 'family.requesterRole' | t }}</span
           ><select [formField]="requestForm.requesterClaimedRole">
-            <option value="Father">أب</option>
-            <option value="Mother">أم</option>
-            <option value="Guardian">ولي أمر</option>
-            <option value="LegalGuardian">وصي قانوني</option>
+            <option value="Father">{{ 'family.father' | t }}</option>
+            <option value="Mother">{{ 'family.mother' | t }}</option>
+            <option value="Guardian">{{ 'family.guardian' | t }}</option>
+            <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
           </select></label
         >
         <label class="form-field"
-          ><span>دور المريض المستهدف</span
+          ><span>{{ 'family.targetRole' | t }}</span
           ><select [formField]="requestForm.targetClaimedRole">
-            <option value="Father">أب</option>
-            <option value="Mother">أم</option>
-            <option value="Child">طفل</option>
-            <option value="Guardian">ولي أمر</option>
-            <option value="LegalGuardian">وصي قانوني</option>
+            <option value="Father">{{ 'family.father' | t }}</option>
+            <option value="Mother">{{ 'family.mother' | t }}</option>
+            <option value="Child">{{ 'family.child' | t }}</option>
+            <option value="Guardian">{{ 'family.guardian' | t }}</option>
+            <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
           </select></label
         >
         <label class="form-field"
-          ><span>أنواع المستندات *</span
+          ><span>{{ 'ui.full.715' | t }}</span
           ><input
-            placeholder="BirthCertificate, NationalId"
+            [placeholder]="'family.documentTypesExample' | t"
             [formField]="requestForm.documentTypes"
-          /><small>نوع واحد مقابل كل ملف وبنفس الترتيب.</small></label
+          /><small>{{ 'ui.full.716' | t }}</small></label
         >
         <label class="form-field">
-          <span>مستندات الإثبات *</span>
+          <span>{{ 'ui.full.717' | t }}</span>
           <input
             type="file"
             multiple
             [accept]="evidenceFileAccept"
             (change)="filesChanged($event)"
           />
-          <small>الصيغ المسموحة: PDF أو JPG أو JPEG أو PNG فقط.</small>
+          <small>{{ 'validation.evidenceFormats' | t }}</small>
         </label>
         <button class="btn btn-primary full" type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'جارٍ التقديم…' : 'تقديم الطلب للمراجعة' }}
+          {{ submitting() ? uiLanguage.t('ui.expressions.214') : uiLanguage.t('ui.expressions.215') }}
         </button>
       </form>
     </section>
@@ -91,35 +98,36 @@
   @if (canView) {
     <section class="workspace-panel requests-section">
       <div class="section-heading">
-        <div><h2>الطلبات التي قدمتها</h2></div>
-        <p>هذه القائمة خاصة بحساب الاستقبال الحالي فقط.</p>
+        <div><h2>{{ 'ui.full.718' | t }}</h2></div>
+        <p>{{ 'ui.full.719' | t }}</p>
       </div>
       <form class="compact-form" (submit)="loadRequests(1, $event)">
         <label class="form-field"
-          ><span>بحث</span><input type="search" [formField]="filterForm.search"
+          ><span>{{ 'discovery.search' | t }}</span
+          ><input type="search" [formField]="filterForm.search"
         /></label>
         <label class="form-field"
-          ><span>الحالة</span
+          ><span>{{ 'common.status' | t }}</span
           ><select [formField]="filterForm.status">
-            <option value="">الكل</option>
-            <option value="Pending">Pending</option>
-            <option value="ModificationRequested">Modification Requested</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
+            <option value="">{{ 'common.all' | t }}</option>
+            <option [value]="'family.pendingFilter' | t">{{ 'family.pendingFilter' | t }}</option>
+            <option value="ModificationRequested">{{ 'family.changesFilter' | t }}</option>
+            <option [value]="'family.approvedFilter' | t">{{ 'family.approvedFilter' | t }}</option>
+            <option [value]="'family.rejectedFilter' | t">{{ 'family.rejectedFilter' | t }}</option>
           </select></label
         >
         <label class="form-field"
-          ><span>النوع</span
+          ><span>{{ 'register.gender' | t }}</span
           ><select [formField]="filterForm.requestType">
-            <option value="">الكل</option>
-            <option value="CreateFamily">إنشاء عائلة</option>
-            <option value="AddFamilyMember">إضافة عضو</option>
+            <option value="">{{ 'common.all' | t }}</option>
+            <option value="CreateFamily">{{ 'family.create' | t }}</option>
+            <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
           </select></label
         >
-        <button class="btn btn-primary" type="submit">تطبيق</button>
+        <button class="btn btn-primary" type="submit">{{ 'ui.full.720' | t }}</button>
       </form>
       @if (loading()) {
-        <div class="empty-state" role="status">جارٍ تحميل الطلبات…</div>
+        <div class="empty-state" role="status">{{ 'ui.full.721' | t }}</div>
       } @else if (result(); as page) {
         <div class="result-list">
           @for (request of page.items; track request.requestId) {
@@ -127,35 +135,37 @@
               <div>
                 <strong>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</strong
                 ><span
-                  >{{ request.requestType }} · Revision {{ request.currentRevisionNumber }}</span
+                  >{{ uiLanguage.label('requestType', request.requestType) }} · {{ 'common.versionPrefix' | t }} {{ request.currentRevisionNumber }}</span
                 >
               </div>
               <span
                 class="status-badge"
                 [class.action]="request.status === 'ModificationRequested'"
-                >{{ request.status }}</span
+                >{{ uiLanguage.label('status', request.status) }}</span
               >
             </button>
           } @empty {
-            <div class="empty-state">لم تقدم طلبات مطابقة بعد.</div>
+            <div class="empty-state">{{ 'ui.full.722' | t }}</div>
           }
         </div>
-        <nav class="pager" aria-label="صفحات الطلبات">
+        <nav class="pager" [attr.aria-label]="'ui.full.723' | t">
           <button
             class="btn btn-sm btn-outline-secondary"
             type="button"
             [disabled]="pageNumber() <= 1"
             (click)="loadRequests(pageNumber() - 1)"
           >
-            السابق</button
-          ><span>صفحة {{ pageNumber() }} من {{ totalPages() }}</span
+            {{ 'discovery.previous' | t }}</button
+          ><span
+            >{{ 'discovery.page' | t }} {{ pageNumber() }} {{ 'discovery.of' | t }}
+            {{ totalPages() }}</span
           ><button
             class="btn btn-sm btn-outline-secondary"
             type="button"
             [disabled]="pageNumber() >= totalPages()"
             (click)="loadRequests(pageNumber() + 1)"
           >
-            التالي
+            {{ 'discovery.next' | t }}
           </button>
         </nav>
       }
@@ -163,80 +173,79 @@
   }
 
   @if (selectedRequest(); as request) {
-    <aside class="details-drawer" aria-label="تفاصيل الطلب">
+    <aside class="details-drawer" [attr.aria-label]="'common.requestDetails' | t">
       <button
         class="drawer-close"
         type="button"
         (click)="closeDetails()"
-        aria-label="إغلاق التفاصيل"
+        [attr.aria-label]="'ui.full.724' | t"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" />
         </svg>
       </button>
-      <span class="status-badge" [class.action]="request.status === 'ModificationRequested'">{{
-        request.status
-      }}</span>
+      <span class="status-badge" [class.action]="request.status === 'ModificationRequested'">{{ uiLanguage.label('status', request.status) }}</span>
       <h2>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h2>
-      <p>{{ request.requestType }} · Revision {{ request.currentRevisionNumber }}</p>
+      <p>{{ uiLanguage.label('requestType', request.requestType) }} · {{ 'common.versionPrefix' | t }} {{ request.currentRevisionNumber }}</p>
       @if (request.status === 'ModificationRequested') {
         <div class="notice warning">
-          <strong>التعديل المطلوب</strong>
+          <strong>{{ 'ui.full.725' | t }}</strong>
           <p>{{ request.modificationMessage }}</p>
         </div>
       }
       @if (request.status === 'Rejected') {
         <div class="notice error">
-          <strong>سبب الرفض النهائي</strong>
+          <strong>{{ 'requests.finalRejectionReason' | t }}</strong>
           <p>{{ request.rejectionReason }}</p>
         </div>
       }
-      <h3>المستندات</h3>
+      <h3>{{ 'ui.full.726' | t }}</h3>
       <div class="document-list">
         @for (document of request.documents; track document.documentId) {
           <button type="button" (click)="openDocument(document.documentId)">
             <strong>{{ document.fileName }}</strong
-            ><span>{{ document.documentType }} · Revision {{ document.revisionNumber }}</span>
+            ><span>{{ uiLanguage.label('documentType', document.documentType) }} · {{ 'common.versionPrefix' | t }} {{ document.revisionNumber }}</span>
           </button>
         } @empty {
-          <p>لا توجد مستندات.</p>
+          <p>{{ 'ui.full.727' | t }}</p>
         }
       </div>
-      <h3>السجل</h3>
+      <h3>{{ 'ui.full.728' | t }}</h3>
       <ol class="history-list">
         @for (item of request.history; track item.occurredOnUtc + item.action) {
           <li>
-            <strong>{{ item.action }}</strong
+            <strong>{{ uiLanguage.label('auditAction', item.action) }}</strong
             ><span>{{ item.occurredOnUtc }}</span>
             @if (item.message) {
-              <p>{{ item.message }}</p>
+              <p>{{ item.message | t }}</p>
             }
           </li>
         }
       </ol>
       @if (request.status === 'ModificationRequested' && canResubmit) {
         <div class="resubmit-box">
-          <h3>إعادة الإرسال</h3>
-          <p>النسخ والأدلة السابقة ستظل محفوظة.</p>
+          <h3>{{ 'common.resubmit' | t }}</h3>
+          <p>{{ 'ui.full.729' | t }}</p>
           <label class="form-field">
-            <span>أدلة جديدة</span>
+            <span>{{ 'ui.full.730' | t }}</span>
             <input
               type="file"
               multiple
               [accept]="evidenceFileAccept"
               (change)="filesChanged($event, true)"
             />
-            <small>الصيغ المسموحة: PDF أو JPG أو JPEG أو PNG فقط.</small>
+            <small>{{ 'validation.evidenceFormats' | t }}</small>
           </label>
           <label class="form-field"
-            ><span>أنواع المستندات</span><input (input)="revisionTypesChanged($event)" /></label
+            ><span>{{ 'family.documentTypes' | t }}</span
+            ><input (input)="revisionTypesChanged($event)" /></label
           ><button
             class="btn btn-primary"
             type="button"
             [disabled]="submitting()"
             (click)="resubmit()"
           >
-            إعادة الإرسال
+            {{ 'common.resubmit' | t }}
           </button>
         </div>
       }

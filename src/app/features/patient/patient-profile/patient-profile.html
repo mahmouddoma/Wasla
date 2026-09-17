@@ -1,4 +1,4 @@
-<main class="patient-profile-shell" dir="rtl">
+<main class="patient-profile-shell" [dir]="uiLanguage.dir()">
   <!-- Ambient backdrop lighting mesh -->
   <div class="ambient-glow-mesh" aria-hidden="true">
     <div class="ambient-circle circle-teal"></div>
@@ -8,10 +8,16 @@
   <!-- Top Enterprise Floating Header -->
   <header class="profile-header">
     <div class="brand-cluster">
-      <img class="profile-logo" src="/images/wasla-mark.png" width="40" height="40" alt="وصلة" />
+      <img
+        class="profile-logo"
+        src="/images/wasla-mark.png"
+        width="40"
+        height="40"
+        [alt]="'common.appName' | t"
+      />
       <div class="brand-meta">
-        <span class="brand-name">وصلة</span>
-        <span class="brand-tagline">منظومة الرعاية الصحية الموحدة</span>
+        <span class="brand-name">{{ 'common.appName' | t }}</span>
+        <span class="brand-tagline">{{ 'common.platform' | t }}</span>
       </div>
     </div>
 
@@ -31,7 +37,7 @@
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
         </svg>
-        <span>العائلة والطلبات</span>
+        <span>{{ 'workspace.familyAndRequests' | t }}</span>
       </a>
       <a class="btn-head btn-head-nav" routerLink="/workspace/patient">
         <svg
@@ -46,13 +52,13 @@
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
-        <span>الرئيسية</span>
+        <span>{{ 'common.home' | t }}</span>
       </a>
       <button
         class="btn-head btn-head-logout"
         type="button"
         (click)="logout()"
-        title="تسجيل الخروج"
+        [title]="'common.logout' | t"
       >
         <svg
           viewBox="0 0 24 24"
@@ -67,7 +73,7 @@
           <polyline points="16 17 21 12 16 7" />
           <line x1="21" y1="12" x2="9" y2="12" />
         </svg>
-        <span>خروج</span>
+        <span>{{ 'common.exit' | t }}</span>
       </button>
     </div>
   </header>
@@ -87,35 +93,13 @@
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
         <circle cx="12" cy="7" r="4"></circle>
       </svg>
-      <span>الهوية الصحية للمريض</span>
+      <span>{{ 'ui.full.669' | t }}</span>
     </div>
-    <h1>البيانات الشخصية وجهات الاتصال</h1>
-    <p>الهوية الصحية تُحمّل من الحساب الحالي بدون الحاجة لإرسال Patient ID في المعاملات.</p>
+    <h1>{{ 'ui.full.670' | t }}</h1>
+    <p>{{ 'ui.full.671' | t }}</p>
   </div>
 
   <!-- Notice / Feedback Banners -->
-  @if (messages().length) {
-    <div class="notice-card notice-error" role="alert">
-      <svg
-        class="notice-icon"
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <div class="notice-content">
-        @for (message of messages(); track message) {
-          <p>{{ message }}</p>
-        }
-      </div>
-    </div>
-  }
   @if (successMessage()) {
     <div class="notice-card notice-success" role="status">
       <svg
@@ -140,7 +124,7 @@
   @if (loading()) {
     <div class="loading-panel">
       <div class="loading-ring"></div>
-      <span>جارٍ تحميل بيانات الملف والمريض…</span>
+      <span>{{ 'ui.full.672' | t }}</span>
     </div>
   }
 
@@ -158,14 +142,16 @@
                   <div class="spinner-sm"></div>
                 </div>
               } @else if (imageUrl()) {
-                <img class="avatar-img" [src]="imageUrl()" alt="الصورة الشخصية للمريض" />
+                <img class="avatar-img" [src]="imageUrl()" [alt]="'ui.full.673' | t" />
               } @else {
                 <div class="avatar-initial">{{ item.nameAr.charAt(0) }}</div>
               }
             </div>
           </div>
 
-          <h2 class="patient-name">{{ item.nameAr }}</h2>
+          <h2 class="patient-name">
+            {{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
+          </h2>
           @if (item.nameEn) {
             <p class="patient-name-en">{{ item.nameEn }}</p>
           }
@@ -173,7 +159,7 @@
           <div
             class="technical-id-badge"
             (click)="copyPatientId(item.patientId)"
-            title="انقر لنسخ المعرّف الطبي"
+            [title]="'ui.full.674' | t"
           >
             <svg
               viewBox="0 0 24 24"
@@ -187,17 +173,23 @@
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
             <span class="id-val">{{ item.patientId }}</span>
-            <span class="copy-tag">{{ copiedId() ? 'تم النسخ!' : 'نسخ' }}</span>
+            <span class="copy-tag">{{
+              copiedId() ? uiLanguage.t('common.copied') : uiLanguage.t('common.copy')
+            }}</span>
           </div>
 
           <div class="identity-specs-grid">
             <div class="spec-card">
-              <span class="spec-label">تاريخ الميلاد</span>
+              <span class="spec-label">{{ 'register.dob' | t }}</span>
               <span class="spec-value">{{ item.dateOfBirth }}</span>
             </div>
             <div class="spec-card">
-              <span class="spec-label">النوع</span>
-              <span class="spec-value">{{ item.gender === 'Male' ? 'ذكر' : 'أنثى' }}</span>
+              <span class="spec-label">{{ 'register.gender' | t }}</span>
+              <span class="spec-value">{{
+                item.gender === 'Male'
+                  ? uiLanguage.t('register.male')
+                  : uiLanguage.t('register.female')
+              }}</span>
             </div>
           </div>
 
@@ -214,7 +206,7 @@
               <line x1="12" y1="16" x2="12" y2="12"></line>
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
-            <p>تاريخ الميلاد والنوع للعرض فقط في المرحلة الحالية.</p>
+            <p>{{ 'ui.full.675' | t }}</p>
           </div>
         </section>
 
@@ -224,57 +216,59 @@
             <div class="heading-title-row">
               <span class="step-pill">01</span>
               <div>
-                <h2>بيانات الملف الأساسية</h2>
-                <p>بيانات الملف لا تُزامن تلقائياً مع بيانات حساب الدخول.</p>
+                <h2>{{ 'ui.full.676' | t }}</h2>
+                <p>{{ 'ui.full.677' | t }}</p>
               </div>
             </div>
           </div>
 
           <form class="detail-form-grid" (submit)="saveProfile($event)" novalidate>
             <label class="input-field">
-              <span class="field-title">الاسم بالعربية <span class="required-star">*</span></span>
+              <span class="field-title"
+                >{{ 'register.fullNameAr' | t }} <span class="required-star">*</span></span
+              >
               <input
                 class="field-input"
                 [formField]="profileForm.nameAr"
-                placeholder="أدخل الاسم بالعربية"
+                [placeholder]="'ui.full.678' | t"
               />
             </label>
 
             <label class="input-field">
-              <span class="field-title">الاسم بالإنجليزية</span>
+              <span class="field-title">{{ 'common.nameEn' | t }}</span>
               <input
                 class="field-input ltr-text"
                 dir="ltr"
                 [formField]="profileForm.nameEn"
-                placeholder="Full name in English"
+                [placeholder]="'common.englishNamePlaceholder' | t"
               />
             </label>
 
             <label class="input-field">
-              <span class="field-title">رقم الهاتف</span>
+              <span class="field-title">{{ 'workspace.phone' | t }}</span>
               <input
                 class="field-input ltr-text"
                 type="tel"
                 dir="ltr"
                 [formField]="profileForm.phoneNumber"
-                placeholder="01XXXXXXXXX"
+                [placeholder]="'common.phoneExample' | t"
               />
             </label>
 
             <label class="input-field">
-              <span class="field-title">البريد الإلكتروني</span>
+              <span class="field-title">{{ 'workspace.email' | t }}</span>
               <input
                 class="field-input ltr-text"
                 type="email"
                 dir="ltr"
                 [formField]="profileForm.email"
-                placeholder="example@domain.com"
+                [placeholder]="'patient.emailExample' | t"
               />
             </label>
 
             <!-- Custom stylized photo uploader -->
             <div class="photo-upload-field full-width">
-              <span class="field-title">استبدال الصورة الشخصية</span>
+              <span class="field-title">{{ 'ui.full.679' | t }}</span>
               <input
                 #fileInput
                 type="file"
@@ -303,7 +297,9 @@
                       </div>
                       <div class="file-details">
                         <span class="file-name">{{ file.name }}</span>
-                        <span class="file-size">{{ (file.size / 1024).toFixed(1) }} كيلوبايت</span>
+                        <span class="file-size"
+                          >{{ (file.size / 1024).toFixed(1) }} {{ 'ui.full.680' | t }}</span
+                        >
                       </div>
                     </div>
                     <div class="file-actions">
@@ -312,13 +308,13 @@
                         class="btn-change-file"
                         (click)="$event.stopPropagation(); fileInput.click()"
                       >
-                        تغيير الصورة
+                        {{ 'ui.full.681' | t }}
                       </button>
                       <button
                         type="button"
                         class="btn-remove-file"
                         (click)="$event.stopPropagation(); clearSelectedFile(fileInput)"
-                        title="إلغاء التحديد"
+                        [title]="'common.clearSelection' | t"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -351,8 +347,8 @@
                       </svg>
                     </div>
                     <div class="upload-text">
-                      <strong>انقر هنا لاختيار صورة للملف الشخصي</strong>
-                      <small>صيغ الصور المدعومة: PNG، JPG، WEBP</small>
+                      <strong>{{ 'ui.full.682' | t }}</strong>
+                      <small>{{ 'ui.full.683' | t }}</small>
                     </div>
                   </div>
                 }
@@ -364,7 +360,7 @@
                 <button class="btn-primary-medical" type="submit" [disabled]="savingProfile()">
                   @if (savingProfile()) {
                     <span class="btn-spinner"></span>
-                    <span>جارٍ الحفظ…</span>
+                    <span>{{ 'common.saving' | t }}</span>
                   } @else {
                     <svg
                       viewBox="0 0 24 24"
@@ -380,7 +376,7 @@
                       <polyline points="17 21 17 13 7 13 7 21"></polyline>
                       <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
-                    <span>حفظ التعديلات</span>
+                    <span>{{ 'common.saveChanges' | t }}</span>
                   }
                 </button>
               </div>
@@ -396,12 +392,12 @@
             <div class="heading-title-row">
               <span class="step-pill">02</span>
               <div>
-                <h2>جهات الاتصال</h2>
-                <p>مخصصة للتواصل فقط، ولا تمثل عضوية عائلية موثقة أو صلاحية طبية.</p>
+                <h2>{{ 'ui.full.684' | t }}</h2>
+                <p>{{ 'ui.full.685' | t }}</p>
               </div>
             </div>
             <div class="contacts-count-badge">
-              <span>{{ contacts().length }} جهات اتصال</span>
+              <span>{{ contacts().length }} {{ 'ui.full.686' | t }}</span>
             </div>
           </div>
 
@@ -423,9 +419,11 @@
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                   </svg>
-                  <h4>جهات الاتصال المسجلة</h4>
+                  <h4>{{ 'ui.full.687' | t }}</h4>
                 </div>
-                <span class="directory-counter">{{ contacts().length }} مسجلة</span>
+                <span class="directory-counter"
+                  >{{ contacts().length }} {{ 'ui.full.688' | t }}</span
+                >
               </div>
 
               <div class="contacts-list-table">
@@ -456,11 +454,13 @@
 
                       <div class="contact-text-cluster">
                         <div class="contact-name-line">
-                          <span class="contact-name-ar">{{ contact.nameAr }}</span>
+                          <span class="contact-name-ar">{{
+                            uiLanguage.isRtl() ? contact.nameAr : contact.nameEn || contact.nameAr
+                          }}</span>
                           @if (contact.isPrimary) {
                             <span class="primary-tag">
                               <span class="live-dot" aria-hidden="true"></span>
-                              <span>أساسية</span>
+                              <span>{{ 'ui.full.689' | t }}</span>
                             </span>
                           }
                           <span class="relation-tag">{{
@@ -477,7 +477,7 @@
                       <a
                         class="contact-phone-val"
                         [href]="'tel:' + contact.phoneNumber"
-                        title="اتصال أو نسخ الرقم"
+                        [title]="'ui.full.690' | t"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -495,7 +495,7 @@
                       </a>
 
                       @if (contact.linkedPatientId) {
-                        <span class="contact-linked-val" title="مرتبط بملف مريض">
+                        <span class="contact-linked-val" [title]="'ui.full.691' | t">
                           <svg
                             viewBox="0 0 24 24"
                             width="12"
@@ -511,7 +511,9 @@
                               d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
                             ></path>
                           </svg>
-                          <span dir="ltr">Patient: {{ contact.linkedPatientId }}</span>
+                          <span dir="ltr"
+                            >{{ 'common.patientPrefix' | t }} {{ contact.linkedPatientId }}</span
+                          >
                         </span>
                       }
                     </div>
@@ -522,7 +524,7 @@
                           class="btn-row-action btn-edit"
                           type="button"
                           (click)="editContact(contact)"
-                          title="تعديل جهة الاتصال"
+                          [title]="'ui.full.692' | t"
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -539,7 +541,7 @@
                               d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
                             ></path>
                           </svg>
-                          <span>تعديل</span>
+                          <span>{{ 'common.edit' | t }}</span>
                         </button>
                         <button
                           class="btn-row-action btn-delete"
@@ -548,8 +550,8 @@
                           (click)="deactivateContact(contact)"
                           title="{{
                             !canDelete(contact)
-                              ? 'لا يمكن إلغاء جهة الاتصال الأساسية الوحيدة'
-                              : 'إلغاء جهة الاتصال'
+                              ? uiLanguage.t('ui.expressions.208')
+                              : uiLanguage.t('ui.expressions.209')
                           }}"
                         >
                           <svg
@@ -565,7 +567,7 @@
                               d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
                             ></path>
                           </svg>
-                          <span>إلغاء</span>
+                          <span>{{ 'common.cancel' | t }}</span>
                         </button>
                       </div>
                     }
@@ -587,8 +589,8 @@
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                     </div>
-                    <h4>لا توجد جهات اتصال مسجلة</h4>
-                    <p>أضف جهة اتصال واحدة على الأقل للاعتماد في حالات الطوارئ والتواصل الإداري.</p>
+                    <h4>{{ 'ui.full.693' | t }}</h4>
+                    <p>{{ 'ui.full.694' | t }}</p>
                   </div>
                 }
               </div>
@@ -613,14 +615,18 @@
                       <line x1="23" y1="11" x2="17" y2="11"></line>
                     </svg>
                     <h3>
-                      {{ editingContactId() ? 'تعديل جهة الاتصال' : 'إضافة جهة اتصال جديدة' }}
+                      {{
+                        editingContactId()
+                          ? uiLanguage.t('ui.full.692')
+                          : uiLanguage.t('ui.expressions.210')
+                      }}
                     </h3>
                   </div>
                   @if (editingContactId()) {
                     <div class="editing-indicator">
-                      <span class="editing-tag">وضع التعديل</span>
+                      <span class="editing-tag">{{ 'ui.full.695' | t }}</span>
                       <button type="button" class="btn-cancel-link" (click)="cancelContactEdit()">
-                        إلغاء التعديل
+                        {{ 'common.cancelEdit' | t }}
                       </button>
                     </div>
                   }
@@ -629,47 +635,50 @@
                 <form class="contact-form-grid" (submit)="saveContact($event)" novalidate>
                   <label class="input-field">
                     <span class="field-title"
-                      >الاسم بالعربية <span class="required-star">*</span></span
+                      >{{ 'register.fullNameAr' | t }} <span class="required-star">*</span></span
                     >
                     <input
                       class="field-input"
                       [formField]="contactForm.nameAr"
-                      placeholder="الاسم بالعربية"
+                      [placeholder]="'register.fullNameAr' | t"
                     />
                   </label>
 
                   <label class="input-field">
                     <span class="field-title"
-                      >الاسم بالإنجليزية <span class="opt-tag">(اختياري)</span></span
+                      >{{ 'common.nameEn' | t }}
+                      <span class="opt-tag">{{ 'common.optionalParentheses' | t }}</span></span
                     >
                     <input
                       class="field-input ltr-text"
                       dir="ltr"
                       [formField]="contactForm.nameEn"
-                      placeholder="Full name in English"
+                      [placeholder]="'common.englishNamePlaceholder' | t"
                     />
                   </label>
 
                   <label class="input-field">
-                    <span class="field-title">رقم الهاتف <span class="required-star">*</span></span>
+                    <span class="field-title"
+                      >{{ 'workspace.phone' | t }} <span class="required-star">*</span></span
+                    >
                     <input
                       class="field-input ltr-text"
                       type="tel"
                       dir="ltr"
                       [formField]="contactForm.phoneNumber"
-                      placeholder="01XXXXXXXXX"
+                      [placeholder]="'common.phoneExample' | t"
                     />
                   </label>
 
                   <label class="input-field">
-                    <span class="field-title">صلة القرابة / العلاقة</span>
+                    <span class="field-title">{{ 'ui.full.696' | t }}</span>
                     <div class="select-box">
                       <select [formField]="contactForm.relationshipType">
-                        <option value="Father">أب</option>
-                        <option value="Mother">أم</option>
-                        <option value="Guardian">ولي أمر</option>
-                        <option value="LegalGuardian">وصي قانوني</option>
-                        <option value="Other">أخرى</option>
+                        <option value="Father">{{ 'family.father' | t }}</option>
+                        <option value="Mother">{{ 'family.mother' | t }}</option>
+                        <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                        <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
+                        <option value="Other">{{ 'common.other' | t }}</option>
                       </select>
                       <svg
                         class="select-arrow"
@@ -687,22 +696,22 @@
 
                   <label class="input-field full-width">
                     <span class="field-title"
-                      >معرّف المريض المرتبط (Linked Patient ID)
-                      <span class="opt-tag">(اختياري)</span></span
+                      >{{ 'ui.full.697' | t }}
+                      <span class="opt-tag">{{ 'common.optionalParentheses' | t }}</span></span
                     >
                     <input
                       class="field-input ltr-text"
                       dir="ltr"
                       [formField]="contactForm.linkedPatientId"
-                      placeholder="معرّف ملف المريض إن وُجد"
+                      [placeholder]="'ui.full.698' | t"
                     />
                   </label>
 
                   <!-- Sleek Toggle Row, NO CARD CONTAINER -->
                   <label class="primary-toggle-row full-width">
                     <div class="toggle-text-wrap">
-                      <span class="toggle-label">جهة الاتصال الأساسية للطوارئ</span>
-                      <span class="toggle-hint">تُعتمد كأولوية أولى للتواصل عند الحاجة</span>
+                      <span class="toggle-label">{{ 'ui.full.699' | t }}</span>
+                      <span class="toggle-hint">{{ 'ui.full.700' | t }}</span>
                     </div>
                     <div class="switch-toggle-wrap">
                       <input
@@ -723,7 +732,7 @@
                     <button class="btn-primary-medical" type="submit" [disabled]="savingContact()">
                       @if (savingContact()) {
                         <span class="btn-spinner"></span>
-                        <span>جارٍ الحفظ…</span>
+                        <span>{{ 'common.saving' | t }}</span>
                       } @else {
                         <svg
                           viewBox="0 0 24 24"
@@ -736,7 +745,9 @@
                           <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                         <span>{{
-                          editingContactId() ? 'حفظ التعديلات' : 'إضافة جهة الاتصال'
+                          editingContactId()
+                            ? uiLanguage.t('common.saveChanges')
+                            : uiLanguage.t('ui.expressions.211')
                         }}</span>
                       }
                     </button>
@@ -746,7 +757,7 @@
                         type="button"
                         (click)="cancelContactEdit()"
                       >
-                        إلغاء التعديل
+                        {{ 'common.cancelEdit' | t }}
                       </button>
                     }
                   </div>
@@ -758,4 +769,7 @@
       }
     </div>
   }
+
+  <!-- Enterprise Platform Footer -->
+  <app-platform-footer />
 </main>

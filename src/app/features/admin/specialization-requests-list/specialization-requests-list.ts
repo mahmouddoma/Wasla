@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,12 +11,12 @@ import {
 import { FormField, form, maxLength } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
-import { DoctorSpecializationRequestsApi } from '../../../core/doctor-specialization-requests/doctor-specialization-requests-api';
-import { DoctorSpecializationRequestsPage } from '../../../core/doctor-specialization-requests/doctor-specialization-requests.models';
+import { DoctorSpecializationRequestsApi } from '../services/doctor-specialization-requests';
+import { DoctorSpecializationRequestsPage } from '../services/doctor-specialization-requests';
 import {
   DoctorSpecializationRequestStatus,
   DoctorSpecializationRequestType,
-} from '../../../core/doctor-profile/doctor-profile.models';
+} from '../../../domains/doctor-profile';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { SpecializationRequestDetailsPage } from '../specialization-request-details/specialization-request-details';
@@ -25,19 +27,20 @@ import { SpecializationRequestDetailsPage } from '../specialization-request-deta
     FormField,
     PageHeader,
     SideDrawer,
-    SpecializationRequestDetailsPage,
-  ],
+    SpecializationRequestDetailsPage, TranslatePipe],
   templateUrl: './specialization-requests-list.html',
   styleUrls: ['../management-list.css', './specialization-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SpecializationRequestsList {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(DoctorSpecializationRequestsApi);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private loadSequence = 0;
   protected readonly model = signal({ search: '' });
   protected readonly searchForm = form(this.model, (field) => {
-    maxLength(field.search, 200, { message: 'الحد الأقصى للبحث 200 حرف.' });
+    maxLength(field.search, 200, { message: 'validation.searchLength' });
   });
   protected readonly status = signal<DoctorSpecializationRequestStatus | ''>('PendingReview');
   protected readonly type = signal<DoctorSpecializationRequestType | ''>('');
@@ -107,10 +110,10 @@ export class SpecializationRequestsList {
   }
 
   protected doctorInitials(nameAr: string): string {
-    if (!nameAr) return 'ط';
+    if (!nameAr) return this.uiLanguage.t('common.doctorInitial');
     const clean = nameAr.replace(/^(دكتور|د\.|أ\.د|أستاذ دكتور)\s+/i, '').trim();
     const parts = clean.split(/\s+/);
-    if (!parts.length || !parts[0]) return 'ط';
+    if (!parts.length || !parts[0]) return this.uiLanguage.t('common.doctorInitial');
     if (parts.length === 1) return parts[0].slice(0, 2);
     return `${parts[0][0]}${parts[1][0]}`;
   }
@@ -166,19 +169,19 @@ export class SpecializationRequestsList {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date);
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', { dateStyle: 'medium' }).format(date);
   }
 
   protected statusLabel(value: DoctorSpecializationRequestStatus): string {
     return {
-      PendingReview: 'قيد المراجعة',
-      ModificationRequested: 'مطلوب تعديل',
-      Approved: 'معتمد',
-      Rejected: 'مرفوض',
+      PendingReview: this.uiLanguage.t('common.pendingReview'),
+      ModificationRequested: this.uiLanguage.t('common.modificationRequested'),
+      Approved: this.uiLanguage.t('common.approved'),
+      Rejected: this.uiLanguage.t('common.rejected'),
     }[value];
   }
 
   protected typeLabel(value: DoctorSpecializationRequestType): string {
-    return value === 'Initial' ? 'طلب أول' : 'تغيير';
+    return value === 'Initial' ? this.uiLanguage.t('common.initialRequest') : this.uiLanguage.t('ui.full.126');
   }
 }

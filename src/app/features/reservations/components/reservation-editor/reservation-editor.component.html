@@ -1,0 +1,141 @@
+<form (submit)="submit($event)" class="editor" [attr.aria-busy]="busy() || loading()">
+  <header>
+    <h2 id="reservation-editor-heading">{{ 'reservations.' + mode() | t }}</h2>
+  </header>
+  <fieldset [disabled]="busy()">
+    @if (loading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @if (mode() === 'create') {
+      @if (reception() && canSearch()) {
+        <label
+          >{{ 'reservations.patientSearch' | t
+          }}<input type="search" #searchInput (change)="search.emit(searchInput.value)"
+        /></label>
+      }
+      @if (reception() && canRegister()) {
+        <a routerLink="/reception/patients">{{ 'reservations.registerPatient' | t }}</a>
+      }
+      <label
+        >{{ 'reservations.patient' | t }}
+        @if (reception() && !patients().length) {
+          <input
+            dir="ltr"
+            [formField]="fields.patientId"
+            [placeholder]="'reservations.patientId' | t"
+          />
+        } @else {
+          <select [formField]="fields.patientId">
+            <option value="">{{ 'reservations.choose' | t }}</option>
+            @for (p of patients(); track p.patientId) {
+              <option [value]="p.patientId">{{ label(p) }}</option>
+            }
+          </select>
+        }
+      </label>
+    }
+    @if (mode() === 'create' || mode() === 'reschedule') {
+      <label
+        >{{ 'reservations.date' | t
+        }}<select
+          dir="ltr"
+          [value]="date()"
+          (change)="dateChange.emit(value($event))"
+          [disabled]="loading() || busy()"
+        >
+          <option value="">{{ 'reservations.choose' | t }}</option>
+          @for (d of dates(); track d.date) {
+            @if (d.isAvailable) {
+              <option [value]="d.date">{{ d.date }}</option>
+            }
+          }
+        </select></label
+      >
+      <label
+        >{{ 'reservations.time' | t
+        }}<select
+          dir="ltr"
+          [value]="time()"
+          (change)="timeChange.emit(value($event))"
+          [disabled]="loading() || busy()"
+        >
+          <option value="">{{ 'reservations.choose' | t }}</option>
+          @for (s of slots(); track s.time) {
+            <option [value]="s.time">
+              {{ s.time }}
+              @if (s.slotDurationMinutes) {
+                ({{ s.slotDurationMinutes }} {{ 'reservations.minutes' | t }})
+              }
+            </option>
+          }
+        </select></label
+      >
+      @if (!loading() && dates().length === 0) {
+        <p>{{ 'reservations.noAvailability' | t }}</p>
+      }
+    }
+    @if (mode() === 'create') {
+      <label
+        >{{ 'reservations.visitType' | t
+        }}<select [formField]="fields.visitTypeId">
+          <option value="">{{ 'reservations.choose' | t }}</option>
+          @for (v of options()?.visitTypes || []; track v.visitTypeId) {
+            <option [value]="v.visitTypeId">{{ label(v) }}</option>
+          }
+        </select></label
+      >
+      <label
+        >{{ 'reservations.segment' | t
+        }}<select [formField]="fields.segmentId">
+          <option value="">{{ 'reservations.choose' | t }}</option>
+          @for (s of segments(); track s.segmentId) {
+            <option [value]="s.segmentId">{{ label(s) }} · {{ s.price }}</option>
+          }
+        </select></label
+      >
+      <label
+        >{{ 'reservations.bookingNote' | t
+        }}<textarea [formField]="fields.bookingNote" rows="3"></textarea>
+      </label>
+    }
+    @if (mode() === 'cancel') {
+      <label
+        >{{ 'reservations.reason' | t
+        }}<select [formField]="fields.reasonCode">
+          <option value="">{{ 'reservations.choose' | t }}</option>
+          @for (r of reasons(); track r.code) {
+            <option [value]="r.code">
+              {{ label(r) }}
+              @if (r.requiresComment) {
+                *
+              }
+            </option>
+          }
+        </select></label
+      >
+      <label
+        >{{ 'reservations.comment' | t }}<textarea [formField]="fields.comment" rows="3"></textarea>
+      </label>
+    }
+    @if (mode() === 'reschedule' && provider()) {
+      <label
+        >{{ 'reservations.reason' | t }}<textarea [formField]="fields.reason" rows="3"></textarea>
+      </label>
+      <label class="consent"
+        ><input
+          type="checkbox"
+          class="sr-only-chk"
+          [formField]="fields.patientConsentConfirmed"
+        /><span class="check" aria-hidden="true"></span>{{ 'reservations.consent' | t }}</label
+      >
+    }
+    @if (mode() === 'restore') {
+      <p>{{ 'reservations.restoreConfirm' | t }}</p>
+    }
+  </fieldset>
+  <footer>
+    <button type="submit" class="primary" [disabled]="!valid() || busy() || loading()">
+      {{ 'reservations.confirm' | t }}
+    </button>
+  </footer>
+</form>

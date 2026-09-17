@@ -995,6 +995,16 @@ These rules address recurring user feedback and enforce strict aesthetic and fun
 
 ---
 
+## 33. COMPONENT FOLDER OWNERSHIP
+
+- Every component owns a separate folder containing its TypeScript, template, styles, and meaningful component spec. Follow the existing short filename convention.
+- Feature-root folders contain routing and feature boundaries, not component implementation files. Place newly organized route screens in `pages/<page-name>` and internal components in `components/<component-name>`. Existing dedicated component folders may remain when ownership is clear.
+- Pages compose components through inputs/outputs. Internal components must not import pages to access their state or workflows. Legitimate component composition is allowed; private implementation files are not a shared API.
+- Share contracts inside the owning feature only when there are actual consumers. Do not introduce global state or move business logic into Shared to connect components.
+- Application entry points use feature routes. Do not expose every component through a feature-wide barrel; public domain interfaces remain limited to intentional consumers.
+- Folder isolation does not replace authorization, dependency boundaries, or testing. Enforce component folders, resource/spec existence, import boundaries, and cycles through `npm run check:architecture`; verify meaningful behavior with tests and production builds.
+- File-only migrations preserve selectors, URLs, inputs/outputs, request contracts, permissions, and business behavior. Keep UI redesign and unrelated logic changes separate.
+
 ## ARCHITECTURE NORTH STAR
 
 > **Build every feature as an independent, testable business capability that can evolve without forcing unrelated parts of the system to change, adhering strictly to Wasla's clean, borderless, card-minimalist, and bilingual (AR/EN) design language.**

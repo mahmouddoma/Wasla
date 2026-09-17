@@ -1,3 +1,7 @@
+import { DoctorSuspensionImpact } from '../services/admin-doctors';
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -6,6 +10,10 @@ import {
   ElementRef,
   computed,
   inject,
+  input,
+  effect,
+  untracked,
+  output,
   signal,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,13 +21,13 @@ import { firstValueFrom } from 'rxjs';
 import { ParsedApiErrors, parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { AdminDoctorsApi } from '../../../core/admin-doctors/admin-doctors-api';
+import { AdminDoctorsApi } from '../services/admin-doctors';
 import {
   AdminDoctorDetails,
   DoctorLifecycleResponse,
   DoctorMediaType,
-} from '../../../core/admin-doctors/admin-doctors.models';
-import { DoctorApprovalStatus } from '../../../core/doctors/doctor.models';
+} from '../services/admin-doctors';
+import { DoctorApprovalStatus } from '../../../domains/doctors';
 import { isGuid } from '../../../core/validation/guid';
 import {
   DoctorDecisionAction,
@@ -50,15 +58,28 @@ interface MediaPreview {
 
 @Component({
   selector: 'app-doctor-details',
-  imports: [RouterLink, DoctorDecisionDialog, ConfirmationDialog],
+  imports: [RouterLink, DoctorDecisionDialog, ConfirmationDialog, TranslatePipe],
   templateUrl: './doctor-details.html',
   styleUrl: './doctor-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorDetails {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(AdminDoctorsApi);
+  private readonly toast = inject(ToastService);
+  protected readonly suspensionImpact = signal<DoctorSuspensionImpact | null>(null);
+  protected readonly impactLoading = signal(false);
   private readonly session = inject(AuthSession);
-  private readonly doctorId = inject(ActivatedRoute).snapshot.paramMap.get('doctorId') ?? '';
+  private readonly routeDoctorId = inject(ActivatedRoute).snapshot.paramMap.get('doctorId') ?? '';
+  readonly doctorIdInput = input<string | null>(null);
+  readonly isDrawer = input(false);
+  readonly reviewed = output<void>();
+  private get doctorId(): string {
+    return this.doctorIdInput() || this.routeDoctorId;
+  }
+  private loadSequence = 0;
+  private destroyed = false;
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
   protected readonly details = signal<AdminDoctorDetails | null>(null);
@@ -69,6 +90,7 @@ export class DoctorDetails {
   protected readonly profileImageUrl = signal<string | null>(null);
   protected readonly isProfileImageLoading = signal(false);
   protected readonly isActionSubmitting = signal(false);
+  readonly busy = this.isActionSubmitting.asReadonly();
   protected readonly actionMessages = signal<string[]>([]);
   protected readonly actionFieldError = signal('');
   protected readonly approveDialogOpen = signal(false);
@@ -99,25 +121,29 @@ export class DoctorDetails {
     const doctor = this.details();
     if (!doctor) return [];
     return [
-      { type: 'ProfileImage', label: 'صورة الملف الشخصي', available: doctor.hasProfileImage },
+      {
+        type: 'ProfileImage',
+        label: this.uiLanguage.t('common.profilePhoto'),
+        available: doctor.hasProfileImage,
+      },
       {
         type: 'PersonalIdFront',
-        label: 'الوجه الأمامي للهوية',
+        label: this.uiLanguage.t('doctor.idFront'),
         available: doctor.hasPersonalIdFront,
       },
       {
         type: 'PersonalIdBack',
-        label: 'الوجه الخلفي للهوية',
+        label: this.uiLanguage.t('doctor.idBack'),
         available: doctor.hasPersonalIdBack,
       },
       {
         type: 'SyndicateCardFront',
-        label: 'الوجه الأمامي لبطاقة النقابة',
+        label: this.uiLanguage.t('doctor.syndicateFront'),
         available: doctor.hasSyndicateFront,
       },
       {
         type: 'SyndicateCardBack',
-        label: 'الوجه الخلفي لبطاقة النقابة',
+        label: this.uiLanguage.t('doctor.syndicateBack'),
         available: doctor.hasSyndicateBack,
       },
     ];
@@ -127,7 +153,7 @@ export class DoctorDetails {
     const name = this.details()?.nameAr ?? '';
     const words = name.trim().split(/\s+/);
     if (words.length >= 2) return words[0][0] + words[1][0];
-    return words[0]?.[0] ?? '؟';
+    return words[0]?.[0] ?? this.uiLanguage.t('ui.full.4');
   });
 
   protected readonly documentsAvailableCount = computed(
@@ -136,35 +162,69 @@ export class DoctorDetails {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.loadSequence++;
       this.revokeActiveMedia();
       this.revokeProfileImage();
     });
-    if (!isGuid(this.doctorId)) {
-      this.isLoading.set(false);
-      this.apiMessages.set(['معرّف الطبيب غير صالح. ارجع إلى قائمة الأطباء واختر الطبيب من جديد.']);
-      return;
-    }
-    void this.load();
+    effect(() => {
+      const id = this.doctorIdInput() || this.routeDoctorId;
+      untracked(() => {
+        this.revokeActiveMedia();
+        this.revokeProfileImage();
+        this.details.set(null);
+        this.isProfileImageLoading.set(false);
+        if (!isGuid(id)) {
+          this.isLoading.set(false);
+          this.apiMessages.set([this.uiLanguage.t('doctor.invalidId')]);
+          return;
+        }
+        void this.load();
+      });
+    });
   }
 
   protected async load(): Promise<void> {
     if (!isGuid(this.doctorId)) return;
+    const request = ++this.loadSequence;
+    const doctorId = this.doctorId;
     this.isLoading.set(true);
     this.apiMessages.set([]);
     try {
-      const doctor = await firstValueFrom(this.api.details(this.doctorId));
+      const doctor = await firstValueFrom(this.api.details(doctorId));
+      if (request !== this.loadSequence) return;
       this.details.set(doctor);
       void this.loadProfileImage(doctor.hasProfileImage);
     } catch (error) {
+      if (request !== this.loadSequence) return;
       const parsed = parseApiErrors(error);
       this.apiMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {
-      this.isLoading.set(false);
+      if (request === this.loadSequence) this.isLoading.set(false);
     }
   }
 
-  protected openDecision(action: DoctorDecisionAction): void {
+  protected async openDecision(action: DoctorDecisionAction): Promise<void> {
+    if (this.isActionSubmitting() || this.impactLoading()) return;
     this.clearActionErrors();
+    if (action === 'suspend') {
+      const doctor = this.details();
+      if (!doctor || !this.canSuspend()) return;
+      this.suspensionImpact.set(null);
+      this.impactLoading.set(true);
+      try {
+        const impact = await firstValueFrom(this.api.suspensionImpact(doctor.doctorId));
+        if (this.doctorId !== doctor.doctorId) return;
+        this.suspensionImpact.set(impact);
+      } catch (error) {
+        const parsed = parseApiErrors(error);
+        this.actionMessages.set(parsed.messages);
+        this.toast.error(parsed.messages.join(' '));
+        return;
+      } finally {
+        this.impactLoading.set(false);
+      }
+    }
     this.decisionDialog(action).set(true);
   }
 
@@ -191,7 +251,14 @@ export class DoctorDetails {
 
   protected async suspend(reason: string): Promise<void> {
     const doctor = this.details();
-    if (!doctor || !this.canSuspend() || this.isLoading() || this.isActionSubmitting()) return;
+    if (
+      !doctor ||
+      !this.canSuspend() ||
+      !this.suspensionImpact() ||
+      this.isLoading() ||
+      this.isActionSubmitting()
+    )
+      return;
     await this.runLifecycle('suspend', reason, () =>
       this.api.suspend(doctor.doctorId, { reason, rowVersion: doctor.rowVersion }),
     );
@@ -207,9 +274,11 @@ export class DoctorDetails {
 
   protected async openMedia(document: MediaDocument): Promise<void> {
     if (!document.available || this.mediaState(document.type).loading) return;
+    const doctorId = this.doctorId;
     this.setMediaState(document.type, { loading: true, error: '' });
     try {
-      const response = await firstValueFrom(this.api.media(this.doctorId, document.type));
+      const response = await firstValueFrom(this.api.media(doctorId, document.type));
+      if (this.destroyed || doctorId !== this.doctorId) return;
       const blob = response.body;
       if (!blob || blob.size === 0) throw new Error('Empty media response');
       this.revokeActiveMedia();
@@ -227,6 +296,7 @@ export class DoctorDetails {
       this.mediaDialogElement()?.showModal();
     } catch (error) {
       const messages = await this.mediaErrorMessages(error);
+      if (this.destroyed || doctorId !== this.doctorId) return;
       this.setMediaState(document.type, { loading: false, error: messages.join(' ') });
       return;
     }
@@ -247,10 +317,10 @@ export class DoctorDetails {
   protected statusLabel(status: DoctorApprovalStatus): string {
     return (
       {
-        Pending: 'قيد المراجعة',
-        Approved: 'معتمد',
-        Rejected: 'مرفوض',
-        Suspended: 'معلّق',
+        Pending: this.uiLanguage.t('common.pendingReview'),
+        Approved: this.uiLanguage.t('common.approved'),
+        Rejected: this.uiLanguage.t('common.rejected'),
+        Suspended: this.uiLanguage.t('common.suspended'),
       } as const
     )[status];
   }
@@ -260,15 +330,19 @@ export class DoctorDetails {
   }
 
   protected genderLabel(gender: string): string {
-    return gender === 'Male' ? 'ذكر' : gender === 'Female' ? 'أنثى' : gender;
+    return gender === 'Male'
+      ? this.uiLanguage.t('register.male')
+      : gender === 'Female'
+        ? this.uiLanguage.t('register.female')
+        : gender;
   }
 
   protected formatDate(value: string | null): string {
-    if (!value) return 'غير مسجل';
+    if (!value) return this.uiLanguage.t('common.notRegistered');
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
           dateStyle: 'medium',
         }).format(date);
   }
@@ -298,11 +372,21 @@ export class DoctorDetails {
     try {
       const response = await firstValueFrom(request());
       this.applyLifecycleResponse(response, action, value);
+      this.toast.success(
+        action === 'suspend'
+          ? this.uiLanguage.t('doctor.suspendedReservations') +
+              ' ' +
+              (response.cancelledReservationCount ?? 0)
+          : this.uiLanguage.t('common.savedSuccessfully'),
+      );
+      this.suspensionImpact.set(null);
       this.isActionSubmitting.set(false);
       this.closeLifecycleDialog(action);
       await this.load();
+      this.reviewed.emit();
     } catch (error) {
       const parsed = parseApiErrors(error);
+      this.toast.error([...parsed.messages, ...Object.values(parsed.fields).flat()].join(' '));
       const field = action === 'approve' ? 'nationalid' : action === 'reactivate' ? '' : 'reason';
       this.actionFieldError.set(parsed.fields[field]?.[0] ?? '');
       this.actionMessages.set([
@@ -314,7 +398,7 @@ export class DoctorDetails {
       if (this.isConcurrencyConflict(action, parsed)) {
         this.actionMessages.update((messages) => [
           ...messages,
-          'تغيرت بيانات الطبيب منذ فتح الصفحة. تمت إعادة تحميل أحدث نسخة؛ راجعها قبل المحاولة مرة أخرى.',
+          this.uiLanguage.t('doctor.conflict'),
         ]);
         await this.load();
       }
@@ -389,17 +473,19 @@ export class DoctorDetails {
     if (this.profileImageUrl() || this.isProfileImageLoading()) return;
 
     this.isProfileImageLoading.set(true);
+    const doctorId = this.doctorId;
     try {
-      const response = await firstValueFrom(this.api.media(this.doctorId, 'ProfileImage'));
+      const response = await firstValueFrom(this.api.media(doctorId, 'ProfileImage'));
+      if (this.destroyed || doctorId !== this.doctorId) return;
       const blob = response.body;
       const contentType = blob?.type || response.headers.get('Content-Type') || '';
       if (!blob?.size || !contentType.startsWith('image/')) return;
 
       this.profileImageUrl.set(URL.createObjectURL(blob));
     } catch {
-      this.revokeProfileImage();
+      if (!this.destroyed && doctorId === this.doctorId) this.revokeProfileImage();
     } finally {
-      this.isProfileImageLoading.set(false);
+      if (!this.destroyed && doctorId === this.doctorId) this.isProfileImageLoading.set(false);
     }
   }
 

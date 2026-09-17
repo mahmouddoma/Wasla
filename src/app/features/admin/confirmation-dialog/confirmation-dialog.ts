@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,12 +11,15 @@ import {
 } from '@angular/core';
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-confirmation-dialog',
   templateUrl: './confirmation-dialog.html',
   styleUrl: './confirmation-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmationDialog {
+  protected readonly uiLanguage = inject(LanguageService);
+
   dialogId = input.required<string>();
   opened = input(false);
   busy = input(false);

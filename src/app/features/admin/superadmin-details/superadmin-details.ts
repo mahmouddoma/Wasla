@@ -1,3 +1,6 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,8 +16,8 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { SuperAdminsApi } from '../../../core/superadmins/superadmins-api';
-import { SuperAdminRecord } from '../../../core/superadmins/superadmins.models';
+import { SuperAdminsApi } from '../services/superadmins';
+import { SuperAdminRecord } from '../services/superadmins';
 import { isGuid } from '../../../core/validation/guid';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 import { SuperAdminForm, SuperAdminFormSubmission } from '../superadmin-form/superadmin-form';
@@ -30,12 +33,16 @@ interface AccountActionDialog {
 
 @Component({
   selector: 'app-superadmin-details',
-  imports: [RouterLink, ConfirmationDialog, SuperAdminForm],
+  imports: [RouterLink, ConfirmationDialog, SuperAdminForm, TranslatePipe],
   templateUrl: './superadmin-details.html',
   styleUrl: './superadmin-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuperAdminDetails {
+  private readonly toast = inject(ToastService);
+
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(SuperAdminsApi);
   private readonly session = inject(AuthSession);
   private readonly route = inject(ActivatedRoute, { optional: true });
@@ -55,7 +62,7 @@ export class SuperAdminDetails {
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly successMessage = signal(
     this.route?.snapshot.queryParamMap.get('status') === 'created'
-      ? 'تم إنشاء حساب SuperAdmin بنجاح.'
+      ? this.uiLanguage.t('ui.full.150')
       : '',
   );
   protected readonly isEditing = signal(false);
@@ -117,31 +124,31 @@ export class SuperAdminDetails {
     const action = this.pendingAction() ?? 'activate';
     return {
       activate: {
-        title: 'تفعيل حساب المشرف',
+        title: this.uiLanguage.t('ui.full.151'),
         description:
-          'سيصبح بإمكان المستخدم تسجيل الدخول مرة أخرى. لا تؤثر العملية على حالة حذف السجل.',
-        confirmLabel: 'تأكيد التفعيل',
+          this.uiLanguage.t('ui.full.152'),
+        confirmLabel: this.uiLanguage.t('ui.full.153'),
         danger: false,
       },
       deactivate: {
-        title: 'تعطيل حساب المشرف',
+        title: this.uiLanguage.t('ui.full.154'),
         description:
-          'لن يستطيع المستخدم تسجيل الدخول بعد التنفيذ، لكن السجل سيظل موجودًا ويمكن إعادة تفعيله لاحقًا.',
-        confirmLabel: 'تأكيد التعطيل',
+          this.uiLanguage.t('ui.full.155'),
+        confirmLabel: this.uiLanguage.t('ui.full.156'),
         danger: true,
       },
       delete: {
-        title: 'حذف حساب المشرف',
+        title: this.uiLanguage.t('admin.deleteAdministrator'),
         description:
-          'هذا حذف مبدئي قابل للاستعادة. سيتوقف الحساب فورًا عن تسجيل الدخول، وسيظل السجل محفوظًا لاستعادته لاحقًا.',
-        confirmLabel: 'تأكيد الحذف',
+          this.uiLanguage.t('ui.full.157'),
+        confirmLabel: this.uiLanguage.t('common.confirmDelete'),
         danger: true,
       },
       restore: {
-        title: 'استعادة حساب المشرف',
+        title: this.uiLanguage.t('admin.restoreAdministrator'),
         description:
-          'ستُلغى حالة الحذف ويعود الحساب نشطًا مع الاحتفاظ بربط الأدوار الموجود في النظام.',
-        confirmLabel: 'تأكيد الاستعادة',
+          this.uiLanguage.t('ui.full.158'),
+        confirmLabel: this.uiLanguage.t('common.confirmRestore'),
         danger: false,
       },
     }[action];
@@ -152,7 +159,7 @@ export class SuperAdminDetails {
       const id = this.activeSuperAdminId();
       if (!isGuid(id)) {
         this.isLoading.set(false);
-        this.apiMessages.set(['معرّف المشرف غير صالح. ارجع إلى القائمة واختر الحساب من جديد.']);
+        this.apiMessages.set([this.uiLanguage.t('ui.full.159')]);
         return;
       }
       void this.load();
@@ -207,7 +214,8 @@ export class SuperAdminDetails {
       const updated = await firstValueFrom(this.api.update(id, submission.request));
       this.details.set(updated);
       this.isEditing.set(false);
-      this.successMessage.set('تم تحديث بيانات المشرف بنجاح.');
+      this.successMessage.set(this.uiLanguage.t('admin.updated'));
+      this.toast.success(this.successMessage());
       this.saved.emit(updated);
     } catch (error) {
       const parsed = parseApiErrors(error);
@@ -247,7 +255,9 @@ export class SuperAdminDetails {
       }
       this.pendingAction.set(null);
       this.successMessage.set(this.actionSuccessMessage(action));
+      this.toast.success(this.successMessage());
     } catch (error) {
+
       const parsed = parseApiErrors(error);
       this.actionMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {
@@ -274,10 +284,10 @@ export class SuperAdminDetails {
 
   private actionSuccessMessage(action: AccountAction): string {
     return {
-      activate: 'تم تفعيل الحساب وأصبح بإمكان المستخدم تسجيل الدخول.',
-      deactivate: 'تم تعطيل الحساب ولن يستطيع المستخدم تسجيل الدخول حتى إعادة تفعيله.',
-      delete: 'تم حذف الحساب مبدئيًا وتعطيل تسجيل الدخول. يمكن استعادته من السجلات المحذوفة.',
-      restore: 'تمت استعادة الحساب وتفعيله بنجاح.',
+      activate: this.uiLanguage.t('ui.full.160'),
+      deactivate: this.uiLanguage.t('ui.full.161'),
+      delete: this.uiLanguage.t('ui.full.162'),
+      restore: this.uiLanguage.t('admin.restored'),
     }[action];
   }
 
@@ -285,13 +295,13 @@ export class SuperAdminDetails {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
           dateStyle: 'medium',
         }).format(date);
   }
 
   protected getAdminInitial(admin: SuperAdminRecord): string {
     const name = admin.nameAr?.trim() || admin.nameEn?.trim() || admin.userName?.trim() || '';
-    return name ? name.charAt(0).toUpperCase() : 'م';
+    return name ? name.charAt(0).toUpperCase() : this.uiLanguage.t('common.pm');
   }
 }

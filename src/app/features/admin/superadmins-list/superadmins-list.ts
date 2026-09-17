@@ -1,3 +1,6 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,8 +14,8 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { SuperAdminsApi } from '../../../core/superadmins/superadmins-api';
-import { SuperAdminRecord, SuperAdminsPage } from '../../../core/superadmins/superadmins.models';
+import { SuperAdminsApi } from '../services/superadmins';
+import { SuperAdminRecord, SuperAdminsPage } from '../services/superadmins';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
@@ -34,13 +37,16 @@ interface PendingListAction {
     ConfirmationDialog,
     SideDrawer,
     SuperAdminForm,
-    SuperAdminDetails,
-  ],
+    SuperAdminDetails, TranslatePipe],
   templateUrl: './superadmins-list.html',
   styleUrls: ['../management-list.css', './superadmins-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuperAdminsList {
+  private readonly toast = inject(ToastService);
+
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(SuperAdminsApi);
   private readonly session = inject(AuthSession);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -48,7 +54,7 @@ export class SuperAdminsList {
 
   protected readonly filterModel = signal({ searchText: '' });
   protected readonly filterForm = form(this.filterModel, (field) => {
-    maxLength(field.searchText, 200, { message: 'الحد الأقصى للبحث 200 حرف.' });
+    maxLength(field.searchText, 200, { message: 'validation.searchLength' });
   });
   protected readonly includeDeleted = signal(false);
   protected readonly pageNumber = signal(1);
@@ -90,18 +96,18 @@ export class SuperAdminsList {
   protected readonly searchError = computed(() => this.fieldErrors()['searchtext']?.[0] ?? '');
   protected readonly actionDialog = computed(() => {
     const pending = this.pendingAction();
-    const name = pending?.admin.nameAr ?? 'هذا المشرف';
+    const name = pending?.admin.nameAr ?? this.uiLanguage.t('ui.full.206');
     return pending?.action === 'restore'
       ? {
-          title: 'استعادة حساب المشرف',
-          description: `سيعود حساب ${name} نشطًا مع إلغاء حالة الحذف والاحتفاظ بربط الأدوار.`,
-          confirmLabel: 'تأكيد الاستعادة',
+          title: this.uiLanguage.t('admin.restoreAdministrator'),
+          description: this.uiLanguage.t('admin.restoreNamedAccount', { name }),
+          confirmLabel: this.uiLanguage.t('common.confirmRestore'),
           danger: false,
         }
       : {
-          title: 'حذف حساب المشرف',
-          description: `سيُحذف حساب ${name} مبدئيًا ويتوقف عن تسجيل الدخول فورًا. يمكن استعادته لاحقًا من السجلات المحذوفة.`,
-          confirmLabel: 'تأكيد الحذف',
+          title: this.uiLanguage.t('admin.deleteAdministrator'),
+          description: this.uiLanguage.t('admin.deleteNamedAccount', { name }),
+          confirmLabel: this.uiLanguage.t('common.confirmDelete'),
           danger: true,
         };
   });
@@ -176,7 +182,8 @@ export class SuperAdminsList {
     try {
       await firstValueFrom(this.api.create(submission.request));
       this.isCreateDrawerOpen.set(false);
-      this.successMessage.set('تم إنشاء حساب المشرف بنجاح.');
+      this.successMessage.set(this.uiLanguage.t('admin.created'));
+      this.toast.success(this.successMessage());
       await this.load();
     } catch (error) {
       const parsed = parseApiErrors(error);
@@ -235,10 +242,12 @@ export class SuperAdminsList {
       this.pendingAction.set(null);
       this.successMessage.set(
         pending.action === 'delete'
-          ? 'تم حذف الحساب مبدئيًا وتعطيل تسجيل الدخول.'
-          : 'تمت استعادة الحساب وتفعيله بنجاح.',
+          ? this.uiLanguage.t('admin.softDeleted')
+          : this.uiLanguage.t('admin.restored'),
       );
+      this.toast.success(this.successMessage());
     } catch (error) {
+
       const parsed = parseApiErrors(error);
       this.actionMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {
@@ -284,14 +293,14 @@ export class SuperAdminsList {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en' : 'ar-EG', {
+      : new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
           dateStyle: 'medium',
         }).format(date);
   }
 
   protected getAdminInitial(admin: SuperAdminRecord): string {
     const name = admin.nameAr?.trim() || admin.nameEn?.trim() || admin.userName?.trim() || '';
-    return name ? name.charAt(0).toUpperCase() : 'م';
+    return name ? name.charAt(0).toUpperCase() : this.uiLanguage.t('common.pm');
   }
 
   private applyActionResult(pending: PendingListAction): void {

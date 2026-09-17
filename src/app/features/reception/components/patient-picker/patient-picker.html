@@ -1,0 +1,42 @@
+<section class="picker" [attr.aria-label]="label()">
+  <header>
+    <h2>{{ label() }}</h2>
+    @if (selectedPatient(); as patient) {
+      <span class="selection">{{ 'ui.full.707' | t }} {{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</span>
+    }
+  </header>
+  <form (submit)="search($event)" novalidate>
+    <label><span>{{ 'discovery.name' | t }}</span><input [formField]="searchForm.name" /></label>
+    <label><span>{{ 'ui.full.708' | t }}</span><input type="tel" [formField]="searchForm.phoneNumber" /></label>
+    <label
+      ><span>{{ 'register.dob' | t }}</span><input type="date" [formField]="searchForm.dateOfBirth"
+    /></label>
+    <button class="btn btn-outline-secondary" type="submit" [disabled]="loading()">
+      {{ loading() ? uiLanguage.t('discovery.loading') : uiLanguage.t('discovery.search') }}
+    </button>
+  </form>
+  @if (message()) {
+    <p class="error" role="alert">{{ message() | t }}</p>
+  }
+  @if (searched()) {
+    <div class="results" aria-live="polite">
+      @for (patient of results(); track patient.patientId) {
+        <button
+          type="button"
+          [class.selected]="selectedPatient()?.patientId === patient.patientId"
+          (click)="choose(patient)"
+        >
+          <strong>{{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</strong>
+          <span>{{ patient.dateOfBirth }} · {{ patient.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
+          <small>{{
+            patient.phoneNumber || (patient.hasContactPhone ? uiLanguage.t('ui.expressions.212') : uiLanguage.t('ui.expressions.213'))
+          }}</small>
+        </button>
+      } @empty {
+        <p class="empty">
+          {{ 'ui.full.709' | t }}
+        </p>
+      }
+    </div>
+  }
+</section>

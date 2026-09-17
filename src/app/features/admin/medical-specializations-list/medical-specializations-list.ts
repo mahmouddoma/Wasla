@@ -1,3 +1,5 @@
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,11 +13,11 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { MedicalSpecializationsApi } from '../../../core/medical-specializations/medical-specializations-api';
+import { MedicalSpecializationsApi } from '../services/medical-specializations';
 import {
   MedicalSpecialization,
   MedicalSpecializationsPage,
-} from '../../../core/medical-specializations/medical-specializations.models';
+} from '../services/medical-specializations';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { MedicalSpecializationDetails } from '../medical-specialization-details/medical-specialization-details';
@@ -24,12 +26,14 @@ type BooleanFilter = '' | 'true' | 'false';
 
 @Component({
   selector: 'app-medical-specializations-list',
-  imports: [FormField, PageHeader, SideDrawer, MedicalSpecializationDetails],
+  imports: [FormField, PageHeader, SideDrawer, MedicalSpecializationDetails, TranslatePipe],
   templateUrl: './medical-specializations-list.html',
   styleUrls: ['../management-list.css', './medical-specializations-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MedicalSpecializationsList {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(MedicalSpecializationsApi);
   private readonly session = inject(AuthSession);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -37,7 +41,7 @@ export class MedicalSpecializationsList {
 
   protected readonly model = signal({ search: '' });
   protected readonly searchForm = form(this.model, (field) => {
-    maxLength(field.search, 200, { message: 'الحد الأقصى للبحث 200 حرف.' });
+    maxLength(field.search, 200, { message: 'validation.searchLength' });
   });
   protected readonly activeFilter = signal<BooleanFilter>('');
   protected readonly deletedFilter = signal<BooleanFilter>('false');

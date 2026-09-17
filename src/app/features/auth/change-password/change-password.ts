@@ -5,33 +5,38 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ToastService } from '../../../core/notifications/toast.service';
 
 @Component({
   selector: 'app-change-password',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe],
   templateUrl: './change-password.html',
   styleUrl: './change-password.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChangePassword {
+  protected readonly language = inject(LanguageService);
+  private readonly toast = inject(ToastService);
   private readonly api = inject(AuthApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
   protected readonly model = signal({ currentPassword: '', newPassword: '', confirmPassword: '' });
   protected readonly passwordForm = form(this.model, (field) => {
-    required(field.currentPassword, { message: 'أدخل كلمة المرور الحالية.' });
+    required(field.currentPassword, { message: 'changePassword.currentRequired' });
     maxLength(field.currentPassword, 4096, {
-      message: 'كلمة المرور الحالية أطول من الحد المسموح.',
+      message: 'changePassword.currentTooLong',
     });
-    required(field.newPassword, { message: 'أدخل كلمة المرور الجديدة.' });
-    maxLength(field.newPassword, 4096, { message: 'كلمة المرور الجديدة أطول من الحد المسموح.' });
-    required(field.confirmPassword, { message: 'أكّد كلمة المرور الجديدة.' });
-    maxLength(field.confirmPassword, 4096, { message: 'تأكيد كلمة المرور أطول من الحد المسموح.' });
+    required(field.newPassword, { message: 'changePassword.newRequired' });
+    maxLength(field.newPassword, 4096, { message: 'changePassword.newTooLong' });
+    required(field.confirmPassword, { message: 'changePassword.confirmRequired' });
+    maxLength(field.confirmPassword, 4096, { message: 'changePassword.confirmTooLong' });
     validate(field.confirmPassword, ({ value, valueOf }) =>
       value() === valueOf(field.newPassword)
         ? undefined
-        : { kind: 'passwordMismatch', message: 'تأكيد كلمة المرور غير مطابق.' },
+        : { kind: 'passwordMismatch', message: 'changePassword.mismatch' },
     );
   });
 
@@ -52,11 +57,13 @@ export class ChangePassword {
       try {
         await firstValueFrom(this.api.changePassword(this.model()));
         this.session.clear();
+        this.toast.success(this.language.t('changePassword.success'));
         await this.router.navigate(['/login'], { queryParams: { status: 'password-changed' } });
       } catch (error) {
         const parsed = parseApiErrors(error);
         this.apiMessages.set(parsed.messages);
         this.fieldErrors.set(parsed.fields);
+        this.toast.error(this.language.t('changePassword.failure'));
       } finally {
         this.isSubmitting.set(false);
       }

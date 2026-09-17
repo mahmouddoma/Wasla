@@ -1,19 +1,23 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { LanguageService } from '../../../core/i18n/language.service';
 import {
   ChangeDetectionStrategy,
   Component,
   OnDestroy,
   input,
   output,
-  signal,
-} from '@angular/core';
+  signal, inject} from '@angular/core';
 
 @Component({
+  imports: [TranslatePipe],
   selector: 'app-file-upload',
   templateUrl: './file-upload.html',
   styleUrl: './file-upload.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileUpload implements OnDestroy {
+  protected readonly uiLanguage = inject(LanguageService);
+
   readonly label = input.required<string>();
   readonly required = input(false);
   readonly error = input('');

@@ -5,13 +5,20 @@ export const EVIDENCE_FILE_ACCEPT = EVIDENCE_FILE_EXTENSIONS.map(
   (extension) => `.${extension}`,
 ).join(',');
 
-export function getEvidenceFileValidationError(files: readonly File[]): string | null {
+export function getEvidenceFileValidationError(
+  files: readonly File[],
+  lang: SupportedLang = 'ar',
+): string | null {
   const unsupportedFile = files.find((file) => {
     const extension = file.name.trim().split('.').pop()?.toLowerCase();
     return !extension || !ALLOWED_EVIDENCE_FILE_EXTENSIONS.has(extension);
   });
 
   return unsupportedFile
-    ? `الملف "${unsupportedFile.name}" غير مدعوم. الصيغ المسموحة: PDF، JPG، JPEG، PNG.`
+    ? TRANSLATIONS['validation.unsupportedEvidence'][lang].replace(
+        '{name}',
+        () => unsupportedFile.name,
+      )
     : null;
 }
+import { SupportedLang, TRANSLATIONS } from '../i18n/translations';

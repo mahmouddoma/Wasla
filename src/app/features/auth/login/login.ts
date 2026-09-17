@@ -1,3 +1,4 @@
+import { LanguageService } from '../../../core/i18n/language.service';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, maxLength, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,6 +18,8 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login {
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(AuthApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
@@ -24,10 +27,10 @@ export class Login {
   private readonly toast = inject(ToastService);
   protected readonly model = signal({ identifier: '', password: '' });
   protected readonly loginForm = form(this.model, (field) => {
-    required(field.identifier, { message: 'أدخل اسم المستخدم أو البريد الإلكتروني.' });
-    maxLength(field.identifier, 200, { message: 'الحد الأقصى 200 حرف.' });
-    required(field.password, { message: 'أدخل كلمة المرور.' });
-    maxLength(field.password, 4096, { message: 'كلمة المرور أطول من الحد المسموح.' });
+    required(field.identifier, { message: 'ui.full.251' });
+    maxLength(field.identifier, 200, { message: 'validation.length200' });
+    required(field.password, { message: 'validation.passwordRequired' });
+    maxLength(field.password, 4096, { message: 'validation.passwordLength' });
   });
   protected readonly isSubmitting = signal(false);
   protected readonly showPassword = signal(false);
@@ -43,7 +46,7 @@ export class Login {
       try {
         const login = await firstValueFrom(this.api.login(this.model()));
         if (!this.session.begin(login)) {
-          this.toast.error('تعذر إنشاء جلسة صالحة من استجابة الخادم.');
+          this.toast.error(this.uiLanguage.t('ui.full.252'));
           return;
         }
         const user = await firstValueFrom(this.api.currentUser());
@@ -51,7 +54,14 @@ export class Login {
         const destination = this.session.requiresPasswordChange()
           ? '/change-password'
           : this.session.destinationFor(user);
-        await this.router.navigate([destination]);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        if (
+          !this.session.requiresPasswordChange() &&
+          returnUrl &&
+          /^\/(patient|doctor|reception|admin)\/reservations(?:\?|$)/.test(returnUrl)
+        )
+          await this.router.navigateByUrl(returnUrl);
+        else await this.router.navigate([destination]);
       } catch (error) {
         this.session.clear();
         const parsed = parseApiErrors(error);

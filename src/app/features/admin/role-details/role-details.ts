@@ -1,3 +1,6 @@
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,13 +17,13 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
-import { SecurityGovernanceApi } from '../../../core/security-governance/security-governance-api';
+import { SecurityGovernanceApi } from '../services/security-governance/security-governance-api';
 import {
   RolePermissionsResponse,
   SecurityPermission,
   SecurityRole,
   isRootOnlyPermissionName,
-} from '../../../core/security-governance/security-governance.models';
+} from '../services/security-governance/security-governance.models';
 import { isGuid } from '../../../core/validation/guid';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 
@@ -29,66 +32,66 @@ export interface PermissionGroup {
   permissions: SecurityPermission[];
 }
 
-const MODULE_ARABIC_NAMES: Record<string, string> = {
-  DoctorOnboarding: 'تأهيل الأطباء',
-  DoctorPracticeBranding: 'الهوية والمظهر للطبيب',
-  DoctorPracticeConfiguration: 'إعدادات ممارسة الطبيب',
-  DoctorPracticeLocation: 'مواقع وعيادات الطبيب',
-  DoctorSpecializationRequests: 'طلبات تخصصات الأطباء',
-  MedicalSpecializations: 'التخصصات الطبية',
-  SuperAdmins: 'إدارة المشرفين',
-  Roles: 'الأدوار والصلاحيات',
-  Permissions: 'كتالوج الصلاحيات',
-  Patients: 'سجلات المرضى',
-  Families: 'العلاقات العائلية',
-  DoctorProfile: 'الملف الشخصي للطبيب',
-  Reception: 'الاستقبال والمواعيد',
-  SecurityGovernance: 'الحوكمة والأمان',
-  DoctorPracticeSchedule: 'جدول مواعيد الطبيب',
-  DoctorPracticeSegments: 'شرائح ممارسة الطبيب',
-  DoctorPracticePricing: 'تسعير ممارسة الطبيب',
-  DoctorPractices: 'ممارسات الأطباء',
-  DoctorSpecializations: 'تخصصات الأطباء',
-  Doctors: 'الأطباء',
-  Specializations: 'التخصصات',
-  PatientContacts: 'جهات اتصال المرضى',
-  PatientProfile: 'ملف المريض',
-  PracticePayments: 'المدفوعات',
-  PracticeQueue: 'قائمة الانتظار',
-  PracticeReservations: 'الحجوزات',
-  PracticeWalkIns: 'الزيارات المباشرة',
-  ReceptionAssignments: 'مهام الاستقبال',
-  ReceptionUsers: 'مستخدمو الاستقبال',
-  RolePermissions: 'صلاحيات الأدوار',
-  FamilyRelationshipRequests: 'طلبات العلاقات العائلية',
+const MODULE_LABEL_KEYS: Record<string, string> = {
+  DoctorOnboarding: "ui.full.8",
+  DoctorPracticeBranding: "ui.full.9",
+  DoctorPracticeConfiguration: "ui.full.10",
+  DoctorPracticeLocation: "ui.full.11",
+  DoctorSpecializationRequests: "specializations.requestsTitle",
+  MedicalSpecializations: "admin.navSpecializations",
+  SuperAdmins: "admin.navSuperAdmins",
+  Roles: "admin.navRoles",
+  Permissions: "ui.full.16",
+  Patients: "ui.full.17",
+  Families: "ui.full.18",
+  DoctorProfile: "ui.full.19",
+  Reception: "ui.full.20",
+  SecurityGovernance: "ui.full.21",
+  DoctorPracticeSchedule: "ui.full.22",
+  DoctorPracticeSegments: "ui.full.23",
+  DoctorPracticePricing: "ui.full.24",
+  DoctorPractices: "ui.full.25",
+  DoctorSpecializations: "ui.full.26",
+  Doctors: "discovery.doctors",
+  Specializations: "specializations.title",
+  PatientContacts: "ui.full.29",
+  PatientProfile: "ui.full.30",
+  PracticePayments: "ui.full.31",
+  PracticeQueue: "ui.full.32",
+  PracticeReservations: "ui.full.33",
+  PracticeWalkIns: "ui.full.34",
+  ReceptionAssignments: "ui.full.35",
+  ReceptionUsers: "ui.full.36",
+  RolePermissions: "ui.full.37",
+  FamilyRelationshipRequests: "family.requests",
 };
 
-const ACTION_ARABIC_NAMES: Record<string, string> = {
-  View: 'عرض',
-  ViewOwn: 'عرض (خاص)',
-  ViewAll: 'عرض الكل',
-  ViewDetails: 'عرض التفاصيل',
-  ViewAssisted: 'عرض مساعد',
-  Manage: 'إدارة',
-  ManageOwn: 'إدارة (خاص)',
-  Create: 'إنشاء',
-  Update: 'تعديل',
-  Delete: 'حذف',
-  Activate: 'تفعيل',
-  ActivateOwn: 'تفعيل (خاص)',
-  Deactivate: 'تعطيل',
-  Suspend: 'إيقاف',
-  Approve: 'موافقة',
-  Reject: 'رفض',
-  Restore: 'استعادة',
-  Record: 'تسجيل',
-  Register: 'تسجيل مريض',
-  SearchBasic: 'بحث أساسي',
-  SubmitOwn: 'إرسال (خاص)',
-  ResubmitOwn: 'إعادة إرسال (خاص)',
-  ResubmitAssisted: 'إعادة إرسال مساعد',
-  RequestModification: 'طلب تعديل',
-  Adjust: 'ضبط',
+const ACTION_LABEL_KEYS: Record<string, string> = {
+  View: "common.view",
+  ViewOwn: "ui.full.40",
+  ViewAll: "ui.full.41",
+  ViewDetails: "ui.full.42",
+  ViewAssisted: "ui.full.43",
+  Manage: "ui.full.44",
+  ManageOwn: "ui.full.45",
+  Create: "ui.full.46",
+  Update: "common.edit",
+  Delete: "common.delete",
+  Activate: "common.activate",
+  ActivateOwn: "ui.full.50",
+  Deactivate: "common.deactivate",
+  Suspend: "ui.full.52",
+  Approve: "ui.full.53",
+  Reject: "ui.full.54",
+  Restore: "common.restore",
+  Record: "ui.full.56",
+  Register: "ui.full.57",
+  SearchBasic: "ui.full.58",
+  SubmitOwn: "ui.full.59",
+  ResubmitOwn: "ui.full.60",
+  ResubmitAssisted: "ui.full.61",
+  RequestModification: "requests.requestChanges",
+  Adjust: "ui.full.63",
 };
 
 function splitCamelCase(str: string): string {
@@ -97,12 +100,16 @@ function splitCamelCase(str: string): string {
 
 @Component({
   selector: 'app-role-details',
-  imports: [RouterLink, ConfirmationDialog],
+  imports: [RouterLink, ConfirmationDialog, TranslatePipe],
   templateUrl: './role-details.html',
   styleUrl: './role-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RoleDetails {
+  private readonly toast = inject(ToastService);
+
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(SecurityGovernanceApi);
   private readonly session = inject(AuthSession);
   private readonly route = inject(ActivatedRoute, { optional: true });
@@ -168,7 +175,7 @@ export class RoleDetails {
         const matchName = permission.name.toLowerCase().includes(query);
         const matchId = permission.id.toLowerCase().includes(query);
         const groupKey = permission.name.split('.')[0] || '';
-        const matchArabic = (MODULE_ARABIC_NAMES[groupKey] || '').toLowerCase().includes(query);
+        const matchArabic = this.uiLanguage.t(MODULE_LABEL_KEYS[groupKey] || '').toLowerCase().includes(query);
         if (!matchName && !matchId && !matchArabic) continue;
       }
 
@@ -203,11 +210,11 @@ export class RoleDetails {
 
   protected readonly managementBlockReason = computed(() => {
     if (!this.canViewCatalog)
-      return 'لا يملك الحساب صلاحية Permissions.View لتحميل كتالوج الصلاحيات.';
+      return this.uiLanguage.t('ui.full.64');
     if (!this.hasManagePermission)
-      return 'هذه الشاشة للعرض فقط لأن الحساب لا يملك RolePermissions.Manage.';
+      return this.uiLanguage.t('ui.full.65');
     if (this.role()?.name === 'SuperAdmin' && !this.hasRootContext()) {
-      return 'تعديل دور SuperAdmin متاح فقط في سياق Root SuperAdmin.';
+      return this.uiLanguage.t('ui.full.66');
     }
     return '';
   });
@@ -223,7 +230,7 @@ export class RoleDetails {
         if (!isGuid(id)) {
           this.isLoading.set(false);
           this.apiMessages.set([
-            'معرّف الدور غير صالح. ارجع إلى قائمة الأدوار واختر الدور من جديد.',
+            this.uiLanguage.t('ui.full.67'),
           ]);
           return;
         }
@@ -283,7 +290,7 @@ export class RoleDetails {
   }
 
   protected getModuleArabic(groupName: string): string {
-    return MODULE_ARABIC_NAMES[groupName] || groupName;
+    return this.uiLanguage.t(MODULE_LABEL_KEYS[groupName] || groupName);
   }
 
   protected getActionName(permissionName: string): string {
@@ -295,7 +302,7 @@ export class RoleDetails {
   protected getActionArabic(permissionName: string): string {
     const parts = permissionName.split('.');
     const action = parts.length > 1 ? parts.slice(1).join('.') : permissionName;
-    return ACTION_ARABIC_NAMES[action] || '';
+    return this.uiLanguage.t(ACTION_LABEL_KEYS[action] || '');
   }
 
   protected getGroupSelectedCount(group: PermissionGroup): number {
@@ -418,9 +425,11 @@ export class RoleDetails {
       this.current.set(response);
       this.selectedIds.set(new Set(response.permissions.map((permission) => permission.id)));
       this.confirmationOpen.set(false);
-      this.successMessage.set('تم استبدال وحفظ صلاحيات الدور بنجاح.');
+      this.successMessage.set(this.uiLanguage.t('admin.permissionsSaved'));
+      this.toast.success(this.successMessage());
       this.saved.emit(response);
     } catch (error) {
+
       const parsed = parseApiErrors(error);
       this.saveMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {

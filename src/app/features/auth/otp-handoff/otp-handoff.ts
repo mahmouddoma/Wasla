@@ -1,3 +1,6 @@
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { ToastService } from '../../../core/notifications/toast.service';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormField, form, maxLength, pattern, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
@@ -10,12 +13,15 @@ const RESEND_COOLDOWN_SECONDS = 60;
 
 @Component({
   selector: 'app-otp-handoff',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, TranslatePipe],
   templateUrl: './otp-handoff.html',
   styleUrl: './otp-handoff.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OtpHandoff implements OnDestroy {
+  private readonly toast = inject(ToastService);
+  protected readonly uiLanguage = inject(LanguageService);
+
   private readonly api = inject(AuthApi);
   private readonly recovery = inject(PasswordRecoverySession);
   private readonly router = inject(Router);
@@ -23,9 +29,9 @@ export class OtpHandoff implements OnDestroy {
   protected readonly challenge = this.recovery.challenge;
   protected readonly model = signal({ otp: '' });
   protected readonly otpForm = form(this.model, (field) => {
-    required(field.otp, { message: 'أدخل رمز التحقق.' });
-    maxLength(field.otp, 6, { message: 'رمز التحقق يتكوّن من 6 أرقام.' });
-    pattern(field.otp, /^\d{6}$/, { message: 'أدخل رمز تحقق صحيحًا مكوّنًا من 6 أرقام.' });
+    required(field.otp, { message: 'ui.full.258' });
+    maxLength(field.otp, 6, { message: 'ui.full.259' });
+    pattern(field.otp, /^\d{6}$/, { message: 'ui.full.260' });
   });
   protected readonly apiMessages = signal<string[]>([]);
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
@@ -63,11 +69,12 @@ export class OtpHandoff implements OnDestroy {
         );
         if (!this.recovery.acceptGrant(response)) {
           this.apiMessages.set([
-            'تعذر إنشاء خطوة آمنة لإعادة تعيين كلمة المرور. اطلب رمزًا جديدًا.',
+            this.uiLanguage.t('ui.full.261'),
           ]);
           this.challengeUnavailable.set(true);
           return;
         }
+        this.toast.success(this.uiLanguage.t('auth.otpVerified'));
         await this.router.navigate(['/forgot-password/reset'], { replaceUrl: true });
       } catch (error) {
         const parsed = parseApiErrors(error);
@@ -91,6 +98,7 @@ export class OtpHandoff implements OnDestroy {
         this.api.requestPasswordReset({ email: challenge.email }),
       );
       this.recovery.begin(challenge.email, response);
+      this.toast.success(this.uiLanguage.t('auth.otpResent'));
       this.model.set({ otp: '' });
       this.otpForm().reset();
       this.challengeUnavailable.set(false);

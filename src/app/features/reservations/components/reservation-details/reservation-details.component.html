@@ -1,0 +1,117 @@
+@let r = reservation();
+<header>
+  <h2 id="reservation-details-heading" dir="ltr">{{ r.reference }}</h2>
+  <p>
+    {{ status() }}
+    @if (r.isLate) {
+      · {{ 'reservations.late' | t }}
+    }
+  </p>
+</header>
+<dl>
+  <dt>{{ 'reservations.patient' | t }}</dt>
+  <dd>{{ label(r.patient) }}</dd>
+  <dt>{{ 'reservations.doctor' | t }}</dt>
+  <dd>{{ label(r.doctor) }}</dd>
+  <dt>{{ 'reservations.practice' | t }}</dt>
+  <dd>{{ label(r.practice) }}</dd>
+  <dt>{{ 'reservations.appointment' | t }}</dt>
+  <dd dir="ltr">
+    {{ r.appointment.businessDate }} ·
+    {{ r.appointment.scheduledTime || r.appointment.slotStartTime }}
+  </dd>
+  @if (r.segment) {
+    <dt>{{ 'reservations.segment' | t }}</dt>
+    <dd>{{ label(r.segment) }}</dd>
+  }
+  @if (r.visitType) {
+    <dt>{{ 'reservations.visitType' | t }}</dt>
+    <dd>{{ label(r.visitType) }}</dd>
+  }
+  @if (r.price !== undefined) {
+    <dt>{{ 'reservations.price' | t }}</dt>
+    <dd>{{ r.price }} {{ r.currency }}</dd>
+  }
+  @if (!administrative() && r.bookingNote) {
+    <dt>{{ 'reservations.bookingNote' | t }}</dt>
+    <dd>{{ r.bookingNote }}</dd>
+  }
+  @if (r.capabilities.patientCancellationCutoffUtc) {
+    <dt>{{ 'reservations.cutoff' | t }}</dt>
+    <dd dir="ltr">{{ r.capabilities.patientCancellationCutoffUtc }}</dd>
+  }
+  @if (r.capabilities.remainingPatientReschedules !== undefined) {
+    <dt>{{ 'reservations.remaining' | t }}</dt>
+    <dd>{{ r.capabilities.remainingPatientReschedules }}</dd>
+  }
+  @if (r.appointment.durationMinutes !== undefined) {
+    <dt>{{ 'reservations.duration' | t }}</dt>
+    <dd>{{ r.appointment.durationMinutes }} {{ 'reservations.minutes' | t }}</dd>
+  }
+  @if (r.appointment.timeZoneId) {
+    <dt>{{ 'reservations.timeZone' | t }}</dt>
+    <dd dir="ltr">{{ r.appointment.timeZoneId }}</dd>
+  }
+  @if (r.appointment.appointmentStartUtc) {
+    <dt>{{ 'reservations.utcStart' | t }}</dt>
+    <dd dir="ltr">{{ r.appointment.appointmentStartUtc }}</dd>
+  }
+  @if (r.appointment.appointmentEndUtc) {
+    <dt>{{ 'reservations.utcEnd' | t }}</dt>
+    <dd dir="ltr">{{ r.appointment.appointmentEndUtc }}</dd>
+  }
+  @if (r.bookingSource) {
+    <dt>{{ 'reservations.source' | t }}</dt>
+    <dd>{{ source(r.bookingSource) }}</dd>
+  }
+  @if (r.createdOnUtc) {
+    <dt>{{ 'reservations.createdOn' | t }}</dt>
+    <dd dir="ltr">{{ r.createdOnUtc }}</dd>
+  }
+  @if (r.cancelledOnUtc) {
+    <dt>{{ 'reservations.cancelledOn' | t }}</dt>
+    <dd dir="ltr">{{ r.cancelledOnUtc }}</dd>
+  }
+  @if (r.cancellationReason) {
+    <dt>{{ 'reservations.reason' | t }}</dt>
+    <dd>{{ r.cancellationReason | t }}</dd>
+  }
+</dl>
+@if (!administrative()) {
+  <div class="actions">
+    @if (canCancel()) {
+      <button (click)="action.emit('cancel')">{{ 'reservations.cancel' | t }}</button>
+    }
+    @if (canReschedule()) {
+      <button (click)="action.emit('reschedule')">{{ 'reservations.reschedule' | t }}</button>
+    }
+    @if (canRestore()) {
+      <button (click)="action.emit('restore')">{{ 'reservations.restore' | t }}</button>
+    }
+  </div>
+  @if (r.capabilities.cancelBlockedReason) {
+    <p>{{ r.capabilities.cancelBlockedReason | t }}</p>
+  }
+  @if (r.capabilities.rescheduleBlockedReason) {
+    <p>{{ r.capabilities.rescheduleBlockedReason | t }}</p>
+  }
+}
+<section>
+  <h3>{{ 'reservations.timeline' | t }}</h3>
+  <ol>
+    @for (e of r.timeline; track $index) {
+      <li>
+        <time dir="ltr">{{ e.occurredOnUtc }}</time
+        ><span>{{
+          e.nameAr ? label({ nameAr: e.nameAr, nameEn: e.nameEn }) : (e.eventType || '' | t)
+        }}</span>
+        @if (!administrative() && e.description) {
+          <p>{{ e.description }}</p>
+        }
+        @if (e.reason) {
+          <p>{{ e.reason }}</p>
+        }
+      </li>
+    }
+  </ol>
+</section>
