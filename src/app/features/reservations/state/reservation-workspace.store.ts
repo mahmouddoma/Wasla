@@ -5,6 +5,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { createIdempotencyKey } from '../../../core/http/create-idempotency-key';
 import { DoctorPracticesApi } from '../../../domains/doctor-practices';
 import { PatientsApi } from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
@@ -29,6 +30,7 @@ import {
   ReservationScope,
   RescheduleReservationRequest,
 } from '../../../domains/reservations';
+import { CheckInSubmission, PracticeTicket, TicketsApi } from '../../../domains/tickets';
 
 export interface ReservationDraft {
   patientId: string;
@@ -45,6 +47,7 @@ export type ReservationEditorMode = 'create' | 'cancel' | 'reschedule' | 'restor
 @Injectable()
 export class ReservationWorkspaceStore {
   private readonly api = inject(ReservationsApi);
+  private readonly ticketsApi = inject(TicketsApi);
   private readonly publicApi = inject(PublicDiscoveryApi);
   private readonly practicesApi = inject(DoctorPracticesApi);
   private readonly patientsApi = inject(PatientsApi);
@@ -78,6 +81,7 @@ export class ReservationWorkspaceStore {
   readonly detailLoading = signal(false);
   readonly bookingLoading = signal(false);
   readonly busy = signal(false);
+  readonly checkedInTicket = signal<PracticeTicket | null>(null);
   private patientSearchSequence = 0;
   private listSequence = 0;
   private bookingSequence = 0;
@@ -110,6 +114,24 @@ export class ReservationWorkspaceStore {
       this.actor() === 'Reception' &&
       !!this.detail()?.capabilities?.canRestoreFromNoShow &&
       this.allowed('RestoreNoShow'),
+  );
+  readonly canCheckIn = computed(
+    () =>
+      this.actor() === 'Reception' &&
+      this.detail()?.status === 'Active' &&
+      this.detail()?.price !== undefined &&
+      this.reception.currentPracticeId() === this.practiceId() &&
+      this.reception.allows('PracticeTickets.CheckIn') &&
+      this.reception.allows('PracticeTickets.RecordPayment'),
+  );
+  readonly canForceCheckIn = computed(
+    () =>
+      this.actor() === 'Reception' &&
+      this.detail()?.status === 'Active' &&
+      this.detail()?.price !== undefined &&
+      this.reception.currentPracticeId() === this.practiceId() &&
+      this.reception.allows('PracticeTickets.ForceCheckIn') &&
+      this.reception.allows('PracticeTickets.RecordPayment'),
   );
 
   constructor() {
@@ -456,8 +478,60 @@ export class ReservationWorkspaceStore {
       this.busy.set(false);
     }
   }
+  async checkIn(draft: CheckInSubmission): Promise<void> {
+    const reservation = this.detail();
+    const allowed = draft.force ? this.canForceCheckIn() : this.canCheckIn();
+    if (
+      !reservation ||
+      !allowed ||
+      this.busy() ||
+      reservation.price === undefined ||
+      draft.paidAmount !== reservation.price
+    )
+      return;
+    if (draft.force && (!this.canForceCheckIn() || !draft.reason)) return;
+    this.busy.set(true);
+    this.messages.set([]);
+    try {
+      let request: Observable<PracticeTicket>;
+      if (draft.force) {
+        const body = { paidAmount: draft.paidAmount, reason: draft.reason };
+        request = this.ticketsApi.forceCheckIn(
+          this.practiceId(),
+          reservation.reservationId,
+          body,
+          this.intentKey('force-check-in', body),
+        );
+      } else {
+        const body = { paidAmount: draft.paidAmount };
+        request = this.ticketsApi.checkIn(
+          this.practiceId(),
+          reservation.reservationId,
+          body,
+          this.intentKey('check-in', body),
+        );
+      }
+      const ticket = await firstValueFrom(request);
+      this.intent = null;
+      this.toast.success('tickets.checkIn.success');
+      this.resetDrawer();
+      await this.loadList();
+      this.checkedInTicket.set(ticket);
+    } catch (error) {
+      await this.failure(error);
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        await this.inspect(reservation.reservationId);
+        await this.loadList();
+      }
+    } finally {
+      this.busy.set(false);
+    }
+  }
   close(): void {
     if (this.busy()) return;
+    this.resetDrawer();
+  }
+  private resetDrawer(): void {
     this.detailSequence++;
     this.bookingSequence++;
     this.detail.set(null);
@@ -496,18 +570,7 @@ export class ReservationWorkspaceStore {
     return this.intent.key;
   }
   private newIntentKey(): string {
-    // getRandomValues also works on HTTP intranet origins where randomUUID is unavailable.
-    const bytes = crypto.getRandomValues(new Uint8Array(16));
-    bytes[6] = (bytes[6] & 15) | 64;
-    bytes[8] = (bytes[8] & 63) | 128;
-    const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
-    return [
-      hex.slice(0, 8),
-      hex.slice(8, 12),
-      hex.slice(12, 16),
-      hex.slice(16, 20),
-      hex.slice(20),
-    ].join('-');
+    return createIdempotencyKey();
   }
   private actionAllowed(mode: ReservationEditorMode): boolean {
     return mode === 'create'

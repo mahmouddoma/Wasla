@@ -1,0 +1,369 @@
+<main class="queue-shell" [dir]="language.dir()">
+  <header class="topbar">
+    <a class="brand" [routerLink]="back()">
+      <img src="/images/wasla-mark.png" width="42" height="42" [alt]="'common.appName' | t" />
+      <span>{{ 'common.appName' | t }}</span>
+    </a>
+    <nav class="topbar-actions" [attr.aria-label]="'common.navigation' | t">
+      <app-language-switcher variant="header" />
+      <a [routerLink]="back()">{{ 'common.workspace' | t }}</a>
+    </nav>
+  </header>
+
+  <section class="queue-header">
+    <div>
+      <h1>{{ 'tickets.queue.title' | t }}</h1>
+      <p>{{ 'tickets.queue.subtitle' | t }}</p>
+    </div>
+    <div class="header-actions">
+      <label class="practice-field">
+        <span>{{ 'reservations.practice' | t }}</span>
+        <select [value]="practiceId()" (change)="selectPractice($event)" [disabled]="busy()">
+          <option value="">{{ 'reservations.choose' | t }}</option>
+          @for (practice of practices(); track practice.id) {
+            <option [value]="practice.id">{{ label(practice) }}</option>
+          }
+        </select>
+      </label>
+      <button
+        type="button"
+        class="secondary-action"
+        (click)="loadQueue()"
+        [disabled]="loading() || !practiceId()"
+      >
+        {{ 'reservations.refresh' | t }}
+      </button>
+      @if (canCall()) {
+        <button
+          type="button"
+          class="primary-action"
+          (click)="callNext()"
+          [disabled]="busy() || !practiceId() || !!queue().called || !!queue().inProgress"
+        >
+          {{ 'tickets.callNext' | t }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="queue-board" [attr.aria-busy]="loading()">
+    @if (practiceId() && !canViewQueue()) {
+      <div class="state-block">
+        <h2>{{ 'tickets.noPermissionTitle' | t }}</h2>
+        <p>{{ 'tickets.noPermissionHelp' | t }}</p>
+      </div>
+    } @else if (!practiceId()) {
+      <div class="state-block">
+        <h2>{{ 'tickets.choosePracticeTitle' | t }}</h2>
+        <p>{{ 'tickets.choosePracticeHelp' | t }}</p>
+      </div>
+    } @else if (loading()) {
+      <div class="state-block" role="status">
+        <span class="spinner"></span>
+        <p>{{ 'tickets.loading' | t }}</p>
+      </div>
+    } @else {
+      <section class="current-strip">
+        <div class="current-slot">
+          <h2>{{ 'tickets.inProgress' | t }}</h2>
+          @if (queue().inProgress; as ticket) {
+            <button type="button" class="current-ticket" (click)="inspect(ticket.ticketId)">
+              <b dir="ltr">{{ ticket.ticketNumber }}</b
+              ><span>{{ ticket.patient ? label(ticket.patient) : '' }}</span>
+            </button>
+          } @else {
+            <p>{{ 'tickets.none' | t }}</p>
+          }
+        </div>
+        <div class="current-slot">
+          <h2>{{ 'tickets.called' | t }}</h2>
+          @if (queue().called; as ticket) {
+            <button type="button" class="current-ticket" (click)="inspect(ticket.ticketId)">
+              <b dir="ltr">{{ ticket.ticketNumber }}</b
+              ><span>{{ ticket.patient ? label(ticket.patient) : '' }}</span>
+            </button>
+          } @else {
+            <p>{{ 'tickets.none' | t }}</p>
+          }
+        </div>
+      </section>
+
+      <div class="queue-columns">
+        <section class="queue-section">
+          <div class="section-title-row">
+            <h2>{{ 'tickets.waiting' | t }}</h2>
+            <span>{{ queue().waiting.length }}</span>
+          </div>
+          <div class="ticket-list">
+            @for (ticket of queue().waiting; track ticket.ticketId; let position = $index) {
+              <button type="button" class="ticket-row" (click)="inspect(ticket.ticketId)">
+                <span class="position" dir="ltr">{{ position + 1 }}</span>
+                <span class="ticket-main"
+                  ><b>{{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}</b
+                  ><small dir="ltr"
+                    >{{ ticket.ticketNumber }} ·
+                    {{ ticket.queueOrderTime || ticket.lastUpdatedOnUtc }}</small
+                  ></span
+                >
+                @if (ticket.fastTrack) {
+                  <span class="status-badge">{{ 'tickets.fastTrack' | t }}</span>
+                }
+                <span class="ahead"
+                  >{{ ticket.patientsAheadNow }} {{ 'tickets.aheadShort' | t }}</span
+                >
+              </button>
+            } @empty {
+              <p class="empty-row">{{ 'tickets.waitingEmpty' | t }}</p>
+            }
+          </div>
+        </section>
+        <section class="queue-section">
+          <div class="section-title-row">
+            <h2>{{ 'tickets.noShow' | t }}</h2>
+            <span>{{ queue().noShow.length }}</span>
+          </div>
+          <div class="ticket-list">
+            @for (ticket of queue().noShow; track ticket.ticketId) {
+              <button type="button" class="ticket-row" (click)="inspect(ticket.ticketId)">
+                <span class="ticket-main"
+                  ><b>{{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}</b
+                  ><small dir="ltr">{{ ticket.ticketNumber }}</small></span
+                >
+                <span class="status-badge muted">{{ statusKey(ticket.status) | t }}</span>
+              </button>
+            } @empty {
+              <p class="empty-row">{{ 'tickets.noShowEmpty' | t }}</p>
+            }
+          </div>
+        </section>
+      </div>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-message" role="alert">{{ message | t }}</p>
+    }
+  </section>
+
+  @if (canWalkIn() && practiceId()) {
+    <section class="walk-in-section" [attr.aria-labelledby]="'walk-in-heading'">
+      <div class="section-heading">
+        <h2 id="walk-in-heading">{{ 'tickets.walkIn.title' | t }}</h2>
+        <p>{{ 'tickets.walkIn.help' | t }}</p>
+      </div>
+      <form class="walk-in-form" (submit)="$event.preventDefault(); submitWalkIn()">
+        <label>
+          <span>{{ 'tickets.patientId' | t }}</span>
+          <input dir="ltr" [formField]="walkInForm.patientId" />
+          @if (walkInForm.patientId().touched() && walkInForm.patientId().errors()[0]; as error) {
+            <small role="alert">{{
+              error.message || 'tickets.validation.patientRequired' | t
+            }}</small>
+          }
+        </label>
+        <label>
+          <span>{{ 'reservations.segment' | t }}</span>
+          <select
+            [value]="walkInModel().segmentId"
+            (change)="selectWalkInOption('segmentId', $event)"
+          >
+            <option value="">{{ 'reservations.choose' | t }}</option>
+            @for (segment of segments(); track segment.id) {
+              <option [value]="segment.id">{{ label(segment) }}</option>
+            }
+          </select>
+          @if (walkInForm.segmentId().touched() && walkInForm.segmentId().errors()[0]; as error) {
+            <small role="alert">{{
+              error.message || 'tickets.validation.segmentRequired' | t
+            }}</small>
+          }
+        </label>
+        <label>
+          <span>{{ 'reservations.visitType' | t }}</span>
+          <select
+            [value]="walkInModel().visitTypeId"
+            (change)="selectWalkInOption('visitTypeId', $event)"
+          >
+            <option value="">{{ 'reservations.choose' | t }}</option>
+            @for (visitType of visitTypes(); track visitType.id) {
+              <option [value]="visitType.id">{{ label(visitType) }}</option>
+            }
+          </select>
+          @if (
+            walkInForm.visitTypeId().touched() && walkInForm.visitTypeId().errors()[0];
+            as error
+          ) {
+            <small role="alert">{{
+              error.message || 'tickets.validation.visitTypeRequired' | t
+            }}</small>
+          }
+        </label>
+        <label>
+          <span>{{ 'tickets.payment' | t }}</span>
+          <input type="number" dir="ltr" readonly [value]="walkInModel().paidAmount" />
+          @if (walkInForm.paidAmount().errors()[0]; as error) {
+            <small role="alert">{{ error.message || 'tickets.validation.paymentExact' | t }}</small>
+          }
+        </label>
+        <button type="submit" class="primary-action" [disabled]="busy() || walkInForm().invalid()">
+          {{ 'tickets.walkIn.action' | t }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (selected() || detailLoading()) {
+    <dialog
+      #drawer
+      class="drawer"
+      (cancel)="cancelDialog($event)"
+      [attr.aria-labelledby]="'ticket-details-heading'"
+    >
+      <header class="drawer-header">
+        <button type="button" (click)="close()" [disabled]="busy()">
+          {{ 'reservations.close' | t }}
+        </button>
+      </header>
+      @if (selected(); as ticket) {
+        <div class="drawer-body">
+          <div class="ticket-title">
+            <div>
+              <h2 id="ticket-details-heading" dir="ltr">{{ ticket.ticketNumber }}</h2>
+              <p>{{ statusKey(ticket.status) | t }}</p>
+            </div>
+            <span class="status-badge"
+              >{{ ticket.patientsAheadNow }} {{ 'tickets.ahead' | t }}</span
+            >
+          </div>
+          <dl>
+            @if (ticket.patient) {
+              <dt>{{ 'reservations.patient' | t }}</dt>
+              <dd>{{ label(ticket.patient) }}</dd>
+            }
+            <dt>{{ 'reservations.practice' | t }}</dt>
+            <dd>{{ label(ticket.practice) }}</dd>
+            <dt>{{ 'reservations.doctor' | t }}</dt>
+            <dd>{{ label(ticket.doctor) }}</dd>
+            <dt>{{ 'tickets.businessDate' | t }}</dt>
+            <dd dir="ltr">{{ ticket.businessDate }}</dd>
+            <dt>{{ 'reservations.source' | t }}</dt>
+            <dd>{{ ticket.source }}</dd>
+            @if (ticket.segment) {
+              <dt>{{ 'reservations.segment' | t }}</dt>
+              <dd>{{ label(ticket.segment) }}</dd>
+            }
+            @if (ticket.visitType) {
+              <dt>{{ 'reservations.visitType' | t }}</dt>
+              <dd>{{ label(ticket.visitType) }}</dd>
+            }
+            <dt>{{ 'tickets.callAttempts' | t }}</dt>
+            <dd>{{ ticket.callAttempts.length }}</dd>
+            @if (ticket.checkedInOnUtc) {
+              <dt>{{ 'tickets.checkedInOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.checkedInOnUtc }}</dd>
+            }
+            @if (ticket.queueOrderTime) {
+              <dt>{{ 'tickets.queuedOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.queueOrderTime }}</dd>
+            }
+            @if (ticket.calledOnUtc) {
+              <dt>{{ 'tickets.calledOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.calledOnUtc }}</dd>
+            }
+            @if (ticket.startedOnUtc) {
+              <dt>{{ 'tickets.startedOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.startedOnUtc }}</dd>
+            }
+            @if (ticket.completedOnUtc) {
+              <dt>{{ 'tickets.completedOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.completedOnUtc }}</dd>
+            }
+            <dt>{{ 'tickets.lastUpdated' | t }}</dt>
+            <dd dir="ltr">{{ ticket.lastUpdatedOnUtc }}</dd>
+          </dl>
+          @if (ticket.callAttempts.length) {
+            <section class="attempts" [attr.aria-labelledby]="'call-attempts-heading'">
+              <h3 id="call-attempts-heading">{{ 'tickets.callAttempts' | t }}</h3>
+              <ol>
+                @for (attempt of ticket.callAttempts; track attempt.attemptNumber) {
+                  <li>
+                    <b>{{ 'tickets.attempt' | t }} {{ attempt.attemptNumber }}</b>
+                    <span>{{ attempt.outcome || ('tickets.pendingOutcome' | t) }}</span>
+                    <time dir="ltr">{{ attempt.confirmedOnUtc || attempt.calledOnUtc }}</time>
+                  </li>
+                }
+              </ol>
+            </section>
+          }
+          @if (ticket.status === 'Waiting' || ticket.status === 'Called') {
+            <label class="reason-field"
+              ><span>{{ 'tickets.reason' | t }}</span
+              ><textarea rows="3" [formField]="reasonForm.reason"></textarea>
+            </label>
+          }
+          <div class="drawer-actions">
+            @if (ticket.status === 'Waiting' && canCall()) {
+              <button
+                type="button"
+                (click)="act('manual-call')"
+                [disabled]="busy() || queueOccupied() || reasonForm().invalid()"
+              >
+                {{ 'tickets.manualCall' | t }}
+              </button>
+            }
+            @if (ticket.status === 'Called' && canCall()) {
+              <button type="button" (click)="act('no-response')" [disabled]="busy()">
+                {{ 'tickets.noResponse' | t }}
+              </button>
+              @if (canRecall(ticket)) {
+                <button type="button" (click)="act('recall')" [disabled]="busy()">
+                  {{ 'tickets.recall' | t }}
+                </button>
+              }
+            }
+            @if (ticket.status === 'NoShow' && canCall()) {
+              <button type="button" (click)="act('restore')" [disabled]="busy()">
+                {{ 'tickets.restore' | t }}
+              </button>
+            }
+            @if (ticket.status === 'Called' && canStart()) {
+              <button
+                type="button"
+                class="primary-action"
+                (click)="act('start')"
+                [disabled]="busy()"
+              >
+                {{ 'tickets.start' | t }}
+              </button>
+            }
+            @if (ticket.status === 'InProgress' && canComplete()) {
+              <button
+                type="button"
+                class="primary-action"
+                (click)="act('complete')"
+                [disabled]="busy()"
+              >
+                {{ 'tickets.complete' | t }}
+              </button>
+            }
+            @if ((ticket.status === 'Waiting' || ticket.status === 'Called') && canCall()) {
+              <button
+                type="button"
+                class="danger-action"
+                (click)="act('cancel')"
+                [disabled]="busy() || reasonForm().invalid()"
+              >
+                {{ 'tickets.cancel' | t }}
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="state-block" role="status">
+          <h2 id="ticket-details-heading">{{ 'tickets.details' | t }}</h2>
+          <span class="spinner"></span>
+          <p>{{ 'tickets.loading' | t }}</p>
+        </div>
+      }
+    </dialog>
+  }
+</main>
+<app-platform-footer />

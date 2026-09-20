@@ -2,6 +2,18 @@ import { Routes } from '@angular/router';
 import { accountAreaGuard, authenticatedGuard } from './core/auth/auth.guards';
 
 export const routes: Routes = [
+  ...(['doctor', 'reception'] as const).map((area) => ({
+    path: area + '/queue',
+    data: { actor: area === 'doctor' ? 'Doctor' : 'Reception' },
+    loadChildren: () =>
+      import('./features/tickets/tickets.routes').then((module) => module.TICKET_ROUTES),
+  })),
+  {
+    path: 'patient/tickets',
+    data: { actor: 'Patient', permission: 'Tickets.ViewOwn' },
+    loadChildren: () =>
+      import('./features/tickets/tickets.routes').then((module) => module.PATIENT_TICKET_ROUTES),
+  },
   ...(['patient', 'doctor', 'reception', 'admin'] as const).map((area) => ({
     path: area + '/reservations',
     data: { actor: area === 'admin' ? 'Admin' : area[0].toUpperCase() + area.slice(1) },

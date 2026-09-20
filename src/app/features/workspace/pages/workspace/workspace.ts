@@ -57,9 +57,18 @@ export class Workspace {
       return '/doctor/reservations';
     return '';
   });
+  readonly ticketPath = computed(() => {
+    const type = this.user()?.userType;
+    if (type === 'Patient' && this.session.hasPermission(PERMISSIONS.ticketsViewOwn))
+      return '/patient/tickets';
+    if (type === 'Reception') return '/reception/queue';
+    if (type === 'Doctor') return '/doctor/queue';
+    return '';
+  });
   protected readonly hasAnyModules = computed(
     () =>
       !!this.reservationPath() ||
+      !!this.ticketPath() ||
       this.canManageDoctorProfile ||
       this.canViewDoctorPractices ||
       this.canViewReceptionUsers ||

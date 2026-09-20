@@ -21,6 +21,7 @@ import { ReservationDetailsComponent } from '../../components/reservation-detail
 import { ReservationEditorComponent } from '../../components/reservation-editor/reservation-editor.component';
 import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
 import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
+import { ReservationCheckInComponent } from '../../components/reservation-check-in/reservation-check-in.component';
 @Component({
   selector: 'app-reservation-workspace',
   imports: [
@@ -29,6 +30,7 @@ import { PlatformFooter } from '../../../../shared/components/platform-footer/pl
     LanguageSwitcher,
     ReservationDetailsComponent,
     ReservationEditorComponent,
+    ReservationCheckInComponent,
     PlatformFooter,
   ],
   providers: [ReservationWorkspaceStore],

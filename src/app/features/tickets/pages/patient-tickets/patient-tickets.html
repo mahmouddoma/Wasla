@@ -1,0 +1,153 @@
+<main class="tickets-shell" [dir]="language.dir()">
+  <header class="topbar">
+    <a class="brand" routerLink="/workspace/patient">
+      <img src="/images/wasla-mark.png" width="42" height="42" [alt]="'common.appName' | t" />
+      <span>{{ 'common.appName' | t }}</span>
+    </a>
+    <div class="topbar-actions">
+      <app-language-switcher variant="header" /><a routerLink="/workspace/patient">{{
+        'common.workspace' | t
+      }}</a>
+    </div>
+  </header>
+
+  <section class="page-heading">
+    <div>
+      <h1>{{ 'tickets.mine.title' | t }}</h1>
+      <p>{{ 'tickets.mine.subtitle' | t }}</p>
+    </div>
+    <button type="button" (click)="load()" [disabled]="loading()">
+      {{ 'reservations.refresh' | t }}
+    </button>
+  </section>
+
+  <section class="ticket-directory" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="state-block" role="status">
+        <span class="spinner"></span>
+        <p>{{ 'tickets.loading' | t }}</p>
+      </div>
+    } @else {
+      @for (ticket of tickets(); track ticket.ticketId) {
+        <button type="button" class="ticket-row" (click)="inspect(ticket.ticketId)">
+          <span class="ticket-number" dir="ltr">{{ ticket.ticketNumber }}</span>
+          <span class="ticket-context"
+            ><b>{{ label(ticket.practice) }}</b
+            ><small>{{ label(ticket.doctor) }}</small></span
+          >
+          <span class="ticket-status">{{ statusKey(ticket.status) | t }}</span>
+          <span class="ahead-count"
+            ><b>{{ ticket.patientsAheadNow }}</b
+            ><small>{{ 'tickets.ahead' | t }}</small></span
+          >
+          <time dir="ltr">{{ ticket.lastUpdatedOnUtc }}</time>
+        </button>
+      } @empty {
+        <div class="state-block">
+          <h2>{{ 'tickets.mine.emptyTitle' | t }}</h2>
+          <p>{{ 'tickets.mine.emptyHelp' | t }}</p>
+        </div>
+      }
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-message" role="alert">{{ message | t }}</p>
+    }
+  </section>
+
+  <p class="privacy-note">{{ 'tickets.mine.dynamicNotice' | t }}</p>
+
+  @if (selected() || detailLoading()) {
+    <dialog
+      #drawer
+      class="drawer"
+      (cancel)="cancelDialog($event)"
+      [attr.aria-labelledby]="'patient-ticket-heading'"
+    >
+      <header class="drawer-header">
+        <button type="button" (click)="close()">{{ 'reservations.close' | t }}</button>
+      </header>
+      @if (selected(); as ticket) {
+        <div class="drawer-body">
+          <div class="ticket-title">
+            <div>
+              <h2 id="patient-ticket-heading" dir="ltr">{{ ticket.ticketNumber }}</h2>
+              <p>{{ statusKey(ticket.status) | t }}</p>
+            </div>
+            <div class="ahead-large">
+              <b>{{ ticket.patientsAheadNow }}</b
+              ><span>{{ 'tickets.ahead' | t }}</span>
+            </div>
+          </div>
+          <dl>
+            <dt>{{ 'reservations.practice' | t }}</dt>
+            <dd>{{ label(ticket.practice) }}</dd>
+            <dt>{{ 'reservations.doctor' | t }}</dt>
+            <dd>{{ label(ticket.doctor) }}</dd>
+            <dt>{{ 'tickets.businessDate' | t }}</dt>
+            <dd dir="ltr">{{ ticket.businessDate }}</dd>
+            <dt>{{ 'reservations.source' | t }}</dt>
+            <dd>{{ ticket.source }}</dd>
+            @if (ticket.segment) {
+              <dt>{{ 'reservations.segment' | t }}</dt>
+              <dd>{{ label(ticket.segment) }}</dd>
+            }
+            @if (ticket.visitType) {
+              <dt>{{ 'reservations.visitType' | t }}</dt>
+              <dd>{{ label(ticket.visitType) }}</dd>
+            }
+            @if (ticket.priceSnapshot !== undefined) {
+              <dt>{{ 'reservations.price' | t }}</dt>
+              <dd>{{ ticket.priceSnapshot }} {{ ticket.currency }}</dd>
+            }
+            <dt>{{ 'tickets.fastTrack' | t }}</dt>
+            <dd>{{ (ticket.fastTrack ? 'common.yes' : 'common.no') | t }}</dd>
+            @if (ticket.checkedInOnUtc) {
+              <dt>{{ 'tickets.checkedInOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.checkedInOnUtc }}</dd>
+            }
+            @if (ticket.queueOrderTime) {
+              <dt>{{ 'tickets.queuedOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.queueOrderTime }}</dd>
+            }
+            @if (ticket.calledOnUtc) {
+              <dt>{{ 'tickets.calledOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.calledOnUtc }}</dd>
+            }
+            @if (ticket.startedOnUtc) {
+              <dt>{{ 'tickets.startedOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.startedOnUtc }}</dd>
+            }
+            @if (ticket.completedOnUtc) {
+              <dt>{{ 'tickets.completedOn' | t }}</dt>
+              <dd dir="ltr">{{ ticket.completedOnUtc }}</dd>
+            }
+            <dt>{{ 'tickets.lastUpdated' | t }}</dt>
+            <dd dir="ltr">{{ ticket.lastUpdatedOnUtc }}</dd>
+          </dl>
+          @if (ticket.callAttempts.length) {
+            <section class="attempts" [attr.aria-labelledby]="'patient-call-attempts-heading'">
+              <h3 id="patient-call-attempts-heading">{{ 'tickets.callAttempts' | t }}</h3>
+              <ol>
+                @for (attempt of ticket.callAttempts; track attempt.attemptNumber) {
+                  <li>
+                    <b>{{ 'tickets.attempt' | t }} {{ attempt.attemptNumber }}</b>
+                    <span>{{ attempt.outcome || ('tickets.pendingOutcome' | t) }}</span>
+                    <time dir="ltr">{{ attempt.confirmedOnUtc || attempt.calledOnUtc }}</time>
+                  </li>
+                }
+              </ol>
+            </section>
+          }
+          <p class="privacy-note">{{ 'tickets.mine.operationalOnly' | t }}</p>
+        </div>
+      } @else {
+        <div class="state-block" role="status">
+          <h2 id="patient-ticket-heading">{{ 'tickets.details' | t }}</h2>
+          <span class="spinner"></span>
+          <p>{{ 'tickets.loading' | t }}</p>
+        </div>
+      }
+    </dialog>
+  }
+</main>
+<app-platform-footer />

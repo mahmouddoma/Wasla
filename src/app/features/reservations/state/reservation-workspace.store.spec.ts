@@ -6,6 +6,7 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { ReservationsApi } from '../../../domains/reservations';
+import { TicketsApi } from '../../../domains/tickets';
 import { ReservationWorkspaceStore, ReservationDraft } from './reservation-workspace.store';
 import { reservationFixture, metadataFixture } from '../reservation-test-fixtures';
 describe('ReservationWorkspaceStore', () => {
@@ -16,6 +17,10 @@ describe('ReservationWorkspaceStore', () => {
     createPatient: vi.fn(),
     createReception: vi.fn(),
     receptionOptions: vi.fn(),
+  };
+  const ticketsApi = {
+    checkIn: vi.fn(),
+    forceCheckIn: vi.fn(),
   };
   const currentPracticeId = signal('clinic'),
     grants = signal<string[]>([]);
@@ -52,6 +57,7 @@ describe('ReservationWorkspaceStore', () => {
         provideHttpClient(),
         ReservationWorkspaceStore,
         { provide: ReservationsApi, useValue: api },
+        { provide: TicketsApi, useValue: ticketsApi },
         { provide: ReceptionPracticeContext, useValue: reception },
         {
           provide: AuthSession,
@@ -145,12 +151,20 @@ describe('ReservationWorkspaceStore', () => {
     store.practiceId.set('clinic');
     store.date.set('2026-09-20');
     store.slots.set([{ date: '2026-09-20', time: '17:00' }]);
-    api.receptionOptions.mockReturnValue(of({
-      practiceId: 'clinic', date: '2026-09-20', time: '17:00',
-      visitTypes: ['NewConsultation', 'FollowUp', 'Other'].map((type) => ({
-        visitTypeId: type, type, nameAr: type, nameEn: type, segments: [],
-      })),
-    }));
+    api.receptionOptions.mockReturnValue(
+      of({
+        practiceId: 'clinic',
+        date: '2026-09-20',
+        time: '17:00',
+        visitTypes: ['NewConsultation', 'FollowUp', 'Other'].map((type) => ({
+          visitTypeId: type,
+          type,
+          nameAr: type,
+          nameEn: type,
+          segments: [],
+        })),
+      }),
+    );
     await store.chooseTime('17:00');
     expect(api.receptionOptions).toHaveBeenCalledWith('clinic', '2026-09-20', '17:00');
     expect(store.options()?.visitTypes.map((v) => v.type)).toEqual(['NewConsultation']);
@@ -189,5 +203,49 @@ describe('ReservationWorkspaceStore', () => {
     });
     await store.save(draft);
     expect(api.cancel).not.toHaveBeenCalled();
+  });
+  it('checks in an active reception reservation with payment and an idempotency key', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    store.detail.set({ ...reservationFixture, status: 'Active', price: 300 });
+    grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
+    ticketsApi.checkIn.mockReturnValue(of({ ticketId: 'ticket-1' }));
+
+    await store.checkIn({ paidAmount: 300, force: false, reason: '' });
+
+    expect(ticketsApi.checkIn).toHaveBeenCalledWith(
+      'clinic',
+      reservationFixture.reservationId,
+      { paidAmount: 300 },
+      expect.any(String),
+    );
+    expect(store.detail()).toBeNull();
+    expect(store.checkedInTicket()?.ticketId).toBe('ticket-1');
+  });
+  it('requires the scoped force permission and sends the reason', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    store.detail.set({ ...reservationFixture, status: 'Active', price: 300 });
+    grants.set(['PracticeTickets.RecordPayment', 'PracticeTickets.ForceCheckIn']);
+    ticketsApi.forceCheckIn.mockReturnValue(of({ ticketId: 'ticket-1' }));
+
+    await store.checkIn({ paidAmount: 300, force: true, reason: 'Patient arrived early' });
+
+    expect(ticketsApi.forceCheckIn).toHaveBeenCalledWith(
+      'clinic',
+      reservationFixture.reservationId,
+      { paidAmount: 300, reason: 'Patient arrived early' },
+      expect.any(String),
+    );
+  });
+  it('does not check in when payment differs from the locked price', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    store.detail.set({ ...reservationFixture, status: 'Active', price: 300 });
+    grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
+
+    await store.checkIn({ paidAmount: 299, force: false, reason: '' });
+
+    expect(ticketsApi.checkIn).not.toHaveBeenCalled();
   });
 });

@@ -1,0 +1,62 @@
+<section class="check-in" [attr.aria-labelledby]="'reservation-check-in-heading'">
+  <div class="section-heading">
+    <div>
+      <h3 id="reservation-check-in-heading">{{ 'tickets.checkIn.title' | t }}</h3>
+      <p>{{ 'tickets.checkIn.help' | t }}</p>
+    </div>
+    @if (expectedPrice() !== undefined) {
+      <button type="button" class="price-shortcut" (click)="useExpectedPrice()">
+        {{ 'tickets.checkIn.usePrice' | t }}: <b dir="ltr">{{ expectedPrice() }}</b>
+      </button>
+    }
+  </div>
+
+  <form (submit)="$event.preventDefault(); submit()">
+    <label class="field">
+      <span>{{ 'tickets.payment' | t }}</span>
+      <input type="number" inputmode="decimal" dir="ltr" [formField]="checkInForm.paidAmount" />
+      @if (checkInForm.paidAmount().touched() && checkInForm.paidAmount().errors()[0]; as error) {
+        <small role="alert">{{ error.message || 'tickets.validation.paymentRequired' | t }}</small>
+      }
+    </label>
+
+    @if (canNormal() && canForce()) {
+      <div class="mode-switch" role="group" [attr.aria-label]="'tickets.checkIn.mode' | t">
+        <button
+          type="button"
+          [class.active]="!model().force"
+          [attr.aria-pressed]="!model().force"
+          (click)="setForce(false)"
+        >
+          {{ 'tickets.checkIn.normal' | t }}
+        </button>
+        <button
+          type="button"
+          [class.active]="model().force"
+          [attr.aria-pressed]="model().force"
+          (click)="setForce(true)"
+        >
+          {{ 'tickets.checkIn.force' | t }}
+        </button>
+      </div>
+    }
+
+    @if (!canNormal() && canForce()) {
+      <p class="force-notice">{{ 'tickets.checkIn.forceOnly' | t }}</p>
+    }
+
+    @if (model().force) {
+      <label class="field">
+        <span>{{ 'tickets.reason' | t }}</span>
+        <textarea rows="3" [formField]="checkInForm.reason"></textarea>
+        @if (checkInForm.reason().touched() && checkInForm.reason().errors()[0]; as error) {
+          <small role="alert">{{ error.message || 'tickets.validation.reasonRequired' | t }}</small>
+        }
+      </label>
+    }
+
+    <button class="submit-action" type="submit" [disabled]="busy() || checkInForm().invalid()">
+      {{ (model().force ? 'tickets.checkIn.forceAction' : 'tickets.checkIn.action') | t }}
+    </button>
+  </form>
+</section>

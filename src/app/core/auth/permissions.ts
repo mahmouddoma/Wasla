@@ -72,4 +72,11 @@ export const PERMISSIONS = {
   familyRelationshipRequestsRequestModification: 'FamilyRelationshipRequests.RequestModification',
   familyRelationshipRequestsApprove: 'FamilyRelationshipRequests.Approve',
   familyRelationshipRequestsReject: 'FamilyRelationshipRequests.Reject',
+  practiceTicketsCheckIn: 'PracticeTickets.CheckIn',
+  practiceTicketsRecordPayment: 'PracticeTickets.RecordPayment',
+  practiceTicketsForceCheckIn: 'PracticeTickets.ForceCheckIn',
+  practiceTicketsCreateWalkIn: 'PracticeTickets.CreateWalkIn',
+  doctorPracticeTicketsStartOwn: 'DoctorPracticeTickets.StartOwn',
+  doctorPracticeTicketsCompleteOwn: 'DoctorPracticeTickets.CompleteOwn',
+  ticketsViewOwn: 'Tickets.ViewOwn',
 } as const;
