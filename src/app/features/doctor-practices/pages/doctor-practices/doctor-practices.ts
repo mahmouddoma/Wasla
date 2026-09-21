@@ -9,8 +9,6 @@ import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { DoctorPractice } from '../../../../domains/doctor-practices';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { LanguageService } from '../../../../core/i18n/language.service';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { PracticeEditor } from '../../components/practice-editor/practice-editor';
 import { PracticeOperations } from '../../components/practice-operations/practice-operations';
@@ -28,9 +26,7 @@ type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
     PracticeSchedule,
     PracticeSegments,
     SideDrawer,
-    LanguageSwitcher,
     TranslatePipe,
-    PlatformFooter,
   ],
   templateUrl: './doctor-practices.html',
   styleUrl: './doctor-practices.css',

@@ -3,8 +3,8 @@
   min-height: 100dvh;
 }
 
-/* ── Admin Shell: Sidebar + Main Content Layout ─────────────── */
-.admin-shell {
+/* ── Portal Shell: Sidebar + Main Content Layout ─────────────── */
+.portal-shell {
   display: flex;
   min-height: 100dvh;
   background: var(--color-background);
@@ -30,7 +30,7 @@
 }
 
 /* ── Enterprise Medical Sidebar ─────────────────────────────── */
-.admin-sidebar {
+.portal-sidebar {
   position: sticky;
   top: 0;
   z-index: 999;
@@ -51,7 +51,7 @@
     padding 0.25s ease;
 }
 
-.admin-sidebar::-webkit-scrollbar {
+.portal-sidebar::-webkit-scrollbar {
   display: none;
 }
 
@@ -99,7 +99,7 @@
 }
 
 /* RTL: Collapsed arrow points left (180deg) to expand */
-[dir='rtl'] .admin-sidebar.collapsed .collapse-chevron {
+[dir='rtl'] .portal-sidebar.collapsed .collapse-chevron {
   transform: rotate(180deg);
 }
 
@@ -109,22 +109,22 @@
 }
 
 /* LTR: Collapsed arrow points right (0deg) to expand */
-[dir='ltr'] .admin-sidebar.collapsed .collapse-chevron {
+[dir='ltr'] .portal-sidebar.collapsed .collapse-chevron {
   transform: rotate(0deg);
 }
 
 /* ── Collapsed Sidebar State ─────────────────────────────── */
-.admin-sidebar.collapsed {
+.portal-sidebar.collapsed {
   width: 80px;
   flex: 0 0 80px;
   padding: 24px 12px 20px;
 }
 
-.admin-sidebar.collapsed .brand-text-block {
+.portal-sidebar.collapsed .brand-text-block {
   display: none;
 }
 
-.admin-sidebar.collapsed .sidebar-brand-header {
+.portal-sidebar.collapsed .sidebar-brand-header {
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -133,16 +133,16 @@
   padding-inline: 0;
 }
 
-.admin-sidebar.collapsed .sidebar-brand-link {
+.portal-sidebar.collapsed .sidebar-brand-link {
   justify-content: center;
 }
 
-.admin-sidebar.collapsed .sidebar-nav {
+.portal-sidebar.collapsed .sidebar-nav {
   gap: 8px;
   align-items: center;
 }
 
-.admin-sidebar.collapsed .sidebar-nav-item {
+.portal-sidebar.collapsed .sidebar-nav-item {
   width: 48px;
   height: 48px;
   min-height: 48px;
@@ -151,23 +151,23 @@
   border-radius: 12px;
 }
 
-.admin-sidebar.collapsed .sidebar-nav-item .nav-text {
+.portal-sidebar.collapsed .sidebar-nav-item .nav-text {
   display: none;
 }
 
-.admin-sidebar.collapsed .sidebar-nav-icon {
+.portal-sidebar.collapsed .sidebar-nav-icon {
   width: 22px;
   height: 22px;
   margin: 0;
 }
 
-.admin-sidebar.collapsed .sidebar-footer {
+.portal-sidebar.collapsed .sidebar-footer {
   display: flex;
   justify-content: center;
   padding-top: 10px;
 }
 
-.admin-sidebar.collapsed .btn-sidebar-logout {
+.portal-sidebar.collapsed .btn-sidebar-logout {
   width: 48px;
   height: 48px;
   min-height: 48px;
@@ -176,11 +176,11 @@
   border-radius: 12px;
 }
 
-.admin-sidebar.collapsed .btn-sidebar-logout .nav-text {
+.portal-sidebar.collapsed .btn-sidebar-logout .nav-text {
   display: none;
 }
 
-.admin-sidebar.collapsed .btn-sidebar-logout svg {
+.portal-sidebar.collapsed .btn-sidebar-logout svg {
   width: 20px;
   height: 20px;
 }
@@ -200,15 +200,11 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  /* border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px); */
 }
 
 .brand-logo-icon img {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
@@ -326,7 +322,7 @@
 }
 
 /* ── Main Layout Wrapper ────────────────────────────────────── */
-.admin-main-wrapper {
+.portal-main-wrapper {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
@@ -334,13 +330,13 @@
   min-height: 100dvh;
 }
 
-/* ── Topbar (Matching Image 2) ──────────────────────────────── */
-.admin-topbar {
+/* ── Topbar ─────────────────────────────────────────────────── */
+.portal-topbar {
   position: sticky;
   top: 0;
   z-index: 90;
   display: flex;
-  min-height: 66px;
+  min-height: 64px;
   align-items: center;
   justify-content: space-between;
   padding-inline: clamp(16px, 2.5vw, 36px);
@@ -413,21 +409,27 @@
 }
 
 /* ── Content Body Container ─────────────────────────────────── */
-.admin-content-body {
+.portal-content-body {
   flex: 1 1 auto;
-  max-width: 1560px;
   width: 100%;
-  margin-inline: auto;
-  padding: clamp(20px, 2.5vw, 36px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.admin-content-body > router-outlet {
+.portal-content-body > router-outlet {
   display: none;
+}
+
+/* Seamless integration: suppress legacy redundant floating headers from inner pages */
+.portal-content-body .profile-header,
+.portal-content-body .topbar,
+.portal-content-body .workspace-header {
+  display: none !important;
 }
 
 /* ── Responsive Breakpoints ─────────────────────────────────── */
 @media (max-width: 992px) {
-  .btn-desktop-collapse,
   .btn-sidebar-collapse {
     display: none;
   }
@@ -436,7 +438,7 @@
     display: flex;
   }
 
-  .admin-sidebar {
+  .portal-sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
@@ -444,7 +446,7 @@
     transition: inset-inline-start 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .admin-sidebar.open {
+  .portal-sidebar.open {
     inset-inline-start: 0;
   }
 
@@ -457,19 +459,9 @@
   }
 }
 
-@media (max-width: 640px) {
-  .admin-content-body {
-    padding: 16px;
-  }
-}
-
 @media (max-width: 480px) {
-  .admin-topbar {
+  .portal-topbar {
     padding-inline: 12px;
-  }
-
-  .admin-content-body {
-    padding: 12px;
   }
 
   .user-display-name {

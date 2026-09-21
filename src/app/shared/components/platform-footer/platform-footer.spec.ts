@@ -28,16 +28,13 @@ describe('PlatformFooter', () => {
     expect(copyright).toBeTruthy();
   });
 
-  it('should render operational status indicator and security badge', () => {
+  it('should render platform security badge and version badge', () => {
     const el: HTMLElement = fixture.nativeElement;
-    const statusPill = el.querySelector('.status-pill');
-    expect(statusPill).toBeTruthy();
+    const trustBadge = el.querySelector('.trust-badge');
+    expect(trustBadge).toBeTruthy();
 
-    const securityPill = el.querySelector('.security-pill');
-    expect(securityPill).toBeTruthy();
-
-    const pulseDot = el.querySelector('.pulse-dot');
-    expect(pulseDot).toBeTruthy();
+    const versionBadge = el.querySelector('.version-badge');
+    expect(versionBadge).toBeTruthy();
   });
 
   it('should render quick navigation buttons and open modal when clicked', () => {

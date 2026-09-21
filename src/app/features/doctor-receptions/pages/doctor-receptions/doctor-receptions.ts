@@ -17,13 +17,11 @@ import {
 import { DoctorReceptionsApi } from '../../services';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-doctor-receptions',
-  imports: [FormField, RouterLink, LanguageSwitcher, SideDrawer, TranslatePipe, PlatformFooter],
+  imports: [FormField, RouterLink, SideDrawer, TranslatePipe],
   templateUrl: './doctor-receptions.html',
   styleUrl: './doctor-receptions.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

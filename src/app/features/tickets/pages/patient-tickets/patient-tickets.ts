@@ -8,18 +8,15 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PracticeTicket, TicketsApi } from '../../../../domains/tickets';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 
 @Component({
   selector: 'app-patient-tickets',
-  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PlatformFooter],
+  imports: [TranslatePipe],
   templateUrl: './patient-tickets.html',
   styleUrl: './patient-tickets.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

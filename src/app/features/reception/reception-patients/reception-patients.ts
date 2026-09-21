@@ -14,7 +14,7 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
@@ -28,11 +28,9 @@ import {
 import { PatientsApi } from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 
-import { PlatformFooter } from '../../../shared/components/platform-footer/platform-footer';
-
 @Component({
   selector: 'app-reception-patients',
-  imports: [FormField, RouterLink, TranslatePipe, PlatformFooter],
+  imports: [FormField, TranslatePipe],
   templateUrl: './reception-patients.html',
   styleUrls: ['../../healthcare-workspace.css', './reception-patients.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, email, form, maxLength, required, submit } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
@@ -22,11 +22,10 @@ import {
   PatientRelationshipType,
 } from '../../../domains/patients';
 import { PatientsApi } from '../../../domains/patients';
-import { PlatformFooter } from '../../../shared/components/platform-footer/platform-footer';
 
 @Component({
   selector: 'app-patient-profile',
-  imports: [FormField, RouterLink, TranslatePipe, PlatformFooter],
+  imports: [FormField, TranslatePipe],
   templateUrl: './patient-profile.html',
   styleUrl: './patient-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

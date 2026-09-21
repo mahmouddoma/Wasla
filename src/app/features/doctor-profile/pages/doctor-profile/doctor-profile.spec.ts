@@ -47,10 +47,23 @@ describe('DoctorProfile specialization mutations', () => {
 
   it('renders the profile and prevents an invalid selection from reaching the API', async () => {
     expect(fixture.componentInstance).toBeTruthy();
+    fixture.componentInstance['activeSection'].set('all');
+    fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('app-public-profile-manager')).not.toBeNull();
     await fixture.componentInstance['saveSpecializations']();
     expect(api.submitSpecializations).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith(TestBed.inject(LanguageService).t('doctor.specializationsInvalid'));
+  });
+
+  it('switches active sections correctly', () => {
+    const component = fixture.componentInstance;
+    expect(component['activeSection']()).toBe('specialties');
+    component['setSection']('location');
+    expect(component['activeSection']()).toBe('location');
+    component['setSection']('bio');
+    expect(component['activeSection']()).toBe('bio');
+    component['setSection']('all');
+    expect(component['activeSection']()).toBe('all');
   });
 
   it('preserves the initial request and refreshes history after success', async () => {

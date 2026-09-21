@@ -5,7 +5,7 @@ import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, required, submit } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthSession } from '../../../core/auth/auth-session';
@@ -16,7 +16,6 @@ import {
   EVIDENCE_FILE_ACCEPT,
   getEvidenceFileValidationError,
 } from '../../../core/validation/evidence-files';
-import { PlatformFooter } from '../../../shared/components/platform-footer/platform-footer';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import {
   Family,
@@ -29,7 +28,7 @@ import {
 
 @Component({
   selector: 'app-patient-family',
-  imports: [FormField, RouterLink, NgClass, SideDrawer, TranslatePipe, PlatformFooter],
+  imports: [FormField, NgClass, SideDrawer, TranslatePipe],
   templateUrl: './patient-family.html',
   styleUrl: './patient-family.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

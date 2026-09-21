@@ -75,4 +75,10 @@ describe('Workspace', () => {
     expect(mockAuthSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  it('should toggle sidebar when toggleSidebar is called', () => {
+    const initial = component['sidebarService'].isCollapsed();
+    component['toggleSidebar']();
+    expect(component['sidebarService'].isCollapsed()).toBe(!initial);
+  });
 });

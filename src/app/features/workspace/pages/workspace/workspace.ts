@@ -4,12 +4,13 @@ import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
+import { WorkspaceSidebarComponent } from '../../../../shared/components/workspace-sidebar/workspace-sidebar';
+import { SidebarService } from '../../../../shared/components/workspace-sidebar/sidebar.service';
 import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/core';
 
 @Component({
   selector: 'app-workspace',
-  imports: [RouterLink, LanguageSwitcher, TranslatePipe, PlatformFooter],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './workspace.html',
   styleUrl: './workspace.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,8 +18,17 @@ import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/c
 export class Workspace {
   readonly langService = inject(LanguageService);
   protected readonly user = inject(AuthSession).user;
+  protected readonly sidebarService = inject(SidebarService);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+
+  protected toggleSidebar(): void {
+    if (typeof window !== 'undefined' && window.innerWidth < 992) {
+      this.sidebarService.toggleMobile();
+    } else {
+      this.sidebarService.toggleCollapse();
+    }
+  }
 
   protected readonly canManageDoctorProfile =
     this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||

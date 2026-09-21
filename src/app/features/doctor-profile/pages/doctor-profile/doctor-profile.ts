@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormField, form, max, maxLength, min, required, submit } from '@angular/forms/signals';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -22,20 +22,15 @@ import {
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TRANSLATIONS } from '../../../../core/i18n/translations';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 import { PublicProfileManager } from '../../components/public-profile-manager/public-profile-manager';
 
 @Component({
   selector: 'app-doctor-profile',
   imports: [
     FormField,
-    RouterLink,
     SpecializationSelector,
-    LanguageSwitcher,
     TranslatePipe,
     PublicProfileManager,
-    PlatformFooter,
   ],
   templateUrl: './doctor-profile.html',
   styleUrl: './doctor-profile.css',
@@ -80,6 +75,14 @@ export class DoctorProfile {
     max(field.longitude, 180, { message: 'validation.longitude' });
   });
   protected readonly isLoading = signal(true);
+  protected readonly activeSection = signal<'specialties' | 'location' | 'bio' | 'all'>(
+    'specialties',
+  );
+
+  protected setSection(section: 'specialties' | 'location' | 'bio' | 'all'): void {
+    this.activeSection.set(section);
+  }
+
   protected readonly isSpecializationSubmitting = signal(false);
   protected readonly isLocationSubmitting = signal(false);
   protected readonly citiesLoading = signal(false);

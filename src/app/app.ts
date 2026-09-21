@@ -5,10 +5,11 @@ import { AuthSession } from './core/auth/auth-session';
 import { LanguageService } from './core/i18n/language.service';
 import { TranslatePipe } from './core/i18n/translate.pipe';
 import { ReceptionPracticeContext } from './domains/reception-practices';
+import { PlatformFooter } from './shared/components/platform-footer/platform-footer';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainer, TranslatePipe],
+  imports: [RouterOutlet, ToastContainer, TranslatePipe, PlatformFooter],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

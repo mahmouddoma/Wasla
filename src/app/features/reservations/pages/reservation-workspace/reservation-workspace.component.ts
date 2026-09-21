@@ -19,19 +19,15 @@ import {
 import { ReservationWorkspaceStore } from '../../state/reservation-workspace.store';
 import { ReservationDetailsComponent } from '../../components/reservation-details/reservation-details.component';
 import { ReservationEditorComponent } from '../../components/reservation-editor/reservation-editor.component';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 import { ReservationCheckInComponent } from '../../components/reservation-check-in/reservation-check-in.component';
 @Component({
   selector: 'app-reservation-workspace',
   imports: [
     TranslatePipe,
     RouterLink,
-    LanguageSwitcher,
     ReservationDetailsComponent,
     ReservationEditorComponent,
     ReservationCheckInComponent,
-    PlatformFooter,
   ],
   providers: [ReservationWorkspaceStore],
   templateUrl: './reservation-workspace.component.html',

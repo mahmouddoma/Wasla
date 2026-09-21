@@ -260,7 +260,9 @@ input:focus-visible {
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+select.form-control,
+.field-input {
   width: 100%;
   min-height: var(--height-control);
   padding: 10px 14px;
@@ -276,18 +278,66 @@ input:focus-visible {
     background-color 0.2s ease;
 }
 .form-field input:hover,
-.form-field select:hover {
+.form-field select:hover,
+select.form-control:hover,
+.field-input:hover {
   border-color: #b2c2cc;
 }
 .form-field input:focus,
-.form-field select:focus {
+.form-field select:focus,
+select.form-control:focus,
+.field-input:focus {
   border-color: var(--wasla-border);
   background: #ffffff;
-  box-shadow: 0 0 0 3.5px rgba(14, 147, 137, 0.12);
+  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
 }
 .form-field input[aria-invalid='true'],
-.form-field select[aria-invalid='true'] {
+.form-field select[aria-invalid='true'],
+select.form-control[aria-invalid='true'],
+.field-input[aria-invalid='true'] {
   border-color: var(--wasla-error);
+}
+
+/* Styled select with SVG chevron and bidirectional logical position */
+.form-field select,
+select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366788a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 14px center;
+  padding-inline-end: 38px;
+  cursor: pointer;
+}
+
+:root[dir='ltr'] .form-field select,
+:root[dir='ltr'] select.form-control,
+[dir='ltr'] .form-field select,
+[dir='ltr'] select.form-control {
+  background-position: right 14px center;
+}
+
+/* Accessible screen-reader-only toggle checkbox */
+.sr-only-chk {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* LTR forced direction for phone numbers, timestamps, IDs */
+.ltr-text {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
 }
 
 .password-control {
@@ -455,7 +505,7 @@ input:focus-visible {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .role-card-btn:hover {
-  border-color: var(--wasla-teal-500);
+  border-color: var(--wasla-border);
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(14, 147, 137, 0.12);
 }
@@ -622,4 +672,16 @@ app-platform-footer {
   display: block;
   width: 100%;
   margin-top: auto;
+}
+
+/* Universal suppression of legacy inner floating headers inside PortalLayout and AdminLayout */
+.portal-content-body .profile-header,
+.portal-content-body .topbar,
+.portal-content-body .onboarding-header,
+.portal-content-body .workspace-header,
+.admin-content-body .profile-header,
+.admin-content-body .topbar,
+.admin-content-body .onboarding-header,
+.admin-content-body .workspace-header {
+  display: none !important;
 }

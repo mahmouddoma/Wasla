@@ -59,3 +59,15 @@ AI-generated code routinely falls into the trap of wrapping every single widget,
 
 - Use `cubic-bezier(0.4, 0, 0.2, 1)` for snappy, natural 150ms-200ms transitions.
 - Prefer subtle scale shifts (`transform: translateY(-1px)`) or ambient opacity shifts over jarring border changes.
+
+---
+
+## 6. Real-World Target Audience: Doctors & Clinic Assistants (المستخدم المستهدف: الأطباء والمساعدون)
+
+- **Audience Reality:** Wasla is designed for doctors and clinic receptionists / assistants. In Egyptian and regional clinics, clinic assistants/secretaries may have limited formal education or digital literacy.
+- **Simplicity First:**
+  - Zero cognitive overload. Everything must be self-explanatory.
+  - Large, crystal-clear Arabic typography with prominent contrast.
+  - **Strictly eliminate blinking/pulsing indicators (such as pulsing green status dots) in footers or chrome**, as they cause confusion, false alarms, and distraction.
+  - Peripheral navigation (like footers) must be calm, clean, 100% full-width edge-to-edge, and resting stably at the bottom of the viewport.
+

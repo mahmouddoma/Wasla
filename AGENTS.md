@@ -932,6 +932,8 @@ Always follow these rules:
 19. **Mandatory `ToastService` feedback on all mutations (add, edit, delete).**
 20. **Polished form controls (no unstyled `<select>`, custom SVG arrow, `.sr-only-chk` for toggles, RTL-first).**
 21. **Bilingual Completeness (Arabic & English):** Always verify that every UI label, button, placeholder, title, and toast message is translated in both Arabic and English (`ar` & `en`) in `src/app/core/i18n/translations.ts` via `TranslatePipe` or `LanguageService`.
+22. **Target User Persona (Doctors & Clinic Assistants):** Wasla is built specifically for healthcare doctors and their assistants/secretaries. Clinic assistants often have limited educational backgrounds; interfaces must be radically simple, clear, intuitive, free of tech jargon, free of distracting animations or blinking indicators, with high-contrast Arabic labels and obvious action buttons.
+23. **Global Full-Width Pinned Footer:** The platform footer is shared across all pages at the application shell (`App`), spans 100% width edge-to-edge (never constrained to an 80% box), stays pinned to the bottom of the viewport, and contains NO blinking/pulsing indicators.
 
 ---
 
@@ -993,8 +995,33 @@ These rules address recurring user feedback and enforce strict aesthetic and fun
 - **Never hardcode static Arabic-only or English-only strings in HTML templates or TypeScript toasts without providing the dual translation entry.**
 - Always verify that switching language via the `LanguageSwitcher` updates the UI seamlessly with correct RTL/LTR layout transitions.
 
+### 32.7 Target User Persona: Doctors & Clinic Assistants (المستخدم المستهدف: الأطباء ومساعدو العيادات / السكرتارية)
+
+- **Wasla is built specifically for healthcare Doctors and their Clinic Assistants/Secretaries (المساعدين بتوع الدكاترة).**
+- **Critical Persona Reality:**
+  - In real-world Egyptian and Arab medical clinics, **medical assistants and receptionists often have limited formal education (ممكن عادي جداً يكونوا مكملوش تعليم)** and low computer literacy.
+- **Strict UI Implications:**
+  - **Zero Confusion & Radical Simplicity (بساطة متناهية وبدون تعقيد):**
+    - Never overwhelm screens with developer jargon, raw status codes, or complex metrics.
+    - Labels must be crystal-clear, everyday healthcare Arabic terms.
+    - Action buttons must be immediately obvious (e.g. green for confirm/save, red for delete/cancel, clear high-contrast icons).
+    - Avoid confusing blinking indicators (no pulsating green dots or flashing elements that might be mistaken for alarms or system errors).
+    - Forgiving workflows: unambiguous confirmations and instant toast notifications.
+
+### 32.8 Universal Shared Full-Width Footer (فوتر شيرد 100% وثابت بالأسفل)
+
+- The platform footer must be **shared globally at the root layout (`App`)** rather than copy-pasted into individual pages.
+- **Width 100% (Not 80% or Boxed):** The footer must span edge-to-edge across the entire screen (`width: 100%`), never trapped inside an inner container or narrow max-width card.
+- **Pinned to Bottom (ثابت تحت):** The page shell must use flex column sticky-footer layout (`min-height: 100dvh; display: flex; flex-direction: column;` with `margin-top: auto;`) so that regardless of page content height, the footer is always resting at the very bottom.
+- **Simple, Calm, and Matching Theme:**
+  - Clean Wasla brand styling: subtle neutral top border (`var(--wasla-border-subtle)`), white background, soft slate text.
+  - **Strictly NO blinking or pulsing indicator dots.**
+  - Concise links: Privacy Policy, Terms of Use, Help & Support.
+  - Static, reassuring badges (e.g. "اتصال آمن وموثق", "الإصدار v2.4.0").
+
 ---
 
 ## ARCHITECTURE NORTH STAR
 
-> **Build every feature as an independent, testable business capability that can evolve without forcing unrelated parts of the system to change, adhering strictly to Wasla's clean, borderless, card-minimalist, and bilingual (AR/EN) design language.**
+> **Build every feature as an independent, testable business capability that can evolve without forcing unrelated parts of the system to change, adhering strictly to Wasla's clean, borderless, card-minimalist, bilingual (AR/EN), and doctor-and-assistant-friendly design language.**
+

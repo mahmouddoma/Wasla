@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormField, form, min, required, submit, validate } from '@angular/forms/signals';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom, forkJoin, Observable } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -33,15 +33,13 @@ import {
   TicketActor,
   TicketsApi,
 } from '../../../../domains/tickets';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 
 type QueueAction =
   'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'complete' | 'cancel';
 
 @Component({
   selector: 'app-queue-workspace',
-  imports: [FormField, RouterLink, TranslatePipe, LanguageSwitcher, PlatformFooter],
+  imports: [FormField, TranslatePipe],
   templateUrl: './queue-workspace.html',
   styleUrl: './queue-workspace.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

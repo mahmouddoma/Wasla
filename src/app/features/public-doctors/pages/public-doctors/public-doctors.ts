@@ -6,7 +6,6 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { PlatformFooter } from '../../../../shared/components/platform-footer/platform-footer';
 import { DoctorProfileApi } from '../../../../domains/doctor-profile';
 import { EgyptLocationOption } from '../../../../domains/doctor-profile';
 import { PublicDiscoveryApi } from '../../../../domains/public-discovery';
@@ -17,7 +16,7 @@ import {
 
 @Component({
   selector: 'app-public-doctors',
-  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PlatformFooter],
+  imports: [RouterLink, TranslatePipe, LanguageSwitcher],
   templateUrl: './public-doctors.html',
   styleUrl: './public-doctors.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
