@@ -1,4 +1,3 @@
-import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -11,11 +10,10 @@ import { DoctorOnboardingStatus } from '../../../../domains/doctors';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
 
 @Component({
   selector: 'app-doctor-onboarding',
-  imports: [NgOptimizedImage, RouterLink, LanguageSwitcher, TranslatePipe],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './doctor-onboarding.html',
   styleUrl: './doctor-onboarding.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

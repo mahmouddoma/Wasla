@@ -3464,8 +3464,8 @@ export const TRANSLATIONS: TranslationDictionary = {
   'footer.systemStatus': { ar: 'جميع الأنظمة تعمل بكفاءة', en: 'All Systems Operational' },
   'footer.securityBadge': { ar: 'اتصال مشفر وآمن', en: 'Encrypted & Secure' },
   'footer.tagline': {
-    ar: 'منظومة الرعاية الصحية الرقمية الموحدة والمعتمدة',
-    en: 'Certified & Unified Digital Healthcare Platform',
+    ar: 'منصة الرعاية الصحية المتكاملة',
+    en: 'Integrated Healthcare Platform',
   },
   'footer.copyright': {
     ar: 'منصة وصلة للرعاية الصحية © جميع الحقوق محفوظة',
@@ -3543,5 +3543,219 @@ export const TRANSLATIONS: TranslationDictionary = {
   'permissions.deselectAll': {
     ar: 'إلغاء التحديد',
     en: 'Deselect All',
+  },
+
+  // ----------------------------------------------------
+  // Legal & Support Shared
+  // ----------------------------------------------------
+  'legal.backToHome': { ar: 'العودة للرئيسية', en: 'Back to Home' },
+  'legal.login': { ar: 'تسجيل الدخول', en: 'Sign In' },
+  'legal.lastUpdated': { ar: 'آخر تحديث: سبتمبر 2026', en: 'Last Updated: September 2026' },
+  'legal.tabPrivacy': { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+  'legal.tabTerms': { ar: 'شروط الاستخدام', en: 'Terms of Service' },
+  'legal.tabHelp': { ar: 'المساعدة والدعم', en: 'Help & Support' },
+
+  // Privacy Policy
+  'privacy.badge': { ar: 'الامتثال وأمن البيانات الصحية', en: 'Health Data Compliance & Security' },
+  'privacy.title': {
+    ar: 'سياسة الخصوصية وحماية البيانات الطبية',
+    en: 'Privacy Policy & Medical Data Protection',
+  },
+  'privacy.subtitle': {
+    ar: 'نلتزم في منصة وصلة بأعلى معايير التشفير والسرية الطبية لحماية سجلات المرضى وبيانات الكوادر الصحية وفقاً للمعايير الدولية والمحلية.',
+    en: 'At Wasla, we adhere to the highest standards of encryption and medical confidentiality to protect patient records and clinical staff data.',
+  },
+  'privacy.sec1Title': {
+    ar: '1. التزامنا بالسرية الطبية',
+    en: '1. Our Commitment to Medical Confidentiality',
+  },
+  'privacy.sec1Text': {
+    ar: 'تعد البيانات الصحية بيانات فائقة الحساسية. تضمن منصة وصلة عدم الاطلاع على السجلات التشخيصية أو المرضية إلا من قِبل الطبيب المعالج المصرح له والمريض صاحب الشأن، مع تطبيق معايير الأمان الصحية المعتمدة (HIPAA و ISO 27001).',
+    en: 'Health data is highly sensitive. Wasla ensures that diagnostic and medical records are only accessible by authorized treating physicians and the patient, adhering to HIPAA and ISO 27001 standards.',
+  },
+  'privacy.sec2Title': { ar: '2. البيانات التي يتم جمعها', en: '2. Data We Collect' },
+  'privacy.sec2Item1': {
+    ar: 'بيانات الهوية والتواصل: الاسم، رقم الهاتف، والبريد الإلكتروني للتحقق من الحسابات.',
+    en: 'Identity & Contact Data: Name, phone number, and email for account verification.',
+  },
+  'privacy.sec2Item2': {
+    ar: 'السجلات الطبية الرقمية: التشخيصات، الوصفات الطبية، نتائج الفحوصات وسجل المواعيد.',
+    en: 'Electronic Medical Records: Diagnoses, e-prescriptions, lab results, and visit logs.',
+  },
+  'privacy.sec2Item3': {
+    ar: 'بيانات تراخيص الأطباء: رقم ترخيص مزاولة المهنة، التخصص المعتمد، وبيانات المنشأة الطبية.',
+    en: 'Provider Licensing Data: Medical syndicate license number, verified specialty, and practice info.',
+  },
+  'privacy.sec3Title': { ar: '3. كيف نستخدم ونعالج بياناتك', en: '3. How We Process Medical Data' },
+  'privacy.sec3Text': {
+    ar: 'تُستخدم البيانات الطبية حصراً لتيسير تقديم الرعاية الصحية، وتنظيم طوابير الانتظار، وإصدار الروشتات الإلكترونية، وجدولة المواعيد في العيادة. نؤكد قطعيًا أننا لا نبيع ولا نؤجر أي بيانات طبية أو شخصية لأي جهات إعلانية أو تجارية.',
+    en: 'Medical data is strictly used to facilitate care delivery, manage patient queues, generate e-prescriptions, and schedule clinic visits. We categorically never sell or rent health or personal data to advertisers or third parties.',
+  },
+  'privacy.sec4Title': {
+    ar: '4. التشفير وإجراءات الأمان',
+    en: '4. Encryption & Security Protocols',
+  },
+  'privacy.sec4Text': {
+    ar: 'يتم تشفير جميع البيانات أثناء النقل عبر بروتوكول TLS 1.3 فائق الأمان، وتشفير قواعد البيانات المخزنة بتقنية AES-256. كما يتم تسجيل كل محاولة وصول للملف الطبي في سجل تدقيق غير قابل للتعديل (Audit Log).',
+    en: 'All data in transit is encrypted using TLS 1.3, and stored databases are encrypted with AES-256. Every access to a medical file is logged in an immutable audit trail.',
+  },
+  'privacy.sec5Title': { ar: '5. حقوق المريض والطبيب', en: '5. Patient & Provider Rights' },
+  'privacy.sec5Text': {
+    ar: 'يحق لكل مريض طلب نسخة رقمية من تاريخه المرضي، وتعديل بياناته الشخصية، ومعرفة الأطباء الذين اطلعوا على ملفه. كما يحق للطبيب تصدير سجلات ممارسته والاحتفاظ بنسخ احتياطية مشفرة لعيادته.',
+    en: 'Patients have the right to request a digital copy of their medical history, update personal info, and see who accessed their file. Doctors may export practice logs and maintain encrypted backups.',
+  },
+  'privacy.sec6Title': { ar: '6. التواصل ومسؤول الخصوصية', en: '6. Privacy Officer & Inquiries' },
+  'privacy.sec6Text': {
+    ar: 'لأي استفسارات بخصوص خصوصية بياناتك الطبية أو لطلب حذف الحساب، يمكنك مراسلة مسؤول حماية البيانات عبر dpo@wasla.health أو الاتصال بالخط الساخن 19000.',
+    en: 'For inquiries regarding health data privacy or deletion requests, contact our Data Protection Officer at dpo@wasla.health or hotline 19000.',
+  },
+
+  // Terms of Service
+  'terms.badge': { ar: 'الشروط والأحكام الطبية', en: 'Medical Terms & Conditions' },
+  'terms.title': { ar: 'شروط الاستخدام واتفاقية الخدمة', en: 'Terms of Service & Usage Agreement' },
+  'terms.subtitle': {
+    ar: 'تحكم هذه الاتفاقية استخدام الأطباء، المرضى، ومساعدي العيادات لمنصة وصلة الرقمية للرعاية الصحية المتكاملة.',
+    en: 'This agreement governs the use of Wasla Integrated Healthcare Platform by doctors, patients, and clinic staff.',
+  },
+  'terms.sec1Title': {
+    ar: '1. طبيعة المنصة وتنبيه الطوارئ الحرجة',
+    en: '1. Nature of Platform & Emergency Disclaimer',
+  },
+  'terms.sec1Text': {
+    ar: 'منصة وصلة هي بنية تكنولوجية ذكية لتنظيم العمل الطبي وحجز المواعيد وإدارة السجلات الصحية. منصة وصلة ليست بديلاً عن الطوارئ الحرجة؛ في الحالات الطارئة المهددة للحياة، يجب التوجه فوراً لأقرب قسم طوارئ أو الاتصال بالإسعاف (123).',
+    en: 'Wasla is a digital infrastructure for clinic scheduling, queue orchestration, and health records. It is not an emergency service. For life-threatening emergencies, visit the nearest ER or dial 123 immediately.',
+  },
+  'terms.sec2Title': {
+    ar: '2. التزامات الكوادر الطبية (الأطباء والعيادات)',
+    en: '2. Healthcare Providers & Clinic Terms',
+  },
+  'terms.sec2Text': {
+    ar: 'يقر الطبيب بحيازته ترخيصاً سارياً وموثقاً من نقابة الأطباء ووزارة الصحة، ويلتزم بأخلاقيات المهنة الطبية، والامتناع عن وصف أدوية خاضعة للرقابة المشددة دون فحص سريري مباشر وفق اللوائح المنظمة.',
+    en: 'Physicians warrant holding a valid, certified medical license from the Medical Syndicate and Ministry of Health, adhering to medical ethics and regulatory guidelines.',
+  },
+  'terms.sec3Title': { ar: '3. مسؤوليات المرضى والمراجعين', en: '3. Patient Responsibilities' },
+  'terms.sec3Text': {
+    ar: 'يلتزم المريض بتقديم معلومات صحية وتاريخ مرضي دقيق للطبيب المعالج، والالتزام بمواعيد الحجز، واحترام الكوادر الطبية والمساعدين داخل المنشأة الصحية.',
+    en: 'Patients agree to provide accurate medical history to the treating doctor, arrive on time for scheduled appointments, and treat clinical staff with mutual respect.',
+  },
+  'terms.sec4Title': {
+    ar: '4. سياسة الحجز والمواعيد وقوائم الانتظار',
+    en: '4. Booking, Queue & Cancellation Policy',
+  },
+  'terms.sec4Text': {
+    ar: 'تخضع تذاكر الانتظار للنظام الديناميكي للعيادة. يمكن للمريض إلغاء أو إعادة جدولة الموعد قبل ساعتين على الأقل من بدء فترة الكشف. في حال عدم الحضور المتكرر بدون إشعار مسبق، تحتفظ العيادة بحق تعليق الحجز المسبق.',
+    en: 'Queue tickets adhere to practice schedules. Appointments can be cancelled or rescheduled at least 2 hours prior to the session. Repeated no-shows may limit advance booking privileges.',
+  },
+  'terms.sec5Title': { ar: '5. أمان الحسابات وسرية الدخول', en: '5. Account Security & Integrity' },
+  'terms.sec5Text': {
+    ar: 'يتحمل كل مستخدم (سواء طبيب أو مساعد استقبال أو مريض) مسؤولية الحفاظ على سرية كلمة المرور وبيانات الدخول الخاصة به، وإبلاغ المنصة فوراً عن أي محاولة استخدام غير مصرح بها.',
+    en: 'Users (doctors, receptionists, or patients) are responsible for safeguarding login credentials and promptly notifying Wasla of any suspected unauthorized access.',
+  },
+  'terms.sec6Title': { ar: '6. القانون الحاكم والنزاعات', en: '6. Governing Law & Jurisdiction' },
+  'terms.sec6Text': {
+    ar: 'تخضع هذه الشروط وتفسر وفقاً للقوانين واللوائح الصحية المنظمة للرعاية الصحية في جمهورية مصر العربية، وتختص المحاكم المختصة بالنظر في أي نزاع ينشأ عنها.',
+    en: 'These terms are governed by the laws and medical regulations of the Arab Republic of Egypt, and competent courts retain exclusive jurisdiction.',
+  },
+
+  // Help & Support
+  'help.badge': { ar: 'مركز المساعدة والدعم الفني', en: 'Help Center & Technical Support' },
+  'help.title': { ar: 'كيف يمكننا مساعدتك اليوم؟', en: 'How can we help you today?' },
+  'help.subtitle': {
+    ar: 'دليل شامل، أسئلة شائعة، وقنوات اتصال مخصصة للأطباء والعيادات والمرضى لضمان تجربة رعاية صحية سلسة.',
+    en: 'Comprehensive guides, FAQs, and dedicated support channels for doctors, clinics, and patients.',
+  },
+  'help.searchPlaceholder': {
+    ar: 'ابحث في مواضيع المساعدة، حجز المواعيد، إدارة العيادة...',
+    en: 'Search help topics, bookings, clinic tools...',
+  },
+  'help.roleDoctors': { ar: 'للأطباء والعيادات', en: 'For Doctors & Clinics' },
+  'help.roleDoctorsDesc': {
+    ar: 'إدارة قوائم الانتظار، فتح فترات الكشف، تنظيم مواعيد الممارسة الطبية.',
+    en: 'Queue management, clinic sessions, and practice schedule tools.',
+  },
+  'help.roleReception': { ar: 'لمساعدي الاستقبال', en: 'For Clinic Assistants' },
+  'help.roleReceptionDesc': {
+    ar: 'تسجيل المرضى، استخراج تذاكر الانتظار، وتنظيم تدفق المراجعين.',
+    en: 'Patient check-in, queue ticket issuance, and patient flow.',
+  },
+  'help.rolePatients': { ar: 'للمرضى والعائلات', en: 'For Patients & Families' },
+  'help.rolePatientsDesc': {
+    ar: 'حجز المواعيد، متابعة دورك لحظياً، وتتبع التذاكر والروشتات.',
+    en: 'Doctor booking, live queue tracking, and ticket history.',
+  },
+  'help.faqTitle': { ar: 'الأسئلة الأكثر شيوعاً', en: 'Frequently Asked Questions' },
+  'help.faqSubtitle': {
+    ar: 'إجابات واضحة ومباشرة لأهم الأسئلة التي قد تواجهك في وصلة.',
+    en: 'Direct answers to the most common questions across Wasla.',
+  },
+  'help.faq1Q': {
+    ar: 'كيف يقوم الطبيب بتحديد فترات ومواعيد العمل في العيادة؟',
+    en: 'How does a doctor configure clinic hours and sessions?',
+  },
+  'help.faq1A': {
+    ar: 'من لوحة تحكم الطبيب، انتقل إلى "مواقع الممارسة" ثم اختر العيادة، واضغط على "إدارة المواعيد" لتحديد أيام وساعات الاستشارات الصباحية والمسائية ومدة كل كشف.',
+    en: 'From the Doctor Workspace, navigate to "Practices", choose the clinic, and click "Schedule Management" to set consultation hours and slot durations.',
+  },
+  'help.faq2Q': {
+    ar: 'ماذا يفعل موظف الاستقبال عند حضور مريض بدون حجز مسبق؟',
+    en: 'What should the receptionist do if a patient walks in without a prior booking?',
+  },
+  'help.faq2A': {
+    ar: 'من شاشة "طابور الاستقبال"، اضغط على "تسجيل دخول مباشر (Walk-in)"، أدخل رقم هاتف المريض واسمه، وسيصدر النظام له تذكرة انتظار ذكية فورا.',
+    en: 'From the Reception Queue workspace, click "Register Walk-in Patient", enter the phone and name, and the system issues an instant queue ticket.',
+  },
+  'help.faq3Q': {
+    ar: 'كيف يتابع المريض دوره في قائمة الانتظار دون الانتظار في العيادة؟',
+    en: 'How can a patient track their queue status remotely?',
+  },
+  'help.faq3A': {
+    ar: 'من صفحة "تذاكر الكشف"، يظهر للمريض رقم تذكرته، وعدد المرضى الذين أمامه، والوقت المتوقع لدخوله، مع تحديث حي وتنبيه عند اقتراب دوره.',
+    en: 'In the "My Tickets" section, the patient sees their live token, remaining patients ahead, and estimated call time with real-time updates.',
+  },
+  'help.faq4Q': {
+    ar: 'هل السجلات الطبية والروشتات مشفرة ومحمية؟',
+    en: 'Are electronic prescriptions and medical records fully encrypted?',
+  },
+  'help.faq4A': {
+    ar: 'نعم، تخضع جميع السجلات لتشفير AES-256، ولا يمكن لأي طرف خارجي أو غير مصرح له الاطلاع على بيانات التشخيص والعلاج إطلاقاً.',
+    en: 'Yes, all records use AES-256 encryption. Unauthorized external parties cannot access diagnostic or therapeutic data.',
+  },
+  'help.faq5Q': {
+    ar: 'كيف يمكن ربط مساعد أو سكرتير عيادة جديد بحساب الطبيب؟',
+    en: 'How do doctors add assistants or secretaries to their practice?',
+  },
+  'help.faq5A': {
+    ar: 'يدخل الطبيب إلى "مساعدي العيادة"، ويضغط على "إضافة مساعد"، ويدخل بياناته لتوليد صلاحيات مخصصة للتحكم بالاستقبال والحجوزات فقط دون الملفات الطبية الحساسة.',
+    en: 'The doctor goes to "Practice Assistants", clicks "Add Assistant", and assigns administrative permissions limited to queue and bookings.',
+  },
+  'help.contactTitle': {
+    ar: 'قنوات التواصل المباشر والدعم المخصص',
+    en: 'Direct Contact Channels & Support',
+  },
+  'help.hotline': { ar: 'الخط الساخن المباشر', en: 'Direct Hotline' },
+  'help.hotlineNum': { ar: '19000 (متاح 24/7)', en: '19000 (Available 24/7)' },
+  'help.email': { ar: 'البريد الإلكتروني للدعم', en: 'Support Email' },
+  'help.emailAddr': { ar: 'support@wasla.health', en: 'support@wasla.health' },
+  'help.whatsapp': { ar: 'واتساب خدمة العيادات', en: 'Clinics WhatsApp Support' },
+  'help.whatsappNum': { ar: '+20 100 123 4567', en: '+20 100 123 4567' },
+  'help.formTitle': {
+    ar: 'أرسل لنا استفساراً وسنرد عليك فوراً',
+    en: 'Send an Inquiry & We Will Respond Promptly',
+  },
+  'help.nameLabel': { ar: 'الاسم الكامل', en: 'Full Name' },
+  'help.emailLabel': { ar: 'البريد الإلكتروني', en: 'Email Address' },
+  'help.roleLabel': { ar: 'صفتك في المنصة', en: 'Your Role on Platform' },
+  'help.roleDoctorOpt': { ar: 'طبيب / استشاري', en: 'Doctor / Consultant' },
+  'help.roleReceptionOpt': { ar: 'مساعد عيادة / استقبال', en: 'Clinic Assistant / Reception' },
+  'help.rolePatientOpt': { ar: 'مريض / مراجع', en: 'Patient / Visitor' },
+  'help.messageLabel': { ar: 'رسالتك أو تفاصيل المشكلة', en: 'Your Message or Issue Details' },
+  'help.sendBtn': { ar: 'إرسال الاستفسار', en: 'Submit Inquiry' },
+  'help.sendSuccess': {
+    ar: 'تم استلام استفسارك بنجاح! سيتواصل معك فريق الدعم قريباً.',
+    en: 'Inquiry received successfully! Our support team will contact you soon.',
+  },
+  'help.sendRequired': {
+    ar: 'يرجى ملء جميع الحقول المطلوبة.',
+    en: 'Please fill in all required fields.',
   },
 };

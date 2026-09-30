@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { PlatformFooter } from './platform-footer';
 
 describe('PlatformFooter', () => {
@@ -8,6 +9,7 @@ describe('PlatformFooter', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PlatformFooter],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PlatformFooter);
@@ -28,32 +30,29 @@ describe('PlatformFooter', () => {
     expect(copyright).toBeTruthy();
   });
 
-  it('should render platform security badge and version badge', () => {
+  it('should render brand tagline and version badge', () => {
     const el: HTMLElement = fixture.nativeElement;
-    const trustBadge = el.querySelector('.trust-badge');
-    expect(trustBadge).toBeTruthy();
+    const tagline = el.querySelector('.brand-tagline');
+    expect(tagline).toBeTruthy();
 
     const versionBadge = el.querySelector('.version-badge');
     expect(versionBadge).toBeTruthy();
   });
 
-  it('should render quick navigation buttons and open modal when clicked', () => {
+  it('should render quick navigation links pointing to privacy, terms, and help', () => {
     const el: HTMLElement = fixture.nativeElement;
-    const navButtons = el.querySelectorAll<HTMLButtonElement>('.footer-nav-btn');
-    expect(navButtons.length).toBeGreaterThanOrEqual(3);
+    const navLinks = el.querySelectorAll<HTMLAnchorElement>('.footer-nav-btn');
+    expect(navLinks.length).toBe(3);
 
-    // Click on Privacy Policy button
-    navButtons[0].click();
-    fixture.detectChanges();
+    const hrefs = Array.from(navLinks).map((a) => a.getAttribute('href') || a.getAttribute('ng-reflect-router-link'));
+    expect(hrefs.some((h) => h?.includes('privacy'))).toBe(true);
+    expect(hrefs.some((h) => h?.includes('terms'))).toBe(true);
+    expect(hrefs.some((h) => h?.includes('help'))).toBe(true);
+  });
 
-    const modal = el.querySelector('.footer-modal-panel');
-    expect(modal).toBeTruthy();
-
-    const closeBtn = el.querySelector<HTMLButtonElement>('.modal-close-btn');
-    expect(closeBtn).toBeTruthy();
-    closeBtn?.click();
-    fixture.detectChanges();
-
-    expect(el.querySelector('.footer-modal-panel')).toBeNull();
+  it('should render language switcher in the footer', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    const langSwitcher = el.querySelector('app-language-switcher');
+    expect(langSwitcher).toBeTruthy();
   });
 });

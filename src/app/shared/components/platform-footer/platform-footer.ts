@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { LanguageSwitcher } from '../language-switcher/language-switcher';
 
 export type FooterModalType = 'privacy' | 'terms' | 'help';
 
 @Component({
   selector: 'app-platform-footer',
-  imports: [TranslatePipe],
+  imports: [RouterLink, TranslatePipe, LanguageSwitcher],
   templateUrl: './platform-footer.html',
   styleUrl: './platform-footer.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

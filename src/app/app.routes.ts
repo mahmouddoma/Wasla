@@ -20,6 +20,12 @@ export const routes: Routes = [
     title: 'routes.doctorDetails',
   },
 
+  // Public Legal & Support Pages
+  {
+    path: '',
+    loadChildren: () => import('./features/legal/legal.routes').then((m) => m.LEGAL_ROUTES),
+  },
+
   // SuperAdmin Portal (wrapped with AdminLayout)
   {
     path: 'admin',
