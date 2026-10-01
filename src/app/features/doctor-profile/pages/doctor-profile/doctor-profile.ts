@@ -22,16 +22,12 @@ import {
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TRANSLATIONS } from '../../../../core/i18n/translations';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PublicProfileManager } from '../../components/public-profile-manager/public-profile-manager';
 
 @Component({
   selector: 'app-doctor-profile',
-  imports: [
-    FormField,
-    SpecializationSelector,
-    TranslatePipe,
-    PublicProfileManager,
-  ],
+  imports: [FormField, SpecializationSelector, TranslatePipe, PageHeader, PublicProfileManager],
   templateUrl: './doctor-profile.html',
   styleUrl: './doctor-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

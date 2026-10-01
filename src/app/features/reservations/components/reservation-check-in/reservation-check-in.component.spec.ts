@@ -28,7 +28,14 @@ describe('ReservationCheckInComponent', () => {
       new Event('submit', { bubbles: true, cancelable: true }),
     );
     await fixture.whenStable();
-    expect(emitted).toHaveBeenCalledWith({ paidAmount: 250, force: false, reason: '' });
+    expect(emitted).toHaveBeenCalledWith({
+      paidAmount: 250,
+      paymentMethod: 'Cash',
+      referenceNumber: null,
+      notes: null,
+      force: false,
+      reason: '',
+    });
   });
 
   it('requires a reason for forced check-in', async () => {

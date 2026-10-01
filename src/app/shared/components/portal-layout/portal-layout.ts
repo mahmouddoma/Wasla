@@ -90,6 +90,8 @@ export class PortalLayout {
           route: '/doctor/receptions',
           icon: 'users',
         },
+        { id: 'finance', labelKey: 'sidebar.finance', route: '/doctor/finance', icon: 'receipt' },
+        { id: 'revenue', labelKey: 'sidebar.revenue', route: '/doctor/revenue', icon: 'chart' },
       ];
     }
 
@@ -125,6 +127,7 @@ export class PortalLayout {
           route: '/reception/family-requests',
           icon: 'clipboard-list',
         },
+        { id: 'finance', labelKey: 'sidebar.finance', route: '/reception/finance', icon: 'receipt' },
       ];
     }
 
@@ -160,6 +163,7 @@ export class PortalLayout {
         route: '/patient/family',
         icon: 'users',
       },
+      { id: 'finance', labelKey: 'sidebar.finance', route: '/patient/finance', icon: 'receipt' },
     ];
   });
 

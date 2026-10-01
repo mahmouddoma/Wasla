@@ -18,10 +18,11 @@ import { DoctorReceptionsApi } from '../../services';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-doctor-receptions',
-  imports: [FormField, RouterLink, SideDrawer, TranslatePipe],
+  imports: [FormField, RouterLink, SideDrawer, TranslatePipe, PageHeader],
   templateUrl: './doctor-receptions.html',
   styleUrl: './doctor-receptions.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -284,7 +285,13 @@ export class DoctorReceptions {
     }
   }
 
-  protected getPermissionLabel(code: string): string {
+  protected getPermissionLabel(value: ReceptionAssignmentPermission | string): string {
+    const permission = typeof value === 'string' ? { id: '', code: value } : value;
+    const localized = this.langService.isRtl()
+      ? permission.nameAr
+      : permission.nameEn || permission.nameAr;
+    if (localized) return localized;
+    const code = permission.code;
     const labels: Record<string, string> = {
       'DoctorReception.Queue.Call': this.langService.t('ui.full.603'),
       'DoctorReception.Queue.CheckIn': this.langService.t('ui.full.604'),

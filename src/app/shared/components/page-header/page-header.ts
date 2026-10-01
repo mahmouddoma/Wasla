@@ -10,7 +10,21 @@ import {
 import { RouterLink } from '@angular/router';
 
 export type PageHeaderIcon =
-  'doctors' | 'admins' | 'roles' | 'specializations' | 'requests' | 'family-requests';
+  | 'doctors'
+  | 'admins'
+  | 'roles'
+  | 'specializations'
+  | 'requests'
+  | 'family-requests'
+  | 'finance'
+  | 'revenue'
+  | 'clinics'
+  | 'practices'
+  | 'reception'
+  | 'queue'
+  | 'reservations'
+  | 'profile'
+  | 'workspace';
 
 @Component({
   selector: 'app-page-header',

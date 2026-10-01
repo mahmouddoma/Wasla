@@ -1,0 +1,15 @@
+<main class="revenue-page" [dir]="language.dir()">
+  <header><span>{{ 'finance.eyebrow' | t }}</span><h1>{{ 'finance.revenue.title' | t }}</h1><p>{{ 'finance.revenue.subtitle' | t }}</p></header>
+  <form (submit)="$event.preventDefault(); load()">
+    <label><span>{{ 'finance.fromDate' | t }}</span><input type="date" [formField]="filters.fromDate" /></label>
+    <label><span>{{ 'finance.toDate' | t }}</span><input type="date" [formField]="filters.toDate" /></label>
+    <label><span>{{ 'finance.doctorId' | t }}</span><input dir="ltr" [formField]="filters.doctorId" /></label>
+    <label><span>{{ 'finance.practiceId' | t }}</span><input dir="ltr" [formField]="filters.practiceId" /></label>
+    <button type="submit" [disabled]="loading()">{{ 'finance.applyFilters' | t }}</button>
+  </form>
+  @for (message of messages(); track $index) {<p class="error" role="alert">{{ message | t }}</p>}
+  @if (data()?.summary; as summary) {
+    <section class="summary"><article><span>{{ 'finance.revenue.gross' | t }}</span><b>{{ summary.grossRevenue }} {{ summary.currencyCode }}</b></article><article><span>{{ 'finance.revenue.refunds' | t }}</span><b>{{ summary.totalRefunds }} {{ summary.currencyCode }}</b></article><article><span>{{ 'finance.revenue.net' | t }}</span><b>{{ summary.netRevenue }} {{ summary.currencyCode }}</b></article></section>
+    <section class="table-wrap"><table><thead><tr><th>{{ 'finance.doctor' | t }}</th><th>{{ 'finance.practice' | t }}</th><th>{{ 'finance.revenue.gross' | t }}</th><th>{{ 'finance.revenue.refunds' | t }}</th><th>{{ 'finance.revenue.net' | t }}</th></tr></thead><tbody>@for (row of data()?.byDoctorPractice || []; track row.doctorId + row.practiceId) {<tr><td>{{ label(row.doctorNameAr, row.doctorNameEn) }}</td><td>{{ label(row.practiceNameAr, row.practiceNameEn) }}</td><td>{{ row.grossRevenue }}</td><td>{{ row.refunds }}</td><td>{{ row.netRevenue }}</td></tr>} @empty {<tr><td colspan="5">{{ 'finance.empty' | t }}</td></tr>}</tbody></table></section>
+  } @else if (!loading()) {<p class="empty">{{ 'finance.empty' | t }}</p>}
+</main>

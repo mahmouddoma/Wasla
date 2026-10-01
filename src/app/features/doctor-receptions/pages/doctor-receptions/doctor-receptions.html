@@ -28,58 +28,33 @@
     </div>
   }
 
-  <!-- Page Hero Header (Shown on list view; detail view uses integrated reception-detail-hero) -->
+  <!-- Page Header (Shown on list view; detail view uses integrated reception-detail-hero) -->
   @if (!receptionId) {
-    <section class="hero-section">
-      <div class="hero-main">
-        <div class="hero-badge">
-          <span class="badge-dot"></span>
-          <span>{{ 'ui.full.561' | t }}</span>
+    <app-page-header
+      [heading]="'common.receptionTeam' | t"
+      [description]="'ui.full.562' | t"
+      icon="reception"
+      [actionLabel]="canManageUsers ? ('ui.full.566' | t) : null"
+      actionIcon="add"
+      (actionClicked)="openCreateDrawer()"
+    >
+      <div pageHeaderDeck class="receptions-stats-deck">
+        <div class="stat-pill">
+          <span class="stat-num">{{ receptions().length }}</span>
+          <span class="stat-lbl">{{ 'ui.full.563' | t }}</span>
         </div>
-        <h1 class="hero-title">{{ 'common.receptionTeam' | t }}</h1>
-        <p class="hero-subtitle">
-          {{ 'ui.full.562' | t }}
-        </p>
-      </div>
-
-      <div class="hero-actions">
-        <!-- Quick Stats Chips -->
-        <div class="stats-strip">
-          <div class="stat-pill">
-            <span class="stat-num">{{ receptions().length }}</span>
-            <span class="stat-lbl">{{ 'ui.full.563' | t }}</span>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-num text-teal">{{ totalAssignmentsCount() }}</span>
-            <span class="stat-lbl">{{ 'ui.full.564' | t }}</span>
-          </div>
-          @if (activeReceptionsCount() > 0) {
-            <div class="stat-pill">
-              <span class="stat-num text-muted">{{ activeReceptionsCount() }}</span>
-              <span class="stat-lbl">{{ 'ui.full.565' | t }}</span>
-            </div>
-          }
+        <div class="stat-pill">
+          <span class="stat-num text-teal">{{ totalAssignmentsCount() }}</span>
+          <span class="stat-lbl">{{ 'ui.full.564' | t }}</span>
         </div>
-
-        @if (canManageUsers) {
-          <button type="button" class="btn-create-reception" (click)="openCreateDrawer()">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              aria-hidden="true"
-            >
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>{{ 'ui.full.566' | t }}</span>
-          </button>
+        @if (activeReceptionsCount() > 0) {
+          <div class="stat-pill">
+            <span class="stat-num text-muted">{{ activeReceptionsCount() }}</span>
+            <span class="stat-lbl">{{ 'ui.full.565' | t }}</span>
+          </div>
         }
       </div>
-    </section>
+    </app-page-header>
   }
 
   <!-- Main Container -->
@@ -360,7 +335,7 @@
                   <div class="perm-chips-wrap">
                     @for (permission of assignment.permissions; track permission.id) {
                       <span class="perm-chip">
-                        {{ getPermissionLabel(permission.code) }}
+                        {{ getPermissionLabel(permission) }}
                       </span>
                     }
                   </div>
@@ -548,7 +523,7 @@
                         </svg>
                       </div>
                       <div class="permission-meta">
-                        <span class="perm-name">{{ getPermissionLabel(permission.code) }}</span>
+                        <span class="perm-name">{{ getPermissionLabel(permission) }}</span>
                         <span class="perm-code" dir="ltr">{{ permission.code }}</span>
                       </div>
                     </label>

@@ -10,6 +10,7 @@ import { DoctorPractice } from '../../../../domains/doctor-practices';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PracticeEditor } from '../../components/practice-editor/practice-editor';
 import { PracticeOperations } from '../../components/practice-operations/practice-operations';
 import { PracticeSchedule } from '../../components/practice-schedule/practice-schedule';
@@ -27,6 +28,7 @@ type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
     PracticeSegments,
     SideDrawer,
     TranslatePipe,
+    PageHeader,
   ],
   templateUrl: './doctor-practices.html',
   styleUrl: './doctor-practices.css',
@@ -182,9 +184,15 @@ export class DoctorPractices {
 
   protected locationLabel(practice: DoctorPractice): string {
     return [
-      this.langService.isRtl() ? practice.location.governorate?.nameAr : practice.location.governorate?.nameEn || practice.location.governorate?.nameAr,
-      this.langService.isRtl() ? practice.location.city?.nameAr : practice.location.city?.nameEn || practice.location.city?.nameAr,
-      this.langService.isRtl() ? practice.location.area?.nameAr : practice.location.area?.nameEn || practice.location.area?.nameAr,
+      this.langService.isRtl()
+        ? practice.location.governorate?.nameAr
+        : practice.location.governorate?.nameEn || practice.location.governorate?.nameAr,
+      this.langService.isRtl()
+        ? practice.location.city?.nameAr
+        : practice.location.city?.nameEn || practice.location.city?.nameAr,
+      this.langService.isRtl()
+        ? practice.location.area?.nameAr
+        : practice.location.area?.nameEn || practice.location.area?.nameAr,
     ]
       .filter(Boolean)
       .join(this.langService.t('ui.full.0'));

@@ -993,6 +993,55 @@ These rules address recurring user feedback and enforce strict aesthetic and fun
 - **Never hardcode static Arabic-only or English-only strings in HTML templates or TypeScript toasts without providing the dual translation entry.**
 - Always verify that switching language via the `LanguageSwitcher` updates the UI seamlessly with correct RTL/LTR layout transitions.
 
+### 32.7 Target User Persona: Doctors & Clinic Assistants (المستخدم المستهدف: الأطباء ومساعدو العيادات / السكرتارية)
+
+- **Wasla is built specifically for healthcare Doctors and their Clinic Assistants/Secretaries (المساعدين بتوع الدكاترة).**
+- **Critical Persona Reality:**
+  - In real-world Egyptian and Arab medical clinics, **medical assistants and receptionists often have limited formal education (ممكن عادي جداً يكونوا مكملوش تعليم)** and low computer literacy.
+- **Strict UI Implications:**
+  - **Zero Confusion & Radical Simplicity (بساطة متناهية وبدون تعقيد):**
+    - Never overwhelm screens with developer jargon, raw status codes, or complex metrics.
+    - Labels must be crystal-clear, everyday healthcare Arabic terms.
+    - Action buttons must be immediately obvious (e.g. green for confirm/save, red for delete/cancel, clear high-contrast icons).
+    - Avoid confusing blinking indicators (no pulsating green dots or flashing elements that might be mistaken for alarms or system errors).
+    - Forgiving workflows: unambiguous confirmations and instant toast notifications.
+
+### 32.8 Universal Shared Full-Width Footer (فوتر شيرد 100% وثابت بالأسفل)
+
+- The platform footer must be **shared globally at the root layout (`App`)** rather than copy-pasted into individual pages.
+- **Width 100% (Not 80% or Boxed):** The footer must span edge-to-edge across the entire screen (`width: 100%`), never trapped inside an inner container or narrow max-width card.
+- **Pinned to Bottom (ثابت تحت):** The page shell must use flex column sticky-footer layout (`min-height: 100dvh; display: flex; flex-direction: column;` with `margin-top: auto;`) so that regardless of page content height, the footer is always resting at the very bottom.
+- **Simple, Calm, and Matching Theme:**
+  - Clean Wasla brand styling: subtle neutral top border (`var(--wasla-border-subtle)`), white background, soft slate text.
+  - **Strictly NO blinking or pulsing indicator dots.**
+  - Concise links: Privacy Policy, Terms of Use, Help & Support.
+  - Static, reassuring badges (e.g. "اتصال آمن وموثق", "الإصدار v2.4.0").
+
+### 32.9 Mandatory Standard Page Header (`<app-page-header>` إلزامي في كل الصفحات)
+
+- **ALL management and portal pages MUST use the shared `<app-page-header>` component** (`src/app/shared/components/page-header/page-header.ts`).
+- NEVER create raw, ad-hoc, unstyled `<header class="page-header">` elements that look detached from the rest of the application.
+- `<app-page-header>` features:
+  - Dynamic medical background slideshow (`bgImages` carousel).
+  - Consistent icon glyph from `PageHeaderIcon` (`doctors`, `admins`, `roles`, `specializations`, `requests`, `family-requests`, `finance`, `revenue`, `clinics`, `reception`, `queue`, `reservations`, `workspace`).
+  - Primary action button or refresh button with loading spinner (`actionIcon="refresh"`, `[actionLoading]="loading()"`).
+  - Integrated header actions slot (`[pageHeaderActions]`) for view switcher pills and clinic selectors.
+  - Integrated filter/search deck slot (`[pageHeaderDeck]`) or metrics summary slot (`[pageHeaderStats]`).
+
+### 32.10 SVG-AVATAR Empty State Illustrations (الرسومات التوضيحية لحالات عدم وجود بيانات)
+
+- **NEVER present an empty state as a blank table, a raw text message, or a tiny exclamation mark icon.**
+- ALWAYS use an expressive, themed SVG illustration from `public/SVG-AVATAR/`:
+  - Payments / Finance / Revenue: `/SVG-AVATAR/Payment Information-bro.svg`
+  - Doctors / Clinics / Medical Practice: `/SVG-AVATAR/Doctors-bro.svg`, `/SVG-AVATAR/Online Doctor-bro.svg`
+  - Reception Team / Staff: `/SVG-AVATAR/Doctors-cuate.svg`, `/SVG-AVATAR/Doctors-rafiki.svg`
+  - Prescriptions / Reservations / Queue: `/SVG-AVATAR/Medical prescription-bro.svg`, `/SVG-AVATAR/Medicine-bro.svg`
+- Structure every empty state with:
+  1. `<img class="state-empty-illustration" src="/SVG-AVATAR/..." alt="" loading="lazy" decoding="async" />`
+  2. Clear, high-contrast Arabic title (`font-size: 1.25rem; font-weight: 800; color: var(--color-navy-950);`)
+  3. Explanatory subtitle guiding the user on what to do next.
+  4. Primary action button (e.g., "إعادة ضبط الفلاتر", "إضافة جديد").
+
 ---
 
 ## 33. COMPONENT FOLDER OWNERSHIP

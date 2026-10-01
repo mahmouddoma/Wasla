@@ -1,3 +1,5 @@
+import { PaymentMethod } from '../finance';
+
 export type TicketActor = 'Doctor' | 'Reception' | 'Patient';
 export type TicketStatus =
   'Waiting' | 'Called' | 'InProgress' | 'NoShow' | 'Completed' | 'Cancelled';
@@ -30,6 +32,14 @@ export interface PracticeTicket {
   readonly visitType?: TicketIdentity | null;
   readonly priceSnapshot?: number;
   readonly currency?: string | null;
+  readonly currencyCode?: string | null;
+  readonly canRefund?: boolean;
+  readonly isRefunded?: boolean;
+  readonly refundableAmount?: number;
+  readonly paymentId?: string | null;
+  readonly paymentTransactionNumber?: string | null;
+  readonly refundId?: string | null;
+  readonly refundTransactionNumber?: string | null;
   readonly checkedInOnUtc?: string | null;
   readonly queueOrderTime?: string | null;
   readonly calledOnUtc?: string | null;
@@ -51,6 +61,9 @@ export interface PracticeQueue {
 
 export interface CheckInTicketRequest {
   readonly paidAmount: number;
+  readonly paymentMethod: PaymentMethod;
+  readonly referenceNumber: string | null;
+  readonly notes: string | null;
 }
 
 export interface ForceCheckInTicketRequest extends CheckInTicketRequest {
@@ -67,6 +80,9 @@ export interface CreateWalkInTicketRequest {
   readonly segmentId: string;
   readonly visitTypeId: string;
   readonly paidAmount: number;
+  readonly paymentMethod: PaymentMethod;
+  readonly referenceNumber: string | null;
+  readonly notes: string | null;
 }
 
 export interface TicketVersionRequest {

@@ -5,99 +5,64 @@
     <div class="ambient-circle circle-navy"></div>
   </div>
 
-  <!-- ── Unified Page Header: Hero + Filters ────────────────────── -->
-  <section class="page-header" [attr.aria-label]="'reservations.title' | t">
-    <!-- Top row: illustration · title · stats · actions -->
-    <div class="page-header-top">
-      <div class="hero-illustration-wrap" aria-hidden="true">
-        <img
-          class="hero-illustration"
-          src="/SVG-AVATAR/Doctors-rafiki.svg"
-          alt=""
-          width="128"
-          height="128"
-        />
-      </div>
-
-      <div class="hero-left">
-        <div class="hero-badge">
-          <span class="badge-dot"></span>
-          <span>{{ 'reservations.workspace' | t }}</span>
+  <!-- ── Standardized Page Header ────────────────────────────────────── -->
+  <app-page-header
+    [heading]="'reservations.title' | t"
+    [description]="'reservations.subtitle' | t"
+    icon="reservations"
+    [actionLabel]="(store.canCreate() && store.practiceId()) ? ('reservations.create' | t) : null"
+    actionIcon="add"
+    (actionClicked)="store.openEditor('create')"
+  >
+    <div pageHeaderDeck class="reservations-stats-deck">
+      @if (!store.loading() && !store.listFailed()) {
+        <div class="stat-pill">
+          <span class="stat-num">{{ store.page().totalCount }}</span>
+          <span class="stat-lbl">{{ 'reservations.summary.total' | t }}</span>
         </div>
-        <h1 class="hero-title">{{ 'reservations.title' | t }}</h1>
-        <p class="hero-subtitle">{{ 'reservations.subtitle' | t }}</p>
-      </div>
-
-      <div class="hero-right">
-        @if (!store.loading() && !store.listFailed()) {
-          <div class="stats-strip">
-            <div class="stat-pill">
-              <span class="stat-num">{{ store.page().totalCount }}</span>
-              <span class="stat-lbl">{{ 'reservations.summary.total' | t }}</span>
-            </div>
-            @for (item of summary(); track item[0]) {
-              <div class="stat-pill">
-                <span class="stat-num text-teal">{{ item[1] }}</span>
-                <span class="stat-lbl">{{ status(item[0]) }}</span>
-              </div>
-            }
+        @for (item of summary(); track item[0]) {
+          <div class="stat-pill">
+            <span class="stat-num text-teal">{{ item[1] }}</span>
+            <span class="stat-lbl">{{ status(item[0]) }}</span>
           </div>
         }
-        <div class="cta-cluster">
-          <button
-            type="button"
-            class="btn-action-refresh"
-            (click)="store.loadList()"
-            [disabled]="store.loading()"
-            [title]="'reservations.refresh' | t"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              [class.spin]="store.loading()"
-              aria-hidden="true"
-            >
-              <path d="M23 4v6h-6"></path>
-              <path d="M1 20v-6h6"></path>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            <span>{{ 'reservations.refresh' | t }}</span>
-          </button>
-
-          @if (store.canCreate() && store.practiceId()) {
-            <button type="button" class="btn-create-action" (click)="store.openEditor('create')">
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                aria-hidden="true"
-              >
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>{{ 'reservations.create' | t }}</span>
-            </button>
-          }
-        </div>
-      </div>
+      }
     </div>
 
-    <!-- Divider -->
-    @if (
-      store.canView() ||
-      store.actor() === 'Doctor' ||
-      (store.actor() === 'Patient' && !store.practiceId())
-    ) {
-      <div class="page-header-divider" aria-hidden="true"></div>
+    <div pageHeaderActions class="reservations-header-actions">
+      <button
+        type="button"
+        class="btn-action-refresh"
+        (click)="store.loadList()"
+        [disabled]="store.loading()"
+        [title]="'reservations.refresh' | t"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          [class.spin]="store.loading()"
+          aria-hidden="true"
+        >
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>{{ 'reservations.refresh' | t }}</span>
+      </button>
+    </div>
+  </app-page-header>
 
-      <!-- Bottom row: filters -->
+  <!-- ── Filters Panel ────────────────────────────────────────── -->
+  @if (
+    store.canView() ||
+    store.actor() === 'Doctor' ||
+    (store.actor() === 'Patient' && !store.practiceId())
+  ) {
+    <section class="reservations-filters-panel" [attr.aria-label]="'reservations.title' | t">
       <div class="page-header-filters">
         @if (store.actor() === 'Doctor') {
           <div class="practice-selector-row">
@@ -297,8 +262,8 @@
           </div>
         }
       </div>
-    }
-  </section>
+    </section>
+  }
 
   <!-- Main Content Body -->
   <div class="reservations-content">

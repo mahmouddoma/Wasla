@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormField, form, min, required, submit, validate } from '@angular/forms/signals';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom, forkJoin, Observable } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -18,6 +18,7 @@ import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { createIdempotencyKey } from '../../../../core/http/create-idempotency-key';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import {
   DoctorPracticePrice,
@@ -26,6 +27,7 @@ import {
   DoctorPracticeVisitType,
 } from '../../../../domains/doctor-practices';
 import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
+import { PaymentMethod } from '../../../../domains/finance';
 import {
   CreateWalkInTicketRequest,
   PracticeQueue,
@@ -34,12 +36,23 @@ import {
   TicketsApi,
 } from '../../../../domains/tickets';
 
+export interface PracticeTicketDetails extends PracticeTicket {
+  readonly currencyCode?: string | null;
+  readonly canRefund?: boolean;
+  readonly isRefunded?: boolean;
+  readonly refundableAmount?: number;
+  readonly paymentId?: string | null;
+  readonly paymentTransactionNumber?: string | null;
+  readonly refundId?: string | null;
+  readonly refundTransactionNumber?: string | null;
+}
+
 type QueueAction =
   'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'complete' | 'cancel';
 
 @Component({
   selector: 'app-queue-workspace',
-  imports: [FormField, TranslatePipe],
+  imports: [FormField, RouterLink, TranslatePipe, PageHeader],
   templateUrl: './queue-workspace.html',
   styleUrl: './queue-workspace.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,7 +74,7 @@ export class QueueWorkspace implements OnInit {
   >([]);
   protected readonly practiceId = signal('');
   protected readonly queue = signal<PracticeQueue>(this.emptyQueue());
-  protected readonly selected = signal<PracticeTicket | null>(null);
+  protected readonly selected = signal<PracticeTicketDetails | null>(null);
   protected readonly loading = signal(false);
   protected readonly detailLoading = signal(false);
   protected readonly busy = signal(false);
@@ -75,6 +88,9 @@ export class QueueWorkspace implements OnInit {
     segmentId: '',
     visitTypeId: '',
     paidAmount: 0,
+    paymentMethod: 'Cash' as PaymentMethod,
+    referenceNumber: '',
+    notes: '',
   });
   protected readonly walkInPrice = computed(
     () =>
@@ -92,6 +108,7 @@ export class QueueWorkspace implements OnInit {
     required(path.segmentId, { message: 'tickets.validation.segmentRequired' });
     required(path.visitTypeId, { message: 'tickets.validation.visitTypeRequired' });
     required(path.paidAmount, { message: 'tickets.validation.paymentRequired' });
+    required(path.paymentMethod, { message: 'finance.validation.methodRequired' });
     min(path.paidAmount, 0.01, { message: 'tickets.validation.paymentPositive' });
     validate(path.paidAmount, ({ value }) =>
       this.walkInPrice() !== undefined && value() === this.walkInPrice()
@@ -204,7 +221,7 @@ export class QueueWorkspace implements OnInit {
     this.selected.set(null);
     this.reasonModel.set({ reason: '' });
     try {
-      this.selected.set(await firstValueFrom(this.api.details(this.practiceId(), ticketId)));
+      this.selected.set((await firstValueFrom(this.api.details(this.practiceId(), ticketId))) as PracticeTicketDetails);
     } catch (error) {
       this.failure(error);
     } finally {
@@ -225,7 +242,13 @@ export class QueueWorkspace implements OnInit {
       if (!this.canWalkIn() || !this.practiceId()) return;
       const price = this.walkInPrice();
       if (price === undefined) return;
-      const body: CreateWalkInTicketRequest = { ...this.walkInModel(), paidAmount: price };
+      const value = this.walkInModel();
+      const body: CreateWalkInTicketRequest = {
+        ...value,
+        paidAmount: price,
+        referenceNumber: value.referenceNumber.trim() || null,
+        notes: value.notes.trim() || null,
+      };
       await this.runMutation(
         `walk-in:${JSON.stringify(body)}`,
         this.api.createWalkIn(
@@ -261,6 +284,7 @@ export class QueueWorkspace implements OnInit {
     if ((action === 'manual-call' || action === 'cancel') && !reason) return;
     if (action === 'manual-call' && this.queueOccupied()) return;
     if (action === 'recall' && !this.canRecall(ticket)) return;
+    if (action === 'restore' && ticket.isRefunded) return;
     if (action === 'start' && !this.canStart()) return;
     if (action === 'complete' && !this.canComplete()) return;
     if (action !== 'start' && action !== 'complete' && !this.canCall()) return;
@@ -322,7 +346,7 @@ export class QueueWorkspace implements OnInit {
     try {
       const ticket = await firstValueFrom(request);
       this.intents.delete(signature);
-      this.selected.set(ticket);
+      this.selected.set(ticket as PracticeTicketDetails);
       this.toast.success('tickets.mutationSuccess');
       await this.loadQueueAfterMutation();
     } catch (error) {
@@ -370,7 +394,15 @@ export class QueueWorkspace implements OnInit {
   }
 
   private resetWalkInForm(): void {
-    this.walkInModel.set({ patientId: '', segmentId: '', visitTypeId: '', paidAmount: 0 });
+    this.walkInModel.set({
+      patientId: '',
+      segmentId: '',
+      visitTypeId: '',
+      paidAmount: 0,
+      paymentMethod: 'Cash',
+      referenceNumber: '',
+      notes: '',
+    });
   }
 
   private intentKey(signature: string): string {

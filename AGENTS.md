@@ -1019,9 +1019,33 @@ These rules address recurring user feedback and enforce strict aesthetic and fun
   - Concise links: Privacy Policy, Terms of Use, Help & Support.
   - Static, reassuring badges (e.g. "اتصال آمن وموثق", "الإصدار v2.4.0").
 
+### 32.9 Mandatory Standard Page Header (`<app-page-header>` إلزامي في كل الصفحات)
+
+- **ALL management and portal pages MUST use the shared `<app-page-header>` component** (`src/app/shared/components/page-header/page-header.ts`).
+- NEVER create raw, ad-hoc, unstyled `<header class="page-header">` elements that look detached from the rest of the application.
+- `<app-page-header>` features:
+  - Dynamic medical background slideshow (`bgImages` carousel).
+  - Consistent icon glyph from `PageHeaderIcon` (`doctors`, `admins`, `roles`, `specializations`, `requests`, `family-requests`, `finance`, `revenue`, `clinics`, `reception`, `queue`, `reservations`, `workspace`).
+  - Primary action button or refresh button with loading spinner (`actionIcon="refresh"`, `[actionLoading]="loading()"`).
+  - Integrated header actions slot (`[pageHeaderActions]`) for view switcher pills and clinic selectors.
+  - Integrated filter/search deck slot (`[pageHeaderDeck]`) or metrics summary slot (`[pageHeaderStats]`).
+
+### 32.10 SVG-AVATAR Empty State Illustrations (الرسومات التوضيحية لحالات عدم وجود بيانات)
+
+- **NEVER present an empty state as a blank table, a raw text message, or a tiny exclamation mark icon.**
+- ALWAYS use an expressive, themed SVG illustration from `public/SVG-AVATAR/`:
+  - Payments / Finance / Revenue: `/SVG-AVATAR/Payment Information-bro.svg`
+  - Doctors / Clinics / Medical Practice: `/SVG-AVATAR/Doctors-bro.svg`, `/SVG-AVATAR/Online Doctor-bro.svg`
+  - Reception Team / Staff: `/SVG-AVATAR/Doctors-cuate.svg`, `/SVG-AVATAR/Doctors-rafiki.svg`
+  - Prescriptions / Reservations / Queue: `/SVG-AVATAR/Medical prescription-bro.svg`, `/SVG-AVATAR/Medicine-bro.svg`
+- Structure every empty state with:
+  1. `<img class="state-empty-illustration" src="/SVG-AVATAR/..." alt="" loading="lazy" decoding="async" />`
+  2. Clear, high-contrast Arabic title (`font-size: 1.25rem; font-weight: 800; color: var(--color-navy-950);`)
+  3. Explanatory subtitle guiding the user on what to do next.
+  4. Primary action button (e.g., "إعادة ضبط الفلاتر", "إضافة جديد").
+
 ---
 
 ## ARCHITECTURE NORTH STAR
 
 > **Build every feature as an independent, testable business capability that can evolve without forcing unrelated parts of the system to change, adhering strictly to Wasla's clean, borderless, card-minimalist, bilingual (AR/EN), and doctor-and-assistant-friendly design language.**
-

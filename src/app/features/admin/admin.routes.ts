@@ -4,6 +4,13 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'revenue',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.platformRevenueViewAggregates },
+    loadComponent: () => import('./revenue-dashboard/revenue-dashboard').then((m) => m.RevenueDashboard),
+    title: 'finance.revenue.title',
+  },
+  {
     path: 'family-relationship-requests/:requestId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.familyRelationshipRequestsViewDetails },

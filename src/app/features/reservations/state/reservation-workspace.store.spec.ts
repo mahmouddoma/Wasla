@@ -211,12 +211,12 @@ describe('ReservationWorkspaceStore', () => {
     grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
     ticketsApi.checkIn.mockReturnValue(of({ ticketId: 'ticket-1' }));
 
-    await store.checkIn({ paidAmount: 300, force: false, reason: '' });
+    await store.checkIn({ paidAmount: 300, paymentMethod: 'Cash', referenceNumber: null, notes: null, force: false, reason: '' });
 
     expect(ticketsApi.checkIn).toHaveBeenCalledWith(
       'clinic',
       reservationFixture.reservationId,
-      { paidAmount: 300 },
+      { paidAmount: 300, paymentMethod: 'Cash', referenceNumber: null, notes: null },
       expect.any(String),
     );
     expect(store.detail()).toBeNull();
@@ -229,12 +229,12 @@ describe('ReservationWorkspaceStore', () => {
     grants.set(['PracticeTickets.RecordPayment', 'PracticeTickets.ForceCheckIn']);
     ticketsApi.forceCheckIn.mockReturnValue(of({ ticketId: 'ticket-1' }));
 
-    await store.checkIn({ paidAmount: 300, force: true, reason: 'Patient arrived early' });
+    await store.checkIn({ paidAmount: 300, paymentMethod: 'Card', referenceNumber: 'POS', notes: null, force: true, reason: 'Patient arrived early' });
 
     expect(ticketsApi.forceCheckIn).toHaveBeenCalledWith(
       'clinic',
       reservationFixture.reservationId,
-      { paidAmount: 300, reason: 'Patient arrived early' },
+      { paidAmount: 300, reason: 'Patient arrived early', paymentMethod: 'Card', referenceNumber: 'POS', notes: null },
       expect.any(String),
     );
   });
@@ -244,7 +244,7 @@ describe('ReservationWorkspaceStore', () => {
     store.detail.set({ ...reservationFixture, status: 'Active', price: 300 });
     grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
 
-    await store.checkIn({ paidAmount: 299, force: false, reason: '' });
+    await store.checkIn({ paidAmount: 299, paymentMethod: 'Cash', referenceNumber: null, notes: null, force: false, reason: '' });
 
     expect(ticketsApi.checkIn).not.toHaveBeenCalled();
   });

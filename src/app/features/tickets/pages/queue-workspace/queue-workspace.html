@@ -1,10 +1,10 @@
 <main class="queue-shell" [dir]="language.dir()">
-  <section class="queue-header">
-    <div>
-      <h1>{{ 'tickets.queue.title' | t }}</h1>
-      <p>{{ 'tickets.queue.subtitle' | t }}</p>
-    </div>
-    <div class="header-actions">
+  <app-page-header
+    [heading]="'tickets.queue.title' | t"
+    [description]="'tickets.queue.subtitle' | t"
+    icon="queue"
+  >
+    <div pageHeaderDeck class="queue-header-deck">
       <label class="practice-field">
         <span>{{ 'reservations.practice' | t }}</span>
         <select [value]="practiceId()" (change)="selectPractice($event)" [disabled]="busy()">
@@ -14,13 +14,21 @@
           }
         </select>
       </label>
+    </div>
+
+    <div pageHeaderActions class="queue-header-actions">
       <button
         type="button"
         class="secondary-action"
         (click)="loadQueue()"
         [disabled]="loading() || !practiceId()"
       >
-        {{ 'reservations.refresh' | t }}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>{{ 'reservations.refresh' | t }}</span>
       </button>
       @if (canCall()) {
         <button
@@ -29,11 +37,14 @@
           (click)="callNext()"
           [disabled]="busy() || !practiceId() || !!queue().called || !!queue().inProgress"
         >
-          {{ 'tickets.callNext' | t }}
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>{{ 'tickets.callNext' | t }}</span>
         </button>
       }
     </div>
-  </section>
+  </app-page-header>
 
   <section class="queue-board" [attr.aria-busy]="loading()">
     @if (practiceId() && !canViewQueue()) {
@@ -43,6 +54,13 @@
       </div>
     } @else if (!practiceId()) {
       <div class="state-block">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Online Doctor-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
         <h2>{{ 'tickets.choosePracticeTitle' | t }}</h2>
         <p>{{ 'tickets.choosePracticeHelp' | t }}</p>
       </div>
@@ -192,6 +210,22 @@
             <small role="alert">{{ error.message || 'tickets.validation.paymentExact' | t }}</small>
           }
         </label>
+        <label>
+          <span>{{ 'finance.method' | t }}</span>
+          <select [formField]="walkInForm.paymentMethod">
+            <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
+            <option value="Card">{{ 'finance.method.Card' | t }}</option>
+            <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
+          </select>
+        </label>
+        <label>
+          <span>{{ 'finance.referenceNumber' | t }}</span>
+          <input dir="ltr" [formField]="walkInForm.referenceNumber" />
+        </label>
+        <label>
+          <span>{{ 'finance.notesOptional' | t }}</span>
+          <input [formField]="walkInForm.notes" />
+        </label>
         <button type="submit" class="primary-action" [disabled]="busy() || walkInForm().invalid()">
           {{ 'tickets.walkIn.action' | t }}
         </button>
@@ -243,6 +277,18 @@
               <dt>{{ 'reservations.visitType' | t }}</dt>
               <dd>{{ label(ticket.visitType) }}</dd>
             }
+            @if (ticket.paymentTransactionNumber) {
+              <dt>{{ 'finance.transactionNumber' | t }}</dt>
+              <dd dir="ltr">{{ ticket.paymentTransactionNumber }}</dd>
+            }
+            @if (ticket.refundTransactionNumber) {
+              <dt>{{ 'finance.refunded' | t }}</dt>
+              <dd dir="ltr">{{ ticket.refundTransactionNumber }}</dd>
+            }
+            @if (ticket.refundableAmount !== undefined) {
+              <dt>{{ 'finance.amount' | t }}</dt>
+              <dd dir="ltr">{{ ticket.refundableAmount }} {{ ticket.currencyCode || ticket.currency }}</dd>
+            }
             <dt>{{ 'tickets.callAttempts' | t }}</dt>
             <dd>{{ ticket.callAttempts.length }}</dd>
             @if (ticket.checkedInOnUtc) {
@@ -282,13 +328,18 @@
               </ol>
             </section>
           }
-          @if (ticket.status === 'Waiting' || ticket.status === 'Called') {
+          @if (ticket.status === 'Waiting' || ticket.status === 'Called' || ticket.status === 'NoShow') {
             <label class="reason-field"
               ><span>{{ 'tickets.reason' | t }}</span
               ><textarea rows="3" [formField]="reasonForm.reason"></textarea>
             </label>
           }
           <div class="drawer-actions">
+            @if (ticket.canRefund && ticket.paymentId) {
+              <a class="primary-action" [routerLink]="['/' + actor().toLowerCase() + '/finance']" [queryParams]="{ practiceId: practiceId(), paymentId: ticket.paymentId }">
+                {{ 'finance.refund.action' | t }} · {{ ticket.refundableAmount }} {{ ticket.currencyCode || ticket.currency }}
+              </a>
+            }
             @if (ticket.status === 'Waiting' && canCall()) {
               <button
                 type="button"
@@ -308,7 +359,7 @@
                 </button>
               }
             }
-            @if (ticket.status === 'NoShow' && canCall()) {
+            @if (ticket.status === 'NoShow' && canCall() && !ticket.isRefunded) {
               <button type="button" (click)="act('restore')" [disabled]="busy()">
                 {{ 'tickets.restore' | t }}
               </button>
@@ -333,7 +384,10 @@
                 {{ 'tickets.complete' | t }}
               </button>
             }
-            @if ((ticket.status === 'Waiting' || ticket.status === 'Called') && canCall()) {
+            @if (
+              (ticket.status === 'Waiting' || ticket.status === 'Called' || ticket.status === 'NoShow') &&
+              canCall()
+            ) {
               <button
                 type="button"
                 class="danger-action"

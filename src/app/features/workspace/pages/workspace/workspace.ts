@@ -6,11 +6,12 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
 import { WorkspaceSidebarComponent } from '../../../../shared/components/workspace-sidebar/workspace-sidebar';
 import { SidebarService } from '../../../../shared/components/workspace-sidebar/sidebar.service';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/core';
 
 @Component({
   selector: 'app-workspace',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, PageHeader],
   templateUrl: './workspace.html',
   styleUrl: './workspace.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

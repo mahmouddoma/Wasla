@@ -44,6 +44,9 @@ export class AdminLayout {
   protected readonly canViewFamilyRequests = computed(() =>
     this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewAll),
   );
+  protected readonly canViewRevenue = computed(() =>
+    this.session.hasPermission(PERMISSIONS.platformRevenueViewAggregates),
+  );
   protected readonly home = computed(() => {
     const user = this.user();
     return user ? this.session.destinationFor(user) : '/login';

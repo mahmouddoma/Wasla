@@ -79,4 +79,13 @@ export const PERMISSIONS = {
   doctorPracticeTicketsStartOwn: 'DoctorPracticeTickets.StartOwn',
   doctorPracticeTicketsCompleteOwn: 'DoctorPracticeTickets.CompleteOwn',
   ticketsViewOwn: 'Tickets.ViewOwn',
+  practicePaymentsView: 'PracticePayments.View',
+  practicePaymentsCorrect: 'PracticePayments.Correct',
+  practicePaymentsRefund: 'PracticePayments.Refund',
+  doctorPracticePaymentsViewOwn: 'DoctorPracticePayments.ViewOwn',
+  doctorPracticePaymentsCorrectOwn: 'DoctorPracticePayments.CorrectOwn',
+  doctorPracticePaymentsRefundOwn: 'DoctorPracticePayments.RefundOwn',
+  doctorRevenueViewOwn: 'DoctorRevenue.ViewOwn',
+  paymentsViewOwn: 'Payments.ViewOwn',
+  platformRevenueViewAggregates: 'PlatformRevenue.ViewAggregates',
 } as const;

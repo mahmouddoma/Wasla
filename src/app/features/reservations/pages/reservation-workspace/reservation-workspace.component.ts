@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import {
@@ -25,6 +26,7 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
   imports: [
     TranslatePipe,
     RouterLink,
+    PageHeader,
     ReservationDetailsComponent,
     ReservationEditorComponent,
     ReservationCheckInComponent,

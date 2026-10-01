@@ -9,7 +9,6 @@ import {
 import { RouterOutlet } from '@angular/router';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { LanguageSwitcher } from '../../../shared/components/language-switcher/language-switcher';
 
 export interface StorySlide {
   id: number;
@@ -24,7 +23,7 @@ export interface StorySlide {
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
-  imports: [RouterOutlet, LanguageSwitcher, TranslatePipe],
+  imports: [RouterOutlet, TranslatePipe],
   templateUrl: './auth-layout.html',
   styleUrl: './auth-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

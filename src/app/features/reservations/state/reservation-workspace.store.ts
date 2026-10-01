@@ -495,7 +495,13 @@ export class ReservationWorkspaceStore {
     try {
       let request: Observable<PracticeTicket>;
       if (draft.force) {
-        const body = { paidAmount: draft.paidAmount, reason: draft.reason };
+        const body = {
+          paidAmount: draft.paidAmount,
+          reason: draft.reason,
+          paymentMethod: draft.paymentMethod,
+          referenceNumber: draft.referenceNumber,
+          notes: draft.notes,
+        };
         request = this.ticketsApi.forceCheckIn(
           this.practiceId(),
           reservation.reservationId,
@@ -503,7 +509,12 @@ export class ReservationWorkspaceStore {
           this.intentKey('force-check-in', body),
         );
       } else {
-        const body = { paidAmount: draft.paidAmount };
+        const body = {
+          paidAmount: draft.paidAmount,
+          paymentMethod: draft.paymentMethod,
+          referenceNumber: draft.referenceNumber,
+          notes: draft.notes,
+        };
         request = this.ticketsApi.checkIn(
           this.practiceId(),
           reservation.reservationId,

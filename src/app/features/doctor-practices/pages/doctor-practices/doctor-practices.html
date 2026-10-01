@@ -5,58 +5,33 @@
     <div class="ambient-circle circle-navy"></div>
   </div>
 
-  <!-- Page Hero Header (Shown on list and create views; detail view uses integrated practice-detail-hero) -->
+  <!-- Page Header (Shown on list and create views; detail view uses integrated practice-detail-hero) -->
   @if (!practiceId) {
-    <section class="hero-section">
-      <div class="hero-main">
-        <div class="hero-badge">
-          <span class="badge-dot"></span>
-          <span>{{ 'ui.full.494' | t }}</span>
+    <app-page-header
+      [heading]="'practice.myClinicsTitle' | t"
+      [description]="'ui.full.495' | t"
+      icon="practices"
+      [actionLabel]="canManage ? ('practice.createClinic' | t) : null"
+      actionIcon="add"
+      (actionClicked)="openCreateDrawer()"
+    >
+      <div pageHeaderDeck class="practices-stats-deck">
+        <div class="stat-pill">
+          <span class="stat-num">{{ practices().length }}</span>
+          <span class="stat-lbl">{{ 'ui.full.496' | t }}</span>
         </div>
-        <h1 class="hero-title">{{ 'practice.myClinicsTitle' | t }}</h1>
-        <p class="hero-subtitle">
-          {{ 'ui.full.495' | t }}
-        </p>
-      </div>
-
-      <div class="hero-actions">
-        <!-- Quick Stats Chips -->
-        <div class="stats-strip">
-          <div class="stat-pill">
-            <span class="stat-num">{{ practices().length }}</span>
-            <span class="stat-lbl">{{ 'ui.full.496' | t }}</span>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-num text-teal">{{ activeCount() }}</span>
-            <span class="stat-lbl">{{ 'ui.full.497' | t }}</span>
-          </div>
-          @if (inactiveCount() > 0) {
-            <div class="stat-pill">
-              <span class="stat-num text-muted">{{ inactiveCount() }}</span>
-              <span class="stat-lbl">{{ 'ui.full.498' | t }}</span>
-            </div>
-          }
+        <div class="stat-pill">
+          <span class="stat-num text-teal">{{ activeCount() }}</span>
+          <span class="stat-lbl">{{ 'ui.full.497' | t }}</span>
         </div>
-
-        @if (canManage) {
-          <button type="button" class="btn-create-practice" (click)="openCreateDrawer()">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              aria-hidden="true"
-            >
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>{{ 'practice.createClinic' | t }}</span>
-          </button>
+        @if (inactiveCount() > 0) {
+          <div class="stat-pill">
+            <span class="stat-num text-muted">{{ inactiveCount() }}</span>
+            <span class="stat-lbl">{{ 'ui.full.498' | t }}</span>
+          </div>
         }
       </div>
-    </section>
+    </app-page-header>
   }
 
   <!-- Main Container -->
@@ -553,19 +528,13 @@
           </article>
         } @empty {
           <div class="state-card empty-card">
-            <div class="state-icon empty-icon" aria-hidden="true">
-              <div class="icon-halo"></div>
-              <svg
-                viewBox="0 0 24 24"
-                width="36"
-                height="36"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-              >
-                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-              </svg>
-            </div>
+            <img
+              class="state-empty-illustration"
+              src="/SVG-AVATAR/Doctors-bro.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
             <h2>{{ 'ui.full.510' | t }}</h2>
             <p>
               {{ 'ui.full.511' | t }}
