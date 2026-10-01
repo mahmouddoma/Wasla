@@ -135,11 +135,15 @@
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               }
               @case ('ticket') {
-                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                <path
+                  d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"
+                />
                 <line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 2" />
               }
               @case ('heart-pulse') {
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                <path
+                  d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+                />
                 <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
               }
               @case ('user-check') {
@@ -155,7 +159,9 @@
                 <polyline points="10 9 9 9 8 9" />
               }
               @case ('receipt') {
-                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
+                <path
+                  d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"
+                />
                 <path d="M16 8H8" />
                 <path d="M16 12H8" />
                 <path d="M13 16H8" />
@@ -232,6 +238,56 @@
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
+
+        @if (user()?.userType === 'Reception') {
+          <div class="topbar-practice-selector" [dir]="langService.dir()">
+            <label for="reception-current-practice" class="practice-selector-label">
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+              </svg>
+              <span>{{ 'ui.full.742' | t }}</span>
+            </label>
+            <div class="practice-select-wrap">
+              <select
+                id="reception-current-practice"
+                [value]="practiceContext.currentPracticeId()"
+                [disabled]="practiceContext.isLoading() || !practiceContext.practices().length"
+                (change)="selectPractice($event)"
+              >
+                <option value="">{{ 'receptions.choosePractice' | t }}</option>
+                @for (practice of practiceContext.practices(); track practice.id) {
+                  <option [value]="practice.id">
+                    {{
+                      (langService.isRtl()
+                        ? practice.nameAr
+                        : practice.nameEn || practice.nameAr) || ('ui.full.762' | t)
+                    }}
+                  </option>
+                }
+              </select>
+              <svg
+                class="select-chevron"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </div>
+        }
       </div>
 
       <div class="topbar-end">

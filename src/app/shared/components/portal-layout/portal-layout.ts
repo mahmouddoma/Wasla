@@ -4,6 +4,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LanguageSwitcher } from '../language-switcher/language-switcher';
+import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 
 export interface PortalNavItem {
   id: string;
@@ -21,8 +22,13 @@ export interface PortalNavItem {
 })
 export class PortalLayout {
   readonly langService = inject(LanguageService);
+  protected readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+
+  protected selectPractice(event: Event): void {
+    this.practiceContext.select((event.currentTarget as HTMLSelectElement).value);
+  }
 
   protected readonly isSidebarOpen = signal(false);
   protected readonly isSidebarCollapsed = signal<boolean>(
@@ -44,9 +50,7 @@ export class PortalLayout {
 
   protected readonly userRole = computed(() => {
     const user = this.user();
-    return user?.roles?.length
-      ? user.roles.join(', ')
-      : (user?.userType ?? '');
+    return user?.roles?.length ? user.roles.join(', ') : (user?.userType ?? '');
   });
 
   protected readonly roleNavItems = computed<PortalNavItem[]>(() => {
@@ -127,7 +131,12 @@ export class PortalLayout {
           route: '/reception/family-requests',
           icon: 'clipboard-list',
         },
-        { id: 'finance', labelKey: 'sidebar.finance', route: '/reception/finance', icon: 'receipt' },
+        {
+          id: 'finance',
+          labelKey: 'sidebar.finance',
+          route: '/reception/finance',
+          icon: 'receipt',
+        },
       ];
     }
 

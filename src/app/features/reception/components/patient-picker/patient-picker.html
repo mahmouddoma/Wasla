@@ -1,36 +1,74 @@
 <section class="picker" [attr.aria-label]="label()">
-  <header>
-    <h2>{{ label() }}</h2>
+  <header class="picker-header">
+    <div class="picker-title-group">
+      <span class="picker-icon-dot"></span>
+      <h2>{{ label() }}</h2>
+    </div>
     @if (selectedPatient(); as patient) {
-      <span class="selection">{{ 'ui.full.707' | t }} {{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</span>
+      <span class="selection-badge">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        <span>{{ 'ui.full.707' | t }} {{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</span>
+      </span>
     }
   </header>
-  <form (submit)="search($event)" novalidate>
-    <label><span>{{ 'discovery.name' | t }}</span><input [formField]="searchForm.name" /></label>
-    <label><span>{{ 'ui.full.708' | t }}</span><input type="tel" [formField]="searchForm.phoneNumber" /></label>
-    <label
-      ><span>{{ 'register.dob' | t }}</span><input type="date" [formField]="searchForm.dateOfBirth"
-    /></label>
-    <button class="btn btn-outline-secondary" type="submit" [disabled]="loading()">
-      {{ loading() ? uiLanguage.t('discovery.loading') : uiLanguage.t('discovery.search') }}
+
+  <form class="picker-search-grid" (submit)="search($event)" novalidate>
+    <label class="picker-field full">
+      <span>{{ 'discovery.name' | t }}</span>
+      <input [formField]="searchForm.name" [placeholder]="'discovery.name' | t" />
+    </label>
+
+    <label class="picker-field">
+      <span>{{ 'ui.full.708' | t }}</span>
+      <input type="tel" dir="ltr" [formField]="searchForm.phoneNumber" placeholder="01xxxxxxxxx" />
+    </label>
+
+    <label class="picker-field">
+      <span>{{ 'register.dob' | t }}</span>
+      <input type="date" [formField]="searchForm.dateOfBirth" />
+    </label>
+
+    <button class="btn-picker-search full" type="submit" [disabled]="loading()">
+      @if (loading()) {
+        <span class="spinner-xs" aria-hidden="true"></span>
+        <span>{{ uiLanguage.t('discovery.loading') }}</span>
+      } @else {
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <span>{{ uiLanguage.t('discovery.search') }}</span>
+      }
     </button>
   </form>
+
   @if (message()) {
     <p class="error" role="alert">{{ message() | t }}</p>
   }
+
   @if (searched()) {
     <div class="results" aria-live="polite">
       @for (patient of results(); track patient.patientId) {
         <button
           type="button"
+          class="picker-result-btn"
           [class.selected]="selectedPatient()?.patientId === patient.patientId"
           (click)="choose(patient)"
         >
-          <strong>{{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</strong>
-          <span>{{ patient.dateOfBirth }} · {{ patient.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
-          <small>{{
-            patient.phoneNumber || (patient.hasContactPhone ? uiLanguage.t('ui.expressions.212') : uiLanguage.t('ui.expressions.213'))
-          }}</small>
+          <div class="result-details">
+            <strong>{{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</strong>
+            <span>{{ patient.dateOfBirth }} · {{ patient.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
+            <small dir="ltr">{{
+              patient.phoneNumber || (patient.hasContactPhone ? uiLanguage.t('ui.expressions.212') : uiLanguage.t('ui.expressions.213'))
+            }}</small>
+          </div>
+          <div class="result-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
         </button>
       } @empty {
         <p class="empty">

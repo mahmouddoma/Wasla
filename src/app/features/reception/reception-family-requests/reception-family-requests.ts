@@ -24,9 +24,11 @@ import {
 } from '../../../core/validation/evidence-files';
 import { PatientSearchItem } from '../../../domains/patients';
 import { PatientPicker } from '../components/patient-picker/patient-picker';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
+
 @Component({
   selector: 'app-reception-family-requests',
-  imports: [FormField, RouterLink, PatientPicker, TranslatePipe],
+  imports: [FormField, RouterLink, PatientPicker, TranslatePipe, PageHeader],
   templateUrl: './reception-family-requests.html',
   styleUrls: ['../../healthcare-workspace.css', './reception-family-requests.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

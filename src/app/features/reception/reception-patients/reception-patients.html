@@ -1,10 +1,50 @@
 <main class="health-workspace" [dir]="uiLanguage.dir()">
-  <header class="workspace-bar">
-    <div>
-      <h1>{{ 'ui.full.737' | t }}</h1>
-      <p>{{ 'ui.full.738' | t }}</p>
+  <!-- Standardized Page Header -->
+  <app-page-header
+    [heading]="'ui.full.737' | t"
+    [description]="'ui.full.738' | t"
+    icon="reception"
+  >
+    <div pageHeaderDeck class="reception-workflow-deck">
+      <div class="workflow-chip active">
+        <span class="workflow-num">01</span>
+        <span>{{ 'reception.stepSearch' | t }}</span>
+      </div>
+      <svg
+        class="workflow-arrow"
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+      <div class="workflow-chip">
+        <span class="workflow-num">02</span>
+        <span>{{ 'reception.stepRegister' | t }}</span>
+      </div>
     </div>
-  </header>
+
+    <div pageHeaderActions>
+      <a class="btn-head-back" routerLink="/workspace/reception">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        <span>{{ 'common.back' | t }}</span>
+      </a>
+    </div>
+  </app-page-header>
 
   @if (messages().length) {
     <div class="notice error" role="alert">
@@ -19,31 +59,79 @@
     </div>
   }
 
-  <div class="workspace-grid">
+  <div class="patients-workspace-grid">
+    <!-- Step 01: Search Panel -->
     @if (canSearch) {
-      <section class="workspace-panel search-panel">
-        <div class="section-heading">
-          <div>
-            <span class="step">01</span>
+      <section class="patient-panel search-panel">
+        <div class="panel-header">
+          <div class="panel-badge-group">
+            <span class="step-badge">01</span>
             <h2>{{ 'ui.full.740' | t }}</h2>
           </div>
-          <p>{{ 'ui.full.741' | t }}</p>
+          <p class="panel-sub">{{ 'ui.full.741' | t }}</p>
         </div>
-        <form class="compact-form" (submit)="search(1, $event)" novalidate>
-          <label class="form-field">
-            <span>{{ 'discovery.name' | t }}</span>
-            <input [formField]="searchForm.name" autocomplete="off" />
+
+        <form class="patient-search-form" (submit)="search(1, $event)" novalidate>
+          <label class="form-field full">
+            <span class="field-label">{{ 'discovery.name' | t }}</span>
+            <div class="input-wrap">
+              <svg
+                class="field-icon"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <input
+                [formField]="searchForm.name"
+                autocomplete="off"
+                [placeholder]="'discovery.name' | t"
+              />
+            </div>
           </label>
+
           <label class="form-field">
-            <span>{{ 'workspace.phone' | t }}</span>
-            <input type="tel" [formField]="searchForm.phoneNumber" autocomplete="off" />
+            <span class="field-label">{{ 'workspace.phone' | t }}</span>
+            <div class="input-wrap">
+              <svg
+                class="field-icon"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                />
+              </svg>
+              <input
+                type="tel"
+                dir="ltr"
+                [formField]="searchForm.phoneNumber"
+                autocomplete="off"
+                placeholder="01xxxxxxxxx"
+              />
+            </div>
           </label>
+
           <label class="form-field">
-            <span>{{ 'register.dob' | t }}</span>
-            <input type="date" [formField]="searchForm.dateOfBirth" />
+            <span class="field-label">{{ 'register.dob' | t }}</span>
+            <div class="input-wrap">
+              <input type="date" [formField]="searchForm.dateOfBirth" />
+            </div>
           </label>
+
           <button
-            class="btn btn-primary"
+            class="btn-search-action full"
             type="submit"
             [disabled]="
               isSearching() ||
@@ -51,146 +139,346 @@
               !selectedPracticeAllows('Patients.SearchBasic')
             "
           >
-            {{
-              isSearching() ? uiLanguage.t('discovery.loading') : uiLanguage.t('discovery.search')
-            }}
+            @if (isSearching()) {
+              <span class="spinner-sm" aria-hidden="true"></span>
+              <span>{{ uiLanguage.t('discovery.loading') }}</span>
+            } @else {
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span>{{ uiLanguage.t('discovery.search') }}</span>
+            }
           </button>
         </form>
 
+        <!-- Search Results or Idle State -->
         @if (results(); as page) {
-          <div class="result-list" aria-live="polite">
-            @for (patient of page.items; track patient.patientId) {
-              <button
-                class="patient-result"
-                [class.selected]="selectedPatientId() === patient.patientId"
-                type="button"
-                (click)="choose(patient.patientId)"
-              >
-                <strong>{{ displayName(patient) }}</strong>
-                <span
-                  >{{ patient.dateOfBirth }} ·
-                  {{
-                    patient.gender === 'Male'
-                      ? uiLanguage.t('register.male')
-                      : uiLanguage.t('register.female')
-                  }}</span
+          <div class="results-container">
+            <div class="results-header">
+              <span class="results-count">{{ page.items.length }} {{ 'discovery.results' | t }}</span>
+            </div>
+
+            <div class="result-list" aria-live="polite">
+              @for (patient of page.items; track patient.patientId) {
+                <button
+                  class="patient-result-card"
+                  [class.selected]="selectedPatientId() === patient.patientId"
+                  type="button"
+                  (click)="choose(patient.patientId)"
                 >
-                <small>{{
-                  patient.phoneNumber ||
-                    (patient.hasContactPhone
-                      ? uiLanguage.t('ui.expressions.218')
-                      : uiLanguage.t('ui.full.195'))
-                }}</small>
-              </button>
-            } @empty {
-              <div class="empty-state">{{ 'ui.full.744' | t }}</div>
+                  <div class="patient-card-avatar" [class.female]="patient.gender === 'Female'">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <div class="patient-card-info">
+                    <strong class="patient-card-name">{{ displayName(patient) }}</strong>
+                    <div class="patient-card-meta">
+                      <span>{{ patient.dateOfBirth }}</span>
+                      <span class="meta-dot">·</span>
+                      <span class="gender-pill" [class.female]="patient.gender === 'Female'">
+                        {{
+                          patient.gender === 'Male'
+                            ? uiLanguage.t('register.male')
+                            : uiLanguage.t('register.female')
+                        }}
+                      </span>
+                    </div>
+                    <small class="patient-card-phone" dir="ltr">{{
+                      patient.phoneNumber ||
+                        (patient.hasContactPhone
+                          ? uiLanguage.t('ui.expressions.218')
+                          : uiLanguage.t('ui.full.195'))
+                    }}</small>
+                  </div>
+                  <div class="patient-card-select-badge">
+                    @if (selectedPatientId() === patient.patientId) {
+                      <span class="badge-chosen">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{{ 'reception.selected' | t }}</span>
+                      </span>
+                    } @else {
+                      <span class="badge-choose">{{ 'reception.selectPatient' | t }}</span>
+                    }
+                  </div>
+                </button>
+              } @empty {
+                <div class="empty-state-card">
+                  <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <p>{{ 'ui.full.744' | t }}</p>
+                </div>
+              }
+            </div>
+
+            @if (page.items.length > 0) {
+              <nav class="pager-nav" [attr.aria-label]="'ui.full.745' | t">
+                <button
+                  class="btn-pager"
+                  type="button"
+                  [disabled]="pageNumber() <= 1"
+                  (click)="search(pageNumber() - 1)"
+                >
+                  {{ 'discovery.previous' | t }}
+                </button>
+                <span class="pager-info">{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
+                <button
+                  class="btn-pager"
+                  type="button"
+                  [disabled]="page.items.length < page.pageSize"
+                  (click)="search(pageNumber() + 1)"
+                >
+                  {{ 'discovery.next' | t }}
+                </button>
+              </nav>
             }
           </div>
-          <nav class="pager" [attr.aria-label]="'ui.full.745' | t">
-            <button
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              [disabled]="pageNumber() <= 1"
-              (click)="search(pageNumber() - 1)"
-            >
-              {{ 'discovery.previous' | t }}
-            </button>
-            <span>{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
-            <button
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              [disabled]="page.items.length < page.pageSize"
-              (click)="search(pageNumber() + 1)"
-            >
-              {{ 'discovery.next' | t }}
-            </button>
-          </nav>
+        } @else {
+          <!-- Friendly idle state before search -->
+          <div class="search-idle-state">
+            <div class="idle-img-wrap">
+              <img
+                src="/SVG-AVATAR/Medical prescription-rafiki.svg"
+                alt=""
+                class="idle-illustration"
+              />
+            </div>
+            <p class="idle-title">{{ 'reception.searchPrompt' | t }}</p>
+            <p class="idle-desc">{{ 'reception.noSearchYet' | t }}</p>
+          </div>
         }
       </section>
     }
 
+    <!-- Step 02: Register Panel -->
     @if (canRegister) {
-      <section class="workspace-panel">
-        <div class="section-heading">
-          <div>
-            <span class="step">02</span>
+      <section class="patient-panel register-panel">
+        <div class="panel-header">
+          <div class="panel-badge-group">
+            <span class="step-badge step-badge-secondary">02</span>
             <h2>{{ 'ui.full.746' | t }}</h2>
           </div>
-          <p>{{ 'ui.full.747' | t }}</p>
+          <p class="panel-sub">{{ 'ui.full.747' | t }}</p>
         </div>
-        <form class="detail-form" (submit)="createPatient($event)" novalidate>
-          <label class="form-field"
-            ><span>{{ 'ui.full.748' | t }}</span
-            ><input [formField]="createForm.nameAr"
-          /></label>
-          <label class="form-field"
-            ><span>{{ 'common.nameEn' | t }}</span
-            ><input dir="ltr" [formField]="createForm.nameEn"
-          /></label>
-          <label class="form-field"
-            ><span>{{ 'ui.full.749' | t }}</span
-            ><input type="date" [formField]="createForm.dateOfBirth"
-          /></label>
-          <label class="form-field"
-            ><span>{{ 'ui.full.750' | t }}</span
-            ><select [formField]="createForm.gender">
-              <option value="">{{ 'ui.full.751' | t }}</option>
-              <option value="Male">{{ 'register.male' | t }}</option>
-              <option value="Female">{{ 'register.female' | t }}</option>
-            </select></label
-          >
-          <label class="form-field"
-            ><span>{{ 'workspace.phone' | t }}</span
-            ><input type="tel" [formField]="createForm.phoneNumber"
-          /></label>
-          <label class="form-field"
-            ><span>{{ 'workspace.email' | t }}</span
-            ><input type="email" dir="ltr" [formField]="createForm.email"
-          /></label>
-          <label class="form-field full"
-            ><span>{{ 'common.profilePhoto' | t }}</span
-            ><input type="file" accept="image/*" (change)="fileChanged($event)"
-          /></label>
 
-          <fieldset class="contact-fields full">
-            <legend>
-              {{ 'ui.full.752' | t }}
-              {{ createModel().phoneNumber.trim() ? uiLanguage.t('ui.full.265') : '*' }}
-            </legend>
-            <p>{{ 'ui.full.753' | t }}</p>
-            <div class="detail-form">
-              <label class="form-field"
-                ><span>{{ 'register.fullNameAr' | t }}</span
-                ><input [formField]="createForm.primaryContactNameAr"
-              /></label>
-              <label class="form-field"
-                ><span>{{ 'workspace.phone' | t }}</span
-                ><input type="tel" [formField]="createForm.primaryContactPhoneNumber"
-              /></label>
-              <label class="form-field"
-                ><span>{{ 'ui.full.754' | t }}</span
-                ><select [formField]="createForm.primaryContactRelationshipType">
-                  <option value="Father">{{ 'family.father' | t }}</option>
-                  <option value="Mother">{{ 'family.mother' | t }}</option>
-                  <option value="Guardian">{{ 'family.guardian' | t }}</option>
-                  <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
-                  <option value="Other">{{ 'common.other' | t }}</option>
-                </select></label
+        <form class="patient-register-grid" (submit)="createPatient($event)" novalidate>
+          <!-- Arabic Name -->
+          <label class="form-field">
+            <span class="field-label">{{ 'ui.full.748' | t }}</span>
+            <input [formField]="createForm.nameAr" placeholder="مثال: أحمد محمد علي" />
+          </label>
+
+          <!-- English Name -->
+          <label class="form-field">
+            <span class="field-label">{{ 'common.nameEn' | t }}</span>
+            <input dir="ltr" [formField]="createForm.nameEn" placeholder="e.g. Ahmed Mohamed" />
+          </label>
+
+          <!-- Date of Birth -->
+          <label class="form-field">
+            <span class="field-label">{{ 'ui.full.749' | t }}</span>
+            <input type="date" [formField]="createForm.dateOfBirth" />
+          </label>
+
+          <!-- Gender with custom arrow -->
+          <label class="form-field">
+            <span class="field-label">{{ 'ui.full.750' | t }}</span>
+            <div class="select-wrap">
+              <select [formField]="createForm.gender">
+                <option value="">{{ 'ui.full.751' | t }}</option>
+                <option value="Male">{{ 'register.male' | t }}</option>
+                <option value="Female">{{ 'register.female' | t }}</option>
+              </select>
+              <svg
+                class="select-arrow"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
               >
-              <label class="form-field"
-                ><span>{{ 'ui.full.755' | t }}</span
-                ><input dir="ltr" [formField]="createForm.primaryContactLinkedPatientId"
-              /></label>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </div>
-          </fieldset>
+          </label>
+
+          <!-- Phone Number -->
+          <label class="form-field">
+            <span class="field-label">{{ 'workspace.phone' | t }}</span>
+            <input
+              type="tel"
+              dir="ltr"
+              [formField]="createForm.phoneNumber"
+              placeholder="01xxxxxxxxx"
+            />
+          </label>
+
+          <!-- Email -->
+          <label class="form-field">
+            <span class="field-label">{{ 'workspace.email' | t }}</span>
+            <input
+              type="email"
+              dir="ltr"
+              [formField]="createForm.email"
+              placeholder="patient@example.com"
+            />
+          </label>
+
+          <!-- Profile Photo Custom Upload -->
+          <div class="form-field full file-field-wrap">
+            <span class="field-label">{{ 'common.profilePhoto' | t }}</span>
+            <label class="custom-file-drop">
+              <input
+                type="file"
+                accept="image/*"
+                (change)="fileChanged($event)"
+                class="sr-only-file"
+              />
+              <div class="file-drop-content">
+                <div class="file-icon-circle">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </div>
+                <span class="file-prompt-text">{{
+                  profileImage() ? profileImage()!.name : ('discovery.uploadPhoto' | t)
+                }}</span>
+                <span class="file-hint-text">PNG, JPG, WEBP (Max 5MB)</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Primary Contact section (Integrated surface, NO carditis) -->
+          <div class="primary-contact-section full">
+            <div class="contact-section-header">
+              <div class="contact-header-title">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>
+                  {{ 'ui.full.752' | t }}
+                  {{ createModel().phoneNumber.trim() ? uiLanguage.t('ui.full.265') : '*' }}
+                </span>
+              </div>
+              <p class="contact-header-desc">{{ 'ui.full.753' | t }}</p>
+            </div>
+
+            <div class="contact-fields-grid">
+              <label class="form-field">
+                <span class="field-label">{{ 'register.fullNameAr' | t }}</span>
+                <input
+                  [formField]="createForm.primaryContactNameAr"
+                  placeholder="اسم ولي الأمر / جهة الاتصال"
+                />
+              </label>
+
+              <label class="form-field">
+                <span class="field-label">{{ 'workspace.phone' | t }}</span>
+                <input
+                  type="tel"
+                  dir="ltr"
+                  [formField]="createForm.primaryContactPhoneNumber"
+                  placeholder="01xxxxxxxxx"
+                />
+              </label>
+
+              <label class="form-field">
+                <span class="field-label">{{ 'ui.full.754' | t }}</span>
+                <div class="select-wrap">
+                  <select [formField]="createForm.primaryContactRelationshipType">
+                    <option value="Father">{{ 'family.father' | t }}</option>
+                    <option value="Mother">{{ 'family.mother' | t }}</option>
+                    <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                    <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
+                    <option value="Other">{{ 'common.other' | t }}</option>
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </label>
+
+              <label class="form-field">
+                <span class="field-label">{{ 'ui.full.755' | t }}</span>
+                <input
+                  dir="ltr"
+                  [formField]="createForm.primaryContactLinkedPatientId"
+                  placeholder="e.g. PT-10029"
+                />
+              </label>
+            </div>
+          </div>
 
           @if (createForm().touched() && createForm().errors().length) {
             <div class="notice error full">{{ 'ui.full.756' | t }}</div>
           }
-          <button class="btn btn-primary full" type="submit" [disabled]="isCreating()">
-            {{
-              isCreating() ? uiLanguage.t('ui.expressions.219') : uiLanguage.t('ui.expressions.220')
-            }}
+
+          <button class="btn-create-patient full" type="submit" [disabled]="isCreating()">
+            @if (isCreating()) {
+              <span class="spinner-sm" aria-hidden="true"></span>
+              <span>{{ uiLanguage.t('ui.expressions.219') }}</span>
+            } @else {
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                aria-hidden="true"
+              >
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>{{ uiLanguage.t('ui.expressions.220') }}</span>
+            }
           </button>
         </form>
       </section>

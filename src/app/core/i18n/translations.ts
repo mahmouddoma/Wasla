@@ -11,6 +11,50 @@ export const TRANSLATIONS: TranslationDictionary = {
   'common.navigation': { ar: 'التنقل الرئيسي', en: 'Main navigation' },
   'common.yes': { ar: 'نعم', en: 'Yes' },
   'common.no': { ar: 'لا', en: 'No' },
+  'workspace.receptionGuideTitle': { ar: 'إرشادات وسير عمل موظف الاستقبال', en: 'Receptionist Workflow & Guidelines' },
+  'workspace.receptionGuideSub': {
+    ar: 'خطوات سريعة لضمان دقة الحجوزات وتنظيم تدفق المرضى داخل العيادة بكل سهولة.',
+    en: 'Quick steps to ensure booking accuracy and organize patient flow within the clinic.',
+  },
+  'workspace.receptionGuide1Title': { ar: 'التحقق من العيادة الحالية', en: 'Select Active Clinic' },
+  'workspace.receptionGuide1Desc': {
+    ar: 'تأكد دائمًا من تحديد العيادة الصحيحة من الشريط العلوي قبل الحجز أو تنظيم الطابور.',
+    en: 'Always verify the active clinic is selected in the top bar before scheduling or managing queue.',
+  },
+  'workspace.receptionGuide2Title': { ar: 'البحث المسبق عن المريض', en: 'Search Before Registering' },
+  'workspace.receptionGuide2Desc': {
+    ar: 'ابحث برقم الهاتف أو الاسم أولاً لتفادي تكرار السجلات الطبية للمريض الواحد.',
+    en: 'Search by phone number or name first to prevent duplicate medical records for the same patient.',
+  },
+  'workspace.receptionGuide3Title': { ar: 'إدارة طابور الانتظار', en: 'Manage Live Queue' },
+  'workspace.receptionGuide3Desc': {
+    ar: 'سجّل حضور المرضى وحدّث حالة التذاكر فورًا للتنسيق اللحظي مع شاشة الطبيب.',
+    en: 'Check in arriving patients and update ticket statuses promptly to coordinate with the doctor.',
+  },
+  'workspace.receptionGuide4Title': { ar: 'طلبات الربط العائلي', en: 'Family Link Requests' },
+  'workspace.receptionGuide4Desc': {
+    ar: 'راجع المستندات الرسمية (شهادة ميلاد أو بطاقة) قبل إرسال طلب ربط القرابة.',
+    en: 'Inspect official documents (birth certificate or ID) before submitting family link requests.',
+  },
+  'workspace.enterModule': { ar: 'فتح الوحدة', en: 'Open Module' },
+  'reception.stepSearch': { ar: 'الخطوة 1: البحث والتحقق', en: 'Step 1: Search & Verify' },
+  'reception.stepRegister': { ar: 'الخطوة 2: إنشاء ملف جديد', en: 'Step 2: Create Record' },
+  'reception.searchPrompt': { ar: 'ابحث في سجلات العيادة', en: 'Search clinic records' },
+  'reception.noSearchYet': {
+    ar: 'أدخل اسم المريض أو رقم هاتفه واضغط بحث للتحقق من وجود ملف مسجل مسبقًا.',
+    en: 'Enter patient name or phone number and click search to verify if a record already exists.',
+  },
+  'reception.selectPatient': { ar: 'اختيار هذا الملف', en: 'Select Profile' },
+  'reception.selected': { ar: 'تم الاختيار', en: 'Selected' },
+  'reception.registerTitle': { ar: 'إنشاء ملف مريض جديد', en: 'Create New Patient Profile' },
+  'reception.registerNotice': {
+    ar: 'يتم إنشاء سجل طبي للمريض فقط داخل العيادة، ولا يتم إنشاء حساب دخول أو كلمة مرور.',
+    en: 'This creates an internal medical record for the clinic, not a login account or password.',
+  },
+  'discovery.uploadPhoto': {
+    ar: 'انقر لاختيار أو رفع صورة شخصية',
+    en: 'Click to upload profile photo',
+  },
   'tickets.queue.title': { ar: 'طابور العيادة', en: 'Clinic Queue' },
   'tickets.queue.subtitle': {
     ar: 'إدارة الحضور والنداء وحالة الزيارة لحظيًا دون تغيير ترتيب الخادم.',

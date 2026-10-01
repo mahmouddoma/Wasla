@@ -3,13 +3,12 @@ import { RouterOutlet } from '@angular/router';
 import { ToastContainer } from './shared/toast/toast-container';
 import { AuthSession } from './core/auth/auth-session';
 import { LanguageService } from './core/i18n/language.service';
-import { TranslatePipe } from './core/i18n/translate.pipe';
 import { ReceptionPracticeContext } from './domains/reception-practices';
 import { PlatformFooter } from './shared/components/platform-footer/platform-footer';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainer, TranslatePipe, PlatformFooter],
+  imports: [RouterOutlet, ToastContainer, PlatformFooter],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,9 +30,5 @@ export class App {
         if (next) void this.practiceContext.refresh();
       });
     });
-  }
-
-  protected selectPractice(event: Event): void {
-    this.practiceContext.select((event.currentTarget as HTMLSelectElement).value);
   }
 }
