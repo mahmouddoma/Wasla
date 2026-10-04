@@ -8,6 +8,21 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
+  'tickets.patientIdPlaceholder': { ar: 'رقم المريض', en: 'Patient ID' },
+  'tickets.referencePlaceholder': { ar: 'رقم مرجع الدفع', en: 'Payment reference number' },
+  'tickets.currency': { ar: 'ج.م', en: 'EGP' },
+
+  'finance.originalPaymentNumber': { ar: 'رقم الدفعة الأصلية', en: 'Original payment number' },
+  'reception.accessChanged': { ar: 'تغيرت صلاحياتك. راجع صلاحيات العيادة مع الطبيب ثم أعد المحاولة.', en: 'Your access has changed. Check clinic permissions with the doctor, then try again.' },
+  'reception.accessTitle': { ar: 'لا توجد صلاحية للعرض', en: 'View access unavailable' },
+  'reception.financeAccessHelp': { ar: 'اختر عيادة لديك صلاحية عرض مدفوعاتها، أو اطلب من الطبيب تحديث صلاحياتك.', en: 'Choose a clinic whose payments you can view, or ask the doctor to update your permissions.' },
+  'family.filesSelected': { ar: 'ملفات محددة', en: 'Files selected' },
+  'family.chooseFilesPrompt': { ar: 'انقر لتحديد المستندات أو اسحبها هنا', en: 'Click to select documents or drag & drop here' },
+  'family.uploadHint': { ar: 'يمكنك اختيار أكثر من ملف دفعة واحدة', en: 'You can choose multiple files at once' },
+  'family.viewAll': { ar: 'عرض متجاور', en: 'Split view' },
+  'family.viewForm': { ar: 'طلب جديد', en: 'New request' },
+  'family.viewList': { ar: 'سجل الطلبات', en: 'Requests history' },
+
   'common.navigation': { ar: 'التنقل الرئيسي', en: 'Main navigation' },
   'common.yes': { ar: 'نعم', en: 'Yes' },
   'common.no': { ar: 'لا', en: 'No' },
@@ -141,6 +156,11 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Create a paid ticket for an existing patient without a reservation.',
   },
   'tickets.walkIn.action': { ar: 'إنشاء التذكرة', en: 'Create ticket' },
+  'tickets.activeNow': { ar: 'نشط الآن', en: 'Active now' },
+  'tickets.nextTurn': { ar: 'الدور التالي', en: 'Next in turn' },
+  'tickets.patientDetails': { ar: 'بيانات المريض والتذكرة', en: 'Patient & Ticket Info' },
+  'tickets.notesPlaceholder': { ar: 'أي ملاحظات إضافية بخصوص الزيارة…', en: 'Any additional notes about the visit…' },
+  'tickets.reasonPlaceholder': { ar: 'اكتب سبب الإجراء إن وجد…', en: 'Specify action reason if applicable…' },
   'tickets.checkIn.title': { ar: 'تسجيل حضور الحجز', en: 'Reservation check-in' },
   'tickets.checkIn.help': {
     ar: 'سجّل الدفع الكامل وحوّل الحجز إلى تذكرة انتظار.',

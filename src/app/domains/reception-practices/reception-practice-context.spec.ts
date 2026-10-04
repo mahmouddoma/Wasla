@@ -23,6 +23,25 @@ describe('ReceptionPracticeContext', () => {
     });
     context = TestBed.inject(ReceptionPracticeContext);
   });
+  it('caches initialization and looks up active assignment permissions centrally', async () => {
+    api.list.mockReturnValue(
+      of([
+        practice('a', ['PracticePayments.View']),
+        practice('b'),
+        practice('off', ['PracticePayments.View'], false),
+      ]),
+    );
+    await context.ensureLoaded();
+    await context.ensureLoaded();
+    expect(api.list).toHaveBeenCalledTimes(1);
+    expect(context.practicesWithPermission('PracticePayments.View').map((p) => p.id)).toEqual([
+      'a',
+    ]);
+    expect(context.allowsInPractice('b', 'PracticePayments.View')).toBe(false);
+    expect(
+      context.hasAnyPracticeWithAnyPermission(['PracticeTickets.View', 'PracticePayments.View']),
+    ).toBe(true);
+  });
   it('automatically selects the sole active assignment', async () => {
     api.list.mockReturnValue(of([practice('cairo', ['Search']), practice('inactive', [], false)]));
     await context.refresh();

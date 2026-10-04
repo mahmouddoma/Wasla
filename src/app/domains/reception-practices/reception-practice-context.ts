@@ -11,6 +11,7 @@ export class ReceptionPracticeContext {
   private readonly items = signal<ReceptionPractice[]>([]);
   private readonly selectedId = signal('');
   private generation = 0;
+  private loaded = false;
   private pending: Promise<void> | null = null;
   readonly practices = this.items.asReadonly();
   readonly currentPracticeId = this.selectedId.asReadonly();
@@ -21,7 +22,29 @@ export class ReceptionPracticeContext {
   );
 
   allows(code: string): boolean {
-    return this.currentPractice()?.permissionCodes.includes(code) ?? false;
+    return this.allowsInPractice(this.selectedId(), code);
+  }
+
+  allowsInPractice(practiceId: string, permission: string): boolean {
+    return this.items().some(
+      (p) => p.id === practiceId && p.isActive && p.permissionCodes.includes(permission),
+    );
+  }
+
+  practicesWithPermission(permission: string): ReceptionPractice[] {
+    return this.items().filter((p) => this.allowsInPractice(p.id, permission));
+  }
+
+  hasAnyPracticeWithPermission(permission: string): boolean {
+    return this.practicesWithPermission(permission).length > 0;
+  }
+
+  hasAnyPracticeWithAnyPermission(permissions: readonly string[]): boolean {
+    return permissions.some((permission) => this.hasAnyPracticeWithPermission(permission));
+  }
+
+  ensureLoaded(): Promise<void> {
+    return this.loaded ? Promise.resolve() : this.refresh();
   }
 
   select(id: string): void {
@@ -30,6 +53,7 @@ export class ReceptionPracticeContext {
 
   clear(): void {
     this.generation++;
+    this.loaded = false;
     this.pending = null;
     this.items.set([]);
     this.selectedId.set('');
@@ -47,6 +71,7 @@ export class ReceptionPracticeContext {
         if (generation !== this.generation) return;
         const active = items.filter((p) => p.isActive);
         this.items.set(active);
+        this.loaded = true;
         if (!active.some((p) => p.id === this.selectedId())) {
           this.selectedId.set(active.length === 1 ? active[0].id : '');
         }

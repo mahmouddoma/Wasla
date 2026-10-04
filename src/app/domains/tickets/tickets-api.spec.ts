@@ -21,16 +21,40 @@ describe('TicketsApi', () => {
 
   it.each([
     [
+      'Walk-In options',
+      'GET',
+      '/api/v1/reception/practices/p1/walk-in/options',
+      () => api.walkInOptions('p1'),
+    ],
+    [
       'WAS-166',
       'POST',
       '/api/v1/practices/p1/reservations/r1/check-in',
-      () => api.checkIn('p1', 'r1', { paidAmount: 250, paymentMethod: 'Cash', referenceNumber: null, notes: null }, 'intent'),
+      () =>
+        api.checkIn(
+          'p1',
+          'r1',
+          { paidAmount: 250, paymentMethod: 'Cash', referenceNumber: null, notes: null },
+          'intent',
+        ),
     ],
     [
       'WAS-167',
       'POST',
       '/api/v1/practices/p1/reservations/r1/force-check-in',
-      () => api.forceCheckIn('p1', 'r1', { paidAmount: 250, reason: 'Early arrival', paymentMethod: 'Card', referenceNumber: 'POS', notes: null }, 'intent'),
+      () =>
+        api.forceCheckIn(
+          'p1',
+          'r1',
+          {
+            paidAmount: 250,
+            reason: 'Early arrival',
+            paymentMethod: 'Card',
+            referenceNumber: 'POS',
+            notes: null,
+          },
+          'intent',
+        ),
     ],
     [
       'WAS-168',
@@ -39,7 +63,15 @@ describe('TicketsApi', () => {
       () =>
         api.createWalkIn(
           'p1',
-          { patientId: 'u1', segmentId: 's1', visitTypeId: 'v1', paidAmount: 250, paymentMethod: 'Wallet', referenceNumber: null, notes: null },
+          {
+            patientId: 'u1',
+            segmentId: 's1',
+            visitTypeId: 'v1',
+            paidAmount: 250,
+            paymentMethod: 'Wallet',
+            referenceNumber: null,
+            notes: null,
+          },
           'intent',
         ),
     ],

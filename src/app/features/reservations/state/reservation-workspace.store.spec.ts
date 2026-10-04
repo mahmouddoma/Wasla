@@ -11,6 +11,7 @@ import { ReservationWorkspaceStore, ReservationDraft } from './reservation-works
 import { reservationFixture, metadataFixture } from '../reservation-test-fixtures';
 describe('ReservationWorkspaceStore', () => {
   const api = {
+    filterOptions: vi.fn(() => of({ segments: [] })),
     cancel: vi.fn(),
     details: vi.fn(),
     list: vi.fn(),
@@ -29,6 +30,7 @@ describe('ReservationWorkspaceStore', () => {
     allows: (code: string) => grants().includes(code),
     practices: () => [{ id: 'clinic', nameAr: 'Test', nameEn: 'Test' }],
     select: (id: string) => currentPracticeId.set(id),
+    ensureLoaded: vi.fn(async () => undefined),
     refresh: vi.fn(async () => {
       grants.set([]);
     }),
@@ -70,6 +72,23 @@ describe('ReservationWorkspaceStore', () => {
     store.metadata.set(metadataFixture);
     store.detail.set(reservationFixture);
     store.editor.set('cancel');
+  });
+  it('coalesces concurrent practice selections and preserves deliberate refresh', async () => {
+    store.actor.set('Reception');
+    grants.set(['PracticeReservations.View']);
+    store.practices.set([{ id: 'clinic', nameAr: 'Clinic', nameEn: 'Clinic' }]);
+    await Promise.all([store.selectPractice('clinic'), store.selectPractice('clinic')]);
+    expect(api.filterOptions).toHaveBeenCalledTimes(1);
+    expect(api.list).toHaveBeenCalledTimes(1);
+    await store.loadList();
+    expect(api.list).toHaveBeenCalledTimes(2);
+  });
+  it('does not load reservation filters without delegated View', async () => {
+    store.actor.set('Reception');
+    store.practices.set([{ id: 'clinic', nameAr: 'Clinic', nameEn: 'Clinic' }]);
+    await store.selectPractice('clinic');
+    expect(api.filterOptions).not.toHaveBeenCalled();
+    expect(api.list).not.toHaveBeenCalled();
   });
   it('retains the same intent key when retrying a failed request', async () => {
     api.cancel
@@ -211,7 +230,14 @@ describe('ReservationWorkspaceStore', () => {
     grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
     ticketsApi.checkIn.mockReturnValue(of({ ticketId: 'ticket-1' }));
 
-    await store.checkIn({ paidAmount: 300, paymentMethod: 'Cash', referenceNumber: null, notes: null, force: false, reason: '' });
+    await store.checkIn({
+      paidAmount: 300,
+      paymentMethod: 'Cash',
+      referenceNumber: null,
+      notes: null,
+      force: false,
+      reason: '',
+    });
 
     expect(ticketsApi.checkIn).toHaveBeenCalledWith(
       'clinic',
@@ -229,12 +255,25 @@ describe('ReservationWorkspaceStore', () => {
     grants.set(['PracticeTickets.RecordPayment', 'PracticeTickets.ForceCheckIn']);
     ticketsApi.forceCheckIn.mockReturnValue(of({ ticketId: 'ticket-1' }));
 
-    await store.checkIn({ paidAmount: 300, paymentMethod: 'Card', referenceNumber: 'POS', notes: null, force: true, reason: 'Patient arrived early' });
+    await store.checkIn({
+      paidAmount: 300,
+      paymentMethod: 'Card',
+      referenceNumber: 'POS',
+      notes: null,
+      force: true,
+      reason: 'Patient arrived early',
+    });
 
     expect(ticketsApi.forceCheckIn).toHaveBeenCalledWith(
       'clinic',
       reservationFixture.reservationId,
-      { paidAmount: 300, reason: 'Patient arrived early', paymentMethod: 'Card', referenceNumber: 'POS', notes: null },
+      {
+        paidAmount: 300,
+        reason: 'Patient arrived early',
+        paymentMethod: 'Card',
+        referenceNumber: 'POS',
+        notes: null,
+      },
       expect.any(String),
     );
   });
@@ -244,7 +283,14 @@ describe('ReservationWorkspaceStore', () => {
     store.detail.set({ ...reservationFixture, status: 'Active', price: 300 });
     grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
 
-    await store.checkIn({ paidAmount: 299, paymentMethod: 'Cash', referenceNumber: null, notes: null, force: false, reason: '' });
+    await store.checkIn({
+      paidAmount: 299,
+      paymentMethod: 'Cash',
+      referenceNumber: null,
+      notes: null,
+      force: false,
+      reason: '',
+    });
 
     expect(ticketsApi.checkIn).not.toHaveBeenCalled();
   });

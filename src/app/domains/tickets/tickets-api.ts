@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  WalkInOptions,
   CheckInTicketRequest,
   CreateWalkInTicketRequest,
   ForceCheckInTicketRequest,
@@ -52,6 +53,12 @@ export class TicketsApi {
       `${this.practiceUrl(practiceId)}/tickets/walk-in`,
       body,
       this.intentHeaders(intentKey),
+    );
+  }
+
+  walkInOptions(practiceId: string): Observable<WalkInOptions> {
+    return this.http.get<WalkInOptions>(
+      `${this.root}/reception/practices/${this.id(practiceId)}/walk-in/options`,
     );
   }
 

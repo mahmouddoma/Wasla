@@ -26,11 +26,13 @@ import { PatientSearchItem } from '../../../domains/patients';
 import { PatientPicker } from '../components/patient-picker/patient-picker';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 
+import { SlicePipe } from '@angular/common';
+
 @Component({
   selector: 'app-reception-family-requests',
-  imports: [FormField, RouterLink, PatientPicker, TranslatePipe, PageHeader],
+  imports: [FormField, RouterLink, PatientPicker, TranslatePipe, PageHeader, SlicePipe],
   templateUrl: './reception-family-requests.html',
-  styleUrls: ['../../healthcare-workspace.css', './reception-family-requests.css'],
+  styleUrl: './reception-family-requests.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReceptionFamilyRequests {
@@ -88,6 +90,12 @@ export class ReceptionFamilyRequests {
   protected readonly canResubmit = this.session.hasPermission(
     PERMISSIONS.familyRelationshipRequestsResubmitAssisted,
   );
+  protected readonly activeView = signal<'all' | 'form' | 'list'>('all');
+
+  protected setView(view: 'all' | 'form' | 'list'): void {
+    this.activeView.set(view);
+  }
+
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.filterModel().pageSize)),
   );

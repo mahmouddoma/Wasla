@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { PERMISSIONS } from '../../../core/auth/permissions';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -25,6 +33,14 @@ export class PortalLayout {
   protected readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+
+  constructor() {
+    effect(() => {
+      if (this.session.user()?.userType.toLowerCase() === 'reception') {
+        void this.practiceContext.ensureLoaded();
+      }
+    });
+  }
 
   protected selectPractice(event: Event): void {
     this.practiceContext.select((event.currentTarget as HTMLSelectElement).value);
@@ -100,7 +116,7 @@ export class PortalLayout {
     }
 
     if (userType === 'reception') {
-      return [
+      const items: PortalNavItem[] = [
         {
           id: 'workspace',
           labelKey: 'sidebar.workspace',
@@ -138,6 +154,30 @@ export class PortalLayout {
           icon: 'receipt',
         },
       ];
+      return items.filter((item) => {
+        switch (item.id) {
+          case 'reservations':
+            return this.practiceContext.hasAnyPracticeWithAnyPermission([
+              PERMISSIONS.practiceReservationsView,
+              PERMISSIONS.practiceReservationsCreate,
+            ]);
+          case 'queue':
+            return this.practiceContext.hasAnyPracticeWithPermission(
+              PERMISSIONS.practiceTicketsView,
+            );
+          case 'finance':
+            return this.practiceContext.hasAnyPracticeWithPermission(
+              PERMISSIONS.practicePaymentsView,
+            );
+          case 'patients':
+            return (
+              this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
+              this.session.hasPermission(PERMISSIONS.patientsRegister)
+            );
+          default:
+            return true;
+        }
+      });
     }
 
     // Default: Patient

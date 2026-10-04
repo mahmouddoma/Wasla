@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,13 +6,15 @@ import {
   OnInit,
   afterRenderEffect,
   computed,
+  effect,
+  untracked,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
 import { FormField, form, min, required, submit, validate } from '@angular/forms/signals';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { firstValueFrom, forkJoin, Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../../core/auth/permissions';
@@ -20,15 +23,11 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { ToastService } from '../../../../core/notifications/toast.service';
-import {
-  DoctorPracticePrice,
-  DoctorPracticeSegment,
-  DoctorPracticesApi,
-  DoctorPracticeVisitType,
-} from '../../../../domains/doctor-practices';
+import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
 import { PaymentMethod } from '../../../../domains/finance';
 import {
+  WalkInSegmentOption,
   CreateWalkInTicketRequest,
   PracticeQueue,
   PracticeTicket,
@@ -36,20 +35,12 @@ import {
   TicketsApi,
 } from '../../../../domains/tickets';
 
-export interface PracticeTicketDetails extends PracticeTicket {
-  readonly currencyCode?: string | null;
-  readonly canRefund?: boolean;
-  readonly isRefunded?: boolean;
-  readonly refundableAmount?: number;
-  readonly paymentId?: string | null;
-  readonly paymentTransactionNumber?: string | null;
-  readonly refundId?: string | null;
-  readonly refundTransactionNumber?: string | null;
-}
-
 type QueueAction =
   'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'complete' | 'cancel';
 
+/**
+ * Queue workspace managing practice queues, live calling, and direct walk-in tickets.
+ */
 @Component({
   selector: 'app-queue-workspace',
   imports: [FormField, RouterLink, TranslatePipe, PageHeader],
@@ -66,6 +57,8 @@ export class QueueWorkspace implements OnInit {
   private readonly toast = inject(ToastService);
   protected readonly language = inject(LanguageService);
   private readonly drawer = viewChild<ElementRef<HTMLDialogElement>>('drawer');
+  private initialized = false;
+  private generation = 0;
   private readonly intents = new Map<string, string>();
 
   protected readonly actor = signal<TicketActor>('Doctor');
@@ -74,14 +67,17 @@ export class QueueWorkspace implements OnInit {
   >([]);
   protected readonly practiceId = signal('');
   protected readonly queue = signal<PracticeQueue>(this.emptyQueue());
-  protected readonly selected = signal<PracticeTicketDetails | null>(null);
+  protected readonly selected = signal<PracticeTicket | null>(null);
   protected readonly loading = signal(false);
   protected readonly detailLoading = signal(false);
   protected readonly busy = signal(false);
   protected readonly messages = signal<readonly string[]>([]);
-  protected readonly segments = signal<readonly DoctorPracticeSegment[]>([]);
-  protected readonly visitTypes = signal<readonly DoctorPracticeVisitType[]>([]);
-  protected readonly prices = signal<readonly DoctorPracticePrice[]>([]);
+  protected readonly segments = signal<readonly WalkInSegmentOption[]>([]);
+  protected readonly visitTypes = computed(
+    () =>
+      this.segments().find((segment) => segment.segmentId === this.walkInModel().segmentId)
+        ?.visitTypes ?? [],
+  );
   protected readonly reasonModel = signal({ reason: '' });
   protected readonly walkInModel = signal({
     patientId: '',
@@ -94,11 +90,8 @@ export class QueueWorkspace implements OnInit {
   });
   protected readonly walkInPrice = computed(
     () =>
-      this.prices().find(
-        (price) =>
-          price.segmentId === this.walkInModel().segmentId &&
-          price.visitTypeId === this.walkInModel().visitTypeId,
-      )?.price,
+      this.visitTypes().find((visit) => visit.visitTypeId === this.walkInModel().visitTypeId)
+        ?.price,
   );
   protected readonly reasonForm = form(this.reasonModel, (path) => {
     required(path.reason, { message: 'tickets.validation.reasonRequired' });
@@ -118,26 +111,36 @@ export class QueueWorkspace implements OnInit {
   });
 
   protected readonly isDoctor = computed(() => this.actor() === 'Doctor');
-  protected readonly canCall = computed(
-    () =>
-      this.isDoctor() ||
-      this.reception.allows('PracticeQueue.Manage') ||
-      this.reception.allows('DoctorReception.Queue.Call'),
+  protected readonly canCallNext = computed(() => this.permitted(PERMISSIONS.practiceTicketsCall));
+  protected readonly canManualCall = computed(() =>
+    this.permitted(PERMISSIONS.practiceTicketsManualCall),
   );
-  protected readonly canViewQueue = computed(
+  protected readonly canRestore = computed(() =>
+    this.permitted(PERMISSIONS.practiceTicketsRestoreNoShow),
+  );
+  protected readonly canCancel = computed(() => this.permitted(PERMISSIONS.practiceTicketsCancel));
+  protected readonly canViewQueue = computed(() => this.permitted(PERMISSIONS.practiceTicketsView));
+  protected readonly canRefund = computed(
     () =>
       this.isDoctor() ||
-      this.reception.allows('PracticeQueue.View') ||
-      this.reception.allows('DoctorReception.Queue.View') ||
-      this.canCall(),
+      (this.reception.allows(PERMISSIONS.practicePaymentsView) &&
+        this.reception.allows(PERMISSIONS.practicePaymentsRefund)),
   );
   protected readonly canWalkIn = computed(
     () =>
       this.actor() === 'Reception' &&
-      (this.reception.allows('PracticeTickets.CreateWalkIn') ||
-        this.reception.allows('PracticeWalkIns.Create')) &&
-      this.reception.allows('PracticeTickets.RecordPayment'),
+      this.reception.currentPracticeId() === this.practiceId() &&
+      this.reception.allows(PERMISSIONS.practiceTicketsCreateWalkIn) &&
+      this.reception.allows(PERMISSIONS.practiceTicketsRecordPayment),
   );
+
+  private permitted(permission: string): boolean {
+    return (
+      this.isDoctor() ||
+      (this.reception.currentPracticeId() === this.practiceId() &&
+        this.reception.allows(permission))
+    );
+  }
   protected readonly queueOccupied = computed(
     () => !!this.queue().called || !!this.queue().inProgress,
   );
@@ -150,6 +153,14 @@ export class QueueWorkspace implements OnInit {
   );
 
   constructor() {
+    effect(() => {
+      const id = this.reception.currentPracticeId();
+      if (this.initialized && this.actor() === 'Reception' && id !== this.practiceId()) {
+        untracked(() => {
+          void this.selectPractice(id);
+        });
+      }
+    });
     afterRenderEffect(() => {
       const dialog = this.drawer()?.nativeElement;
       if (dialog && !dialog.open) dialog.showModal();
@@ -165,18 +176,21 @@ export class QueueWorkspace implements OnInit {
           (await firstValueFrom(this.doctorPractices.list())).filter((item) => item.isActive),
         );
       } else {
-        await this.reception.refresh();
+        await this.reception.ensureLoaded();
         this.practices.set(this.reception.practices());
       }
-      const requested = this.route.snapshot.queryParamMap.get('practiceId') || '';
+      const requested =
+        this.route.snapshot.queryParamMap.get('practiceId') ||
+        (this.actor() === 'Reception' ? this.reception.currentPracticeId() : '');
       const initial = this.practices().some((item) => item.id === requested)
         ? requested
         : this.practices().length === 1
           ? this.practices()[0].id
           : '';
       await this.selectPractice(initial);
+      this.initialized = true;
     } catch (error) {
-      this.failure(error);
+      await this.failure(error);
     } finally {
       this.loading.set(false);
     }
@@ -190,47 +204,55 @@ export class QueueWorkspace implements OnInit {
     const id =
       typeof idOrEvent === 'string' ? idOrEvent : (idOrEvent.target as HTMLSelectElement).value;
     if (id && !this.practices().some((item) => item.id === id)) return;
+    const generation = ++this.generation;
     this.practiceId.set(id);
     if (this.actor() === 'Reception') this.reception.select(id);
-    this.close();
+    this.selected.set(null);
+    this.detailLoading.set(false);
     this.queue.set(this.emptyQueue());
     this.resetWalkIn();
+    this.intents.clear();
     if (id && this.canViewQueue()) {
       await this.loadQueue();
-      if (this.canWalkIn()) await this.loadWalkInOptions();
+      if (generation === this.generation && this.canWalkIn()) await this.loadWalkInOptions();
     }
   }
 
   protected async loadQueue(): Promise<void> {
     if (!this.practiceId() || !this.canViewQueue() || this.busy()) return;
+    const id = this.practiceId(),
+      generation = this.generation;
     this.loading.set(true);
     this.messages.set([]);
     try {
-      this.queue.set(await firstValueFrom(this.api.queue(this.practiceId())));
+      const queue = await firstValueFrom(this.api.queue(id));
+      if (generation === this.generation && this.canViewQueue()) this.queue.set(queue);
     } catch (error) {
-      this.failure(error);
+      if (generation === this.generation) await this.failure(error);
     } finally {
-      this.loading.set(false);
+      if (generation === this.generation) this.loading.set(false);
     }
   }
 
   protected async inspect(ticketId: string): Promise<void> {
-    if (!this.practiceId()) return;
+    if (!this.practiceId() || !this.canViewQueue()) return;
+    const generation = this.generation;
     this.detailLoading.set(true);
     this.messages.set([]);
     this.selected.set(null);
     this.reasonModel.set({ reason: '' });
     try {
-      this.selected.set((await firstValueFrom(this.api.details(this.practiceId(), ticketId))) as PracticeTicketDetails);
+      const ticket = await firstValueFrom(this.api.details(this.practiceId(), ticketId));
+      if (generation === this.generation && this.canViewQueue()) this.selected.set(ticket);
     } catch (error) {
-      this.failure(error);
+      if (generation === this.generation) await this.failure(error);
     } finally {
-      this.detailLoading.set(false);
+      if (generation === this.generation) this.detailLoading.set(false);
     }
   }
 
   protected async callNext(): Promise<void> {
-    if (!this.canCall() || !this.practiceId()) return;
+    if (!this.canCallNext() || !this.practiceId()) return;
     await this.runMutation(
       'call-next',
       this.api.callNext(this.practiceId(), this.intentKey('call-next')),
@@ -263,7 +285,11 @@ export class QueueWorkspace implements OnInit {
 
   protected selectWalkInOption(field: 'segmentId' | 'visitTypeId', event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.walkInModel.update((model) => ({ ...model, [field]: value }));
+    this.walkInModel.update((model) => ({
+      ...model,
+      [field]: value,
+      ...(field === 'segmentId' ? { visitTypeId: '' } : {}),
+    }));
     this.walkInModel.update((model) => ({ ...model, paidAmount: this.walkInPrice() ?? 0 }));
   }
 
@@ -287,7 +313,19 @@ export class QueueWorkspace implements OnInit {
     if (action === 'restore' && ticket.isRefunded) return;
     if (action === 'start' && !this.canStart()) return;
     if (action === 'complete' && !this.canComplete()) return;
-    if (action !== 'start' && action !== 'complete' && !this.canCall()) return;
+    const allowed =
+      action === 'manual-call'
+        ? this.canManualCall()
+        : action === 'restore'
+          ? this.canRestore()
+          : action === 'cancel'
+            ? this.canCancel()
+            : action === 'start'
+              ? this.canStart()
+              : action === 'complete'
+                ? this.canComplete()
+                : this.canCallNext();
+    if (!allowed) return;
     const version = { rowVersion: ticket.rowVersion };
     const reasonBody = { ...version, reason };
     const signature = `${action}:${ticket.ticketId}:${ticket.rowVersion}:${reason}`;
@@ -341,56 +379,52 @@ export class QueueWorkspace implements OnInit {
 
   private async runMutation(signature: string, request: Observable<PracticeTicket>): Promise<void> {
     if (this.busy()) return;
+    const generation = this.generation;
     this.busy.set(true);
     this.messages.set([]);
     try {
       const ticket = await firstValueFrom(request);
       this.intents.delete(signature);
-      this.selected.set(ticket as PracticeTicketDetails);
       this.toast.success('tickets.mutationSuccess');
+      if (generation !== this.generation) return;
+      this.selected.set(ticket);
       await this.loadQueueAfterMutation();
     } catch (error) {
-      this.failure(error);
-      await this.loadQueueAfterMutation();
+      await this.failure(error);
+      if (!(error instanceof HttpErrorResponse && error.status === 403))
+        await this.loadQueueAfterMutation();
     } finally {
       this.busy.set(false);
     }
   }
 
   private async loadQueueAfterMutation(): Promise<void> {
+    if (!this.canViewQueue()) return;
+    const id = this.practiceId(),
+      generation = this.generation;
     try {
-      this.queue.set(await firstValueFrom(this.api.queue(this.practiceId())));
+      const queue = await firstValueFrom(this.api.queue(id));
+      if (generation === this.generation && this.canViewQueue()) this.queue.set(queue);
     } catch (error) {
-      this.failure(error);
+      await this.failure(error);
     }
   }
 
   private async loadWalkInOptions(): Promise<void> {
+    if (!this.canWalkIn()) return;
+    const id = this.practiceId(),
+      generation = this.generation;
     try {
-      const { segments, visitTypes, prices } = await firstValueFrom(
-        forkJoin({
-          segments: this.doctorPractices.segments(this.practiceId()),
-          visitTypes: this.doctorPractices.visitTypes(this.practiceId()),
-          prices: this.doctorPractices.prices(this.practiceId()),
-        }),
-      );
-      this.segments.set(segments.filter((segment) => segment.isActive));
-      this.visitTypes.set(
-        visitTypes.filter(
-          (visitType) => visitType.isActive && visitType.type === 'NewConsultation',
-        ),
-      );
-      this.prices.set(prices);
+      const options = await firstValueFrom(this.api.walkInOptions(id));
+      if (generation === this.generation && this.canWalkIn()) this.segments.set(options.segments);
     } catch (error) {
-      this.failure(error);
+      if (generation === this.generation) await this.failure(error);
     }
   }
 
   private resetWalkIn(): void {
     this.resetWalkInForm();
     this.segments.set([]);
-    this.visitTypes.set([]);
-    this.prices.set([]);
   }
 
   private resetWalkInForm(): void {
@@ -413,7 +447,22 @@ export class QueueWorkspace implements OnInit {
     return key;
   }
 
-  private failure(error: unknown): void {
+  private async failure(error: unknown): Promise<void> {
+    if (
+      error instanceof HttpErrorResponse &&
+      error.status === 403 &&
+      this.actor() === 'Reception'
+    ) {
+      await this.reception.refresh();
+      this.practices.set(this.reception.practices());
+      this.generation++;
+      this.queue.set(this.emptyQueue());
+      this.selected.set(null);
+      this.resetWalkIn();
+      this.messages.set(['reception.accessChanged']);
+      this.toast.error('reception.accessChanged');
+      return;
+    }
     const parsed = parseApiErrors(error);
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];
     this.messages.set(messages.length ? messages : ['tickets.operationFailed']);

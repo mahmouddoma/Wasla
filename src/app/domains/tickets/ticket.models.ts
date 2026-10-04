@@ -92,3 +92,26 @@ export interface TicketVersionRequest {
 export interface TicketReasonRequest extends TicketVersionRequest {
   readonly reason: string;
 }
+
+/** Server-owned valid Walk-In combinations; independent of reservation availability. */
+export interface WalkInVisitTypeOption {
+  readonly visitTypeId: string;
+  readonly code: 'NewConsultation';
+  readonly nameAr: string;
+  readonly nameEn: string | null;
+  readonly price: number;
+}
+
+export interface WalkInSegmentOption {
+  readonly segmentId: string;
+  readonly nameAr: string;
+  readonly nameEn: string | null;
+  readonly priority: number;
+  readonly visitTypes: readonly WalkInVisitTypeOption[];
+}
+
+export interface WalkInOptions {
+  readonly practiceId: string;
+  readonly currencyCode: 'EGP';
+  readonly segments: readonly WalkInSegmentOption[];
+}
