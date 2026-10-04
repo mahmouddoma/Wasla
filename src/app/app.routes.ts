@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 import { accountAreaGuard, authenticatedGuard } from './core/auth/auth.guards';
 
 export const routes: Routes = [
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'login',
+  },
   // Public & Doctor Discovery
   {
     path: 'doctors',
@@ -80,22 +85,26 @@ export const routes: Routes = [
       {
         path: 'doctor/finance',
         data: { actor: 'Doctor', view: 'transactions' },
-        loadChildren: () => import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'doctor/revenue',
         data: { actor: 'Doctor', view: 'revenue' },
-        loadChildren: () => import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'reception/finance',
         data: { actor: 'Reception', view: 'transactions' },
-        loadChildren: () => import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'patient/finance',
         data: { actor: 'Patient', view: 'transactions' },
-        loadChildren: () => import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'doctor/reservations',

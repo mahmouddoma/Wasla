@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '../../../core/auth/permissions';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, untracked, inject, signal } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -87,6 +88,8 @@ export class ReservationWorkspaceStore {
   private bookingSequence = 0;
   private detailSequence = 0;
   private scopeGeneration = 0;
+  private initializing = false;
+  private selection: { id: string; promise: Promise<void> } | null = null;
   private intent: { signature: string; key: string } | null = null;
   readonly scope = computed<ReservationScope>(() => ({
     actor: this.actor(),
@@ -121,8 +124,8 @@ export class ReservationWorkspaceStore {
       this.detail()?.status === 'Active' &&
       this.detail()?.price !== undefined &&
       this.reception.currentPracticeId() === this.practiceId() &&
-      this.reception.allows('PracticeTickets.CheckIn') &&
-      this.reception.allows('PracticeTickets.RecordPayment'),
+      this.reception.allows(PERMISSIONS.practiceTicketsCheckIn) &&
+      this.reception.allows(PERMISSIONS.practiceTicketsRecordPayment),
   );
   readonly canForceCheckIn = computed(
     () =>
@@ -130,8 +133,8 @@ export class ReservationWorkspaceStore {
       this.detail()?.status === 'Active' &&
       this.detail()?.price !== undefined &&
       this.reception.currentPracticeId() === this.practiceId() &&
-      this.reception.allows('PracticeTickets.ForceCheckIn') &&
-      this.reception.allows('PracticeTickets.RecordPayment'),
+      this.reception.allows(PERMISSIONS.practiceTicketsForceCheckIn) &&
+      this.reception.allows(PERMISSIONS.practiceTicketsRecordPayment),
   );
 
   constructor() {
@@ -139,6 +142,7 @@ export class ReservationWorkspaceStore {
       const id = this.reception.currentPracticeId();
       if (
         this.actor() === 'Reception' &&
+        !this.initializing &&
         this.metadata() &&
         !this.busy() &&
         id !== this.practiceId()
@@ -149,6 +153,7 @@ export class ReservationWorkspaceStore {
     });
   }
   async initialize(actor: ReservationActor, practiceId = ''): Promise<void> {
+    this.initializing = true;
     this.actor.set(actor);
     this.loading.set(true);
     try {
@@ -167,7 +172,7 @@ export class ReservationWorkspaceStore {
           (await firstValueFrom(this.practicesApi.list())).filter((p) => p.isActive),
         );
       if (actor === 'Reception') {
-        await this.reception.refresh();
+        await this.reception.ensureLoaded();
         this.practices.set(this.reception.practices());
       }
       if (this.scoped()) {
@@ -183,10 +188,21 @@ export class ReservationWorkspaceStore {
     } catch (error) {
       await this.failure(error);
     } finally {
+      this.initializing = false;
       this.loading.set(false);
     }
   }
-  async selectPractice(id: string): Promise<void> {
+  selectPractice(id: string): Promise<void> {
+    if (this.selection?.id === id) return this.selection.promise;
+    const promise = this.loadPractice(id);
+    const selection = { id, promise };
+    this.selection = selection;
+    void promise.finally(() => {
+      if (this.selection === selection) this.selection = null;
+    });
+    return promise;
+  }
+  private async loadPractice(id: string): Promise<void> {
     if (this.busy()) return;
     if (this.scoped() && id && !this.practices().some((p) => p.id === id)) return;
     const generation = ++this.scopeGeneration;
@@ -334,7 +350,7 @@ export class ReservationWorkspaceStore {
   async searchPatients(searchText: string): Promise<void> {
     if (
       this.actor() !== 'Reception' ||
-      !this.reception.allows('Patients.SearchBasic') ||
+      !this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
       !searchText.trim()
     )
       return;
@@ -657,6 +673,9 @@ export class ReservationWorkspaceStore {
       this.editor.set(null);
       this.resetAvailability();
       this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+      this.messages.set(['reception.accessChanged']);
+      this.toast.error('reception.accessChanged');
+      this.filters.set(null);
       await this.reception.refresh();
       this.practices.set(this.reception.practices());
       this.practiceId.set(this.reception.currentPracticeId());

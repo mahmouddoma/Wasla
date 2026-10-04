@@ -1,11 +1,68 @@
-<main class="health-workspace" [dir]="uiLanguage.dir()">
-  <!-- Standardized Page Header -->
+<!-- ── Reception Family Requests Workspace (طلبات إثبات العلاقة) ── -->
+<main class="reception-requests-shell" [dir]="uiLanguage.dir()">
+  <!-- ── 1. Enterprise Page Header ────────────────────────────────────── -->
   <app-page-header
     [heading]="'ui.full.710' | t"
     [description]="'ui.full.711' | t"
     icon="family-requests"
   >
     <div pageHeaderActions class="family-requests-actions">
+      <!-- View Mode Segmented Controls (Split / Form / List) -->
+      <div class="workspace-view-segmented" role="tablist" aria-label="عرض لوحة العمل">
+        <button
+          type="button"
+          class="segmented-btn"
+          [class.active]="activeView() === 'all'"
+          (click)="setView('all')"
+          role="tab"
+          [attr.aria-selected]="activeView() === 'all'"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="8" height="18" rx="2" />
+            <rect x="13" y="3" width="8" height="18" rx="2" />
+          </svg>
+          <span>{{ 'family.viewAll' | t }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="segmented-btn"
+          [class.active]="activeView() === 'form'"
+          (click)="setView('form')"
+          role="tab"
+          [attr.aria-selected]="activeView() === 'form'"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>{{ 'family.viewForm' | t }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="segmented-btn"
+          [class.active]="activeView() === 'list'"
+          (click)="setView('list')"
+          role="tab"
+          [attr.aria-selected]="activeView() === 'list'"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <span>{{ 'family.viewList' | t }}</span>
+          @if (result()?.totalCount; as total) {
+            <span class="count-pill">{{ total }}</span>
+          }
+        </button>
+      </div>
+
+      <div class="header-divider" aria-hidden="true"></div>
+
       <a class="btn-head-patient-search" routerLink="/reception/patients">
         <svg
           viewBox="0 0 24 24"
@@ -21,6 +78,7 @@
         </svg>
         <span>{{ 'ui.full.712' | t }}</span>
       </a>
+
       <a class="btn-head-back" routerLink="/workspace/reception">
         <svg
           viewBox="0 0 24 24"
@@ -38,256 +96,606 @@
     </div>
   </app-page-header>
 
+  <!-- ── 2. Feedback Notifications ────────────────────────────────────── -->
   @if (messages().length) {
-    <div class="notice error" role="alert">
-      @for (message of messages(); track message) {
-        <p>{{ message | t }}</p>
-      }
+    <div class="feedback-alert error" role="alert">
+      <div class="alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <div class="alert-content">
+        @for (message of messages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
     </div>
   }
+
   @if (successMessage()) {
-    <div class="notice success" role="status">{{ successMessage() }}</div>
-  }
-
-  @if (canCreate) {
-    <section class="workspace-panel assisted-create">
-      <div class="section-heading">
-        <div>
-          <h2>{{ 'ui.full.713' | t }}</h2>
-        </div>
-        <p>{{ 'ui.full.714' | t }}</p>
-      </div>
-      <div class="picker-grid">
-        <app-patient-picker [label]="'requests.applicant' | t" (selected)="requester.set($event)" />
-        <app-patient-picker
-          [label]="'requests.targetPatient' | t"
-          (selected)="target.set($event)"
-        />
-      </div>
-      <form class="detail-form assisted-form" (submit)="submitRequest($event)" novalidate>
-        <label class="form-field"
-          ><span>{{ 'common.requestType' | t }}</span
-          ><select [formField]="requestForm.requestType">
-            <option value="CreateFamily">{{ 'family.create' | t }}</option>
-            <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
-          </select></label
-        >
-        @if (requestModel().requestType === 'AddFamilyMember') {
-          <label class="form-field"
-            ><span>{{ 'family.idRequiredLabel' | t }}</span
-            ><input dir="ltr" [formField]="requestForm.familyId"
-          /></label>
-        }
-        <label class="form-field"
-          ><span>{{ 'family.requesterRole' | t }}</span
-          ><select [formField]="requestForm.requesterClaimedRole">
-            <option value="Father">{{ 'family.father' | t }}</option>
-            <option value="Mother">{{ 'family.mother' | t }}</option>
-            <option value="Guardian">{{ 'family.guardian' | t }}</option>
-            <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
-          </select></label
-        >
-        <label class="form-field"
-          ><span>{{ 'family.targetRole' | t }}</span
-          ><select [formField]="requestForm.targetClaimedRole">
-            <option value="Father">{{ 'family.father' | t }}</option>
-            <option value="Mother">{{ 'family.mother' | t }}</option>
-            <option value="Child">{{ 'family.child' | t }}</option>
-            <option value="Guardian">{{ 'family.guardian' | t }}</option>
-            <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
-          </select></label
-        >
-        <label class="form-field"
-          ><span>{{ 'ui.full.715' | t }}</span
-          ><input
-            [placeholder]="'family.documentTypesExample' | t"
-            [formField]="requestForm.documentTypes"
-          /><small>{{ 'ui.full.716' | t }}</small></label
-        >
-        <label class="form-field">
-          <span>{{ 'ui.full.717' | t }}</span>
-          <input
-            type="file"
-            multiple
-            [accept]="evidenceFileAccept"
-            (change)="filesChanged($event)"
-          />
-          <small>{{ 'validation.evidenceFormats' | t }}</small>
-        </label>
-        <button class="btn btn-primary full" type="submit" [disabled]="submitting()">
-          {{
-            submitting() ? uiLanguage.t('ui.expressions.214') : uiLanguage.t('ui.expressions.215')
-          }}
-        </button>
-      </form>
-    </section>
-  }
-
-  @if (canView) {
-    <section class="workspace-panel requests-section">
-      <div class="section-heading">
-        <div>
-          <h2>{{ 'ui.full.718' | t }}</h2>
-        </div>
-        <p>{{ 'ui.full.719' | t }}</p>
-      </div>
-      <form class="compact-form" (submit)="loadRequests(1, $event)">
-        <label class="form-field"
-          ><span>{{ 'discovery.search' | t }}</span
-          ><input type="search" [formField]="filterForm.search"
-        /></label>
-        <label class="form-field"
-          ><span>{{ 'common.status' | t }}</span
-          ><select [formField]="filterForm.status">
-            <option value="">{{ 'common.all' | t }}</option>
-            <option [value]="'family.pendingFilter' | t">{{ 'family.pendingFilter' | t }}</option>
-            <option value="ModificationRequested">{{ 'family.changesFilter' | t }}</option>
-            <option [value]="'family.approvedFilter' | t">{{ 'family.approvedFilter' | t }}</option>
-            <option [value]="'family.rejectedFilter' | t">{{ 'family.rejectedFilter' | t }}</option>
-          </select></label
-        >
-        <label class="form-field"
-          ><span>{{ 'register.gender' | t }}</span
-          ><select [formField]="filterForm.requestType">
-            <option value="">{{ 'common.all' | t }}</option>
-            <option value="CreateFamily">{{ 'family.create' | t }}</option>
-            <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
-          </select></label
-        >
-        <button class="btn btn-primary" type="submit">{{ 'ui.full.720' | t }}</button>
-      </form>
-      @if (loading()) {
-        <div class="empty-state" role="status">{{ 'ui.full.721' | t }}</div>
-      } @else if (result(); as page) {
-        <div class="result-list">
-          @for (request of page.items; track request.requestId) {
-            <button class="request-row" type="button" (click)="openRequest(request.requestId)">
-              <div>
-                <strong>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</strong
-                ><span
-                  >{{ uiLanguage.label('requestType', request.requestType) }} ·
-                  {{ 'common.versionPrefix' | t }} {{ request.currentRevisionNumber }}</span
-                >
-              </div>
-              <span
-                class="status-badge"
-                [class.action]="request.status === 'ModificationRequested'"
-                >{{ uiLanguage.label('status', request.status) }}</span
-              >
-            </button>
-          } @empty {
-            <div class="empty-state">{{ 'ui.full.722' | t }}</div>
-          }
-        </div>
-        <nav class="pager" [attr.aria-label]="'ui.full.723' | t">
-          <button
-            class="btn btn-sm btn-outline-secondary"
-            type="button"
-            [disabled]="pageNumber() <= 1"
-            (click)="loadRequests(pageNumber() - 1)"
-          >
-            {{ 'discovery.previous' | t }}</button
-          ><span
-            >{{ 'discovery.page' | t }} {{ pageNumber() }} {{ 'discovery.of' | t }}
-            {{ totalPages() }}</span
-          ><button
-            class="btn btn-sm btn-outline-secondary"
-            type="button"
-            [disabled]="pageNumber() >= totalPages()"
-            (click)="loadRequests(pageNumber() + 1)"
-          >
-            {{ 'discovery.next' | t }}
-          </button>
-        </nav>
-      }
-    </section>
-  }
-
-  @if (selectedRequest(); as request) {
-    <aside class="details-drawer" [attr.aria-label]="'common.requestDetails' | t">
-      <button
-        class="drawer-close"
-        type="button"
-        (click)="closeDetails()"
-        [attr.aria-label]="'ui.full.724' | t"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" />
+    <div class="feedback-alert success" role="status">
+      <div class="alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
-      </button>
-      <span class="status-badge" [class.action]="request.status === 'ModificationRequested'">{{
-        uiLanguage.label('status', request.status)
-      }}</span>
-      <h2>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h2>
-      <p>
-        {{ uiLanguage.label('requestType', request.requestType) }} ·
-        {{ 'common.versionPrefix' | t }} {{ request.currentRevisionNumber }}
-      </p>
-      @if (request.status === 'ModificationRequested') {
-        <div class="notice warning">
-          <strong>{{ 'ui.full.725' | t }}</strong>
-          <p>{{ request.modificationMessage }}</p>
+      </div>
+      <div class="alert-content">
+        <p>{{ successMessage() }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- ── 3. Main Workspace Grid Container ─────────────────────────────── -->
+  <div
+    class="requests-workspace-grid"
+    [class.mode-split]="activeView() === 'all'"
+    [class.mode-form-only]="activeView() === 'form'"
+    [class.mode-list-only]="activeView() === 'list'"
+  >
+    <!-- Block 1: Create Review Request (إنشاء طلب للمراجعة) -->
+    @if (canCreate && (activeView() === 'all' || activeView() === 'form')) {
+      <section class="panel-surface assisted-create-section">
+        <header class="panel-header">
+          <div class="panel-title-cluster">
+            <span class="panel-icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <div>
+              <h2>{{ 'ui.full.713' | t }}</h2>
+              <p>{{ 'ui.full.714' | t }}</p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Patient Selection Deck (2 Columns) -->
+        <div class="patient-pickers-deck">
+          <div class="picker-column">
+            <app-patient-picker [label]="'requests.applicant' | t" (selected)="requester.set($event)" />
+          </div>
+          <div class="picker-divider" aria-hidden="true"></div>
+          <div class="picker-column">
+            <app-patient-picker
+              [label]="'requests.targetPatient' | t"
+              (selected)="target.set($event)"
+            />
+          </div>
         </div>
-      }
-      @if (request.status === 'Rejected') {
-        <div class="notice error">
-          <strong>{{ 'requests.finalRejectionReason' | t }}</strong>
-          <p>{{ request.rejectionReason }}</p>
-        </div>
-      }
-      <h3>{{ 'ui.full.726' | t }}</h3>
-      <div class="document-list">
-        @for (document of request.documents; track document.documentId) {
-          <button type="button" (click)="openDocument(document.documentId)">
-            <strong>{{ document.fileName }}</strong
-            ><span
-              >{{ uiLanguage.label('documentType', document.documentType) }} ·
-              {{ 'common.versionPrefix' | t }} {{ document.revisionNumber }}</span
+
+        <!-- Detail Form Grid (12-Column Grid System) -->
+        <form class="assisted-form-grid" (submit)="submitRequest($event)" novalidate>
+          <!-- Field: نوع الطلب -->
+          <div class="form-field col-6">
+            <label for="request-type-select">
+              <span>{{ 'common.requestType' | t }}</span>
+              <span class="req-indicator" aria-hidden="true">*</span>
+            </label>
+            <div class="select-wrapper">
+              <select id="request-type-select" [formField]="requestForm.requestType">
+                <option value="CreateFamily">{{ 'family.create' | t }}</option>
+                <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
+              </select>
+              <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Field: معرف العائلة (Conditional) -->
+          @if (requestModel().requestType === 'AddFamilyMember') {
+            <div class="form-field col-6">
+              <label for="family-id-input">
+                <span>{{ 'family.idRequiredLabel' | t }}</span>
+                <span class="req-indicator" aria-hidden="true">*</span>
+              </label>
+              <input
+                id="family-id-input"
+                dir="ltr"
+                class="field-input"
+                placeholder="e.g. fam-12345"
+                [formField]="requestForm.familyId"
+              />
+            </div>
+          }
+
+          <!-- Field: دور مقدم الطلب -->
+          <div class="form-field col-6">
+            <label for="requester-role-select">
+              <span>{{ 'family.requesterRole' | t }}</span>
+              <span class="req-indicator" aria-hidden="true">*</span>
+            </label>
+            <div class="select-wrapper">
+              <select id="requester-role-select" [formField]="requestForm.requesterClaimedRole">
+                <option value="Father">{{ 'family.father' | t }}</option>
+                <option value="Mother">{{ 'family.mother' | t }}</option>
+                <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
+              </select>
+              <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Field: دور المريض المستهدف -->
+          <div class="form-field col-6">
+            <label for="target-role-select">
+              <span>{{ 'family.targetRole' | t }}</span>
+              <span class="req-indicator" aria-hidden="true">*</span>
+            </label>
+            <div class="select-wrapper">
+              <select id="target-role-select" [formField]="requestForm.targetClaimedRole">
+                <option value="Father">{{ 'family.father' | t }}</option>
+                <option value="Mother">{{ 'family.mother' | t }}</option>
+                <option value="Child">{{ 'family.child' | t }}</option>
+                <option value="Guardian">{{ 'family.guardian' | t }}</option>
+                <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
+              </select>
+              <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Field: أنواع المستندات -->
+          <div class="form-field col-12">
+            <label for="document-types-input">
+              <span>{{ 'ui.full.715' | t }}</span>
+              <span class="req-indicator" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="document-types-input"
+              class="field-input"
+              [placeholder]="'family.documentTypesExample' | t"
+              [formField]="requestForm.documentTypes"
+            />
+            <small class="field-hint">{{ 'ui.full.716' | t }}</small>
+          </div>
+
+          <!-- Field: مستندات الإثبات (Custom File Upload Zone) -->
+          <div class="form-field col-12">
+            <label>
+              <span>{{ 'ui.full.717' | t }}</span>
+              <span class="req-indicator" aria-hidden="true">*</span>
+            </label>
+            <div class="file-upload-card" [class.has-selection]="evidenceFiles().length > 0">
+              <input
+                id="evidence-file-input"
+                type="file"
+                multiple
+                [accept]="evidenceFileAccept"
+                (change)="filesChanged($event)"
+                class="sr-only-input"
+              />
+              <label for="evidence-file-input" class="file-upload-trigger">
+                <div class="upload-icon-circle" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </div>
+                <div class="upload-text-block">
+                  @if (evidenceFiles().length > 0) {
+                    <span class="upload-title file-success">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      <span>{{ 'family.filesSelected' | t }} ({{ evidenceFiles().length }})</span>
+                    </span>
+                    <div class="selected-files-list">
+                      @for (file of evidenceFiles(); track file.name) {
+                        <span class="file-name-chip">{{ file.name }}</span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="upload-title">{{ 'family.chooseFilesPrompt' | t }}</span>
+                    <span class="upload-sub">{{ 'family.uploadHint' | t }} · {{ 'validation.evidenceFormats' | t }}</span>
+                  }
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Form Actions Bar -->
+          <div class="form-actions-bar col-12">
+            <button class="btn-submit-request" type="submit" [disabled]="submitting()">
+              @if (submitting()) {
+                <span class="spinner-btn" aria-hidden="true"></span>
+                <span>{{ uiLanguage.t('ui.expressions.214') }}</span>
+              } @else {
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{{ uiLanguage.t('ui.expressions.215') }}</span>
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <!-- Block 2: Submitted Requests (الطلبات التي قدمتها) -->
+    @if (canView && (activeView() === 'all' || activeView() === 'list')) {
+      <section class="panel-surface requests-history-section">
+        <header class="panel-header">
+          <div class="panel-title-cluster">
+            <span class="panel-icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>{{ 'ui.full.718' | t }}</h2>
+              <p>{{ 'ui.full.719' | t }}</p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Filter Toolbar -->
+        <form class="filter-toolbar" (submit)="loadRequests(1, $event)">
+          <div class="filter-field search-box">
+            <label for="filter-search-input">{{ 'discovery.search' | t }}</label>
+            <div class="input-with-icon">
+              <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                id="filter-search-input"
+                type="search"
+                class="filter-input"
+                [formField]="filterForm.search"
+                placeholder="{{ 'discovery.search' | t }}..."
+              />
+            </div>
+          </div>
+
+          <div class="filter-field">
+            <label for="filter-status-select">{{ 'common.status' | t }}</label>
+            <div class="select-wrapper">
+              <select id="filter-status-select" [formField]="filterForm.status">
+                <option value="">{{ 'common.all' | t }}</option>
+                <option [value]="'family.pendingFilter' | t">{{ 'family.pendingFilter' | t }}</option>
+                <option value="ModificationRequested">{{ 'family.changesFilter' | t }}</option>
+                <option [value]="'family.approvedFilter' | t">{{ 'family.approvedFilter' | t }}</option>
+                <option [value]="'family.rejectedFilter' | t">{{ 'family.rejectedFilter' | t }}</option>
+              </select>
+              <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <div class="filter-field">
+            <label for="filter-type-select">{{ 'common.requestType' | t }}</label>
+            <div class="select-wrapper">
+              <select id="filter-type-select" [formField]="filterForm.requestType">
+                <option value="">{{ 'common.all' | t }}</option>
+                <option value="CreateFamily">{{ 'family.create' | t }}</option>
+                <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
+              </select>
+              <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <div class="filter-action">
+            <button class="btn-filter-apply" type="submit">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              <span>{{ 'ui.full.720' | t }}</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Requests List / Table -->
+        @if (loading()) {
+          <div class="loading-state-block" role="status">
+            <span class="spinner-state" aria-hidden="true"></span>
+            <p>{{ 'ui.full.721' | t }}</p>
+          </div>
+        } @else if (result(); as page) {
+          <div class="requests-cards-stack">
+            @for (request of page.items; track request.requestId) {
+              <button
+                class="request-card-row"
+                type="button"
+                (click)="openRequest(request.requestId)"
+                [class.active]="selectedRequest()?.requestId === request.requestId"
+              >
+                <div class="request-names-block">
+                  <div class="names-flow">
+                    <span class="person-name requester">{{ request.requesterNameAr }}</span>
+                    <span class="flow-arrow" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                    </span>
+                    <span class="person-name target">{{ request.targetNameAr }}</span>
+                  </div>
+                  <div class="meta-inline-tags">
+                    <span class="meta-pill type-pill">{{ uiLanguage.label('requestType', request.requestType) }}</span>
+                    <span class="meta-sep" aria-hidden="true">·</span>
+                    <span class="meta-pill rev-pill">{{ 'common.versionPrefix' | t }} {{ request.currentRevisionNumber }}</span>
+                    @if (request.submittedOnUtc) {
+                      <span class="meta-sep" aria-hidden="true">·</span>
+                      <span class="meta-pill date-pill" dir="ltr">{{ request.submittedOnUtc | slice:0:10 }}</span>
+                    }
+                  </div>
+                </div>
+
+                <div class="request-actions-block">
+                  <span
+                    class="status-badge-chip"
+                    [class.status-pending]="request.status === 'Pending'"
+                    [class.status-changes]="request.status === 'ModificationRequested'"
+                    [class.status-approved]="request.status === 'Approved'"
+                    [class.status-rejected]="request.status === 'Rejected'"
+                  >
+                    {{ uiLanguage.label('status', request.status) }}
+                  </span>
+                  <span class="chevron-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </button>
+            } @empty {
+              <div class="empty-state-block">
+                <div class="empty-icon-wrap" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  </svg>
+                </div>
+                <h3>{{ 'ui.full.722' | t }}</h3>
+                <p>{{ 'ui.full.719' | t }}</p>
+              </div>
+            }
+          </div>
+
+          <!-- Pager Bar -->
+          <nav class="pager-nav-bar" [attr.aria-label]="'ui.full.723' | t">
+            <button
+              class="btn-pager"
+              type="button"
+              [disabled]="pageNumber() <= 1"
+              (click)="loadRequests(pageNumber() - 1)"
             >
-          </button>
-        } @empty {
-          <p>{{ 'ui.full.727' | t }}</p>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>{{ 'discovery.previous' | t }}</span>
+            </button>
+
+            <span class="pager-info">
+              {{ 'discovery.page' | t }} <strong>{{ pageNumber() }}</strong> {{ 'discovery.of' | t }} <strong>{{ totalPages() }}</strong>
+            </span>
+
+            <button
+              class="btn-pager"
+              type="button"
+              [disabled]="pageNumber() >= totalPages()"
+              (click)="loadRequests(pageNumber() + 1)"
+            >
+              <span>{{ 'discovery.next' | t }}</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </nav>
+        }
+      </section>
+    }
+  </div>
+
+  <!-- ── 4. Slide-Over Details Drawer (نافذة التفاصيل الجانبية) ────────── -->
+  @if (selectedRequest(); as request) {
+    <!-- Backdrop overlay -->
+    <div class="drawer-backdrop" (click)="closeDetails()" aria-hidden="true"></div>
+
+    <aside class="details-drawer" [attr.aria-label]="'common.requestDetails' | t">
+      <header class="drawer-top-bar">
+        <div class="drawer-title-group">
+          <span
+            class="status-badge-chip"
+            [class.status-pending]="request.status === 'Pending'"
+            [class.status-changes]="request.status === 'ModificationRequested'"
+            [class.status-approved]="request.status === 'Approved'"
+            [class.status-rejected]="request.status === 'Rejected'"
+          >
+            {{ uiLanguage.label('status', request.status) }}
+          </span>
+          <h2>{{ request.requesterNameAr }} ← {{ request.targetNameAr }}</h2>
+          <p class="drawer-subtitle">
+            {{ uiLanguage.label('requestType', request.requestType) }} ·
+            {{ 'common.versionPrefix' | t }} {{ request.currentRevisionNumber }}
+          </p>
+        </div>
+
+        <button
+          class="btn-drawer-close"
+          type="button"
+          (click)="closeDetails()"
+          [attr.aria-label]="'ui.full.724' | t"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <div class="drawer-body">
+        <!-- Conditional Alerts -->
+        @if (request.status === 'ModificationRequested') {
+          <div class="drawer-alert warning">
+            <div class="alert-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div>
+              <strong>{{ 'ui.full.725' | t }}</strong>
+              <p>{{ request.modificationMessage }}</p>
+            </div>
+          </div>
+        }
+
+        @if (request.status === 'Rejected') {
+          <div class="drawer-alert danger">
+            <div class="alert-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div>
+              <strong>{{ 'requests.finalRejectionReason' | t }}</strong>
+              <p>{{ request.rejectionReason }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Documents Section -->
+        <section class="drawer-section">
+          <h3>{{ 'ui.full.726' | t }}</h3>
+          <div class="drawer-docs-grid">
+            @for (document of request.documents; track document.documentId) {
+              <button class="doc-card-btn" type="button" (click)="openDocument(document.documentId)">
+                <div class="doc-icon-wrap" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div class="doc-info-block">
+                  <strong class="doc-name">{{ document.fileName }}</strong>
+                  <span class="doc-sub">
+                    {{ uiLanguage.label('documentType', document.documentType) }} ·
+                    {{ 'common.versionPrefix' | t }} {{ document.revisionNumber }}
+                  </span>
+                </div>
+                <span class="doc-action-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </span>
+              </button>
+            } @empty {
+              <p class="empty-docs-note">{{ 'ui.full.727' | t }}</p>
+            }
+          </div>
+        </section>
+
+        <!-- Audit History Timeline -->
+        <section class="drawer-section">
+          <h3>{{ 'ui.full.728' | t }}</h3>
+          <ol class="history-timeline">
+            @for (item of request.history; track item.occurredOnUtc + item.action) {
+              <li class="timeline-step">
+                <span class="timeline-dot" aria-hidden="true"></span>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <strong>{{ uiLanguage.label('auditAction', item.action) }}</strong>
+                    <span class="timeline-date" dir="ltr">{{ item.occurredOnUtc }}</span>
+                  </div>
+                  @if (item.message) {
+                    <p class="timeline-desc">{{ item.message | t }}</p>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+
+        <!-- Resubmit Box (Conditional if ModificationRequested) -->
+        @if (request.status === 'ModificationRequested' && canResubmit) {
+          <section class="resubmit-action-card">
+            <div class="resubmit-header">
+              <span class="resubmit-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                </svg>
+              </span>
+              <div>
+                <h3>{{ 'common.resubmit' | t }}</h3>
+                <p>{{ 'ui.full.729' | t }}</p>
+              </div>
+            </div>
+
+            <div class="resubmit-form">
+              <div class="form-field">
+                <label>
+                  <span>{{ 'ui.full.730' | t }}</span>
+                </label>
+                <div class="file-upload-card compact">
+                  <input
+                    id="revision-file-input"
+                    type="file"
+                    multiple
+                    [accept]="evidenceFileAccept"
+                    (change)="filesChanged($event, true)"
+                    class="sr-only-input"
+                  />
+                  <label for="revision-file-input" class="file-upload-trigger">
+                    <span class="upload-title">{{ 'family.chooseFilesPrompt' | t }}</span>
+                    <span class="upload-sub">{{ 'validation.evidenceFormats' | t }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="revision-types-input">
+                  <span>{{ 'family.documentTypes' | t }}</span>
+                </label>
+                <input
+                  id="revision-types-input"
+                  class="field-input"
+                  placeholder="BirthCertificate, NationalId"
+                  (input)="revisionTypesChanged($event)"
+                />
+              </div>
+
+              <button
+                class="btn-resubmit-now"
+                type="button"
+                [disabled]="submitting()"
+                (click)="resubmit()"
+              >
+                @if (submitting()) {
+                  <span class="spinner-btn" aria-hidden="true"></span>
+                  <span>{{ uiLanguage.t('ui.expressions.214') }}</span>
+                } @else {
+                  <span>{{ 'common.resubmit' | t }}</span>
+                }
+              </button>
+            </div>
+          </section>
         }
       </div>
-      <h3>{{ 'ui.full.728' | t }}</h3>
-      <ol class="history-list">
-        @for (item of request.history; track item.occurredOnUtc + item.action) {
-          <li>
-            <strong>{{ uiLanguage.label('auditAction', item.action) }}</strong
-            ><span>{{ item.occurredOnUtc }}</span>
-            @if (item.message) {
-              <p>{{ item.message | t }}</p>
-            }
-          </li>
-        }
-      </ol>
-      @if (request.status === 'ModificationRequested' && canResubmit) {
-        <div class="resubmit-box">
-          <h3>{{ 'common.resubmit' | t }}</h3>
-          <p>{{ 'ui.full.729' | t }}</p>
-          <label class="form-field">
-            <span>{{ 'ui.full.730' | t }}</span>
-            <input
-              type="file"
-              multiple
-              [accept]="evidenceFileAccept"
-              (change)="filesChanged($event, true)"
-            />
-            <small>{{ 'validation.evidenceFormats' | t }}</small>
-          </label>
-          <label class="form-field"
-            ><span>{{ 'family.documentTypes' | t }}</span
-            ><input (input)="revisionTypesChanged($event)" /></label
-          ><button
-            class="btn btn-primary"
-            type="button"
-            [disabled]="submitting()"
-            (click)="resubmit()"
-          >
-            {{ 'common.resubmit' | t }}
-          </button>
-        </div>
-      }
     </aside>
   }
 </main>

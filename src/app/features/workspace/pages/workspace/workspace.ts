@@ -1,3 +1,4 @@
+import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
 import { Router, RouterLink } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../../core/auth/permissions';
@@ -20,6 +21,7 @@ export class Workspace {
   readonly langService = inject(LanguageService);
   protected readonly user = inject(AuthSession).user;
   protected readonly sidebarService = inject(SidebarService);
+  private readonly reception = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
@@ -63,7 +65,14 @@ export class Workspace {
     if (type === 'SuperAdmin' && this.session.hasPermission('Reservations.ViewAdministrative'))
       return '/admin/reservations';
     if (type === 'Patient') return '/patient/reservations';
-    if (type === 'Reception') return '/reception/reservations';
+    if (
+      type === 'Reception' &&
+      this.reception.hasAnyPracticeWithAnyPermission([
+        PERMISSIONS.practiceReservationsView,
+        PERMISSIONS.practiceReservationsCreate,
+      ])
+    )
+      return '/reception/reservations';
     if (type === 'Doctor' && this.session.hasPermission('DoctorPracticeReservations.ViewOwn'))
       return '/doctor/reservations';
     return '';
@@ -72,7 +81,11 @@ export class Workspace {
     const type = this.user()?.userType;
     if (type === 'Patient' && this.session.hasPermission(PERMISSIONS.ticketsViewOwn))
       return '/patient/tickets';
-    if (type === 'Reception') return '/reception/queue';
+    if (
+      type === 'Reception' &&
+      this.reception.hasAnyPracticeWithPermission(PERMISSIONS.practiceTicketsView)
+    )
+      return '/reception/queue';
     if (type === 'Doctor') return '/doctor/queue';
     return '';
   });

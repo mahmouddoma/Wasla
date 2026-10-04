@@ -1,3 +1,4 @@
+import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
@@ -67,6 +68,17 @@ describe('PortalLayout', () => {
       providers: [
         provideRouter([]),
         { provide: AuthSession, useValue: mockSession },
+        {
+          provide: ReceptionPracticeContext,
+          useValue: {
+            ensureLoaded: vi.fn(async () => undefined),
+            currentPracticeId: signal(''),
+            practices: signal([]),
+            isLoading: signal(false),
+            hasAnyPracticeWithPermission: () => false,
+            hasAnyPracticeWithAnyPermission: () => false,
+          },
+        },
         LanguageService,
       ],
     }).compileComponents();
@@ -86,7 +98,9 @@ describe('PortalLayout', () => {
   });
 
   it('should compute Doctor nav items when userType is Doctor', () => {
-    const items = (component as unknown as { roleNavItems: () => { route: string }[] }).roleNavItems();
+    const items = (
+      component as unknown as { roleNavItems: () => { route: string }[] }
+    ).roleNavItems();
     const routes = items.map((i) => i.route);
     expect(routes).toContain('/workspace/doctor');
     expect(routes).toContain('/doctor/reservations');
@@ -100,7 +114,9 @@ describe('PortalLayout', () => {
     userSignal.set(patientUser);
     fixture.detectChanges();
 
-    const items = (component as unknown as { roleNavItems: () => { route: string }[] }).roleNavItems();
+    const items = (
+      component as unknown as { roleNavItems: () => { route: string }[] }
+    ).roleNavItems();
     const routes = items.map((i) => i.route);
     expect(routes).toContain('/workspace/patient');
     expect(routes).toContain('/patient/reservations');
@@ -113,11 +129,14 @@ describe('PortalLayout', () => {
     userSignal.set(receptionUser);
     fixture.detectChanges();
 
-    const items = (component as unknown as { roleNavItems: () => { route: string }[] }).roleNavItems();
+    const items = (
+      component as unknown as { roleNavItems: () => { route: string }[] }
+    ).roleNavItems();
     const routes = items.map((i) => i.route);
     expect(routes).toContain('/workspace/reception');
-    expect(routes).toContain('/reception/reservations');
-    expect(routes).toContain('/reception/queue');
+    expect(routes).not.toContain('/reception/reservations');
+    expect(routes).not.toContain('/reception/queue');
+    expect(routes).not.toContain('/reception/finance');
     expect(routes).toContain('/reception/patients');
     expect(routes).toContain('/reception/family-requests');
   });
@@ -131,9 +150,13 @@ describe('PortalLayout', () => {
   });
 
   it('should toggle sidebar collapse', () => {
-    const initial = (component as unknown as { isSidebarCollapsed: () => boolean }).isSidebarCollapsed();
+    const initial = (
+      component as unknown as { isSidebarCollapsed: () => boolean }
+    ).isSidebarCollapsed();
     (component as unknown as { toggleSidebarCollapse: () => void }).toggleSidebarCollapse();
-    expect((component as unknown as { isSidebarCollapsed: () => boolean }).isSidebarCollapsed()).toBe(!initial);
+    expect(
+      (component as unknown as { isSidebarCollapsed: () => boolean }).isSidebarCollapsed(),
+    ).toBe(!initial);
   });
 
   it('should logout and redirect to login', () => {
