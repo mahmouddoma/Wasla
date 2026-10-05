@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -13,6 +14,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { AvailableDate, AvailableSlot, BookingOptions } from '../../../../domains/public-discovery';
 import { BookablePatient, ReservationLabel } from '../../../../domains/reservations';
+import { FollowUpEligibility } from '../../../../domains/follow-ups';
 import { ReservationDraft, ReservationEditorMode } from '../../state/reservation-workspace.store';
 @Component({
   selector: 'app-reservation-editor',
@@ -26,6 +28,11 @@ export class ReservationEditorComponent {
   readonly provider = input(false);
   readonly reception = input(false);
   readonly patients = input<BookablePatient[]>([]);
+  readonly eligibilities = input<readonly FollowUpEligibility[]>([]);
+  readonly eligibilityId = input('');
+  readonly patientId = input('');
+  readonly patientChange = output<string>();
+  readonly eligibilityChange = output<string>();
   readonly dates = input<AvailableDate[]>([]);
   readonly slots = input<AvailableSlot[]>([]);
   readonly options = input<BookingOptions | null>(null);
@@ -52,6 +59,16 @@ export class ReservationEditorComponent {
     reason: '',
   });
   readonly fields = form(this.model);
+  constructor() {
+    effect(() => {
+      const patientId = this.patientId();
+      this.model.update(model => ({ ...model, patientId, segmentId: '', visitTypeId: '' }));
+    });
+    effect(() => {
+      this.options();
+      this.model.update(model => ({ ...model, segmentId: '', visitTypeId: '' }));
+    });
+  }
   readonly segments = computed(
     () =>
       this.options()?.visitTypes.find((v) => v.visitTypeId === this.model().visitTypeId)

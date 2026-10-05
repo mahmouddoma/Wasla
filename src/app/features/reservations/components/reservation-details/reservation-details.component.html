@@ -1,117 +1,328 @@
 @let r = reservation();
-<header>
-  <h2 id="reservation-details-heading" dir="ltr">{{ r.reference }}</h2>
-  <p>
-    {{ status() }}
-    @if (r.isLate) {
-      · {{ 'reservations.late' | t }}
-    }
-  </p>
-</header>
-<dl>
-  <dt>{{ 'reservations.patient' | t }}</dt>
-  <dd>{{ label(r.patient) }}</dd>
-  <dt>{{ 'reservations.doctor' | t }}</dt>
-  <dd>{{ label(r.doctor) }}</dd>
-  <dt>{{ 'reservations.practice' | t }}</dt>
-  <dd>{{ label(r.practice) }}</dd>
-  <dt>{{ 'reservations.appointment' | t }}</dt>
-  <dd dir="ltr">
-    {{ r.appointment.businessDate }} ·
-    {{ r.appointment.scheduledTime || r.appointment.slotStartTime }}
-  </dd>
-  @if (r.segment) {
-    <dt>{{ 'reservations.segment' | t }}</dt>
-    <dd>{{ label(r.segment) }}</dd>
-  }
-  @if (r.visitType) {
-    <dt>{{ 'reservations.visitType' | t }}</dt>
-    <dd>{{ label(r.visitType) }}</dd>
-  }
-  @if (r.price !== undefined) {
-    <dt>{{ 'reservations.price' | t }}</dt>
-    <dd>{{ r.price }} {{ r.currency }}</dd>
-  }
-  @if (!administrative() && r.bookingNote) {
-    <dt>{{ 'reservations.bookingNote' | t }}</dt>
-    <dd>{{ r.bookingNote }}</dd>
-  }
-  @if (r.capabilities.patientCancellationCutoffUtc) {
-    <dt>{{ 'reservations.cutoff' | t }}</dt>
-    <dd dir="ltr">{{ r.capabilities.patientCancellationCutoffUtc }}</dd>
-  }
-  @if (r.capabilities.remainingPatientReschedules !== undefined) {
-    <dt>{{ 'reservations.remaining' | t }}</dt>
-    <dd>{{ r.capabilities.remainingPatientReschedules }}</dd>
-  }
-  @if (r.appointment.durationMinutes !== undefined) {
-    <dt>{{ 'reservations.duration' | t }}</dt>
-    <dd>{{ r.appointment.durationMinutes }} {{ 'reservations.minutes' | t }}</dd>
-  }
-  @if (r.appointment.timeZoneId) {
-    <dt>{{ 'reservations.timeZone' | t }}</dt>
-    <dd dir="ltr">{{ r.appointment.timeZoneId }}</dd>
-  }
-  @if (r.appointment.appointmentStartUtc) {
-    <dt>{{ 'reservations.utcStart' | t }}</dt>
-    <dd dir="ltr">{{ r.appointment.appointmentStartUtc }}</dd>
-  }
-  @if (r.appointment.appointmentEndUtc) {
-    <dt>{{ 'reservations.utcEnd' | t }}</dt>
-    <dd dir="ltr">{{ r.appointment.appointmentEndUtc }}</dd>
-  }
-  @if (r.bookingSource) {
-    <dt>{{ 'reservations.source' | t }}</dt>
-    <dd>{{ source(r.bookingSource) }}</dd>
-  }
-  @if (r.createdOnUtc) {
-    <dt>{{ 'reservations.createdOn' | t }}</dt>
-    <dd dir="ltr">{{ r.createdOnUtc }}</dd>
-  }
-  @if (r.cancelledOnUtc) {
-    <dt>{{ 'reservations.cancelledOn' | t }}</dt>
-    <dd dir="ltr">{{ r.cancelledOnUtc }}</dd>
-  }
-  @if (r.cancellationReason) {
-    <dt>{{ 'reservations.reason' | t }}</dt>
-    <dd>{{ r.cancellationReason | t }}</dd>
-  }
-</dl>
-@if (!administrative()) {
-  <div class="actions">
-    @if (canCancel()) {
-      <button (click)="action.emit('cancel')">{{ 'reservations.cancel' | t }}</button>
-    }
-    @if (canReschedule()) {
-      <button (click)="action.emit('reschedule')">{{ 'reservations.reschedule' | t }}</button>
-    }
-    @if (canRestore()) {
-      <button (click)="action.emit('restore')">{{ 'reservations.restore' | t }}</button>
+<div class="reservation-detail-flow">
+  <!-- 1. Hero Identity Card -->
+  <div class="res-hero-card">
+    <div class="res-hero-avatar">
+      <svg
+        viewBox="0 0 24 24"
+        width="22"
+        height="22"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+    </div>
+    <div class="res-hero-body">
+      <div class="res-hero-eyebrow">
+        <span class="res-ref-tag" dir="ltr" id="reservation-details-heading">{{ r.reference }}</span>
+        @if (r.bookingSource) {
+          <span class="sep-dot">·</span>
+          <span class="source-tag">{{ source(r.bookingSource) }}</span>
+        }
+      </div>
+      <h3 class="res-patient-name">{{ label(r.patient) }}</h3>
+      <p class="res-meta-line">
+        <span class="doctor-name">{{ label(r.doctor) }}</span>
+        <span class="sep-dot">·</span>
+        <span class="practice-name">{{ label(r.practice) }}</span>
+      </p>
+    </div>
+    <div class="res-hero-status">
+      <span class="status-pill" [class]="statusClass()">
+        @if (r.status === 'Active' || r.status === 'Confirmed') {
+          <span class="status-dot-pulse" aria-hidden="true"></span>
+        }
+        {{ status() }}
+        @if (r.isLate) {
+          <span class="late-tag">· {{ 'reservations.late' | t }}</span>
+        }
+      </span>
+    </div>
+  </div>
+
+  <!-- 2. Appointment Time & Fee Banner -->
+  <div class="appointment-banner-card">
+    <div class="appointment-time-info">
+      <div class="time-main-row">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span class="appointment-date" dir="ltr">{{ r.appointment.businessDate }}</span>
+        <span class="time-sep">|</span>
+        <span class="appointment-time" dir="ltr">
+          {{ r.appointment.scheduledTime || r.appointment.slotStartTime }}
+        </span>
+      </div>
+      @if (r.appointment.durationMinutes) {
+        <span class="appointment-duration">
+          {{ r.appointment.durationMinutes }} {{ 'reservations.minutes' | t }}
+          @if (r.appointment.timeZoneId) {
+            ({{ r.appointment.timeZoneId }})
+          }
+        </span>
+      }
+    </div>
+    @if (r.price !== undefined) {
+      <div class="appointment-fee-badge">
+        <span class="fee-label">{{ 'reservations.price' | t }}</span>
+        <span class="fee-amount">{{ r.price }} {{ r.currency || 'EGP' }}</span>
+      </div>
     }
   </div>
-  @if (r.capabilities.cancelBlockedReason) {
-    <p>{{ r.capabilities.cancelBlockedReason | t }}</p>
-  }
-  @if (r.capabilities.rescheduleBlockedReason) {
-    <p>{{ r.capabilities.rescheduleBlockedReason | t }}</p>
-  }
-}
-<section>
-  <h3>{{ 'reservations.timeline' | t }}</h3>
-  <ol>
-    @for (e of r.timeline; track $index) {
-      <li>
-        <time dir="ltr">{{ e.occurredOnUtc }}</time
-        ><span>{{
-          e.nameAr ? label({ nameAr: e.nameAr, nameEn: e.nameEn }) : (e.eventType || '' | t)
-        }}</span>
-        @if (!administrative() && e.description) {
-          <p>{{ e.description }}</p>
-        }
-        @if (e.reason) {
-          <p>{{ e.reason }}</p>
-        }
-      </li>
+
+  <!-- 3. Actions Bar (Cancel / Reschedule / Restore) -->
+  @if (!administrative() && (canCancel() || canReschedule() || canRestore())) {
+    <div class="drawer-actions-bar">
+      @if (canCancel()) {
+        <button
+          type="button"
+          class="btn-drawer-action btn-danger"
+          (click)="action.emit('cancel')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          <span>{{ 'reservations.cancel' | t }}</span>
+        </button>
+      }
+      @if (canReschedule()) {
+        <button
+          type="button"
+          class="btn-drawer-action btn-primary"
+          (click)="action.emit('reschedule')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>{{ 'reservations.reschedule' | t }}</span>
+        </button>
+      }
+      @if (canRestore()) {
+        <button
+          type="button"
+          class="btn-drawer-action btn-warning"
+          (click)="action.emit('restore')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M3 2v6h6"></path>
+            <path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path>
+            <path d="M21 22v-6h-6"></path>
+            <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path>
+          </svg>
+          <span>{{ 'reservations.restore' | t }}</span>
+        </button>
+      }
+    </div>
+    @if (r.capabilities.cancelBlockedReason) {
+      <p class="capability-notice notice-danger">{{ r.capabilities.cancelBlockedReason | t }}</p>
     }
-  </ol>
-</section>
+    @if (r.capabilities.rescheduleBlockedReason) {
+      <p class="capability-notice notice-warning">{{ r.capabilities.rescheduleBlockedReason | t }}</p>
+    }
+  }
+
+  <!-- 4. Key Metrics Grid -->
+  <div class="drawer-section">
+    <h4 class="section-title">
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      {{ 'ui.full.643' | t }}
+    </h4>
+    <div class="info-metric-grid">
+      <div class="info-metric-card">
+        <span class="metric-label">{{ 'reservations.patient' | t }}</span>
+        <span class="metric-val">{{ label(r.patient) }}</span>
+      </div>
+      <div class="info-metric-card">
+        <span class="metric-label">{{ 'reservations.doctor' | t }}</span>
+        <span class="metric-val">{{ label(r.doctor) }}</span>
+      </div>
+      <div class="info-metric-card">
+        <span class="metric-label">{{ 'reservations.practice' | t }}</span>
+        <span class="metric-val">{{ label(r.practice) }}</span>
+      </div>
+      @if (r.segment) {
+        <div class="info-metric-card">
+          <span class="metric-label">{{ 'reservations.segment' | t }}</span>
+          <span class="metric-val">{{ label(r.segment) }}</span>
+        </div>
+      }
+      @if (r.visitType) {
+        <div class="info-metric-card">
+          <span class="metric-label">{{ 'reservations.visitType' | t }}</span>
+          <span class="metric-val">{{ label(r.visitType) }}</span>
+        </div>
+      }
+      @if (r.bookingSource) {
+        <div class="info-metric-card">
+          <span class="metric-label">{{ 'reservations.source' | t }}</span>
+          <span class="metric-val">{{ source(r.bookingSource) }}</span>
+        </div>
+      }
+      @if (r.createdOnUtc) {
+        <div class="info-metric-card">
+          <span class="metric-label">{{ 'reservations.createdOn' | t }}</span>
+          <span class="metric-val" dir="ltr">{{ r.createdOnUtc }}</span>
+        </div>
+      }
+      @if (r.capabilities.remainingPatientReschedules !== undefined) {
+        <div class="info-metric-card">
+          <span class="metric-label">{{ 'reservations.remaining' | t }}</span>
+          <span class="metric-val">{{ r.capabilities.remainingPatientReschedules }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Booking Note if exists -->
+  @if (!administrative() && r.bookingNote) {
+    <div class="drawer-notice drawer-notice-note">
+      <div class="notice-icon-box">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </div>
+      <div class="notice-text-content">
+        <h5 class="notice-title">{{ 'reservations.bookingNote' | t }}</h5>
+        <p class="notice-desc">{{ r.bookingNote }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- Follow-Up Eligibility if exists -->
+  @if (r.followUpEligibilityId) {
+    <div class="drawer-notice drawer-notice-info">
+      <div class="notice-icon-box">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </div>
+      <div class="notice-text-content">
+        <h5 class="notice-title">{{ 'followUps.followUp' | t }}</h5>
+        <p class="notice-desc">
+          {{ 'followUps.status.' + r.followUpEligibilityStatus | t }} ·
+          {{ 'followUps.validUntil' | t }}: <time dir="ltr">{{ r.followUpValidUntil }}</time>
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- 5. Timeline & History Stepper -->
+  @if (r.timeline && r.timeline.length) {
+    <div class="drawer-section">
+      <h4 class="section-title">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 14 14"></polyline>
+        </svg>
+        {{ 'reservations.timeline' | t }}
+      </h4>
+      <div class="timeline-stepper">
+        @for (e of r.timeline; track $index) {
+          <div class="timeline-step">
+            <div class="timeline-step-indicator">
+              <span class="timeline-step-dot"></span>
+              @if (!$last) {
+                <span class="timeline-step-line"></span>
+              }
+            </div>
+            <div class="timeline-step-content">
+              <div class="timeline-step-head">
+                <span class="timeline-event-name">
+                  {{ e.nameAr ? label({ nameAr: e.nameAr, nameEn: e.nameEn }) : (e.eventType || '' | t) }}
+                </span>
+                <time class="timeline-time" dir="ltr">{{ e.occurredOnUtc }}</time>
+              </div>
+              @if (!administrative() && e.description) {
+                <p class="timeline-desc">{{ e.description }}</p>
+              }
+              @if (e.reason) {
+                <p class="timeline-reason">{{ e.reason }}</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

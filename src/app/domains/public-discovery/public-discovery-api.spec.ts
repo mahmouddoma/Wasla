@@ -18,6 +18,36 @@ describe('PublicDiscoveryApi', () => {
   });
   afterEach(() => http.verify());
 
+  it.each(['id', 'practiceId', 'doctorPracticeId'])('normalizes %s for search and details booking', async (key) => {
+    const practice = { [key]: 'clinic-1', nameAr: 'Clinic', isBookable: true };
+    const doctor = { doctorId: 'doctor-1', practices: [practice] };
+    const search = firstValueFrom(api.doctors({ pageNumber: 1, pageSize: 20 }));
+    http.expectOne((request) => request.url === `${url}/doctors`).flush({
+      items: [doctor], totalCount: 1, pageNumber: 1, pageSize: 20,
+    });
+    expect((await search).items[0].practices[0].id).toBe('clinic-1');
+    const details = firstValueFrom(api.doctor('doctor-1'));
+    http.expectOne(`${url}/doctors/doctor-1`).flush(doctor);
+    const selected = (await details).practices[0];
+    const dates = firstValueFrom(api.availableDates(selected.id));
+    http.expectOne(`${url}/practices/clinic-1/available-dates`).flush([]);
+    await dates;
+  });
+
+  it.each([undefined, null, '', 'undefined', 'null'])('blocks availability requests for invalid identifier %s', (id) => {
+    expect(() => api.availableDates(id as unknown as string)).toThrow('discovery.invalidPractice');
+    expect(() => api.availableSlots(id as unknown as string, '2026-10-04')).toThrow('discovery.invalidPractice');
+    expect(() => api.bookingOptions(id as unknown as string, '2026-10-04', '10:00')).toThrow('discovery.invalidPractice');
+    http.expectNone((request) => request.url.includes('/practices/'));
+  });
+
+  it('reports malformed doctor practice data instead of returning an undefined booking ID', async () => {
+    const details = firstValueFrom(api.doctor('doctor-1'));
+    const rejected = expect(details).rejects.toThrow('discovery.invalidPractice');
+    http.expectOne(`${url}/doctors/doctor-1`).flush({ doctorId: 'doctor-1', practices: [{ nameAr: 'Clinic' }] });
+    await rejected;
+  });
+
   it('loads anonymous specialization/search/details contracts with server pagination', async () => {
     const specializations = firstValueFrom(api.specializations());
     http.expectOne(`${url}/specializations`).flush([]);

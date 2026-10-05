@@ -49,28 +49,23 @@
 
       @if (isStaff() && practices().length) {
         <div class="practice-selector-pill">
-          <label class="practice-selector-label" for="header-practice-select">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-            </svg>
-            <span class="sr-only">{{ 'finance.practice' | t }}</span>
-          </label>
-          <div class="custom-select-wrap">
-            <select
-              id="header-practice-select"
-              class="practice-select-input"
-              [value]="practiceId()"
-              (change)="selectPractice($event)"
-              [attr.aria-label]="'finance.practice' | t"
-            >
-              @for (practice of practices(); track practice.id) {
-                <option [value]="practice.id">{{ label(practice) }}</option>
-              }
-            </select>
-            <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
+          <svg class="practice-selector-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+          </svg>
+          <select
+            id="header-practice-select"
+            class="practice-select-input"
+            [value]="practiceId()"
+            (change)="selectPractice($event)"
+            [attr.aria-label]="'finance.practice' | t"
+          >
+            @for (practice of practices(); track practice.id) {
+              <option [value]="practice.id">{{ label(practice) }}</option>
+            }
+          </select>
+          <svg class="practice-chevron" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
       }
     </div>
@@ -646,8 +641,8 @@
       <!-- ═══════════════════════════════════════════════════════════════════ -->
       <!-- VIEW 2: TRANSACTIONS WORKSPACE (الحركات المالية)                   -->
       <!-- ═══════════════════════════════════════════════════════════════════ -->
-      <section class="transactions-view-surface">
-        <!-- Table Meta Bar -->
+      <section class="transactions-view-surface medical-table-card">
+        <!-- Table Meta Bar (inside the same surface — no detached header) -->
         <div class="table-meta-bar">
           <div class="meta-start">
             <div class="meta-title-cluster">
@@ -674,10 +669,14 @@
           </div>
         </div>
 
-        <!-- Transactions Medical Table Card -->
-        <div class="medical-table-card">
+        <!-- Transactions Table -->
+        <div class="table-body-wrap">
           <div class="table-scroll-container">
-            <table class="modern-finance-table" [attr.aria-label]="'finance.transactions' | t">
+            <table
+              class="modern-finance-table"
+              [class.is-empty]="!page().items.length"
+              [attr.aria-label]="'finance.transactions' | t"
+            >
               <thead>
                 <tr>
                   <th scope="col" style="width: 130px">{{ 'finance.type' | t }}</th>

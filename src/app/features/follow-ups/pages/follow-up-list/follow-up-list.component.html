@@ -1,0 +1,117 @@
+<main class="follow-up-shell" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'followUps.title' | t"
+    [description]="'followUps.subtitle' | t"
+    icon="reservations"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  >
+    <div pageHeaderDeck class="filters">
+      <label
+        >{{ 'reservations.patient' | t
+        }}<select (change)="filter('patientId', $event)">
+          <option value="">{{ 'reservations.all' | t }}</option>
+          @for (patient of patients(); track patient.patientId) {
+            <option [value]="patient.patientId">{{ label(patient) }}</option>
+          }
+        </select></label
+      >
+      <label
+        >{{ 'reservations.status' | t
+        }}<select (change)="filter('status', $event)">
+          <option value="">{{ 'reservations.all' | t }}</option>
+          @for (status of ['Available', 'Reserved', 'Consumed', 'Expired']; track status) {
+            <option [value]="status">{{ 'followUps.status.' + status | t }}</option>
+          }
+        </select></label
+      >
+    </div>
+  </app-page-header>
+  <section class="directory">
+    @if (loading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state" role="alert">
+        <h2>{{ 'encounters.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else {
+      @for (eligibility of page().items; track eligibility.eligibilityId) {
+        <div class="eligibility-row">
+          <div>
+            <b>{{ patientName(eligibility.patientId) }}</b>
+            <p>
+              {{ 'followUps.status.' + eligibility.status | t }} · {{ 'followUps.validUntil' | t }}
+              <time dir="ltr">{{ eligibility.validUntil }}</time>
+            </p>
+          </div>
+          <button class="btn btn-outline-secondary" (click)="inspect(eligibility.eligibilityId)">
+            {{ 'reservations.inspect' | t }}
+          </button>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Medical prescription-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h2>{{ 'followUps.empty' | t }}</h2>
+          <p>{{ 'followUps.emptyHelp' | t }}</p>
+          <button class="btn btn-primary" (click)="load()">{{ 'common.refresh' | t }}</button>
+        </div>
+      }
+      <nav class="pagination-row" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="paginate(-1)"
+          [disabled]="page().pageNumber <= 1"
+        >
+          {{ 'reservations.previous' | t }}</button
+        ><span>{{ page().pageNumber }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="paginate(1)"
+          [disabled]="page().pageNumber * page().pageSize >= page().totalCount"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  @for (message of messages(); track $index) {
+    <p role="alert">{{ message | t }}</p>
+  }
+  @if (selected() || detailLoading()) {
+    <app-side-drawer [opened]="true" [title]="'followUps.followUp' | t" (closed)="close()">
+      @if (detailLoading()) {
+        <p role="status">{{ 'reservations.loading' | t }}</p>
+      }
+      @if (selected(); as eligibility) {
+        <p>{{ patientName(eligibility.patientId) }}</p>
+        <p>{{ 'followUps.status.' + eligibility.status | t }}</p>
+        <p>
+          {{ 'followUps.validUntil' | t }} <time dir="ltr">{{ eligibility.validUntil }}</time>
+        </p>
+        @if (eligibility.canBook) {
+          <a
+            class="btn btn-primary"
+            routerLink="/patient/reservations"
+            [queryParams]="{
+              practiceId: eligibility.practiceId,
+              patientId: eligibility.patientId,
+              eligibilityId: eligibility.eligibilityId,
+            }"
+            >{{ 'followUps.book' | t }}</a
+          >
+        } @else {
+          <p>{{ 'followUps.unavailable' | t }}</p>
+        }
+      }
+    </app-side-drawer>
+  }
+</main>

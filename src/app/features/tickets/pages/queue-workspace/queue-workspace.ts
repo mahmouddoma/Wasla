@@ -26,6 +26,7 @@ import { ToastService } from '../../../../core/notifications/toast.service';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
 import { PaymentMethod } from '../../../../domains/finance';
+import { FollowUpEligibility, FollowUpsApi } from '../../../../domains/follow-ups';
 import {
   WalkInSegmentOption,
   CreateWalkInTicketRequest,
@@ -36,7 +37,7 @@ import {
 } from '../../../../domains/tickets';
 
 type QueueAction =
-  'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'complete' | 'cancel';
+  'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
 
 /**
  * Queue workspace managing practice queues, live calling, and direct walk-in tickets.
@@ -50,6 +51,11 @@ type QueueAction =
 })
 export class QueueWorkspace implements OnInit {
   private readonly api = inject(TicketsApi);
+  private readonly followUps = inject(FollowUpsApi);
+  protected readonly eligibilities = signal<readonly FollowUpEligibility[]>([]);
+  protected readonly eligibility = signal<FollowUpEligibility | null>(null);
+  protected readonly optionsLoading = signal(false);
+  private optionsSequence = 0;
   private readonly doctorPractices = inject(DoctorPracticesApi);
   protected readonly reception = inject(ReceptionPracticeContext);
   private readonly route = inject(ActivatedRoute);
@@ -100,9 +106,8 @@ export class QueueWorkspace implements OnInit {
     required(path.patientId, { message: 'tickets.validation.patientRequired' });
     required(path.segmentId, { message: 'tickets.validation.segmentRequired' });
     required(path.visitTypeId, { message: 'tickets.validation.visitTypeRequired' });
-    required(path.paidAmount, { message: 'tickets.validation.paymentRequired' });
     required(path.paymentMethod, { message: 'finance.validation.methodRequired' });
-    min(path.paidAmount, 0.01, { message: 'tickets.validation.paymentPositive' });
+    min(path.paidAmount, 0, { message: 'tickets.validation.paymentNonnegative' });
     validate(path.paidAmount, ({ value }) =>
       this.walkInPrice() !== undefined && value() === this.walkInPrice()
         ? undefined
@@ -145,11 +150,11 @@ export class QueueWorkspace implements OnInit {
     () => !!this.queue().called || !!this.queue().inProgress,
   );
   protected readonly canStart = computed(
-    () => this.isDoctor() && this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsStartOwn),
+    () => this.isDoctor() && this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsStartOwn) && this.session.hasPermission(PERMISSIONS.medicalEncountersStartOwn),
   );
-  protected readonly canComplete = computed(
+  protected readonly canOpenClinical = computed(
     () =>
-      this.isDoctor() && this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn),
+      this.isDoctor() && this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn) && this.session.hasPermission(PERMISSIONS.diagnosesViewOwn),
   );
 
   constructor() {
@@ -261,15 +266,19 @@ export class QueueWorkspace implements OnInit {
 
   protected submitWalkIn(): void {
     submit(this.walkInForm, async () => {
-      if (!this.canWalkIn() || !this.practiceId()) return;
+      if (!this.canWalkIn() || !this.practiceId() || this.optionsLoading()) return;
       const price = this.walkInPrice();
       if (price === undefined) return;
       const value = this.walkInModel();
+      const eligibility = this.eligibility();
+      const visit = this.visitTypes().find(v => v.visitTypeId === value.visitTypeId);
+      if (!visit || (visit.code === 'FollowUp' && (!eligibility?.canBook || eligibility.patientId !== value.patientId))) return;
       const body: CreateWalkInTicketRequest = {
         ...value,
         paidAmount: price,
         referenceNumber: value.referenceNumber.trim() || null,
         notes: value.notes.trim() || null,
+        ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId, followUpEligibilityRowVersion: eligibility.rowVersion } : {}),
       };
       await this.runMutation(
         `walk-in:${JSON.stringify(body)}`,
@@ -312,7 +321,6 @@ export class QueueWorkspace implements OnInit {
     if (action === 'recall' && !this.canRecall(ticket)) return;
     if (action === 'restore' && ticket.isRefunded) return;
     if (action === 'start' && !this.canStart()) return;
-    if (action === 'complete' && !this.canComplete()) return;
     const allowed =
       action === 'manual-call'
         ? this.canManualCall()
@@ -322,9 +330,7 @@ export class QueueWorkspace implements OnInit {
             ? this.canCancel()
             : action === 'start'
               ? this.canStart()
-              : action === 'complete'
-                ? this.canComplete()
-                : this.canCallNext();
+              : this.canCallNext();
     if (!allowed) return;
     const version = { rowVersion: ticket.rowVersion };
     const reasonBody = { ...version, reason };
@@ -346,9 +352,6 @@ export class QueueWorkspace implements OnInit {
         break;
       case 'start':
         request = this.api.start(this.practiceId(), ticket.ticketId, version, key);
-        break;
-      case 'complete':
-        request = this.api.complete(this.practiceId(), ticket.ticketId, version, key);
         break;
       case 'cancel':
         request = this.api.cancel(this.practiceId(), ticket.ticketId, reasonBody, key);
@@ -392,7 +395,11 @@ export class QueueWorkspace implements OnInit {
     } catch (error) {
       await this.failure(error);
       if (!(error instanceof HttpErrorResponse && error.status === 403))
-        await this.loadQueueAfterMutation();
+        {
+          await this.loadQueueAfterMutation();
+          if (this.selected()) await this.inspect(this.selected()!.ticketId);
+          if (this.canWalkIn()) await this.refreshWalkInPatient();
+        }
     } finally {
       this.busy.set(false);
     }
@@ -412,17 +419,52 @@ export class QueueWorkspace implements OnInit {
 
   private async loadWalkInOptions(): Promise<void> {
     if (!this.canWalkIn()) return;
+    const sequence = ++this.optionsSequence;
+    this.optionsLoading.set(true);
+    this.segments.set([]);
     const id = this.practiceId(),
       generation = this.generation;
     try {
-      const options = await firstValueFrom(this.api.walkInOptions(id));
-      if (generation === this.generation && this.canWalkIn()) this.segments.set(options.segments);
+      const eligibility = this.eligibility(), patientId = this.walkInModel().patientId;
+      const options = await firstValueFrom(this.api.walkInOptions(id, {
+        ...(patientId ? { patientId } : {}),
+        ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId } : {}),
+      }));
+      if (sequence === this.optionsSequence && generation === this.generation && this.canWalkIn())
+        this.segments.set(options.segments.map(segment => ({ ...segment, visitTypes: segment.visitTypes.filter(v => v.code === (eligibility ? 'FollowUp' : 'NewConsultation')) })));
     } catch (error) {
       if (generation === this.generation) await this.failure(error);
+    } finally {
+      if (sequence === this.optionsSequence) this.optionsLoading.set(false);
     }
+  }
+  protected async refreshWalkInPatient(): Promise<void> {
+    this.optionsSequence++;
+    const generation = this.generation, patientId = this.walkInModel().patientId;
+    this.eligibility.set(null); this.eligibilities.set([]); this.segments.set([]);
+    this.walkInModel.update(model => ({ ...model, segmentId: '', visitTypeId: '', paidAmount: 0 }));
+    if (patientId && this.reception.allows(PERMISSIONS.followUpEligibilityViewBookingEligibility)) {
+      try {
+        const items = await firstValueFrom(this.followUps.reception(this.practiceId(), patientId));
+        if (generation !== this.generation || patientId !== this.walkInModel().patientId) return;
+        this.eligibilities.set(items.filter(e => e.patientId === patientId && e.practiceId === this.practiceId()));
+      } catch (error) { await this.failure(error); }
+    }
+    if (generation === this.generation && patientId === this.walkInModel().patientId) await this.loadWalkInOptions();
+  }
+  protected async selectWalkInEligibility(event: Event): Promise<void> {
+    if (this.busy()) return;
+    const id = (event.target as HTMLSelectElement).value;
+    const eligibility = this.eligibilities().find(e => e.eligibilityId === id && e.canBook);
+    if (id && !eligibility) return;
+    this.eligibility.set(eligibility || null);
+    this.walkInModel.update(model => ({ ...model, segmentId: '', visitTypeId: '', paidAmount: 0 }));
+    await this.loadWalkInOptions();
   }
 
   private resetWalkIn(): void {
+    this.optionsSequence++; this.optionsLoading.set(false);
+    this.eligibilities.set([]); this.eligibility.set(null);
     this.resetWalkInForm();
     this.segments.set([]);
   }

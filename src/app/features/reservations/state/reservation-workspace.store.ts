@@ -32,6 +32,7 @@ import {
   RescheduleReservationRequest,
 } from '../../../domains/reservations';
 import { CheckInSubmission, PracticeTicket, TicketsApi } from '../../../domains/tickets';
+import { FollowUpEligibility, FollowUpsApi } from '../../../domains/follow-ups';
 
 export interface ReservationDraft {
   patientId: string;
@@ -48,6 +49,14 @@ export type ReservationEditorMode = 'create' | 'cancel' | 'reschedule' | 'restor
 @Injectable()
 export class ReservationWorkspaceStore {
   private readonly api = inject(ReservationsApi);
+  private readonly followUps = inject(FollowUpsApi);
+  readonly bookingPatientId = signal('');
+  readonly eligibilities = signal<readonly FollowUpEligibility[]>([]);
+  readonly eligibility = signal<FollowUpEligibility | null>(null);
+  private eligibilitySequence = 0;
+  readonly canViewFollowUps = computed(() => this.actor() === 'Patient'
+    ? this.session.hasPermission(PERMISSIONS.followUpEligibilityViewOwn)
+    : this.actor() === 'Reception' && this.reception.allows(PERMISSIONS.followUpEligibilityViewBookingEligibility));
   private readonly ticketsApi = inject(TicketsApi);
   private readonly publicApi = inject(PublicDiscoveryApi);
   private readonly practicesApi = inject(DoctorPracticesApi);
@@ -276,8 +285,10 @@ export class ReservationWorkspaceStore {
           mode === 'reschedule'
             ? this.api.rescheduleDates(this.scope(), this.detail()!.reservationId)
             : this.actor() === 'Reception'
-              ? this.api.receptionDates(this.practiceId())
-              : this.publicApi.availableDates(this.practiceId()),
+              ? this.api.receptionDates(this.practiceId(), this.bookingContext())
+              : this.eligibility()
+                ? this.followUps.dates(this.eligibility()!.eligibilityId)
+                : this.publicApi.availableDates(this.practiceId()),
         );
         if (sequence === this.bookingSequence) this.dates.set(dates);
       } catch (error) {
@@ -303,8 +314,10 @@ export class ReservationWorkspaceStore {
         this.editor() === 'reschedule'
           ? this.api.rescheduleSlots(this.scope(), this.detail()!.reservationId, date)
           : this.actor() === 'Reception'
-            ? this.api.receptionSlots(this.practiceId(), date)
-            : this.publicApi.availableSlots(this.practiceId(), date),
+            ? this.api.receptionSlots(this.practiceId(), date, this.bookingContext())
+            : this.eligibility()
+              ? this.followUps.slots(this.eligibility()!.eligibilityId, date)
+              : this.publicApi.availableSlots(this.practiceId(), date),
       );
       if (sequence === this.bookingSequence)
         this.slots.set(
@@ -333,13 +346,15 @@ export class ReservationWorkspaceStore {
     try {
       const options = await firstValueFrom(
         this.actor() === 'Reception'
-          ? this.api.receptionOptions(this.practiceId(), this.date(), time)
-          : this.publicApi.bookingOptions(this.practiceId(), this.date(), time),
+          ? this.api.receptionOptions(this.practiceId(), this.date(), time, this.bookingContext())
+          : this.eligibility()
+            ? this.followUps.options(this.eligibility()!.eligibilityId, this.date(), time)
+            : this.publicApi.bookingOptions(this.practiceId(), this.date(), time),
       );
       if (sequence === this.bookingSequence)
         this.options.set({
           ...options,
-          visitTypes: options.visitTypes.filter((v) => v.type === 'NewConsultation'),
+          visitTypes: options.visitTypes.filter((v) => v.type === (this.eligibility() ? 'FollowUp' : 'NewConsultation')),
         });
     } catch (error) {
       if (sequence === this.bookingSequence) await this.failure(error);
@@ -398,6 +413,8 @@ export class ReservationWorkspaceStore {
         return;
       const visit = this.options()?.visitTypes.find((v) => v.visitTypeId === draft.visitTypeId);
       if (!visit?.segments.some((s) => s.segmentId === draft.segmentId)) return;
+      const eligibility = this.eligibility();
+      if (eligibility && (!eligibility.canBook || eligibility.patientId !== draft.patientId || eligibility.practiceId !== this.practiceId() || !eligibility.rowVersion)) return;
       const body: CreateReservationRequest = {
         patientId: draft.patientId,
         businessDate: this.date(),
@@ -405,6 +422,7 @@ export class ReservationWorkspaceStore {
         segmentId: draft.segmentId,
         visitTypeId: draft.visitTypeId,
         bookingNote: draft.bookingNote.trim() || null,
+        ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId, followUpEligibilityRowVersion: eligibility.rowVersion } : {}),
       };
       request =
         this.actor() === 'Patient'
@@ -467,6 +485,10 @@ export class ReservationWorkspaceStore {
       }
       this.detail.set(response);
       this.editor.set(null);
+      this.eligibilitySequence++;
+      this.eligibility.set(null);
+      this.eligibilities.set([]);
+      this.bookingPatientId.set('');
       this.resetAvailability();
       this.intent = null;
       this.toast.success(this.language.t('reservations.saved'));
@@ -559,6 +581,10 @@ export class ReservationWorkspaceStore {
     this.resetDrawer();
   }
   private resetDrawer(): void {
+    this.eligibilitySequence++;
+    this.bookingPatientId.set('');
+    this.eligibilities.set([]);
+    this.eligibility.set(null);
     this.detailSequence++;
     this.bookingSequence++;
     this.detail.set(null);
@@ -574,6 +600,12 @@ export class ReservationWorkspaceStore {
     time: string,
   ): Promise<void> {
     const intent = this.intent;
+    const eligibility = this.eligibility();
+    if (eligibility) {
+      await this.choosePatient(eligibility.patientId);
+      await this.chooseEligibility(eligibility.eligibilityId);
+      if (!this.eligibility()?.canBook) { this.resetAvailability(); return; }
+    }
     await this.openEditor(mode);
     this.intent = intent;
     await this.chooseDate(date);
@@ -585,6 +617,59 @@ export class ReservationWorkspaceStore {
     this.options.set(null);
     this.date.set('');
     this.time.set('');
+  }
+  async choosePatient(patientId: string): Promise<void> {
+    if (this.busy() || this.editor() !== 'create') return;
+    const sequence = ++this.eligibilitySequence;
+    this.bookingSequence++;
+    this.bookingPatientId.set(patientId);
+    this.eligibility.set(null);
+    this.eligibilities.set([]);
+    this.resetAvailability();
+    this.intent = null;
+    if (patientId && this.canViewFollowUps()) {
+      try {
+        const items = this.actor() === 'Reception'
+          ? await firstValueFrom(this.followUps.reception(this.practiceId(), patientId))
+          : (await firstValueFrom(this.followUps.mine({ patientId, status: 'Available', pageNumber: 1, pageSize: 100 }))).items;
+        if (sequence === this.eligibilitySequence) {
+          this.eligibilities.set(items.filter(e => e.patientId === patientId && e.practiceId === this.practiceId()));
+        }
+      } catch (error) {
+        if (sequence === this.eligibilitySequence) await this.failure(error);
+      }
+    }
+    if (sequence === this.eligibilitySequence) await this.openEditor('create');
+  }
+  async chooseEligibility(id: string): Promise<void> {
+    if (this.busy() || !this.canViewFollowUps()) return;
+    const sequence = ++this.eligibilitySequence;
+    this.bookingSequence++;
+    this.eligibility.set(null);
+    this.resetAvailability();
+    if (id) {
+      try {
+        const selected = this.actor() === 'Patient'
+          ? await firstValueFrom(this.followUps.details(id))
+          : (await firstValueFrom(this.followUps.reception(this.practiceId(), this.bookingPatientId()))).find(e => e.eligibilityId === id);
+        if (sequence !== this.eligibilitySequence) return;
+        if (!selected?.canBook || selected.patientId !== this.bookingPatientId() || selected.practiceId !== this.practiceId()) {
+          this.messages.set(['followUps.unavailable']);
+          return;
+        }
+        this.eligibility.set(selected);
+      } catch (error) {
+        if (sequence === this.eligibilitySequence) await this.failure(error);
+        return;
+      }
+    }
+    if (sequence === this.eligibilitySequence) await this.openEditor('create');
+  }
+  private bookingContext() {
+    return {
+      ...(this.bookingPatientId() ? { patientId: this.bookingPatientId() } : {}),
+      ...(this.eligibility() ? { followUpEligibilityId: this.eligibility()!.eligibilityId } : {}),
+    };
   }
   private intentKey(mode: string, body: object): string {
     const signature = JSON.stringify({
@@ -666,6 +751,10 @@ export class ReservationWorkspaceStore {
       this.actor() === 'Reception'
     ) {
       this.scopeGeneration++;
+      this.eligibilitySequence++;
+      this.eligibility.set(null);
+      this.eligibilities.set([]);
+      this.bookingPatientId.set('');
       this.listSequence++;
       this.bookingSequence++;
       this.detailSequence++;

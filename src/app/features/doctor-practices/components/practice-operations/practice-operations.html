@@ -9,7 +9,7 @@
 
   <!-- ── Top Grid: حالة التشغيل جنباً إلى جنب مع الهوية البصرية ── -->
   <div class="operations-top-grid">
-    <!-- ── حالة التشغيل والجاهزية ── -->
+    <!-- ── 1. حالة التشغيل والجاهزية ── -->
     @if (canActivate()) {
       <section class="operation-card status-card">
         <div class="card-header">
@@ -111,19 +111,44 @@
             [disabled]="activeAction() === 'status'"
             (click)="toggleStatus()"
           >
-            {{
-              activeAction() === 'status'
-                ? uiLanguage.t('common.updating')
-                : practice().isActive
-                  ? uiLanguage.t('ui.expressions.157')
-                  : uiLanguage.t('ui.expressions.158')
-            }}
+            @if (activeAction() === 'status') {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span>{{ uiLanguage.t('common.updating') }}</span>
+            } @else if (practice().isActive) {
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="10" y1="15" x2="10" y2="9"></line>
+                <line x1="14" y1="15" x2="14" y2="9"></line>
+              </svg>
+              <span>{{ uiLanguage.t('ui.expressions.157') }}</span>
+            } @else {
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>{{ uiLanguage.t('ui.expressions.158') }}</span>
+            }
           </button>
         </div>
       </section>
     }
 
-    <!-- ── الهوية البصرية والشعار بجانب حالة التشغيل ── -->
+    <!-- ── 2. الهوية البصرية والشعار ── -->
     @if (canViewBranding() || canManageBranding()) {
       <section class="operation-card branding-card">
         <div class="card-header">
@@ -345,11 +370,28 @@
                       type="submit"
                       [disabled]="activeAction() === 'branding'"
                     >
-                      {{
-                        activeAction() === 'branding'
-                          ? uiLanguage.t('common.saving')
-                          : uiLanguage.t('ui.expressions.167')
-                      }}
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+                        ></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                      </svg>
+                      <span>
+                        {{
+                          activeAction() === 'branding'
+                            ? uiLanguage.t('common.saving')
+                            : uiLanguage.t('ui.expressions.167')
+                        }}
+                      </span>
                     </button>
                   </div>
                 </form>
@@ -386,10 +428,10 @@
     }
   </div>
 
-  <!-- ── الإعدادات التشغيلية ── -->
+  <!-- ── 3. الإعدادات التشغيلية ── -->
   @if (canViewConfiguration() || canManageConfiguration()) {
     <section class="operation-card config-card">
-      <div class="card-header">
+      <div class="card-header config-card-header">
         <div>
           <h2>{{ 'ui.full.328' | t }}</h2>
           <p class="card-desc-compact">{{ 'ui.full.329' | t }}</p>
@@ -399,73 +441,242 @@
       @if (configuration(); as config) {
         @if (canManageConfiguration()) {
           <form class="config-form" (submit)="saveConfiguration($event)" novalidate>
-            <div class="config-toggles-bar">
-              <label class="toggle-field">
-                <input type="checkbox" [formField]="configForm.allowOnlineBooking" />
-                <span>{{ 'ui.full.330' | t }}</span>
-              </label>
-              <label class="toggle-field">
-                <input type="checkbox" [formField]="configForm.allowWalkIn" />
-                <span>{{ 'ui.full.331' | t }}</span>
-              </label>
+            <div class="config-sections-grid">
+              <!-- القسم الأول: مواعيد وسياسات الحجز -->
+              <div class="config-group-panel">
+                <div class="group-header">
+                  <span class="group-header-icon icon-teal" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </span>
+                  <div>
+                    <h3>سياسات ومواعيد الحجز</h3>
+                    <p>التحكم في قنوات الحجز والمدد الزمنية للكشوفات</p>
+                  </div>
+                </div>
+
+                <!-- Toggles Row: 2 clean inline toggle switches -->
+                <div class="toggles-grid">
+                  <label class="primary-toggle-row">
+                    <div class="toggle-text-wrap">
+                      <span class="toggle-label">{{ 'ui.full.330' | t }}</span>
+                      <span class="toggle-hint"
+                        >إتاحة حجز المواعيد إلكترونياً للمرضى عبر المنصة</span
+                      >
+                    </div>
+                    <div class="switch-toggle-wrap">
+                      <input
+                        type="checkbox"
+                        class="sr-only-chk"
+                        [formField]="configForm.allowOnlineBooking"
+                      />
+                      <span
+                        class="switch-toggle-track"
+                        [class.is-checked]="configModel().allowOnlineBooking"
+                      >
+                        <span class="switch-toggle-thumb"></span>
+                      </span>
+                    </div>
+                  </label>
+
+                  <label class="primary-toggle-row">
+                    <div class="toggle-text-wrap">
+                      <span class="toggle-label">{{ 'ui.full.331' | t }}</span>
+                      <span class="toggle-hint"
+                        >استقبال المرضى الحاضرين مباشرة للعيادة دون حجز</span
+                      >
+                    </div>
+                    <div class="switch-toggle-wrap">
+                      <input
+                        type="checkbox"
+                        class="sr-only-chk"
+                        [formField]="configForm.allowWalkIn"
+                      />
+                      <span
+                        class="switch-toggle-track"
+                        [class.is-checked]="configModel().allowWalkIn"
+                      >
+                        <span class="switch-toggle-thumb"></span>
+                      </span>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Timings 3 Fields -->
+                <div class="timings-grid">
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'ui.full.332' | t }}
+                      <span class="unit-badge">دقيقة</span>
+                    </span>
+                    <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
+                    <small class="field-micro-hint">مدة كشف المريض المقررة في الجدول</small>
+                  </label>
+
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'ui.full.333' | t }}
+                      <span class="unit-badge">دقيقة</span>
+                    </span>
+                    <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
+                    <small class="field-micro-hint">مهلة التأخر المسموحة قبل إلغاء الموعد</small>
+                  </label>
+
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'ui.full.334' | t }}
+                      <span class="unit-badge">دقيقة</span>
+                    </span>
+                    <input
+                      type="number"
+                      [formField]="configForm.patientSelfCancellationCutoffMinutes"
+                    />
+                    <small class="field-micro-hint">آخر موعد متاح للمريض لإلغاء حجزه بنفسه</small>
+                  </label>
+                </div>
+              </div>
+
+              <!-- القسم الثاني: سعة العيادة وإدارة الطابور -->
+              <div class="config-group-panel">
+                <div class="group-header">
+                  <span class="group-header-icon icon-navy" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  </span>
+                  <div>
+                    <h3>سعة العيادة وإدارة الطابور</h3>
+                    <p>الحدود اليومية للمرضى وقواعد النداء وتحديد الغياب</p>
+                  </div>
+                </div>
+
+                <div class="capacity-grid">
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'ui.full.335' | t }}
+                    </span>
+                    <input
+                      inputmode="numeric"
+                      [formField]="configForm.maximumDailyPatients"
+                      [placeholder]="'ui.full.336' | t"
+                    />
+                    <small class="field-micro-hint">اتركه فارغاً لعدد غير محدود من المرضى</small>
+                  </label>
+
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'ui.full.337' | t }}
+                    </span>
+                    <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
+                    <small class="field-micro-hint">عدد النداءات قبل نقل التذكرة للمؤجل</small>
+                  </label>
+
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'practice.noShowPassedPatients' | t }}
+                    </span>
+                    <input type="number" [formField]="configForm.noShowAfterPassedPatientsCount" />
+                    <small class="field-micro-hint"
+                      >عدد المرضى المفحوصين قبل اعتبار المتأخر غائباً</small
+                    >
+                  </label>
+
+                  <label class="form-field">
+                    <span class="field-label-text">
+                      {{ 'practice.timeZone' | t }}
+                    </span>
+                    <input
+                      dir="ltr"
+                      class="timezone-input"
+                      [formField]="configForm.timeZoneId"
+                      placeholder="Africa/Cairo"
+                    />
+                    <small class="field-micro-hint"
+                      >التوقيت المحلي لتشغيل مواعيد وسجلات العيادة</small
+                    >
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <div class="config-inputs-grid">
-              <label class="form-field">
-                <span>{{ 'ui.full.332' | t }}</span>
-                <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
-              </label>
-              <label class="form-field">
-                <span>{{ 'ui.full.333' | t }}</span>
-                <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
-              </label>
-              <label class="form-field">
-                <span>{{ 'ui.full.334' | t }}</span>
-                <input
-                  type="number"
-                  [formField]="configForm.patientSelfCancellationCutoffMinutes"
-                />
-              </label>
-              <label class="form-field">
-                <span>{{ 'ui.full.335' | t }}</span>
-                <input
-                  inputmode="numeric"
-                  [formField]="configForm.maximumDailyPatients"
-                  [placeholder]="'ui.full.336' | t"
-                />
-              </label>
-              <label class="form-field">
-                <span>{{ 'ui.full.337' | t }}</span>
-                <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
-              </label>
-              <label class="form-field">
-                <span>{{ 'practice.noShowPassedPatients' | t }}</span>
-                <input type="number" [formField]="configForm.noShowAfterPassedPatientsCount" />
-                <small>{{ 'practice.noShowPassedPatientsHelp' | t }}</small>
-              </label>
-              <label class="form-field">
-                <span>{{ 'practice.timeZone' | t }}</span>
-                <input dir="ltr" [formField]="configForm.timeZoneId" />
-              </label>
-            </div>
+            <!-- شريط الحفظ والتنبيه السفلي -->
+            <div class="config-footer-bar">
+              <div class="config-footer-note">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span
+                  >القيم المحفوظة تسري فوراً على المواعيد والتذاكر المستقبلية دون تعديل المواعيد
+                  المحجوزة مسبقاً.</span
+                >
+              </div>
 
-            <div class="form-actions config-actions">
-              <button
-                class="btn btn-primary"
-                type="submit"
-                [disabled]="activeAction() === 'configuration'"
-              >
-                {{
-                  activeAction() === 'configuration'
-                    ? uiLanguage.t('common.saving')
-                    : uiLanguage.t('ui.expressions.168')
-                }}
-              </button>
+              <div class="config-footer-actions">
+                <button
+                  class="btn btn-primary btn-save-config"
+                  type="submit"
+                  [disabled]="activeAction() === 'configuration'"
+                >
+                  @if (activeAction() === 'configuration') {
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                    <span>{{ uiLanguage.t('common.saving') }}</span>
+                  } @else {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+                      ></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span>{{ uiLanguage.t('ui.expressions.168') }}</span>
+                  }
+                </button>
+              </div>
             </div>
           </form>
         } @else {
+          <!-- Read-only view -->
           <dl class="config-summary">
-            <div>
+            <div class="summary-item">
               <dt>{{ 'ui.full.338' | t }}</dt>
               <dd>
                 {{
@@ -475,7 +686,7 @@
                 }}
               </dd>
             </div>
-            <div>
+            <div class="summary-item">
               <dt>{{ 'ui.full.339' | t }}</dt>
               <dd>
                 {{
@@ -485,19 +696,19 @@
                 }}
               </dd>
             </div>
-            <div>
+            <div class="summary-item">
               <dt>{{ 'ui.full.340' | t }}</dt>
               <dd>{{ config.defaultSlotDurationMinutes }} {{ 'practice.minutesUnit' | t }}</dd>
             </div>
-            <div>
+            <div class="summary-item">
               <dt>{{ 'ui.full.341' | t }}</dt>
               <dd>{{ config.maximumDailyPatients ?? uiLanguage.t('ui.full.336') }}</dd>
             </div>
-            <div>
+            <div class="summary-item">
               <dt>{{ 'practice.noShowPassedPatients' | t }}</dt>
               <dd>{{ config.noShowAfterPassedPatientsCount }}</dd>
             </div>
-            <div>
+            <div class="summary-item">
               <dt>{{ 'practice.timeZone' | t }}</dt>
               <dd dir="ltr">{{ config.timeZoneId }}</dd>
             </div>

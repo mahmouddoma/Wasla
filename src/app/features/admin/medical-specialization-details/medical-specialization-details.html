@@ -9,17 +9,28 @@
     </a>
     <header class="page-top-header">
       <div>
-        <h1>{{ isCreate() ? uiLanguage.t('ui.expressions.25') : uiLanguage.t('ui.expressions.26') }}</h1>
+        <h1>
+          {{ isCreate() ? uiLanguage.t('ui.expressions.25') : uiLanguage.t('ui.expressions.26') }}
+        </h1>
         <p>{{ 'review.specializationHelp' | t }}</p>
       </div>
     </header>
   }
 
   @if (apiMessages().length) {
-    <div class="form-notice error" role="alert">
-      @for (message of apiMessages(); track message) {
-        <p>{{ message | t }}</p>
-      }
+    <div class="form-notice-banner" role="alert">
+      <div class="notice-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <div class="notice-messages">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
     </div>
   }
 
@@ -29,37 +40,40 @@
       <p>{{ 'review.loadingSpecialization' | t }}</p>
     </div>
   } @else {
-    <form class="auth-form specialization-form" (submit)="save($event)" novalidate>
-      <!-- ── حالة التخصص والعمليات (عند التعديل فقط) ── -->
-      @if (details(); as item) {
-        <fieldset class="form-section-card status-section-card">
-          <legend>
-            <span class="legend-icon">
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-                />
-                <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
-              </svg>
-            </span>
-            <span>{{ 'review.specializationStatus' | t }}</span>
-          </legend>
+    <form class="specialization-form" (submit)="save($event)" novalidate>
+      <div class="form-surface">
+        <!-- ── حالة التخصص والعمليات (عند التعديل فقط) ── -->
+        @if (details(); as item) {
+          <div class="form-section">
+            <div class="section-title-bar">
+              <div class="section-icon icon-teal" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+                  />
+                  <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
+                </svg>
+              </div>
+              <div class="section-meta">
+                <h3>{{ 'review.specializationStatus' | t }}</h3>
+              </div>
+            </div>
 
-          <div class="status-actions-row">
             <div class="status-pills-wrap">
               <span class="badge-state" [class.active]="item.isActive">
                 <span class="status-dot"></span>
-                {{ item.isActive ? uiLanguage.t('ui.expressions.27') : uiLanguage.t('ui.expressions.28') }}
+                {{
+                  item.isActive
+                    ? uiLanguage.t('ui.expressions.27')
+                    : uiLanguage.t('ui.expressions.28')
+                }}
               </span>
               <span class="badge-state" [class.deleted]="item.isDeleted">
-                {{ item.isDeleted ? uiLanguage.t('ui.expressions.29') : uiLanguage.t('ui.expressions.30') }}
+                {{
+                  item.isDeleted
+                    ? uiLanguage.t('ui.expressions.29')
+                    : uiLanguage.t('ui.expressions.30')
+                }}
               </span>
             </div>
 
@@ -124,123 +138,140 @@
               }
             </div>
           </div>
-        </fieldset>
-      }
+        }
 
-      <!-- ── القسم الأول: البيانات الأساسية ── -->
-      <fieldset class="form-section-card">
-        <legend>
-          <span class="legend-icon">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </span>
-          <span>{{ 'review.specializationDetails' | t }}</span>
-        </legend>
+        <!-- ── القسم الأول: البيانات الأساسية ── -->
+        <div class="form-section">
+          <div class="section-title-bar">
+            <div class="section-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <div class="section-meta">
+              <h3>{{ 'review.specializationDetails' | t }}</h3>
+            </div>
+          </div>
 
-        <div class="form-grid-wasla">
-          <!-- الاسم بالعربية -->
-          <label class="form-field">
-            <span>{{ 'register.fullNameAr' | t }}</span>
-            <input
-              type="text"
-              [placeholder]="'review.specializationArExample' | t"
-              [formField]="detailsForm.nameAr"
-            />
-            @if (detailsForm.nameAr().touched() && detailsForm.nameAr().errors().length) {
-              <small class="field-error">{{ (detailsForm.nameAr().errors()[0].message ?? '') | t }}</small>
-            }
-            @if (serverError('nameAr')) {
-              <small class="field-error">{{ serverError('nameAr') }}</small>
-            }
-          </label>
+          <div class="section-fields-grid">
+            <!-- الاسم بالعربية -->
+            <div class="form-field-group" [class.has-error]="serverError('nameAr')">
+              <label class="field-label" for="spec-name-ar">
+                <span>{{ 'register.fullNameAr' | t }}</span>
+                <span class="required-star" aria-hidden="true">*</span>
+              </label>
+              <input
+                id="spec-name-ar"
+                type="text"
+                [placeholder]="'review.specializationArExample' | t"
+                [formField]="detailsForm.nameAr"
+              />
+              @if (detailsForm.nameAr().touched() && detailsForm.nameAr().errors().length) {
+                <small class="field-error-text">{{
+                  detailsForm.nameAr().errors()[0].message ?? '' | t
+                }}</small>
+              }
+              @if (serverError('nameAr')) {
+                <small class="field-error-text">{{ serverError('nameAr') }}</small>
+              }
+            </div>
 
-          <!-- الاسم بالإنجليزية -->
-          <label class="form-field">
-            <span>{{ 'common.nameEn' | t }} <small>{{ 'common.optionalParentheses' | t }}</small></span>
-            <input
-              type="text"
-              lang="en"
-              dir="ltr"
-              [placeholder]="'review.specializationEnExample' | t"
-              [formField]="detailsForm.nameEn"
-            />
-            @if (serverError('nameEn')) {
-              <small class="field-error">{{ serverError('nameEn') }}</small>
-            }
-          </label>
+            <!-- الاسم بالإنجليزية -->
+            <div class="form-field-group" [class.has-error]="serverError('nameEn')">
+              <label class="field-label" for="spec-name-en">
+                <span>{{ 'common.nameEn' | t }}</span>
+                <span class="optional-pill">{{ 'common.optionalParentheses' | t }}</span>
+              </label>
+              <input
+                id="spec-name-en"
+                type="text"
+                lang="en"
+                dir="ltr"
+                [placeholder]="'review.specializationEnExample' | t"
+                [formField]="detailsForm.nameEn"
+              />
+              @if (serverError('nameEn')) {
+                <small class="field-error-text">{{ serverError('nameEn') }}</small>
+              }
+            </div>
 
-          <!-- ترتيب العرض -->
-          <label class="form-field full-span">
-            <span>{{ 'common.displayOrder' | t }}</span>
-            <input type="number" dir="ltr" placeholder="0" [formField]="detailsForm.sortOrder" />
-            <small class="field-hint"
-              >{{ 'review.specializationOrderHelp' | t }}</small
-            >
-            @if (detailsForm.sortOrder().touched() && detailsForm.sortOrder().errors().length) {
-              <small class="field-error">{{ (detailsForm.sortOrder().errors()[0].message ?? '') | t }}</small>
-            }
-          </label>
+            <!-- ترتيب العرض -->
+            <div class="form-field-group full-span">
+              <label class="field-label" for="spec-sort-order">
+                <span>{{ 'common.displayOrder' | t }}</span>
+              </label>
+              <input
+                id="spec-sort-order"
+                type="number"
+                dir="ltr"
+                placeholder="0"
+                [formField]="detailsForm.sortOrder"
+              />
+              <small class="field-hint">{{ 'review.specializationOrderHelp' | t }}</small>
+              @if (detailsForm.sortOrder().touched() && detailsForm.sortOrder().errors().length) {
+                <small class="field-error-text">{{
+                  detailsForm.sortOrder().errors()[0].message ?? '' | t
+                }}</small>
+              }
+            </div>
+          </div>
         </div>
-      </fieldset>
 
-      <!-- ── القسم الثاني: التعريف والوصف الطبي ── -->
-      <fieldset class="form-section-card">
-        <legend>
-          <span class="legend-icon">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-          </span>
-          <span>{{ 'review.medicalDescription' | t }}</span>
-          <small>{{ 'common.optionalParentheses' | t }}</small>
-        </legend>
+        <!-- ── القسم الثاني: التعريف والوصف الطبي ── -->
+        <div class="form-section">
+          <div class="section-title-bar">
+            <div class="section-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            </div>
+            <div class="section-meta">
+              <h3>
+                {{ 'review.medicalDescription' | t }}
+                <span class="optional-pill">{{ 'common.optionalParentheses' | t }}</span>
+              </h3>
+            </div>
+          </div>
 
-        <div class="form-grid-wasla">
-          <!-- الوصف بالعربية -->
-          <label class="form-field full-span">
-            <span>{{ 'review.descriptionAr' | t }} <small>{{ 'common.optionalParentheses' | t }}</small></span>
-            <textarea
-              rows="3"
-              [placeholder]="'review.descriptionPlaceholder' | t"
-              [formField]="detailsForm.descriptionAr"
-            ></textarea>
-            <small class="field-hint">{{ 'validation.max1000Short' | t }}</small>
-          </label>
+          <div class="section-fields-grid">
+            <!-- الوصف بالعربية -->
+            <div class="form-field-group full-span">
+              <label class="field-label" for="spec-desc-ar">
+                <span>{{ 'review.descriptionAr' | t }}</span>
+                <span class="optional-pill">{{ 'common.optionalParentheses' | t }}</span>
+              </label>
+              <textarea
+                id="spec-desc-ar"
+                rows="3"
+                [placeholder]="'review.descriptionPlaceholder' | t"
+                [formField]="detailsForm.descriptionAr"
+              ></textarea>
+              <small class="field-hint">{{ 'validation.max1000Short' | t }}</small>
+            </div>
 
-          <!-- الوصف بالإنجليزية -->
-          <label class="form-field full-span">
-            <span>{{ 'review.descriptionEn' | t }} <small>{{ 'common.optionalParentheses' | t }}</small></span>
-            <textarea
-              rows="3"
-              lang="en"
-              dir="ltr"
-              [placeholder]="'specialization.descriptionPlaceholder' | t"
-              [formField]="detailsForm.descriptionEn"
-            ></textarea>
-            <small class="field-hint">{{ 'validation.max1000Short' | t }}</small>
-          </label>
+            <!-- الوصف بالإنجليزية -->
+            <div class="form-field-group full-span">
+              <label class="field-label" for="spec-desc-en">
+                <span>{{ 'review.descriptionEn' | t }}</span>
+                <span class="optional-pill">{{ 'common.optionalParentheses' | t }}</span>
+              </label>
+              <textarea
+                id="spec-desc-en"
+                rows="3"
+                lang="en"
+                dir="ltr"
+                [placeholder]="'specialization.descriptionPlaceholder' | t"
+                [formField]="detailsForm.descriptionEn"
+              ></textarea>
+              <small class="field-hint">{{ 'validation.max1000Short' | t }}</small>
+            </div>
+          </div>
         </div>
-      </fieldset>
+      </div>
 
       <!-- ── أزرار الإجراءات ── -->
       <div class="form-actions-bar">
@@ -250,7 +281,9 @@
               <span class="btn-spinner" aria-hidden="true"></span>
               <span>{{ 'common.savingApproval' | t }}</span>
             } @else {
-              <span>{{ isCreate() ? uiLanguage.t('ui.expressions.31') : uiLanguage.t('ui.expressions.32') }}</span>
+              <span>{{
+                isCreate() ? uiLanguage.t('ui.expressions.31') : uiLanguage.t('ui.expressions.32')
+              }}</span>
               <svg viewBox="0 0 24 24" class="btn-arrow-icon" aria-hidden="true">
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 19 5 12 12 5" />

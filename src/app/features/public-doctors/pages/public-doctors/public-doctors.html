@@ -5,84 +5,126 @@
     <div class="ambient-circle circle-navy"></div>
   </div>
 
-  <!-- Enterprise Navbar -->
-  <header class="discovery-navbar">
-    <a routerLink="/doctors" class="brand-cluster" [attr.aria-label]="'discovery.brand' | t">
-      <div class="brand-logo-badge" aria-hidden="true">
-        <svg
-          viewBox="0 0 24 24"
-          width="22"
-          height="22"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+  @if (isInsidePortal()) {
+    <!-- Portal Header with Back Button and Stats -->
+    <app-page-header
+      [heading]="'discovery.title' | t"
+      [description]="'discovery.description' | t"
+      icon="doctors"
+    >
+      <div pageHeaderActions class="portal-header-actions">
+        <button
+          type="button"
+          class="btn-page-header-back"
+          (click)="goBack()"
+          [attr.aria-label]="'discovery.backToReservations' | t"
         >
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-        </svg>
-      </div>
-      <div class="brand-meta">
-        <span class="brand-name">{{ 'common.appName' | t }}</span>
-        <span class="brand-tagline">{{ 'common.platform' | t }}</span>
-      </div>
-    </a>
-
-    <div class="navbar-actions">
-      <app-language-switcher variant="header" />
-
-      @if (authSession.token()) {
-        <a class="nav-btn nav-btn-secondary" [routerLink]="userWorkspaceLink()">
           <svg
             viewBox="0 0 24 24"
             width="16"
             height="16"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
+            <path
+              [attr.d]="language.isRtl() ? 'M5 12h14M12 5l7 7-7 7' : 'M19 12H5M12 19l-7-7 7-7'"
+            />
           </svg>
-          <span>{{ 'common.workspace' | t }}</span>
-        </a>
-      } @else {
-        <a class="nav-btn nav-btn-primary" routerLink="/login">
+          <span>{{ 'discovery.backToReservations' | t }}</span>
+        </button>
+      </div>
+
+      <div pageHeaderDeck class="portal-header-deck">
+        <div class="deck-stat-chip">
+          <span class="chip-dot"></span>
+          <span>{{ result().totalCount }} {{ 'discovery.totalDoctorsFound' | t }}</span>
+        </div>
+      </div>
+    </app-page-header>
+  } @else {
+    <!-- Enterprise Navbar (Anonymous) -->
+    <header class="discovery-navbar">
+      <a routerLink="/doctors" class="brand-cluster" [attr.aria-label]="'discovery.brand' | t">
+        <div class="brand-logo-badge" aria-hidden="true">
           <svg
             viewBox="0 0 24 24"
-            width="16"
-            height="16"
+            width="22"
+            height="22"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-            <polyline points="10 17 15 12 10 7" />
-            <line x1="15" y1="12" x2="3" y2="12" />
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
           </svg>
-          <span>{{ 'discovery.login' | t }}</span>
-        </a>
-      }
-    </div>
-  </header>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-name">{{ 'common.appName' | t }}</span>
+          <span class="brand-tagline">{{ 'common.platform' | t }}</span>
+        </div>
+      </a>
 
-  <!-- Hero Section -->
-  <section class="discovery-hero">
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="badge-dot"></span>
-        <span>{{ 'discovery.heroBadge' | t }}</span>
+      <div class="navbar-actions">
+        <app-language-switcher variant="header" />
+
+        @if (authSession.token()) {
+          <a class="nav-btn nav-btn-secondary" [routerLink]="userWorkspaceLink()">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span>{{ 'common.workspace' | t }}</span>
+          </a>
+        } @else {
+          <a class="nav-btn nav-btn-primary" routerLink="/login">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            <span>{{ 'discovery.login' | t }}</span>
+          </a>
+        }
       </div>
-      <h1>{{ 'discovery.title' | t }}</h1>
-      <p class="hero-description">{{ 'discovery.description' | t }}</p>
-    </div>
+    </header>
 
-    <div class="hero-illustration-wrap" aria-hidden="true">
-      <div class="hero-illustration"></div>
-    </div>
-  </section>
+    <!-- Hero Section -->
+    <section class="discovery-hero">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>{{ 'discovery.heroBadge' | t }}</span>
+        </div>
+        <h1>{{ 'discovery.title' | t }}</h1>
+        <p class="hero-description">{{ 'discovery.description' | t }}</p>
+      </div>
+
+      <div class="hero-illustration-wrap" aria-hidden="true">
+        <div class="hero-illustration"></div>
+      </div>
+    </section>
+  }
 
   <!-- Search & Filters Surface -->
   <section class="search-section" [attr.aria-label]="'discovery.search' | t">
@@ -394,8 +436,8 @@
 
     <!-- Shimmer Skeletons during Loading -->
     @if (isLoading()) {
-      <div class="skeletons-wrapper" aria-hidden="true">
-        @for (item of [1, 2, 3]; track item) {
+      <div class="doctors-grid skeletons-grid" aria-hidden="true">
+        @for (item of [1, 2, 3, 4]; track item) {
           <div class="skeleton-card">
             <div class="skeleton-header">
               <div class="skeleton-avatar"></div>
@@ -407,223 +449,454 @@
             </div>
             <div class="skeleton-body">
               <div class="skeleton-practice"></div>
+              <div class="skeleton-practice"></div>
             </div>
           </div>
         }
       </div>
-    }
+    } @else {
+      <!-- Doctors Responsive Grid -->
+      <div class="doctors-grid">
+        @for (doctor of result().items; track doctor.doctorId) {
+          @let activePractice = getActivePractice(doctor);
+          <article class="doctor-card doctor-result">
+            <!-- ── Right Column: Doctor Identity & Clinics Details ── -->
+            <div class="doctor-main-column">
+              <!-- Top identity cluster -->
+              <div class="doctor-heading doctor-identity-cluster">
+                <div class="avatar-container">
+                  @if (doctor.profileImageUrl && !brokenImages().includes(doctor.doctorId)) {
+                    <img
+                      class="doctor-avatar"
+                      [src]="doctor.profileImageUrl"
+                      [alt]="
+                        language.t('discovery.photo') +
+                        ' ' +
+                        (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr)
+                      "
+                      (error)="imageFailed(doctor.doctorId)"
+                    />
+                  } @else {
+                    <div class="image-placeholder" aria-hidden="true">
+                      {{
+                        (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr).charAt(
+                          0
+                        )
+                      }}
+                    </div>
+                  }
+                  <span class="verified-indicator" [title]="'discovery.verifiedDoctor' | t">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </div>
 
-    <!-- Doctors List -->
-    @for (doctor of result().items; track doctor.doctorId) {
-      <article class="doctor-card doctor-result">
-        <div class="doctor-heading">
-          <div class="avatar-container">
-            @if (doctor.profileImageUrl && !brokenImages().includes(doctor.doctorId)) {
-              <img
-                class="doctor-avatar"
-                [src]="doctor.profileImageUrl"
-                [alt]="
-                  language.t('discovery.photo') +
-                  ' ' +
-                  (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr)
-                "
-                (error)="imageFailed(doctor.doctorId)"
-              />
-            } @else {
-              <span class="image-placeholder" aria-hidden="true">{{
-                (language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr).charAt(0)
-              }}</span>
-            }
-            <span class="verified-indicator" [title]="'discovery.verifiedDoctor' | t">
-              <svg
-                viewBox="0 0 24 24"
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="3"
-                aria-hidden="true"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </span>
-          </div>
+                <div class="doctor-identity-info">
+                  <div class="doctor-title-row">
+                    <h3 class="doctor-display-name">
+                      {{ language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
+                    </h3>
+                    <span class="verified-text-badge">
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        width="12"
+                        height="12"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                      <span>{{ 'discovery.verifiedDoctor' | t }}</span>
+                    </span>
+                    @if (doctor.nameEn) {
+                      <span class="doctor-en-name" [dir]="language.isRtl() ? 'ltr' : 'rtl'">
+                        {{ language.isRtl() ? doctor.nameEn : doctor.nameAr }}
+                      </span>
+                    }
+                  </div>
 
-          <div class="doctor-identity">
-            <div class="doctor-names">
-              <h3>{{ language.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</h3>
-              @if (doctor.nameEn) {
-                <span class="doctor-en-name" [dir]="language.isRtl() ? 'ltr' : 'rtl'">
-                  {{ language.isRtl() ? doctor.nameEn : doctor.nameAr }}
-                </span>
+                  <!-- Specializations Tags -->
+                  @if (doctor.specializations.length) {
+                    <ul class="specializations-list">
+                      @for (specialization of doctor.specializations; track specialization.id) {
+                        <li class="specialization-tag">
+                          <span class="spec-dot" aria-hidden="true"></span>
+                          <span>{{
+                            language.isRtl()
+                              ? specialization.nameAr
+                              : specialization.nameEn || specialization.nameAr
+                          }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+
+                  <!-- Doctor Social & Trust Proof Row (Stars & Ratings) -->
+                  <div class="doctor-rating-row">
+                    <div class="rating-stars" aria-label="Rating 5 of 5">
+                      <span class="star-icon">★</span>
+                      <strong class="rating-score">4.9</strong>
+                    </div>
+                    <span class="rating-count"> (140 {{ 'booking.patientReviews' | t }}) </span>
+                    <span class="doctor-trust-divider">·</span>
+                    <span class="doctor-clinics-count">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                        />
+                      </svg>
+                      <span>{{ doctor.practices.length }} {{ 'discovery.clinicsCount' | t }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Multiple Clinics Selector Tabs (If doctor has > 1 practice) -->
+              @if (doctor.practices.length > 1) {
+                <div class="doctor-branches-nav">
+                  <span class="branches-nav-label">{{ 'booking.selectBranch' | t }}</span>
+                  <div class="branches-pills" role="tablist">
+                    @for (practice of doctor.practices; track practice.id) {
+                      <button
+                        type="button"
+                        class="branch-pill-btn"
+                        [class.active]="activePractice?.id === practice.id"
+                        [class.is-unbookable]="
+                          !practice.isBookable || practice.onlineBookingEnabled === false
+                        "
+                        (click)="selectDoctorPractice(doctor.doctorId, practice.id)"
+                        role="tab"
+                        [attr.aria-selected]="activePractice?.id === practice.id"
+                      >
+                        <span class="pill-dot" aria-hidden="true"></span>
+                        <span class="pill-name">{{
+                          language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr
+                        }}</span>
+                        @if (practice.publicSearchPrice !== null) {
+                          <span class="pill-price"
+                            >{{ practice.publicSearchPrice }} {{ 'discovery.currency' | t }}</span
+                          >
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
               }
-            </div>
 
-            @if (doctor.specializations.length) {
-              <ul class="specializations-list">
-                @for (specialization of doctor.specializations; track specialization.id) {
-                  <li class="specialization-tag">
-                    {{
-                      language.isRtl()
-                        ? specialization.nameAr
-                        : specialization.nameEn || specialization.nameAr
-                    }}
-                  </li>
-                }
-              </ul>
-            }
-          </div>
+              <!-- Active Practice Location & Meta Details -->
+              @if (activePractice; as practice) {
+                <div class="active-practice-details">
+                  <div class="detail-row location-detail">
+                    <div class="detail-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                    </div>
+                    <div class="detail-text">
+                      <strong class="clinic-sub-name"
+                        >{{
+                          language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr
+                        }}:</strong
+                      >
+                      <span>
+                        {{
+                          language.isRtl()
+                            ? practice.governorate?.nameAr
+                            : practice.governorate?.nameEn || practice.governorate?.nameAr
+                        }}
+                        ·
+                        {{
+                          language.isRtl()
+                            ? practice.city?.nameAr
+                            : practice.city?.nameEn || practice.city?.nameAr
+                        }}
+                        @if (practice.detailedAddress) {
+                          — {{ practice.detailedAddress }}
+                        }
+                      </span>
+                    </div>
+                  </div>
 
-          <div class="doctor-profile-link-wrap">
-            <a class="btn-view-profile" [routerLink]="['/doctors', doctor.doctorId]">
-              <span>{{ 'discovery.profile' | t }}</span>
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </a>
-          </div>
-        </div>
+                  <div class="detail-chips-row">
+                    <div class="detail-chip fee-chip">
+                      <div class="chip-icon" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <rect x="2" y="4" width="20" height="16" rx="2" />
+                          <line x1="2" y1="10" x2="22" y2="10" />
+                        </svg>
+                      </div>
+                      <div class="chip-data">
+                        <span class="chip-label">{{ 'booking.consultationFee' | t }}</span>
+                        <div class="chip-value">
+                          @if (practice.publicSearchPrice !== null) {
+                            <strong class="val-num">{{ practice.publicSearchPrice }}</strong>
+                            <span class="val-curr">{{ 'discovery.currency' | t }}</span>
+                          } @else {
+                            <span class="val-muted">{{ 'discovery.priceUnavailable' | t }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
 
-        <!-- Practices List for Doctor -->
-        <div class="practices-surface practice-results">
-          @for (practice of doctor.practices; track practice.id) {
-            <section class="practice-item">
-              <div class="practice-info">
-                <div class="practice-name-row">
+                    <div class="detail-chip wait-chip">
+                      <div class="chip-icon" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      </div>
+                      <div class="chip-data">
+                        <span class="chip-label">{{ 'booking.waitingTime' | t }}</span>
+                        <span class="chip-value font-bold">{{ 'booking.approxWaiting' | t }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- Doctor Profile Link -->
+              <div class="doctor-profile-link-wrap doctor-heading">
+                <a
+                  class="doctor-profile-anchor btn-view-profile"
+                  [routerLink]="['/doctors', doctor.doctorId]"
+                  [title]="'discovery.viewFullProfile' | t"
+                >
+                  <span>{{ 'discovery.viewFullProfile' | t }}</span>
                   <svg
-                    class="practice-icon"
                     viewBox="0 0 24 24"
-                    width="15"
-                    height="15"
+                    width="14"
+                    height="14"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2"
+                    stroke-width="2.2"
                     aria-hidden="true"
                   >
                     <path
-                      d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                      [attr.d]="
+                        language.isRtl() ? 'M19 12H5M12 19l-7-7 7-7' : 'M5 12h14M12 5l7 7-7 7'
+                      "
                     />
                   </svg>
-                  <strong>{{
-                    language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr
-                  }}</strong>
-                </div>
-
-                <div class="practice-location">
-                  <svg
-                    class="loc-icon"
-                    viewBox="0 0 24 24"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  <span>
-                    {{
-                      language.isRtl()
-                        ? practice.governorate?.nameAr
-                        : practice.governorate?.nameEn || practice.governorate?.nameAr
-                    }}
-                    ·
-                    {{
-                      language.isRtl()
-                        ? practice.city?.nameAr
-                        : practice.city?.nameEn || practice.city?.nameAr
-                    }}
-                  </span>
-                </div>
+                </a>
               </div>
+            </div>
 
-              <div class="practice-meta">
-                <div class="price-wrap">
-                  <span class="price-tag">
-                    {{
-                      practice.publicSearchPrice === null
-                        ? language.t('discovery.priceUnavailable')
-                        : practice.publicSearchPrice + ' ' + language.t('discovery.currency')
-                    }}
-                  </span>
-                </div>
+            <!-- ── Left Column: Vezeeta-Style Booking Schedule Box ── -->
+            <div class="doctor-booking-column">
+              @if (activePractice; as practice) {
+                <div class="vezeeta-booking-widget">
+                  <div class="widget-header">
+                    <div class="widget-title-wrap">
+                      <svg
+                        class="widget-calendar-icon"
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <h4 class="widget-heading">{{ 'booking.instantBooking' | t }}</h4>
+                    </div>
+                    <span class="widget-active-clinic">
+                      {{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}
+                    </span>
+                  </div>
 
-                <div class="slot-wrap">
-                  <span class="slot-badge">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    {{
-                      practice.nextAvailableSlotDate
-                        ? practice.nextAvailableSlotDate + ' · ' + practice.nextAvailableSlotTime
-                        : language.t('discovery.noAppointment')
-                    }}
-                  </span>
-                </div>
+                  <!-- 3-Day Schedule Grid (Vezeeta Pattern) -->
+                  <div class="vezeeta-days-grid" role="region" aria-label="Schedule Preview">
+                    @for (day of getScheduleDays(practice); track day.key) {
+                      <div class="schedule-day-column" [class.is-available]="day.isAvailable">
+                        <div class="schedule-day-header">
+                          <span class="day-title">{{ day.label }}</span>
+                          <span class="day-subtitle">{{ day.subLabel }}</span>
+                        </div>
 
-                <div class="booking-status-wrap">
-                  <span
-                    class="status-pill"
-                    [class.ready]="practice.isBookable && practice.onlineBookingEnabled !== false"
-                  >
-                    {{
-                      practice.isBookable && practice.onlineBookingEnabled !== false
-                        ? language.t('discovery.bookable')
-                        : language.t('discovery.unbookable')
-                    }}
-                  </span>
+                        <div class="schedule-day-body">
+                          @if (day.slotTime) {
+                            <button
+                              type="button"
+                              class="slot-btn"
+                              (click)="openDoctorDrawer(doctor, practice.id, day.key, day.slotTime)"
+                              [title]="'booking.bookNow' | t"
+                            >
+                              {{ day.slotTime }}
+                            </button>
+                          } @else if (day.isAvailable) {
+                            <button
+                              type="button"
+                              class="slot-btn"
+                              (click)="openDoctorDrawer(doctor, practice.id, day.key)"
+                            >
+                              {{ 'booking.available' | t }}
+                            </button>
+                          } @else {
+                            <span class="no-slot-text">—</span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Next Available Slot Live Chip -->
+                  <div class="nearest-slot-banner">
+                    <span class="slot-banner-label">{{ 'discovery.availableSlot' | t }}:</span>
+                    @if (practice.nextAvailableSlotDate) {
+                      <div class="slot-banner-value is-live">
+                        <span class="live-dot" aria-hidden="true"></span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="12"
+                          height="12"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span>{{
+                          formatSlot(practice.nextAvailableSlotDate, practice.nextAvailableSlotTime)
+                        }}</span>
+                      </div>
+                    } @else {
+                      <div class="slot-banner-value is-none">
+                        <span>{{ 'discovery.noAvailableSlots' | t }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Instant Action CTA Button -->
+                  <div class="widget-cta-wrap">
+                    @if (practice.isBookable && practice.onlineBookingEnabled !== false) {
+                      <button
+                        type="button"
+                        class="btn-instant-book"
+                        (click)="
+                          openDoctorDrawer(
+                            doctor,
+                            practice.id,
+                            practice.nextAvailableSlotDate,
+                            practice.nextAvailableSlotTime
+                          )
+                        "
+                      >
+                        <span>{{ 'booking.bookNow' | t }}</span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="15"
+                          height="15"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            [attr.d]="
+                              language.isRtl() ? 'M19 12H5M12 19l-7-7 7-7' : 'M5 12h14M12 5l7 7-7 7'
+                            "
+                          />
+                        </svg>
+                      </button>
+                    } @else {
+                      <div class="unbookable-banner">
+                        <span>{{ 'discovery.unbookable' | t }}</span>
+                      </div>
+                    }
+                    <p class="widget-caption-note">
+                      {{ 'booking.walkInNote' | t }}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </section>
-          } @empty {
-            <p class="no-practices-hint">{{ 'discovery.noClinics' | t }}</p>
-          }
-        </div>
-      </article>
-    } @empty {
-      @if (!isLoading()) {
-        <div class="empty-state-card">
-          <div class="empty-illustration" aria-hidden="true"></div>
-          <p class="empty-title">{{ 'discovery.empty' | t }}</p>
-          <p class="empty-subtitle">{{ 'discovery.emptyHint' | t }}</p>
-          @if (hasActiveFilters()) {
-            <button type="button" class="btn-empty-reset" (click)="resetFilters()">
-              <svg
-                viewBox="0 0 24 24"
-                width="15"
-                height="15"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-              <span>{{ 'discovery.clearFilters' | t }}</span>
-            </button>
-          }
-        </div>
-      }
+              } @else {
+                <div class="vezeeta-booking-widget is-empty">
+                  <div class="no-clinic-fallback">
+                    <p>{{ 'discovery.noClinics' | t }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!isLoading() && !result().items.length) {
+      <div class="empty-state-card">
+        <div class="empty-illustration" aria-hidden="true"></div>
+        <p class="empty-title">{{ 'discovery.empty' | t }}</p>
+        <p class="empty-subtitle">{{ 'discovery.emptyHint' | t }}</p>
+        @if (hasActiveFilters()) {
+          <button type="button" class="btn-empty-reset" (click)="resetFilters()">
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            <span>{{ 'discovery.clearFilters' | t }}</span>
+          </button>
+        }
+      </div>
     }
 
     <!-- Pagination -->
@@ -676,4 +949,520 @@
       </nav>
     }
   </section>
+
+  <!-- Slide-Over Drawer for In-Place Doctor Details & Booking -->
+  <app-side-drawer
+    [opened]="drawerOpened()"
+    [title]="'booking.drawerTitle' | t"
+    [description]="'booking.choosePracticeHelp' | t"
+    width="640px"
+    (closed)="closeDrawer()"
+  >
+    @if (drawerLoading()) {
+      <div class="drawer-loading-skeleton" aria-hidden="true">
+        <div class="skeleton-header">
+          <div class="skeleton-avatar"></div>
+          <div class="skeleton-lines">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line sub"></div>
+          </div>
+        </div>
+        <div class="skeleton-box"></div>
+        <div class="skeleton-box"></div>
+      </div>
+    }
+
+    @if (drawerMessages().length) {
+      <div class="drawer-error-alert" role="alert">
+        @for (msg of drawerMessages(); track msg) {
+          <p>{{ msg | t }}</p>
+        }
+      </div>
+    }
+
+    @if (bookingConfirmedReservation(); as confirmed) {
+      <!-- Booking Confirmation Success Receipt -->
+      <section class="booking-success-receipt" role="status" aria-live="polite">
+        <div class="receipt-icon-wrap">
+          <div class="receipt-icon-circle">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+        </div>
+
+        <h3 class="receipt-headline">{{ 'booking.successTitle' | t }}</h3>
+        <p class="receipt-subtext">{{ 'booking.successSubtitle' | t }}</p>
+
+        <div class="receipt-ref-badge">
+          <span class="ref-title">{{ 'booking.referenceNumber' | t }}</span>
+          <strong class="ref-code" dir="ltr">#{{ confirmed.reference }}</strong>
+        </div>
+
+        <div class="receipt-summary-card">
+          <div class="receipt-data-row">
+            <span class="data-label">{{ 'discovery.doctor' | t }}</span>
+            <strong class="data-value">
+              {{
+                language.isRtl()
+                  ? confirmed.doctor.nameAr
+                  : confirmed.doctor.nameEn || confirmed.doctor.nameAr
+              }}
+            </strong>
+          </div>
+
+          <div class="receipt-data-row">
+            <span class="data-label">{{ 'booking.choosePractice' | t }}</span>
+            <span class="data-value">
+              {{
+                language.isRtl()
+                  ? confirmed.practice.nameAr
+                  : confirmed.practice.nameEn || confirmed.practice.nameAr
+              }}
+            </span>
+          </div>
+
+          <div class="receipt-data-row is-featured">
+            <span class="data-label">{{ 'booking.appointmentTime' | t }}</span>
+            <strong class="data-value appointment-highlight" dir="ltr">
+              {{
+                formatSlot(
+                  confirmed.appointment.businessDate,
+                  confirmed.appointment.slotStartTime
+                )
+              }}
+            </strong>
+          </div>
+
+          <div class="receipt-data-row">
+            <span class="data-label">{{ 'booking.patientNameLabel' | t }}</span>
+            <span class="data-value">
+              {{
+                language.isRtl()
+                  ? confirmed.patient.nameAr
+                  : confirmed.patient.nameEn || confirmed.patient.nameAr
+              }}
+            </span>
+          </div>
+
+          @if (confirmed.price) {
+            <div class="receipt-data-row is-price">
+              <span class="data-label">{{ 'booking.consultationFee' | t }}</span>
+              <strong class="data-price">
+                {{ confirmed.price }} {{ 'discovery.currency' | t }}
+              </strong>
+            </div>
+          }
+        </div>
+
+        <p class="receipt-clinic-notice">{{ 'booking.payAtClinic' | t }}</p>
+
+        <div class="receipt-cta-buttons">
+          <a
+            [routerLink]="['/patient/reservations']"
+            class="btn-receipt-view"
+            (click)="closeDrawer()"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span>{{ 'booking.viewMyReservations' | t }}</span>
+          </a>
+
+          <button type="button" class="btn-receipt-close" (click)="closeDrawer()">
+            <span>{{ 'booking.doneAndClose' | t }}</span>
+          </button>
+        </div>
+      </section>
+    } @else if (drawerDoctor(); as doc) {
+      <!-- Doctor Mini Profile -->
+      <section class="drawer-doc-profile">
+        <div class="doc-summary-header">
+          <div class="doc-summary-avatar">
+            @if (doc.profileImageUrl && !drawerDoctorImageBroken()) {
+              <img
+                [src]="doc.profileImageUrl"
+                [alt]="language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr"
+                (error)="drawerDoctorImageBroken.set(true)"
+              />
+            } @else {
+              <span class="doc-initial" aria-hidden="true">
+                {{ (language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr).charAt(0) }}
+              </span>
+            }
+          </div>
+          <div class="doc-summary-info">
+            <div class="doc-title-row">
+              <h3 class="doc-summary-name">
+                {{ language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr }}
+              </h3>
+              @if (doc.nameEn) {
+                <span class="doc-summary-en">
+                  {{ doc.nameEn }}
+                </span>
+              }
+            </div>
+            @if (doc.specializations.length) {
+              <div class="doc-specs-tags">
+                @for (spec of doc.specializations; track spec.id) {
+                  <span class="spec-chip">
+                    {{ language.isRtl() ? spec.nameAr : spec.nameEn || spec.nameAr }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (doc.qualifications.length) {
+          <div class="doc-qualifications-block">
+            <h4>{{ 'doctor.qualifications' | t }}</h4>
+            <ul class="qualifications-chips">
+              @for (q of doc.qualifications; track q.id) {
+                <li>
+                  {{ language.isRtl() ? q.nameAr : q.nameEn || q.nameAr }}
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+
+      <!-- Clinics / Practices Selection -->
+      <section class="drawer-practices-section">
+        <div class="section-title-wrap">
+          <div class="title-with-badge">
+            <h4>{{ 'booking.availableClinics' | t }}</h4>
+            <span class="clinics-count-pill">{{ doc.practices.length }}</span>
+          </div>
+          <span class="section-subtitle">{{ 'booking.choosePractice' | t }}</span>
+        </div>
+
+        <div class="drawer-practices-grid">
+          @for (practice of doc.practices; track practice.id) {
+            <button
+              type="button"
+              class="drawer-practice-card"
+              [class.active]="drawerSelectedPractice()?.id === practice.id"
+              [disabled]="!practice.isBookable || practice.onlineBookingEnabled === false"
+              (click)="chooseDrawerPractice(practice)"
+            >
+              <div class="practice-card-top">
+                <div class="practice-name-cluster">
+                  <svg
+                    class="practice-card-icon"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                    />
+                  </svg>
+                  <span class="practice-card-name">
+                    {{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}
+                  </span>
+                </div>
+                <div class="practice-price-cluster">
+                  <span class="practice-card-price">
+                    {{
+                      practice.publicSearchPrice === null
+                        ? ('discovery.priceUnavailable' | t)
+                        : practice.publicSearchPrice + ' ' + ('discovery.currency' | t)
+                    }}
+                  </span>
+                  @if (drawerSelectedPractice()?.id === practice.id) {
+                    <span class="selected-check-indicator" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="3"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                  }
+                </div>
+              </div>
+              @if (practice.governorate || practice.city || practice.detailedAddress) {
+                <div class="practice-card-addr">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="13"
+                    height="13"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <span>
+                    {{
+                      language.isRtl()
+                        ? practice.governorate?.nameAr
+                        : practice.governorate?.nameEn || practice.governorate?.nameAr
+                    }}
+                    ·
+                    {{
+                      language.isRtl()
+                        ? practice.city?.nameAr
+                        : practice.city?.nameEn || practice.city?.nameAr
+                    }}
+                    @if (practice.detailedAddress) {
+                      — {{ practice.detailedAddress }}
+                    }
+                  </span>
+                </div>
+              }
+            </button>
+          } @empty {
+            <p class="drawer-empty-hint">{{ 'discovery.noClinics' | t }}</p>
+          }
+        </div>
+      </section>
+
+      <!-- Date & Slot Booking Flow -->
+      @if (drawerSelectedPractice(); as activePractice) {
+        <section class="drawer-booking-flow">
+          <div class="section-title-wrap">
+            <div class="title-with-badge">
+              <h4>{{ 'booking.chooseTime' | t }}</h4>
+              <span class="active-practice-tag">
+                {{
+                  language.isRtl()
+                    ? activePractice.nameAr
+                    : activePractice.nameEn || activePractice.nameAr
+                }}
+              </span>
+            </div>
+            @if (drawerBookingLoading()) {
+              <span class="booking-loading-indicator">{{ 'booking.loadingAvailability' | t }}</span>
+            }
+          </div>
+
+          <!-- 1. Available Dates -->
+          <div class="booking-drawer-step">
+            <span class="step-label">{{ 'booking.availableDays' | t }}</span>
+            <div class="dates-chip-grid">
+              @for (item of drawerDates(); track item.date) {
+                <button
+                  type="button"
+                  class="btn-date-chip"
+                  [class.active]="drawerSelectedDate() === item.date"
+                  [disabled]="!item.isAvailable"
+                  dir="ltr"
+                  (click)="chooseDrawerDate(item.date)"
+                >
+                  {{ item.date }}
+                </button>
+              } @empty {
+                @if (!drawerBookingLoading() && !drawerMessages().length) {
+                  <p class="drawer-empty-hint">{{ 'booking.noDays' | t }}</p>
+                }
+              }
+            </div>
+          </div>
+
+          <!-- 2. Available Slots -->
+          @if (drawerSelectedDate()) {
+            <div class="booking-drawer-step">
+              <span class="step-label">{{ 'booking.availableTimes' | t }}</span>
+              <div class="slots-chip-grid">
+                @for (slot of drawerSlots(); track slot.date + slot.time) {
+                  <button
+                    type="button"
+                    class="btn-slot-chip"
+                    [class.active]="drawerSelectedTime() === slot.time"
+                    dir="ltr"
+                    (click)="chooseDrawerSlot(slot.time)"
+                  >
+                    {{ slot.time }}
+                  </button>
+                } @empty {
+                  @if (!drawerBookingLoading() && !drawerMessages().length) {
+                    <p class="drawer-empty-hint">{{ 'booking.noTimes' | t }}</p>
+                  }
+                }
+              </div>
+            </div>
+          }
+
+          <!-- 3. Visit Types & Booking Actions -->
+          @if (drawerOptions(); as booking) {
+            <div class="booking-drawer-step">
+              <span class="step-label">{{ 'booking.visitAndPrice' | t }}</span>
+
+              <!-- Patient Profile Selector (if authenticated as Patient) -->
+              @if (isPatient()) {
+                <div class="patient-selector-block">
+                  <span class="step-label">{{ 'booking.selectPatientLabel' | t }}</span>
+                  @if (bookablePatients().length > 1) {
+                    <div class="patient-select-wrapper">
+                      <select
+                        class="patient-custom-select"
+                        [value]="selectedPatientId()"
+                        (change)="selectPatient($any($event.target).value)"
+                        id="bookablePatientSelect"
+                      >
+                        @for (p of bookablePatients(); track p.patientId) {
+                          <option [value]="p.patientId">
+                            {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
+                            {{ p.isSelf ? (' (' + ('booking.myself' | t) + ')') : '' }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                  } @else {
+                    <div class="patient-single-info">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      <span>
+                        {{
+                          bookablePatients().length === 1
+                            ? (language.isRtl() ? bookablePatients()[0].nameAr : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr)
+                            : (authSession.user()?.userName || '')
+                        }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Visit Types & Segments Options -->
+              <div class="visit-types-stack">
+                @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
+                  @if (visitType.type !== 'FollowUp') {
+                    <div class="visit-type-row">
+                      <div class="visit-type-meta">
+                        <strong class="visit-name">
+                          {{
+                            language.isRtl()
+                              ? visitType.nameAr
+                              : visitType.nameEn || visitType.nameAr
+                          }}
+                        </strong>
+                      </div>
+                      @for (segment of visitType.segments; track segment.segmentId) {
+                        <div class="segment-action-row">
+                          <div class="segment-text-info">
+                            <span class="segment-name">
+                              {{
+                                language.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr
+                              }}
+                              {{ segment.isDefault ? ('booking.defaultSuffix' | t) : '' }}
+                            </span>
+                            <span class="segment-price">
+                              {{ segment.price }} {{ 'discovery.currency' | t }}
+                            </span>
+                          </div>
+
+                          @if (authSession.isAuthenticated()) {
+                            <button
+                              type="button"
+                              class="btn-confirm-booking"
+                              [disabled]="bookingSubmitting()"
+                              (click)="confirmBooking(segment, visitType)"
+                            >
+                              @if (bookingSubmitting()) {
+                                <span class="btn-spinner" aria-hidden="true"></span>
+                                <span>{{ 'booking.bookingInProgress' | t }}</span>
+                              } @else {
+                                <span>{{ 'booking.confirmBookingBtn' | t }}</span>
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  width="14"
+                                  height="14"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2.2"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    [attr.d]="
+                                      language.isRtl()
+                                        ? 'M19 12H5M12 19l-7-7 7-7'
+                                        : 'M5 12h14M12 5l7 7-7 7'
+                                    "
+                                  />
+                                </svg>
+                              }
+                            </button>
+                          } @else {
+                            <a
+                              class="btn-confirm-booking is-login-prompt"
+                              [routerLink]="['/login']"
+                              [queryParams]="{ returnUrl: currentUrl() }"
+                            >
+                              <span>{{ 'booking.loginToBook' | t }}</span>
+                            </a>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                } @empty {
+                  <p class="drawer-empty-hint">{{ 'booking.optionsUnavailable' | t }}</p>
+                }
+              </div>
+
+              <!-- Optional Notes for Doctor -->
+              <div class="booking-note-field">
+                <label class="step-label" for="drawerBookingNotes">{{ 'booking.bookingNotes' | t }}</label>
+                <input
+                  id="drawerBookingNotes"
+                  type="text"
+                  class="booking-notes-input"
+                  [value]="bookingNote()"
+                  (input)="updateBookingNote($event)"
+                  [placeholder]="'booking.bookingNotesPlaceholder' | t"
+                />
+              </div>
+
+              <p class="review-note">{{ 'booking.payAtClinic' | t }}</p>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- Drawer Bottom Actions -->
+      <footer class="drawer-footer-actions">
+        <button type="button" class="btn-drawer-dismiss" (click)="closeDrawer()">
+          <span>{{ 'discovery.closeDrawer' | t }}</span>
+        </button>
+        <a
+          [routerLink]="['/doctors', doc.doctorId]"
+          class="btn-drawer-full-page"
+          (click)="closeDrawer()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span>{{ 'discovery.openFullProfile' | t }}</span>
+        </a>
+      </footer>
+    }
+  </app-side-drawer>
 </main>

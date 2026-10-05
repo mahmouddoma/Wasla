@@ -11,6 +11,7 @@ import {
 import { TicketsApi } from '../../../../domains/tickets';
 import { QueueWorkspace } from './queue-workspace';
 import { AuthSession } from '../../../../core/auth/auth-session';
+import { provideHttpClient } from '@angular/common/http';
 
 describe('QueueWorkspace', () => {
   let fixture: ComponentFixture<QueueWorkspace>;
@@ -37,6 +38,7 @@ describe('QueueWorkspace', () => {
       imports: [QueueWorkspace],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { data: { actor: 'Doctor' }, queryParamMap: { get: () => null } } },
@@ -114,6 +116,7 @@ describe('Reception queue authorization', () => {
       imports: [QueueWorkspace],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -136,7 +139,7 @@ describe('Reception queue authorization', () => {
     grants.push('PracticeTickets.CreateWalkIn', 'PracticeTickets.RecordPayment');
     await start();
     expect(api.queue).toHaveBeenCalledWith('p1');
-    expect(api.walkInOptions).toHaveBeenCalledWith('p1');
+    expect(api.walkInOptions).toHaveBeenCalledWith('p1', {});
     for (const request of Object.values(doctorApi)) expect(request).not.toHaveBeenCalled();
   });
   it('does not request queue or catalog without View', async () => {

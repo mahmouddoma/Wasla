@@ -1,16 +1,581 @@
-:host { display: block; }
-.revenue-page { padding: clamp(1rem, 2vw, 2rem); color: #172033; }
-header span { color: #0f766e; font-size: .75rem; font-weight: 800; text-transform: uppercase; }
-h1 { margin: .25rem 0; } header p { color: #64748b; }
-form { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: .75rem; align-items: end; padding-block: 1.25rem; border-block: 1px solid #f1f5f9; }
-label { display: grid; gap: .35rem; color: #475569; font-size: .8rem; font-weight: 700; }
-input { min-height: 42px; padding: .65rem .8rem; border: 1px solid #e2e8f0; border-radius: 10px; background: #fcfdfe; }
-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(11, 165, 160, .12); }
-button { min-height: 42px; border: 0; border-radius: 10px; background: #0f766e; color: white; font-weight: 800; }
-.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-block: 1.5rem; }
-.summary article { padding-block: 1rem; border-bottom: 2px solid #e2e8f0; }
-.summary span, .summary b { display: block; } .summary span { color: #64748b; } .summary b { margin-top: .35rem; font-size: 1.65rem; }
-.table-wrap { overflow-x: auto; } table { width: 100%; border-collapse: collapse; min-width: 700px; } th, td { padding: .85rem; text-align: start; border-bottom: 1px solid #f1f5f9; } th { color: #64748b; font-size: .78rem; }
-.error { color: #991b1b; background: #fef2f2; padding: .75rem; border-radius: 8px; }.empty { padding: 3rem; text-align: center; color: #64748b; }
-@media (max-width: 850px) { form { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { form, .summary { grid-template-columns: 1fr; } }
+/* ==========================================================================
+   REVENUE DASHBOARD (لوحة الإيرادات) — Wasla Healthcare Admin
+   ========================================================================== */
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.revenue-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── 1. Page Header Integration ──────────────────── */
+app-page-header {
+  display: block;
+  width: 100%;
+}
+
+/* ── 2. Alert / Notice Banner ────────────────────── */
+.revenue-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--color-danger-bg, #fff0f1);
+  border: 1px solid rgba(217, 80, 87, 0.2);
+  border-radius: var(--radius-control, 10px);
+  color: var(--color-danger, #d95057);
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(217, 80, 87, 0.05);
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  color: var(--color-danger, #d95057);
+}
+
+/* ── 3. Filters Card (لوحة الفلاتر) ────────────────── */
+.revenue-filter-card {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-panel, 16px);
+  padding: 20px 24px;
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
+}
+
+.filter-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wasla-navy-800, #123451);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.filter-header-icon {
+  color: var(--wasla-teal-600, #078c88);
+}
+
+.revenue-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field-label-text {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--wasla-navy-800, #123451);
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-lead-icon {
+  position: absolute;
+  inset-inline-start: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--wasla-muted, #94a3b8);
+  pointer-events: none;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.form-input {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid var(--wasla-border, #cbd5e1);
+  border-radius: var(--radius-control, 10px);
+  background: var(--wasla-app, #f8fafc);
+  color: var(--wasla-navy-950, #071c30);
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.form-input.has-icon {
+  padding-inline-start: 36px;
+}
+
+.form-input:focus {
+  border-color: var(--wasla-teal-500, #0ba5a0);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
+}
+
+.form-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.filter-action-cell {
+  display: flex;
+  align-items: flex-end;
+}
+
+.btn-apply-filters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-control, 10px);
+  background: linear-gradient(
+    135deg,
+    var(--wasla-teal-600, #078c88) 0%,
+    var(--wasla-teal-700, #047c79) 100%
+  );
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(11, 165, 160, 0.25);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.btn-apply-filters:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 165, 160, 0.35);
+}
+
+.btn-apply-filters:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-apply-filters:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.spinner-icon {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── 4. 3-Card High Impact KPI Stat Cards ────────── */
+.revenue-kpi-deck {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.kpi-stat-card {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-panel, 16px);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.kpi-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(12, 39, 66, 0.06);
+}
+
+.kpi-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kpi-icon-bubble {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-icon-bubble svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bubble-teal {
+  background: var(--color-teal-50, #f0fbfa);
+  color: var(--color-teal-600, #078c88);
+}
+
+.bubble-rose {
+  background: var(--color-danger-bg, #fff0f1);
+  color: var(--color-danger, #d95057);
+}
+
+.bubble-navy {
+  background: var(--color-blue-50, #eff6ff);
+  color: var(--color-blue-600, #2563eb);
+}
+
+.kpi-tag-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 99px;
+  letter-spacing: 0.01em;
+}
+
+.badge-teal {
+  background: var(--color-teal-50, #f0fbfa);
+  color: var(--color-teal-700, #047c79);
+}
+
+.badge-rose {
+  background: var(--color-danger-bg, #fff0f1);
+  color: var(--color-danger, #d95057);
+}
+
+.badge-navy {
+  background: var(--color-blue-50, #eff6ff);
+  color: var(--color-blue-600, #2563eb);
+}
+
+.kpi-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpi-metric-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.kpi-number {
+  font-size: 2rem;
+  line-height: 1.15;
+  color: var(--wasla-navy-950, #071c30);
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+}
+
+.kpi-currency {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--wasla-slate, #66788a);
+}
+
+.kpi-metric-row.is-negative .kpi-number {
+  color: var(--color-danger, #d95057);
+}
+
+.kpi-metric-subtext {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--wasla-slate, #66788a);
+  margin: 0;
+}
+
+/* ── 5. Revenue Table Card ── */
+.revenue-table-card {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-panel, 16px);
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
+}
+
+.table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
+  background: #ffffff;
+}
+
+.table-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-header-icon {
+  color: var(--wasla-teal-600, #078c88);
+}
+
+.table-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 850;
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.table-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--wasla-app, #f8fafc);
+  color: var(--wasla-slate, #66788a);
+  border: 1px solid var(--wasla-border-subtle, #eef2f6);
+}
+
+.table-responsive-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.revenue-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+  text-align: start;
+}
+
+.revenue-data-table thead tr {
+  background: var(--wasla-app, #f8fafc);
+  border-bottom: 1px solid var(--wasla-border-subtle, #eef2f6);
+}
+
+.revenue-data-table th {
+  padding: 12px 20px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--wasla-slate, #64748b);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.revenue-data-table td {
+  padding: 16px 20px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
+  color: var(--wasla-navy-900, #0c2742);
+  vertical-align: middle;
+}
+
+.revenue-data-row {
+  transition: background-color 0.15s ease;
+}
+
+.revenue-data-row:hover {
+  background-color: #f8fbfa;
+}
+
+.revenue-data-row:last-child td {
+  border-bottom: none;
+}
+
+.cell-entity-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doctor-avatar-circle,
+.practice-avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.doctor-avatar-circle {
+  background: var(--wasla-teal-50, #f0fbfa);
+  color: var(--wasla-teal-600, #078c88);
+}
+
+.practice-avatar-circle {
+  background: var(--wasla-app, #f1f5f9);
+  color: var(--wasla-slate, #64748b);
+}
+
+.entity-name {
+  font-weight: 750;
+  color: var(--wasla-navy-950, #071c30);
+  line-height: 1.3;
+}
+
+.num-col {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.num-value {
+  font-weight: 700;
+  margin-inline-end: 4px;
+}
+
+.currency-sub {
+  font-size: 0.74rem;
+  color: var(--wasla-slate, #94a3b8);
+  font-weight: 600;
+}
+
+.text-slate {
+  color: var(--wasla-navy-800, #1e293b);
+}
+
+.text-rose {
+  color: var(--color-danger, #d95057);
+}
+
+.text-teal {
+  color: var(--wasla-teal-700, #078c88);
+}
+
+.font-bold {
+  font-weight: 850;
+}
+
+/* ── 6. Empty States ──────── */
+.empty-table-cell {
+  padding: 48px 20px !important;
+  text-align: center;
+}
+
+.table-empty-state,
+.revenue-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--wasla-slate, #64748b);
+}
+
+.revenue-empty-card {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-panel, 16px);
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
+}
+
+.empty-icon {
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.empty-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--wasla-slate, #64748b);
+  max-width: 400px;
+}
+
+/* ── 7. Responsive Breakpoints ───────────────────── */
+@media (max-width: 1080px) {
+  .revenue-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-action-cell {
+    grid-column: span 2;
+  }
+
+  .btn-apply-filters {
+    width: 100%;
+  }
+
+  .revenue-kpi-deck {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .revenue-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-action-cell {
+    grid-column: span 1;
+  }
+
+  .revenue-kpi-deck {
+    grid-template-columns: 1fr;
+  }
+
+  .revenue-filter-card {
+    padding: 16px;
+  }
+
+  .table-card-header {
+    padding: 14px 16px;
+  }
+}

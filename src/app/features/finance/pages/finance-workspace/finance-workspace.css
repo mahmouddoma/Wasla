@@ -1,12 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   WASLA FINANCE WORKSPACE — ENTERPRISE UI/UX SPECIFICATION
-   Strictly adheres to AGENTS.md rules:
-   - NO colored borders (neutral subtle borders only)
-   - NO carditis (unified surfaces and seamless lists)
-   - Slide-over drawer for reviews and detail inspection
-   - High-contrast Arabic typography (Alexandria / Cairo)
-   - Sleek responsive layouts (Desktop, Tablet, Mobile)
-   - High-end SVG-AVATAR empty state illustrations
+   WASLA FINANCE WORKSPACE
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :host {
@@ -15,9 +8,11 @@
 }
 
 .finance-workspace {
-  max-width: 1400px;
+  max-width: 1540px;
+  width: 100%;
   margin: 0 auto;
-  padding: clamp(1rem, 2.5vw, 2rem);
+  padding: 20px clamp(16px, 3.5vw, 48px) 40px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -102,15 +97,18 @@
   stroke: var(--color-teal-600, #078c88);
 }
 
-/* Practice Selector Pill */
+/* Practice Selector Pill - Clean Single Unified Control */
 .practice-selector-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  height: 38px;
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #e3eaf0);
   border-radius: var(--radius-control, 10px);
   padding-inline-start: 10px;
-  min-width: 200px;
+  padding-inline-end: 28px;
+  min-width: 210px;
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -121,38 +119,45 @@
   box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
 }
 
-.practice-selector-label {
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-teal-600, #078c88);
-}
-
-.practice-selector-label svg {
+.practice-selector-icon {
   width: 16px;
   height: 16px;
   fill: none;
-  stroke: currentColor;
+  stroke: var(--color-teal-600, #078c88);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 .practice-select-input {
-  border: none;
-  background: transparent;
-  height: 38px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  height: 100%;
   width: 100%;
   font-size: 0.825rem;
   font-weight: 700;
   color: var(--color-text-primary, #0c2742);
-  padding: 0 8px;
+  padding: 0 6px;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
 }
 
-.practice-select-input:focus {
-  outline: none;
+.practice-chevron {
+  position: absolute;
+  inset-inline-end: 10px;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--color-text-muted, #91a0ae);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 
 /* ── 2. Integrated Filter Deck in Page Header ────────────────────────── */
@@ -168,17 +173,16 @@
 .revenue-deck-layout {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .deck-field-group {
   display: flex;
   align-items: flex-end;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  flex: 1;
 }
 
 .transactions-deck-layout {
@@ -188,25 +192,26 @@
   width: 100%;
 }
 
-.deck-row-primary {
+/* Both rows share the same 4-column track so fields line up vertically */
+.deck-row-primary,
+.deck-row-secondary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
+  align-items: end;
 }
 
-.deck-row-secondary {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+.deck-row-secondary .deck-actions-group {
+  grid-column: span 2;
+  justify-content: flex-end;
 }
 
 .deck-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 140px;
+  min-width: 0;
 }
 
 .deck-field-label {
@@ -297,8 +302,7 @@
 /* Search Box with Integrated Icon */
 .deck-search-box {
   position: relative;
-  flex: 1;
-  min-width: 200px;
+  min-width: 0;
   display: flex;
   align-items: center;
 }
@@ -792,15 +796,15 @@
 .transactions-view-surface {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-/* Table Meta Bar */
+/* Table Meta Bar — lives inside the table surface */
 .table-meta-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-inline: 4px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-soft, #edf1f5);
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -902,6 +906,16 @@
   border-bottom: 1px solid var(--color-border, #e3eaf0);
   letter-spacing: 0.01em;
   white-space: nowrap;
+  text-align: start;
+}
+
+/* No orphan column headers above an empty state */
+.modern-finance-table.is-empty thead {
+  display: none;
+}
+
+.modern-finance-table.is-empty tbody td {
+  border-bottom: none;
 }
 
 .modern-finance-table tbody td {
@@ -1130,7 +1144,12 @@
   border: none;
   border-radius: 0;
   background: transparent;
-  padding: 56px 24px;
+  padding: 40px 24px 44px;
+}
+
+.state-empty-display.inside-table .state-empty-illustration {
+  width: clamp(140px, 20vw, 180px);
+  max-height: 160px;
 }
 
 .state-empty-illustration {
@@ -1885,7 +1904,8 @@
 
 /* ── 10. Responsive Breakpoints ───────────────────────────────────────── */
 @media (max-width: 900px) {
-  .deck-row-primary {
+  .deck-row-primary,
+  .deck-row-secondary {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1899,16 +1919,13 @@
 }
 
 @media (max-width: 640px) {
-  .deck-row-primary {
+  .deck-row-primary,
+  .deck-row-secondary {
     grid-template-columns: 1fr;
   }
 
-  .deck-row-secondary {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .deck-actions-group {
+  .deck-row-secondary .deck-actions-group {
+    grid-column: auto;
     width: 100%;
   }
 

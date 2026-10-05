@@ -51,6 +51,21 @@ export interface PublicDoctorDetails extends PublicDoctorSearchItem {
   bio: string | null;
   qualifications: PublicQualification[];
 }
+/** Transport identifiers are normalized once before reaching booking UI. */
+export interface PublicPracticeResponse extends Omit<PublicPracticeSummary, 'id'> {
+  id?: string | null;
+  practiceId?: string | null;
+  doctorPracticeId?: string | null;
+}
+export interface PublicDoctorSearchItemResponse extends Omit<PublicDoctorSearchItem, 'practices'> {
+  practices: PublicPracticeResponse[];
+}
+export interface PublicDoctorSearchResponseDto extends Omit<PublicDoctorSearchResponse, 'items'> {
+  items: PublicDoctorSearchItemResponse[];
+}
+export interface PublicDoctorDetailsResponse extends Omit<PublicDoctorDetails, 'practices'> {
+  practices: PublicPracticeResponse[];
+}
 export interface AvailableDate {
   date: string;
   isAvailable: boolean;

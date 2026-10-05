@@ -1,7 +1,7 @@
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { email, FormField, form, maxLength, required, submit } from '@angular/forms/signals';
+import { email, FormField, form, maxLength, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
@@ -93,6 +93,9 @@ export class DoctorReceptions {
     this.selectedPermissionIds.set([]);
   }
 
+  protected readonly formSubmitted = signal(false);
+  protected readonly fieldErrors = signal<Record<string, string[]>>({});
+
   protected readonly userModel = signal({
     userName: '',
     email: '',
@@ -115,11 +118,35 @@ export class DoctorReceptions {
     void this.load();
   }
 
+  protected clientError(field: 'userName' | 'email' | 'phoneNumber' | 'temporaryPassword' | 'nameAr' | 'nameEn'): string {
+    const control = this.userForm[field]();
+    if (!control.touched() && !this.formSubmitted()) return '';
+    const err = control.errors()[0];
+    return err ? this.langService.t(err.message ?? '') : '';
+  }
+
+  protected serverError(field: string): string {
+    const errs = this.fieldErrors()[field.toLowerCase()];
+    return errs && errs.length > 0 ? this.langService.t(errs[0]) : '';
+  }
+
   protected openCreateDrawer(): void {
+    this.formSubmitted.set(false);
+    this.fieldErrors.set({});
+    this.messages.set([]);
+    this.userModel.set({
+      userName: '',
+      email: '',
+      phoneNumber: '',
+      temporaryPassword: '',
+      nameAr: '',
+      nameEn: '',
+    });
     this.isCreateDrawerOpen.set(true);
   }
 
   protected closeCreateDrawer(): void {
+    this.formSubmitted.set(false);
     this.isCreateDrawerOpen.set(false);
     if (this.isCreate) {
       void this.router.navigate(['/doctor/receptions']);
@@ -128,30 +155,52 @@ export class DoctorReceptions {
 
   protected async create(event: Event): Promise<void> {
     event.preventDefault();
-    await submit(this.userForm, async () => {
-      if (!this.canManageUsers || this.isSubmitting()) return;
-      this.isSubmitting.set(true);
-      try {
-        const value = this.userModel();
-        const created = await firstValueFrom(
-          this.api.create({
-            userName: value.userName.trim(),
-            email: value.email.trim(),
-            phoneNumber: value.phoneNumber.trim() || null,
-            temporaryPassword: value.temporaryPassword || null,
-            nameAr: value.nameAr.trim(),
-            nameEn: value.nameEn.trim() || null,
-          }),
-        );
-        this.isCreateDrawerOpen.set(false);
-        this.toast.success(this.langService.t('ui.full.597'));
-        await this.router.navigate(['/doctor/receptions', created.id]);
-      } catch (error) {
-        this.setErrors(error);
-      } finally {
-        this.isSubmitting.set(false);
+    this.formSubmitted.set(true);
+
+    if (!this.canManageUsers) {
+      this.toast.error(this.langService.t('ui.full.570'));
+      return;
+    }
+
+    if (this.isSubmitting()) return;
+
+    if (this.userForm().invalid()) {
+      this.toast.error(this.langService.t('ui.full.590'));
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.fieldErrors.set({});
+    this.messages.set([]);
+
+    try {
+      const value = this.userModel();
+      const created = await firstValueFrom(
+        this.api.create({
+          userName: value.userName.trim(),
+          email: value.email.trim(),
+          phoneNumber: value.phoneNumber.trim() || null,
+          temporaryPassword: value.temporaryPassword || null,
+          nameAr: value.nameAr.trim(),
+          nameEn: value.nameEn.trim() || null,
+        }),
+      );
+      this.isCreateDrawerOpen.set(false);
+      this.formSubmitted.set(false);
+      this.toast.success(this.langService.t('ui.full.597'));
+      await this.router.navigate(['/doctor/receptions', created.id]);
+    } catch (error) {
+      this.setErrors(error);
+      const parsed = parseApiErrors(error);
+      const firstErr = parsed.messages[0] || Object.values(parsed.fields).flat()[0];
+      if (firstErr) {
+        this.toast.error(this.langService.t(firstErr));
+      } else {
+        this.toast.error(this.langService.t('common.errorOccurred'));
       }
-    });
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 
   protected togglePermission(id: string, checked: boolean): void {
@@ -364,6 +413,7 @@ export class DoctorReceptions {
       this.forbidden.set(error.status === 403);
     }
     const parsed = parseApiErrors(error);
+    this.fieldErrors.set(parsed.fields);
     this.messages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
   }
 }

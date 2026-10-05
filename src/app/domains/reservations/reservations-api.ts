@@ -1,13 +1,15 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { FollowUpBookingContext } from '../follow-ups';
 import { AvailableDate, AvailableSlot, BookingOptions } from '../public-discovery';
 import {
   BookablePatient,
   CancelReservationRequest,
   CreatePatientReservationRequest,
   CreateReservationRequest,
+  normalizeReservation,
   ProviderRescheduleRequest,
   Reservation,
   ReservationFilterOptions,
@@ -32,10 +34,15 @@ export class ReservationsApi {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(query))
       if (value !== undefined && value !== '') params = params.set(key, String(value));
-    return this.http.get<ReservationPage>(this.scopeUrl(scope), { params });
+    return this.http.get<ReservationPage>(this.scopeUrl(scope), { params }).pipe(
+      map((page) => ({
+        ...page,
+        items: (page.items || []).map(normalizeReservation),
+      })),
+    );
   }
   details(scope: ReservationScope, id: string): Observable<Reservation> {
-    return this.http.get<Reservation>(this.detailUrl(scope, id));
+    return this.http.get<Reservation>(this.detailUrl(scope, id)).pipe(map(normalizeReservation));
   }
   filterOptions(scope: ReservationScope): Observable<ReservationFilterOptions> {
     if (scope.actor !== 'Doctor' && scope.actor !== 'Reception')
@@ -43,37 +50,38 @@ export class ReservationsApi {
     return this.http.get<ReservationFilterOptions>(`${this.scopeUrl(scope)}/filter-options`);
   }
   createPatient(body: CreatePatientReservationRequest, intentKey: string): Observable<Reservation> {
-    return this.http.post<Reservation>(
-      `${this.root}/reservations`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<Reservation>(`${this.root}/reservations`, body, this.intentHeaders(intentKey))
+      .pipe(map(normalizeReservation));
   }
   createReception(
     practiceId: string,
     body: CreateReservationRequest,
     intentKey: string,
   ): Observable<Reservation> {
-    return this.http.post<Reservation>(
-      this.scopeUrl({ actor: 'Reception', practiceId }),
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<Reservation>(
+        this.scopeUrl({ actor: 'Reception', practiceId }),
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeReservation));
   }
-  receptionDates(practiceId: string): Observable<AvailableDate[]> {
+  receptionDates(practiceId: string, context: FollowUpBookingContext = {}): Observable<AvailableDate[]> {
     return this.http.get<AvailableDate[]>(
       `${this.receptionBookingUrl(practiceId)}/available-dates`,
+      { params: { ...context } },
     );
   }
-  receptionSlots(practiceId: string, date: string): Observable<AvailableSlot[]> {
+  receptionSlots(practiceId: string, date: string, context: FollowUpBookingContext = {}): Observable<AvailableSlot[]> {
     return this.http.get<AvailableSlot[]>(
       `${this.receptionBookingUrl(practiceId)}/available-slots`,
-      { params: { date } },
+      { params: { date, ...context } },
     );
   }
-  receptionOptions(practiceId: string, date: string, time: string): Observable<BookingOptions> {
+  receptionOptions(practiceId: string, date: string, time: string, context: FollowUpBookingContext = {}): Observable<BookingOptions> {
     return this.http.get<BookingOptions>(`${this.receptionBookingUrl(practiceId)}/options`, {
-      params: { date, time },
+      params: { date, time, ...context },
     });
   }
   cancel(
@@ -83,11 +91,13 @@ export class ReservationsApi {
     intentKey: string,
   ): Observable<Reservation> {
     this.assertMutable(scope);
-    return this.http.post<Reservation>(
-      `${this.detailUrl(scope, id)}/cancel`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<Reservation>(
+        `${this.detailUrl(scope, id)}/cancel`,
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeReservation));
   }
   rescheduleDates(scope: ReservationScope, id: string): Observable<AvailableDate[]> {
     this.assertMutable(scope);
@@ -114,11 +124,13 @@ export class ReservationsApi {
       (!('patientConsentConfirmed' in body) || !body.patientConsentConfirmed || !body.reason.trim())
     )
       throw new Error('Provider consent and reason required');
-    return this.http.post<Reservation>(
-      `${this.detailUrl(scope, id)}/reschedule`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<Reservation>(
+        `${this.detailUrl(scope, id)}/reschedule`,
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeReservation));
   }
   restoreNoShow(
     practiceId: string,
@@ -126,11 +138,13 @@ export class ReservationsApi {
     rowVersion: string,
     intentKey: string,
   ): Observable<Reservation> {
-    return this.http.post<Reservation>(
-      `${this.detailUrl({ actor: 'Reception', practiceId }, id)}/restore-no-show`,
-      { rowVersion },
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<Reservation>(
+        `${this.detailUrl({ actor: 'Reception', practiceId }, id)}/restore-no-show`,
+        { rowVersion },
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeReservation));
   }
   private receptionBookingUrl(id: string): string {
     if (!id) throw new Error('Practice required');

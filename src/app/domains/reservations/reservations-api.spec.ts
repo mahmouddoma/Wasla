@@ -4,7 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ReservationsApi } from './reservations-api';
 import { environment } from '../../../environments/environment';
-import { ReservationScope } from './reservation.models';
+import { ReservationScope, ReservationPage } from './reservation.models';
 describe('ReservationsApi', () => {
   let api: ReservationsApi, http: HttpTestingController;
   beforeEach(() => {
@@ -298,19 +298,42 @@ describe('ReservationsApi', () => {
     expect(r.request.params.get('date')).toBe('2026-09-20');
     r.flush([]);
   });
-  it('creates internal reservations without client-owned price or doctor fields', () => {
-    const body = {
-      patientId: 'p1',
-      businessDate: '2026-09-20',
-      slotStartTime: '17:00',
-      segmentId: 's1',
-      visitTypeId: 'v1',
-      bookingNote: null,
+  it('normalizes flat patient reservation responses from /reservations/mine', () => {
+    const flatItem = {
+      reservationId: 'b2a571e0-d159-4821-bd2e-4ada8d3c135a',
+      reservationReference: 'WSL-R-ZHR6Y2',
+      status: 'Active',
+      isLate: false,
+      patientId: '362db6fd-36d0-4062-8021-c523c6da60e4',
+      patientNameAr: 'أحمد محمود سالم',
+      patientNameEn: 'Ahmed Mahmoud Salem',
+      doctorPracticeId: '6c12101a-cf3b-4311-bd6c-43e3185047dd',
+      practiceNameAr: 'عيادة د. أحمد حسن — فرع الدقي',
+      practiceNameEn: 'Dr. Ahmed Hassan — Dokki Branch',
+      businessDate: '2026-10-06',
+      localTime: '06:00:00',
+      segmentNameAr: 'حالات حرجه',
+      segmentNameEn: 'Critical situations',
+      bookingSource: 'Patient',
+      price: 700.0,
+      rowVersion: 'AAAAAAADkhs=',
     };
-    api.createReception('c1', body, 'key').subscribe();
-    const r = http.expectOne((r) => r.url.endsWith('/reception/practices/c1/reservations'));
-    expect(r.request.body).toEqual(body);
-    expect(r.request.headers.get('Idempotency-Key')).toBe('key');
-    r.flush({});
+
+    let resultPage: ReservationPage | undefined;
+    api.list({ actor: 'Patient' }, { pageNumber: 1, pageSize: 20 }).subscribe((res) => {
+      resultPage = res;
+    });
+
+    const req = http.expectOne((r) =>
+      r.url.endsWith('/reservations/mine') && r.params.get('pageNumber') === '1',
+    );
+    req.flush({ items: [flatItem], totalCount: 1, pageNumber: 1, pageSize: 20 });
+
+    expect(resultPage?.items[0].reference).toBe('WSL-R-ZHR6Y2');
+    expect(resultPage?.items[0].patient.nameAr).toBe('أحمد محمود سالم');
+    expect(resultPage?.items[0].practice.nameAr).toBe('عيادة د. أحمد حسن — فرع الدقي');
+    expect(resultPage?.items[0].appointment.businessDate).toBe('2026-10-06');
+    expect(resultPage?.items[0].appointment.slotStartTime).toBe('06:00:00');
+    expect(resultPage?.items[0].segment?.nameAr).toBe('حالات حرجه');
   });
 });

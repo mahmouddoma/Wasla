@@ -5,29 +5,57 @@
     <div class="ambient-circle circle-navy"></div>
   </div>
 
-
-  <!-- Hero Header -->
-  <div class="profile-hero-header">
-    <div class="hero-pill-badge">
-      <svg
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.2"
-        aria-hidden="true"
-      >
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>
-      <span>{{ 'ui.full.609' | t }}</span>
+  <!-- Standardized Enterprise Page Header -->
+  <app-page-header
+    [heading]="'ui.full.610' | t"
+    [description]="'ui.full.611' | t"
+    icon="family-requests"
+  >
+    <div pageHeaderDeck class="family-header-deck">
+      @if (family(); as f) {
+        <div class="stat-pill">
+          <span class="stat-num">{{ f.members.length }}</span>
+          <span class="stat-lbl">{{ 'family.members' | t }}</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num text-teal">{{ getStatusLabel(f.status) }}</span>
+          <span class="stat-lbl">{{ 'common.status' | t }}</span>
+        </div>
+      }
+      @if (requests(); as r) {
+        <div class="stat-pill">
+          <span class="stat-num">{{ r.totalCount }}</span>
+          <span class="stat-lbl">{{ 'family.requestsCount' | t }}</span>
+        </div>
+      }
     </div>
-    <h1>{{ 'ui.full.610' | t }}</h1>
-    <p>{{ 'ui.full.611' | t }}</p>
-  </div>
+
+    <div pageHeaderActions class="family-header-actions">
+      <button
+        type="button"
+        class="btn-action-refresh"
+        (click)="load()"
+        [disabled]="loading()"
+        [title]="'common.refresh' | t"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          [class.spin]="loading()"
+          aria-hidden="true"
+        >
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>{{ 'common.refresh' | t }}</span>
+      </button>
+    </div>
+  </app-page-header>
 
   <!-- Notice / Feedback Banners -->
   @if (successMessage()) {
@@ -60,8 +88,9 @@
 
   <!-- Loaded Content -->
   @if (!loading()) {
-    <div class="content-container">
-      <div class="family-top-grid">
+    <div class="content-container family-dashboard-grid">
+      <!-- ═══ Side Column: 4/5 Cols (Block 01: My Family + Block 03: My Requests) ═══ -->
+      <aside class="family-col-side">
         <!-- ═══ Section 01: My Family ═══ -->
         <section class="panel family-panel">
           <div class="section-heading">
@@ -159,8 +188,166 @@
           }
         </section>
 
-        <!-- ═══ Section 02: Family Request Form ═══ -->
-        @if (canCreateRequest) {
+        <!-- ═══ Section 03: My Requests ═══ -->
+        @if (canViewRequests) {
+          <section class="panel requests-panel">
+            <div class="section-heading">
+              <div class="heading-title-row">
+                <span class="step-pill">03</span>
+                <div>
+                  <h2>{{ 'ui.full.629' | t }}</h2>
+                  <p>{{ 'ui.full.630' | t }}</p>
+                </div>
+              </div>
+            </div>
+
+            <form class="filter-form-bar" (submit)="loadRequests(1, $event)">
+              <label class="input-field">
+                <span class="field-title">{{ 'common.status' | t }}</span>
+                <div class="select-box">
+                  <select [formField]="filterForm.status">
+                    <option value="">{{ 'common.all' | t }}</option>
+                    <option value="Pending">{{ 'ui.full.631' | t }}</option>
+                    <option value="ModificationRequested">
+                      {{ 'ui.full.632' | t }}
+                    </option>
+                    <option value="Approved">{{ 'ui.full.633' | t }}</option>
+                    <option value="Rejected">{{ 'ui.full.634' | t }}</option>
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </label>
+
+              <label class="input-field">
+                <span class="field-title">{{ 'common.requestType' | t }}</span>
+                <div class="select-box">
+                  <select [formField]="filterForm.requestType">
+                    <option value="">{{ 'common.all' | t }}</option>
+                    <option value="CreateFamily">{{ 'family.create' | t }}</option>
+                    <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </label>
+
+              <button class="btn-filter-apply" type="submit">{{ 'ui.full.635' | t }}</button>
+            </form>
+
+            @if (requests(); as page) {
+              <div class="requests-deck">
+                @for (request of page.items; track request.requestId) {
+                  <div class="request-entry-card" (click)="openRequest(request.requestId)">
+                    <div class="req-main-info">
+                      <div class="req-icon-box">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="18"
+                          height="18"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 class="req-target-name">{{ request.targetNameAr }}</h4>
+                        <span class="req-meta-sub">
+                          {{ getRequestTypeLabel(request.requestType) }} {{ 'ui.full.636' | t }}
+                          {{ request.currentRevisionNumber }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="req-status-cluster">
+                      <span class="status-badge" [ngClass]="getStatusClass(request.status)">
+                        {{ getStatusLabel(request.status) }}
+                      </span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        style="color: var(--wasla-slate)"
+                      >
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty-state-box">
+                    <div class="empty-icon">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="24"
+                        height="24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                      </svg>
+                    </div>
+                    <h4>{{ 'requests.noMatches' | t }}</h4>
+                    <p>{{ 'ui.full.637' | t }}</p>
+                  </div>
+                }
+              </div>
+
+              <nav class="pager-bar">
+                <button
+                  class="pager-btn"
+                  type="button"
+                  [disabled]="pageNumber() <= 1"
+                  (click)="loadRequests(pageNumber() - 1)"
+                >
+                  {{ 'discovery.previous' | t }}
+                </button>
+                <span class="page-indicator">{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
+                <button
+                  class="pager-btn"
+                  type="button"
+                  [disabled]="page.items.length < page.pageSize"
+                  (click)="loadRequests(pageNumber() + 1)"
+                >
+                  {{ 'discovery.next' | t }}
+                </button>
+              </nav>
+            }
+          </section>
+        }
+      </aside>
+
+      <!-- ═══ Main Column: 7/8 Cols (Block 02: Family Request Form) ═══ -->
+      @if (canCreateRequest) {
+        <main class="family-col-main">
+          <!-- ═══ Section 02: Family Request Form ═══ -->
           <section class="panel request-panel">
             <div class="section-heading">
               <div class="heading-title-row">
@@ -370,162 +557,7 @@
               </div>
             </form>
           </section>
-        }
-      </div>
-
-      <!-- ═══ Section 03: My Requests ═══ -->
-      @if (canViewRequests) {
-        <section class="panel requests-panel">
-          <div class="section-heading">
-            <div class="heading-title-row">
-              <span class="step-pill">03</span>
-              <div>
-                <h2>{{ 'ui.full.629' | t }}</h2>
-                <p>{{ 'ui.full.630' | t }}</p>
-              </div>
-            </div>
-          </div>
-
-          <form class="filter-form-bar" (submit)="loadRequests(1, $event)">
-            <label class="input-field">
-              <span class="field-title">{{ 'common.status' | t }}</span>
-              <div class="select-box">
-                <select [formField]="filterForm.status">
-                  <option value="">{{ 'common.all' | t }}</option>
-                  <option value="Pending">{{ 'ui.full.631' | t }}</option>
-                  <option value="ModificationRequested">
-                    {{ 'ui.full.632' | t }}
-                  </option>
-                  <option value="Approved">{{ 'ui.full.633' | t }}</option>
-                  <option value="Rejected">{{ 'ui.full.634' | t }}</option>
-                </select>
-                <svg
-                  class="select-arrow"
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
-            </label>
-
-            <label class="input-field">
-              <span class="field-title">{{ 'common.requestType' | t }}</span>
-              <div class="select-box">
-                <select [formField]="filterForm.requestType">
-                  <option value="">{{ 'common.all' | t }}</option>
-                  <option value="CreateFamily">{{ 'family.create' | t }}</option>
-                  <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
-                </select>
-                <svg
-                  class="select-arrow"
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
-            </label>
-
-            <button class="btn-filter-apply" type="submit">{{ 'ui.full.635' | t }}</button>
-          </form>
-
-          @if (requests(); as page) {
-            <div class="requests-deck">
-              @for (request of page.items; track request.requestId) {
-                <div class="request-entry-card" (click)="openRequest(request.requestId)">
-                  <div class="req-main-info">
-                    <div class="req-icon-box">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 class="req-target-name">{{ request.targetNameAr }}</h4>
-                      <span class="req-meta-sub">
-                        {{ getRequestTypeLabel(request.requestType) }} {{ 'ui.full.636' | t }}
-                        {{ request.currentRevisionNumber }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="req-status-cluster">
-                    <span class="status-badge" [ngClass]="getStatusClass(request.status)">
-                      {{ getStatusLabel(request.status) }}
-                    </span>
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      style="color: var(--wasla-slate)"
-                    >
-                      <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                  </div>
-                </div>
-              } @empty {
-                <div class="empty-state-box">
-                  <div class="empty-icon">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="24"
-                      height="24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="8" y1="12" x2="16" y2="12"></line>
-                    </svg>
-                  </div>
-                  <h4>{{ 'requests.noMatches' | t }}</h4>
-                  <p>{{ 'ui.full.637' | t }}</p>
-                </div>
-              }
-            </div>
-
-            <nav class="pager-bar">
-              <button
-                class="pager-btn"
-                type="button"
-                [disabled]="pageNumber() <= 1"
-                (click)="loadRequests(pageNumber() - 1)"
-              >
-                {{ 'discovery.previous' | t }}
-              </button>
-              <span class="page-indicator">{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
-              <button
-                class="pager-btn"
-                type="button"
-                [disabled]="page.items.length < page.pageSize"
-                (click)="loadRequests(pageNumber() + 1)"
-              >
-                {{ 'discovery.next' | t }}
-              </button>
-            </nav>
-          }
-        </section>
+        </main>
       }
     </div>
   }

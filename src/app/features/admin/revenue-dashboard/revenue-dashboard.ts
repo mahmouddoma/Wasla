@@ -6,9 +6,11 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { AdminRevenueAggregates, FinanceApi } from '../../../domains/finance';
 
+import { PageHeader } from '../../../shared/components/page-header/page-header';
+
 @Component({
   selector: 'app-revenue-dashboard',
-  imports: [FormField, TranslatePipe],
+  imports: [FormField, TranslatePipe, PageHeader],
   templateUrl: './revenue-dashboard.html',
   styleUrl: './revenue-dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

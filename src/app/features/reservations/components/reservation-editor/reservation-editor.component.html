@@ -22,10 +22,11 @@
           <input
             dir="ltr"
             [formField]="fields.patientId"
+            (change)="patientChange.emit(value($event))"
             [placeholder]="'reservations.patientId' | t"
           />
         } @else {
-          <select [formField]="fields.patientId">
+          <select [formField]="fields.patientId" (change)="patientChange.emit(value($event))">
             <option value="">{{ 'reservations.choose' | t }}</option>
             @for (p of patients(); track p.patientId) {
               <option [value]="p.patientId">{{ label(p) }}</option>
@@ -33,6 +34,16 @@
           </select>
         }
       </label>
+      @if (eligibilities().length) {
+        <label>{{ 'followUps.bookingType' | t }}
+          <select [value]="eligibilityId()" (change)="eligibilityChange.emit(value($event))">
+            <option value="">{{ 'followUps.newConsultation' | t }}</option>
+            @for (e of eligibilities(); track e.eligibilityId) {
+              <option [value]="e.eligibilityId" [disabled]="!e.canBook">{{ 'followUps.followUp' | t }} · {{ e.validUntil }}</option>
+            }
+          </select>
+        </label>
+      }
     }
     @if (mode() === 'create' || mode() === 'reschedule') {
       <label

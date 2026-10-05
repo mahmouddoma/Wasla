@@ -117,6 +117,10 @@ export class PublicDoctorDetailsPage {
     }
   }
   private setErrors(error: unknown): void {
+    if (error instanceof Error && error.message === 'discovery.invalidPractice') {
+      this.messages.set(['discovery.invalidPractice']);
+      return;
+    }
     const parsed = parseApiErrors(error);
     this.messages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
   }

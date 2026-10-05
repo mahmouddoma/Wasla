@@ -112,7 +112,7 @@ describe('TicketsApi', () => {
       'WAS-177',
       'POST',
       '/api/v1/practices/p1/tickets/t1/complete',
-      () => api.complete('p1', 't1', { rowVersion: 'rv' }, 'intent'),
+      () => api.complete('p1', 't1', { ticketRowVersion: 'rv', encounterRowVersion: 'ev' }, 'intent'),
     ],
     [
       'WAS-178',
@@ -135,6 +135,21 @@ describe('TicketsApi', () => {
     api.cancel('p1', 't1', { reason: 'Patient left', rowVersion: 'rv-2' }, 'key').subscribe();
     const request = http.expectOne((item) => item.url.endsWith('/tickets/t1/cancel'));
     expect(request.request.body).toEqual({ reason: 'Patient left', rowVersion: 'rv-2' });
+    request.flush({});
+  });
+  it('completes atomically with both concurrency tokens and keeps encounter linkage', () => {
+    let encounterId: string | null | undefined;
+    api.complete('p1', 't1', { ticketRowVersion: 'tv2', encounterRowVersion: 'ev3' }, 'intent').subscribe(ticket => encounterId = ticket.medicalEncounterId);
+    const request = http.expectOne(environment.apiBaseUrl + '/api/v1/practices/p1/tickets/t1/complete');
+    expect(request.request.body).toEqual({ ticketRowVersion: 'tv2', encounterRowVersion: 'ev3' });
+    request.flush({ medicalEncounterId: 'e1', medicalEncounterRowVersion: 'ev4', followUpEligibilityId: 'f1' });
+    expect(encounterId).toBe('e1');
+  });
+  it('loads eligibility-aware walk-in options without clinical data', () => {
+    api.walkInOptions('p1', { patientId: 'u1', followUpEligibilityId: 'f1' }).subscribe();
+    const request = http.expectOne(r => r.url.endsWith('/walk-in/options'));
+    expect(request.request.params.get('patientId')).toBe('u1');
+    expect(request.request.params.get('followUpEligibilityId')).toBe('f1');
     request.flush({});
   });
 });
