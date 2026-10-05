@@ -33,7 +33,7 @@ import { ReceptionPracticeContext } from '../../../domains/reception-practices';
   selector: 'app-reception-patients',
   imports: [FormField, TranslatePipe, PageHeader, RouterLink],
   templateUrl: './reception-patients.html',
-  styleUrls: ['../../healthcare-workspace.css', './reception-patients.css'],
+  styleUrl: './reception-patients.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReceptionPatients {

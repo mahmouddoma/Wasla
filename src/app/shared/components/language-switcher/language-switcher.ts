@@ -9,7 +9,7 @@ import { LanguageService } from '../../../core/i18n/language.service';
 })
 export class LanguageSwitcher {
   readonly langService = inject(LanguageService);
-  readonly variant = input<'pill' | 'header' | 'footer'>('pill');
+  readonly variant = input<'pill' | 'header'>('pill');
 
   toggle(): void {
     this.langService.toggleLanguage();

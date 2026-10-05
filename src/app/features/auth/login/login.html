@@ -1,46 +1,71 @@
 <div class="auth-form-wrap">
-  <!-- Brand logo & platform tagline -->
-  <header class="auth-logo-header">
-    <a routerLink="/login" class="auth-logo-link" [title]="'changePassword.home' | t">
+  <!-- Mobile & Tablet Ambient Hero Header -->
+  <div class="mobile-ambient-hero d-xl-none" aria-hidden="true">
+    <div class="hero-glow-layer"></div>
+    <!-- Ambient Healthcare Pulse Wave -->
+    <svg class="hero-pulse-wave" viewBox="0 0 600 160" preserveAspectRatio="none">
+      <path
+        d="M0,80 C60,40 120,120 180,60 C220,20 260,140 300,80 C340,30 380,110 440,70 C500,30 550,110 600,75"
+        fill="none"
+        stroke="rgba(14, 147, 137, 0.45)"
+        stroke-width="2.5"
+      />
+      <path
+        d="M0,95 C70,60 140,130 210,85 C270,40 320,130 380,75 C450,20 520,120 600,90"
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.16)"
+        stroke-width="1.5"
+        stroke-dasharray="6 6"
+      />
+    </svg>
+    <div class="hero-brand-center">
       <img
         src="/images/wasla-mark.png"
-        width="1254"
-        height="1254"
-        [alt]="'common.appName' | t"
-        class="auth-logo-img"
+        width="64"
+        height="64"
+        alt=""
+        class="hero-brand-symbol"
+        decoding="async"
       />
-    </a>
-    <p class="auth-platform-tagline">{{ 'common.platformSubtitle' | t }}</p>
-  </header>
+      <h2 class="hero-brand-name">{{ 'common.appName' | t }}</h2>
+      <p class="hero-brand-subtitle">{{ 'common.platformSubtitle' | t }}</p>
+    </div>
+  </div>
 
-  <!-- Welcome Pill Badge (100% SVG, No Emojis) -->
-  <div class="auth-badge-wrap">
-    <span class="auth-welcome-pill">
-      <svg
-        class="welcome-badge-svg"
-        viewBox="0 0 24 24"
-        width="15"
-        height="15"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path
-          d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"
+  <div class="auth-sheet-container">
+    <div class="sheet-drag-pill d-xl-none" aria-hidden="true"></div>
+
+    <!-- Brand logo & platform tagline (Desktop only) -->
+    <header class="auth-logo-header d-none d-xl-flex">
+      <a routerLink="/login" class="auth-logo-link" [title]="'changePassword.home' | t">
+        <img
+          src="/images/wasla-mark.png"
+          width="1254"
+          height="1254"
+          [alt]="'common.appName' | t"
+          class="auth-logo-img"
         />
-      </svg>
-      <span>{{ 'login.welcome' | t }}</span>
-    </span>
-  </div>
+      </a>
+      <p class="auth-platform-tagline">{{ 'common.platformSubtitle' | t }}</p>
+    </header>
 
-  <!-- Heading and Subheading -->
-  <div class="auth-form-heading">
-    <h1>{{ 'login.title' | t }}</h1>
-    <p>{{ 'login.subtitle' | t }}</p>
-  </div>
+    <!-- Heading and Subheading -->
+    <div class="auth-form-heading">
+      <div class="auth-heading-content">
+        <h1>{{ 'login.title' | t }}</h1>
+        <p>{{ 'login.subtitle' | t }}</p>
+      </div>
+      <div class="login-illustration-wrap d-xl-none" aria-hidden="true">
+        <img
+          class="login-illustration"
+          src="/SVG-AVATAR/Online Doctor-pana.svg"
+          width="112"
+          height="112"
+          alt=""
+          decoding="async"
+        />
+      </div>
+    </div>
 
   @if (successStatus === 'patient-registered') {
     <div class="form-notice success" role="status">
@@ -89,7 +114,9 @@
         </span>
       </div>
       @if (loginForm.identifier().touched() && loginForm.identifier().errors().length) {
-        <small class="field-error">{{ (loginForm.identifier().errors()[0].message ?? '') | t }}</small>
+        <small class="field-error">{{
+          loginForm.identifier().errors()[0].message ?? '' | t
+        }}</small>
       }
       @if (serverError('identifier')) {
         <small class="field-error">{{ serverError('identifier') }}</small>
@@ -124,8 +151,9 @@
           type="button"
           class="btn-toggle-pwd"
           (click)="togglePassword()"
+          [attr.aria-pressed]="showPassword()"
           [attr.aria-label]="
-            showPassword() ? ('register.showPasswords' | t) : ('register.showPasswords' | t)
+            showPassword() ? ('login.hidePassword' | t) : ('register.showPasswords' | t)
           "
         >
           @if (showPassword()) {
@@ -159,7 +187,7 @@
         </button>
       </div>
       @if (loginForm.password().touched() && loginForm.password().errors().length) {
-        <small class="field-error">{{ (loginForm.password().errors()[0].message ?? '') | t }}</small>
+        <small class="field-error">{{ loginForm.password().errors()[0].message ?? '' | t }}</small>
       }
       @if (serverError('password')) {
         <small class="field-error">{{ serverError('password') }}</small>
@@ -253,4 +281,5 @@
       </svg>
     </a>
   </div>
+</div>
 </div>

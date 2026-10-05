@@ -3639,6 +3639,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'register.password': { ar: 'كلمة المرور', en: 'Password' },
   'register.confirmPassword': { ar: 'تأكيد كلمة المرور', en: 'Confirm Password' },
   'register.showPasswords': { ar: 'إظهار كلمات المرور', en: 'Show passwords' },
+  'login.hidePassword': { ar: 'إخفاء كلمة المرور', en: 'Hide password' },
   'register.fullNameAr': { ar: 'الاسم بالعربية', en: 'Full Name (Arabic)' },
   'register.fullNameEn': {
     ar: 'الاسم بالإنجليزية (اختياري)',

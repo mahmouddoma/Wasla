@@ -44,15 +44,17 @@ describe('PlatformFooter', () => {
     const navLinks = el.querySelectorAll<HTMLAnchorElement>('.footer-nav-btn');
     expect(navLinks.length).toBe(3);
 
-    const hrefs = Array.from(navLinks).map((a) => a.getAttribute('href') || a.getAttribute('ng-reflect-router-link'));
+    const hrefs = Array.from(navLinks).map(
+      (a) => a.getAttribute('href') || a.getAttribute('ng-reflect-router-link'),
+    );
     expect(hrefs.some((h) => h?.includes('privacy'))).toBe(true);
     expect(hrefs.some((h) => h?.includes('terms'))).toBe(true);
     expect(hrefs.some((h) => h?.includes('help'))).toBe(true);
   });
 
-  it('should render language switcher in the footer', () => {
+  it('keeps language switching in the page header', () => {
     const el: HTMLElement = fixture.nativeElement;
     const langSwitcher = el.querySelector('app-language-switcher');
-    expect(langSwitcher).toBeTruthy();
+    expect(langSwitcher).toBeNull();
   });
 });

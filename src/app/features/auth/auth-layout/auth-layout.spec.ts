@@ -48,6 +48,27 @@ describe('AuthLayout', () => {
     expect(component.activeSlideIndex()).toBe(2);
   });
 
+  it('switches language from a single visible utility control in both directions', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    const switchers = element.querySelectorAll('app-language-switcher');
+    expect(switchers.length).toBe(1);
+    const button = element.querySelector<HTMLButtonElement>('.auth-panel-topbar button')!;
+    const shell = element.querySelector('.auth-shell')!;
+    const language = TestBed.inject(LanguageService);
+
+    expect(button.textContent).toContain('English');
+    button.click();
+    await fixture.whenStable();
+    expect(language.currentLang()).toBe('en');
+    expect(shell.getAttribute('dir')).toBe('ltr');
+    expect(button.textContent).toContain('Arabic');
+
+    button.click();
+    await fixture.whenStable();
+    expect(language.currentLang()).toBe('ar');
+    expect(shell.getAttribute('dir')).toBe('rtl');
+  });
+
   it('toggles pause state when interacting with story slider', () => {
     expect(component.isPaused()).toBe(false);
 
@@ -60,7 +81,7 @@ describe('AuthLayout', () => {
 
   it('translates every existing slide when switching language without resetting selection', async () => {
     component.setSlide(2);
-    const arabicTitles = component.slides.map(slide => slide.title);
+    const arabicTitles = component.slides.map((slide) => slide.title);
     TestBed.inject(LanguageService).setLanguage('en');
     await fixture.whenStable();
     expect(component.activeSlideIndex()).toBe(2);

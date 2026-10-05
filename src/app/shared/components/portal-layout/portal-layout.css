@@ -337,9 +337,12 @@
   z-index: 90;
   display: flex;
   min-height: 64px;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
   padding-inline: clamp(16px, 2.5vw, 36px);
+  padding-block: 8px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-soft);
   box-shadow: 0 1px 3px rgba(12, 39, 66, 0.03);
@@ -348,6 +351,7 @@
 .topbar-start,
 .topbar-end {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 14px;
 }
@@ -355,6 +359,7 @@
 /* ── Topbar Practice Selector ────────────────────────────────── */
 .topbar-practice-selector {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 8px;
   background: var(--wasla-navy-50, #f8fafc);
@@ -392,11 +397,14 @@
 
 .practice-select-wrap {
   position: relative;
+  min-width: 0;
   display: flex;
   align-items: center;
 }
 
 .practice-select-wrap select {
+  min-width: 0;
+  width: 100%;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -517,12 +525,12 @@
     position: fixed;
     top: 0;
     bottom: 0;
-    inset-inline-start: -280px;
-    transition: inset-inline-start 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    inset-inline-start: 0;
+    visibility: hidden;
   }
 
   .portal-sidebar.open {
-    inset-inline-start: 0;
+    visibility: visible;
   }
 
   .btn-sidebar-close {
@@ -532,6 +540,50 @@
   .user-role-label {
     display: none;
   }
+
+  .topbar-start,
+  .topbar-end {
+    gap: 8px;
+  }
+}
+
+/* ── Topbar Login Button (Mobile & Tablet) ────────────────────── */
+.btn-topbar-login {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: var(--wasla-teal-50, #f0fdfa);
+  color: var(--wasla-teal-700, #0f766e);
+  border: 1px solid var(--wasla-teal-200, #99f6e4);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-topbar-login:hover {
+  background: var(--wasla-teal-100, #ccfbf1);
+  color: var(--wasla-teal-800, #115e59);
+  border-color: var(--wasla-teal-300, #5eead4);
+}
+
+.btn-topbar-login svg {
+  flex-shrink: 0;
+}
+
+:host-context([dir='ltr']) .btn-topbar-login svg,
+[dir='ltr'] .btn-topbar-login svg {
+  transform: scaleX(-1);
+}
+
+@media (max-width: 1199.98px) {
+  .btn-topbar-login {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 480px) {
@@ -539,10 +591,14 @@
     padding-inline: 12px;
   }
 
+  .btn-topbar-login {
+    padding: 5px 8px;
+    gap: 4px;
+    font-size: 0.75rem;
+  }
+
   .user-display-name {
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: none;
   }
 
   .user-profile {

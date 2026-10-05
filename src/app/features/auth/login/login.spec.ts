@@ -79,12 +79,19 @@ describe('Login', () => {
     expect(pwdInput).not.toBeNull();
 
     const toggleBtn = element.querySelector<HTMLButtonElement>('.btn-toggle-pwd');
+    expect(toggleBtn?.getAttribute('aria-pressed')).toBe('false');
     toggleBtn?.click();
     fixture.detectChanges();
     await fixture.whenStable();
 
     const textInput = element.querySelector<HTMLInputElement>('#login-password');
     expect(textInput?.type).toBe('text');
+    expect(toggleBtn?.getAttribute('aria-pressed')).toBe('true');
+    expect(toggleBtn?.getAttribute('aria-label')).toBe('إخفاء كلمة المرور');
+    toggleBtn?.click();
+    await fixture.whenStable();
+    expect(textInput?.type).toBe('password');
+    expect(toggleBtn?.getAttribute('aria-pressed')).toBe('false');
   });
 
   it('submits valid credentials, initializes session and navigates to user destination', async () => {
