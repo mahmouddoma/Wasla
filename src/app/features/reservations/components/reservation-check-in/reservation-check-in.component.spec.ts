@@ -47,6 +47,17 @@ describe('ReservationCheckInComponent', () => {
       (fixture.nativeElement.querySelector('.submit-action') as HTMLButtonElement).disabled,
     ).toBe(true);
   });
+  it('accepts a free follow-up when the server-owned price is zero', async () => {
+    fixture.componentRef.setInput('expectedPrice', 0);
+    const emitted = vi.fn();
+    fixture.componentInstance.checkIn.subscribe(emitted);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.price-shortcut') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await fixture.whenStable();
+    expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ paidAmount: 0 }));
+  });
 
   it('rejects a payment that differs from the locked reservation price', async () => {
     const emitted = vi.fn();

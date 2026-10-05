@@ -203,6 +203,76 @@ describe('DoctorReceptions', () => {
     expect(component['isCreateDrawerOpen']()).toBe(false);
   });
 
+  it('rejects creation when required fields or email are invalid and displays feedback', async () => {
+    await createAndInitializeComponent();
+    const toast = TestBed.inject(ToastService);
+
+    component['openCreateDrawer']();
+    // Simulate invalid inputs like the user reported (double @ in email)
+    component['userModel'].set({
+      userName: 'rec_user',
+      nameAr: 'علي حسن',
+      nameEn: 'Ali Hassan',
+      email: 'rec@123@gmail.com', // invalid email
+      phoneNumber: '01012345678',
+      temporaryPassword: '',
+    });
+
+    const event = new Event('submit');
+    await component['create'](event);
+
+    expect(component['formSubmitted']()).toBe(true);
+    expect(component['clientError']('email')).toBeTruthy();
+    expect(toast.messages().some((m) => m.kind === 'error')).toBe(true);
+    httpTesting.expectNone(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions`);
+  });
+
+  it('successfully creates receptionist when form is valid', async () => {
+    await createAndInitializeComponent();
+    const toast = TestBed.inject(ToastService);
+
+    component['openCreateDrawer']();
+    component['userModel'].set({
+      userName: 'rec_user',
+      nameAr: 'علي حسن',
+      nameEn: 'Ali Hassan',
+      email: 'rec123@gmail.com',
+      phoneNumber: '01012345678',
+      temporaryPassword: '',
+    });
+
+    const event = new Event('submit');
+    const creating = component['create'](event);
+
+    const postReq = httpTesting.expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions`);
+    expect(postReq.request.method).toBe('POST');
+    expect(postReq.request.body).toEqual({
+      userName: 'rec_user',
+      email: 'rec123@gmail.com',
+      phoneNumber: '01012345678',
+      temporaryPassword: null,
+      nameAr: 'علي حسن',
+      nameEn: 'Ali Hassan',
+    });
+
+    postReq.flush({
+      id: 'rec-new-1',
+      applicationUserId: 'app-user-new',
+      userName: 'rec_user',
+      email: 'rec123@gmail.com',
+      phoneNumber: '01012345678',
+      nameAr: 'علي حسن',
+      nameEn: 'Ali Hassan',
+      assignments: [],
+      rowVersion: 'ver-new',
+    });
+
+    await creating;
+
+    expect(component['isCreateDrawerOpen']()).toBe(false);
+    expect(toast.messages().some((m) => m.kind === 'success')).toBe(true);
+  });
+
   it('toggles permission selection correctly', async () => {
     await createAndInitializeComponent();
 

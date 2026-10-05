@@ -195,7 +195,7 @@ export class DoctorPractices {
         : practice.location.area?.nameEn || practice.location.area?.nameAr,
     ]
       .filter(Boolean)
-      .join(this.langService.t('ui.full.0'));
+      .join(this.langService.isRtl() ? '، ' : ', ');
   }
 
   protected logout(): void {

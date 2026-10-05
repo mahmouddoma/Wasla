@@ -1,5 +1,9 @@
 import { Routes } from '@angular/router';
-import { accountAreaGuard, authenticatedGuard } from './core/auth/auth.guards';
+import {
+  accountAreaGuard,
+  anonymousOnlyMatchGuard,
+  authenticatedGuard,
+} from './core/auth/auth.guards';
 
 export const routes: Routes = [
   {
@@ -7,9 +11,10 @@ export const routes: Routes = [
     pathMatch: 'full',
     redirectTo: 'login',
   },
-  // Public & Doctor Discovery
+  // Public & Doctor Discovery (Anonymous)
   {
     path: 'doctors',
+    canMatch: [anonymousOnlyMatchGuard],
     loadComponent: () =>
       import('./features/public-doctors/pages/public-doctors/public-doctors').then(
         (m) => m.PublicDoctors,
@@ -18,6 +23,7 @@ export const routes: Routes = [
   },
   {
     path: 'doctors/:doctorId',
+    canMatch: [anonymousOnlyMatchGuard],
     loadComponent: () =>
       import('./features/public-doctor-details/pages/public-doctor-details/public-doctor-details').then(
         (m) => m.PublicDoctorDetailsPage,
@@ -40,13 +46,6 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/admin/admin.routes').then((routes) => routes.ADMIN_ROUTES),
   },
-  {
-    path: 'admin/reservations',
-    canActivate: [authenticatedGuard],
-    data: { actor: 'Admin' },
-    loadChildren: () =>
-      import('./features/reservations/reservations.routes').then((m) => m.RESERVATION_ROUTES),
-  },
 
   // Healthcare Staff & Patients Portal (wrapped with PortalLayout)
   {
@@ -55,6 +54,23 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./shared/components/portal-layout/portal-layout').then((m) => m.PortalLayout),
     children: [
+      {
+        path: 'doctor/encounters',
+        data: { actor: 'Doctor' },
+        loadChildren: () =>
+          import('./features/encounters/encounters.routes').then((m) => m.ENCOUNTER_ROUTES),
+      },
+      {
+        path: 'patient/encounters',
+        data: { actor: 'Patient' },
+        loadChildren: () =>
+          import('./features/encounters/encounters.routes').then((m) => m.ENCOUNTER_ROUTES),
+      },
+      {
+        path: 'patient/follow-ups',
+        loadChildren: () =>
+          import('./features/follow-ups/follow-ups.routes').then((m) => m.FOLLOW_UP_ROUTES),
+      },
       {
         path: 'workspace/:area',
         title: 'routes.workspace',
@@ -159,6 +175,27 @@ export const routes: Routes = [
         path: 'patient',
         loadChildren: () =>
           import('./features/patient/patient.routes').then((m) => m.FEATURE_ROUTES),
+      },
+      {
+        path: 'doctors',
+        title: 'routes.findDoctor',
+        loadComponent: () =>
+          import('./features/public-doctors/pages/public-doctors/public-doctors').then(
+            (m) => m.PublicDoctors,
+          ),
+      },
+      {
+        path: 'doctors/:doctorId',
+        title: 'routes.doctorDetails',
+        loadComponent: () =>
+          import('./features/public-doctor-details/pages/public-doctor-details/public-doctor-details').then(
+            (m) => m.PublicDoctorDetailsPage,
+          ),
+      },
+      {
+        path: 'patient/find-doctor',
+        redirectTo: 'doctors',
+        pathMatch: 'full',
       },
     ],
   },

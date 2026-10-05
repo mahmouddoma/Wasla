@@ -1,5 +1,11 @@
 <!-- ── Queue Workspace (شاشة إدارة الطابور والانتظار) ────────────────── -->
 <main class="queue-shell" [dir]="language.dir()">
+  <!-- Ambient backdrop lighting -->
+  <div class="ambient-glow-mesh" aria-hidden="true">
+    <div class="ambient-circle circle-teal"></div>
+    <div class="ambient-circle circle-navy"></div>
+  </div>
+
   <!-- ── 1. Enterprise Page Header ────────────────────────────────────── -->
   <app-page-header
     [heading]="'tickets.queue.title' | t"
@@ -8,34 +14,27 @@
   >
     <!-- Practice Selector in Header Deck -->
     <div pageHeaderDeck class="queue-header-deck">
-      <div class="practice-selector-badge">
-        <span class="selector-icon" aria-hidden="true">
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-          </svg>
-        </span>
-        <label for="queue-practice-select" class="selector-label">{{
-          'reservations.practice' | t
-        }}</label>
+      <div class="practice-selector-pill">
+        <svg class="practice-selector-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+        </svg>
+        <span class="practice-label-text">{{ 'reservations.practice' | t }}:</span>
         <select
           id="queue-practice-select"
-          class="selector-select"
+          class="practice-select-input"
           [value]="practiceId()"
           (change)="selectPractice($event)"
           [disabled]="busy()"
+          [attr.aria-label]="'reservations.practice' | t"
         >
           <option value="">{{ 'reservations.choose' | t }}</option>
           @for (practice of practices(); track practice.id) {
             <option [value]="practice.id">{{ label(practice) }}</option>
           }
         </select>
+        <svg class="practice-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
     </div>
 
@@ -475,6 +474,15 @@
       </header>
 
       <form class="walk-in-form-grid" (submit)="$event.preventDefault(); submitWalkIn()">
+        @if (eligibilities().length) {
+          <div class="form-group-item col-field">
+            <label class="field-label" for="walk-in-follow-up">{{ 'followUps.bookingType' | t }}</label>
+            <select id="walk-in-follow-up" class="field-select" [value]="eligibility()?.eligibilityId || ''" (change)="selectWalkInEligibility($event)" [disabled]="busy() || optionsLoading()">
+              <option value="">{{ 'followUps.newConsultation' | t }}</option>
+              @for (e of eligibilities(); track e.eligibilityId) { <option [value]="e.eligibilityId" [disabled]="!e.canBook">{{ 'followUps.followUp' | t }} · {{ e.validUntil }}</option> }
+            </select>
+          </div>
+        }
         <!-- Field 1: معرف المريض -->
         <div class="form-group-item col-field">
           <label class="field-label" for="walk-in-patient-id">
@@ -487,6 +495,7 @@
             dir="ltr"
             [placeholder]="'tickets.patientIdPlaceholder' | t"
             [formField]="walkInForm.patientId"
+            (change)="refreshWalkInPatient()"
           />
           @if (walkInForm.patientId().touched() && walkInForm.patientId().errors()[0]; as error) {
             <small class="field-validation-error" role="alert">
@@ -619,7 +628,7 @@
           <button
             type="submit"
             class="btn-submit-walk-in"
-            [disabled]="busy() || walkInForm().invalid()"
+            [disabled]="busy() || optionsLoading() || walkInForm().invalid()"
           >
             <svg
               viewBox="0 0 24 24"
@@ -878,15 +887,10 @@
               </button>
             }
 
-            @if (ticket.status === 'InProgress' && canComplete()) {
-              <button
-                type="button"
-                class="btn-drawer-primary"
-                (click)="act('complete')"
-                [disabled]="busy()"
-              >
-                {{ 'tickets.complete' | t }}
-              </button>
+            @if (ticket.status === 'InProgress' && canOpenClinical()) {
+              <a class="btn-drawer-primary" routerLink="/doctor/encounters" [queryParams]="{ practiceId: practiceId(), ticketId: ticket.ticketId }">
+                {{ 'encounters.open' | t }}
+              </a>
             }
 
             @if (

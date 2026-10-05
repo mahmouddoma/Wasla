@@ -130,14 +130,14 @@ export class FinanceWorkspace implements OnInit {
     });
   });
 
-  protected readonly canView = computed(
+  readonly canView = computed(
     () =>
       this.actor() !== 'Reception' ||
       (!!this.practiceId() &&
         this.reception.currentPracticeId() === this.practiceId() &&
         this.reception.allowsInPractice(this.practiceId(), PERMISSIONS.practicePaymentsView)),
   );
-  protected readonly canCorrect = computed(
+  readonly canCorrect = computed(
     () =>
       this.actor() === 'Doctor' ||
       (this.actor() === 'Reception' &&
@@ -147,7 +147,7 @@ export class FinanceWorkspace implements OnInit {
           PERMISSIONS.practicePaymentsCorrect,
         )),
   );
-  protected readonly canRefund = computed(
+  readonly canRefund = computed(
     () =>
       !!this.detail()?.canRefund &&
       (this.actor() === 'Doctor' ||

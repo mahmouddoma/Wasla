@@ -74,6 +74,9 @@ export class PortalLayout {
 
     if (userType === 'doctor') {
       return [
+        ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn) ? [{
+          id: 'encounters', labelKey: 'encounters.title', route: '/doctor/encounters', icon: 'stethoscope',
+        }] : []),
         {
           id: 'workspace',
           labelKey: 'sidebar.workspace',
@@ -182,6 +185,12 @@ export class PortalLayout {
 
     // Default: Patient
     return [
+      ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwnCompleted) ? [{
+        id: 'encounters', labelKey: 'encounters.title', route: '/patient/encounters', icon: 'stethoscope',
+      }] : []),
+      ...(this.session.hasPermission(PERMISSIONS.followUpEligibilityViewOwn) ? [{
+        id: 'follow-ups', labelKey: 'followUps.title', route: '/patient/follow-ups', icon: 'calendar',
+      }] : []),
       {
         id: 'workspace',
         labelKey: 'sidebar.workspace',
@@ -193,6 +202,12 @@ export class PortalLayout {
         labelKey: 'sidebar.reservations',
         route: '/patient/reservations',
         icon: 'calendar',
+      },
+      {
+        id: 'find-doctor',
+        labelKey: 'routes.findDoctor',
+        route: '/doctors',
+        icon: 'stethoscope',
       },
       {
         id: 'tickets',

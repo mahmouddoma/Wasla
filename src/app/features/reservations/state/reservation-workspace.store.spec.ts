@@ -185,7 +185,7 @@ describe('ReservationWorkspaceStore', () => {
       }),
     );
     await store.chooseTime('17:00');
-    expect(api.receptionOptions).toHaveBeenCalledWith('clinic', '2026-09-20', '17:00');
+    expect(api.receptionOptions).toHaveBeenCalledWith('clinic', '2026-09-20', '17:00', {});
     expect(store.options()?.visitTypes.map((v) => v.type)).toEqual(['NewConsultation']);
   });
   it('clears operational state and refreshes delegated grants after a fresh 403', async () => {

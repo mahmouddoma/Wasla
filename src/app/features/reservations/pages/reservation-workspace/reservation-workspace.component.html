@@ -10,7 +10,7 @@
     [heading]="'reservations.title' | t"
     [description]="'reservations.subtitle' | t"
     icon="reservations"
-    [actionLabel]="(store.canCreate() && store.practiceId()) ? ('reservations.create' | t) : null"
+    [actionLabel]="store.canCreate() && store.practiceId() ? ('reservations.create' | t) : null"
     actionIcon="add"
     (actionClicked)="store.openEditor('create')"
   >
@@ -100,19 +100,23 @@
         @if (store.actor() === 'Patient' && !store.practiceId()) {
           <div class="patient-doctor-discovery-row">
             <div class="discovery-text">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <span>{{ 'reservations.findDoctor' | t }}</span>
+              <div class="discovery-icon-circle" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+              <div class="discovery-copy">
+                <span class="discovery-title">{{ 'reservations.bookNewAppointment' | t }}</span>
+                <span class="discovery-subtitle">{{ 'reservations.findDoctorHelp' | t }}</span>
+              </div>
             </div>
             <a class="btn-find-doctor" routerLink="/doctors">
               <span>{{ 'reservations.findDoctor' | t }}</span>
@@ -295,7 +299,7 @@
           @if (!store.loading() && !store.listFailed()) {
             <span class="count-badge">
               <span class="pulse-dot"></span>
-              <span>{{ store.page().totalCount }} {{ 'reservations.title' | t }}</span>
+              <span>{{ store.page().totalCount }} {{ 'reservations.count' | t }}</span>
             </span>
           }
           @if (store.loading()) {
@@ -538,95 +542,68 @@
     </section>
   </div>
 
-  @if (store.detail() || store.detailLoading() || store.editor()) {
-    <dialog
-      #drawer
-      class="drawer"
-      (cancel)="cancelDialog($event)"
-      [attr.aria-labelledby]="
-        store.editor()
-          ? 'reservation-editor-heading'
-          : store.detail()
-            ? 'reservation-details-heading'
-            : 'reservation-loading-heading'
-      "
-    >
-      <div class="drawer-header">
-        <button
-          class="drawer-close"
-          type="button"
-          (click)="store.close()"
-          [disabled]="store.busy()"
-          [title]="'reservations.close' | t"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-          <span>{{ 'reservations.close' | t }}</span>
-        </button>
+  <!-- ═══ Side Drawer: Reservation Details & Editor ═══ -->
+  <app-side-drawer
+    [opened]="!!store.detail() || store.detailLoading() || !!store.editor()"
+    [title]="drawerTitle()"
+    [description]="drawerDescription()"
+    width="640px"
+    (closed)="store.close()"
+  >
+    @if (store.editor(); as mode) {
+      <app-reservation-editor
+        [mode]="mode"
+        [provider]="store.actor() !== 'Patient'"
+        [reception]="store.actor() === 'Reception'"
+        [canSearch]="store.reception.allows('Patients.SearchBasic')"
+        [canRegister]="store.canRegisterPatient()"
+        [patients]="store.patients()"
+        [patientId]="store.bookingPatientId()"
+        [eligibilities]="store.eligibilities()"
+        [eligibilityId]="store.eligibility()?.eligibilityId || ''"
+        (patientChange)="store.choosePatient($event)"
+        (eligibilityChange)="store.chooseEligibility($event)"
+        [dates]="store.dates()"
+        [slots]="store.slots()"
+        [options]="store.options()"
+        [reasons]="reasons()"
+        [date]="store.date()"
+        [time]="store.time()"
+        [busy]="store.busy()"
+        [loading]="store.bookingLoading()"
+        (dateChange)="store.chooseDate($event)"
+        (timeChange)="store.chooseTime($event)"
+        (search)="store.searchPatients($event)"
+        (save)="store.save($event)"
+      />
+    } @else if (store.detail(); as r) {
+      <app-reservation-details
+        [reservation]="r"
+        [administrative]="store.actor() === 'Admin'"
+        [statuses]="store.metadata()?.statuses || []"
+        [bookingSources]="store.metadata()?.bookingSources || []"
+        [canCancel]="store.canCancel()"
+        [canReschedule]="store.canReschedule()"
+        [canRestore]="store.canRestore()"
+        (action)="store.openEditor($event)"
+      />
+      @if (store.canCheckIn() || store.canForceCheckIn()) {
+        <app-reservation-check-in
+          [expectedPrice]="r.price"
+          [canNormal]="store.canCheckIn()"
+          [canForce]="store.canForceCheckIn()"
+          [busy]="store.busy()"
+          (checkIn)="store.checkIn($event)"
+        />
+      }
+    } @else {
+      <div class="drawer-loading" id="reservation-loading-heading" role="status">
+        <span class="spinner-ring" aria-hidden="true"></span>
+        <p>{{ 'reservations.loading' | t }}</p>
       </div>
-
-      <div class="drawer-body">
-        @if (store.editor(); as mode) {
-          <app-reservation-editor
-            [mode]="mode"
-            [provider]="store.actor() !== 'Patient'"
-            [reception]="store.actor() === 'Reception'"
-            [canSearch]="store.reception.allows('Patients.SearchBasic')"
-            [canRegister]="store.canRegisterPatient()"
-            [patients]="store.patients()"
-            [dates]="store.dates()"
-            [slots]="store.slots()"
-            [options]="store.options()"
-            [reasons]="reasons()"
-            [date]="store.date()"
-            [time]="store.time()"
-            [busy]="store.busy()"
-            [loading]="store.bookingLoading()"
-            (dateChange)="store.chooseDate($event)"
-            (timeChange)="store.chooseTime($event)"
-            (search)="store.searchPatients($event)"
-            (save)="store.save($event)"
-          />
-        } @else if (store.detail(); as r) {
-          <app-reservation-details
-            [reservation]="r"
-            [administrative]="store.actor() === 'Admin'"
-            [statuses]="store.metadata()?.statuses || []"
-            [bookingSources]="store.metadata()?.bookingSources || []"
-            [canCancel]="store.canCancel()"
-            [canReschedule]="store.canReschedule()"
-            [canRestore]="store.canRestore()"
-            (action)="store.openEditor($event)"
-          />
-          @if (store.canCheckIn() || store.canForceCheckIn()) {
-            <app-reservation-check-in
-              [expectedPrice]="r.price"
-              [canNormal]="store.canCheckIn()"
-              [canForce]="store.canForceCheckIn()"
-              [busy]="store.busy()"
-              (checkIn)="store.checkIn($event)"
-            />
-          }
-        } @else {
-          <div class="drawer-loading" id="reservation-loading-heading" role="status">
-            <span class="spinner-ring" aria-hidden="true"></span>
-            <p>{{ 'reservations.loading' | t }}</p>
-          </div>
-        }
-        @for (message of store.messages(); track $index) {
-          <p role="alert" class="drawer-alert">{{ message | t }}</p>
-        }
-      </div>
-    </dialog>
-  }
+    }
+    @for (message of store.messages(); track $index) {
+      <p role="alert" class="drawer-alert">{{ message | t }}</p>
+    }
+  </app-side-drawer>
 </main>

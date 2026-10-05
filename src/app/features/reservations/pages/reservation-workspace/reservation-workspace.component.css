@@ -2,18 +2,44 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  width: 100%;
   background: var(--wasla-app);
 }
 
-/* ── Shell & Ambient Backdrop ────────────────────────────────────── */
 .reservations-shell {
   position: relative;
   flex: 1 0 auto;
+  max-width: 1540px;
+  width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
   padding: 20px clamp(16px, 3.5vw, 48px) 32px;
   background: radial-gradient(ellipse at 60% 0%, #e8f7f7 0%, var(--wasla-app) 65%);
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+}
+
+:host-context(.admin-content-body) {
+  min-height: auto;
+}
+
+:host-context(.admin-content-body) .reservations-shell {
+  padding: 0;
+  background: transparent;
+  max-width: 100%;
+}
+
+:host-context(.admin-content-body) .ambient-glow-mesh {
+  display: none;
+}
+
+app-page-header {
+  display: block;
+  max-width: 1540px;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .ambient-glow-mesh {
@@ -198,7 +224,7 @@
 .reservations-filters-panel {
   max-width: 1540px;
   width: 100%;
-  margin: 0 auto 20px;
+  margin: 0 auto;
   background: var(--wasla-surface);
   border: 1px solid var(--wasla-border-subtle);
   border-radius: var(--radius-major, 18px);
@@ -512,39 +538,70 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 18px;
-  background: rgba(11, 165, 160, 0.04);
-  border: 1px dashed rgba(11, 165, 160, 0.3);
-  border-radius: var(--radius-control, 10px);
+  padding: 14px 20px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle);
+  border-radius: var(--radius-panel, 14px);
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
 .discovery-text {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--wasla-teal-800);
-  font-weight: 700;
-  font-size: 0.88rem;
+  gap: 12px;
+}
+
+.discovery-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(11, 165, 160, 0.08);
+  color: var(--wasla-teal-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.discovery-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.discovery-title {
+  color: var(--wasla-navy-950);
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.discovery-subtitle {
+  color: var(--wasla-slate);
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
 .btn-find-doctor {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  height: 38px;
+  padding: 0 16px;
   border-radius: var(--radius-control, 10px);
   background: var(--wasla-teal-600);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.82rem;
   text-decoration: none;
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(11, 165, 160, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-find-doctor:hover {
   background: var(--wasla-teal-700);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 165, 160, 0.28);
 }
 
 .filters-grid {
@@ -1074,73 +1131,7 @@ tbody tr:last-child td {
   box-shadow: 0 2px 8px rgba(7, 140, 136, 0.25);
 }
 
-/* ── Slide-Over Drawer Modal ─────────────────────────────────────── */
-.drawer::backdrop {
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.drawer {
-  position: fixed;
-  margin: 0;
-  max-width: 100vw;
-  max-height: 100vh;
-  height: 100vh;
-  border: 0;
-  inset-block: 0;
-  inset-inline-end: 0;
-  width: min(600px, 100vw);
-  padding: 0;
-  background: #ffffff;
-  overflow-y: auto;
-  box-shadow: -10px 0 40px rgba(15, 23, 42, 0.16);
-  display: flex;
-  flex-direction: column;
-}
-
-.drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--wasla-border-subtle);
-  position: sticky;
-  top: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  z-index: 10;
-}
-
-.drawer-close {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--radius-control, 8px);
-  border: 1px solid var(--wasla-border-subtle);
-  background: #ffffff;
-  color: var(--wasla-slate);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.drawer-close:hover {
-  background: #f8fafc;
-  color: var(--wasla-navy-900);
-  border-color: var(--wasla-border);
-}
-
-.drawer-body {
-  padding: 24px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
+/* ── Side Drawer Inner Elements ─────────────────────────────────── */
 .drawer-loading {
   display: flex;
   flex-direction: column;
@@ -1181,6 +1172,19 @@ tbody tr:last-child td {
   border-top-color: var(--wasla-teal-600);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spin {

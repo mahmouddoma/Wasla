@@ -1,7 +1,5 @@
 /* ==========================================================================
-   QUEUE WORKSPACE — Wasla Healthcare SaaS
-   Modern Enterprise Clinic Queue & Walk-In Registration
-   RTL-first · Neutral Subtle Borders · Fluid Responsive Grid
+   QUEUE WORKSPACE — Wasla Healthcare 
    ========================================================================== */
 
 :host {
@@ -11,9 +9,56 @@
 }
 
 .queue-shell {
-  max-width: 1440px;
+  max-width: 1540px;
+  width: 100%;
   margin-inline: auto;
-  padding: 24px clamp(16px, 2.5vw, 36px) 64px;
+  padding: 20px clamp(16px, 3.5vw, 48px) 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: radial-gradient(circle at 50% 0%, #eef8f8 0%, var(--wasla-app) 70%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── Ambient Backdrop Lighting ─────────────────────────────────────────── */
+.ambient-glow-mesh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.45;
+}
+
+.circle-teal {
+  top: -80px;
+  inset-inline-start: 10%;
+  width: 500px;
+  height: 500px;
+  background: rgba(11, 165, 160, 0.12);
+}
+
+.circle-navy {
+  top: 100px;
+  inset-inline-end: 5%;
+  width: 480px;
+  height: 480px;
+  background: rgba(18, 52, 81, 0.05);
+}
+
+app-page-header {
+  display: block;
+  width: 100%;
+  position: relative;
+  z-index: 5;
 }
 
 /* ── 1. Page Header Elements & Deck ─────────────────────────────────────── */
@@ -24,48 +69,76 @@
   gap: 12px;
 }
 
-.practice-selector-badge {
+.practice-selector-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
+  height: 38px;
   background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-control, 8px);
-  box-shadow: 0 1px 3px rgba(12, 39, 66, 0.04);
+  border: 1px solid var(--wasla-border, #e3eaf0);
+  border-radius: var(--radius-control, 10px);
+  padding-inline-start: 10px;
+  padding-inline-end: 28px;
+  min-width: 220px;
+  max-width: 320px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
-.selector-icon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--wasla-teal-600, #078c88);
+.practice-selector-pill:focus-within {
+  border-color: var(--wasla-teal-500, #0ba5a0);
+  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
 }
 
-.selector-label {
-  color: var(--wasla-slate, #66788a);
+.practice-selector-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--wasla-teal-600, #078c88);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.practice-label-text {
   font-size: 0.8rem;
   font-weight: 700;
+  color: var(--wasla-slate, #66788a);
+  margin-inline-start: 6px;
+  margin-inline-end: 4px;
   white-space: nowrap;
 }
 
-.selector-select {
-  border: 0;
-  background: transparent;
+.practice-select-input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  height: 100%;
+  width: 100%;
+  font-size: 0.825rem;
+  font-weight: 700;
   color: var(--wasla-navy-900, #0b2239);
-  font-size: 0.84rem;
-  font-weight: 800;
+  padding: 0;
   cursor: pointer;
-  outline: none;
-  padding-inline-end: 22px;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230ba5a0' stroke-width='2.2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: left 2px center;
-  background-size: 13px;
+  -webkit-appearance: none;
 }
 
-[dir='ltr'] .selector-select {
-  background-position: right 2px center;
+.practice-chevron {
+  position: absolute;
+  inset-inline-end: 10px;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--wasla-slate, #66788a);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 
 .queue-header-actions {
@@ -81,9 +154,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 40px;
   padding: 8px 18px;
-  border-radius: var(--radius-control, 8px);
+  border-radius: var(--radius-control, 10px);
   font-size: 0.82rem;
   font-weight: 800;
   cursor: pointer;
@@ -172,23 +245,30 @@
 
 /* ── 3. Queue Board Container ────────────────────────────────────────────── */
 .queue-board {
-  margin-top: 20px;
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 0;
 }
 
 /* ── 3.1 Live Status Strip (قيد الكشف + تم النداء) ───────────────────────── */
 .live-status-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 18px;
-  margin-bottom: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .live-status-card {
   background: var(--wasla-surface, #ffffff);
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 14px);
+  border-radius: var(--radius-panel, 16px);
   padding: 20px 24px;
-  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.04);
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
   transition: all 0.2s ease;
 }
 
@@ -370,16 +450,17 @@
 /* ── 3.2 Two-Column Queue Grid (الانتظار + لم يحضر) ───────────────────────── */
 .queue-grid-columns {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 20px;
+  width: 100%;
 }
 
 .queue-panel {
   background: var(--wasla-surface, #ffffff);
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 14px);
+  border-radius: var(--radius-panel, 16px);
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.04);
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
 }
 
 .queue-panel-header {
@@ -587,16 +668,20 @@
 
 /* ── 4. Walk-In Direct Registration Section ─────────────────────────────── */
 .walk-in-section {
-  margin-top: 24px;
-  padding: 26px 30px;
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0;
+  padding: 24px 28px;
   background: var(--wasla-surface, #ffffff);
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 14px);
-  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.04);
+  border-radius: var(--radius-panel, 16px);
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
 }
 
 .walk-in-header {
-  margin-bottom: 22px;
+  margin-bottom: 20px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
 }
@@ -611,8 +696,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
   background: var(--wasla-teal-50, #f0fbfa);
   color: var(--wasla-teal-600, #078c88);
@@ -635,23 +720,26 @@
 /* Walk-in Form Grid */
 .walk-in-form-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: flex-end;
 }
 
 .col-field {
-  grid-column: span 3;
+  grid-column: span 1;
 }
 
 .col-field-wide {
-  grid-column: span 6;
+  grid-column: span 2;
 }
 
 .walk-in-action-bar {
-  grid-column: span 6;
+  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--wasla-border-subtle, #f1f5f9);
+  margin-top: 6px;
 }
 
 .form-group-item {
@@ -696,8 +784,8 @@
   height: 44px;
   padding: 0 14px;
   border: 1px solid var(--wasla-border, #e3eaf0);
-  border-radius: var(--radius-control, 8px);
-  background-color: #fdfefe;
+  border-radius: var(--radius-control, 10px);
+  background-color: #ffffff;
   color: var(--wasla-navy-950, #071c30);
   font-family: inherit;
   font-size: 0.84rem;
@@ -1146,46 +1234,35 @@
 }
 
 /* ── 7. Responsive Breakpoints ───────────────────────────────────────────── */
-@media (max-width: 1199.98px) {
+@media (max-width: 1080px) {
   .walk-in-form-grid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .col-field {
-    grid-column: span 3;
-  }
-
+  .col-field,
   .col-field-wide {
-    grid-column: span 6;
+    grid-column: span 1;
   }
 
   .walk-in-action-bar {
-    grid-column: span 6;
+    grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 960px) {
   .queue-grid-columns {
     grid-template-columns: 1fr;
   }
 
-  .col-field {
-    grid-column: span 3;
-  }
-
-  .col-field-wide,
-  .walk-in-action-bar {
-    grid-column: span 6;
+  .live-status-strip {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 768px) {
   .queue-shell {
-    padding-inline: 14px;
-  }
-
-  .live-status-strip {
-    grid-template-columns: 1fr;
+    padding: 16px 14px 44px;
+    gap: 1.25rem;
   }
 
   .active-ticket-box {
@@ -1202,8 +1279,7 @@
   }
 
   .col-field,
-  .col-field-wide,
-  .walk-in-action-bar {
+  .col-field-wide {
     grid-column: span 1;
   }
 
@@ -1223,7 +1299,7 @@
   }
 
   .walk-in-section {
-    padding: 20px 16px;
+    padding: 18px 16px;
   }
 }
 

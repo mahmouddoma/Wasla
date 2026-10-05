@@ -26,9 +26,11 @@ import {
   FamilyRole,
 } from '../../../domains/families';
 
+import { PageHeader } from '../../../shared/components/page-header/page-header';
+
 @Component({
   selector: 'app-patient-family',
-  imports: [FormField, NgClass, SideDrawer, TranslatePipe],
+  imports: [FormField, NgClass, SideDrawer, TranslatePipe, PageHeader],
   templateUrl: './patient-family.html',
   styleUrl: './patient-family.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -131,7 +133,10 @@ export class PatientFamily {
         if (!this.evidenceFiles().length) this.messages.set([this.uiLanguage.t('ui.full.663')]);
         return;
       }
-      const fileError = getEvidenceFileValidationError(this.evidenceFiles(), this.uiLanguage.currentLang());
+      const fileError = getEvidenceFileValidationError(
+        this.evidenceFiles(),
+        this.uiLanguage.currentLang(),
+      );
       if (fileError) {
         this.messages.set([fileError]);
         return;
@@ -153,10 +158,9 @@ export class PatientFamily {
         );
         this.selectedRequest.set(details);
         this.successMessage.set(this.uiLanguage.t('family.submitted'));
-      this.toast.success(this.successMessage());
+        this.toast.success(this.successMessage());
         await this.loadRequests(1);
       } catch (error) {
-
         this.messages.set(flattenErrors(error));
       } finally {
         this.submitting.set(false);
@@ -168,7 +172,10 @@ export class PatientFamily {
     const request = this.selectedRequest();
     if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
     const documentTypes = splitTypes(this.resubmitDocumentTypes());
-    const fileError = getEvidenceFileValidationError(this.resubmitFiles(), this.uiLanguage.currentLang());
+    const fileError = getEvidenceFileValidationError(
+      this.resubmitFiles(),
+      this.uiLanguage.currentLang(),
+    );
     if (fileError) {
       this.messages.set([fileError]);
       return;
@@ -194,14 +201,10 @@ export class PatientFamily {
       this.toast.success(this.successMessage());
       await this.loadRequests(this.pageNumber());
     } catch (error) {
-
       this.messages.set(flattenErrors(error));
       if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.openRequest(request.requestId);
-        this.messages.update((items) => [
-          ...items,
-          this.uiLanguage.t('ui.full.666'),
-        ]);
+        this.messages.update((items) => [...items, this.uiLanguage.t('ui.full.666')]);
       }
     } finally {
       this.submitting.set(false);

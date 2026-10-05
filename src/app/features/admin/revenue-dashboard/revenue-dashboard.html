@@ -1,15 +1,412 @@
-<main class="revenue-page" [dir]="language.dir()">
-  <header><span>{{ 'finance.eyebrow' | t }}</span><h1>{{ 'finance.revenue.title' | t }}</h1><p>{{ 'finance.revenue.subtitle' | t }}</p></header>
-  <form (submit)="$event.preventDefault(); load()">
-    <label><span>{{ 'finance.fromDate' | t }}</span><input type="date" [formField]="filters.fromDate" /></label>
-    <label><span>{{ 'finance.toDate' | t }}</span><input type="date" [formField]="filters.toDate" /></label>
-    <label><span>{{ 'finance.doctorId' | t }}</span><input dir="ltr" [formField]="filters.doctorId" /></label>
-    <label><span>{{ 'finance.practiceId' | t }}</span><input dir="ltr" [formField]="filters.practiceId" /></label>
-    <button type="submit" [disabled]="loading()">{{ 'finance.applyFilters' | t }}</button>
-  </form>
-  @for (message of messages(); track $index) {<p class="error" role="alert">{{ message | t }}</p>}
+<section class="management-page revenue-page" [dir]="language.dir()">
+  <!-- 1. Enterprise Page Header -->
+  <app-page-header
+    [heading]="'finance.revenue.title' | t"
+    [description]="'finance.revenue.subtitle' | t"
+    icon="revenue"
+    [actionLabel]="'finance.refresh' | t"
+    actionIcon="refresh"
+    [actionDisabled]="loading()"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  />
+
+  <!-- 2. Errors / Alerts -->
+  @for (message of messages(); track $index) {
+    <div class="revenue-alert-banner" role="alert">
+      <svg
+        class="alert-icon"
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span>{{ message | t }}</span>
+    </div>
+  }
+
+  <!-- 3. Filter Controls Deck (Card Surface) -->
+  <div class="revenue-filter-card">
+    <div class="filter-card-header">
+      <div class="filter-title-cluster">
+        <svg
+          class="filter-header-icon"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+        <span class="filter-title">{{ 'finance.quickFilters' | t }}</span>
+      </div>
+    </div>
+
+    <form class="revenue-filters-grid" (submit)="$event.preventDefault(); load()">
+      <!-- من تاريخ -->
+      <label class="filter-field">
+        <span class="field-label-text">{{ 'finance.fromDate' | t }}</span>
+        <div class="input-with-icon">
+          <svg
+            class="input-lead-icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <input
+            id="revenue-from-date"
+            type="date"
+            class="form-input has-icon"
+            [formField]="filters.fromDate"
+            [attr.aria-label]="'finance.fromDate' | t"
+          />
+        </div>
+      </label>
+
+      <!-- إلى تاريخ -->
+      <label class="filter-field">
+        <span class="field-label-text">{{ 'finance.toDate' | t }}</span>
+        <div class="input-with-icon">
+          <svg
+            class="input-lead-icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <input
+            id="revenue-to-date"
+            type="date"
+            class="form-input has-icon"
+            [formField]="filters.toDate"
+            [attr.aria-label]="'finance.toDate' | t"
+          />
+        </div>
+      </label>
+
+      <!-- معرّف الطبيب (اختياري) -->
+      <label class="filter-field">
+        <span class="field-label-text">{{ 'finance.doctorId' | t }}</span>
+        <div class="input-with-icon">
+          <svg
+            class="input-lead-icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+          <input
+            id="revenue-doctor-id"
+            dir="ltr"
+            class="form-input has-icon"
+            [placeholder]="'finance.doctorId' | t"
+            [formField]="filters.doctorId"
+            [attr.aria-label]="'finance.doctorId' | t"
+          />
+        </div>
+      </label>
+
+      <!-- معرّف العيادة (اختياري) -->
+      <label class="filter-field">
+        <span class="field-label-text">{{ 'finance.practiceId' | t }}</span>
+        <div class="input-with-icon">
+          <svg
+            class="input-lead-icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+          </svg>
+          <input
+            id="revenue-practice-id"
+            dir="ltr"
+            class="form-input has-icon"
+            [placeholder]="'finance.practiceId' | t"
+            [formField]="filters.practiceId"
+            [attr.aria-label]="'finance.practiceId' | t"
+          />
+        </div>
+      </label>
+
+      <!-- Submit Button -->
+      <div class="filter-action-cell">
+        <button
+          type="submit"
+          class="btn-apply-filters"
+          [disabled]="loading()"
+          [attr.aria-label]="'finance.applyFilters' | t"
+        >
+          @if (loading()) {
+            <span class="spinner-icon" aria-hidden="true"></span>
+          } @else {
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          }
+          <span>{{ 'finance.applyFilters' | t }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 4. KPI Stat Cards (3-Card High Impact Deck) -->
   @if (data()?.summary; as summary) {
-    <section class="summary"><article><span>{{ 'finance.revenue.gross' | t }}</span><b>{{ summary.grossRevenue }} {{ summary.currencyCode }}</b></article><article><span>{{ 'finance.revenue.refunds' | t }}</span><b>{{ summary.totalRefunds }} {{ summary.currencyCode }}</b></article><article><span>{{ 'finance.revenue.net' | t }}</span><b>{{ summary.netRevenue }} {{ summary.currencyCode }}</b></article></section>
-    <section class="table-wrap"><table><thead><tr><th>{{ 'finance.doctor' | t }}</th><th>{{ 'finance.practice' | t }}</th><th>{{ 'finance.revenue.gross' | t }}</th><th>{{ 'finance.revenue.refunds' | t }}</th><th>{{ 'finance.revenue.net' | t }}</th></tr></thead><tbody>@for (row of data()?.byDoctorPractice || []; track row.doctorId + row.practiceId) {<tr><td>{{ label(row.doctorNameAr, row.doctorNameEn) }}</td><td>{{ label(row.practiceNameAr, row.practiceNameEn) }}</td><td>{{ row.grossRevenue }}</td><td>{{ row.refunds }}</td><td>{{ row.netRevenue }}</td></tr>} @empty {<tr><td colspan="5">{{ 'finance.empty' | t }}</td></tr>}</tbody></table></section>
-  } @else if (!loading()) {<p class="empty">{{ 'finance.empty' | t }}</p>}
-</main>
+    <div class="revenue-kpi-deck" [attr.aria-label]="'finance.revenue.summary' | t">
+      <!-- 1. Net Revenue (صافي الإيراد) -->
+      <article class="kpi-stat-card is-net">
+        <div class="kpi-card-header">
+          <div class="kpi-icon-bubble bubble-teal">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              <polyline points="17 6 23 6 23 12" />
+            </svg>
+          </div>
+          <span class="kpi-tag-badge badge-teal">{{ 'finance.revenue.net' | t }}</span>
+        </div>
+        <div class="kpi-card-body">
+          <div class="kpi-metric-row" dir="ltr">
+            <span class="kpi-currency">{{ summary.currencyCode }}</span>
+            <span class="kpi-number">{{ summary.netRevenue }}</span>
+          </div>
+          <p class="kpi-metric-subtext">{{ 'finance.netSubtitle' | t }}</p>
+        </div>
+      </article>
+
+      <!-- 2. Refunds (المبالغ المستردة) -->
+      <article class="kpi-stat-card is-refunds">
+        <div class="kpi-card-header">
+          <div class="kpi-icon-bubble bubble-rose">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+          </div>
+          <span class="kpi-tag-badge badge-rose">{{ 'finance.revenue.refunds' | t }}</span>
+        </div>
+        <div class="kpi-card-body">
+          <div class="kpi-metric-row is-negative" dir="ltr">
+            <span class="kpi-currency">{{ summary.currencyCode }}</span>
+            <span class="kpi-number">{{ summary.totalRefunds }}</span>
+          </div>
+          <p class="kpi-metric-subtext">
+            {{ summary.refundCount }} {{ 'finance.refunds' | t }}
+          </p>
+        </div>
+      </article>
+
+      <!-- 3. Gross Revenue (إجمالي الدخل) -->
+      <article class="kpi-stat-card is-gross">
+        <div class="kpi-card-header">
+          <div class="kpi-icon-bubble bubble-navy">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"
+              />
+              <path d="M16 8H8" />
+              <path d="M16 12H8" />
+              <path d="M13 16H8" />
+            </svg>
+          </div>
+          <span class="kpi-tag-badge badge-navy">{{ 'finance.revenue.gross' | t }}</span>
+        </div>
+        <div class="kpi-card-body">
+          <div class="kpi-metric-row" dir="ltr">
+            <span class="kpi-currency">{{ summary.currencyCode }}</span>
+            <span class="kpi-number">{{ summary.grossRevenue }}</span>
+          </div>
+          <p class="kpi-metric-subtext">
+            {{ summary.paymentCount }} {{ 'finance.payments' | t }}
+          </p>
+        </div>
+      </article>
+    </div>
+
+    <!-- 5. Table of Revenue by Doctor & Practice -->
+    <section class="revenue-table-card">
+      <header class="table-card-header">
+        <div class="table-title-cluster">
+          <svg
+            class="table-header-icon"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M3 3v18h18" />
+            <path d="m19 9-5 5-4-4-3 3" />
+          </svg>
+          <h2 class="table-card-title">{{ 'finance.revenue.byDoctorPractice' | t }}</h2>
+        </div>
+        <span class="table-count-badge">
+          {{ (data()?.byDoctorPractice || []).length }} {{ 'finance.totalCount' | t }}
+        </span>
+      </header>
+
+      <div class="table-responsive-container">
+        <table class="revenue-data-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'finance.doctor' | t }}</th>
+              <th scope="col">{{ 'finance.practice' | t }}</th>
+              <th scope="col" class="num-col">{{ 'finance.revenue.gross' | t }}</th>
+              <th scope="col" class="num-col">{{ 'finance.revenue.refunds' | t }}</th>
+              <th scope="col" class="num-col">{{ 'finance.revenue.net' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              row of data()?.byDoctorPractice || [];
+              track row.doctorId + row.practiceId
+            ) {
+              <tr class="revenue-data-row">
+                <td class="doctor-cell">
+                  <div class="cell-entity-cluster">
+                    <span class="doctor-avatar-circle" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                      </svg>
+                    </span>
+                    <span class="entity-name">{{
+                      label(row.doctorNameAr, row.doctorNameEn)
+                    }}</span>
+                  </div>
+                </td>
+                <td class="practice-cell">
+                  <div class="cell-entity-cluster">
+                    <span class="practice-avatar-circle" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                        />
+                      </svg>
+                    </span>
+                    <span class="entity-name">{{
+                      label(row.practiceNameAr, row.practiceNameEn)
+                    }}</span>
+                  </div>
+                </td>
+                <td class="num-col text-slate" dir="ltr">
+                  <span class="num-value">{{ row.grossRevenue }}</span>
+                  <span class="currency-sub">{{ summary.currencyCode }}</span>
+                </td>
+                <td class="num-col text-rose" dir="ltr">
+                  <span class="num-value">{{ row.refunds }}</span>
+                  <span class="currency-sub">{{ summary.currencyCode }}</span>
+                </td>
+                <td class="num-col text-teal font-bold" dir="ltr">
+                  <span class="num-value">{{ row.netRevenue }}</span>
+                  <span class="currency-sub">{{ summary.currencyCode }}</span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty-table-cell">
+                  <div class="table-empty-state">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="40"
+                      height="40"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      class="empty-icon"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                    <h3 class="empty-title">{{ 'finance.empty' | t }}</h3>
+                    <p class="empty-subtitle">{{ 'finance.emptySub' | t }}</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else if (!loading()) {
+    <div class="revenue-empty-card">
+      <svg
+        viewBox="0 0 24 24"
+        width="48"
+        height="48"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        class="empty-icon"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+      <h3 class="empty-title">{{ 'finance.empty' | t }}</h3>
+      <p class="empty-subtitle">{{ 'finance.emptySub' | t }}</p>
+    </div>
+  }
+</section>

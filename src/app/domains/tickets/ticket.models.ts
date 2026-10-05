@@ -27,6 +27,9 @@ export interface PracticeTicket {
   readonly doctor: TicketIdentity;
   readonly patient?: TicketIdentity;
   readonly reservationId?: string | null;
+  readonly medicalEncounterId?: string | null;
+  readonly medicalEncounterRowVersion?: string | null;
+  readonly followUpEligibilityId?: string | null;
   readonly businessDate: string;
   readonly segment?: TicketIdentity | null;
   readonly visitType?: TicketIdentity | null;
@@ -76,6 +79,8 @@ export interface CheckInSubmission extends CheckInTicketRequest {
 }
 
 export interface CreateWalkInTicketRequest {
+  readonly followUpEligibilityId?: string;
+  readonly followUpEligibilityRowVersion?: string;
   readonly patientId: string;
   readonly segmentId: string;
   readonly visitTypeId: string;
@@ -89,6 +94,11 @@ export interface TicketVersionRequest {
   readonly rowVersion: string;
 }
 
+export interface CompleteTicketRequest {
+  readonly ticketRowVersion: string;
+  readonly encounterRowVersion: string;
+}
+
 export interface TicketReasonRequest extends TicketVersionRequest {
   readonly reason: string;
 }
@@ -96,7 +106,7 @@ export interface TicketReasonRequest extends TicketVersionRequest {
 /** Server-owned valid Walk-In combinations; independent of reservation availability. */
 export interface WalkInVisitTypeOption {
   readonly visitTypeId: string;
-  readonly code: 'NewConsultation';
+  readonly code: 'NewConsultation' | 'FollowUp';
   readonly nameAr: string;
   readonly nameEn: string | null;
   readonly price: number;

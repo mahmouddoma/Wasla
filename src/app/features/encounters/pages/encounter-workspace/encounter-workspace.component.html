@@ -1,0 +1,497 @@
+<main class="clinical-shell" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'encounters.title' | t"
+    [description]="'encounters.subtitle' | t"
+    icon="doctors"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="store.loading()"
+    (actionClicked)="store.load()"
+  >
+    @if (store.doctor()) {
+      <div pageHeaderDeck class="filters">
+        <label
+          >{{ 'reservations.practice' | t
+          }}<select
+            [value]="store.practiceId()"
+            (change)="store.selectPractice(value($event))"
+            [disabled]="store.busy()"
+          >
+            <option value="">{{ 'reservations.choose' | t }}</option>
+            @for (practice of store.practices(); track practice.id) {
+              <option [value]="practice.id">{{ label(practice) }}</option>
+            }
+          </select></label
+        >
+        <label
+          >{{ 'reservations.search' | t }}<input type="search" (change)="filter('search', $event)"
+        /></label>
+        <label
+          >{{ 'reservations.patientId' | t
+          }}<input dir="ltr" (change)="filter('patientId', $event)"
+        /></label>
+        <label
+          >{{ 'reservations.status' | t
+          }}<select (change)="filter('status', $event)">
+            <option value="">{{ 'reservations.all' | t }}</option>
+            <option value="InProgress">{{ 'encounters.status.InProgress' | t }}</option>
+            <option value="Completed">{{ 'encounters.status.Completed' | t }}</option>
+          </select></label
+        >
+        <label
+          >{{ 'reservations.from' | t
+          }}<input type="date" dir="ltr" (change)="filter('fromDate', $event)"
+        /></label>
+        <label
+          >{{ 'reservations.to' | t
+          }}<input type="date" dir="ltr" (change)="filter('toDate', $event)"
+        /></label>
+      </div>
+    }
+  </app-page-header>
+  <section class="directory" [attr.aria-busy]="store.loading()">
+    @if (store.loading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (store.failed()) {
+      <div class="empty-state" role="alert">
+        <h2>{{ 'encounters.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="store.load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!store.page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medical prescription-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'encounters.empty' | t }}</h2>
+        <p>{{ 'encounters.emptyHelp' | t }}</p>
+        <button class="btn btn-primary" (click)="store.load()">{{ 'common.refresh' | t }}</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              'encounters.title' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">
+                {{ (store.doctor() ? 'reservations.patient' : 'reservations.doctor') | t }}
+              </th>
+              <th scope="col">{{ 'reservations.practice' | t }}</th>
+              <th scope="col">{{ 'encounters.date' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of store.page().items; track item.encounterId) {
+              <tr>
+                <td>{{ store.doctor() ? label(item.patient) : label(item.doctor) }}</td>
+                <td>{{ label(item.practice) }}</td>
+                <td dir="ltr">{{ item.completedOnUtc || item.startedOnUtc }}</td>
+                <td>{{ 'encounters.status.' + item.status | t }}</td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    [disabled]="!store.canReadDetails()"
+                    (click)="store.inspect(item.encounterId)"
+                  >
+                    {{ 'reservations.inspect' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pagination-row" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="page(-1)"
+          [disabled]="store.page().pageNumber <= 1"
+        >
+          {{ 'reservations.previous' | t }}
+        </button>
+        <span>{{ store.page().pageNumber }} · {{ store.page().totalCount }}</span>
+        <button
+          class="btn btn-outline-secondary"
+          (click)="page(1)"
+          [disabled]="store.page().pageNumber * store.page().pageSize >= store.page().totalCount"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  @for (message of store.messages(); track $index) {
+    <p role="alert">{{ message | t }}</p>
+  }
+  @if (store.detail() || store.patientDetail() || store.detailLoading()) {
+    <app-side-drawer
+      [opened]="true"
+      [busy]="store.busy()"
+      [title]="'encounters.details' | t"
+      width="640px"
+      (closed)="store.close()"
+    >
+      @if (store.detailLoading()) {
+        <p role="status">{{ 'reservations.loading' | t }}</p>
+      }
+      @if (store.detail(); as detail) {
+        <p>{{ label(detail.patient) }} · {{ label(detail.practice) }}</p>
+        <p>{{ 'encounters.status.' + detail.status | t }}</p>
+        <form (submit)="$event.preventDefault(); store.saveNotes(model().clinicalNotes)">
+          <label
+            >{{ 'encounters.clinicalNotes' | t
+            }}<textarea rows="7" [formField]="fields.clinicalNotes"></textarea>
+          </label>
+          @if (store.canEditNotes()) {
+            <button class="btn btn-primary" [disabled]="store.busy()">
+              {{ 'common.save' | t }}
+            </button>
+          }
+        </form>
+        <section class="detail-section">
+          <h3>{{ 'encounters.diagnoses' | t }}</h3>
+          @for (diagnosis of detail.diagnoses; track diagnosis.diagnosisId) {
+            @if (!diagnosis.isVoided) {
+              <div class="diagnosis-row">
+                <div>
+                  <b>{{ diagnosis.displayText }}</b>
+                  <p>{{ 'encounters.diagnosis.' + diagnosis.type | t }}</p>
+                  <p>{{ diagnosis.notes }}</p>
+                </div>
+                @if (store.canManageDiagnoses()) {
+                  <div class="actions">
+                    <button
+                      class="btn btn-outline-secondary"
+                      (click)="editDiagnosis(diagnosis)"
+                      [disabled]="store.busy()"
+                    >
+                      {{ 'common.edit' | t }}</button
+                    ><button
+                      class="btn btn-outline-danger"
+                      (click)="removeId.set(diagnosis.diagnosisId)"
+                      [disabled]="store.busy()"
+                    >
+                      {{ 'common.delete' | t }}
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          } @empty {
+            <p>{{ 'encounters.noDiagnosis' | t }}</p>
+          }
+          @if (removeId()) {
+            <div class="actions" role="alert">
+              <p>{{ 'encounters.removeConfirm' | t }}</p>
+              <button
+                class="btn btn-danger"
+                [disabled]="store.busy()"
+                (click)="store.removeDiagnosis(removeId())"
+              >
+                {{ 'common.delete' | t }}</button
+              ><button class="btn btn-outline-secondary" (click)="removeId.set('')">
+                {{ 'common.cancel' | t }}
+              </button>
+            </div>
+          }
+          @if (store.canManageDiagnoses()) {
+            <form (submit)="saveDiagnosis($event)">
+              <fieldset [disabled]="store.busy()">
+                <label
+                  >{{ 'encounters.diagnosisType' | t
+                  }}<select [formField]="fields.type">
+                    <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                    <option value="Secondary">{{ 'encounters.diagnosis.Secondary' | t }}</option>
+                  </select></label
+                >
+                <label
+                  >{{ 'encounters.diagnosisText' | t }}<input [formField]="fields.displayText"
+                /></label>
+                <label
+                  >{{ 'encounters.diagnosisNotes' | t
+                  }}<textarea rows="3" [formField]="fields.notes"></textarea>
+                </label>
+                <button class="btn btn-primary" [disabled]="!model().displayText.trim()">
+                  {{ 'common.save' | t }}
+                </button>
+              </fieldset>
+            </form>
+          }
+        </section>
+        @if (store.canComplete()) {
+          <button
+            class="btn btn-primary"
+            [disabled]="
+              store.busy() ||
+              !detail.clinicalNotes.trim() ||
+              model().clinicalNotes !== detail.clinicalNotes
+            "
+            (click)="store.complete()"
+          >
+            {{ 'encounters.complete' | t }}
+          </button>
+        }
+        @if (store.canCreateFollowUp()) {
+          <form
+            class="detail-section"
+            (submit)="$event.preventDefault(); store.createFollowUp(model().validUntil)"
+          >
+            <label
+              >{{ 'followUps.validUntil' | t
+              }}<input type="date" dir="ltr" [formField]="fields.validUntil" /></label
+            ><button class="btn btn-primary" [disabled]="store.busy() || !model().validUntil">
+              {{ 'encounters.createFollowUp' | t }}
+            </button>
+          </form>
+        }
+        @if (detail.followUpEligibility; as eligibility) {
+          <p>
+            {{ 'followUps.followUp' | t }} · {{ 'followUps.status.' + eligibility.status | t }} ·
+            <time dir="ltr">{{ eligibility.validUntil }}</time>
+          </p>
+        }
+        @if (detail.status === 'Completed') {
+          @if (store.canAmend()) {
+            <section class="detail-section amendment-card">
+              <div class="section-header-row">
+                <h3>{{ 'encounters.amendment' | t }}</h3>
+                @if (!showAmendmentForm()) {
+                  <button type="button" class="btn btn-outline-primary" (click)="startAmendment()">
+                    {{ 'encounters.createAmendment' | t }}
+                  </button>
+                }
+              </div>
+
+              @if (showAmendmentForm()) {
+                <form class="amendment-form" (submit)="$event.preventDefault(); submitAmendment()">
+                  <p class="amendment-help-text">
+                    {{ 'encounters.amendmentImmutableHelp' | t }}
+                  </p>
+
+                  <!-- 1. Mandatory Reason -->
+                  <label class="form-group">
+                    <span class="label-text">
+                      {{ 'encounters.amendmentReason' | t }}
+                      <span class="required-asterisk">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      [value]="amendmentReason()"
+                      (input)="amendmentReason.set(value($event))"
+                      [placeholder]="'encounters.amendmentReasonPlaceholder' | t"
+                      required
+                    />
+                  </label>
+
+                  <!-- 2. Amend Clinical Notes -->
+                  <div class="amend-notes-toggle">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        [checked]="amendNotes()"
+                        (change)="amendNotes.set(!amendNotes())"
+                      />
+                      <span>{{ 'encounters.amendClinicalNotes' | t }}</span>
+                    </label>
+                  </div>
+
+                  @if (amendNotes()) {
+                    <label class="form-group">
+                      <textarea
+                        rows="4"
+                        class="form-control"
+                        [value]="amendedNotes()"
+                        (input)="amendedNotes.set(value($event))"
+                      ></textarea>
+                    </label>
+                  }
+
+                  <!-- 3. Existing Diagnoses: Logical Void option -->
+                  @if (detail.diagnoses.length) {
+                    <div class="amend-diagnoses-void-list">
+                      <span class="sub-label">{{ 'encounters.diagnoses' | t }}</span>
+                      @for (diag of detail.diagnoses; track diag.diagnosisId) {
+                        <div
+                          class="void-diag-item"
+                          [class.voided]="stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)"
+                        >
+                          <span>
+                            <b>{{ diag.displayText }}</b>
+                            ({{ 'encounters.diagnosis.' + diag.type | t }})
+                          </span>
+                          <button
+                            type="button"
+                            class="btn btn-sm"
+                            [class.btn-outline-danger]="
+                              !stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                            "
+                            [class.btn-danger]="
+                              stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                            "
+                            (click)="toggleVoidDiagnosis(diag.diagnosisId)"
+                          >
+                            {{
+                              stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                ? ('common.cancel' | t)
+                                : ('encounters.amendVoidDiagnosis' | t)
+                            }}
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- 4. Add Corrected Diagnosis -->
+                  <div class="amend-add-diagnosis-box">
+                    <span class="sub-label">{{ 'encounters.amendAddDiagnosis' | t }}</span>
+                    <div class="add-diag-inputs">
+                      <select
+                        class="form-control"
+                        [value]="newDiagnosisType()"
+                        (change)="onNewDiagnosisTypeChange($event)"
+                      >
+                        <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                        <option value="Secondary">
+                          {{ 'encounters.diagnosis.Secondary' | t }}
+                        </option>
+                      </select>
+                      <input
+                        type="text"
+                        class="form-control"
+                        [value]="newDiagnosisText()"
+                        (input)="newDiagnosisText.set(value($event))"
+                        [placeholder]="'encounters.diagnosisText' | t"
+                      />
+                      <input
+                        type="text"
+                        class="form-control"
+                        [value]="newDiagnosisNotes()"
+                        (input)="newDiagnosisNotes.set(value($event))"
+                        [placeholder]="'encounters.diagnosisNotes' | t"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        [disabled]="!newDiagnosisText().trim()"
+                        (click)="stageAddDiagnosis()"
+                      >
+                        {{ 'common.add' | t }}
+                      </button>
+                    </div>
+
+                    @if (stagedDiagnosesToAdd().length) {
+                      <div class="staged-list">
+                        @for (diag of stagedDiagnosesToAdd(); track $index) {
+                          <div class="staged-item">
+                            <span
+                              >+ {{ diag.displayText }} ({{
+                                'encounters.diagnosis.' + diag.type | t
+                              }})</span
+                            >
+                            <button
+                              type="button"
+                              class="btn-remove-tiny"
+                              (click)="removeStagedAddDiagnosis($index)"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Staged Changes Summary -->
+                  <div class="staged-summary">
+                    <span class="summary-count">
+                      {{ 'encounters.amendmentChanges' | t }}: {{ stagedChanges().length }}
+                    </span>
+                    @if (stagedChanges().length === 0) {
+                      <span class="summary-warning">{{ 'encounters.noChangesSelected' | t }}</span>
+                    }
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="amendment-actions">
+                    <button
+                      type="submit"
+                      class="btn btn-primary"
+                      [disabled]="!canSubmitAmendment() || store.busy()"
+                    >
+                      {{ 'encounters.amendSubmit' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      [disabled]="store.busy()"
+                      (click)="cancelAmendment()"
+                    >
+                      {{ 'common.cancel' | t }}
+                    </button>
+                  </div>
+                </form>
+              }
+            </section>
+          }
+
+          <section class="detail-section">
+            <h3>{{ 'encounters.history' | t }}</h3>
+            <button class="btn btn-outline-secondary" (click)="store.loadHistory()">
+              {{ 'encounters.history' | t }}
+            </button>
+            @for (amendment of store.history(); track amendment.sequence) {
+              <article class="detail-section">
+                <b>{{ amendment.sequence }} · {{ amendment.reason }}</b>
+                <p>
+                  {{ amendment.author }} · <time dir="ltr">{{ amendment.createdOnUtc }}</time>
+                </p>
+                @for (change of amendment.changes; track $index) {
+                  <dl>
+                    <dt>{{ 'encounters.before' | t }}</dt>
+                    <dd>{{ snapshot(change.before) }}</dd>
+                    <dt>{{ 'encounters.after' | t }}</dt>
+                    <dd>{{ snapshot(change.after) }}</dd>
+                  </dl>
+                }
+              </article>
+            }
+          </section>
+        }
+      }
+      @if (store.patientDetail(); as detail) {
+        <p>{{ label(detail.doctor) }} · {{ label(detail.practice) }}</p>
+        <time dir="ltr">{{ detail.completedOnUtc }}</time>
+        <section class="detail-section">
+          <h3>{{ 'encounters.diagnoses' | t }}</h3>
+          @for (diagnosis of detail.diagnoses; track diagnosis.diagnosisId) {
+            @if (!diagnosis.isVoided) {
+              <p>
+                <b>{{ diagnosis.displayText }}</b> ·
+                {{ 'encounters.diagnosis.' + diagnosis.type | t }}
+              </p>
+            }
+          }
+        </section>
+        @if (detail.followUpEligibility; as eligibility) {
+          <p>
+            {{ 'followUps.followUp' | t }} · {{ 'followUps.status.' + eligibility.status | t }} ·
+            <time dir="ltr">{{ eligibility.validUntil }}</time>
+          </p>
+        }
+      }
+      @for (message of store.messages(); track $index) {
+        <p role="alert">{{ message | t }}</p>
+      }
+    </app-side-drawer>
+  }
+</main>

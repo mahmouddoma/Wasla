@@ -42,4 +42,12 @@ describe('PatientTickets', () => {
   it('renders the privacy-safe dynamic queue notice', () => {
     expect(fixture.nativeElement.textContent).toContain('يتغير لحظيًا');
   });
+
+  it('renders empty state when no active tickets exist', async () => {
+    api.myActive.mockReturnValueOnce(of([]));
+    const emptyFixture = TestBed.createComponent(PatientTickets);
+    await emptyFixture.whenStable();
+    emptyFixture.detectChanges();
+    expect(emptyFixture.nativeElement.textContent).toContain('لا توجد تذاكر نشطة');
+  });
 });

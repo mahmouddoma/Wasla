@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { FollowUpBookingContext } from '../follow-ups';
 import {
   WalkInOptions,
   CheckInTicketRequest,
@@ -11,6 +12,7 @@ import {
   PracticeTicket,
   TicketReasonRequest,
   TicketVersionRequest,
+  CompleteTicketRequest,
 } from './ticket.models';
 
 @Injectable({ providedIn: 'root' })
@@ -56,9 +58,10 @@ export class TicketsApi {
     );
   }
 
-  walkInOptions(practiceId: string): Observable<WalkInOptions> {
+  walkInOptions(practiceId: string, context: FollowUpBookingContext = {}): Observable<WalkInOptions> {
     return this.http.get<WalkInOptions>(
       `${this.root}/reception/practices/${this.id(practiceId)}/walk-in/options`,
+      { params: { ...context } },
     );
   }
 
@@ -126,7 +129,7 @@ export class TicketsApi {
   complete(
     practiceId: string,
     ticketId: string,
-    body: TicketVersionRequest,
+    body: CompleteTicketRequest,
     intentKey: string,
   ): Observable<PracticeTicket> {
     return this.mutate(practiceId, ticketId, 'complete', body, intentKey);
@@ -157,7 +160,7 @@ export class TicketsApi {
     practiceId: string,
     ticketId: string,
     action: string,
-    body: TicketVersionRequest | TicketReasonRequest,
+    body: TicketVersionRequest | TicketReasonRequest | CompleteTicketRequest,
     intentKey: string,
   ): Observable<PracticeTicket> {
     return this.http.post<PracticeTicket>(

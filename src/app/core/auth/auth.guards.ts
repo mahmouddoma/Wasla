@@ -1,7 +1,12 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 import { AuthSession } from './auth-session';
 import { PERMISSIONS } from './permissions';
+
+export const anonymousOnlyMatchGuard: CanMatchFn = () => {
+  const session = inject(AuthSession);
+  return !session.isAuthenticated();
+};
 
 export const authenticatedGuard: CanActivateFn = () => {
   const session = inject(AuthSession);

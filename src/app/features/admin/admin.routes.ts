@@ -7,8 +7,17 @@ export const ADMIN_ROUTES: Routes = [
     path: 'revenue',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.platformRevenueViewAggregates },
-    loadComponent: () => import('./revenue-dashboard/revenue-dashboard').then((m) => m.RevenueDashboard),
+    loadComponent: () =>
+      import('./revenue-dashboard/revenue-dashboard').then((m) => m.RevenueDashboard),
     title: 'finance.revenue.title',
+  },
+  {
+    path: 'reservations',
+    canActivate: [permissionGuard],
+    data: { actor: 'Admin', permission: 'Reservations.ViewAdministrative' },
+    loadChildren: () =>
+      import('../reservations/reservations.routes').then((m) => m.RESERVATION_ROUTES),
+    title: 'reservations.title',
   },
   {
     path: 'family-relationship-requests/:requestId',

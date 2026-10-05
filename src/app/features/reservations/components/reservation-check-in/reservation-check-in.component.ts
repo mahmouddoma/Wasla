@@ -27,9 +27,8 @@ export class ReservationCheckInComponent {
     reason: '',
   });
   protected readonly checkInForm = form(this.model, (path) => {
-    required(path.paidAmount, { message: 'tickets.validation.paymentRequired' });
     required(path.paymentMethod, { message: 'finance.validation.methodRequired' });
-    min(path.paidAmount, 0.01, { message: 'tickets.validation.paymentPositive' });
+    min(path.paidAmount, 0, { message: 'tickets.validation.paymentNonnegative' });
     validate(path.paidAmount, ({ value }) => {
       const expectedPrice = this.expectedPrice();
       return expectedPrice === undefined || value() === expectedPrice

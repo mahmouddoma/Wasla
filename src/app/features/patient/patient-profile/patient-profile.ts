@@ -20,12 +20,13 @@ import {
   PatientContact,
   PatientProfile as PatientProfileModel,
   PatientRelationshipType,
+  PatientsApi,
 } from '../../../domains/patients';
-import { PatientsApi } from '../../../domains/patients';
+import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-patient-profile',
-  imports: [FormField, TranslatePipe],
+  imports: [FormField, TranslatePipe, PageHeader],
   templateUrl: './patient-profile.html',
   styleUrl: './patient-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

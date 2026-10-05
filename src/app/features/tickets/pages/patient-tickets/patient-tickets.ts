@@ -8,15 +8,17 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PracticeTicket, TicketsApi } from '../../../../domains/tickets';
 
 @Component({
   selector: 'app-patient-tickets',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, PageHeader, RouterLink],
   templateUrl: './patient-tickets.html',
   styleUrl: './patient-tickets.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -82,6 +84,20 @@ export class PatientTickets implements OnInit {
 
   protected statusKey(status: string): string {
     return `tickets.status.${status}`;
+  }
+
+  protected statusClass(status: string): string {
+    const lower = (status || '').toLowerCase();
+    if (lower.includes('progress') || lower.includes('called') || lower.includes('active')) {
+      return 'status-active';
+    }
+    if (lower.includes('complete') || lower.includes('done')) {
+      return 'status-completed';
+    }
+    if (lower.includes('cancel') || lower.includes('noshow')) {
+      return 'status-cancelled';
+    }
+    return 'status-waiting';
   }
 
   private failure(error: unknown): void {
