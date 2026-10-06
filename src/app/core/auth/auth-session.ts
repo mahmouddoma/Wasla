@@ -45,6 +45,12 @@ export class AuthSession {
     return this.user()?.permissions.includes(permission) ?? false;
   }
   destinationFor(user: CurrentUser): string {
+    if (user.userType === 'DrugCatalogManager') {
+      if (user.permissions.includes('DrugCatalog.View')) return '/drug-catalog';
+      if (user.permissions.some(p => ['DrugCatalog.Import', 'DrugCatalog.ImportHistory'].includes(p))) return '/drug-catalog/imports';
+      if (user.permissions.includes('DrugCatalogRequests.View')) return '/drug-catalog-requests';
+      return '/workspace/drug-catalog-manager';
+    }
     if (user.userType === 'SuperAdmin') {
       if (user.permissions.includes(PERMISSIONS.doctorsViewAll)) return '/admin/doctors';
       if (user.permissions.includes(PERMISSIONS.superAdminsViewAll)) return '/admin/superadmins';
@@ -60,6 +66,7 @@ export class AuthSession {
       if (user.permissions.includes(PERMISSIONS.familyRelationshipRequestsViewAll)) {
         return '/admin/family-relationship-requests';
       }
+      if (user.permissions.includes('DrugCatalogManagers.ViewAll')) return '/admin/drug-catalog-managers';
     }
     if (user.userType === 'Doctor' && !this.hasDoctorOperationalAccess(user)) {
       return '/doctor/onboarding';
@@ -70,6 +77,7 @@ export class AuthSession {
         Doctor: '/workspace/doctor',
         Reception: '/workspace/reception',
         Patient: '/workspace/patient',
+        DrugCatalogManager: '/workspace/drug-catalog-manager',
       } as const
     )[user.userType];
   }

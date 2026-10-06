@@ -1,5 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import {
   DoctorPracticeSchedule,
@@ -64,7 +64,9 @@ describe('PracticeSchedule', () => {
         selects[part].value = selection;
         selects[part].dispatchEvent(new Event('change', { bubbles: true }));
       }
-      pickers[index].querySelectorAll<HTMLButtonElement>('.toggle-pill')[numericHour >= 12 ? 0 : 1].click();
+      pickers[index]
+        .querySelectorAll<HTMLButtonElement>('.toggle-pill')
+        [numericHour >= 12 ? 0 : 1].click();
     }
     if (!end) {
       const duration = element.querySelector<HTMLInputElement>('input[type="number"]')!;
@@ -174,9 +176,12 @@ describe('PracticeSchedule', () => {
     await fixture.whenStable();
     expect(element.querySelectorAll('[role="dialog"]').length).toBe(1);
     expect(element.querySelector('input[type="time"]')).toBeNull();
-    element.querySelector('.schedule-dialog')!.dispatchEvent(new KeyboardEvent('keydown', {
-      key: 'Escape', bubbles: true,
-    }));
+    element.querySelector('.schedule-dialog')!.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+      }),
+    );
     await fixture.whenStable();
     expect(element.querySelector('[role="dialog"]')).toBeNull();
   });
@@ -219,5 +224,28 @@ describe('PracticeSchedule', () => {
     element.querySelectorAll<HTMLButtonElement>('.preset-chip')[2].click();
     await fixture.whenStable();
     expect(values()).toEqual(['9', '00', '2', '00']);
+  });
+
+  afterEach(() => localStorage.removeItem('wasla_lang'));
+  it('holds the mutation lock until both schedule views finish refreshing', async () => {
+    const component = fixture.componentInstance;
+    const reload = new Subject<DoctorPracticeSchedule>();
+    api.schedule.mockReturnValueOnce(reload);
+    component['openAddPeriodModal']();
+    const saving = component['savePeriod'](new Event('submit'));
+    await vi.waitFor(() => expect(api.schedule).toHaveBeenCalledTimes(2));
+    expect(component['activeAction']()).toBe('period');
+    await component['savePeriod'](new Event('submit'));
+    expect(api.addPeriod).toHaveBeenCalledTimes(1);
+    reload.next(records);
+    await saving;
+    expect(component['activeAction']()).toBeNull();
+    expect(toast.success).toHaveBeenCalledTimes(1);
+  });
+  it('does not mutate a read-only schedule even when its handler is invoked', async () => {
+    fixture.componentRef.setInput('canManage', false);
+    fixture.componentInstance['openAddPeriodModal']();
+    await fixture.componentInstance['savePeriod'](new Event('submit'));
+    expect(api.addPeriod).not.toHaveBeenCalled();
   });
 });

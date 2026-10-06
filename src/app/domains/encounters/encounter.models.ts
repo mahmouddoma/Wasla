@@ -1,3 +1,4 @@
+import type { PrescriptionState } from '../prescriptions';
 export interface ClinicalIdentity {
   readonly id: string;
   readonly nameAr: string;
@@ -40,6 +41,7 @@ export interface PatientEncounterDetails {
   } | null;
 }
 export interface EncounterDetails extends EncounterSummary {
+  readonly prescription?: EncounterPrescription | null;
   readonly clinicalNotes: string;
   readonly diagnoses: readonly Diagnosis[];
   readonly followUpEligibility?: {
@@ -53,8 +55,13 @@ export interface EncounterDetails extends EncounterSummary {
     readonly canComplete: boolean;
     readonly canAmend: boolean;
     readonly canCreateFollowUpEligibility: boolean;
+    readonly canManagePrescription?: boolean;
+    readonly canRequestNewMedication?: boolean;
   };
 }
+
+/** Independent prescription root concurrency; never substitute the encounter token. */
+export type EncounterPrescription = PrescriptionState;
 export interface EncounterQuery {
   patientId?: string;
   status?: EncounterStatus;

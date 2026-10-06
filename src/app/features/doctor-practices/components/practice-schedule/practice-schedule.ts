@@ -197,7 +197,8 @@ export class PracticeSchedule implements OnInit {
 
   protected async loadEffective(): Promise<void> {
     if (!this.effectiveDate()) return;
-    this.activeAction.set('effective');
+    const ownsAction = this.activeAction() === null;
+    if (ownsAction) this.activeAction.set('effective');
     try {
       this.effectivePeriods.set(
         await firstValueFrom(this.api.effectiveSchedule(this.practiceId(), this.effectiveDate())),
@@ -205,7 +206,7 @@ export class PracticeSchedule implements OnInit {
     } catch (error) {
       this.messages.set(flattenErrors(error));
     } finally {
-      this.activeAction.set(null);
+      if (ownsAction) this.activeAction.set(null);
     }
   }
 
@@ -346,7 +347,7 @@ export class PracticeSchedule implements OnInit {
 
   protected async savePeriod(event: Event): Promise<void> {
     event.preventDefault();
-    if (this.activeAction()) return;
+    if (!this.canManage() || this.activeAction()) return;
     this.periodFeedback.set(null);
     if (this.periodForm().invalid()) {
       await submit(this.periodForm, async () => {});
@@ -394,7 +395,8 @@ export class PracticeSchedule implements OnInit {
   }
 
   protected async deletePeriod(period: DoctorPracticeSchedulePeriod): Promise<void> {
-    if (this.activeAction() || !window.confirm(this.language.t('ui.full.419'))) return;
+    if (!this.canManage() || this.activeAction() || !window.confirm(this.language.t('ui.full.419')))
+      return;
     this.activeAction.set(`period-${period.id}`);
     this.messages.set([]);
     this.reservationImpact.set(null);
@@ -413,7 +415,7 @@ export class PracticeSchedule implements OnInit {
 
   protected async saveException(event: Event): Promise<void> {
     event.preventDefault();
-    if (this.activeAction()) return;
+    if (!this.canManage() || this.activeAction()) return;
     if (this.exceptionForm().invalid()) {
       await submit(this.exceptionForm, async () => {});
       const message = this.language.t('schedule.invalidException');
@@ -459,7 +461,8 @@ export class PracticeSchedule implements OnInit {
   }
 
   protected async deleteException(exception: DoctorPracticeScheduleException): Promise<void> {
-    if (this.activeAction() || !window.confirm(this.language.t('ui.full.423'))) return;
+    if (!this.canManage() || this.activeAction() || !window.confirm(this.language.t('ui.full.423')))
+      return;
     this.activeAction.set(`exception-${exception.id}`);
     this.messages.set([]);
     this.reservationImpact.set(null);

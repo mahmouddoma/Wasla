@@ -21,7 +21,7 @@ describe('Encounter workspace UI', () => {
           provide: ActivatedRoute,
           useValue: { snapshot: { data: { actor: 'Doctor' }, queryParamMap: { get: () => null } } },
         },
-        { provide: AuthSession, useValue: { hasPermission: () => true } },
+        { provide: AuthSession, useValue: { user: () => ({ userType: 'Doctor' }), hasPermission: () => true } },
         { provide: DoctorPracticesApi, useValue: { list: () => of([]) } },
         { provide: EncountersApi, useValue: { list: () => of({ items: [], totalCount: 0 }) } },
       ],
@@ -75,14 +75,13 @@ describe('Encounter workspace UI', () => {
     fixture.componentInstance.store.detail.set({
       ...encounterFixture,
       status: 'Completed',
+      capabilities: { ...encounterFixture.capabilities, canAmend: true },
       diagnoses: [
         {
-          id: 'diag-1',
+          diagnosisId: 'diag-1',
           type: 'Primary',
           displayText: 'Old Diagnosis',
           notes: 'Old Notes',
-          recordedAtUtc: '2026-10-01T10:00:00Z',
-          recordedByName: 'Dr. Ahmed',
         },
       ],
     });
@@ -91,10 +90,10 @@ describe('Encounter workspace UI', () => {
 
     const createAmendmentSpy = vi
       .spyOn(fixture.componentInstance.store, 'createAmendment')
-      .mockResolvedValue(true);
+      .mockResolvedValue(undefined);
 
     // Initial state: drawer open, Completed encounter, canAmend is true
-    expect(fixture.nativeElement.querySelector('[data-test="btn-start-amendment"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain(TestBed.inject(LanguageService).t('encounters.createAmendment'));
 
     // Start amendment
     fixture.componentInstance.startAmendment();
@@ -130,13 +129,16 @@ describe('Encounter workspace UI', () => {
     expect(createAmendmentSpy).toHaveBeenCalledWith(
       'Clinical update and correction',
       expect.arrayContaining([
-        { changeType: 'ClinicalNotes', notes: 'Amended clinical observation notes' },
+        { type: 'ClinicalNotes', clinicalNotes: 'Amended clinical observation notes' },
         {
-          changeType: 'Diagnosis',
+          type: 'Diagnosis',
           action: 'Add',
-          diagnosis: { type: 'Secondary', displayText: 'Staged New Diagnosis', notes: '' },
+          diagnosisType: 'Secondary',
+          displayText: 'Staged New Diagnosis',
+          notes: null,
+          diagnosis: { type: 'Secondary', displayText: 'Staged New Diagnosis', notes: null },
         },
-        { changeType: 'Diagnosis', action: 'Remove', diagnosisId: 'diag-1' },
+        { type: 'Diagnosis', action: 'Remove', diagnosisId: 'diag-1' },
       ]),
     );
 

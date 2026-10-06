@@ -2,6 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { parseApiErrors } from './api-errors';
 
 describe('parseApiErrors', () => {
+  it('preserves every prescription item blocker sharing the same field', () => {
+    const result = parseApiErrors(new HttpErrorResponse({ status: 422, error: {
+      errors: { 'items[0].dose': ['First item dose required'], 'items[1].dose': ['Second item dose required'] },
+    } }));
+    expect(result.fields['dose']).toEqual(['First item dose required', 'Second item dose required']);
+  });
   it('reads ASP.NET validation dictionaries without throwing', () => {
     const result = parseApiErrors(
       new HttpErrorResponse({

@@ -1,0 +1,264 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'imports.title' | t"
+    [description]="'imports.subtitle' | t"
+    icon="specializations"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  />
+  @if (allowed('Import')) {
+    <form class="detail-form directory p-4" (submit)="$event.preventDefault(); preview()">
+      <label class="full"
+        >{{ 'imports.file' | t
+        }}<input
+          class="field-input"
+          type="file"
+          accept=".json,application/json"
+          (change)="chooseFile($event)"
+          [disabled]="busy()"
+      /></label>
+      <label
+        >{{ 'imports.sourceVersion' | t
+        }}<input
+          class="field-input"
+          [value]="sourceVersion()"
+          (input)="sourceVersion.set(value($event))"
+          [disabled]="busy()"
+      /></label>
+      <label
+        >{{ 'imports.sourceCommitSha' | t
+        }}<input
+          class="field-input ltr-text"
+          dir="ltr"
+          [value]="sourceCommitSha()"
+          (input)="sourceCommitSha.set(value($event))"
+          [disabled]="busy()"
+      /></label>
+      <p class="full">{{ 'imports.previewHelp' | t }}</p>
+      <div class="actions full">
+        <button class="btn btn-primary" [disabled]="busy() || !file()">
+          {{ 'imports.preview' | t }}
+        </button>
+      </div>
+    </form>
+  }
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+  }
+  <section class="directory">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'medications.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medicine-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'imports.empty' | t }}</h2>
+        <p>{{ 'imports.previewHelp' | t }}</p>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.refresh' | t }}</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              'imports.title' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'medications.source' | t }}</th>
+              <th scope="col">{{ 'imports.sourceVersion' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'encounters.date' | t }}</th>
+              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (batch of page().items; track batch.batchId) {
+              <tr>
+                <td>{{ batch.source || '—' }}</td>
+                <td>{{ batch.sourceVersion || '—' }}</td>
+                <td>{{ 'imports.status.' + batch.status | t }}</td>
+                <td dir="ltr">{{ batch.createdOnUtc | localizedDate: language.currentLang() }}</td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    [disabled]="busy()"
+                    (click)="inspect(batch.batchId)"
+                  >
+                    {{ 'reservations.inspect' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="busy() || page().pageNumber <= 1"
+          (click)="load(page().pageNumber - 1)"
+        >
+          {{ 'reservations.previous' | t }}</button
+        ><span>{{ page().pageNumber }} · {{ page().totalCount }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
+          (click)="load(page().pageNumber + 1)"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="'imports.details' | t"
+    width="640px"
+    (closed)="close()"
+  >
+    @if (busy()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+    @if (detail(); as batch) {
+      <p>{{ 'imports.status.' + batch.status | t }}</p>
+      <dl>
+        <dt>{{ 'medications.source' | t }}</dt>
+        <dd>{{ batch.source || '—' }}</dd>
+        <dt>{{ 'imports.sourceVersion' | t }}</dt>
+        <dd>{{ batch.sourceVersion || '—' }}</dd>
+        <dt>{{ 'imports.sourceCommitSha' | t }}</dt>
+        <dd dir="ltr">{{ batch.sourceCommitSha || '—' }}</dd>
+        <dt>{{ 'imports.fileSha256' | t }}</dt>
+        <dd dir="ltr">{{ batch.fileSha256 }}</dd>
+        <dt>{{ 'encounters.date' | t }}</dt>
+        <dd dir="ltr">{{ batch.createdOnUtc | localizedDate: language.currentLang() }}</dd>
+        @if (batch.appliedOnUtc) {
+          <dt>{{ 'imports.appliedAt' | t }}</dt>
+          <dd dir="ltr">{{ batch.appliedOnUtc | localizedDate: language.currentLang() }}</dd>
+        }
+      </dl>
+      <h3>{{ 'imports.counts' | t }}</h3>
+      <dl>
+        @for (count of counts(batch); track count[0]) {
+          <dt>{{ 'imports.change.' + count[0] | t }}</dt>
+          <dd>{{ count[1] }}</dd>
+        }
+      </dl>
+      @if (batch.status === 'Staged' && allowed('Import')) {
+        <button class="btn btn-primary" [disabled]="busy()" (click)="confirmation.set(true)">
+          {{ 'imports.apply' | t }}
+        </button>
+      }
+      @if (confirmation()) {
+        <section class="section">
+          <p>{{ 'imports.applyConfirm' | t }}</p>
+          <div class="actions">
+            <button class="btn btn-primary" [disabled]="busy()" (click)="apply()">
+              {{ 'medications.confirm' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="confirmation.set(false)"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+          </div>
+        </section>
+      }
+      @if (allowed('ImportHistory')) {
+        <section class="section">
+          <h3>{{ 'imports.changes' | t }}</h3>
+          <label
+            >{{ 'imports.changeType' | t
+            }}<span class="select-control"
+              ><select
+                class="field-input"
+                [value]="changeType() || ''"
+                (change)="filter($event)"
+                [disabled]="busy()"
+              >
+                <option value="">{{ 'reservations.all' | t }}</option>
+                @for (type of changeTypes; track type) {
+                  <option [value]="type">{{ 'imports.change.' + type | t }}</option>
+                }</select
+              ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+          ></label>
+          @if (changesLoading()) {
+            <p role="status">{{ 'reservations.loading' | t }}</p>
+          }
+          <ul class="history">
+            @for (change of changes().items; track change.recordId) {
+              <li>
+                <strong>{{ 'imports.change.' + change.changeType | t }}</strong>
+                <dl>
+                  @for (field of sourceFields(change.sourceRow); track field.label) {
+                    <dt>{{ field.label | t }}</dt>
+                    <dd>{{ field.value }}</dd>
+                  }
+                </dl>
+                <details>
+                  <summary>{{ 'imports.originalSource' | t }}</summary>
+                  <pre>{{ change.sourceRow | json }}</pre>
+                </details>
+                @if (change.drugCatalogId) {
+                  <p>
+                    @if (allowed('View')) {
+                      <a
+                        routerLink="/drug-catalog"
+                        [queryParams]="{ drugId: change.drugCatalogId }"
+                        >{{ 'imports.matchedMedication' | t }}</a
+                      >
+                    } @else {
+                      {{ 'imports.matchedMedication' | t }}
+                    }
+                  </p>
+                }
+              </li>
+            } @empty {
+              <li>{{ 'imports.noChanges' | t }}</li>
+            }
+          </ul>
+          <nav class="actions" [attr.aria-label]="'reservations.pagination' | t">
+            <button
+              class="btn btn-outline-secondary"
+              [disabled]="busy() || changesLoading() || changes().pageNumber <= 1"
+              (click)="loadChanges(changes().pageNumber - 1)"
+            >
+              {{ 'reservations.previous' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              [disabled]="
+                busy() ||
+                changesLoading() ||
+                changes().pageNumber * changes().pageSize >= changes().totalCount
+              "
+              (click)="loadChanges(changes().pageNumber + 1)"
+            >
+              {{ 'reservations.next' | t }}
+            </button>
+          </nav>
+        </section>
+      }
+    }
+  </app-side-drawer>
+</main>

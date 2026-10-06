@@ -1,3 +1,4 @@
+import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,10 +22,11 @@ import {
   EncounterQuery,
 } from '../../../../domains/encounters';
 import { EncounterWorkspaceStore } from '../../state/encounter-workspace.store';
+import { PrescriptionWorkspaceComponent } from '../../../prescriptions';
 
 @Component({
   selector: 'app-encounter-workspace',
-  imports: [TranslatePipe, PageHeader, FormField, SideDrawer],
+  imports: [LocalizedDatePipe, TranslatePipe, PageHeader, FormField, SideDrawer, PrescriptionWorkspaceComponent],
   providers: [EncounterWorkspaceStore],
   templateUrl: './encounter-workspace.component.html',
   styleUrl: './encounter-workspace.component.css',

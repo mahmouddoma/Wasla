@@ -1,0 +1,324 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'requests.title' | t"
+    [description]="'requests.subtitle' | t"
+    icon="requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  >
+    <div pageHeaderActions>
+      @if (!manager && allowed('CreateOwn')) {
+        <button class="btn btn-primary" [disabled]="busy()" (click)="create()">
+          {{ 'requests.add' | t }}
+        </button>
+      }
+    </div>
+    <div pageHeaderDeck class="toolbar">
+      <label
+        >{{ 'reservations.status' | t
+        }}<span class="select-control"
+          ><select class="field-input" (change)="filter('status', $event)" [disabled]="busy()">
+            <option value="">{{ 'reservations.all' | t }}</option>
+            @for (status of statuses; track status) {
+              <option [value]="status">{{ 'requests.status.' + status | t }}</option>
+            }</select
+          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+      ></label>
+      @if (manager) {
+        <label
+          >{{ 'reservations.search' | t
+          }}<input
+            class="field-input"
+            type="search"
+            (change)="filter('search', $event)"
+            [disabled]="busy()" /></label
+        ><label
+          >{{ 'requests.doctorId' | t
+          }}<input
+            class="field-input ltr-text"
+            dir="ltr"
+            (change)="filter('doctorId', $event)"
+            [disabled]="busy()"
+        /></label>
+      }</div
+  ></app-page-header>
+  <section class="directory" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'medications.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medicine-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'requests.empty' | t }}</h2>
+        <p>{{ 'requests.subtitle' | t }}</p>
+        <button
+          class="btn btn-primary"
+          (click)="query.set({ pageNumber: 1, pageSize: 20 }); load()"
+        >
+          {{ 'medications.resetSearch' | t }}
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              'requests.title' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'requests.medicationName' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of page().items; track item.requestId) {
+              <tr>
+                <td>{{ item.medicationName }}</td>
+                <td>
+                  <span class="status-badge">{{ 'requests.status.' + item.status | t }}</span>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    [disabled]="busy()"
+                    (click)="inspect(item.requestId)"
+                  >
+                    {{ 'reservations.inspect' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="busy() || page().pageNumber <= 1"
+          (click)="load(page().pageNumber - 1)"
+        >
+          {{ 'reservations.previous' | t }}</button
+        ><span>{{ page().pageNumber }} · {{ page().totalCount }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
+          (click)="load(page().pageNumber + 1)"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+  }
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="'requests.title' | t"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+    @if (editing()) {
+      <form class="detail-form" [formGroup]="form" (ngSubmit)="save()">
+        <fieldset class="full detail-form" [disabled]="busy()">
+          @for (field of fields; track field) {
+            <label
+              >{{ 'requests.' + field | t
+              }}<input
+                class="field-input"
+                [formControlName]="field"
+                [required]="field === 'medicationName'"
+            /></label>
+          }
+        </fieldset>
+        <div class="actions full">
+          <button class="btn btn-primary" [disabled]="busy()">{{ 'common.save' | t }}</button
+          ><button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="busy()"
+            (click)="editing.set(false)"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </form>
+    } @else if (detail(); as item) {
+      <h2>{{ item.medicationName }}</h2>
+      <p>{{ 'requests.status.' + item.status | t }}</p>
+      <dl>
+        @for (field of fields; track field) {
+          <dt>{{ 'requests.' + field | t }}</dt>
+          <dd>{{ item[field] || '—' }}</dd>
+        }
+      </dl>
+      @if (item.approvedDrug || item.duplicateDrug; as drug) {
+        <p>
+          {{ 'requests.canonical' | t }}:
+          {{
+            language.currentLang() === 'ar'
+              ? drug.commercialNameAr || drug.commercialNameEn
+              : drug.commercialNameEn
+          }}
+        </p>
+      }
+      <div class="actions">
+        @if (canEdit()) {
+          <button class="btn btn-primary" [disabled]="busy()" (click)="edit()">
+            {{ 'medications.edit' | t }}
+          </button>
+        }
+        @if (canReview()) {
+          <button class="btn btn-primary" [disabled]="busy()" (click)="prepareReview('approve')">
+            {{ 'requests.approve' | t }}</button
+          ><button
+            class="btn btn-outline-secondary"
+            [disabled]="busy()"
+            (click)="prepareReview('request-more-info')"
+          >
+            {{ 'requests.moreInfo' | t }}</button
+          ><button class="btn btn-danger" [disabled]="busy()" (click)="prepareReview('reject')">
+            {{ 'requests.reject' | t }}
+          </button>
+        }
+      </div>
+      @if (review(); as action) {
+        <section class="section">
+          @if (action === 'approve') {
+            <div class="detail-form" [formGroup]="approved">
+              @for (field of approvalFields; track field) {
+                <label
+                  >{{ 'medications.' + field | t
+                  }}<input class="field-input" [formControlName]="field" [readonly]="busy()"
+                /></label>
+              }
+              <label
+                >{{ 'medications.priceEgp' | t
+                }}<input
+                  class="field-input ltr-text"
+                  type="number"
+                  min="0"
+                  dir="ltr"
+                  formControlName="priceEgp"
+                  [readonly]="busy()"
+              /></label>
+            </div>
+          }
+          <label
+            >{{ 'medications.reason' | t
+            }}<input
+              class="field-input"
+              [value]="reason()"
+              (input)="reason.set(value($event))"
+              [disabled]="busy()"
+              required
+          /></label>
+          @if (action === 'reject') {
+            <label
+              >{{ 'requests.duplicateSearch' | t
+              }}<input
+                class="field-input"
+                type="search"
+                [value]="matchSearch()"
+                (change)="matchSearch.set(value($event)); searchMatches()"
+                [disabled]="busy()"
+            /></label>
+            <ul class="history">
+              @for (drug of matches(); track drug.drugCatalogId) {
+                <li>
+                  <button
+                    class="btn btn-outline-secondary"
+                    [attr.aria-pressed]="duplicate()?.drugCatalogId === drug.drugCatalogId"
+                    [disabled]="busy()"
+                    (click)="chooseDuplicate(drug)"
+                  >
+                    {{ drug.commercialNameEn }}
+                  </button>
+                </li>
+              }
+            </ul>
+            <nav class="actions" [attr.aria-label]="'reservations.pagination' | t">
+              <button
+                class="btn btn-outline-secondary"
+                [disabled]="busy() || matchPage() <= 1"
+                (click)="searchMatches(matchPage() - 1)"
+              >
+                {{ 'reservations.previous' | t }}</button
+              ><button
+                class="btn btn-outline-secondary"
+                [disabled]="busy() || matchPage() * 20 >= matchTotal()"
+                (click)="searchMatches(matchPage() + 1)"
+              >
+                {{ 'reservations.next' | t }}
+              </button>
+            </nav>
+            @if (duplicate()) {
+              <p>{{ 'requests.canonical' | t }}: {{ duplicate()?.commercialNameEn }}</p>
+              <button
+                class="btn btn-outline-secondary"
+                [disabled]="busy()"
+                (click)="duplicate.set(null)"
+              >
+                {{ 'common.cancel' | t }}
+              </button>
+            }
+          }
+          <p>{{ 'medications.confirmChange' | t }}</p>
+          <div class="actions">
+            <button
+              class="btn btn-primary"
+              [disabled]="busy() || !reason().trim()"
+              (click)="decide()"
+            >
+              {{ 'medications.confirm' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="review.set(null)"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+          </div>
+        </section>
+      }
+      <section class="section">
+        <h3>{{ 'medications.history' | t }}</h3>
+        <ul class="history">
+          @for (entry of item.history || []; track $index) {
+            <li>
+              <p>{{ entry.reason }}</p>
+              <time dir="ltr">{{
+                entry.createdOnUtc | localizedDate: language.currentLang()
+              }}</time>
+            </li>
+          } @empty {
+            <li>{{ 'medications.noHistory' | t }}</li>
+          }
+        </ul>
+      </section>
+    }
+  </app-side-drawer>
+</main>

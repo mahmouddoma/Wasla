@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SideDrawer } from './side-drawer';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 describe('SideDrawer', () => {
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   let component: SideDrawer;
   let fixture: ComponentFixture<SideDrawer>;
 
@@ -17,6 +19,20 @@ describe('SideDrawer', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('updates the panel direction when the language changes while open', async () => {
+    const language = TestBed.inject(LanguageService);
+    fixture.componentRef.setInput('opened', true);
+    language.setLanguage('ar');
+    await fixture.whenStable();
+    const panel = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[role="dialog"]',
+    )!;
+    expect(panel.dir).toBe('rtl');
+    language.setLanguage('en');
+    await fixture.whenStable();
+    expect(panel.dir).toBe('ltr');
   });
 
   it('renders its heading and emits close for the close button and Escape', async () => {

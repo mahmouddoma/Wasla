@@ -18,14 +18,13 @@ import { Gender } from '../../../core/auth/auth.models';
 import { NoFutureDate } from '../../../shared/no-future-date/no-future-date';
 import { FileUpload } from '../file-upload/file-upload';
 
-
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-doctor-registration',
   imports: [FormField, RouterLink, FileUpload, NoFutureDate, TranslatePipe],
   templateUrl: './doctor-registration.html',
-  styleUrl: './doctor-registration.css',
+  styleUrls: ['../registration.css', './doctor-registration.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorRegistration {
@@ -67,9 +66,7 @@ export class DoctorRegistration {
     maxLength(field.nameEn, 200, { message: 'validation.nameLength' });
     required(field.dateOfBirth, { message: 'validation.birthDateRequired' });
     validate(field.dateOfBirth, ({ value }) =>
-      isFutureDate(value())
-        ? { kind: 'futureDate', message: 'validation.birthFuture' }
-        : undefined,
+      isFutureDate(value()) ? { kind: 'futureDate', message: 'validation.birthFuture' } : undefined,
     );
     required(field.gender, { message: 'validation.genderRequired' });
   });

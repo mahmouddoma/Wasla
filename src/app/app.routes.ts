@@ -3,6 +3,7 @@ import {
   accountAreaGuard,
   anonymousOnlyMatchGuard,
   authenticatedGuard,
+  catalogManagerAreaGuard,
 } from './core/auth/auth.guards';
 
 export const routes: Routes = [
@@ -40,7 +41,7 @@ export const routes: Routes = [
   // SuperAdmin Portal (wrapped with AdminLayout)
   {
     path: 'admin',
-    canActivate: [authenticatedGuard],
+    canActivate: [authenticatedGuard, catalogManagerAreaGuard],
     loadComponent: () =>
       import('./features/admin/admin-layout/admin-layout').then((m) => m.AdminLayout),
     loadChildren: () =>
@@ -53,7 +54,33 @@ export const routes: Routes = [
     canActivate: [authenticatedGuard],
     loadComponent: () =>
       import('./shared/components/portal-layout/portal-layout').then((m) => m.PortalLayout),
+    canActivateChild: [catalogManagerAreaGuard],
     children: [
+      {
+        path: 'drug-catalog',
+        data: { catalogManagerArea: true },
+        loadChildren: () => import('./features/drug-catalog/drug-catalog.routes').then(m => m.DRUG_CATALOG_ROUTES),
+      },
+      {
+        path: 'doctor/medication-requests',
+        data: { actor: 'Doctor', permission: ['DrugCatalogRequests.ViewOwn', 'DrugCatalogRequests.CreateOwn'] },
+        loadChildren: () => import('./features/medication-requests/medication-requests.routes').then(m => m.MEDICATION_REQUEST_ROUTES),
+      },
+      {
+        path: 'drug-catalog-requests',
+        data: { actor: 'DrugCatalogManager', permission: 'DrugCatalogRequests.View', catalogManagerArea: true },
+        loadChildren: () => import('./features/medication-requests/medication-requests.routes').then(m => m.MEDICATION_REQUEST_ROUTES),
+      },
+      {
+        path: 'doctor/prescriptions',
+        data: { actor: 'Doctor', permission: 'Prescriptions.ViewOwn' },
+        loadChildren: () => import('./features/prescriptions/prescriptions.routes').then(m => m.PRESCRIPTION_ROUTES),
+      },
+      {
+        path: 'patient/prescriptions',
+        data: { actor: 'Patient', permission: 'Prescriptions.ViewOwnCompleted' },
+        loadChildren: () => import('./features/prescriptions/prescriptions.routes').then(m => m.PRESCRIPTION_ROUTES),
+      },
       {
         path: 'doctor/encounters',
         data: { actor: 'Doctor' },

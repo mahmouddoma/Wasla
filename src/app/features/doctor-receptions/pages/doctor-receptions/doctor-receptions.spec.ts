@@ -175,6 +175,8 @@ describe('DoctorReceptions', () => {
     if (httpTesting) {
       httpTesting.verify();
     }
+    fixture?.destroy();
+    localStorage.removeItem('wasla_lang');
   });
 
   it('creates component and loads reception list and practice list', async () => {
@@ -534,6 +536,43 @@ describe('DoctorReceptions', () => {
     expect(component['selectedPermissionIds']()).toEqual(['perm-2']);
     expect(component['reception']()?.assignments[0].rowVersion).toBe('new-version');
     expect(component['messages']()).toEqual(['Conflict']);
+    expect(component['isSubmitting']()).toBe(false);
+  });
+
+  it('keeps assignment edits and shows a toast after a failed save, allowing retry', async () => {
+    await createAndInitializeComponent();
+    component['reception'].set(sampleReceptions[0]);
+    component['editAssignment'](sampleReceptions[0].assignments[0]);
+    component['selectedPermissionIds'].set(['perm-2']);
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'error');
+    const saving = component['saveAssignment']();
+    await component['saveAssignment']();
+    httpTesting
+      .expectOne(
+        environment.apiBaseUrl + '/api/v1/doctors/me/receptions/rec-1/assignments/assign-1',
+      )
+      .flush({ detail: 'common.requestFailed' }, { status: 503, statusText: 'Unavailable' });
+    await saving;
+    expect(toast).toHaveBeenCalledWith('common.requestFailed');
+    expect(component['editingAssignmentId']()).toBe('assign-1');
+    expect(component['selectedPermissionIds']()).toEqual(['perm-2']);
+    expect(component['isSubmitting']()).toBe(false);
+  });
+  it('reports a failed activation and failed conflict refresh without leaking the pending state', async () => {
+    await createAndInitializeComponent();
+    component['reception'].set(sampleReceptions[0]);
+    const assignment = { ...sampleReceptions[0].assignments[0], isActive: false };
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'error');
+    const saving = component['toggleAssignment'](assignment);
+    httpTesting
+      .expectOne((request) => request.method === 'POST')
+      .flush({ detail: 'Conflict' }, { status: 409, statusText: 'Conflict' });
+    await Promise.resolve();
+    httpTesting
+      .expectOne(environment.apiBaseUrl + '/api/v1/doctors/me/receptions/rec-1')
+      .flush({ detail: 'Refresh failed' }, { status: 503, statusText: 'Unavailable' });
+    await saving;
+    expect(toast).toHaveBeenCalledWith('Refresh failed');
     expect(component['isSubmitting']()).toBe(false);
   });
 });

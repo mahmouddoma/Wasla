@@ -9,6 +9,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { CurrentUser } from '../../../../core/auth/auth.models';
 
 describe('DoctorOnboarding', () => {
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   let fixture: ComponentFixture<DoctorOnboarding>;
   let component: DoctorOnboarding;
 
@@ -102,6 +103,19 @@ describe('DoctorOnboarding', () => {
     expect(mockDoctorApi.onboardingStatus).toHaveBeenCalled();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('قيد المراجعة والتدقيق');
+  });
+
+  it('uses the shared bilingual header and refreshes the approval status', async () => {
+    const language = TestBed.inject(LanguageService);
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('app-page-header')?.textContent).toContain(language.t('doctor.onboardingStatus'));
+    mockDoctorApi.onboardingStatus.mockClear();
+    element.querySelector<HTMLButtonElement>('.page-header__action-btn')!.click();
+    await fixture.whenStable();
+    expect(mockDoctorApi.onboardingStatus).toHaveBeenCalledOnce();
+    language.setLanguage('en');
+    await fixture.whenStable();
+    expect(element.querySelector('app-page-header')?.textContent).toContain(language.t('doctor.onboardingDescription'));
   });
 
   it('should navigate away if status is approved', async () => {

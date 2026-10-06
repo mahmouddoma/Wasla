@@ -99,6 +99,8 @@ export class Workspace {
   protected readonly roleBadge = computed(() => {
     const type = this.user()?.userType;
     switch (type) {
+      case 'DrugCatalogManager':
+        return { label: this.langService.t('medications.managerRole'), icon: 'shield' };
       case 'Doctor':
         return {
           label: this.langService.t('ui.full.765'),

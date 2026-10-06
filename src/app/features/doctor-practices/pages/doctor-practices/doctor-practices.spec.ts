@@ -115,7 +115,7 @@ describe('DoctorPractices', () => {
     expect(fixture.nativeElement.querySelector('aside.side-drawer-panel')).toBeNull();
 
     const createBtn = fixture.nativeElement.querySelector(
-      '.btn-create-practice',
+      'app-page-header button.page-header__action-btn',
     ) as HTMLButtonElement;
     expect(createBtn).toBeTruthy();
     createBtn.click();

@@ -18,6 +18,15 @@ export const authenticatedGuard: CanActivateFn = () => {
   return session.requiresPasswordChange() ? router.createUrlTree(['/change-password']) : true;
 };
 
+export const catalogManagerAreaGuard: CanActivateFn = (route) => {
+  const session = inject(AuthSession);
+  const user = session.user();
+  if (user?.userType !== 'DrugCatalogManager') return true;
+  return route.data['catalogManagerArea'] === true ||
+    (route.routeConfig?.path === 'workspace/:area' && route.paramMap.get('area') === 'drug-catalog-manager')
+    ? true : inject(Router).createUrlTree([session.destinationFor(user)]);
+};
+
 export const accountAreaGuard: CanActivateFn = (route) => {
   const session = inject(AuthSession);
   const router = inject(Router);
@@ -63,6 +72,9 @@ export const permissionGuard: CanActivateFn = (route) => {
   const user = session.user();
   if (!user) return router.createUrlTree(['/login']);
   const permission = route.data['permission'];
+  if (typeof route.data['actor'] === 'string' && user.userType !== route.data['actor']) {
+    return router.createUrlTree([session.destinationFor(user)]);
+  }
   const allowed =
     typeof permission === 'string'
       ? session.hasPermission(permission)

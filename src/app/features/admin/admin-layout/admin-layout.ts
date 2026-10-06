@@ -1,9 +1,14 @@
+import { AppHeader } from '../../../shared/components/app-header/app-header';
+import {
+  MobileNavigation,
+  NavigationItem,
+  NAVIGATION_ICONS,
+} from '../../../shared/components/mobile-navigation/mobile-navigation';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { LanguageSwitcher } from '../../../shared/components/language-switcher/language-switcher';
 import {
   Component,
   ChangeDetectionStrategy,
@@ -15,12 +20,13 @@ import {
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, LanguageSwitcher, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, AppHeader, TranslatePipe, MobileNavigation],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminLayout {
+  protected readonly navigationIcons = NAVIGATION_ICONS;
   readonly langService = inject(LanguageService);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
@@ -30,74 +36,96 @@ export class AdminLayout {
       localStorage.getItem('wasla_sidebar_collapsed') === 'true',
   );
   protected readonly user = this.session.user;
-  protected readonly isUserMenuOpen = signal(false);
-  protected readonly isIdCopied = signal(false);
 
-  protected readonly canViewReservations = computed(() =>
-    this.session.hasPermission('Reservations.ViewAdministrative'),
-  );
-  protected readonly canViewDoctors = computed(() =>
-    this.session.hasPermission(PERMISSIONS.doctorsViewAll),
-  );
-  protected readonly canViewSuperAdmins = computed(() =>
-    this.session.hasPermission(PERMISSIONS.superAdminsViewAll),
-  );
-  protected readonly canViewRoles = computed(() =>
-    this.session.hasPermission(PERMISSIONS.rolesView),
-  );
-  protected readonly canViewSpecializations = computed(() =>
-    this.session.hasPermission(PERMISSIONS.specializationsView),
-  );
-  protected readonly canViewSpecializationRequests = computed(() =>
-    this.session.hasPermission(PERMISSIONS.doctorSpecializationRequestsViewAll),
-  );
-  protected readonly canViewFamilyRequests = computed(() =>
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewAll),
-  );
-  protected readonly canViewRevenue = computed(() =>
-    this.session.hasPermission(PERMISSIONS.platformRevenueViewAggregates),
-  );
+  protected readonly navItems = computed<NavigationItem[]>(() => {
+    const definitions: (NavigationItem & { permission: string })[] = [
+      {
+        id: 'drug-catalog-managers', labelKey: 'medications.managers',
+        route: '/admin/drug-catalog-managers', icon: 'users', permission: 'DrugCatalogManagers.ViewAll',
+      },
+      {
+        id: 'revenue',
+        labelKey: 'sidebar.revenue',
+        route: '/admin/revenue',
+        icon: 'chart',
+        permission: PERMISSIONS.platformRevenueViewAggregates,
+      },
+      {
+        id: 'reservations',
+        labelKey: 'reservations.title',
+        route: '/admin/reservations',
+        icon: 'calendar',
+        permission: 'Reservations.ViewAdministrative',
+      },
+      {
+        id: 'doctors',
+        labelKey: 'admin.navDoctors',
+        route: '/admin/doctors',
+        icon: 'stethoscope',
+        permission: PERMISSIONS.doctorsViewAll,
+      },
+      {
+        id: 'superadmins',
+        labelKey: 'admin.navSuperAdmins',
+        route: '/admin/superadmins',
+        icon: 'shield',
+        permission: PERMISSIONS.superAdminsViewAll,
+      },
+      {
+        id: 'roles',
+        labelKey: 'admin.navRoles',
+        route: '/admin/roles',
+        icon: 'lock',
+        permission: PERMISSIONS.rolesView,
+      },
+      {
+        id: 'specializations',
+        labelKey: 'admin.navSpecializations',
+        route: '/admin/medical-specializations',
+        icon: 'heart-pulse',
+        permission: PERMISSIONS.specializationsView,
+      },
+      {
+        id: 'requests',
+        labelKey: 'admin.navRequests',
+        route: '/admin/doctor-specialization-requests',
+        icon: 'clipboard-list',
+        permission: PERMISSIONS.doctorSpecializationRequestsViewAll,
+      },
+      {
+        id: 'family-requests',
+        labelKey: 'family.requests',
+        route: '/admin/family-relationship-requests',
+        icon: 'users',
+        permission: PERMISSIONS.familyRelationshipRequestsViewAll,
+      },
+    ];
+    return definitions.filter((item) => this.session.hasPermission(item.permission));
+  });
+  protected readonly mobileNavItems = computed(() => {
+    const priorities = [
+      'doctors',
+      'reservations',
+      'requests',
+      'revenue',
+      'superadmins',
+      'roles',
+      'specializations',
+      'family-requests',
+      'drug-catalog-managers',
+    ];
+    return priorities
+      .flatMap((id) => this.navItems().filter((item) => item.id === id))
+      .slice(0, 4)
+      .map((item) => ({ ...item, mobileLabelKey: 'navigation.' + item.id }));
+  });
   protected readonly home = computed(() => {
     const user = this.user();
     return user ? this.session.destinationFor(user) : '/login';
   });
-  protected readonly userInitial = computed(() => {
-    const name = this.user()?.userName?.trim();
-    return name ? name.charAt(0).toUpperCase() : '';
-  });
-  protected readonly userRole = computed(() => {
-    const user = this.user();
-    return user?.roles.length
-      ? user.roles.join(this.langService.t('ui.full.0'))
-      : (user?.userType ?? '');
-  });
-
-  protected toggleUserMenu(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isUserMenuOpen.update((open) => !open);
-  }
-
-  protected closeUserMenu(): void {
-    this.isUserMenuOpen.set(false);
-  }
-
-  protected copyUserId(): void {
-    const id = this.user()?.applicationUserId;
-    if (id && typeof navigator !== 'undefined' && navigator.clipboard) {
-      void navigator.clipboard.writeText(id);
-      this.isIdCopied.set(true);
-      setTimeout(() => this.isIdCopied.set(false), 2000);
-    }
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.closeUserMenu();
-  }
-
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    this.closeUserMenu();
+    this.closeSidebar();
   }
 
   protected logout(): void {

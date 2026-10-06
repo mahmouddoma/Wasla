@@ -224,13 +224,17 @@ async function main() {
           );
           if (route === 'reception/finance' || route === 'reception/reservations')
             assert.deepEqual(metrics.clipped, [], JSON.stringify({ route, lang, ...metrics }));
-          assert.equal(await evaluate("document.querySelector('#reception-current-practice').value"), 'c1', 'clinic selection missing');
+          assert.equal(
+            await evaluate("document.querySelector('#reception-current-practice').value"),
+            'c1',
+            'clinic selection missing',
+          );
           if (width < 768) {
             const nav = await evaluate(
-              "(()=>{const n=document.querySelector('.reception-mobile-nav');const r=n.getBoundingClientRect();return {display:getComputedStyle(n).display,bottom:r.bottom,links:n.querySelectorAll('a').length}})()",
+              "(()=>{const n=document.querySelector('app-mobile-navigation');const r=n.getBoundingClientRect();return {display:getComputedStyle(n).display,bottom:r.bottom,links:n.querySelectorAll('a').length}})()",
             );
             assert.equal(nav.links, 4);
-            assert.ok(nav.bottom <= 900 && nav.display === 'flex', JSON.stringify(nav));
+            assert.ok(nav.bottom <= 900 && nav.display === 'block', JSON.stringify(nav));
           }
 
           if (route === 'reception/reservations' && width <= 1024)

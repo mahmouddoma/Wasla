@@ -1,8 +1,9 @@
+import { ToastService } from '../../../core/notifications/toast.service';
 import { signal } from '@angular/core';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { ReservationsApi } from '../../../domains/reservations';
@@ -293,5 +294,29 @@ describe('ReservationWorkspaceStore', () => {
     });
 
     expect(ticketsApi.checkIn).not.toHaveBeenCalled();
+  });
+
+  it('prevents duplicate cancellations and confirms completion with a toast', async () => {
+    const response = new Subject<typeof reservationFixture>();
+    api.cancel.mockReturnValue(response);
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'success');
+    const saving = store.save(draft);
+    expect(store.busy()).toBe(true);
+    await store.save(draft);
+    expect(api.cancel).toHaveBeenCalledTimes(1);
+    response.next({ ...reservationFixture, status: 'Cancelled' });
+    await saving;
+    expect(store.busy()).toBe(false);
+    expect(store.editor()).toBeNull();
+    expect(toast).toHaveBeenCalledTimes(1);
+  });
+  it('keeps the cancellation editor and draft context after a failed mutation', async () => {
+    api.cancel.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'error');
+    await store.save(draft);
+    expect(store.editor()).toBe('cancel');
+    expect(store.detail()?.reservationId).toBe(reservationFixture.reservationId);
+    expect(store.busy()).toBe(false);
+    expect(toast).toHaveBeenCalled();
   });
 });

@@ -1,5 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ToastService } from '../../../../core/notifications/toast.service';
+import { LanguageService } from '../../../../core/i18n/language.service';
 import { TestBed } from '@angular/core/testing';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { DoctorPractice } from '../../../../domains/doctor-practices';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { DoctorProfileApi } from '../../../../domains/doctor-profile';
@@ -57,5 +60,100 @@ describe('PracticeEditor', () => {
       '10280003',
     ]);
     expect(element.querySelector('input')?.value).toBe(practice.nameAr);
+  });
+
+  describe('saving', () => {
+    const practice: DoctorPractice = {
+      id: 'p1',
+      nameAr: 'Clinic',
+      nameEn: 'Clinic',
+      isActive: false,
+      hasLogo: false,
+      rowVersion: 'v1',
+      location: {
+        governorate: { id: 1, nameAr: 'Cairo', nameEn: 'Cairo' },
+        city: { id: 2, nameAr: 'City', nameEn: 'City' },
+        area: { id: 3, nameAr: 'Area', nameEn: 'Area' },
+        detailedAddress: 'Address',
+        latitude: 30,
+        longitude: 31,
+      },
+    };
+    const api = { create: vi.fn(), update: vi.fn(), details: vi.fn() };
+    const toast = { success: vi.fn(), error: vi.fn() };
+    async function start(edit = true) {
+      vi.resetAllMocks();
+      TestBed.configureTestingModule({
+        imports: [PracticeEditor],
+        providers: [
+          { provide: DoctorPracticesApi, useValue: api },
+          { provide: ToastService, useValue: toast },
+          {
+            provide: DoctorProfileApi,
+            useValue: {
+              governorates: () => of([practice.location.governorate]),
+              cities: () => of([practice.location.city]),
+              areas: () => of([practice.location.area]),
+            },
+          },
+        ],
+      });
+      TestBed.inject(LanguageService).setLanguage('en');
+      const fixture = TestBed.createComponent(PracticeEditor);
+      if (edit) fixture.componentRef.setInput('practice', practice);
+      await fixture.whenStable();
+      return fixture;
+    }
+    afterEach(() => {
+      TestBed.resetTestingModule();
+      localStorage.removeItem('wasla_lang');
+    });
+    it('blocks invalid creation without sending a request', async () => {
+      const fixture = await start(false);
+      await fixture.componentInstance['save'](new Event('submit'));
+      expect(api.create).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(fixture.componentInstance['editorForm']().invalid()).toBe(true);
+    });
+    it('locks controls and prevents duplicate saves, then emits the updated practice', async () => {
+      const fixture = await start();
+      const response = new Subject<DoctorPractice>();
+      api.update.mockReturnValue(response);
+      const emitted = vi.fn();
+      fixture.componentInstance.saved.subscribe(emitted);
+      const saving = fixture.componentInstance['save'](new Event('submit'));
+      await vi.waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(true);
+      await fixture.componentInstance['save'](new Event('submit'));
+      expect(api.update).toHaveBeenCalledTimes(1);
+      response.next({ ...practice, rowVersion: 'v2' });
+      await saving;
+      expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ rowVersion: 'v2' }));
+      expect(toast.success).toHaveBeenCalledTimes(1);
+      expect(fixture.componentInstance['isSubmitting']()).toBe(false);
+    });
+    it('preserves input after a failed save and shows an error toast', async () => {
+      const fixture = await start();
+      fixture.componentInstance['model'].update((v) => ({ ...v, nameAr: 'Changed clinic' }));
+      api.update.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
+      await fixture.componentInstance['save'](new Event('submit'));
+      expect(fixture.componentInstance['model']().nameAr).toBe('Changed clinic');
+      expect(toast.error).toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(fixture.componentInstance['isSubmitting']()).toBe(false);
+    });
+    it('uses the refreshed row version when retrying after a conflict', async () => {
+      const fixture = await start();
+      api.update
+        .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 409 })))
+        .mockReturnValueOnce(of({ ...practice, rowVersion: 'v3' }));
+      api.details.mockReturnValue(of({ ...practice, rowVersion: 'v2' }));
+      await fixture.componentInstance['save'](new Event('submit'));
+      await fixture.componentInstance['save'](new Event('submit'));
+      expect(api.update.mock.calls[1][1].rowVersion).toBe('v2');
+      expect(toast.error).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledTimes(1);
+    });
   });
 });

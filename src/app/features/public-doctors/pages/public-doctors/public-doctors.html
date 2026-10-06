@@ -1,10 +1,4 @@
 <main class="discovery-shell" [dir]="language.dir()">
-  <!-- Ambient backdrop glow mesh -->
-  <div class="ambient-glow-mesh" aria-hidden="true">
-    <div class="ambient-circle circle-teal"></div>
-    <div class="ambient-circle circle-navy"></div>
-  </div>
-
   @if (isInsidePortal()) {
     <!-- Portal Header with Back Button and Stats -->
     <app-page-header
@@ -548,7 +542,7 @@
 
                   <!-- Doctor Social & Trust Proof Row (Stars & Ratings) -->
                   <div class="doctor-rating-row">
-                    <div class="rating-stars" aria-label="Rating 5 of 5">
+                    <div class="rating-stars" [attr.aria-label]="'discovery.ratingFive' | t">
                       <span class="star-icon">★</span>
                       <strong class="rating-score">4.9</strong>
                     </div>
@@ -755,7 +749,11 @@
                   </div>
 
                   <!-- 3-Day Schedule Grid (Vezeeta Pattern) -->
-                  <div class="vezeeta-days-grid" role="region" aria-label="Schedule Preview">
+                  <div
+                    class="vezeeta-days-grid"
+                    role="region"
+                    [attr.aria-label]="'discovery.schedulePreview' | t"
+                  >
                     @for (day of getScheduleDays(practice); track day.key) {
                       <div class="schedule-day-column" [class.is-available]="day.isAvailable">
                         <div class="schedule-day-header">
@@ -985,7 +983,14 @@
       <section class="booking-success-receipt" role="status" aria-live="polite">
         <div class="receipt-icon-wrap">
           <div class="receipt-icon-circle">
-            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg
+              viewBox="0 0 24 24"
+              width="36"
+              height="36"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
               <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
@@ -1026,10 +1031,7 @@
             <span class="data-label">{{ 'booking.appointmentTime' | t }}</span>
             <strong class="data-value appointment-highlight" dir="ltr">
               {{
-                formatSlot(
-                  confirmed.appointment.businessDate,
-                  confirmed.appointment.slotStartTime
-                )
+                formatSlot(confirmed.appointment.businessDate, confirmed.appointment.slotStartTime)
               }}
             </strong>
           </div>
@@ -1063,11 +1065,18 @@
             class="btn-receipt-view"
             (click)="closeDrawer()"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
             <span>{{ 'booking.viewMyReservations' | t }}</span>
           </a>
@@ -1319,22 +1328,31 @@
                         @for (p of bookablePatients(); track p.patientId) {
                           <option [value]="p.patientId">
                             {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
-                            {{ p.isSelf ? (' (' + ('booking.myself' | t) + ')') : '' }}
+                            {{ p.isSelf ? ' (' + ('booking.myself' | t) + ')' : '' }}
                           </option>
                         }
                       </select>
                     </div>
                   } @else {
                     <div class="patient-single-info">
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
                       <span>
                         {{
                           bookablePatients().length === 1
-                            ? (language.isRtl() ? bookablePatients()[0].nameAr : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr)
-                            : (authSession.user()?.userName || '')
+                            ? language.isRtl()
+                              ? bookablePatients()[0].nameAr
+                              : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr
+                            : authSession.user()?.userName || ''
                         }}
                       </span>
                     </div>
@@ -1421,7 +1439,9 @@
 
               <!-- Optional Notes for Doctor -->
               <div class="booking-note-field">
-                <label class="step-label" for="drawerBookingNotes">{{ 'booking.bookingNotes' | t }}</label>
+                <label class="step-label" for="drawerBookingNotes">{{
+                  'booking.bookingNotes' | t
+                }}</label>
                 <input
                   id="drawerBookingNotes"
                   type="text"

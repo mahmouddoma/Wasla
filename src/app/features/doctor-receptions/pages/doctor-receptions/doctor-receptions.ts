@@ -119,7 +119,9 @@ export class DoctorReceptions {
     void this.load();
   }
 
-  protected clientError(field: 'userName' | 'email' | 'phoneNumber' | 'temporaryPassword' | 'nameAr' | 'nameEn'): string {
+  protected clientError(
+    field: 'userName' | 'email' | 'phoneNumber' | 'temporaryPassword' | 'nameAr' | 'nameEn',
+  ): string {
     const control = this.userForm[field]();
     if (!control.touched() && !this.formSubmitted()) return '';
     const err = control.errors()[0];
@@ -197,7 +199,7 @@ export class DoctorReceptions {
       if (firstErr) {
         this.toast.error(this.langService.t(firstErr));
       } else {
-        this.toast.error(this.langService.t('common.errorOccurred'));
+        this.toast.error(this.langService.t('common.requestFailed'));
       }
     } finally {
       this.isSubmitting.set(false);
@@ -289,7 +291,7 @@ export class DoctorReceptions {
         editing ? this.langService.t('ui.full.598') : this.langService.t('ui.full.599'),
       );
     } catch (error) {
-      this.setErrors(error);
+      this.reportMutationError(error);
       if (error instanceof HttpErrorResponse && error.status === 409) {
         try {
           await this.loadDetails(current.id);
@@ -299,7 +301,7 @@ export class DoctorReceptions {
             else this.cancelAssignmentEdit();
           }
         } catch (refreshError) {
-          this.setErrors(refreshError);
+          this.reportMutationError(refreshError);
         }
       }
     } finally {
@@ -326,9 +328,13 @@ export class DoctorReceptions {
         assignment.isActive ? this.langService.t('ui.full.601') : this.langService.t('ui.full.602'),
       );
     } catch (error) {
-      this.setErrors(error);
+      this.reportMutationError(error);
       if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 409)) {
-        await this.loadDetails(current.id);
+        try {
+          await this.loadDetails(current.id);
+        } catch (refreshError) {
+          this.reportMutationError(refreshError);
+        }
       }
     } finally {
       this.isSubmitting.set(false);
@@ -381,6 +387,11 @@ export class DoctorReceptions {
       this.messages.set(['receptions.permissionsUnavailable']);
       this.toast.error('receptions.permissionsUnavailable');
     }
+  }
+
+  private reportMutationError(error: unknown): void {
+    this.setErrors(error);
+    this.toast.error(this.messages()[0] || 'common.requestFailed');
   }
 
   private setErrors(error: unknown): void {

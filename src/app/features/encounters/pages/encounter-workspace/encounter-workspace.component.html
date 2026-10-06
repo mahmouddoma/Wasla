@@ -94,7 +94,11 @@
               <tr>
                 <td>{{ store.doctor() ? label(item.patient) : label(item.doctor) }}</td>
                 <td>{{ label(item.practice) }}</td>
-                <td dir="ltr">{{ item.completedOnUtc || item.startedOnUtc }}</td>
+                <td dir="ltr">
+                  {{
+                    item.completedOnUtc || item.startedOnUtc | localizedDate: language.currentLang()
+                  }}
+                </td>
                 <td>{{ 'encounters.status.' + item.status | t }}</td>
                 <td>
                   <button
@@ -135,7 +139,7 @@
   @if (store.detail() || store.patientDetail() || store.detailLoading()) {
     <app-side-drawer
       [opened]="true"
-      [busy]="store.busy()"
+      [busy]="store.busy() || store.prescriptionBusy()"
       [title]="'encounters.details' | t"
       width="640px"
       (closed)="store.close()"
@@ -226,6 +230,20 @@
               </fieldset>
             </form>
           }
+        </section>
+        <section class="section">
+          <app-prescription-workspace
+            [initial]="detail.prescription || null"
+            [practiceId]="store.practiceId()"
+            [encounterId]="detail.encounterId"
+            [canManage]="
+              detail.status === 'InProgress' && !!detail.capabilities.canManagePrescription
+            "
+            [canRequest]="!!detail.capabilities.canRequestNewMedication"
+            [disabled]="store.busy() || store.detailLoading()"
+            (changed)="store.prescriptionChanged($event)"
+            (busyChanged)="store.prescriptionBusy.set($event)"
+          />
         </section>
         @if (store.canComplete()) {
           <button
@@ -470,7 +488,7 @@
       }
       @if (store.patientDetail(); as detail) {
         <p>{{ label(detail.doctor) }} · {{ label(detail.practice) }}</p>
-        <time dir="ltr">{{ detail.completedOnUtc }}</time>
+        <time dir="ltr">{{ detail.completedOnUtc | localizedDate: language.currentLang() }}</time>
         <section class="detail-section">
           <h3>{{ 'encounters.diagnoses' | t }}</h3>
           @for (diagnosis of detail.diagnoses; track diagnosis.diagnosisId) {

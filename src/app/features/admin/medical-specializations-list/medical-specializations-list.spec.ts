@@ -56,6 +56,7 @@ describe('MedicalSpecializationsList', () => {
       ],
     }).compileComponents();
 
+    TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(MedicalSpecializationsList);
     component = fixture.componentInstance;
     fixture.detectChanges();

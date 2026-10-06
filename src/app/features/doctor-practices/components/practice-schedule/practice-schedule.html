@@ -87,21 +87,29 @@
       <div class="weekly-glance-bar">
         <div class="glance-item working-glance">
           <span class="glance-dot green"></span>
-          <span class="glance-label">أيام العمل الأسبوعية:</span>
-          <strong>{{ activeDaysCount }} أيام</strong>
+          <span class="glance-label">{{ 'schedule.weeklyWorkingDays' | t }}</span>
+          <strong>{{ activeDaysCount }} {{ 'schedule.daysUnit' | t }}</strong>
         </div>
         <div class="glance-item off-glance">
           <span class="glance-dot gray"></span>
-          <span class="glance-label">أيام العطلة الأسبوعية:</span>
-          <strong>{{ 7 - activeDaysCount }} أيام</strong>
+          <span class="glance-label">{{ 'schedule.weeklyDaysOff' | t }}</span>
+          <strong>{{ 7 - activeDaysCount }} {{ 'schedule.daysUnit' | t }}</strong>
         </div>
         <div class="glance-item duration-glance">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          <span class="glance-label">مدة الكشف:</span>
-          <strong>{{ schedule().periods[0]?.slotDurationMinutes || 30 }} دقيقة</strong>
+          <span class="glance-label">{{ 'schedule.consultationDuration' | t }}</span>
+          <strong>{{ schedule().periods[0]?.slotDurationMinutes || 30 }} {{ 'practice.minutesUnit' | t }}</strong>
         </div>
       </div>
 
@@ -134,9 +142,9 @@
               <div class="strip-day-titles">
                 <strong class="strip-day-name">{{ day.label }}</strong>
                 @if (dayPeriods.length > 0) {
-                  <span class="day-status-indicator active">يوم عمل</span>
+                  <span class="day-status-indicator active">{{ 'schedule.workingDay' | t }}</span>
                 } @else {
-                  <span class="day-status-indicator off">عطلة</span>
+                  <span class="day-status-indicator off">{{ 'schedule.vacation' | t }}</span>
                 }
               </div>
             </div>
@@ -167,13 +175,17 @@
                         </svg>
                         <div class="time-flow-wrap">
                           <span class="time-segment">
-                            <span class="time-marker">من</span>
-                            <strong class="time-main-text" dir="ltr">{{ formatTime(period.startTime) }}</strong>
+                            <span class="time-marker">{{ 'discovery.of' | t }}</span>
+                            <strong class="time-main-text" dir="ltr">{{
+                              formatTime(period.startTime)
+                            }}</strong>
                           </span>
                           <span class="time-arrow" aria-hidden="true">⬅️</span>
                           <span class="time-segment">
-                            <span class="time-marker">إلى</span>
-                            <strong class="time-main-text" dir="ltr">{{ formatTime(period.endTime) }}</strong>
+                            <span class="time-marker">{{ 'schedule.toLabel' | t }}</span>
+                            <strong class="time-main-text" dir="ltr">{{
+                              formatTime(period.endTime)
+                            }}</strong>
                           </span>
                         </div>
                       </div>
@@ -237,7 +249,7 @@
               } @else {
                 <div class="strip-off-status">
                   <span class="off-badge">{{ 'ui.full.370' | t }}</span>
-                  <span class="off-caption">لا توجد كشوفات محددة لهذا اليوم</span>
+                  <span class="off-caption">{{ 'schedule.noAppointmentsForDay' | t }}</span>
                 </div>
               }
             </div>
@@ -312,7 +324,15 @@
             [disabled]="activeAction() === 'effective'"
             (click)="loadEffective()"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
@@ -324,8 +344,11 @@
           @for (period of effectivePeriods(); track period.startTime + period.endTime) {
             <div class="effective-period-box">
               <div class="period-box-header">
-                <span class="effective-time-range">
-                  من <strong dir="ltr">{{ formatTime(period.startTime) }}</strong> إلى <strong dir="ltr">{{ formatTime(period.endTime) }}</strong>
+                <span class="effective-time-range"
+                  >{{ 'discovery.of' | t
+                  }}<strong dir="ltr">{{ formatTime(period.startTime) }}</strong
+                  >{{ 'schedule.toLabel' | t
+                  }}<strong dir="ltr">{{ formatTime(period.endTime) }}</strong>
                 </span>
                 <span class="effective-duration-tag">
                   {{ period.slotDurationMinutes }} {{ 'practice.minutesPerSlot' | t }}
@@ -396,7 +419,15 @@
                 (click)="openAddExceptionModal()"
                 [title]="'ui.full.383' | t"
               >
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  aria-hidden="true"
+                >
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
@@ -421,8 +452,11 @@
                   <span class="exception-date-text" dir="ltr">{{ exception.date }}</span>
                 </div>
                 @if (exception.startTime && exception.endTime) {
-                  <span class="exception-hours-note">
-                    من <strong dir="ltr">{{ formatTime(exception.startTime) }}</strong> إلى <strong dir="ltr">{{ formatTime(exception.endTime) }}</strong>
+                  <span class="exception-hours-note"
+                    >{{ 'discovery.of' | t
+                    }}<strong dir="ltr">{{ formatTime(exception.startTime) }}</strong
+                    >{{ 'schedule.toLabel' | t
+                    }}<strong dir="ltr">{{ formatTime(exception.endTime) }}</strong>
                   </span>
                 }
               </div>
@@ -443,12 +477,8 @@
                       stroke="currentColor"
                       stroke-width="2"
                     >
-                      <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      ></path>
-                      <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                      ></path>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                     <span>{{ 'common.edit' | t }}</span>
                   </button>

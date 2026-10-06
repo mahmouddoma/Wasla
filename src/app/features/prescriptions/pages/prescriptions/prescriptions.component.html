@@ -1,0 +1,117 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'medications.prescription' | t"
+    [description]="'prescriptions.subtitle' | t"
+    icon="doctors"
+    [actionLabel]="patient ? ('common.refresh' | t) : null"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  />
+  <section class="directory">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'medications.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!patient || !page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medical prescription-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'prescriptions.empty' | t }}</h2>
+        <p>{{ (patient ? 'prescriptions.subtitle' : 'prescriptions.openFromVisit') | t }}</p>
+        @if (patient) {
+          <button class="btn btn-primary" (click)="load()">{{ 'common.refresh' | t }}</button>
+        } @else {
+          <a class="btn btn-primary" routerLink="/doctor/encounters">{{ 'encounters.title' | t }}</a>
+        }
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              'medications.prescription' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'reservations.doctor' | t }}</th>
+              <th scope="col">{{ 'reservations.practice' | t }}</th>
+              <th scope="col">{{ 'encounters.date' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of page().items; track item.prescriptionId) {
+              <tr>
+                <td>{{ label(item.doctor) }}</td>
+                <td>{{ label(item.practice) }}</td>
+                <td dir="ltr">{{ item.visitDateUtc | localizedDate: language.currentLang() }}</td>
+                <td>{{ 'prescriptions.status.' + item.status | t }}</td>
+                <td>
+                  <button class="btn btn-outline-secondary" (click)="inspect(item.prescriptionId)">
+                    {{ 'reservations.inspect' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page().pageNumber <= 1"
+          (click)="load(page().pageNumber - 1)"
+        >
+          {{ 'reservations.previous' | t }}</button
+        ><span>{{ page().pageNumber }} · {{ page().totalCount }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="page().pageNumber * page().pageSize >= page().totalCount"
+          (click)="load(page().pageNumber + 1)"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+  }
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="'medications.prescription' | t"
+    width="640px"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+    @if (patient && detail()) {
+      <app-prescription-workspace [patientView]="detail()" />
+    }
+    @if (!patient && doctorPrescriptionId()) {
+      <app-prescription-workspace
+        [prescriptionId]="doctorPrescriptionId()"
+        [canRequest]="true"
+        (busyChanged)="busy.set($event)"
+      />
+    }
+  </app-side-drawer>
+</main>

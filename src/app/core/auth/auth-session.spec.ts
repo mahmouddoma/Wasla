@@ -24,6 +24,17 @@ describe('AuthSession doctor destination', () => {
     session = TestBed.inject(AuthSession);
   });
 
+  it('routes catalog managers to their own area and enforces first login independently of nullable clinical IDs', () => {
+    const manager: CurrentUser = { ...doctor, userType: 'DrugCatalogManager', roles: ['DrugCatalogManager'],
+      permissions: ['DrugCatalog.View'], doctorId: null, patientId: null, isFirstLogin: true };
+    session.begin({ accessToken: 'synthetic-token', expiresOnUtc: new Date(Date.now() + 60000).toISOString(), passwordChangeRequired: true });
+    session.complete(manager);
+    expect(session.destinationFor(manager)).toBe('/drug-catalog');
+    expect(session.requiresPasswordChange()).toBe(true);
+    expect(session.hasPermission('Prescriptions.ViewOwn')).toBe(false);
+    expect(session.destinationFor({ ...manager, permissions: [] })).toBe('/workspace/drug-catalog-manager');
+  });
+
   it('keeps an onboarding-only doctor out of the operational workspace', () => {
     expect(session.destinationFor(doctor)).toBe('/doctor/onboarding');
   });

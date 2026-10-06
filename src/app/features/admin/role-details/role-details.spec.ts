@@ -11,6 +11,8 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { PERMISSIONS } from '../../../core/auth/permissions';
+import { CurrentUser } from '../../../core/auth/auth.models';
+import { signal } from '@angular/core';
 
 describe('RoleDetails', () => {
   let fixture: ComponentFixture<RoleDetails>;
@@ -39,15 +41,16 @@ describe('RoleDetails', () => {
     roleDetails: vi.fn(() => of(mockRole)),
     rolePermissions: vi.fn(() => of(mockPermissionsResponse)),
     permissions: vi.fn(() => of(mockPermissionsResponse.permissions)),
-    updateRolePermissions: vi.fn(() => of(mockPermissionsResponse)),
+    replaceRolePermissions: vi.fn(() => of(mockPermissionsResponse)),
     roles: vi.fn(() => of([mockRole])),
   };
 
+  const mockUser = signal<CurrentUser | null>(null);
   const mockSession = {
     hasPermission: vi.fn((perm: string) => {
       return perm === PERMISSIONS.rolePermissionsManage || perm === PERMISSIONS.permissionsView;
     }),
-    user: vi.fn(() => null),
+    user: mockUser,
   };
 
   const mockToast = {
@@ -59,6 +62,7 @@ describe('RoleDetails', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockUser.set(null);
     mockApi.roleDetails.mockReturnValue(of(mockRole));
     mockApi.rolePermissions.mockReturnValue(of(mockPermissionsResponse));
     mockApi.permissions.mockReturnValue(of(mockPermissionsResponse.permissions));
@@ -88,6 +92,18 @@ describe('RoleDetails', () => {
     expect(mockApi.rolePermissions).toHaveBeenCalledWith(validRoleId);
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('CustomManager');
+  });
+
+  it('requires root for manager role and limits assignment to the catalog allowlist', () => {
+    component['role'].set({ id: validRoleId, name: 'DrugCatalogManager', isSystemRole: true });
+    expect(component['canManage']()).toBe(false);
+    mockUser.set({ applicationUserId: 'root', userName: 'root', email: '', phoneNumber: '',
+      userType: 'SuperAdmin', roles: ['SuperAdmin'], permissions: ['DrugCatalogManagers.ViewAll'],
+      isFirstLogin: false, doctorId: null, patientId: null });
+    expect(component['isAssignable']({ id: 'catalog', name: 'DrugCatalog.View', isSystemPermission: true })).toBe(true);
+    for (const name of ['DrugCatalogManagers.Create', 'Prescriptions.ViewOwn', 'Doctors.ViewAll', 'DrugCatalog.SearchActive']) {
+      expect(component['isAssignable']({ id: name, name, isSystemPermission: true })).toBe(false);
+    }
   });
 
   it('should emit closed event', () => {

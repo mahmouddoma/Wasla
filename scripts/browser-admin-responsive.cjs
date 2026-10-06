@@ -137,7 +137,9 @@ async function main() {
   const results = [];
   fs.mkdirSync('.tmp/responsive', { recursive: true });
   try {
-    for (const route of ['doctors', 'superadmins', 'reservations'])
+    for (const route of ['doctors', 'superadmins', 'reservations'].filter(
+      (route) => !process.env.WASLA_ROUTES || process.env.WASLA_ROUTES.split(',').includes(route),
+    ))
       for (const lang of ['ar', 'en']) {
         const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
         const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });

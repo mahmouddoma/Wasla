@@ -35,387 +35,416 @@
     <div class="sheet-drag-pill d-xl-none" aria-hidden="true"></div>
 
     <div class="registration-top-bar">
-    <a class="back-link" routerLink="/login">
-      <svg
-        class="back-link-icon"
-        viewBox="0 0 24 24"
-        width="15"
-        height="15"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-      <span>{{ 'register.backToLogin' | t }}</span>
-    </a>
-
-    <!-- Role Switcher -->
-    <div class="registration-role-switcher" role="tablist" [attr.aria-label]="'register.sectionBasic' | t">
-      <a routerLink="/register/patient" class="role-switch-tab" role="tab" aria-selected="false">
-        <span class="role-tab-icon">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
-            />
-          </svg>
-        </span>
-        <span>{{ 'register.rolePatient' | t }}</span>
-      </a>
-      <a
-        routerLink="/register/doctor"
-        class="role-switch-tab active"
-        role="tab"
-        aria-selected="true"
-      >
-        <span class="role-tab-icon">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-            <path
-              d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.89 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"
-            />
-          </svg>
-        </span>
-        <span>{{ 'register.roleDoctor' | t }}</span>
-      </a>
-    </div>
-  </div>
-
-  <header class="auth-form-heading">
-    <div class="heading-badge-wrap">
-      <span class="auth-welcome-pill doctor-pill-badge">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-          <path
-            d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.89 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"
-          />
-        </svg>
-        {{ 'ui.full.231' | t }}
-      </span>
-    </div>
-    <h1>{{ 'ui.full.232' | t }}</h1>
-    <p>{{ 'ui.full.233' | t }}</p>
-  </header>
-
-  @if (apiMessages().length) {
-    <div class="form-notice error" role="alert">
-      @for (message of apiMessages(); track message) {
-        <p>{{ message | t }}</p>
-      }
-    </div>
-  }
-
-  <form class="auth-form registration-form" (submit)="onSubmit($event)" novalidate>
-    <!-- بيانات الحساب الأساسية -->
-    <fieldset class="form-section-card">
-      <legend>
-        <span class="legend-icon">
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-        </span>
-        <span>{{ 'register.sectionBasic' | t }}</span>
-      </legend>
-      <div class="row g-3">
-        <label class="form-field col-12 col-md-4">
-          <span>{{ 'workspace.username' | t }}</span>
-          <input
-            type="text"
-            autocomplete="username"
-            [formField]="registrationForm.userName"
-            [placeholder]="'ui.full.234' | t"
-          />
-          @if (
-            registrationForm.userName().touched() && registrationForm.userName().errors().length
-          ) {
-            <small class="field-error">{{ (registrationForm.userName().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('UserName')) {
-            <small class="field-error">{{ serverError('UserName') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-4">
-          <span>{{ 'workspace.email' | t }}</span>
-          <input
-            type="email"
-            autocomplete="email"
-            [formField]="registrationForm.email"
-            [placeholder]="'doctor.emailExample' | t"
-          />
-          @if (registrationForm.email().touched() && registrationForm.email().errors().length) {
-            <small class="field-error">{{ (registrationForm.email().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('Email')) {
-            <small class="field-error">{{ serverError('Email') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-4">
-          <span>{{ 'workspace.phone' | t }}</span>
-          <input
-            type="tel"
-            autocomplete="tel"
-            [formField]="registrationForm.phoneNumber"
-            [placeholder]="'account.phoneExample' | t"
-          />
-          @if (
-            registrationForm.phoneNumber().touched() &&
-            registrationForm.phoneNumber().errors().length
-          ) {
-            <small class="field-error">{{ (registrationForm.phoneNumber().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('PhoneNumber')) {
-            <small class="field-error">{{ serverError('PhoneNumber') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-6">
-          <span>{{ 'register.password' | t }}</span>
-          <input
-            [type]="showPasswords() ? 'text' : 'password'"
-            autocomplete="new-password"
-            [formField]="registrationForm.password"
-            [placeholder]="'account.strongPasswordPlaceholder' | t"
-          />
-          @if (
-            registrationForm.password().touched() && registrationForm.password().errors().length
-          ) {
-            <small class="field-error">{{ (registrationForm.password().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('Password')) {
-            <small class="field-error">{{ serverError('Password') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-6">
-          <span>{{ 'register.confirmPassword' | t }}</span>
-          <input
-            [type]="showPasswords() ? 'text' : 'password'"
-            autocomplete="new-password"
-            [formField]="registrationForm.confirmPassword"
-            [placeholder]="'account.repeatPasswordPlaceholder' | t"
-          />
-          @if (
-            registrationForm.confirmPassword().touched() &&
-            registrationForm.confirmPassword().errors().length
-          ) {
-            <small class="field-error">{{ (registrationForm.confirmPassword().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('ConfirmPassword')) {
-            <small class="field-error">{{ serverError('ConfirmPassword') }}</small>
-          }
-        </label>
-
-        <label class="form-check-line col-12">
-          <input type="checkbox" [checked]="showPasswords()" (change)="togglePasswords()" />
-          <span>{{ 'register.showPasswords' | t }}</span>
-        </label>
-      </div>
-    </fieldset>
-
-    <!-- البيانات الشخصية والمهنية -->
-    <fieldset class="form-section-card">
-      <legend>
-        <span class="legend-icon">
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-        </span>
-        <span>{{ 'register.sectionPersonal' | t }}</span>
-      </legend>
-      <div class="row g-3">
-        <label class="form-field col-12 col-md-6">
-          <span>{{ 'register.fullNameAr' | t }}</span>
-          <input
-            type="text"
-            autocomplete="name"
-            [dir]="uiLanguage.dir()"
-            [formField]="registrationForm.nameAr"
-            [placeholder]="'ui.full.235' | t"
-          />
-          @if (registrationForm.nameAr().touched() && registrationForm.nameAr().errors().length) {
-            <small class="field-error">{{ (registrationForm.nameAr().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('NameAr')) {
-            <small class="field-error">{{ serverError('NameAr') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-6">
-          <span>{{ 'common.nameEn' | t }} <small class="text-muted">{{ 'common.optionalParentheses' | t }}</small></span>
-          <input
-            type="text"
-            autocomplete="name"
-            dir="ltr"
-            [formField]="registrationForm.nameEn"
-            [placeholder]="'doctor.englishNameExample' | t"
-          />
-          @if (registrationForm.nameEn().touched() && registrationForm.nameEn().errors().length) {
-            <small class="field-error">{{ (registrationForm.nameEn().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('NameEn')) {
-            <small class="field-error">{{ serverError('NameEn') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-6">
-          <span>{{ 'register.dob' | t }}</span>
-          <input type="date" appNoFutureDate [formField]="registrationForm.dateOfBirth" />
-          @if (
-            registrationForm.dateOfBirth().touched() &&
-            registrationForm.dateOfBirth().errors().length
-          ) {
-            <small class="field-error">{{ (registrationForm.dateOfBirth().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('DateOfBirth')) {
-            <small class="field-error">{{ serverError('DateOfBirth') }}</small>
-          }
-        </label>
-
-        <label class="form-field col-12 col-md-6">
-          <span>{{ 'register.gender' | t }}</span>
-          <select [formField]="registrationForm.gender">
-            <option value="">{{ 'register.selectGender' | t }}</option>
-            <option value="Male">{{ 'register.male' | t }}</option>
-            <option value="Female">{{ 'register.female' | t }}</option>
-          </select>
-          @if (registrationForm.gender().touched() && registrationForm.gender().errors().length) {
-            <small class="field-error">{{ (registrationForm.gender().errors()[0].message ?? '') | t }}</small>
-          }
-          @if (serverError('Gender')) {
-            <small class="field-error">{{ serverError('Gender') }}</small>
-          }
-        </label>
-      </div>
-    </fieldset>
-
-    <!-- مستندات الاعتماد -->
-    <fieldset class="form-section-card">
-      <legend>
-        <span class="legend-icon">
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <polyline points="21 15 16 10 5 21" />
-          </svg>
-        </span>
-        <span>{{ 'ui.full.236' | t }}</span>
-      </legend>
-      <div class="row g-3">
-        <div class="col-12 col-md-4">
-          <app-file-upload
-            [label]="'common.profilePhoto' | t"
-            [error]="serverError('ProfileImage')"
-            (fileChange)="profileImage.set($event)"
-          />
-        </div>
-        <div class="col-12 col-md-4">
-          <app-file-upload
-            [label]="'account.idFront' | t"
-            [required]="true"
-            [error]="serverError('PersonalIdFrontImage')"
-            (fileChange)="personalIdFrontImage.set($event)"
-          />
-        </div>
-        <div class="col-12 col-md-4">
-          <app-file-upload
-            [label]="'account.idBack' | t"
-            [required]="true"
-            [error]="serverError('PersonalIdBackImage')"
-            (fileChange)="personalIdBackImage.set($event)"
-          />
-        </div>
-        <div class="col-12 col-md-6">
-          <app-file-upload
-            [label]="'ui.full.237' | t"
-            [required]="true"
-            [error]="serverError('SyndicateCardFrontImage')"
-            (fileChange)="syndicateCardFrontImage.set($event)"
-          />
-        </div>
-        <div class="col-12 col-md-6">
-          <app-file-upload
-            [label]="'ui.full.238' | t"
-            [required]="true"
-            [error]="serverError('SyndicateCardBackImage')"
-            (fileChange)="syndicateCardBackImage.set($event)"
-          />
-        </div>
-      </div>
-      @if (filesError()) {
-        <p class="field-error files-error" role="alert">{{ filesError() }}</p>
-      }
-    </fieldset>
-
-    <div class="form-notice info notice-with-icon">
-      <svg
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="16" x2="12" y2="12" />
-        <line x1="12" y1="8" x2="12.01" y2="8" />
-      </svg>
-      <span
-        >{{ 'ui.full.239' | t }}</span
-      >
-    </div>
-
-    <button class="btn btn-primary auth-submit" type="submit" [disabled]="isSubmitting()">
-      @if (isSubmitting()) {
-        <span>{{ 'requests.submitting' | t }}</span>
-      } @else {
-        <span>{{ 'ui.full.240' | t }}</span>
+      <a class="back-link" routerLink="/login">
         <svg
+          class="back-link-icon"
           viewBox="0 0 24 24"
-          width="16"
-          height="16"
+          width="15"
+          height="15"
           fill="none"
           stroke="currentColor"
-          stroke-width="2.5"
+          stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
           aria-hidden="true"
         >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
+          <polyline points="9 18 15 12 9 6" />
         </svg>
-      }
-    </button>
-  </form>
+        <span>{{ 'register.backToLogin' | t }}</span>
+      </a>
+
+      <!-- Role Switcher -->
+      <div
+        class="registration-role-switcher"
+        role="tablist"
+        [attr.aria-label]="'register.sectionBasic' | t"
+      >
+        <a routerLink="/register/patient" class="role-switch-tab" role="tab" aria-selected="false">
+          <span class="role-tab-icon">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
+              />
+            </svg>
+          </span>
+          <span>{{ 'register.rolePatient' | t }}</span>
+        </a>
+        <a
+          routerLink="/register/doctor"
+          class="role-switch-tab active"
+          role="tab"
+          aria-selected="true"
+        >
+          <span class="role-tab-icon">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <path
+                d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.89 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"
+              />
+            </svg>
+          </span>
+          <span>{{ 'register.roleDoctor' | t }}</span>
+        </a>
+      </div>
+    </div>
+
+    <header class="auth-form-heading">
+      <div class="heading-badge-wrap">
+        <span class="auth-welcome-pill doctor-pill-badge">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+            <path
+              d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.89 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"
+            />
+          </svg>
+          {{ 'ui.full.231' | t }}
+        </span>
+      </div>
+      <h1>{{ 'ui.full.232' | t }}</h1>
+      <p>{{ 'ui.full.233' | t }}</p>
+    </header>
+
+    @if (apiMessages().length) {
+      <div class="form-notice error" role="alert">
+        @for (message of apiMessages(); track message) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    }
+
+    <form class="auth-form registration-form" (submit)="onSubmit($event)" novalidate>
+      <!-- بيانات الحساب الأساسية -->
+      <fieldset class="form-section-card">
+        <legend>
+          <span class="legend-icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </span>
+          <span>{{ 'register.sectionBasic' | t }}</span>
+        </legend>
+        <div class="registration-grid">
+          <label class="form-field field-full col-md-4">
+            <span>{{ 'workspace.username' | t }}</span>
+            <input
+              type="text"
+              autocomplete="username"
+              [formField]="registrationForm.userName"
+              [placeholder]="'ui.full.234' | t"
+            />
+            @if (
+              registrationForm.userName().touched() && registrationForm.userName().errors().length
+            ) {
+              <small class="field-error">{{
+                registrationForm.userName().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('UserName')) {
+              <small class="field-error">{{ serverError('UserName') }}</small>
+            }
+          </label>
+
+          <label class="form-field field-full col-md-4">
+            <span>{{ 'workspace.email' | t }}</span>
+            <input
+              type="email"
+              autocomplete="email"
+              [formField]="registrationForm.email"
+              [placeholder]="'doctor.emailExample' | t"
+            />
+            @if (registrationForm.email().touched() && registrationForm.email().errors().length) {
+              <small class="field-error">{{
+                registrationForm.email().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('Email')) {
+              <small class="field-error">{{ serverError('Email') }}</small>
+            }
+          </label>
+
+          <label class="form-field field-full col-md-4">
+            <span>{{ 'workspace.phone' | t }}</span>
+            <input
+              type="tel"
+              autocomplete="tel"
+              [formField]="registrationForm.phoneNumber"
+              [placeholder]="'account.phoneExample' | t"
+            />
+            @if (
+              registrationForm.phoneNumber().touched() &&
+              registrationForm.phoneNumber().errors().length
+            ) {
+              <small class="field-error">{{
+                registrationForm.phoneNumber().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('PhoneNumber')) {
+              <small class="field-error">{{ serverError('PhoneNumber') }}</small>
+            }
+          </label>
+
+          <label class="form-field">
+            <span>{{ 'register.password' | t }}</span>
+            <input
+              [type]="showPasswords() ? 'text' : 'password'"
+              autocomplete="new-password"
+              [formField]="registrationForm.password"
+              [placeholder]="'account.strongPasswordPlaceholder' | t"
+            />
+            @if (
+              registrationForm.password().touched() && registrationForm.password().errors().length
+            ) {
+              <small class="field-error">{{
+                registrationForm.password().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('Password')) {
+              <small class="field-error">{{ serverError('Password') }}</small>
+            }
+          </label>
+
+          <label class="form-field">
+            <span>{{ 'register.confirmPassword' | t }}</span>
+            <input
+              [type]="showPasswords() ? 'text' : 'password'"
+              autocomplete="new-password"
+              [formField]="registrationForm.confirmPassword"
+              [placeholder]="'account.repeatPasswordPlaceholder' | t"
+            />
+            @if (
+              registrationForm.confirmPassword().touched() &&
+              registrationForm.confirmPassword().errors().length
+            ) {
+              <small class="field-error">{{
+                registrationForm.confirmPassword().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('ConfirmPassword')) {
+              <small class="field-error">{{ serverError('ConfirmPassword') }}</small>
+            }
+          </label>
+
+          <label class="form-check-line field-full">
+            <input
+              class="sr-only-chk"
+              type="checkbox"
+              [checked]="showPasswords()"
+              (change)="togglePasswords()"
+            />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span>{{ 'register.showPasswords' | t }}</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- البيانات الشخصية والمهنية -->
+      <fieldset class="form-section-card">
+        <legend>
+          <span class="legend-icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </span>
+          <span>{{ 'register.sectionPersonal' | t }}</span>
+        </legend>
+        <div class="registration-grid">
+          <label class="form-field">
+            <span>{{ 'register.fullNameAr' | t }}</span>
+            <input
+              type="text"
+              autocomplete="name"
+              [dir]="uiLanguage.dir()"
+              [formField]="registrationForm.nameAr"
+              [placeholder]="'ui.full.235' | t"
+            />
+            @if (registrationForm.nameAr().touched() && registrationForm.nameAr().errors().length) {
+              <small class="field-error">{{
+                registrationForm.nameAr().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('NameAr')) {
+              <small class="field-error">{{ serverError('NameAr') }}</small>
+            }
+          </label>
+
+          <label class="form-field">
+            <span
+              >{{ 'common.nameEn' | t }}
+              <small class="text-muted">{{ 'common.optionalParentheses' | t }}</small></span
+            >
+            <input
+              type="text"
+              autocomplete="name"
+              dir="ltr"
+              [formField]="registrationForm.nameEn"
+              [placeholder]="'doctor.englishNameExample' | t"
+            />
+            @if (registrationForm.nameEn().touched() && registrationForm.nameEn().errors().length) {
+              <small class="field-error">{{
+                registrationForm.nameEn().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('NameEn')) {
+              <small class="field-error">{{ serverError('NameEn') }}</small>
+            }
+          </label>
+
+          <label class="form-field">
+            <span>{{ 'register.dob' | t }}</span>
+            <input type="date" appNoFutureDate [formField]="registrationForm.dateOfBirth" />
+            @if (
+              registrationForm.dateOfBirth().touched() &&
+              registrationForm.dateOfBirth().errors().length
+            ) {
+              <small class="field-error">{{
+                registrationForm.dateOfBirth().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('DateOfBirth')) {
+              <small class="field-error">{{ serverError('DateOfBirth') }}</small>
+            }
+          </label>
+
+          <label class="form-field">
+            <span>{{ 'register.gender' | t }}</span>
+            <select [formField]="registrationForm.gender">
+              <option value="">{{ 'register.selectGender' | t }}</option>
+              <option value="Male">{{ 'register.male' | t }}</option>
+              <option value="Female">{{ 'register.female' | t }}</option>
+            </select>
+            @if (registrationForm.gender().touched() && registrationForm.gender().errors().length) {
+              <small class="field-error">{{
+                registrationForm.gender().errors()[0].message ?? '' | t
+              }}</small>
+            }
+            @if (serverError('Gender')) {
+              <small class="field-error">{{ serverError('Gender') }}</small>
+            }
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- مستندات الاعتماد -->
+      <fieldset class="form-section-card">
+        <legend>
+          <span class="legend-icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          </span>
+          <span>{{ 'ui.full.236' | t }}</span>
+        </legend>
+        <div class="registration-grid">
+          <div class="upload-field">
+            <app-file-upload
+              [label]="'common.profilePhoto' | t"
+              [error]="serverError('ProfileImage')"
+              (fileChange)="profileImage.set($event)"
+            />
+          </div>
+          <div class="upload-field">
+            <app-file-upload
+              [label]="'account.idFront' | t"
+              [required]="true"
+              [error]="serverError('PersonalIdFrontImage')"
+              (fileChange)="personalIdFrontImage.set($event)"
+            />
+          </div>
+          <div class="upload-field">
+            <app-file-upload
+              [label]="'account.idBack' | t"
+              [required]="true"
+              [error]="serverError('PersonalIdBackImage')"
+              (fileChange)="personalIdBackImage.set($event)"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <app-file-upload
+              [label]="'ui.full.237' | t"
+              [required]="true"
+              [error]="serverError('SyndicateCardFrontImage')"
+              (fileChange)="syndicateCardFrontImage.set($event)"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <app-file-upload
+              [label]="'ui.full.238' | t"
+              [required]="true"
+              [error]="serverError('SyndicateCardBackImage')"
+              (fileChange)="syndicateCardBackImage.set($event)"
+            />
+          </div>
+        </div>
+        @if (filesError()) {
+          <p class="field-error files-error" role="alert">{{ filesError() }}</p>
+        }
+      </fieldset>
+
+      <div class="form-notice info notice-with-icon">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+        <span>{{ 'ui.full.239' | t }}</span>
+      </div>
+
+      <button class="btn btn-primary auth-submit" type="submit" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span>{{ 'requests.submitting' | t }}</span>
+        } @else {
+          <span>{{ 'ui.full.240' | t }}</span>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        }
+      </button>
+    </form>
   </div>
 </div>

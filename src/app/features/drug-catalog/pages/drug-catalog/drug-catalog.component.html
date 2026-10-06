@@ -1,0 +1,356 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'medications.title' | t"
+    [description]="'medications.subtitle' | t"
+    icon="specializations"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  >
+    <div pageHeaderActions>
+      @if (allowed('Create')) {
+        <button class="btn btn-primary" [disabled]="busy()" (click)="create()">
+          {{ 'medications.add' | t }}
+        </button>
+      }
+    </div>
+    <div pageHeaderDeck class="toolbar">
+      <label
+        >{{ 'reservations.search' | t
+        }}<input
+          class="field-input"
+          type="search"
+          [value]="query().search || ''"
+          (change)="filter('search', $event)"
+          [disabled]="busy()"
+      /></label>
+      <label
+        >{{ 'reservations.status' | t
+        }}<span class="select-control">
+          <select
+            class="field-input"
+            [value]="query().status || ''"
+            (change)="filter('status', $event)"
+            [disabled]="busy()"
+          >
+            <option value="">{{ 'reservations.all' | t }}</option>
+            @for (status of statuses; track status) {
+              <option [value]="status">{{ 'medications.status.' + status | t }}</option>
+            }</select
+          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg> </span
+      ></label>
+    </div>
+  </app-page-header>
+  <section class="directory" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'medications.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medicine-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'medications.empty' | t }}</h2>
+        <p>{{ 'medications.emptyHelp' | t }}</p>
+        <button class="btn btn-primary" (click)="resetFilters()">
+          {{ 'medications.resetSearch' | t }}
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              'medications.title' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'medications.name' | t }}</th>
+              <th scope="col">{{ 'medications.scientificName' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of page().items; track item.drugCatalogId) {
+              <tr>
+                <td>
+                  <strong>{{ name(item) }}</strong
+                  ><small class="drug-description"
+                    >{{ item.strengthText }} {{ item.dosageForm }}</small
+                  >
+                </td>
+                <td>{{ item.scientificName || '—' }}</td>
+                <td>
+                  <span class="status-badge">{{ 'medications.status.' + item.status | t }}</span>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    [disabled]="busy()"
+                    (click)="inspect(item.drugCatalogId)"
+                  >
+                    {{ 'reservations.inspect' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page().pageNumber <= 1 || busy()"
+          (click)="load(page().pageNumber - 1)"
+        >
+          {{ 'reservations.previous' | t }}
+        </button>
+        <span>{{ page().pageNumber }} · {{ page().totalCount }}</span>
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page().pageNumber * page().pageSize >= page().totalCount || busy()"
+          (click)="load(page().pageNumber + 1)"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+  }
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="'medications.details' | t"
+    width="640px"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+    @if (editing()) {
+      <form class="detail-form" [formGroup]="form" (ngSubmit)="save()">
+        <fieldset class="full detail-form" [disabled]="busy()">
+          @for (field of textFields; track field) {
+            <label
+              >{{ 'medications.' + field | t
+              }}<input
+                class="field-input"
+                [formControlName]="field"
+                [required]="field === 'commercialNameEn'"
+            /></label>
+          }
+          <label
+            >{{ 'medications.priceEgp' | t
+            }}<input
+              class="field-input ltr-text"
+              formControlName="priceEgp"
+              type="number"
+              min="0"
+              step="0.01"
+              dir="ltr"
+          /></label>
+          @if (!creating()) {
+            <label class="full"
+              >{{ 'medications.reason' | t
+              }}<input class="field-input" [value]="reason()" (input)="setReason($event)" required
+            /></label>
+          }
+          <p class="full">{{ 'medications.priceHelp' | t }}</p>
+        </fieldset>
+        <div class="actions full">
+          <button class="btn btn-primary" [disabled]="busy()">{{ 'common.save' | t }}</button>
+          @if (!creating()) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="cancelEdit()"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+          }
+        </div>
+      </form>
+    } @else if (detail(); as item) {
+      <h2>{{ name(item) }}</h2>
+      <p>
+        <span class="status-badge">{{ 'medications.status.' + item.status | t }}</span>
+      </p>
+      <dl>
+        @for (field of textFields; track field) {
+          <dt>{{ 'medications.' + field | t }}</dt>
+          <dd>{{ item[field] || '—' }}</dd>
+        }
+        <dt>{{ 'medications.priceEgp' | t }}</dt>
+        <dd dir="ltr">{{ item.priceEgp ?? '—' }}</dd>
+        <dt>{{ 'medications.source' | t }}</dt>
+        <dd>{{ item.source || '—' }}</dd>
+        @if (item.targetDrugCatalogId) {
+          <dt>{{ 'medications.mergedTarget' | t }}</dt>
+          <dd>
+            <button
+              class="btn btn-link"
+              [disabled]="busy()"
+              (click)="inspect(item.targetDrugCatalogId)"
+            >
+              {{ 'reservations.inspect' | t }}
+            </button>
+          </dd>
+        }
+      </dl>
+      <p>{{ 'medications.priceHelp' | t }}</p>
+      @if (item.status !== 'Merged') {
+        <div class="actions">
+          @if (allowed('Update')) {
+            <button class="btn btn-primary" [disabled]="busy()" (click)="edit()">
+              {{ 'medications.edit' | t }}
+            </button>
+          }
+          @if (item.status !== 'Active' && allowed('Activate')) {
+            <button
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="prepareAction('activate')"
+            >
+              {{ 'medications.activate' | t }}
+            </button>
+          }
+          @if (item.status === 'Active' && allowed('Deactivate')) {
+            <button
+              class="btn btn-danger"
+              [disabled]="busy()"
+              (click)="prepareAction('deactivate')"
+            >
+              {{ 'medications.deactivate' | t }}
+            </button>
+          }
+          @if (allowed('Merge')) {
+            <button
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="prepareAction('merge')"
+            >
+              {{ 'medications.merge' | t }}
+            </button>
+          }
+        </div>
+      }
+      @if (pendingAction(); as action) {
+        <section class="section">
+          <h3>{{ 'medications.' + action | t }}</h3>
+          <label
+            >{{ 'medications.reason' | t
+            }}<input
+              class="field-input"
+              [value]="reason()"
+              (input)="setReason($event)"
+              [disabled]="busy()"
+              required
+          /></label>
+          @if (action === 'merge') {
+            <p>{{ 'medications.mergeHelp' | t }}</p>
+            <label
+              >{{ 'medications.targetSearch' | t
+              }}<input
+                class="field-input"
+                type="search"
+                [value]="targetSearch()"
+                (change)="setTargetSearch($event)"
+                [disabled]="busy()"
+            /></label>
+            @if (targetLoading()) {
+              <p role="status">{{ 'reservations.loading' | t }}</p>
+            }
+            <ul class="history">
+              @for (target of targets().items; track target.drugCatalogId) {
+                @if (target.status === 'Active' && target.drugCatalogId !== item.drugCatalogId) {
+                  <li>
+                    <button
+                      class="btn btn-outline-secondary"
+                      [attr.aria-pressed]="targetId() === target.drugCatalogId"
+                      [disabled]="busy()"
+                      (click)="chooseTarget(target.drugCatalogId)"
+                    >
+                      {{ name(target) }}
+                    </button>
+                  </li>
+                }
+              }
+            </ul>
+            @if (!targetLoading() && !targets().items.length) {
+              <p>{{ 'medications.noTarget' | t }}</p>
+            }
+            <nav class="actions" [attr.aria-label]="'reservations.pagination' | t">
+              <button
+                class="btn btn-outline-secondary"
+                [disabled]="targets().pageNumber <= 1 || targetLoading() || busy()"
+                (click)="loadTargets(targets().pageNumber - 1)"
+              >
+                {{ 'reservations.previous' | t }}
+              </button>
+              <button
+                class="btn btn-outline-secondary"
+                [disabled]="
+                  targets().pageNumber * targets().pageSize >= targets().totalCount ||
+                  targetLoading() ||
+                  busy()
+                "
+                (click)="loadTargets(targets().pageNumber + 1)"
+              >
+                {{ 'reservations.next' | t }}
+              </button>
+            </nav>
+          }
+          <p>{{ 'medications.confirmChange' | t }}</p>
+          <div class="actions">
+            <button
+              class="btn btn-primary"
+              [disabled]="busy() || !reason().trim() || (action === 'merge' && !targetId())"
+              (click)="executeAction()"
+            >
+              {{ 'medications.confirm' | t }}
+            </button>
+            <button class="btn btn-outline-secondary" [disabled]="busy()" (click)="cancelAction()">
+              {{ 'common.cancel' | t }}
+            </button>
+          </div>
+        </section>
+      }
+      <section class="section">
+        <h3>{{ 'medications.history' | t }}</h3>
+        <ul class="history">
+          @for (entry of item.history || []; track $index) {
+            <li>
+              <strong>{{ historyLabel(entry.action) }}</strong>
+              <p>{{ entry.reason }}</p>
+              <small>{{ entry.changedBy }}</small
+              ><time dir="ltr">{{
+                entry.createdOnUtc | localizedDate: language.currentLang()
+              }}</time>
+            </li>
+          } @empty {
+            <li>{{ 'medications.noHistory' | t }}</li>
+          }
+        </ul>
+      </section>
+    }
+  </app-side-drawer>
+</main>

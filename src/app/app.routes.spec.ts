@@ -11,8 +11,9 @@ import { PERMISSIONS } from './core/auth/permissions';
 
 describe('Feature route ownership', () => {
   it('keeps major feature boundaries lazy and preserves public URLs', () => {
+    const portalRoutes = routes.find(route => route.children?.some(child => child.path === 'doctor/practices'))!.children!;
     for (const prefix of ['doctor/practices','doctor/receptions','doctor/profile','doctor/onboarding','patient','reception']) {
-      expect(routes.find(route=>route.path===prefix)?.loadChildren).toBeTypeOf('function');
+      expect(portalRoutes.find(route=>route.path===prefix)?.loadChildren).toBeTypeOf('function');
     }
     expect(practices.map(route=>route.path)).toEqual(['','new',':practiceId']);
     expect(receptions.map(route=>route.path)).toEqual(['','new',':receptionId']);

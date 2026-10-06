@@ -18,6 +18,7 @@ import {
   PatientEncounterDetails,
 } from '../../../domains/encounters';
 import { TicketsApi } from '../../../domains/tickets';
+import { PrescriptionState } from '../../../domains/prescriptions';
 
 @Injectable()
 export class EncounterWorkspaceStore {
@@ -37,6 +38,7 @@ export class EncounterWorkspaceStore {
   readonly loading = signal(false);
   readonly detailLoading = signal(false);
   readonly busy = signal(false);
+  readonly prescriptionBusy = signal(false);
   readonly failed = signal(false);
   readonly messages = signal<readonly string[]>([]);
   private generation = 0;
@@ -51,19 +53,19 @@ export class EncounterWorkspaceStore {
   );
   readonly canEditNotes = computed(
     () =>
-      this.detail()?.status === 'InProgress' &&
+      !this.prescriptionBusy() && this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canEditClinicalNotes &&
       this.session.hasPermission(PERMISSIONS.medicalEncountersUpdateOwn),
   );
   readonly canManageDiagnoses = computed(
     () =>
-      this.detail()?.status === 'InProgress' &&
+      !this.prescriptionBusy() && this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canManageDiagnoses &&
       this.session.hasPermission(PERMISSIONS.diagnosesManageOwn),
   );
   readonly canComplete = computed(
     () =>
-      this.detail()?.status === 'InProgress' &&
+      !this.prescriptionBusy() && this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canComplete &&
       this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn),
   );
@@ -79,6 +81,10 @@ export class EncounterWorkspaceStore {
       (this.detail()?.capabilities?.canAmend ?? true) &&
       this.session.hasPermission(PERMISSIONS.medicalEncountersAmendOwn),
   );
+
+  prescriptionChanged(prescription: PrescriptionState | null) {
+    this.detail.update(detail => detail ? { ...detail, prescription } : null);
+  }
 
   async initialize(doctor: boolean, practiceId = '', encounterId = '', ticketId = '') {
     this.doctor.set(doctor);
@@ -114,7 +120,7 @@ export class EncounterWorkspaceStore {
     }
   }
   async selectPractice(id: string) {
-    if (this.busy() || (id && !this.practices().some((p) => p.id === id))) return;
+    if (this.busy() || this.prescriptionBusy() || (id && !this.practices().some((p) => p.id === id))) return;
     this.generation++;
     this.close();
     this.practiceId.set(id);
@@ -147,7 +153,7 @@ export class EncounterWorkspaceStore {
     }
   }
   async inspect(id: string) {
-    if (!this.canReadDetails() || this.busy()) return;
+    if (!this.canReadDetails() || this.busy() || this.prescriptionBusy()) return;
     this.close();
     const sequence = ++this.detailSequence,
       generation = this.generation;
@@ -215,8 +221,23 @@ export class EncounterWorkspaceStore {
     if (active.length && active.filter((d) => d.type === 'Primary').length !== 1) return;
     this.busy.set(true);
     try {
-      const ticket = await firstValueFrom(this.tickets.details(this.practiceId(), detail.ticketId));
-      const body = { ticketRowVersion: ticket.rowVersion, encounterRowVersion: detail.rowVersion };
+      const [ticket, latest] = await Promise.all([
+        firstValueFrom(this.tickets.details(this.practiceId(), detail.ticketId)),
+        firstValueFrom(this.api.byTicket(this.practiceId(), detail.ticketId)),
+      ]);
+      this.detail.set(latest);
+      if (latest.status !== 'InProgress' || !this.canComplete()) return;
+      const prescription = latest.prescription;
+      if (prescription?.draft && prescription.completionBlockers.length) {
+        this.messages.set(prescription.completionBlockers.map(blocker => blocker.message));
+        this.toast.error('medications.resolveBlockers');
+        return;
+      }
+      const body = {
+        ticketRowVersion: ticket.rowVersion,
+        encounterRowVersion: latest.rowVersion,
+        ...(prescription?.draft ? { prescriptionRowVersion: prescription.rowVersion } : {}),
+      };
       const signature = JSON.stringify({ ticketId: detail.ticketId, ...body });
       if (this.completionIntent?.signature !== signature)
         this.completionIntent = { signature, key: createIdempotencyKey() };
@@ -295,7 +316,7 @@ export class EncounterWorkspaceStore {
     }
   }
   close() {
-    if (this.busy()) return;
+    if (this.busy() || this.prescriptionBusy()) return;
     this.detailSequence++;
     this.detail.set(null);
     this.patientDetail.set(null);
@@ -304,7 +325,7 @@ export class EncounterWorkspaceStore {
     this.completionIntent = null;
   }
   private async mutate(request: Observable<EncounterDetails>) {
-    if (this.busy()) return;
+    if (this.busy() || this.prescriptionBusy()) return;
     this.busy.set(true);
     this.messages.set([]);
     try {

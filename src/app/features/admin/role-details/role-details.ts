@@ -28,6 +28,7 @@ import {
   SecurityPermission,
   SecurityRole,
   isRootOnlyPermissionName,
+  DRUG_CATALOG_MANAGER_PERMISSIONS,
 } from '../services/security-governance/security-governance.models';
 import { isGuid } from '../../../core/validation/guid';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
@@ -90,7 +91,7 @@ export class RoleDetails {
   protected readonly canManage = computed(() => {
     const role = this.role();
     if (!role || !this.canViewCatalog || !this.hasManagePermission) return false;
-    return role.name !== 'SuperAdmin' || this.hasRootContext();
+    return !['SuperAdmin', 'DrugCatalogManager'].includes(role.name) || this.hasRootContext();
   });
 
   protected readonly totalCatalogCount = computed(() => this.catalog()?.length ?? 0);
@@ -155,7 +156,7 @@ export class RoleDetails {
   protected readonly managementBlockReason = computed(() => {
     if (!this.canViewCatalog) return this.uiLanguage.t('ui.full.64');
     if (!this.hasManagePermission) return this.uiLanguage.t('ui.full.65');
-    if (this.role()?.name === 'SuperAdmin' && !this.hasRootContext()) {
+    if (['SuperAdmin', 'DrugCatalogManager'].includes(this.role()?.name ?? '') && !this.hasRootContext()) {
       return this.uiLanguage.t('ui.full.66');
     }
     return '';
@@ -226,7 +227,8 @@ export class RoleDetails {
   }
 
   protected isAssignable(permission: SecurityPermission): boolean {
-    return this.canManage() && permission.isSystemPermission && !this.isRootOnly(permission);
+    return this.canManage() && permission.isSystemPermission && !this.isRootOnly(permission) &&
+      (this.role()?.name !== 'DrugCatalogManager' || DRUG_CATALOG_MANAGER_PERMISSIONS.has(permission.name));
   }
 
   protected getGroupLabel(group: string): string {
@@ -349,6 +351,12 @@ export class RoleDetails {
     this.isSaving.set(true);
     this.saveMessages.set([]);
     try {
+      const selected = [...this.selectedIds()];
+      const catalog = this.catalog() ?? [];
+      if (selected.some(id => !catalog.some(p => p.id === id && this.isAssignable(p)))) {
+        this.toast.error('medications.permissionDenied');
+        return;
+      }
       const response = await firstValueFrom(
         this.api.replaceRolePermissions(id, {
           permissionIds: [...this.selectedIds()],
@@ -363,6 +371,7 @@ export class RoleDetails {
     } catch (error) {
       const parsed = parseApiErrors(error);
       this.saveMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
+      this.toast.error(this.saveMessages()[0] || 'medications.failed');
     } finally {
       this.isSaving.set(false);
     }

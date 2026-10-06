@@ -83,6 +83,7 @@ describe('PracticeSegments', () => {
       ],
     }).compileComponents();
 
+    TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(PracticeSegments);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('practiceId', 'prac-1');
@@ -109,16 +110,26 @@ describe('PracticeSegments', () => {
 
   it('should toggle adding segment state', () => {
     (component as unknown as { openAddSegment: () => void }).openAddSegment();
-    expect((component as unknown as { isAddingSegment: () => boolean }).isAddingSegment()).toBe(true);
+    expect((component as unknown as { isAddingSegment: () => boolean }).isAddingSegment()).toBe(
+      true,
+    );
 
     (component as unknown as { cancelSegmentEdit: () => void }).cancelSegmentEdit();
-    expect((component as unknown as { isAddingSegment: () => boolean }).isAddingSegment()).toBe(false);
+    expect((component as unknown as { isAddingSegment: () => boolean }).isAddingSegment()).toBe(
+      false,
+    );
   });
 
   it('should populate edit segment form', () => {
-    (component as unknown as { editSegment: (s: DoctorPracticeSegment) => void }).editSegment(mockSegments[0]);
-    expect((component as unknown as { editingSegmentId: () => string | null }).editingSegmentId()).toBe('seg-1');
-    const model = (component as unknown as { segmentModel: () => { nameAr: string } }).segmentModel();
+    (component as unknown as { editSegment: (s: DoctorPracticeSegment) => void }).editSegment(
+      mockSegments[0],
+    );
+    expect(
+      (component as unknown as { editingSegmentId: () => string | null }).editingSegmentId(),
+    ).toBe('seg-1');
+    const model = (
+      component as unknown as { segmentModel: () => { nameAr: string } }
+    ).segmentModel();
     expect(model.nameAr).toBe('شريحة عامة');
   });
 
@@ -126,7 +137,9 @@ describe('PracticeSegments', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockApi.deletePrice.mockReturnValue(of(undefined));
 
-    await (component as unknown as { deletePrice: (p: DoctorPracticePrice) => Promise<void> }).deletePrice(mockPrices[0]);
+    await (
+      component as unknown as { deletePrice: (p: DoctorPracticePrice) => Promise<void> }
+    ).deletePrice(mockPrices[0]);
 
     expect(mockApi.deletePrice).toHaveBeenCalledWith('prac-1', 'pr-1', { rowVersion: 'v1' });
     expect(mockToast.success).toHaveBeenCalledWith('تم حذف السعر.');
@@ -142,5 +155,16 @@ describe('PracticeSegments', () => {
 
     const messages = (component as unknown as { messages: () => string[] }).messages();
     expect(messages.length).toBeGreaterThan(0);
+  });
+
+  afterEach(() => localStorage.removeItem('wasla_lang'));
+  it('shows an error toast and releases controls after a failed price deletion', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockApi.deletePrice.mockReturnValueOnce(throwError(() => new Error('Unavailable')));
+    await component['deletePrice'](mockPrices[0]);
+    expect(mockToast.error).toHaveBeenCalledWith('common.requestFailed');
+    expect(mockToast.success).not.toHaveBeenCalled();
+    expect(component['activeAction']()).toBeNull();
+    expect(component['prices']()).toEqual(mockPrices);
   });
 });

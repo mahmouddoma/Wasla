@@ -1,3 +1,9 @@
+import { AppHeader } from '../app-header/app-header';
+import {
+  MobileNavigation,
+  NavigationItem,
+  NAVIGATION_ICONS,
+} from '../mobile-navigation/mobile-navigation';
 import { PERMISSIONS } from '../../../core/auth/permissions';
 import {
   ChangeDetectionStrategy,
@@ -12,24 +18,17 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { LanguageSwitcher } from '../language-switcher/language-switcher';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
-
-export interface PortalNavItem {
-  id: string;
-  labelKey: string;
-  route: string;
-  icon: string;
-}
 
 @Component({
   selector: 'app-portal-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, LanguageSwitcher, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, AppHeader, TranslatePipe, MobileNavigation],
   templateUrl: './portal-layout.html',
   styleUrl: './portal-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PortalLayout {
+  protected readonly navigationIcons = NAVIGATION_ICONS;
   readonly langService = inject(LanguageService);
   protected readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
@@ -55,43 +54,49 @@ export class PortalLayout {
 
   protected readonly user = this.session.user;
   protected readonly isReception = computed(() => this.user()?.userType === 'Reception');
-  protected readonly mobileNavItems = computed(() =>
-    this.isReception()
-      ? this.roleNavItems().filter((item) =>
-          ['workspace', 'reservations', 'queue', 'patients'].includes(item.id),
-        )
-      : [],
-  );
-  protected readonly isUserMenuOpen = signal(false);
-  protected readonly isIdCopied = signal(false);
+  protected readonly mobileNavItems = computed(() => {
+    const primaryIds = this.isReception()
+      ? ['workspace', 'reservations', 'queue', 'patients']
+      : this.user()?.userType.toLowerCase() === 'doctor'
+        ? ['workspace', 'reservations', 'queue', 'encounters']
+        : this.user()?.userType === 'DrugCatalogManager'
+          ? ['drug-catalog', 'drug-imports', 'medication-requests']
+          : ['workspace', 'reservations', 'find-doctor', 'tickets'];
+    return primaryIds
+      .flatMap((id) => this.roleNavItems().filter((item) => item.id === id))
+      .map((item) => ({ ...item, mobileLabelKey: 'navigation.' + item.id }));
+  });
 
   protected readonly home = computed(() => {
     const user = this.user();
     return user ? this.session.destinationFor(user) : '/login';
   });
 
-  protected readonly userInitial = computed(() => {
-    const name = this.user()?.userName?.trim();
-    return name ? name.charAt(0).toUpperCase() : '';
-  });
-
-  protected readonly userRole = computed(() => {
-    const user = this.user();
-    return user?.roles?.length ? user.roles.join(', ') : (user?.userType ?? '');
-  });
-
-  protected readonly roleNavItems = computed<PortalNavItem[]>(() => {
+  protected readonly roleNavItems = computed<NavigationItem[]>(() => {
     const userType = this.user()?.userType?.toLowerCase();
 
+    if (userType === 'drugcatalogmanager') {
+      const items: NavigationItem[] = [
+        { id: 'drug-catalog', labelKey: 'medications.title', route: '/drug-catalog', icon: 'clipboard-list' },
+        { id: 'drug-imports', labelKey: 'imports.title', route: '/drug-catalog/imports', icon: 'clipboard-list' },
+        { id: 'medication-requests', labelKey: 'requests.title', route: '/drug-catalog-requests', icon: 'clipboard-list' },
+      ];
+      return items.filter(item => item.id === 'drug-catalog' ? this.session.hasPermission('DrugCatalog.View')
+        : item.id === 'drug-imports' ? ['DrugCatalog.Import', 'DrugCatalog.ImportHistory'].some(p => this.session.hasPermission(p))
+        : this.session.hasPermission('DrugCatalogRequests.View'));
+    }
+
     if (userType === 'doctor') {
-      return [
+      const items: NavigationItem[] = [
+        ...(this.session.hasPermission('DrugCatalogRequests.ViewOwn') || this.session.hasPermission('DrugCatalogRequests.CreateOwn')
+          ? [{ id: 'medication-requests', labelKey: 'requests.title', route: '/doctor/medication-requests', icon: 'clipboard-list' as const }] : []),
         ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn)
           ? [
               {
                 id: 'encounters',
                 labelKey: 'encounters.title',
                 route: '/doctor/encounters',
-                icon: 'stethoscope',
+                icon: 'stethoscope' as const,
               },
             ]
           : []),
@@ -134,10 +139,11 @@ export class PortalLayout {
         { id: 'finance', labelKey: 'sidebar.finance', route: '/doctor/finance', icon: 'receipt' },
         { id: 'revenue', labelKey: 'sidebar.revenue', route: '/doctor/revenue', icon: 'chart' },
       ];
+      return items.filter((item) => this.canAccessDoctorItem(item.id));
     }
 
     if (userType === 'reception') {
-      const items: PortalNavItem[] = [
+      const items: NavigationItem[] = [
         {
           id: 'workspace',
           labelKey: 'sidebar.workspace',
@@ -195,6 +201,12 @@ export class PortalLayout {
               this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
               this.session.hasPermission(PERMISSIONS.patientsRegister)
             );
+          case 'family-requests':
+            return [
+              PERMISSIONS.familyRelationshipRequestsCreateAssisted,
+              PERMISSIONS.familyRelationshipRequestsViewAssisted,
+              PERMISSIONS.familyRelationshipRequestsResubmitAssisted,
+            ].some((permission) => this.session.hasPermission(permission));
           default:
             return true;
         }
@@ -202,14 +214,16 @@ export class PortalLayout {
     }
 
     // Default: Patient
-    return [
+    const items: NavigationItem[] = [
+      ...(this.session.hasPermission('Prescriptions.ViewOwnCompleted')
+        ? [{ id: 'prescriptions', labelKey: 'medications.prescription', route: '/patient/prescriptions', icon: 'clipboard-list' as const }] : []),
       ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwnCompleted)
         ? [
             {
               id: 'encounters',
               labelKey: 'encounters.title',
               route: '/patient/encounters',
-              icon: 'stethoscope',
+              icon: 'stethoscope' as const,
             },
           ]
         : []),
@@ -219,7 +233,7 @@ export class PortalLayout {
               id: 'follow-ups',
               labelKey: 'followUps.title',
               route: '/patient/follow-ups',
-              icon: 'calendar',
+              icon: 'calendar' as const,
             },
           ]
         : []),
@@ -261,34 +275,51 @@ export class PortalLayout {
       },
       { id: 'finance', labelKey: 'sidebar.finance', route: '/patient/finance', icon: 'receipt' },
     ];
+    return items.filter((item) => this.canAccessPatientItem(item.id));
   });
 
-  protected toggleUserMenu(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isUserMenuOpen.update((open) => !open);
+  private canAccessDoctorItem(id: string): boolean {
+    const required: Record<string, readonly string[]> = {
+      reservations: ['DoctorPracticeReservations.ViewOwn'],
+      profile: [
+        PERMISSIONS.doctorSpecializationsViewOwn,
+        PERMISSIONS.doctorPracticeLocationViewOwn,
+        PERMISSIONS.doctorPracticeLocationManageOwn,
+      ],
+      practices: [PERMISSIONS.doctorPracticesViewOwn],
+      receptions: [PERMISSIONS.receptionUsersViewOwn],
+      finance: [PERMISSIONS.doctorPracticePaymentsViewOwn],
+      revenue: [PERMISSIONS.doctorRevenueViewOwn],
+    };
+    return (
+      !required[id] || required[id].some((permission) => this.session.hasPermission(permission))
+    );
   }
 
-  protected closeUserMenu(): void {
-    this.isUserMenuOpen.set(false);
-  }
-
-  protected copyUserId(): void {
-    const id = this.user()?.applicationUserId;
-    if (id && typeof navigator !== 'undefined' && navigator.clipboard) {
-      void navigator.clipboard.writeText(id);
-      this.isIdCopied.set(true);
-      setTimeout(() => this.isIdCopied.set(false), 2000);
-    }
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.closeUserMenu();
+  private canAccessPatientItem(id: string): boolean {
+    const required: Record<string, readonly string[]> = {
+      tickets: [PERMISSIONS.ticketsViewOwn],
+      profile: [
+        PERMISSIONS.patientProfileViewOwn,
+        PERMISSIONS.patientProfileUpdateOwn,
+        PERMISSIONS.patientContactsViewOwn,
+        PERMISSIONS.patientContactsManageOwn,
+      ],
+      family: [
+        PERMISSIONS.familiesViewOwn,
+        PERMISSIONS.familyRelationshipRequestsCreate,
+        PERMISSIONS.familyRelationshipRequestsViewOwn,
+        PERMISSIONS.familyRelationshipRequestsResubmitOwn,
+      ],
+      finance: [PERMISSIONS.paymentsViewOwn],
+    };
+    return (
+      !required[id] || required[id].some((permission) => this.session.hasPermission(permission))
+    );
   }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    this.closeUserMenu();
     this.closeSidebar();
   }
 

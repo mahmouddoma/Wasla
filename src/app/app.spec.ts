@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
+import { PortalLayout } from './shared/components/portal-layout/portal-layout';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthSession } from './core/auth/auth-session';
@@ -11,7 +12,7 @@ describe('App', () => {
   beforeEach(async () => {
     sessionStorage.clear();
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [App, PortalLayout],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
   });
@@ -22,8 +23,11 @@ describe('App', () => {
   });
 
   it('loads practices after the reception user is established and preserves the token on selection', async () => {
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: 'reception', component: PortalLayout }]);
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
+    await router.navigateByUrl('/reception');
     const session = TestBed.inject(AuthSession);
     const http = TestBed.inject(HttpTestingController);
     session.begin({

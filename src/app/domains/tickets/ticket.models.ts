@@ -30,6 +30,7 @@ export interface PracticeTicket {
   readonly medicalEncounterId?: string | null;
   readonly medicalEncounterRowVersion?: string | null;
   readonly followUpEligibilityId?: string | null;
+  readonly prescriptionId?: string | null;
   readonly businessDate: string;
   readonly segment?: TicketIdentity | null;
   readonly visitType?: TicketIdentity | null;
@@ -97,6 +98,7 @@ export interface TicketVersionRequest {
 export interface CompleteTicketRequest {
   readonly ticketRowVersion: string;
   readonly encounterRowVersion: string;
+  readonly prescriptionRowVersion?: string | null;
 }
 
 export interface TicketReasonRequest extends TicketVersionRequest {

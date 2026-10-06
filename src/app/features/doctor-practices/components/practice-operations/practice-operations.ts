@@ -104,7 +104,7 @@ export class PracticeOperations implements OnInit, OnDestroy {
   }
 
   protected async toggleStatus(): Promise<void> {
-    if (this.activeAction()) return;
+    if (!this.canActivate() || this.activeAction()) return;
     const practice = this.practice();
     const action = practice.isActive
       ? this.uiLanguage.t('common.deactivate')
@@ -139,6 +139,7 @@ export class PracticeOperations implements OnInit, OnDestroy {
 
   protected async saveConfiguration(event: Event): Promise<void> {
     event.preventDefault();
+    if (!this.canManageConfiguration() || this.activeAction()) return;
     await submit(this.configForm, async () => {
       const current = this.configuration();
       if (!current || this.activeAction()) return;
@@ -181,7 +182,14 @@ export class PracticeOperations implements OnInit, OnDestroy {
 
   protected async removeLogo(): Promise<void> {
     const branding = this.branding();
-    if (!branding || !branding.hasLogo || this.practice().isActive || this.activeAction()) return;
+    if (
+      !this.canManageBranding() ||
+      !branding ||
+      !branding.hasLogo ||
+      this.practice().isActive ||
+      this.activeAction()
+    )
+      return;
     if (!window.confirm(this.uiLanguage.t('ui.full.355'))) return;
 
     this.activeAction.set('logo');
@@ -229,6 +237,7 @@ export class PracticeOperations implements OnInit, OnDestroy {
 
   protected async saveBranding(event: Event): Promise<void> {
     event.preventDefault();
+    if (!this.canManageBranding() || this.activeAction()) return;
     await submit(this.brandingForm, async () => {
       const current = this.branding();
       if (!current || this.activeAction()) return;
@@ -265,7 +274,7 @@ export class PracticeOperations implements OnInit, OnDestroy {
   protected async uploadLogo(): Promise<void> {
     const current = this.branding();
     const file = this.selectedLogo();
-    if (!current || !file || this.activeAction()) return;
+    if (!this.canManageBranding() || !current || !file || this.activeAction()) return;
     this.activeAction.set('logo');
     this.messages.set([]);
     this.reservationImpact.set(null);

@@ -10,14 +10,28 @@ export class ModalFocus {
   private readonly document = inject(DOCUMENT);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private previousFocus: HTMLElement | null = null;
+  private static readonly scrollLocks = new WeakMap<
+    HTMLElement,
+    { count: number; overflow: string }
+  >();
 
   constructor() {
+    const body = this.document.body;
+    const locks = ModalFocus.scrollLocks;
+    const lock = locks.get(body) ?? { count: 0, overflow: body.style.overflow };
+    lock.count++;
+    locks.set(body, lock);
+    body.style.overflow = 'hidden';
     afterNextRender(() => {
       const active = this.document.activeElement;
       this.previousFocus = active instanceof HTMLElement ? active : null;
       (this.focusableElements()[0] ?? this.element).focus();
     });
     inject(DestroyRef).onDestroy(() => {
+      if (--lock.count === 0) {
+        body.style.overflow = lock.overflow;
+        locks.delete(body);
+      }
       if (this.previousFocus?.isConnected) this.previousFocus.focus();
     });
   }
@@ -41,10 +55,17 @@ export class ModalFocus {
   }
 
   private focusableElements(): HTMLElement[] {
-    return Array.from(this.element.querySelectorAll<HTMLElement>(
-      'button, input, select, textarea, a[href], [tabindex]',
-    )).filter(element => {
-      if (element.tabIndex < 0 || element.matches(':disabled') || element.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
+    return Array.from(
+      this.element.querySelectorAll<HTMLElement>(
+        'button, input, select, textarea, a[href], [tabindex]',
+      ),
+    ).filter((element) => {
+      if (
+        element.tabIndex < 0 ||
+        element.matches(':disabled') ||
+        element.closest('[hidden], [inert], [aria-hidden="true"]')
+      )
+        return false;
       const style = this.document.defaultView?.getComputedStyle(element);
       return style?.display !== 'none' && style?.visibility !== 'hidden';
     });

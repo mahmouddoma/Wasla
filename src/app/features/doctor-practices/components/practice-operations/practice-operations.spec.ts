@@ -1,3 +1,4 @@
+import { ToastService } from '../../../../core/notifications/toast.service';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -47,7 +48,7 @@ describe('PracticeOperations', () => {
     patientSelfCancellationCutoffMinutes: 60,
     maximumDailyPatients: 30,
     maximumTicketCallAttempts: 3,
-      noShowAfterPassedPatientsCount: 3,
+    noShowAfterPassedPatientsCount: 3,
     timeZoneId: 'Africa/Cairo',
     rowVersion: 'AQID',
   };
@@ -142,5 +143,61 @@ describe('PracticeOperations', () => {
     expect(component['brandingModel']().primaryColor).toBe('#099268');
     expect(component['getValidHex']('#099268', '#008C8C')).toBe('#099268');
     expect(component['getValidHex']('invalid', '#008C8C')).toBe('#008C8C');
+  });
+
+  async function initializeOperations(): Promise<void> {
+    fixture.detectChanges();
+    httpTesting
+      .expectOne(
+        environment.apiBaseUrl +
+          '/api/v1/doctors/me/practices/' +
+          samplePractice.id +
+          '/configuration',
+      )
+      .flush(sampleConfig);
+    httpTesting
+      .expectOne(
+        environment.apiBaseUrl + '/api/v1/doctors/me/practices/' + samplePractice.id + '/branding',
+      )
+      .flush({ ...sampleBranding, hasLogo: false });
+    await fixture.whenStable();
+  }
+  it('prevents repeated configuration saves and refreshes the row version on success', async () => {
+    await initializeOperations();
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'success');
+    const saving = component['saveConfiguration'](new Event('submit'));
+    await vi.waitFor(() => expect(component['activeAction']()).toBe('configuration'));
+    await component['saveConfiguration'](new Event('submit'));
+    const request = httpTesting.expectOne((r) => r.method === 'PUT');
+    expect(request.request.body.rowVersion).toBe('AQID');
+    request.flush({ ...sampleConfig, rowVersion: 'v2' });
+    await saving;
+    expect(component['configuration']()?.rowVersion).toBe('v2');
+    expect(toast).toHaveBeenCalled();
+    expect(component['activeAction']()).toBeNull();
+  });
+  it('blocks invalid configuration and preserves the draft after API failure', async () => {
+    await initializeOperations();
+    component['configModel'].update((v) => ({ ...v, defaultSlotDurationMinutes: 0 }));
+    await component['saveConfiguration'](new Event('submit'));
+    httpTesting.expectNone((r) => r.method === 'PUT');
+    component['configModel'].update((v) => ({ ...v, defaultSlotDurationMinutes: 25 }));
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'error');
+    const saving = component['saveConfiguration'](new Event('submit'));
+    await vi.waitFor(() => expect(component['activeAction']()).toBe('configuration'));
+    httpTesting
+      .expectOne((r) => r.method === 'PUT')
+      .flush({ detail: 'common.requestFailed' }, { status: 503, statusText: 'Unavailable' });
+    await saving;
+    expect(component['configModel']().defaultSlotDurationMinutes).toBe(25);
+    expect(toast).toHaveBeenCalled();
+    expect(component['activeAction']()).toBeNull();
+  });
+
+  it('does not mutate configuration when management permission is absent', async () => {
+    await initializeOperations();
+    fixture.componentRef.setInput('canManageConfiguration', false);
+    await component['saveConfiguration'](new Event('submit'));
+    httpTesting.expectNone((r) => r.method === 'PUT');
   });
 });

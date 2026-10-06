@@ -29,6 +29,7 @@ describe('AdminLayout', () => {
   const mockSession = {
     user: userSignal,
     hasPermission: vi.fn((perm: string) => {
+      userSignal();
       return perm === PERMISSIONS.doctorsViewAll || perm === PERMISSIONS.superAdminsViewAll;
     }),
     clear: vi.fn(),
@@ -37,6 +38,10 @@ describe('AdminLayout', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockSession.hasPermission.mockImplementation((perm: string) => {
+      userSignal();
+      return perm === PERMISSIONS.doctorsViewAll || perm === PERMISSIONS.superAdminsViewAll;
+    });
     userSignal.set(adminUser);
 
     await TestBed.configureTestingModule({
@@ -62,6 +67,35 @@ describe('AdminLayout', () => {
     expect(compiled.textContent).toContain('superadmin');
   });
 
+  it('uses the same permitted routes in both navigation surfaces', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const hrefs = (selector: string) =>
+      Array.from(root.querySelectorAll(selector)).map((link) => link.getAttribute('href'));
+    expect(hrefs('.sidebar-nav a')).toEqual(['/admin/doctors', '/admin/superadmins']);
+    expect(hrefs('app-mobile-navigation a')).toEqual(['/admin/doctors', '/admin/superadmins']);
+    root.querySelector<HTMLButtonElement>('app-mobile-navigation button')!.click();
+    fixture.detectChanges();
+    expect(component['isSidebarOpen']()).toBe(true);
+    component.onEscape();
+    fixture.detectChanges();
+    expect(root.querySelector('app-mobile-navigation button')?.getAttribute('aria-expanded')).toBe(
+      'false',
+    );
+  });
+
+  it('limits primary shortcuts to four when all management modules are permitted', () => {
+    mockSession.hasPermission.mockImplementation(() => true);
+    userSignal.set({ ...adminUser });
+    fixture.detectChanges();
+    expect(component['mobileNavItems']().map((item) => item.id)).toEqual([
+      'doctors',
+      'reservations',
+      'requests',
+      'revenue',
+    ]);
+    expect(component['navItems']()).toHaveLength(9);
+  });
+
   it('should toggle and close sidebar', () => {
     (component as unknown as { toggleSidebar: () => void }).toggleSidebar();
     expect((component as unknown as { isSidebarOpen: () => boolean }).isSidebarOpen()).toBe(true);
@@ -71,45 +105,20 @@ describe('AdminLayout', () => {
   });
 
   it('should toggle sidebar collapse', () => {
-    const initial = (component as unknown as { isSidebarCollapsed: () => boolean }).isSidebarCollapsed();
+    const initial = (
+      component as unknown as { isSidebarCollapsed: () => boolean }
+    ).isSidebarCollapsed();
     (component as unknown as { toggleSidebarCollapse: () => void }).toggleSidebarCollapse();
-    expect((component as unknown as { isSidebarCollapsed: () => boolean }).isSidebarCollapsed()).toBe(!initial);
+    expect(
+      (component as unknown as { isSidebarCollapsed: () => boolean }).isSidebarCollapsed(),
+    ).toBe(!initial);
   });
 
   it('should logout and redirect to login', () => {
-    (component as unknown as { logout: () => void }).logout();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('app-header .btn-topbar-logout')!
+      .click();
     expect(mockSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
-  });
-
-  it('should toggle and close user profile popover', () => {
-    const comp = component as unknown as {
-      isUserMenuOpen: () => boolean;
-      toggleUserMenu: (e?: Event) => void;
-      closeUserMenu: () => void;
-    };
-    expect(comp.isUserMenuOpen()).toBe(false);
-    comp.toggleUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(true);
-    comp.closeUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(false);
-  });
-
-  it('should close user menu on document click and escape key', () => {
-    const comp = component as unknown as {
-      isUserMenuOpen: () => boolean;
-      toggleUserMenu: () => void;
-      onDocumentClick: () => void;
-      onEscape: () => void;
-    };
-    comp.toggleUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(true);
-    comp.onDocumentClick();
-    expect(comp.isUserMenuOpen()).toBe(false);
-
-    comp.toggleUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(true);
-    comp.onEscape();
-    expect(comp.isUserMenuOpen()).toBe(false);
   });
 });

@@ -2,6 +2,30 @@ import { TestBed } from '@angular/core/testing';
 import { SideDrawer } from '../components/side-drawer/side-drawer';
 
 describe('ModalFocus', () => {
+  it('locks background scrolling until the last modal closes and restores the previous style', async () => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'auto';
+    const first = TestBed.createComponent(SideDrawer);
+    const second = TestBed.createComponent(SideDrawer);
+    try {
+      first.componentRef.setInput('opened', true);
+      second.componentRef.setInput('opened', true);
+      await first.whenStable();
+      await second.whenStable();
+      expect(document.body.style.overflow).toBe('hidden');
+      first.componentRef.setInput('opened', false);
+      await first.whenStable();
+      expect(document.body.style.overflow).toBe('hidden');
+      second.componentRef.setInput('opened', false);
+      await second.whenStable();
+      expect(document.body.style.overflow).toBe('auto');
+    } finally {
+      first.destroy();
+      second.destroy();
+      document.body.style.overflow = previousOverflow;
+    }
+  });
+
   it('focuses the modal, wraps Tab in both directions and restores the opener', async () => {
     const opener = document.createElement('button');
     document.body.append(opener);
@@ -17,9 +41,18 @@ describe('ModalFocus', () => {
       disabled.disabled = true;
       element.querySelector('.drawer-body')!.append(last, disabled);
       expect(document.activeElement).toBe(first);
-      first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+      first.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
       expect(document.activeElement).toBe(last);
-      last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+      last.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
       expect(document.activeElement).toBe(first);
       fixture.componentRef.setInput('opened', false);
       await fixture.whenStable();
@@ -35,9 +68,13 @@ describe('ModalFocus', () => {
     fixture.componentRef.setInput('opened', true);
     fixture.componentRef.setInput('busy', true);
     await fixture.whenStable();
-    const panel = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[role="dialog"]')!;
+    const panel = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[role="dialog"]',
+    )!;
     expect(document.activeElement).toBe(panel);
-    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    panel.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+    );
     expect(document.activeElement).toBe(panel);
   });
 });

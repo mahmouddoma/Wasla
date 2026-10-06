@@ -76,7 +76,8 @@ for (const file of sourceFiles.filter(file => file.endsWith('.ts'))) {
       if (resolved) dependencies.push(resolved);
       const sourceFeature = path.relative(root, file).replaceAll(path.sep, '/').match(/^features\/([^/]+)/)?.[1];
       const targetFeature = path.relative(root, target).replaceAll(path.sep, '/').match(/^features\/([^/]+)/)?.[1];
-      if (sourceFeature && targetFeature && sourceFeature !== targetFeature) errors.push(`${file}: cross-feature import ${specifier.text}`);
+      const publicFeatureEntry = resolved === path.join(root, 'features', targetFeature ?? '', 'index.ts');
+      if (sourceFeature && targetFeature && sourceFeature !== targetFeature && !publicFeatureEntry) errors.push(`${file}: cross-feature private import ${specifier.text}`);
       const relativeSource = path.relative(root, file).replaceAll(path.sep, '/');
       const relativeTarget = path.relative(root, target).replaceAll(path.sep, '/');
       if (!file.endsWith('.spec.ts') && /^features\/[^/]+\/components\//.test(relativeSource)

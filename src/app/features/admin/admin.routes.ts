@@ -4,6 +4,13 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'drug-catalog-managers',
+    canActivate: [permissionGuard],
+    data: { permission: 'DrugCatalogManagers.ViewAll' },
+    loadComponent: () => import('./pages/drug-catalog-managers/drug-catalog-managers.component').then(m => m.DrugCatalogManagersComponent),
+    title: 'medications.managers',
+  },
+  {
     path: 'revenue',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.platformRevenueViewAggregates },

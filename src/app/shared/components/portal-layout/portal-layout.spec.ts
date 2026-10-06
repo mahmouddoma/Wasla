@@ -61,6 +61,7 @@ describe('PortalLayout', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockSession.hasPermission.mockImplementation(() => true);
     userSignal.set(doctorUser);
 
     await TestBed.configureTestingModule({
@@ -101,7 +102,7 @@ describe('PortalLayout', () => {
     userSignal.set(receptionUser);
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    const nav = root.querySelector('.reception-mobile-nav');
+    const nav = root.querySelector('app-mobile-navigation nav');
     expect(nav).not.toBeNull();
     const routes = Array.from(nav!.querySelectorAll('a')).map((link) => link.getAttribute('href'));
     expect(routes).toEqual(['/workspace/reception', '/reception/patients']);
@@ -113,15 +114,41 @@ describe('PortalLayout', () => {
     expect(nav!.querySelector('button')?.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('does not add reception mobile navigation to doctor and patient portals', () => {
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.reception-mobile-nav'),
-    ).toBeNull();
+  it('switches primary shortcuts with the current role', () => {
+    const routes = () =>
+      Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('app-mobile-navigation a'),
+      ).map((link) => link.getAttribute('href'));
+    expect(routes()).toEqual([
+      '/workspace/doctor',
+      '/doctor/reservations',
+      '/doctor/queue',
+      '/doctor/encounters',
+    ]);
     userSignal.set(patientUser);
     fixture.detectChanges();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.reception-mobile-nav'),
-    ).toBeNull();
+    expect(routes()).toEqual([
+      '/workspace/patient',
+      '/patient/reservations',
+      '/doctors',
+      '/patient/tickets',
+    ]);
+  });
+
+  it('removes forbidden shortcuts and sidebar links together', () => {
+    mockSession.hasPermission.mockImplementation(() => false);
+    userSignal.set({ ...doctorUser, permissions: [] });
+    fixture.detectChanges();
+    expect(component['mobileNavItems']().map((item) => item.id)).toEqual(['workspace', 'queue']);
+    expect(component['roleNavItems']().some((item) => item.id === 'practices')).toBe(false);
+    userSignal.set(patientUser);
+    fixture.detectChanges();
+    expect(component['mobileNavItems']().map((item) => item.id)).toEqual([
+      'workspace',
+      'reservations',
+      'find-doctor',
+    ]);
+    expect(component['roleNavItems']().some((item) => item.id === 'family')).toBe(false);
   });
 
   it('should compute Doctor nav items when userType is Doctor', () => {
@@ -187,39 +214,10 @@ describe('PortalLayout', () => {
   });
 
   it('should logout and redirect to login', () => {
-    (component as unknown as { logout: () => void }).logout();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('app-header .btn-topbar-logout')!
+      .click();
     expect(mockSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
-  });
-
-  it('should toggle and close user profile popover', () => {
-    const comp = component as unknown as {
-      isUserMenuOpen: () => boolean;
-      toggleUserMenu: (e?: Event) => void;
-      closeUserMenu: () => void;
-    };
-    expect(comp.isUserMenuOpen()).toBe(false);
-    comp.toggleUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(true);
-    comp.closeUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(false);
-  });
-
-  it('should close user menu on document click and escape key', () => {
-    const comp = component as unknown as {
-      isUserMenuOpen: () => boolean;
-      toggleUserMenu: () => void;
-      onDocumentClick: () => void;
-      onEscape: () => void;
-    };
-    comp.toggleUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(true);
-    comp.onDocumentClick();
-    expect(comp.isUserMenuOpen()).toBe(false);
-
-    comp.toggleUserMenu();
-    expect(comp.isUserMenuOpen()).toBe(true);
-    comp.onEscape();
-    expect(comp.isUserMenuOpen()).toBe(false);
   });
 });

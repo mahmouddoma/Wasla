@@ -1,0 +1,249 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'medications.managers' | t"
+    [description]="'medications.managersHelp' | t"
+    icon="admins"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  >
+    <div pageHeaderActions>
+      @if (allowed('Create')) {
+        <button class="btn btn-primary" (click)="create()" [disabled]="busy()">
+          {{ 'medications.addManager' | t }}
+        </button>
+      }
+    </div>
+    <div pageHeaderDeck class="toolbar">
+      <label
+        >{{ 'reservations.search' | t
+        }}<input
+          class="field-input"
+          type="search"
+          [value]="search()"
+          (change)="setSearch($event)"
+          [disabled]="busy()"
+      /></label>
+    </div>
+  </app-page-header>
+  <section class="directory" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'medications.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-cuate.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'medications.noManagers' | t }}</h2>
+        <p>{{ 'medications.managersHelp' | t }}</p>
+        <button class="btn btn-primary" (click)="search.set(''); load()">
+          {{ 'medications.resetSearch' | t }}
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              'medications.managers' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'medications.userName' | t }}</th>
+              <th scope="col">{{ 'medications.email' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of page().items; track item.id) {
+              <tr>
+                <td>{{ item.userName }}</td>
+                <td dir="ltr">{{ item.email }}</td>
+                <td>
+                  <span class="status-badge">{{
+                    (item.isActive ? 'medications.active' : 'medications.inactive') | t
+                  }}</span>
+                  @if (item.isFirstLogin) {
+                    <small class="first-login">{{ 'medications.firstLogin' | t }}</small>
+                  }
+                </td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    [disabled]="!allowed('ViewDetails') || busy()"
+                    (click)="inspect(item.id)"
+                  >
+                    {{ 'reservations.inspect' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page().pageNumber <= 1 || busy()"
+          (click)="load(page().pageNumber - 1)"
+        >
+          {{ 'reservations.previous' | t }}
+        </button>
+        <span>{{ page().pageNumber }} · {{ page().totalCount }}</span>
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page().pageNumber * page().pageSize >= page().totalCount || busy()"
+          (click)="load(page().pageNumber + 1)"
+        >
+          {{ 'reservations.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p role="alert" class="error-text">{{ message | t }}</p>
+    }
+  }
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="'medications.managers' | t"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p role="alert" class="error-text">{{ message | t }}</p>
+    }
+    @if (editing()) {
+      <form class="detail-form" [formGroup]="form" (ngSubmit)="save()">
+        <fieldset class="full detail-form" [disabled]="busy()">
+          @if (creating()) {
+            <label class="full"
+              >{{ 'medications.userName' | t
+              }}<input class="field-input" formControlName="userName" autocomplete="off" required
+            /></label>
+          }
+          <label class="full"
+            >{{ 'medications.email' | t
+            }}<input
+              class="field-input"
+              formControlName="email"
+              type="email"
+              dir="ltr"
+              autocomplete="email"
+              required
+          /></label>
+          <label class="full"
+            >{{ 'medications.phone' | t
+            }}<input
+              class="field-input ltr-text"
+              formControlName="phoneNumber"
+              type="tel"
+              dir="ltr"
+              autocomplete="tel"
+          /></label>
+          @if (creating()) {
+            <label class="full"
+              >{{ 'medications.initialPassword' | t
+              }}<input
+                class="field-input"
+                formControlName="initialPassword"
+                type="password"
+                autocomplete="new-password"
+                required
+            /></label>
+            <label class="full"
+              >{{ 'medications.confirmPassword' | t
+              }}<input
+                class="field-input"
+                formControlName="confirmPassword"
+                type="password"
+                autocomplete="new-password"
+                required
+            /></label>
+            <p class="full">{{ 'medications.firstLoginHelp' | t }}</p>
+          }
+        </fieldset>
+        <div class="actions full">
+          <button class="btn btn-primary" [disabled]="busy()">{{ 'common.save' | t }}</button>
+          @if (!creating()) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="cancelEdit()"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+          }
+        </div>
+      </form>
+    } @else if (detail(); as item) {
+      <h2>{{ item.userName }}</h2>
+      <dl>
+        <dt>{{ 'medications.email' | t }}</dt>
+        <dd dir="ltr">{{ item.email }}</dd>
+        <dt>{{ 'medications.phone' | t }}</dt>
+        <dd dir="ltr" class="ltr-text">{{ item.phoneNumber || '—' }}</dd>
+        <dt>{{ 'reservations.status' | t }}</dt>
+        <dd>{{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}</dd>
+      </dl>
+      @if (item.isFirstLogin) {
+        <p>{{ 'medications.firstLoginHelp' | t }}</p>
+      }
+      <div class="actions">
+        @if (allowed('Update')) {
+          <button class="btn btn-primary" [disabled]="busy()" (click)="edit()">
+            {{ 'medications.edit' | t }}
+          </button>
+        }
+        @if (!item.isActive && allowed('Activate')) {
+          <button
+            class="btn btn-outline-secondary"
+            [disabled]="busy()"
+            (click)="confirmAction('activate')"
+          >
+            {{ 'medications.activate' | t }}
+          </button>
+        }
+        @if (item.isActive && allowed('Deactivate')) {
+          <button class="btn btn-danger" [disabled]="busy()" (click)="confirmAction('deactivate')">
+            {{ 'medications.deactivate' | t }}
+          </button>
+        }
+      </div>
+      @if (pendingAction()) {
+        <section class="section">
+          <p>{{ 'medications.confirmAccount' | t }}</p>
+          <div class="actions">
+            <button class="btn btn-primary" [disabled]="busy()" (click)="changeActive()">
+              {{ 'medications.confirm' | t }}
+            </button>
+            <button
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="pendingAction.set(null)"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+          </div>
+        </section>
+      }
+    }
+  </app-side-drawer>
+</main>

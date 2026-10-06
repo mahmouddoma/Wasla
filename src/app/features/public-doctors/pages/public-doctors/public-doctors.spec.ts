@@ -278,6 +278,7 @@ describe('PublicDoctors', () => {
       patientId: 'p-1',
     });
 
+    component['drawerOpened'].set(true);
     component['drawerSelectedPractice'].set(mockDoctorDetails.practices[0]);
     component['drawerSelectedDate'].set('2026-10-06');
     component['drawerSelectedTime'].set('06:00:00');

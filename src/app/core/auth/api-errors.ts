@@ -24,9 +24,10 @@ export function parseApiErrors(error: unknown): ParsedApiErrors {
   if (errors && !Array.isArray(errors)) {
     for (const [source, items] of Object.entries(errors)) {
       if (Array.isArray(items)) {
-        fields[source.split('.').at(-1)!.toLowerCase()] = items.filter(
+        const field = source.split('.').at(-1)!.toLowerCase();
+        fields[field] = [...(fields[field] ?? []), ...items.filter(
           (message): message is string => typeof message === 'string',
-        );
+        )];
       }
     }
   }

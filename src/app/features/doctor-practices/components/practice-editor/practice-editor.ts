@@ -44,6 +44,7 @@ export class PracticeEditor implements OnInit {
   protected readonly isLoadingLocations = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly messages = signal<string[]>([]);
+  private rowVersion: string | null = null;
   protected readonly model = signal({
     nameAr: '',
     nameEn: '',
@@ -98,6 +99,7 @@ export class PracticeEditor implements OnInit {
 
   protected async save(event: Event): Promise<void> {
     event.preventDefault();
+    if (this.isSubmitting() || this.isLoadingLocations()) return;
     await submit(this.editorForm, async () => {
       if (this.isSubmitting()) return;
       this.isSubmitting.set(true);
@@ -118,14 +120,21 @@ export class PracticeEditor implements OnInit {
         const current = this.practice();
         const response = current
           ? await firstValueFrom(
-              this.api.update(current.id, { ...request, rowVersion: current.rowVersion }),
+              this.api.update(current.id, {
+                ...request,
+                rowVersion: this.rowVersion ?? current.rowVersion,
+              }),
             )
           : await firstValueFrom(this.api.create(request));
         this.populate(response);
         this.saved.emit(response);
-        this.toast.success(current ? this.uiLanguage.t('ui.full.304') : this.uiLanguage.t('ui.full.305'));
+        this.toast.success(
+          current ? this.uiLanguage.t('ui.full.304') : this.uiLanguage.t('ui.full.305'),
+        );
       } catch (error) {
-        this.messages.set(flattenErrors(error));
+        const messages = flattenErrors(error);
+        this.messages.set(messages);
+        this.toast.error(messages[0] || 'common.requestFailed');
         if (error instanceof HttpErrorResponse && error.status === 409 && this.practice()) {
           const fresh = await this.reloadAfterConflict();
           if (fresh) this.saved.emit(fresh);
@@ -143,12 +152,15 @@ export class PracticeEditor implements OnInit {
       this.toast.error(this.uiLanguage.t('ui.full.306'));
       return fresh;
     } catch (error) {
-      this.messages.set(flattenErrors(error));
+      const messages = flattenErrors(error);
+      this.messages.set(messages);
+      this.toast.error(messages[0] || 'common.requestFailed');
       return null;
     }
   }
 
   private populate(practice: DoctorPractice): void {
+    this.rowVersion = practice.rowVersion;
     this.model.set({
       nameAr: practice.nameAr,
       nameEn: practice.nameEn ?? '',

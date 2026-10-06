@@ -152,7 +152,9 @@ export class PracticeSegments implements OnInit {
         }
         await this.loadSegments();
         this.cancelSegmentEdit();
-        this.toast.success(editing ? this.uiLanguage.t('ui.full.483') : this.uiLanguage.t('ui.full.484'));
+        this.toast.success(
+          editing ? this.uiLanguage.t('ui.full.483') : this.uiLanguage.t('ui.full.484'),
+        );
       } catch (error) {
         await this.handleMutationError(error, this.loadSegments.bind(this));
       } finally {
@@ -303,7 +305,9 @@ export class PracticeSegments implements OnInit {
   }
 
   private async handleMutationError(error: unknown, reload: () => Promise<void>): Promise<void> {
-    this.messages.set(flattenErrors(error));
+    const messages = flattenErrors(error);
+    this.messages.set(messages);
+    this.toast.error(messages[0] || 'common.requestFailed');
     if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 409)) {
       await reload();
       if (error.status === 409) this.toast.error(this.uiLanguage.t('ui.full.492'));

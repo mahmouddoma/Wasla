@@ -10,10 +10,11 @@ import { DoctorOnboardingStatus } from '../../../../domains/doctors';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PageHeader } from '../../../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-doctor-onboarding',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, PageHeader],
   templateUrl: './doctor-onboarding.html',
   styleUrl: './doctor-onboarding.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

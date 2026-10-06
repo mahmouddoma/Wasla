@@ -9,7 +9,7 @@
     class="portal-sidebar"
     id="portal-sidebar"
     [class.open]="isSidebarOpen()"
-    [class.collapsed]="isSidebarCollapsed()"
+    [class.collapsed]="isSidebarCollapsed() && !isSidebarOpen()"
     [attr.aria-label]="'sidebar.workspace' | t"
   >
     <!-- Sidebar Brand -->
@@ -106,77 +106,7 @@
             stroke-linejoin="round"
             aria-hidden="true"
           >
-            @switch (item.icon) {
-              @case ('home') {
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              }
-              @case ('calendar') {
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              }
-              @case ('clock') {
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              }
-              @case ('stethoscope') {
-                <path d="M4.5 3v5a3.5 3.5 0 0 0 7 0V3" />
-                <path d="M8 11.5v3.5a4.5 4.5 0 0 0 9 0v-2.5" />
-                <circle cx="17" cy="10" r="2" />
-              }
-              @case ('building') {
-                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-              }
-              @case ('users') {
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              }
-              @case ('ticket') {
-                <path
-                  d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"
-                />
-                <line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 2" />
-              }
-              @case ('heart-pulse') {
-                <path
-                  d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-                />
-                <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
-              }
-              @case ('user-check') {
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <polyline points="16 11 18 13 22 9" />
-              }
-              @case ('clipboard-list') {
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              }
-              @case ('receipt') {
-                <path
-                  d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"
-                />
-                <path d="M16 8H8" />
-                <path d="M16 12H8" />
-                <path d="M13 16H8" />
-              }
-              @case ('chart') {
-                <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-                <path d="M18 17V9" />
-                <path d="M13 17V5" />
-                <path d="M8 17v-3" />
-              }
-              @default {
-                <circle cx="12" cy="12" r="8" />
-              }
-            }
+            <path [attr.d]="navigationIcons[item.icon]" />
           </svg>
           <span class="nav-text">{{ item.labelKey | t }}</span>
         </a>
@@ -214,210 +144,14 @@
 
   <!-- Main Content Layout (Topbar + Body) -->
   <div class="portal-main-wrapper">
-    <header class="portal-topbar">
-      <div class="topbar-start">
-        @if (isReception()) {
-          <a
-            class="reception-brand"
-            routerLink="/workspace/reception"
-            [attr.aria-label]="'common.home' | t"
-          >
-            <img src="/images/wasla-mark.png" width="28" height="28" alt="" />
-            <strong>{{ 'common.appName' | t }}</strong>
-          </a>
-        }
-        <!-- Mobile Drawer Button -->
-        <button
-          type="button"
-          class="btn-mobile-menu"
-          (click)="toggleSidebar()"
-          aria-controls="portal-sidebar"
-          [attr.aria-expanded]="isSidebarOpen()"
-          [attr.aria-label]="'common.openSidebar' | t"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="topbar-end">
-        <!-- User Profile Avatar with Popover -->
-        <div class="user-profile-wrapper">
-          <button
-            type="button"
-            class="btn-user-avatar-trigger"
-            [class.active]="isUserMenuOpen()"
-            (click)="toggleUserMenu($event)"
-            aria-haspopup="true"
-            [attr.aria-expanded]="isUserMenuOpen()"
-            [attr.aria-label]="user()?.userName ?? ''"
-          >
-            <div class="avatar-ring">
-              <span class="avatar-letter">{{ userInitial() }}</span>
-              <span class="avatar-status-dot" aria-hidden="true"></span>
-            </div>
-            <div class="user-meta-preview">
-              <strong class="user-display-name">{{ user()?.userName }}</strong>
-              <span class="user-role-label">{{ userRole() }}</span>
-            </div>
-            <svg
-              class="avatar-chevron"
-              [class.rotated]="isUserMenuOpen()"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          <!-- Sleek User Profile Popover -->
-          @if (isUserMenuOpen()) {
-            <div
-              class="user-popover-card"
-              (click)="$event.stopPropagation()"
-              role="dialog"
-              [attr.aria-label]="user()?.userName ?? ''"
-            >
-              <div class="popover-hero">
-                <div class="popover-avatar-large">
-                  <span>{{ userInitial() }}</span>
-                  <span class="popover-status-dot" aria-hidden="true"></span>
-                </div>
-                <div class="popover-identity">
-                  <h4 class="popover-username">{{ user()?.userName }}</h4>
-                  <span class="popover-role-badge">{{ userRole() }}</span>
-                </div>
-              </div>
-
-              <div class="popover-divider"></div>
-
-              <div class="popover-info-list">
-                @if (user()?.email) {
-                  <div class="popover-info-row">
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <rect width="20" height="16" x="2" y="4" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">{{ 'register.email' | t }}</span>
-                      <span class="info-value" dir="ltr">{{ user()?.email }}</span>
-                    </div>
-                  </div>
-                }
-
-                @if (user()?.phoneNumber) {
-                  <div class="popover-info-row">
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path
-                          d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-                        />
-                      </svg>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">{{ 'register.phone' | t }}</span>
-                      <span class="info-value" dir="ltr">{{ user()?.phoneNumber }}</span>
-                    </div>
-                  </div>
-                }
-
-                @if (user()?.applicationUserId) {
-                  <div
-                    class="popover-info-row info-row-copyable"
-                    (click)="copyUserId()"
-                    [title]="'common.copyId' | t"
-                  >
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <rect width="13" height="13" x="9" y="9" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">{{ 'common.idLabel' | t }}</span>
-                      <code class="info-code">{{ user()?.applicationUserId }}</code>
-                    </div>
-                    <div class="copy-action-indicator">
-                      @if (isIdCopied()) {
-                        <span class="copied-pill">{{ 'common.copied' | t }}</span>
-                      } @else {
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="13"
-                          height="13"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <rect width="13" height="13" x="9" y="9" rx="2" ry="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <div class="popover-divider"></div>
-
-              <button type="button" class="btn-popover-logout" (click)="logout()">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                <span>{{ 'common.logout' | t }}</span>
-              </button>
-            </div>
-          }
-        </div>
-
-        <!-- Language Switcher -->
-        <div class="lang-pill-holder">
-          <app-language-switcher variant="header" />
-        </div>
-
-        <!-- Topbar Logout Button (Positioned where user-squircle-avatar was on the edge) -->
-        <button
-          type="button"
-          class="btn-topbar-logout"
-          (click)="logout()"
-          [attr.aria-label]="'common.logout' | t"
-          [title]="'common.logout' | t"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span class="btn-topbar-logout-text">{{ 'common.logout' | t }}</span>
-        </button>
-      </div>
+    <app-header
+      [user]="user()"
+      [home]="home()"
+      menuId="portal-sidebar"
+      [menuExpanded]="isSidebarOpen()"
+      (menuToggle)="toggleSidebar()"
+      (logout)="logout()"
+    >
       @if (user()?.userType === 'Reception') {
         <div class="topbar-practice-selector" [dir]="langService.dir()">
           <label for="reception-current-practice" class="practice-selector-label">
@@ -471,53 +205,18 @@
           </div>
         </div>
       }
-    </header>
+    </app-header>
 
     <!-- Page Content Area -->
     <main class="portal-content-body">
       <router-outlet />
     </main>
-    @if (isReception()) {
-      <nav class="reception-mobile-nav" [attr.aria-label]="'reception.mobileNavigation' | t">
-        @for (item of mobileNavItems(); track item.id) {
-          <a
-            [routerLink]="item.route"
-            routerLinkActive="active"
-            ariaCurrentWhenActive="page"
-            (click)="closeSidebar()"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              @switch (item.icon) {
-                @case ('home') {
-                  <path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7" />
-                }
-                @case ('calendar') {
-                  <rect x="3" y="5" width="18" height="16" rx="2" />
-                  <path d="M16 3v4M8 3v4M3 11h18" />
-                }
-                @case ('clock') {
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7v5l3 2" />
-                }
-                @case ('user-check') {
-                  <circle cx="9" cy="7" r="3" />
-                  <path d="M3 21v-3a6 6 0 0 1 12 0v3m2-11 2 2 3-3" />
-                }
-              }
-            </svg>
-            <span>{{ 'reception.nav.' + item.id | t }}</span>
-          </a>
-        }
-        <button
-          type="button"
-          (click)="toggleSidebar()"
-          aria-controls="portal-sidebar"
-          [attr.aria-expanded]="isSidebarOpen()"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-          <span>{{ 'reception.more' | t }}</span>
-        </button>
-      </nav>
-    }
+    <app-mobile-navigation
+      [items]="mobileNavItems()"
+      menuId="portal-sidebar"
+      [menuExpanded]="isSidebarOpen()"
+      (more)="toggleSidebar()"
+      (navigate)="closeSidebar()"
+    />
   </div>
 </div>
