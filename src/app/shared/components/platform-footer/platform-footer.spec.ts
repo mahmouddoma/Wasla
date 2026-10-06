@@ -52,6 +52,15 @@ describe('PlatformFooter', () => {
     expect(hrefs.some((h) => h?.includes('help'))).toBe(true);
   });
 
+  it('should render brand logo badge and trust security badge', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    const logoBadge = el.querySelector('.footer-logo-badge');
+    expect(logoBadge).toBeTruthy();
+
+    const trustTag = el.querySelector('.footer-trust-tag');
+    expect(trustTag).toBeTruthy();
+  });
+
   it('keeps language switching in the page header', () => {
     const el: HTMLElement = fixture.nativeElement;
     const langSwitcher = el.querySelector('app-language-switcher');

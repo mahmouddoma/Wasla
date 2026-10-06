@@ -97,6 +97,33 @@ describe('PortalLayout', () => {
     expect(compiled.textContent).toContain('د. أحمد محمود');
   });
 
+  it('shows reception mobile links from the permitted navigation and opens the remaining menu', () => {
+    userSignal.set(receptionUser);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const nav = root.querySelector('.reception-mobile-nav');
+    expect(nav).not.toBeNull();
+    const routes = Array.from(nav!.querySelectorAll('a')).map((link) => link.getAttribute('href'));
+    expect(routes).toEqual(['/workspace/reception', '/reception/patients']);
+    nav!.querySelector<HTMLButtonElement>('button')!.click();
+    fixture.detectChanges();
+    expect(component['isSidebarOpen']()).toBe(true);
+    component.onEscape();
+    fixture.detectChanges();
+    expect(nav!.querySelector('button')?.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('does not add reception mobile navigation to doctor and patient portals', () => {
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.reception-mobile-nav'),
+    ).toBeNull();
+    userSignal.set(patientUser);
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.reception-mobile-nav'),
+    ).toBeNull();
+  });
+
   it('should compute Doctor nav items when userType is Doctor', () => {
     const items = (
       component as unknown as { roleNavItems: () => { route: string }[] }
@@ -163,5 +190,36 @@ describe('PortalLayout', () => {
     (component as unknown as { logout: () => void }).logout();
     expect(mockSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('should toggle and close user profile popover', () => {
+    const comp = component as unknown as {
+      isUserMenuOpen: () => boolean;
+      toggleUserMenu: (e?: Event) => void;
+      closeUserMenu: () => void;
+    };
+    expect(comp.isUserMenuOpen()).toBe(false);
+    comp.toggleUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(true);
+    comp.closeUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(false);
+  });
+
+  it('should close user menu on document click and escape key', () => {
+    const comp = component as unknown as {
+      isUserMenuOpen: () => boolean;
+      toggleUserMenu: () => void;
+      onDocumentClick: () => void;
+      onEscape: () => void;
+    };
+    comp.toggleUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(true);
+    comp.onDocumentClick();
+    expect(comp.isUserMenuOpen()).toBe(false);
+
+    comp.toggleUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(true);
+    comp.onEscape();
+    expect(comp.isUserMenuOpen()).toBe(false);
   });
 });

@@ -174,10 +174,7 @@
         <strong>{{ result()?.totalCount ?? 0 }}</strong> {{ 'common.doctor' | t }}
       </span>
       @if (isLoading()) {
-        <span class="live-update-pill">
-          <span class="pulse-dot" aria-hidden="true"></span>
-          <span>{{ 'common.updating' | t }}</span>
-        </span>
+        <span role="status">{{ 'common.updating' | t }}</span>
       }
     </div>
 
@@ -327,16 +324,18 @@
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2"
+                      aria-hidden="true"
                     >
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                     </svg>
-                    <span>{{ doctor.email }}</span>
+                    <span class="contact-text-truncate">{{ doctor.email }}</span>
                   </a>
                   <a
                     class="contact-pill-link contact-phone"
                     [href]="'tel:' + doctor.phone"
                     dir="ltr"
+                    [title]="doctor.phone"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -345,12 +344,13 @@
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2"
+                      aria-hidden="true"
                     >
                       <path
                         d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
                       />
                     </svg>
-                    <span>{{ doctor.phone }}</span>
+                    <span class="contact-phone-text">{{ doctor.phone }}</span>
                   </a>
                   <span class="demographics-line"
                     >{{ doctor.age }} {{ 'ui.full.5' | t }} {{ doctor.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span
@@ -393,7 +393,10 @@
                 <div class="col-progress">
                   <span class="mobile-col-label">{{ 'admin.completionPrefix' | t }}</span>
                   <div class="progress-bar-wrap">
-                    <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+                    <div class="progress-header-row">
+                      <span class="progress-label">{{ 'common.profileCompletion' | t }}</span>
+                      <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+                    </div>
                     <div
                       class="progress-track"
                       role="progressbar"
@@ -413,8 +416,7 @@
                 <div class="col-status">
                   <span class="mobile-col-label">{{ 'admin.approvalPrefix' | t }}</span>
                   <span
-                    class="enterprise-status-badge"
-                    [class]="'status--' + doctor.approvalStatus.toLowerCase()"
+                    [class]="'enterprise-status-badge status--' + doctor.approvalStatus.toLowerCase()"
                   >
                     <span class="status-living-dot" aria-hidden="true"></span>
                     <span>{{ statusLabel(doctor.approvalStatus) }}</span>
@@ -481,8 +483,7 @@
                   }
                 </div>
                 <span
-                  class="enterprise-status-badge"
-                  [class]="'status--' + doctor.approvalStatus.toLowerCase()"
+                  [class]="'enterprise-status-badge status--' + doctor.approvalStatus.toLowerCase()"
                 >
                   <span class="status-living-dot" aria-hidden="true"></span>
                   <span>{{ statusLabel(doctor.approvalStatus) }}</span>
@@ -490,30 +491,66 @@
               </div>
 
               <div class="card-item-body">
-                <div class="card-data-row">
-                  <span class="card-row-label">{{ 'review.contact' | t }}</span>
-                  <span class="card-row-value field-ltr">{{ doctor.phone }}</span>
+                <!-- ROW 2: Email + Phone -->
+                <div class="card-contact-row">
+                  @if (doctor.email) {
+                    <a class="card-contact-item" [href]="'mailto:' + doctor.email" [title]="doctor.email">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                      <span class="contact-text-truncate">{{ doctor.email }}</span>
+                    </a>
+                  }
+                  @if (doctor.phone) {
+                    <a class="card-contact-item" [href]="'tel:' + doctor.phone" dir="ltr" [title]="doctor.phone">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      </svg>
+                      <span>{{ doctor.phone }}</span>
+                    </a>
+                  }
                 </div>
-                <div class="card-data-row">
-                  <span class="card-row-label">{{ 'review.uploadedDocuments' | t }}</span>
-                  <span class="card-row-value">{{ availableDocuments(doctor) }} / 5</span>
+
+                <!-- ROW 3: License Status + Documents Count -->
+                <div class="card-docs-row">
+                  <div class="license-status-line">
+                    <span
+                      class="license-dot"
+                      [class.license-dot--valid]="doctor.hasSyndicateFront"
+                      [class.license-dot--missing]="!doctor.hasSyndicateFront"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="license-text">
+                      {{ doctor.hasSyndicateFront ? uiLanguage.t('ui.expressions.21') : uiLanguage.t('ui.expressions.22') }}
+                    </span>
+                  </div>
+                  <span class="docs-count-sub">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>{{ availableDocuments(doctor) }} {{ 'admin.outOfFiveDocuments' | t }}</span>
+                  </span>
                 </div>
-                <div class="card-data-row">
-                  <span class="card-row-label">{{ 'common.profileCompletion' | t }}</span>
+
+                <!-- ROW 4: Profile Completion + Progress Bar -->
+                <div class="card-progress-row">
                   <div class="progress-bar-wrap">
-                    <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
-                    <div class="progress-track">
-                      <div
-                        class="progress-fill"
-                        [style.width.%]="completionPercentage(doctor)"
-                      ></div>
+                    <div class="progress-header-row">
+                      <span class="card-row-label">{{ 'common.profileCompletion' | t }}</span>
+                      <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+                    </div>
+                    <div class="progress-track" role="progressbar" [attr.aria-valuenow]="completionPercentage(doctor)" aria-valuemin="0" aria-valuemax="100">
+                      <div class="progress-fill" [style.width.%]="completionPercentage(doctor)"></div>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- ROW 5: Registration Date + View Profile Button -->
               <div class="card-item-footer">
-                <time class="date-time-text">{{ formatDate(doctor.createdOnUtc) }}</time>
+                <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">{{ formatDate(doctor.createdOnUtc) }}</time>
                 @if (canViewDetails) {
                   <button type="button"
                     class="btn-inspect-enterprise"
@@ -537,7 +574,6 @@
             {{ pageItemRange().total }} {{ 'common.doctor' | t }}</span
           >
           <div class="page-size-picker">
-            <span>{{ 'common.view' | t }}</span>
             <select
               [value]="pageSize()"
               (change)="onPageSizeChange($event)"

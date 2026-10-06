@@ -42,6 +42,8 @@ describe('PatientPicker', () => {
       ],
     }).compileComponents();
 
+    TestBed.inject(LanguageService).setLanguage('ar');
+
     fixture = TestBed.createComponent(PatientPicker);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('label', 'البحث عن مريض');

@@ -1,33 +1,6 @@
 <main class="health-workspace" [dir]="uiLanguage.dir()">
   <!-- Standardized Page Header -->
-  <app-page-header
-    [heading]="'ui.full.737' | t"
-    [description]="'ui.full.738' | t"
-    icon="reception"
-  >
-    <div pageHeaderDeck class="reception-workflow-deck">
-      <div class="workflow-chip active">
-        <span class="workflow-num">01</span>
-        <span>{{ 'reception.stepSearch' | t }}</span>
-      </div>
-      <svg
-        class="workflow-arrow"
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        aria-hidden="true"
-      >
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-      <div class="workflow-chip">
-        <span class="workflow-num">02</span>
-        <span>{{ 'reception.stepRegister' | t }}</span>
-      </div>
-    </div>
-
+  <app-page-header [heading]="'ui.full.737' | t" [description]="'ui.full.738' | t" icon="reception">
     <div pageHeaderActions>
       <a class="btn-head-back" routerLink="/workspace/reception">
         <svg
@@ -59,10 +32,36 @@
     </div>
   }
 
-  <div class="patients-workspace-grid">
+  @if (canSearch && canRegister) {
+    <div
+      class="patient-panel-switcher"
+      role="group"
+      [attr.aria-label]="'workspace.managePatients' | t"
+    >
+      <button
+        type="button"
+        [class.active]="activePanel() === 'search'"
+        [attr.aria-pressed]="activePanel() === 'search'"
+        aria-controls="patient-search-panel"
+        (click)="activePanel.set('search')"
+      >
+        {{ 'reception.stepSearch' | t }}
+      </button>
+      <button
+        type="button"
+        [class.active]="activePanel() === 'register'"
+        [attr.aria-pressed]="activePanel() === 'register'"
+        aria-controls="patient-registration-panel"
+        (click)="activePanel.set('register')"
+      >
+        {{ 'reception.stepRegister' | t }}
+      </button>
+    </div>
+  }
+  <div class="patients-workspace-grid" [attr.data-panel]="activePanel()">
     <!-- Step 01: Search Panel -->
     @if (canSearch) {
-      <section class="patient-panel search-panel">
+      <section class="patient-panel search-panel" id="patient-search-panel">
         <div class="panel-header">
           <div class="panel-badge-group">
             <span class="step-badge">01</span>
@@ -118,7 +117,7 @@
                 dir="ltr"
                 [formField]="searchForm.phoneNumber"
                 autocomplete="off"
-                placeholder="01xxxxxxxxx"
+                [placeholder]="'reception.phoneExample' | t"
               />
             </div>
           </label>
@@ -164,7 +163,9 @@
         @if (results(); as page) {
           <div class="results-container">
             <div class="results-header">
-              <span class="results-count">{{ page.items.length }} {{ 'discovery.results' | t }}</span>
+              <span class="results-count"
+                >{{ page.items.length }} {{ 'discovery.results' | t }}</span
+              >
             </div>
 
             <div class="result-list" aria-live="polite">
@@ -176,7 +177,15 @@
                   (click)="choose(patient.patientId)"
                 >
                   <div class="patient-card-avatar" [class.female]="patient.gender === 'Female'">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
@@ -204,7 +213,14 @@
                   <div class="patient-card-select-badge">
                     @if (selectedPatientId() === patient.patientId) {
                       <span class="badge-chosen">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                        >
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                         <span>{{ 'reception.selected' | t }}</span>
@@ -216,7 +232,15 @@
                 </button>
               } @empty {
                 <div class="empty-state-card">
-                  <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="36"
+                    height="36"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    aria-hidden="true"
+                  >
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
@@ -266,7 +290,7 @@
 
     <!-- Step 02: Register Panel -->
     @if (canRegister) {
-      <section class="patient-panel register-panel">
+      <section class="patient-panel register-panel" id="patient-registration-panel">
         <div class="panel-header">
           <div class="panel-badge-group">
             <span class="step-badge step-badge-secondary">02</span>
@@ -279,13 +303,20 @@
           <!-- Arabic Name -->
           <label class="form-field">
             <span class="field-label">{{ 'ui.full.748' | t }}</span>
-            <input [formField]="createForm.nameAr" placeholder="مثال: أحمد محمد علي" />
+            <input
+              [formField]="createForm.nameAr"
+              [placeholder]="'reception.arabicNameExample' | t"
+            />
           </label>
 
           <!-- English Name -->
           <label class="form-field">
             <span class="field-label">{{ 'common.nameEn' | t }}</span>
-            <input dir="ltr" [formField]="createForm.nameEn" placeholder="e.g. Ahmed Mohamed" />
+            <input
+              dir="ltr"
+              [formField]="createForm.nameEn"
+              [placeholder]="'reception.englishNameExample' | t"
+            />
           </label>
 
           <!-- Date of Birth -->
@@ -325,7 +356,7 @@
               type="tel"
               dir="ltr"
               [formField]="createForm.phoneNumber"
-              placeholder="01xxxxxxxxx"
+              [placeholder]="'reception.phoneExample' | t"
             />
           </label>
 
@@ -336,7 +367,7 @@
               type="email"
               dir="ltr"
               [formField]="createForm.email"
-              placeholder="patient@example.com"
+              [placeholder]="'reception.patientEmailExample' | t"
             />
           </label>
 
@@ -405,7 +436,7 @@
                 <span class="field-label">{{ 'register.fullNameAr' | t }}</span>
                 <input
                   [formField]="createForm.primaryContactNameAr"
-                  placeholder="اسم ولي الأمر / جهة الاتصال"
+                  [placeholder]="'reception.contactNameExample' | t"
                 />
               </label>
 
@@ -415,7 +446,7 @@
                   type="tel"
                   dir="ltr"
                   [formField]="createForm.primaryContactPhoneNumber"
-                  placeholder="01xxxxxxxxx"
+                  [placeholder]="'reception.phoneExample' | t"
                 />
               </label>
 
@@ -449,7 +480,7 @@
                 <input
                   dir="ltr"
                   [formField]="createForm.primaryContactLinkedPatientId"
-                  placeholder="e.g. PT-10029"
+                  [placeholder]="'reception.patientIdExample' | t"
                 />
               </label>
             </div>

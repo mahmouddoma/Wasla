@@ -5,7 +5,7 @@ import { ActivatedRoute, provideRouter, convertToParamMap } from '@angular/route
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { ReservationWorkspaceComponent } from './reservation-workspace.component';
 import { LanguageService } from '../../../../core/i18n/language.service';
-import { metadataFixture } from '../../reservation-test-fixtures';
+import { metadataFixture, reservationFixture } from '../../reservation-test-fixtures';
 describe('ReservationWorkspaceComponent', () => {
   beforeEach(() =>
     TestBed.configureTestingModule({
@@ -90,6 +90,46 @@ describe('ReservationWorkspaceComponent', () => {
     expect(f.nativeElement.querySelectorAll('tbody tr').length).toBe(1);
     http.verify();
   });
+  it('keeps reservation values and mobile field labels translated in both languages', async () => {
+    const fixture = TestBed.createComponent(ReservationWorkspaceComponent);
+    const http = TestBed.inject(HttpTestingController);
+    const language = TestBed.inject(LanguageService);
+    fixture.detectChanges();
+    http
+      .expectOne((request) => request.url.endsWith('/reservations/metadata'))
+      .flush(metadataFixture);
+    await Promise.resolve();
+    http.expectOne((request) => request.url.endsWith('/reservations/bookable-patients')).flush([]);
+    await Promise.resolve();
+    http
+      .expectOne((request) => request.url.endsWith('/reservations/mine'))
+      .flush({
+        items: [reservationFixture],
+        totalCount: 1,
+        pageNumber: 1,
+        pageSize: 20,
+      });
+    await fixture.whenStable();
+
+    for (const lang of ['ar', 'en'] as const) {
+      language.setLanguage(lang);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const labels = Array.from(root.querySelectorAll('.mobile-cell-label'));
+      expect(labels.map((label) => label.textContent?.trim())).toEqual(
+        ['reference', 'patient', 'practice', 'appointment', 'status'].map((key) =>
+          language.t(`reservations.${key}`),
+        ),
+      );
+      expect(root.querySelector('.td-ref')?.textContent).toContain(reservationFixture.reference);
+      expect(root.querySelector('.td-appointment')?.textContent).toContain('17:00');
+      expect(root.querySelector('tbody button')?.textContent).toContain(
+        language.t('reservations.inspect'),
+      );
+    }
+    http.verify();
+  });
+
   it('still loads view-authorized reservations when booking subjects fail to load', async () => {
     const f = TestBed.createComponent(ReservationWorkspaceComponent);
     const http = TestBed.inject(HttpTestingController);

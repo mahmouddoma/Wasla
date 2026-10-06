@@ -26,11 +26,23 @@ describe('SideDrawer', () => {
     fixture.componentRef.setInput('title', 'تفاصيل العيادة');
     await fixture.whenStable();
     const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('تفاصيل العيادة');
+    expect(element.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(
+      'تفاصيل العيادة',
+    );
     element.querySelector<HTMLButtonElement>('.drawer-close-btn')!.click();
     expect(closed).toHaveBeenCalledTimes(1);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(closed).toHaveBeenCalledTimes(2);
+  });
+
+  it('applies drawer-theme-navy class when theme is navy', async () => {
+    fixture.componentRef.setInput('opened', true);
+    fixture.componentRef.setInput('theme', 'navy');
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(
+      element.querySelector('.side-drawer-panel')?.classList.contains('drawer-theme-navy'),
+    ).toBe(true);
   });
 
   it('prevents close while busy and removes the panel when closed', async () => {

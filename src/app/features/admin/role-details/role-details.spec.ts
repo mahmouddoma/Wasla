@@ -98,20 +98,27 @@ describe('RoleDetails', () => {
 
     expect(closedCalled).toBe(true);
   });
-  it('preserves dotted permission action names without introducing path separators', () => {
-    expect(component['getActionName']('Doctors.View.Own')).toContain('View.Own');
-    expect(component['getActionName']('Doctors.View.Own')).not.toContain('/');
-  });
 
   it('updates permission module and action labels without reloading the catalog', async () => {
     const language = TestBed.inject(LanguageService);
     language.setLanguage('ar');
-    expect(component['getModuleArabic']('Doctors')).toBe('الأطباء');
-    expect(component['getActionArabic']('Doctors.ViewAll')).toBe('عرض الكل');
+    expect(component['getGroupLabel']('Doctors')).toBe('حسابات الأطباء');
+    expect(component['getPermissionLabel']('Doctors.ViewAll')).toBe('عرض جميع حسابات الأطباء');
     language.setLanguage('en');
     await fixture.whenStable();
-    expect(component['getModuleArabic']('Doctors')).toBe('Doctors');
-    expect(component['getActionArabic']('Doctors.ViewAll')).toBe('View all');
+    expect(component['getGroupLabel']('Doctors')).toBe('Doctor accounts');
+    expect(component['getPermissionLabel']('Doctors.ViewAll')).toBe('View all doctor accounts');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'View all doctor accounts',
+    );
+  });
+
+  it('finds permissions by the translated action in either language', () => {
+    component['permissionSearch'].set('عرض جميع');
+    expect(component['filteredPermissionGroups']()[0].permissions[0].name).toBe('Doctors.ViewAll');
+    component['permissionSearch'].set('View all doctor');
+    expect(component['filteredPermissionGroups']()[0].permissions[0].name).toBe('Doctors.ViewAll');
   });
 
   it('should handle error during permissions loading gracefully', async () => {

@@ -1,3 +1,4 @@
+import { permissionLabel } from '../../../../core/i18n/permission-labels';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
@@ -336,34 +337,9 @@ export class DoctorReceptions {
 
   protected getPermissionLabel(value: ReceptionAssignmentPermission | string): string {
     const permission = typeof value === 'string' ? { id: '', code: value } : value;
-    const localized = this.langService.isRtl()
-      ? permission.nameAr
-      : permission.nameEn || permission.nameAr;
-    if (localized) return localized;
-    const code = permission.code;
-    const labels: Record<string, string> = {
-      'DoctorReception.Queue.Call': this.langService.t('ui.full.603'),
-      'DoctorReception.Queue.CheckIn': this.langService.t('ui.full.604'),
-      'DoctorReception.Bookings.Manage': this.langService.t('ui.full.605'),
-      'DoctorReception.Patients.View': this.langService.t('ui.full.606'),
-      'DoctorReception.Queue.View': this.langService.t('ui.full.607'),
-      'Patients.Register': this.langService.t('permissions.patientsRegister'),
-      'Patients.SearchBasic': this.langService.t('permissions.patientsSearchBasic'),
-      'PracticePayments.Record': this.langService.t('permissions.practicePaymentsRecord'),
-      'PracticeQueue.Manage': this.langService.t('permissions.practiceQueueManage'),
-      'PracticeReservations.Cancel': this.langService.t('permissions.practiceReservationsCancel'),
-      'PracticeReservations.Create': this.langService.t('permissions.practiceReservationsCreate'),
-      'PracticeReservations.Reschedule': this.langService.t(
-        'permissions.practiceReservationsReschedule',
-      ),
-      'PracticeReservations.RestoreNoShow': this.langService.t(
-        'permissions.practiceReservationsRestoreNoShow',
-      ),
-      'PracticeReservations.View': this.langService.t('permissions.practiceReservationsView'),
-      'PracticeWalkIns.Create': this.langService.t('permissions.practiceWalkInsCreate'),
-      'PracticeReservations.Manage': this.langService.t('permissions.practiceReservationsManage'),
-    };
-    return labels[code] || code;
+    const language = this.langService.currentLang();
+    const localized = language === 'ar' ? permission.nameAr : permission.nameEn;
+    return permissionLabel(permission.code, language, localized ?? undefined);
   }
 
   protected logout(): void {

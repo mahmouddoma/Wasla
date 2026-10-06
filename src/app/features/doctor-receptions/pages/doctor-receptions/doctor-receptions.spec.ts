@@ -292,16 +292,32 @@ describe('DoctorReceptions', () => {
     await createAndInitializeComponent();
 
     expect(component['getPermissionLabel']('DoctorReception.Queue.Call')).toBe(
-      'نداء التذاكر والمرضى',
+      'نداء المريض التالي',
     );
     expect(component['getPermissionLabel']('DoctorReception.Queue.CheckIn')).toBe(
-      'تسجيل حضور المرضى',
+      'تسجيل حضور المريض',
     );
-    expect(component['getPermissionLabel']('Patients.Register')).toBe('تسجيل المرضى الجدد');
+    expect(component['getPermissionLabel']('Patients.Register')).toBe('تسجيل مريض جديد');
     expect(component['getPermissionLabel']('PracticeQueue.Manage')).toBe(
       'إدارة طابور الانتظار والنداء',
     );
-    expect(component['getPermissionLabel']('Unknown.Code')).toBe('Unknown.Code');
+    expect(component['getPermissionLabel']('Unknown.Code')).toBe('صلاحية إضافية غير موصوفة');
+  });
+
+  it('uses the shared labels in both languages instead of technical server names', async () => {
+    await createAndInitializeComponent();
+    const permission = {
+      id: 'perm-new',
+      code: 'PracticePayments.Correct',
+      nameAr: 'PracticePayments.Correct',
+      nameEn: 'PracticePayments.Correct',
+    };
+    component['langService'].setLanguage('ar');
+    expect(component['getPermissionLabel'](permission)).toBe('تصحيح دفعة مسجلة');
+    component['langService'].setLanguage('en');
+    expect(component['getPermissionLabel'](permission)).toBe('Correct a recorded payment');
+    expect(component['getPermissionLabel']('PracticeTickets.CheckIn')).toBe('Check in a patient');
+    component['langService'].setLanguage('ar');
   });
 
   it('selects and deselects all available permissions', async () => {

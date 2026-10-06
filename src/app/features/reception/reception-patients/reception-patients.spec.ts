@@ -91,6 +91,24 @@ describe('ReceptionPatients', () => {
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
 
+  it('switches patient panels without losing entered registration or search values', () => {
+    component['searchModel'].update((model) => ({ ...model, name: 'Ahmed' }));
+    component['createModel'].update((model) => ({ ...model, nameEn: 'New patient' }));
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const buttons = root.querySelectorAll<HTMLButtonElement>('.patient-panel-switcher button');
+    buttons[1].click();
+    fixture.detectChanges();
+    expect(root.querySelector('.patients-workspace-grid')?.getAttribute('data-panel')).toBe(
+      'register',
+    );
+    expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
+    buttons[0].click();
+    fixture.detectChanges();
+    expect(component['searchModel']().name).toBe('Ahmed');
+    expect(component['createModel']().nameEn).toBe('New patient');
+  });
+
   it('loads accessible practices on creation and selects the first active one', () => {
     expect(component).toBeTruthy();
     expect(practicesApi.list).toHaveBeenCalled();

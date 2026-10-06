@@ -36,7 +36,7 @@
       <h2>{{ 'roles.loadingPermissions' | t }}</h2>
     </div>
   } @else if (role(); as roleDetails) {
-    <!-- Role Header Card -->
+    <!-- Role Header Card (Theme Matched to Project Sidebar & Clinical Design) -->
     <header class="role-card-header">
       <div class="role-identity-cluster">
         <div class="role-avatar-badge" aria-hidden="true">
@@ -46,7 +46,8 @@
           </svg>
         </div>
         <div class="role-meta-info">
-          <div class="role-tags-row">
+          <div class="role-header-top-row">
+            <h1 class="role-name-heading" lang="en" dir="ltr">{{ roleDetails.name }}</h1>
             <span class="role-type-pill" [class.is-system]="roleDetails.isSystemRole">
               @if (roleDetails.isSystemRole) {
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -63,25 +64,41 @@
             </span>
           </div>
 
-          <h1 class="role-name-heading" lang="en" dir="ltr">{{ roleDetails.name }}</h1>
+          <div class="role-header-sub-row">
+            <div
+              class="role-guid-chip"
+              (click)="copyRoleId()"
+              [title]="uiLanguage.t('ui.expressions.39') + ' ' + roleDetails.id"
+            >
+              <span class="guid-label">{{ 'common.idLabel' | t }}</span>
+              <code class="guid-value">{{ roleDetails.id }}</code>
+              <button type="button" class="btn-copy-guid" [attr.aria-label]="'common.copyId' | t">
+                @if (idCopied()) {
+                  <span class="copied-indicator">{{ 'common.copied' | t }}</span>
+                } @else {
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                }
+              </button>
+            </div>
 
-          <div
-            class="role-guid-chip"
-            (click)="copyRoleId()"
-            [title]="uiLanguage.t('ui.expressions.39') + ' ' + roleDetails.id"
-          >
-            <span class="guid-label">{{ 'common.idLabel' | t }}</span>
-            <code class="guid-value">{{ roleDetails.id }}</code>
-            <button type="button" class="btn-copy-guid" [attr.aria-label]="'common.copyId' | t">
-              @if (idCopied()) {
-                <span class="copied-indicator">{{ 'common.copied' | t }}</span>
-              } @else {
+            @if (totalCatalogCount() > 0) {
+              <div class="role-stats-chip" [title]="'roles.assigned' | t">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
-              }
-            </button>
+                <span class="stats-text">
+                  <strong>{{ selectedCount() }}</strong>
+                  <span class="stats-sep">/</span>
+                  <span>{{ totalCatalogCount() }}</span>
+                  <span class="stats-lbl">{{ 'roles.assigned' | t }}</span>
+                </span>
+                <span class="stats-pct-badge">{{ assignmentPercentage() }}%</span>
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -185,7 +202,8 @@
           }
         </div>
 
-        <div class="toolbar-filters-cluster">
+        <div class="toolbar-controls-cluster">
+          <!-- Filter Mode Pills -->
           <div class="filter-pills-group" role="radiogroup" [attr.aria-label]="'roles.filterPermissions' | t">
             <button
               type="button"
@@ -216,32 +234,40 @@
             </button>
           </div>
 
+          <!-- Bulk Selection Actions -->
           @if (canManage() && filteredPermissionGroups().length) {
             <div class="toolbar-bulk-actions">
               <button
                 type="button"
-                class="btn-bulk-subtle"
+                class="btn-bulk-action"
                 [disabled]="isSaving()"
                 (click)="selectAllFiltered()"
                 [title]="'roles.selectAllVisible' | t"
               >
-                {{ 'roles.selectVisible' | t }}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{{ 'roles.selectVisible' | t }}</span>
               </button>
               <button
                 type="button"
-                class="btn-bulk-subtle"
+                class="btn-bulk-action btn-bulk-action--clear"
                 [disabled]="isSaving()"
                 (click)="deselectAllFiltered()"
                 [title]="'roles.deselectAllVisible' | t"
               >
-                {{ 'roles.deselectVisible' | t }}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                <span>{{ 'roles.deselectVisible' | t }}</span>
               </button>
             </div>
           }
         </div>
       </div>
 
-      <!-- Permission Groups List -->
+      <!-- Permission Groups Stack -->
       @if (catalog(); as permissionCatalog) {
         @if (permissionCatalog.length) {
           @if (filteredPermissionGroups(); as groups) {
@@ -252,26 +278,31 @@
                     <!-- Group Header -->
                     <header class="group-header">
                       <div class="group-brand-lead">
-                        <div class="group-titles">
-                          <h3 class="group-title-ar">{{ getModuleArabic(group.name) }}</h3>
-                          <span class="group-title-en" lang="en" dir="ltr">{{ group.name }}</span>
-                        </div>
+                        <span
+                          class="group-indicator-dot"
+                          [class.is-all-selected]="isGroupFullySelected(group)"
+                          aria-hidden="true"
+                        ></span>
+                        <h3 class="group-title-ar">{{ getGroupLabel(group.name) }}</h3>
                       </div>
 
                       <div class="group-controls">
                         <div
                           class="group-selection-badge"
                           [class.is-full]="isGroupFullySelected(group)"
+                          [class.has-partial]="getGroupSelectedCount(group) > 0 && !isGroupFullySelected(group)"
                         >
                           <span class="badge-num">{{ getGroupSelectedCount(group) }}</span>
-                          <span class="badge-sep">{{ 'discovery.of' | t }}</span>
+                          <span class="badge-sep">/</span>
                           <span class="badge-total">{{ group.permissions.length }}</span>
+                          <span class="badge-text">{{ 'roles.assigned' | t }}</span>
                         </div>
 
                         @if (canManage()) {
                           <button
                             type="button"
                             class="btn-group-toggle"
+                            [class.is-active-btn]="isGroupFullySelected(group)"
                             [disabled]="isSaving()"
                             (click)="toggleGroupSelection(group)"
                           >
@@ -289,7 +320,7 @@
                           [class.is-selected]="isSelected(permission.id)"
                           [class.is-disabled]="!isAssignable(permission)"
                         >
-                          <label class="permission-tile-inner">
+                          <label class="permission-tile-inner" [title]="permission.name">
                             <div class="checkbox-container">
                               <input
                                 type="checkbox"
@@ -307,15 +338,8 @@
 
                             <div class="permission-content-col">
                               <span class="action-ar-label">{{
-                                getActionArabic(permission.name) || getActionName(permission.name)
+                                getPermissionLabel(permission.name)
                               }}</span>
-                              <span
-                                class="action-tag"
-                                lang="en"
-                                dir="ltr"
-                                [title]="permission.name"
-                                >{{ getActionName(permission.name) }}</span
-                              >
 
                               @if (isRootOnly(permission)) {
                                 <span class="restriction-hint root-hint">
@@ -333,9 +357,7 @@
                                     <line x1="12" y1="8" x2="12" y2="12" />
                                     <line x1="12" y1="16" x2="12.01" y2="16" />
                                   </svg>
-                                  <span
-                                    >{{ 'roles.notSystemPermission' | t }}</span
-                                  >
+                                  <span>{{ 'roles.notSystemPermission' | t }}</span>
                                 </span>
                               }
                             </div>
@@ -380,7 +402,7 @@
               </p>
               <div class="missing-tags-list">
                 @for (permission of missingCatalogPermissions(); track permission.id) {
-                  <span class="missing-tag" lang="en" dir="ltr">{{ permission.name }}</span>
+                  <span class="missing-tag" [title]="permission.name">{{ getPermissionLabel(permission.name) }}</span>
                 }
               </div>
             </div>
@@ -397,7 +419,7 @@
           <div class="current-tags-wrap">
             @for (permission of current()?.permissions ?? []; track permission.id) {
               <div class="current-role-tag">
-                <strong lang="en" dir="ltr">{{ permission.name }}</strong>
+                <strong [title]="permission.name">{{ getPermissionLabel(permission.name) }}</strong>
               </div>
             } @empty {
               <p class="empty-text">{{ 'roles.noAssignedPermissions' | t }}</p>
@@ -411,6 +433,9 @@
     <footer class="permissions-sticky-footer" [class.is-floating]="isDrawer()">
       <div class="footer-summary-cluster">
         <div class="selection-counter-badge">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
           <span class="counter-val">{{ selectedCount() }}</span>
           <span class="counter-lbl">{{ 'roles.selectedPermission' | t }}</span>
         </div>

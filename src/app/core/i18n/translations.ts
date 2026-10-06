@@ -8,6 +8,628 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
+  'permissions.group.Diagnoses': { ar: 'تشخيصات المرضى', en: 'Patient diagnoses' },
+  'permissions.group.MedicalEncounters': { ar: 'الكشوفات الطبية', en: 'Medical consultations' },
+  'permissions.group.FollowUpEligibility': {
+    ar: 'استحقاق إعادة الكشف',
+    en: 'Follow-up eligibility',
+  },
+  'permissions.group.DoctorOnboarding': { ar: 'طلب انضمام الطبيب', en: 'Doctor registration' },
+  'permissions.group.DoctorPracticeBranding': {
+    ar: 'اسم وشعار عيادات الطبيب',
+    en: 'Doctor clinic name and logo',
+  },
+  'permissions.group.DoctorPracticeConfiguration': {
+    ar: 'إعدادات عيادات الطبيب',
+    en: 'Doctor clinic settings',
+  },
+  'permissions.group.DoctorPracticeLocation': {
+    ar: 'عناوين عيادات الطبيب',
+    en: 'Doctor clinic addresses',
+  },
+  'permissions.group.DoctorPracticePayments': {
+    ar: 'مدفوعات عيادات الطبيب',
+    en: 'Doctor clinic payments',
+  },
+  'permissions.group.DoctorPracticeReservations': {
+    ar: 'حجوزات عيادات الطبيب',
+    en: 'Doctor clinic appointments',
+  },
+  'permissions.group.DoctorPracticeTickets': {
+    ar: 'دور المرضى بعيادات الطبيب',
+    en: 'Doctor clinic patient queue',
+  },
+  'permissions.group.DoctorPracticeSchedule': {
+    ar: 'مواعيد عمل عيادات الطبيب',
+    en: 'Doctor clinic working hours',
+  },
+  'permissions.group.DoctorPracticeSegments': {
+    ar: 'فترات الحجز بعيادات الطبيب',
+    en: 'Doctor clinic booking sessions',
+  },
+  'permissions.group.DoctorPracticePricing': {
+    ar: 'أسعار الكشف بعيادات الطبيب',
+    en: 'Doctor clinic consultation fees',
+  },
+  'permissions.group.DoctorPractices': { ar: 'عيادات الطبيب', en: 'Doctor clinics' },
+  'permissions.group.DoctorProfile': { ar: 'الملف الشخصي للطبيب', en: 'Doctor profile' },
+  'permissions.group.DoctorSpecializations': { ar: 'تخصصات الطبيب', en: 'Doctor specialties' },
+  'permissions.group.DoctorSpecializationRequests': {
+    ar: 'طلبات اعتماد تخصصات الأطباء',
+    en: 'Doctor specialty approval requests',
+  },
+  'permissions.group.Doctors': { ar: 'حسابات الأطباء', en: 'Doctor accounts' },
+  'permissions.group.Specializations': { ar: 'التخصصات الطبية', en: 'Medical specialties' },
+  'permissions.group.SuperAdmins': {
+    ar: 'حسابات مسؤولي النظام',
+    en: 'System administrator accounts',
+  },
+  'permissions.group.Roles': { ar: 'الأدوار الوظيفية', en: 'User roles' },
+  'permissions.group.Permissions': { ar: 'الصلاحيات المتاحة', en: 'Available permissions' },
+  'permissions.group.RolePermissions': { ar: 'صلاحيات الأدوار الوظيفية', en: 'Role permissions' },
+  'permissions.group.Patients': { ar: 'سجلات المرضى', en: 'Patient records' },
+  'permissions.group.PatientProfile': { ar: 'الملف الشخصي للمريض', en: 'Patient profile' },
+  'permissions.group.PatientContacts': { ar: 'جهات اتصال المريض', en: 'Patient contacts' },
+  'permissions.group.Families': { ar: 'أفراد الأسرة', en: 'Family members' },
+  'permissions.group.FamilyRelationshipRequests': {
+    ar: 'طلبات ربط أفراد الأسرة',
+    en: 'Family linking requests',
+  },
+  'permissions.group.Reception': { ar: 'الاستقبال', en: 'Reception' },
+  'permissions.group.ReceptionUsers': { ar: 'موظفو الاستقبال', en: 'Reception staff' },
+  'permissions.group.ReceptionAssignments': {
+    ar: 'ربط موظفي الاستقبال بالعيادات',
+    en: 'Reception staff clinic assignments',
+  },
+  'permissions.group.PracticePayments': { ar: 'مدفوعات العيادة', en: 'Clinic payments' },
+  'permissions.group.PracticeQueue': { ar: 'طابور انتظار العيادة', en: 'Clinic waiting queue' },
+  'permissions.group.PracticeReservations': { ar: 'حجوزات العيادة', en: 'Clinic appointments' },
+  'permissions.group.PracticeTickets': { ar: 'دور المرضى بالعيادة', en: 'Clinic patient queue' },
+  'permissions.group.PracticeWalkIns': { ar: 'الحضور بدون حجز', en: 'Walk-in visits' },
+  'permissions.group.DoctorRevenue': { ar: 'إيرادات الطبيب', en: 'Doctor revenue' },
+  'permissions.group.Payments': { ar: 'المدفوعات', en: 'Payments' },
+  'permissions.group.PlatformRevenue': { ar: 'إيرادات المنصة', en: 'Platform revenue' },
+  'permissions.group.Tickets': { ar: 'أرقام الدور', en: 'Queue tickets' },
+  'permissions.group.Reservations': { ar: 'الحجوزات', en: 'Appointments' },
+  'permissions.group.Appointments': { ar: 'المواعيد', en: 'Appointments' },
+  'permissions.group.SecurityGovernance': {
+    ar: 'إدارة الوصول للنظام',
+    en: 'System access management',
+  },
+  'permissions.group.MedicalSpecializations': { ar: 'التخصصات الطبية', en: 'Medical specialties' },
+  'permissions.label.MedicalEncounters.ViewOwn': {
+    ar: 'عرض كشوفاتي الطبية',
+    en: 'View my consultations',
+  },
+  'permissions.label.MedicalEncounters.UpdateOwn': {
+    ar: 'تعديل بيانات كشف أجريه',
+    en: 'Edit a consultation I am conducting',
+  },
+  'permissions.label.Diagnoses.ViewOwn': {
+    ar: 'عرض تشخيصات مرضاي',
+    en: 'View my patient diagnoses',
+  },
+  'permissions.label.Diagnoses.ManageOwn': {
+    ar: 'إدارة تشخيصات مرضاي',
+    en: 'Manage my patient diagnoses',
+  },
+  'permissions.label.FollowUpEligibility.CreateOwn': {
+    ar: 'تحديد استحقاق مرضاي لإعادة الكشف',
+    en: 'Set follow-up eligibility for my patients',
+  },
+  'permissions.label.FollowUpEligibility.ViewOwn': {
+    ar: 'عرض استحقاق مرضاي لإعادة الكشف',
+    en: 'View follow-up eligibility for my patients',
+  },
+  'permissions.label.DoctorOnboarding.ViewOwn': {
+    ar: 'عرض طلب انضمامي كطبيب',
+    en: 'View my doctor registration request',
+  },
+  'permissions.label.Doctors.ViewAll': {
+    ar: 'عرض جميع حسابات الأطباء',
+    en: 'View all doctor accounts',
+  },
+  'permissions.label.Doctors.ViewDetails': {
+    ar: 'عرض تفاصيل حسابات الأطباء',
+    en: 'View details of doctor accounts',
+  },
+  'permissions.label.Doctors.Approve': {
+    ar: 'الموافقة على حسابات الأطباء',
+    en: 'Approve doctor accounts',
+  },
+  'permissions.label.Doctors.Reject': { ar: 'رفض حسابات الأطباء', en: 'Reject doctor accounts' },
+  'permissions.label.Doctors.Suspend': {
+    ar: 'إيقاف حسابات الأطباء',
+    en: 'Suspend doctor accounts',
+  },
+  'permissions.label.Doctors.Reactivate': {
+    ar: 'إعادة تفعيل حسابات الأطباء',
+    en: 'Reactivate doctor accounts',
+  },
+  'permissions.label.SuperAdmins.ViewAll': {
+    ar: 'عرض جميع حسابات مسؤولي النظام',
+    en: 'View all system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.ViewDetails': {
+    ar: 'عرض تفاصيل حسابات مسؤولي النظام',
+    en: 'View details of system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.Create': {
+    ar: 'إضافة حسابات مسؤولي النظام',
+    en: 'Add system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.Update': {
+    ar: 'تعديل حسابات مسؤولي النظام',
+    en: 'Edit system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.Activate': {
+    ar: 'تفعيل حسابات مسؤولي النظام',
+    en: 'Activate system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.Deactivate': {
+    ar: 'تعطيل حسابات مسؤولي النظام',
+    en: 'Deactivate system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.Delete': {
+    ar: 'حذف حسابات مسؤولي النظام',
+    en: 'Delete system administrator accounts',
+  },
+  'permissions.label.SuperAdmins.Restore': {
+    ar: 'استعادة حسابات مسؤولي النظام',
+    en: 'Restore system administrator accounts',
+  },
+  'permissions.label.Roles.View': { ar: 'عرض الأدوار الوظيفية', en: 'View user roles' },
+  'permissions.label.Permissions.View': {
+    ar: 'عرض الصلاحيات المتاحة',
+    en: 'View available permissions',
+  },
+  'permissions.label.RolePermissions.Manage': {
+    ar: 'إدارة صلاحيات الأدوار الوظيفية',
+    en: 'Manage role permissions',
+  },
+  'permissions.label.Specializations.View': {
+    ar: 'عرض التخصصات الطبية',
+    en: 'View medical specialties',
+  },
+  'permissions.label.Specializations.Create': {
+    ar: 'إضافة التخصصات الطبية',
+    en: 'Add medical specialties',
+  },
+  'permissions.label.Specializations.Update': {
+    ar: 'تعديل التخصصات الطبية',
+    en: 'Edit medical specialties',
+  },
+  'permissions.label.Specializations.Activate': {
+    ar: 'تفعيل التخصصات الطبية',
+    en: 'Activate medical specialties',
+  },
+  'permissions.label.Specializations.Deactivate': {
+    ar: 'تعطيل التخصصات الطبية',
+    en: 'Deactivate medical specialties',
+  },
+  'permissions.label.Specializations.Delete': {
+    ar: 'حذف التخصصات الطبية',
+    en: 'Delete medical specialties',
+  },
+  'permissions.label.Specializations.Restore': {
+    ar: 'استعادة التخصصات الطبية',
+    en: 'Restore medical specialties',
+  },
+  'permissions.label.DoctorSpecializations.ViewOwn': {
+    ar: 'عرض تخصصاتي الطبية',
+    en: 'View my medical specialties',
+  },
+  'permissions.label.DoctorSpecializations.SubmitOwn': {
+    ar: 'تقديم طلب اعتماد تخصصاتي الطبية',
+    en: 'Submit approval for my medical specialties',
+  },
+  'permissions.label.DoctorSpecializations.ResubmitOwn': {
+    ar: 'إعادة تقديم تخصصاتي الطبية',
+    en: 'Resubmit my medical specialties',
+  },
+  'permissions.label.DoctorPracticeLocation.ViewOwn': {
+    ar: 'عرض عناوين عياداتي',
+    en: 'View my clinic addresses',
+  },
+  'permissions.label.DoctorPracticeLocation.ManageOwn': {
+    ar: 'إدارة عناوين عياداتي',
+    en: 'Manage my clinic addresses',
+  },
+  'permissions.label.DoctorPractices.ViewOwn': { ar: 'عرض عياداتي', en: 'View my clinics' },
+  'permissions.label.DoctorPractices.ManageOwn': { ar: 'إدارة عياداتي', en: 'Manage my clinics' },
+  'permissions.label.DoctorPractices.ActivateOwn': {
+    ar: 'تفعيل عياداتي',
+    en: 'Activate my clinics',
+  },
+  'permissions.label.DoctorPracticeConfiguration.ViewOwn': {
+    ar: 'عرض إعدادات عياداتي',
+    en: 'View my clinic settings',
+  },
+  'permissions.label.DoctorPracticeConfiguration.ManageOwn': {
+    ar: 'إدارة إعدادات عياداتي',
+    en: 'Manage my clinic settings',
+  },
+  'permissions.label.DoctorPracticeBranding.ViewOwn': {
+    ar: 'عرض اسم وشعار عياداتي',
+    en: 'View my clinic name and logo',
+  },
+  'permissions.label.DoctorPracticeBranding.ManageOwn': {
+    ar: 'إدارة اسم وشعار عياداتي',
+    en: 'Manage my clinic name and logo',
+  },
+  'permissions.label.DoctorPracticeSchedule.ViewOwn': {
+    ar: 'عرض مواعيد عمل عياداتي',
+    en: 'View my clinic working hours',
+  },
+  'permissions.label.DoctorPracticeSchedule.ManageOwn': {
+    ar: 'إدارة مواعيد عمل عياداتي',
+    en: 'Manage my clinic working hours',
+  },
+  'permissions.label.DoctorPracticeSegments.ViewOwn': {
+    ar: 'عرض فترات الحجز بعياداتي',
+    en: 'View my clinic booking sessions',
+  },
+  'permissions.label.DoctorPracticeSegments.ManageOwn': {
+    ar: 'إدارة فترات الحجز بعياداتي',
+    en: 'Manage my clinic booking sessions',
+  },
+  'permissions.label.DoctorPracticePricing.ViewOwn': {
+    ar: 'عرض أسعار الكشف بعياداتي',
+    en: 'View my clinic consultation fees',
+  },
+  'permissions.label.DoctorPracticePricing.ManageOwn': {
+    ar: 'إدارة أسعار الكشف بعياداتي',
+    en: 'Manage my clinic consultation fees',
+  },
+  'permissions.label.ReceptionUsers.ViewOwn': {
+    ar: 'عرض موظفي الاستقبال بعياداتي',
+    en: 'View reception staff at my clinics',
+  },
+  'permissions.label.ReceptionUsers.ManageOwn': {
+    ar: 'إدارة موظفي الاستقبال بعياداتي',
+    en: 'Manage reception staff at my clinics',
+  },
+  'permissions.label.ReceptionAssignments.ManageOwn': {
+    ar: 'ربط موظفي الاستقبال بعياداتي وتحديد صلاحياتهم',
+    en: 'Assign reception staff to my clinics and set their permissions',
+  },
+  'permissions.label.DoctorProfile.ViewOwn': {
+    ar: 'عرض ملفي الشخصي كطبيب',
+    en: 'View my doctor profile',
+  },
+  'permissions.label.DoctorProfile.UpdateOwn': {
+    ar: 'تعديل ملفي الشخصي كطبيب',
+    en: 'Edit my doctor profile',
+  },
+  'permissions.label.DoctorSpecializationRequests.ViewAll': {
+    ar: 'عرض جميع طلبات اعتماد تخصصات الأطباء',
+    en: 'View all doctor specialty approval requests',
+  },
+  'permissions.label.DoctorSpecializationRequests.ViewDetails': {
+    ar: 'عرض تفاصيل طلبات اعتماد تخصصات الأطباء',
+    en: 'View details of doctor specialty approval requests',
+  },
+  'permissions.label.DoctorSpecializationRequests.Adjust': {
+    ar: 'تصحيح بيانات طلبات اعتماد تخصصات الأطباء',
+    en: 'Correct details of doctor specialty approval requests',
+  },
+  'permissions.label.DoctorSpecializationRequests.RequestModification': {
+    ar: 'طلب تعديل طلبات اعتماد تخصصات الأطباء',
+    en: 'Request changes to doctor specialty approval requests',
+  },
+  'permissions.label.DoctorSpecializationRequests.Approve': {
+    ar: 'الموافقة على طلبات اعتماد تخصصات الأطباء',
+    en: 'Approve doctor specialty approval requests',
+  },
+  'permissions.label.DoctorSpecializationRequests.Reject': {
+    ar: 'رفض طلبات اعتماد تخصصات الأطباء',
+    en: 'Reject doctor specialty approval requests',
+  },
+  'permissions.label.PatientProfile.ViewOwn': {
+    ar: 'عرض ملفي الشخصي كمريض',
+    en: 'View my patient profile',
+  },
+  'permissions.label.PatientProfile.UpdateOwn': {
+    ar: 'تعديل ملفي الشخصي كمريض',
+    en: 'Edit my patient profile',
+  },
+  'permissions.label.PatientContacts.ViewOwn': {
+    ar: 'عرض جهات الاتصال المسجلة في ملفي',
+    en: 'View contacts saved in my profile',
+  },
+  'permissions.label.PatientContacts.ManageOwn': {
+    ar: 'تعديل جهات الاتصال المسجلة في ملفي',
+    en: 'Edit contacts saved in my profile',
+  },
+  'permissions.label.Families.ViewOwn': { ar: 'عرض أفراد أسرتي', en: 'View my family members' },
+  'permissions.label.FamilyRelationshipRequests.Create': {
+    ar: 'إضافة طلبات ربط أفراد الأسرة',
+    en: 'Add family linking requests',
+  },
+  'permissions.label.FamilyRelationshipRequests.ViewOwn': {
+    ar: 'عرض طلباتي لربط أفراد الأسرة',
+    en: 'View my family linking requests',
+  },
+  'permissions.label.FamilyRelationshipRequests.ResubmitOwn': {
+    ar: 'إعادة تقديم طلبي لربط أفراد الأسرة',
+    en: 'Resubmit my family linking request',
+  },
+  'permissions.label.FamilyRelationshipRequests.CreateAssisted': {
+    ar: 'تقديم طلب ربط أفراد الأسرة نيابة عن المريض',
+    en: 'Submit a family linking request on behalf of a patient',
+  },
+  'permissions.label.FamilyRelationshipRequests.ViewAssisted': {
+    ar: 'عرض طلبات ربط الأسرة المقدمة نيابة عن المرضى',
+    en: 'View family linking requests submitted on behalf of patients',
+  },
+  'permissions.label.FamilyRelationshipRequests.ResubmitAssisted': {
+    ar: 'إعادة تقديم طلب ربط الأسرة نيابة عن المريض',
+    en: 'Resubmit a family linking request on behalf of a patient',
+  },
+  'permissions.label.FamilyRelationshipRequests.ViewAll': {
+    ar: 'عرض جميع طلبات ربط أفراد الأسرة',
+    en: 'View all family linking requests',
+  },
+  'permissions.label.FamilyRelationshipRequests.ViewDetails': {
+    ar: 'عرض تفاصيل طلبات ربط أفراد الأسرة',
+    en: 'View details of family linking requests',
+  },
+  'permissions.label.FamilyRelationshipRequests.RequestModification': {
+    ar: 'طلب تعديل طلبات ربط أفراد الأسرة',
+    en: 'Request changes to family linking requests',
+  },
+  'permissions.label.FamilyRelationshipRequests.Approve': {
+    ar: 'الموافقة على طلبات ربط أفراد الأسرة',
+    en: 'Approve family linking requests',
+  },
+  'permissions.label.FamilyRelationshipRequests.Reject': {
+    ar: 'رفض طلبات ربط أفراد الأسرة',
+    en: 'Reject family linking requests',
+  },
+  'permissions.label.PracticeTickets.View': { ar: 'عرض دور المرضى', en: 'View the patient queue' },
+  'permissions.label.PracticeReservations.View': {
+    ar: 'عرض حجوزات العيادة',
+    en: 'View clinic appointments',
+  },
+  'permissions.label.PracticeReservations.Create': {
+    ar: 'حجز موعد للمريض',
+    en: 'Book a patient appointment',
+  },
+  'permissions.label.Tickets.ViewOwn': {
+    ar: 'عرض أرقام الدور الخاصة بي',
+    en: 'View my queue tickets',
+  },
+  'permissions.label.PracticePayments.View': {
+    ar: 'عرض مدفوعات العيادة',
+    en: 'View clinic payments',
+  },
+  'permissions.label.DoctorPracticePayments.ViewOwn': {
+    ar: 'عرض مدفوعات العيادة بعياداتي',
+    en: 'View clinic payments at my clinics',
+  },
+  'permissions.label.DoctorRevenue.ViewOwn': {
+    ar: 'عرض إيرادات عياداتي',
+    en: 'View my clinic revenue',
+  },
+  'permissions.label.Payments.ViewOwn': { ar: 'عرض المدفوعات الخاصة بي', en: 'View my payments' },
+  'permissions.label.PlatformRevenue.ViewAggregates': {
+    ar: 'عرض إجمالي إيرادات المنصة',
+    en: 'View total platform revenue',
+  },
+  'permissions.label.DoctorPracticeReservations.ViewOwn': {
+    ar: 'عرض حجوزات العيادة بعياداتي',
+    en: 'View clinic appointments at my clinics',
+  },
+  'permissions.label.DoctorPracticeTickets.ViewOwn': {
+    ar: 'عرض دور المرضى بعياداتي',
+    en: 'View the patient queue at my clinics',
+  },
+  'permissions.label.Patients.Register': { ar: 'تسجيل مريض جديد', en: 'Register a new patient' },
+  'permissions.label.Patients.SearchBasic': {
+    ar: 'البحث عن مريض وبياناته الأساسية',
+    en: 'Find a patient and basic details',
+  },
+  'permissions.label.FollowUpEligibility.ViewBookingEligibility': {
+    ar: 'معرفة استحقاق المريض لإعادة الكشف',
+    en: 'Check patient follow-up eligibility',
+  },
+  'permissions.label.MedicalEncounters.StartOwn': {
+    ar: 'بدء كشف لمريض لديّ',
+    en: 'Start a consultation for my patient',
+  },
+  'permissions.label.MedicalEncounters.AmendOwn': {
+    ar: 'إضافة تصحيح لكشف أنهيته',
+    en: 'Add a correction to my completed consultation',
+  },
+  'permissions.label.MedicalEncounters.ViewOwnCompleted': {
+    ar: 'عرض كشوفاتي المنتهية',
+    en: 'View my completed consultations',
+  },
+  'permissions.label.Diagnoses.ViewOwnCompleted': {
+    ar: 'عرض تشخيصات كشوفاتي المنتهية',
+    en: 'View diagnoses from my completed consultations',
+  },
+  'permissions.label.PracticeQueue.Manage': {
+    ar: 'إدارة طابور الانتظار والنداء',
+    en: 'Manage the waiting queue and patient calls',
+  },
+  'permissions.label.PracticeWalkIns.Create': {
+    ar: 'تسجيل مريض بدون حجز مسبق',
+    en: 'Register a walk-in patient',
+  },
+  'permissions.label.Reservations.ViewAdministrative': {
+    ar: 'عرض الحجوزات لإدارة المنصة',
+    en: 'View appointments for platform administration',
+  },
+  'permissions.label.PracticeReservations.Manage': {
+    ar: 'إدارة حجوزات العيادة',
+    en: 'Manage clinic appointments',
+  },
+  'permissions.label.PracticeTickets.Call': {
+    ar: 'نداء المريض التالي',
+    en: 'Call the next patient',
+  },
+  'permissions.label.DoctorPracticeTickets.CallOwn': {
+    ar: 'نداء المريض التالي بعياداتي',
+    en: 'Call the next patient at my clinics',
+  },
+  'permissions.label.PracticeTickets.ManualCall': {
+    ar: 'نداء مريض محدد من الطابور',
+    en: 'Call a selected patient from the queue',
+  },
+  'permissions.label.DoctorPracticeTickets.ManualCallOwn': {
+    ar: 'نداء مريض محدد من الطابور بعياداتي',
+    en: 'Call a selected patient from the queue at my clinics',
+  },
+  'permissions.label.PracticeTickets.CheckIn': {
+    ar: 'تسجيل حضور المريض',
+    en: 'Check in a patient',
+  },
+  'permissions.label.DoctorPracticeTickets.CheckInOwn': {
+    ar: 'تسجيل حضور المريض بعياداتي',
+    en: 'Check in a patient at my clinics',
+  },
+  'permissions.label.PracticeTickets.ForceCheckIn': {
+    ar: 'تسجيل الحضور استثنائيًا رغم قيود الحجز',
+    en: 'Override booking restrictions to check in a patient',
+  },
+  'permissions.label.DoctorPracticeTickets.ForceCheckInOwn': {
+    ar: 'تسجيل الحضور استثنائيًا رغم قيود الحجز بعياداتي',
+    en: 'Override booking restrictions to check in a patient at my clinics',
+  },
+  'permissions.label.PracticeTickets.CreateWalkIn': {
+    ar: 'إضافة مريض للدور بدون حجز',
+    en: 'Add a walk-in patient to the queue',
+  },
+  'permissions.label.DoctorPracticeTickets.CreateWalkInOwn': {
+    ar: 'إضافة مريض للدور بدون حجز بعياداتي',
+    en: 'Add a walk-in patient to the queue at my clinics',
+  },
+  'permissions.label.PracticeTickets.RecordPayment': {
+    ar: 'تسجيل دفعة للمريض',
+    en: 'Record a patient payment',
+  },
+  'permissions.label.DoctorPracticeTickets.RecordPaymentOwn': {
+    ar: 'تسجيل دفعة للمريض بعياداتي',
+    en: 'Record a patient payment at my clinics',
+  },
+  'permissions.label.PracticeTickets.Cancel': {
+    ar: 'إلغاء دور المريض',
+    en: 'Cancel a patient queue ticket',
+  },
+  'permissions.label.DoctorPracticeTickets.CancelOwn': {
+    ar: 'إلغاء دور المريض بعياداتي',
+    en: 'Cancel a patient queue ticket at my clinics',
+  },
+  'permissions.label.PracticeTickets.RestoreNoShow': {
+    ar: 'إعادة مريض متغيب إلى الطابور',
+    en: 'Return a missed patient to the queue',
+  },
+  'permissions.label.DoctorPracticeTickets.RestoreNoShowOwn': {
+    ar: 'إعادة مريض متغيب إلى الطابور بعياداتي',
+    en: 'Return a missed patient to the queue at my clinics',
+  },
+  'permissions.label.PracticeTickets.Start': {
+    ar: 'بدء الكشف على المريض',
+    en: 'Start the patient consultation',
+  },
+  'permissions.label.DoctorPracticeTickets.StartOwn': {
+    ar: 'بدء الكشف على المريض بعياداتي',
+    en: 'Start the patient consultation at my clinics',
+  },
+  'permissions.label.PracticeTickets.Complete': {
+    ar: 'إنهاء الكشف على المريض',
+    en: 'Complete the patient consultation',
+  },
+  'permissions.label.DoctorPracticeTickets.CompleteOwn': {
+    ar: 'إنهاء الكشف على المريض بعياداتي',
+    en: 'Complete the patient consultation at my clinics',
+  },
+  'permissions.label.PracticeTickets.ConfirmNoResponse': {
+    ar: 'تأكيد عدم استجابة المريض للنداء',
+    en: 'Confirm the patient did not answer the call',
+  },
+  'permissions.label.DoctorPracticeTickets.ConfirmNoResponseOwn': {
+    ar: 'تأكيد عدم استجابة المريض للنداء بعياداتي',
+    en: 'Confirm the patient did not answer the call at my clinics',
+  },
+  'permissions.label.PracticePayments.Record': {
+    ar: 'تسجيل دفعة بالعيادة',
+    en: 'Record a clinic payment',
+  },
+  'permissions.label.DoctorPracticePayments.RecordOwn': {
+    ar: 'تسجيل دفعة بالعيادة بعياداتي',
+    en: 'Record a clinic payment at my clinics',
+  },
+  'permissions.label.PracticePayments.Correct': {
+    ar: 'تصحيح دفعة مسجلة',
+    en: 'Correct a recorded payment',
+  },
+  'permissions.label.DoctorPracticePayments.CorrectOwn': {
+    ar: 'تصحيح دفعة مسجلة بعياداتي',
+    en: 'Correct a recorded payment at my clinics',
+  },
+  'permissions.label.PracticePayments.Refund': {
+    ar: 'رد مبلغ للمريض',
+    en: 'Refund a patient payment',
+  },
+  'permissions.label.DoctorPracticePayments.RefundOwn': {
+    ar: 'رد مبلغ للمريض بعياداتي',
+    en: 'Refund a patient payment at my clinics',
+  },
+  'permissions.label.DoctorPracticeReservations.CreateOwn': {
+    ar: 'حجز موعد للمريض بعياداتي',
+    en: 'Book a patient appointment at my clinics',
+  },
+  'permissions.label.PracticeReservations.Cancel': {
+    ar: 'إلغاء حجز المريض',
+    en: 'Cancel a patient appointment',
+  },
+  'permissions.label.DoctorPracticeReservations.CancelOwn': {
+    ar: 'إلغاء حجز المريض بعياداتي',
+    en: 'Cancel a patient appointment at my clinics',
+  },
+  'permissions.label.PracticeReservations.Reschedule': {
+    ar: 'تغيير موعد حجز المريض',
+    en: 'Reschedule a patient appointment',
+  },
+  'permissions.label.DoctorPracticeReservations.RescheduleOwn': {
+    ar: 'تغيير موعد حجز المريض بعياداتي',
+    en: 'Reschedule a patient appointment at my clinics',
+  },
+  'permissions.label.PracticeReservations.RestoreNoShow': {
+    ar: 'استعادة حجز مريض لم يحضر',
+    en: 'Restore a missed patient appointment',
+  },
+  'permissions.label.DoctorPracticeReservations.RestoreNoShowOwn': {
+    ar: 'استعادة حجز مريض لم يحضر بعياداتي',
+    en: 'Restore a missed patient appointment at my clinics',
+  },
+  'permissions.label.DoctorReception.Queue.Call': {
+    ar: 'نداء المريض التالي',
+    en: 'Call the next patient',
+  },
+  'permissions.label.DoctorReception.Queue.CheckIn': {
+    ar: 'تسجيل حضور المريض',
+    en: 'Check in a patient',
+  },
+  'permissions.label.DoctorReception.Bookings.Manage': {
+    ar: 'إدارة حجوزات العيادة',
+    en: 'Manage clinic appointments',
+  },
+  'permissions.label.DoctorReception.Patients.View': {
+    ar: 'البحث عن مريض وبياناته الأساسية',
+    en: 'Find a patient and basic details',
+  },
+  'permissions.label.DoctorReception.Queue.View': {
+    ar: 'عرض دور المرضى',
+    en: 'View the patient queue',
+  },
+  'permissions.unlisted': {
+    ar: 'صلاحية إضافية غير موصوفة',
+    en: 'Additional permission without a description',
+  },
+  'permissions.otherGroup': { ar: 'صلاحيات إضافية', en: 'Additional permissions' },
   'reservations.all': { ar: 'الكل', en: 'All' },
   'tickets.validation.paymentNonnegative': {
     ar: 'المبلغ لا يمكن أن يكون سالبًا.',
@@ -3696,6 +4318,18 @@ export const TRANSLATIONS: TranslationDictionary = {
   // Post-login: Workspace
   'workspace.secureSession': { ar: 'جلسة آمنة وموثقة', en: 'Secure & Authenticated Session' },
   'workspace.welcome': { ar: 'مرحبًا بك', en: 'Welcome' },
+  'reception.mobileNavigation': { ar: 'التنقل بين خدمات العيادة', en: 'Clinic navigation' },
+  'reception.nav.workspace': { ar: 'الرئيسية', en: 'Home' },
+  'reception.nav.reservations': { ar: 'الحجوزات', en: 'Bookings' },
+  'reception.nav.queue': { ar: 'الدور', en: 'Queue' },
+  'reception.nav.patients': { ar: 'المرضى', en: 'Patients' },
+  'reception.phoneExample': { ar: '01xxxxxxxxx', en: '01xxxxxxxxx' },
+  'reception.arabicNameExample': { ar: 'مثال: أحمد محمد علي', en: 'Enter the name in Arabic' },
+  'reception.englishNameExample': { ar: 'الاسم بالإنجليزية', en: 'e.g. Ahmed Mohamed' },
+  'reception.patientEmailExample': { ar: 'patient@example.com', en: 'patient@example.com' },
+  'reception.contactNameExample': { ar: 'اسم ولي الأمر أو جهة الاتصال', en: 'Guardian or contact name' },
+  'reception.patientIdExample': { ar: 'مثال: PT-10029', en: 'e.g. PT-10029' },
+  'reception.more': { ar: 'المزيد', en: 'More' },
   'workspace.readyNotice': {
     ar: 'تم تحميل بيانات حسابك وصلاحياتك من منصة وصلة بنجاح. يمكنك الوصول المباشر للخدمات والوحدات المتاحة أدناه.',
     en: 'Your account data and permissions have loaded successfully from Wasla. You can directly access the available services below.',
@@ -3799,50 +4433,6 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Our technical support team is available via support@wasla.health or our hotline 19000.',
   },
   'footer.closeModal': { ar: 'إغلاق', en: 'Close' },
-  'permissions.patientsRegister': {
-    ar: 'تسجيل المرضى الجدد',
-    en: 'Register New Patients',
-  },
-  'permissions.patientsSearchBasic': {
-    ar: 'البحث في سجلات المرضى',
-    en: 'Search Patient Records',
-  },
-  'permissions.practicePaymentsRecord': {
-    ar: 'تسجيل المدفوعات والتحصيل',
-    en: 'Record Practice Payments',
-  },
-  'permissions.practiceQueueManage': {
-    ar: 'إدارة طابور الانتظار والنداء',
-    en: 'Manage Waiting Queue',
-  },
-  'permissions.practiceReservationsCancel': {
-    ar: 'إلغاء الحجوزات',
-    en: 'Cancel Reservations',
-  },
-  'permissions.practiceReservationsCreate': {
-    ar: 'إنشاء حجز جديد',
-    en: 'Create Reservations',
-  },
-  'permissions.practiceReservationsReschedule': {
-    ar: 'إعادة جدولة المواعيد',
-    en: 'Reschedule Appointments',
-  },
-  'permissions.practiceReservationsRestoreNoShow': {
-    ar: 'استعادة حالات عدم الحضور',
-    en: 'Restore No-Show Bookings',
-  },
-  'permissions.practiceReservationsView': {
-    ar: 'عرض جدول الحجوزات',
-    en: 'View Practice Reservations',
-  },
-  'permissions.practiceWalkInsCreate': {
-    ar: 'تسجيل الدخول المباشر (بدون موعد)',
-    en: 'Register Walk-in Patients',
-  },
-  'permissions.practiceReservationsManage': {
-    ar: 'إدارة الحجوزات والمواعيد',
-    en: 'Manage Reservations',
-  },
   'permissions.selectAll': {
     ar: 'تحديد الكل',
     en: 'Select All',

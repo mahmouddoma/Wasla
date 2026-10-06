@@ -81,4 +81,35 @@ describe('AdminLayout', () => {
     expect(mockSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  it('should toggle and close user profile popover', () => {
+    const comp = component as unknown as {
+      isUserMenuOpen: () => boolean;
+      toggleUserMenu: (e?: Event) => void;
+      closeUserMenu: () => void;
+    };
+    expect(comp.isUserMenuOpen()).toBe(false);
+    comp.toggleUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(true);
+    comp.closeUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(false);
+  });
+
+  it('should close user menu on document click and escape key', () => {
+    const comp = component as unknown as {
+      isUserMenuOpen: () => boolean;
+      toggleUserMenu: () => void;
+      onDocumentClick: () => void;
+      onEscape: () => void;
+    };
+    comp.toggleUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(true);
+    comp.onDocumentClick();
+    expect(comp.isUserMenuOpen()).toBe(false);
+
+    comp.toggleUserMenu();
+    expect(comp.isUserMenuOpen()).toBe(true);
+    comp.onEscape();
+    expect(comp.isUserMenuOpen()).toBe(false);
+  });
 });

@@ -1,12 +1,9 @@
 import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
-import { WorkspaceSidebarComponent } from '../../../../shared/components/workspace-sidebar/workspace-sidebar';
-import { SidebarService } from '../../../../shared/components/workspace-sidebar/sidebar.service';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/core';
 
@@ -19,19 +16,9 @@ import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/c
 })
 export class Workspace {
   readonly langService = inject(LanguageService);
-  protected readonly user = inject(AuthSession).user;
-  protected readonly sidebarService = inject(SidebarService);
   private readonly reception = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
-  private readonly router = inject(Router);
-
-  protected toggleSidebar(): void {
-    if (typeof window !== 'undefined' && window.innerWidth < 992) {
-      this.sidebarService.toggleMobile();
-    } else {
-      this.sidebarService.toggleCollapse();
-    }
-  }
+  protected readonly user = this.session.user;
 
   protected readonly canManageDoctorProfile =
     this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
@@ -111,29 +98,23 @@ export class Workspace {
 
   protected readonly roleBadge = computed(() => {
     const type = this.user()?.userType;
-    const isAr = this.langService.currentLang() === 'ar';
     switch (type) {
       case 'Doctor':
         return {
-          label: isAr ? this.langService.t('ui.full.765') : 'Practicing Doctor',
+          label: this.langService.t('ui.full.765'),
           icon: 'stethoscope',
         };
       case 'Reception':
-        return { label: isAr ? this.langService.t('ui.full.766') : 'Receptionist', icon: 'desk' };
+        return { label: this.langService.t('ui.full.766'), icon: 'desk' };
       case 'Patient':
         return {
-          label: isAr ? this.langService.t('ui.full.767') : 'Verified Patient',
+          label: this.langService.t('ui.full.767'),
           icon: 'user',
         };
       case 'SuperAdmin':
-        return { label: isAr ? this.langService.t('ui.full.768') : 'Super Admin', icon: 'shield' };
+        return { label: this.langService.t('ui.full.768'), icon: 'shield' };
       default:
         return { label: type ?? '', icon: 'user' };
     }
   });
-
-  protected logout(): void {
-    this.session.clear();
-    void this.router.navigate(['/login']);
-  }
 }

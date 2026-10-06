@@ -1,70 +1,19 @@
 :host {
   display: block;
   background: var(--wasla-app);
+  min-width: 0;
+  container-type: inline-size;
 }
 
 .health-workspace {
   padding: 24px clamp(16px, 3vw, 32px);
-  background: radial-gradient(circle at 50% 0%, #eef8f8 0%, var(--wasla-app) 70%);
+  background: var(--wasla-app);
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
 /* ── Header Deck & Workflow Chips ────────────────────────────────── */
-.reception-workflow-deck {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.workflow-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  background: #ffffff;
-  border: 1px solid var(--wasla-border-subtle);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--wasla-slate);
-}
-
-.workflow-chip.active {
-  background: var(--wasla-teal-50, #f0fbfa);
-  border-color: rgba(11, 165, 160, 0.25);
-  color: var(--wasla-teal-700, #047c79);
-}
-
-.workflow-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--wasla-navy-100, #e2e8f0);
-  color: var(--wasla-navy-800, #1e293b);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.workflow-chip.active .workflow-num {
-  background: var(--wasla-teal-500, #0ba5a0);
-  color: #ffffff;
-}
-
-.workflow-arrow {
-  color: var(--wasla-muted);
-  flex-shrink: 0;
-}
-
-:host-context([dir='rtl']) .workflow-arrow,
-[dir='rtl'] .workflow-arrow {
-  transform: scaleX(-1);
-}
 
 .btn-head-back {
   display: inline-flex;
@@ -86,7 +35,7 @@
 .btn-head-back:hover {
   background: var(--wasla-teal-50, #f0fbfa);
   color: var(--wasla-teal-700, #047c79);
-  border-color: rgba(11, 165, 160, 0.3);
+  border-color: var(--wasla-border);
 }
 
 :host-context([dir='rtl']) .btn-head-back svg,
@@ -127,12 +76,6 @@
   grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
-}
-
-@media (max-width: 1200px) {
-  .patients-workspace-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* ── Panels Surface ──────────────────────────────────────────────── */
@@ -241,6 +184,7 @@
   font-weight: 500;
   outline: none;
   transition: all 0.18s ease;
+  min-width: 0;
 }
 
 .input-wrap .field-icon + input {
@@ -250,7 +194,7 @@
 .form-field input:focus,
 .select-wrap select:focus {
   background: #ffffff;
-  border-color: var(--wasla-teal-500, #0ba5a0);
+  border-color: var(--wasla-border);
   box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
 }
 
@@ -401,7 +345,7 @@
 }
 
 .patient-result-card.selected {
-  border-color: var(--wasla-teal-500, #0ba5a0);
+  border-color: var(--wasla-border);
   background: var(--wasla-teal-50, #f0fbfa);
 }
 
@@ -542,7 +486,7 @@
 
 .btn-pager:hover:not(:disabled) {
   background: #f8fafc;
-  border-color: var(--wasla-teal-500);
+  border-color: var(--wasla-border);
   color: var(--wasla-teal-700);
 }
 
@@ -562,12 +506,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-}
-
-@media (max-width: 640px) {
-  .patient-register-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ── Custom File Upload Dropzone ─────────────────────────────────── */
@@ -596,7 +534,7 @@
 
 .custom-file-drop:hover {
   background: #f0fbfa;
-  border-color: var(--wasla-teal-500);
+  border-color: var(--wasla-border);
 }
 
 .file-drop-content {
@@ -674,12 +612,6 @@
   gap: 14px;
 }
 
-@media (max-width: 640px) {
-  .contact-fields-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .btn-create-patient {
   display: inline-flex;
   align-items: center;
@@ -721,5 +653,69 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.patient-panel-switcher {
+  display: none;
+}
+
+@container (max-width: 1199px) {
+  .patients-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .patient-panel-switcher {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--wasla-border-subtle);
+    border-radius: var(--radius-control);
+    background: var(--wasla-surface);
+  }
+  .patient-panel-switcher button {
+    flex: 1;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--wasla-slate);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .patient-panel-switcher button.active {
+    background: var(--wasla-teal-50);
+    color: var(--wasla-teal-700);
+  }
+  .patient-panel-switcher button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
+  }
+  .patients-workspace-grid[data-panel='search'] .register-panel,
+  .patients-workspace-grid[data-panel='register'] .search-panel {
+    display: none;
+  }
+}
+
+@container (max-width: 599px) {
+  .health-workspace {
+    padding: 16px;
+    gap: 16px;
+  }
+  .patient-panel {
+    padding: 16px;
+    gap: 16px;
+  }
+  .patient-search-form,
+  .patient-register-grid,
+  .contact-fields-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .form-field input:not([type='file']),
+  .select-wrap select {
+    font-size: 1rem;
+  }
+  .result-list {
+    max-height: none;
   }
 }

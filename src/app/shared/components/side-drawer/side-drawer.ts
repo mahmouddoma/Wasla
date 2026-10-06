@@ -23,6 +23,7 @@ export class SideDrawer {
   title = input('');
   description = input('');
   width = input('560px');
+  theme = input<'light' | 'navy'>('light');
   closed = output<void>();
 
   @HostListener('document:keydown.escape')

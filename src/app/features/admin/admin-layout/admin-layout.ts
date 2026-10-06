@@ -4,7 +4,14 @@ import { PERMISSIONS } from '../../../core/auth/permissions';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LanguageSwitcher } from '../../../shared/components/language-switcher/language-switcher';
-import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  computed,
+  signal,
+  HostListener,
+} from '@angular/core';
 
 @Component({
   selector: 'app-admin-layout',
@@ -23,6 +30,9 @@ export class AdminLayout {
       localStorage.getItem('wasla_sidebar_collapsed') === 'true',
   );
   protected readonly user = this.session.user;
+  protected readonly isUserMenuOpen = signal(false);
+  protected readonly isIdCopied = signal(false);
+
   protected readonly canViewReservations = computed(() =>
     this.session.hasPermission('Reservations.ViewAdministrative'),
   );
@@ -61,6 +71,34 @@ export class AdminLayout {
       ? user.roles.join(this.langService.t('ui.full.0'))
       : (user?.userType ?? '');
   });
+
+  protected toggleUserMenu(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.isUserMenuOpen.update((open) => !open);
+  }
+
+  protected closeUserMenu(): void {
+    this.isUserMenuOpen.set(false);
+  }
+
+  protected copyUserId(): void {
+    const id = this.user()?.applicationUserId;
+    if (id && typeof navigator !== 'undefined' && navigator.clipboard) {
+      void navigator.clipboard.writeText(id);
+      this.isIdCopied.set(true);
+      setTimeout(() => this.isIdCopied.set(false), 2000);
+    }
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeUserMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeUserMenu();
+  }
 
   protected logout(): void {
     this.session.clear();

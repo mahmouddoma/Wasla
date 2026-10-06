@@ -1,3 +1,8 @@
+import {
+  permissionLabel,
+  permissionGroupLabel,
+  permissionMatches,
+} from '../../../core/i18n/permission-labels';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -30,72 +35,6 @@ import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 export interface PermissionGroup {
   name: string;
   permissions: SecurityPermission[];
-}
-
-const MODULE_LABEL_KEYS: Record<string, string> = {
-  DoctorOnboarding: "ui.full.8",
-  DoctorPracticeBranding: "ui.full.9",
-  DoctorPracticeConfiguration: "ui.full.10",
-  DoctorPracticeLocation: "ui.full.11",
-  DoctorSpecializationRequests: "specializations.requestsTitle",
-  MedicalSpecializations: "admin.navSpecializations",
-  SuperAdmins: "admin.navSuperAdmins",
-  Roles: "admin.navRoles",
-  Permissions: "ui.full.16",
-  Patients: "ui.full.17",
-  Families: "ui.full.18",
-  DoctorProfile: "ui.full.19",
-  Reception: "ui.full.20",
-  SecurityGovernance: "ui.full.21",
-  DoctorPracticeSchedule: "ui.full.22",
-  DoctorPracticeSegments: "ui.full.23",
-  DoctorPracticePricing: "ui.full.24",
-  DoctorPractices: "ui.full.25",
-  DoctorSpecializations: "ui.full.26",
-  Doctors: "discovery.doctors",
-  Specializations: "specializations.title",
-  PatientContacts: "ui.full.29",
-  PatientProfile: "ui.full.30",
-  PracticePayments: "ui.full.31",
-  PracticeQueue: "ui.full.32",
-  PracticeReservations: "ui.full.33",
-  PracticeWalkIns: "ui.full.34",
-  ReceptionAssignments: "ui.full.35",
-  ReceptionUsers: "ui.full.36",
-  RolePermissions: "ui.full.37",
-  FamilyRelationshipRequests: "family.requests",
-};
-
-const ACTION_LABEL_KEYS: Record<string, string> = {
-  View: "common.view",
-  ViewOwn: "ui.full.40",
-  ViewAll: "ui.full.41",
-  ViewDetails: "ui.full.42",
-  ViewAssisted: "ui.full.43",
-  Manage: "ui.full.44",
-  ManageOwn: "ui.full.45",
-  Create: "ui.full.46",
-  Update: "common.edit",
-  Delete: "common.delete",
-  Activate: "common.activate",
-  ActivateOwn: "ui.full.50",
-  Deactivate: "common.deactivate",
-  Suspend: "ui.full.52",
-  Approve: "ui.full.53",
-  Reject: "ui.full.54",
-  Restore: "common.restore",
-  Record: "ui.full.56",
-  Register: "ui.full.57",
-  SearchBasic: "ui.full.58",
-  SubmitOwn: "ui.full.59",
-  ResubmitOwn: "ui.full.60",
-  ResubmitAssisted: "ui.full.61",
-  RequestModification: "requests.requestChanges",
-  Adjust: "ui.full.63",
-};
-
-function splitCamelCase(str: string): string {
-  return str.replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
 @Component({
@@ -155,6 +94,11 @@ export class RoleDetails {
   });
 
   protected readonly totalCatalogCount = computed(() => this.catalog()?.length ?? 0);
+  protected readonly assignmentPercentage = computed(() => {
+    const total = this.totalCatalogCount();
+    if (!total) return 0;
+    return Math.round((this.selectedCount() / total) * 100);
+  });
   protected readonly selectedCount = computed(() => this.selectedIds().size);
   protected readonly unselectedCount = computed(() =>
     Math.max(0, this.totalCatalogCount() - this.selectedCount()),
@@ -172,11 +116,11 @@ export class RoleDetails {
       if (mode === 'unselected' && isSel) continue;
 
       if (query) {
-        const matchName = permission.name.toLowerCase().includes(query);
-        const matchId = permission.id.toLowerCase().includes(query);
-        const groupKey = permission.name.split('.')[0] || '';
-        const matchArabic = this.uiLanguage.t(MODULE_LABEL_KEYS[groupKey] || '').toLowerCase().includes(query);
-        if (!matchName && !matchId && !matchArabic) continue;
+        if (
+          !permissionMatches(permission.name, query) &&
+          !permission.id.toLowerCase().includes(query)
+        )
+          continue;
       }
 
       const groupName = permission.name.split('.')[0] || 'Other';
@@ -209,10 +153,8 @@ export class RoleDetails {
   });
 
   protected readonly managementBlockReason = computed(() => {
-    if (!this.canViewCatalog)
-      return this.uiLanguage.t('ui.full.64');
-    if (!this.hasManagePermission)
-      return this.uiLanguage.t('ui.full.65');
+    if (!this.canViewCatalog) return this.uiLanguage.t('ui.full.64');
+    if (!this.hasManagePermission) return this.uiLanguage.t('ui.full.65');
     if (this.role()?.name === 'SuperAdmin' && !this.hasRootContext()) {
       return this.uiLanguage.t('ui.full.66');
     }
@@ -229,9 +171,7 @@ export class RoleDetails {
         if (id === this.loadedRoleId) return;
         if (!isGuid(id)) {
           this.isLoading.set(false);
-          this.apiMessages.set([
-            this.uiLanguage.t('ui.full.67'),
-          ]);
+          this.apiMessages.set([this.uiLanguage.t('ui.full.67')]);
           return;
         }
         this.loadedRoleId = id;
@@ -289,20 +229,12 @@ export class RoleDetails {
     return this.canManage() && permission.isSystemPermission && !this.isRootOnly(permission);
   }
 
-  protected getModuleArabic(groupName: string): string {
-    return this.uiLanguage.t(MODULE_LABEL_KEYS[groupName] || groupName);
+  protected getGroupLabel(group: string): string {
+    return permissionGroupLabel(group, this.uiLanguage.currentLang());
   }
 
-  protected getActionName(permissionName: string): string {
-    const parts = permissionName.split('.');
-    const raw = parts.length > 1 ? parts.slice(1).join('.') : permissionName;
-    return splitCamelCase(raw);
-  }
-
-  protected getActionArabic(permissionName: string): string {
-    const parts = permissionName.split('.');
-    const action = parts.length > 1 ? parts.slice(1).join('.') : permissionName;
-    return this.uiLanguage.t(ACTION_LABEL_KEYS[action] || '');
+  protected getPermissionLabel(code: string): string {
+    return permissionLabel(code, this.uiLanguage.currentLang());
   }
 
   protected getGroupSelectedCount(group: PermissionGroup): number {
@@ -429,7 +361,6 @@ export class RoleDetails {
       this.toast.success(this.successMessage());
       this.saved.emit(response);
     } catch (error) {
-
       const parsed = parseApiErrors(error);
       this.saveMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {

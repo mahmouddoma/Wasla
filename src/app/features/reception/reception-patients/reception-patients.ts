@@ -102,6 +102,9 @@ export class ReceptionPatients {
   protected readonly selectedPracticeId = this.practiceContext.currentPracticeId;
   protected readonly canSearch = this.session.hasPermission(PERMISSIONS.patientsSearchBasic);
   protected readonly canRegister = this.session.hasPermission(PERMISSIONS.patientsRegister);
+  protected readonly activePanel = signal<'search' | 'register'>(
+    this.canSearch ? 'search' : 'register',
+  );
 
   constructor() {
     if (this.canSearch && !this.practices().length) void this.loadPractices();

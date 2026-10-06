@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   signal,
+  HostListener,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthSession } from '../../../core/auth/auth-session';
@@ -53,6 +54,16 @@ export class PortalLayout {
   );
 
   protected readonly user = this.session.user;
+  protected readonly isReception = computed(() => this.user()?.userType === 'Reception');
+  protected readonly mobileNavItems = computed(() =>
+    this.isReception()
+      ? this.roleNavItems().filter((item) =>
+          ['workspace', 'reservations', 'queue', 'patients'].includes(item.id),
+        )
+      : [],
+  );
+  protected readonly isUserMenuOpen = signal(false);
+  protected readonly isIdCopied = signal(false);
 
   protected readonly home = computed(() => {
     const user = this.user();
@@ -74,9 +85,16 @@ export class PortalLayout {
 
     if (userType === 'doctor') {
       return [
-        ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn) ? [{
-          id: 'encounters', labelKey: 'encounters.title', route: '/doctor/encounters', icon: 'stethoscope',
-        }] : []),
+        ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn)
+          ? [
+              {
+                id: 'encounters',
+                labelKey: 'encounters.title',
+                route: '/doctor/encounters',
+                icon: 'stethoscope',
+              },
+            ]
+          : []),
         {
           id: 'workspace',
           labelKey: 'sidebar.workspace',
@@ -185,12 +203,26 @@ export class PortalLayout {
 
     // Default: Patient
     return [
-      ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwnCompleted) ? [{
-        id: 'encounters', labelKey: 'encounters.title', route: '/patient/encounters', icon: 'stethoscope',
-      }] : []),
-      ...(this.session.hasPermission(PERMISSIONS.followUpEligibilityViewOwn) ? [{
-        id: 'follow-ups', labelKey: 'followUps.title', route: '/patient/follow-ups', icon: 'calendar',
-      }] : []),
+      ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwnCompleted)
+        ? [
+            {
+              id: 'encounters',
+              labelKey: 'encounters.title',
+              route: '/patient/encounters',
+              icon: 'stethoscope',
+            },
+          ]
+        : []),
+      ...(this.session.hasPermission(PERMISSIONS.followUpEligibilityViewOwn)
+        ? [
+            {
+              id: 'follow-ups',
+              labelKey: 'followUps.title',
+              route: '/patient/follow-ups',
+              icon: 'calendar',
+            },
+          ]
+        : []),
       {
         id: 'workspace',
         labelKey: 'sidebar.workspace',
@@ -230,6 +262,35 @@ export class PortalLayout {
       { id: 'finance', labelKey: 'sidebar.finance', route: '/patient/finance', icon: 'receipt' },
     ];
   });
+
+  protected toggleUserMenu(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.isUserMenuOpen.update((open) => !open);
+  }
+
+  protected closeUserMenu(): void {
+    this.isUserMenuOpen.set(false);
+  }
+
+  protected copyUserId(): void {
+    const id = this.user()?.applicationUserId;
+    if (id && typeof navigator !== 'undefined' && navigator.clipboard) {
+      void navigator.clipboard.writeText(id);
+      this.isIdCopied.set(true);
+      setTimeout(() => this.isIdCopied.set(false), 2000);
+    }
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeUserMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeUserMenu();
+    this.closeSidebar();
+  }
 
   protected logout(): void {
     this.session.clear();
