@@ -357,13 +357,19 @@ describe('ReservationWorkspaceStore', () => {
     await store.searchPatients({ phoneNumber: '01011122233' });
     expect(search).not.toHaveBeenCalled();
   });
-  it('retains search phone/DOB context and clears it on clinic switch, including pending errors', async () => {
+  it('clears completed patient search state on practice switch', async () => {
     vi.spyOn(TestBed.inject(AuthSession), 'hasPermission').mockReturnValue(true);
     store.actor.set('Reception');
-    store.practiceId.set('clinic');
+    store.practices.set([
+      { id: 'clinic-a', nameAr: 'Clinic A', nameEn: 'Clinic A' },
+      { id: 'clinic-b', nameAr: 'Clinic B', nameEn: 'Clinic B' },
+    ]);
+    currentPracticeId.set('clinic-a');
+    store.practiceId.set('clinic-a');
     grants.set(['Patients.SearchBasic']);
+
     const patient: PatientSearchItem = {
-      patientId: 'p1',
+      patientId: 'p-a',
       nameAr: 'Synthetic',
       nameEn: 'Synthetic',
       dateOfBirth: '1990-01-01',
@@ -374,30 +380,222 @@ describe('ReservationWorkspaceStore', () => {
     const search = vi
       .spyOn(TestBed.inject(PatientsApi), 'search')
       .mockReturnValue(of({ items: [patient], totalCount: 1, pageNumber: 1, pageSize: 20 }));
+
     await store.searchPatients({
       phoneNumber: patient.phoneNumber!,
       dateOfBirth: patient.dateOfBirth,
     });
     expect(search).toHaveBeenCalledWith(
       expect.objectContaining({
-        doctorPracticeId: 'clinic',
+        doctorPracticeId: 'clinic-a',
         phoneNumber: patient.phoneNumber,
         dateOfBirth: patient.dateOfBirth,
       }),
     );
     expect(store.patientResults()[0].phoneNumber).toBe(patient.phoneNumber);
-    const pending = new Subject<PagedResponse<PatientSearchItem>>();
-    search.mockReturnValue(pending);
-    const request = store.searchPatients({ name: 'Synthetic' });
-    await Promise.resolve();
-    store.practices.set([{ id: 'clinic', nameAr: 'Clinic', nameEn: 'Clinic' }]);
-    await store.selectPractice('');
-    pending.error(new HttpErrorResponse({ status: 403 }));
-    await request;
-    expect(store.patientResults()).toEqual([]);
-    expect(store.bookingPatientId()).toBe('');
-    expect(reception.refresh).not.toHaveBeenCalled();
+    expect(store.patientSearched()).toBe(true);
     expect(store.patientSearchLoading()).toBe(false);
+    expect(store.patientSearchFailed()).toBe(false);
+
+    // Switch to Clinic B
+    await store.selectPractice('clinic-b');
+
+    // Assert after switch
+    expect(store.patientResults()).toEqual([]);
+    expect(store.patientSearched()).toBe(false);
+    expect(store.patientSearchFailed()).toBe(false);
+    expect(store.patientSearchLoading()).toBe(false);
+    expect(store.bookingPatient()).toBeNull();
+    expect(store.bookingPatientId()).toBe('');
+  });
+
+  it('clears selected booking patient, eligibilities, and availability on practice switch', async () => {
+    vi.spyOn(TestBed.inject(AuthSession), 'hasPermission').mockReturnValue(true);
+    store.actor.set('Reception');
+    store.practices.set([
+      { id: 'clinic-a', nameAr: 'Clinic A', nameEn: 'Clinic A' },
+      { id: 'clinic-b', nameAr: 'Clinic B', nameEn: 'Clinic B' },
+    ]);
+    currentPracticeId.set('clinic-a');
+    store.practiceId.set('clinic-a');
+    grants.set([
+      'Patients.SearchBasic',
+      'PracticeReservations.View',
+      'PracticeReservations.Create',
+      'FollowUpEligibility.ViewBookingEligibility',
+    ]);
+
+    const patient: PatientSearchItem = {
+      patientId: 'p-a',
+      nameAr: 'Synthetic',
+      nameEn: 'Synthetic',
+      dateOfBirth: '1990-01-01',
+      gender: 'Male',
+      phoneNumber: '01011122233',
+      hasContactPhone: false,
+    };
+    vi.spyOn(TestBed.inject(PatientsApi), 'search').mockReturnValue(
+      of({ items: [patient], totalCount: 1, pageNumber: 1, pageSize: 20 }),
+    );
+
+    await store.searchPatients({ name: 'Synthetic' });
+    store.editor.set('create');
+    await store.choosePatient('p-a');
+
+    expect(store.bookingPatientId()).toBe('p-a');
+    expect(store.bookingPatient()?.patientId).toBe('p-a');
+
+    store.dates.set([{ date: '2026-10-07', isAvailable: true }]);
+    store.slots.set([{ date: '2026-10-07', time: '10:00' }]);
+    store.date.set('2026-10-07');
+    store.time.set('10:00');
+
+    // Switch to Clinic B
+    await store.selectPractice('clinic-b');
+
+    expect(store.bookingPatient()).toBeNull();
+    expect(store.bookingPatientId()).toBe('');
+    expect(store.eligibilities()).toEqual([]);
+    expect(store.eligibility()).toBeNull();
+    expect(store.dates()).toEqual([]);
+    expect(store.slots()).toEqual([]);
+    expect(store.options()).toBeNull();
+    expect(store.date()).toBe('');
+    expect(store.time()).toBe('');
+  });
+
+  it('does not restore old patient results when switching A -> B -> A', async () => {
+    vi.spyOn(TestBed.inject(AuthSession), 'hasPermission').mockReturnValue(true);
+    store.actor.set('Reception');
+    store.practices.set([
+      { id: 'clinic-a', nameAr: 'Clinic A', nameEn: 'Clinic A' },
+      { id: 'clinic-b', nameAr: 'Clinic B', nameEn: 'Clinic B' },
+    ]);
+    currentPracticeId.set('clinic-a');
+    store.practiceId.set('clinic-a');
+    grants.set(['Patients.SearchBasic']);
+
+    const patient: PatientSearchItem = {
+      patientId: 'p-a',
+      nameAr: 'Synthetic',
+      nameEn: 'Synthetic',
+      dateOfBirth: '1990-01-01',
+      gender: 'Male',
+      phoneNumber: '01011122233',
+      hasContactPhone: false,
+    };
+    vi.spyOn(TestBed.inject(PatientsApi), 'search').mockReturnValue(
+      of({ items: [patient], totalCount: 1, pageNumber: 1, pageSize: 20 }),
+    );
+
+    await store.searchPatients({ name: 'Synthetic' });
+    expect(store.patientResults().length).toBe(1);
+
+    // Switch to Clinic B
+    await store.selectPractice('clinic-b');
+    expect(store.patientResults()).toEqual([]);
+
+    // Switch back to Clinic A
+    await store.selectPractice('clinic-a');
+    expect(store.patientResults()).toEqual([]);
+    expect(store.bookingPatient()).toBeNull();
+    expect(store.bookingPatientId()).toBe('');
+    expect(store.patientSearched()).toBe(false);
+    expect(store.patientSearchLoading()).toBe(false);
+    expect(store.patientSearchFailed()).toBe(false);
+  });
+
+  it('ignores late responses (both success and failure) from Clinic A after switching to Clinic B', async () => {
+    vi.spyOn(TestBed.inject(AuthSession), 'hasPermission').mockReturnValue(true);
+    store.actor.set('Reception');
+    store.practices.set([
+      { id: 'clinic-a', nameAr: 'Clinic A', nameEn: 'Clinic A' },
+      { id: 'clinic-b', nameAr: 'Clinic B', nameEn: 'Clinic B' },
+    ]);
+    currentPracticeId.set('clinic-a');
+    store.practiceId.set('clinic-a');
+    grants.set(['Patients.SearchBasic']);
+
+    const patient: PatientSearchItem = {
+      patientId: 'p-a',
+      nameAr: 'Synthetic',
+      nameEn: 'Synthetic',
+      dateOfBirth: '1990-01-01',
+      gender: 'Male',
+      phoneNumber: '01011122233',
+      hasContactPhone: false,
+    };
+
+    // Case 4a: Late success ignored
+    const pendingSuccess = new Subject<PagedResponse<PatientSearchItem>>();
+    const searchSpy = vi
+      .spyOn(TestBed.inject(PatientsApi), 'search')
+      .mockReturnValue(pendingSuccess);
+
+    const requestA = store.searchPatients({ name: 'Synthetic' });
+    expect(store.patientSearchLoading()).toBe(true);
+
+    await store.selectPractice('clinic-b');
+    expect(store.patientSearchLoading()).toBe(false);
+
+    pendingSuccess.next({ items: [patient], totalCount: 1, pageNumber: 1, pageSize: 20 });
+    pendingSuccess.complete();
+    await requestA;
+
+    expect(store.patientResults()).toEqual([]);
+    expect(store.patientSearched()).toBe(false);
+    expect(store.patientSearchLoading()).toBe(false);
+    expect(store.patientSearchFailed()).toBe(false);
+
+    // Case 4b: Late failure ignored
+    currentPracticeId.set('clinic-a');
+    store.practiceId.set('clinic-a');
+    const pendingFailure = new Subject<PagedResponse<PatientSearchItem>>();
+    searchSpy.mockReturnValue(pendingFailure);
+
+    const requestB = store.searchPatients({ name: 'Synthetic' });
+    expect(store.patientSearchLoading()).toBe(true);
+
+    await store.selectPractice('clinic-b');
+    expect(store.patientSearchLoading()).toBe(false);
+
+    pendingFailure.error(new HttpErrorResponse({ status: 403 }));
+    await requestB;
+
+    expect(store.patientResults()).toEqual([]);
+    expect(store.patientSearchFailed()).toBe(false);
+    expect(store.patientSearchLoading()).toBe(false);
+    expect(reception.refresh).not.toHaveBeenCalled();
+  });
+
+  it('correctly derives Reception Today empty state and filtered states', () => {
+    store.actor.set('Reception');
+    currentPracticeId.set('clinic-a');
+    store.practiceId.set('clinic-a');
+    grants.set(['PracticeReservations.View', 'PracticeReservations.Create']);
+    store.setReceptionView('Today');
+    store.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+    store.loading.set(false);
+    store.listFailed.set(false);
+
+    // Default Today with no filters
+    expect(store.isReceptionFiltered()).toBe(false);
+    expect(store.isReceptionTodayEmpty()).toBe(true);
+
+    // Search filter active
+    store.query.update((q) => ({ ...q, search: 'Ahmed' }));
+    expect(store.isReceptionFiltered()).toBe(true);
+    expect(store.isReceptionTodayEmpty()).toBe(false);
+
+    // Clear search, add status filter
+    store.query.update((q) => ({ ...q, search: undefined, status: 'Active' }));
+    expect(store.isReceptionFiltered()).toBe(true);
+    expect(store.isReceptionTodayEmpty()).toBe(false);
+
+    // Switch to Upcoming view
+    store.query.update((q) => ({ ...q, status: undefined }));
+    store.setReceptionView('Upcoming');
+    expect(store.isReceptionTodayEmpty()).toBe(false);
   });
   it('clears a pending drawer on clinic switch without attaching its result to the new clinic', async () => {
     store.actor.set('Reception');

@@ -98,6 +98,11 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'جرّب يومًا آخر أو غيّر فلاتر البحث',
     en: 'Try another day or change the search filters.',
   },
+  'reception.appointments.emptyToday': { ar: 'لا توجد مواعيد اليوم', en: 'No appointments today' },
+  'reception.appointments.emptyTodayHelp': {
+    ar: 'لا توجد مواعيد مجدولة لهذا اليوم حتى الآن.',
+    en: 'No appointments scheduled for today yet.',
+  },
   'reception.appointments.viewUnavailable': {
     ar: 'عرض المواعيد غير متاح لك في هذه العيادة',
     en: 'Appointment viewing is unavailable for you in this clinic.',

@@ -87,6 +87,43 @@ export class ReservationWorkspaceStore {
       String(date.getDate()).padStart(2, '0'),
     ].join('-');
   }
+  readonly isReceptionFiltered = computed(() => {
+    if (this.actor() !== 'Reception') return false;
+    const q = this.query();
+    if (q.search?.trim()) return true;
+    if (q.status) return true;
+    if (q.bookingSource) return true;
+    if (q.segmentId) return true;
+    if (q.isLate !== undefined) return true;
+    const view = this.receptionView();
+    if (view === 'Custom') return true;
+    const today = this.today();
+    if (view === 'Today') {
+      return (
+        (q.fromDate !== undefined && q.fromDate !== today) ||
+        (q.toDate !== undefined && q.toDate !== today)
+      );
+    }
+    if (view === 'Upcoming') {
+      return (q.fromDate !== undefined && q.fromDate !== today) || q.toDate !== undefined;
+    }
+    if (view === 'All') {
+      return q.fromDate !== undefined || q.toDate !== undefined;
+    }
+    return false;
+  });
+  readonly isReceptionTodayEmpty = computed(() => {
+    return (
+      this.actor() === 'Reception' &&
+      !!this.practiceId() &&
+      this.canView() &&
+      this.receptionView() === 'Today' &&
+      !this.isReceptionFiltered() &&
+      this.page().items.length === 0 &&
+      !this.loading() &&
+      !this.listFailed()
+    );
+  });
   readonly eligibilities = signal<readonly FollowUpEligibility[]>([]);
   readonly eligibility = signal<FollowUpEligibility | null>(null);
   private eligibilitySequence = 0;
@@ -261,6 +298,7 @@ export class ReservationWorkspaceStore {
     this.listSequence++;
     this.bookingSequence++;
     this.detailSequence++;
+    this.patientSearchSequence++;
     this.practiceId.set(id);
     if (this.actor() === 'Reception') this.reception.select(id);
     this.close();
@@ -269,6 +307,12 @@ export class ReservationWorkspaceStore {
     this.listFailed.set(false);
     this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
     this.query.update((q) => ({ ...q, pageNumber: 1, segmentId: undefined }));
+    this.patientResults.set([]);
+    this.patientSearchLoading.set(false);
+    this.patientSearched.set(false);
+    this.patientSearchFailed.set(false);
+    this.bookingPatient.set(null);
+    this.bookingPatientId.set('');
     if (this.scoped() && !id) return;
     if (this.scoped() && this.canView()) {
       try {
@@ -646,6 +690,7 @@ export class ReservationWorkspaceStore {
   private resetDrawer(): void {
     this.eligibilitySequence++;
     this.bookingPatientId.set('');
+    this.bookingPatient.set(null);
     this.eligibilities.set([]);
     this.eligibility.set(null);
     this.detailSequence++;
@@ -849,6 +894,8 @@ export class ReservationWorkspaceStore {
       this.patients.set([]);
       this.bookingPatient.set(null);
       this.patientSearchLoading.set(false);
+      this.patientSearched.set(false);
+      this.patientSearchFailed.set(false);
       this.eligibilitySequence++;
       this.eligibility.set(null);
       this.eligibilities.set([]);

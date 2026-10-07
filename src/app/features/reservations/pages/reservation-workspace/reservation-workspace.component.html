@@ -661,21 +661,37 @@
                               ? 'reception.patients.chooseClinic'
                               : !store.canView()
                                 ? 'reception.appointments.viewUnavailable'
-                                : 'reception.appointments.empty'
+                                : store.isReceptionTodayEmpty()
+                                  ? 'reception.appointments.emptyToday'
+                                  : 'reception.appointments.empty'
                             : 'reservations.empty'
                           ) | t
                         }}
                       </p>
                       <span class="empty-subtitle">{{
                         (store.actor() === 'Reception'
-                          ? 'reception.appointments.emptyHelp'
+                          ? store.isReceptionTodayEmpty()
+                            ? 'reception.appointments.emptyTodayHelp'
+                            : 'reception.appointments.emptyHelp'
                           : 'reservations.subtitle'
                         ) | t
                       }}</span>
                       @if (store.actor() === 'Reception' && store.canView()) {
-                        <button type="button" class="btn-secondary" (click)="resetFilters()">
-                          {{ 'reception.appointments.resetFilters' | t }}
-                        </button>
+                        @if (store.isReceptionTodayEmpty()) {
+                          @if (store.canCreate()) {
+                            <button
+                              type="button"
+                              class="btn-primary"
+                              (click)="store.openEditor('create')"
+                            >
+                              {{ 'reception.appointments.book' | t }}
+                            </button>
+                          }
+                        } @else {
+                          <button type="button" class="btn-secondary" (click)="resetFilters()">
+                            {{ 'reception.appointments.resetFilters' | t }}
+                          </button>
+                        }
                       }
                     }
                   </div>

@@ -128,3 +128,49 @@ Queue movement, check-in redesign, force check-in and payment collection remain 
 - Clinic switching must invalidate stale results, editors and asynchronous completions. Never silently transfer a mutation into another clinic.
 - Server capabilities, permissions, availability, concurrency and idempotency stay authoritative. Every mutation needs translated toast feedback.
 - Preserve bilingual RTL/LTR behavior, responsive action clearance, neutral surfaces, shared drawers and accessible controls. P2 should build on this workflow without adding automatic check-in to registration or booking.
+
+## 14. P1 Hardening Review
+
+### 14.1 Clinic-Context Leakage Discovery
+During post-implementation review, a clinic-context leakage risk was identified in `src/app/features/reservations/state/reservation-workspace.store.ts` around Reception practice switching. While `loadPractice()` invalidated request sequences and closed drawers, a completed patient search in Clinic A left search context (`patientResults`, `patientSearched`, `patientSearchLoading`, `patientSearchFailed`, `bookingPatient`, `bookingPatientId`) in memory. If the receptionist subsequently switched to Clinic B and opened "Book appointment", stale patient search results from Clinic A remained visible. Even though backend authorization remained authoritative, this violated ReceptionPracticeContext scope isolation.
+
+### 14.2 Exact Fix Implemented
+In `ReservationWorkspaceStore`:
+1. **Invalidation on Practice Change (`loadPractice`):**
+   - Automatically resets `patientResults.set([])`, `patientSearchLoading.set(false)`, `patientSearched.set(false)`, `patientSearchFailed.set(false)`, `bookingPatient.set(null)`, and `bookingPatientId.set('')`.
+   - Increments `this.patientSearchSequence++` so in-flight async search requests from the previous clinic are dropped immediately.
+   - Retains existing `scopeGeneration` bump, request sequence protections, drawer closing, filter reset, and availability resets (`dates`, `slots`, `options`, `date`, `time`).
+2. **Drawer Reset Synchronization (`resetDrawer`):**
+   - Ensured `bookingPatient.set(null)` is reset alongside `bookingPatientId.set('')` whenever the drawer is reset.
+3. **Access Failure Cleanliness (`failure` on 403):**
+   - Added resets for `patientSearched.set(false)` and `patientSearchFailed.set(false)` alongside the existing patient resets on delegated access revocation.
+
+### 14.3 Tests Added
+Updated `src/app/features/reservations/state/reservation-workspace.store.spec.ts` and `src/app/features/reservations/pages/reservation-workspace/reservation-workspace.component.spec.ts`:
+1. **Completed search cleared on clinic switch:** Verifies that searching in Clinic A produces results, and switching to Clinic B empties `patientResults()`, sets `patientSearched()` to false, and clears booking patient data.
+2. **Selected booking patient cleared on clinic switch:** Verifies that selecting a patient in Clinic A sets `bookingPatient` and `bookingPatientId`, and switching to Clinic B clears both, as well as eligibilities, dates, slots, and availability options.
+3. **A → B → A does not restore old results:** Verifies that patient search state is not cached per clinic; switching back to Clinic A requires an explicit new search.
+4. **Pending Clinic A search cannot populate Clinic B:** Verifies that if a search is pending when switching clinics, both late success and late 403 failure from Clinic A are safely dropped without attaching to Clinic B or causing stale refresh.
+5. **Today empty state & filtered state derivation:** Verifies `isReceptionTodayEmpty` and `isReceptionFiltered` across view modes and query filters.
+6. **Workspace component Today & Filtered empty state interactions:** Verifies that Today with zero appointments renders "Book appointment" (`reception.appointments.book`) and triggers the create drawer, while filtered zero results renders "Reset filters" (`reception.appointments.resetFilters`) and restores Today view.
+
+### 14.4 Today Empty-State UX Improvement
+Differentiated the default untouched Today view from a filtered empty state:
+- **Default Today Empty View:**
+  - Title: "لا توجد مواعيد اليوم" / "No appointments today" (`reception.appointments.emptyToday`).
+  - Subtitle: "لا توجد مواعيد مجدولة لهذا اليوم حتى الآن." (`reception.appointments.emptyTodayHelp`).
+  - Action (when `store.canCreate()` is true): Prominent "حجز موعد" / "Book appointment" CTA (`.btn-primary`) opening the existing create drawer.
+  - When `canCreate()` is false: Informational empty state only.
+- **Filtered Empty State:**
+  - Title: "لا توجد مواعيد مطابقة" / "No matching appointments" (`reception.appointments.empty`).
+  - Subtitle: "جرّب يومًا آخر أو غيّر فلاتر البحث" (`reception.appointments.emptyHelp`).
+  - Action: "إعادة ضبط الفلاتر" / "Reset filters" CTA (`.btn-secondary`) restoring the default Today view.
+- **Filter Detection (`isReceptionFiltered`):** Derived from query state (`search`, `status`, `bookingSource`, `segmentId`, `isLate`, custom date deviation from active quick view). Default Today date bounds are treated as the standard schedule view, not an active filter.
+- **Responsive & Visuals:** Verified across 320px, 390px, 576px, 768px, 820px, 1024px, 1280px, and 1440px in RTL and LTR with touch-friendly CTA height (min 42px), safe wrapping, and mobile navigation clearance.
+
+### 14.5 Verification & Quality Gates
+- `npm test -- --watch=false`: **119 test files, 714 tests passed (100%)**.
+- `npm run build`: Succeeded (production bundle complete).
+- `git diff --check`: Passed (no whitespace errors or conflict markers).
+- `npm run check:i18n` & `npm run check:architecture`: Zero new violations (only pre-existing baseline failures in untouched files).
+- **Confirmation:** P2 has **NOT** been started; no changes were made to check-in, queue, payments, routes, or backend contracts.

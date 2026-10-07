@@ -275,4 +275,125 @@ describe('ReservationWorkspaceComponent', () => {
     expect(f.componentInstance.store.editor()).toBeNull();
     http.verify();
   });
+
+  it('renders Book appointment in Today empty state when canCreate is true, and opens create drawer', async () => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: { data: { actor: 'Reception' }, queryParamMap: convertToParamMap({}) },
+      },
+    });
+    TestBed.overrideProvider(AuthSession, {
+      useValue: { user: () => ({ userType: 'Reception' }), hasPermission: () => true },
+    });
+    const f = TestBed.createComponent(ReservationWorkspaceComponent),
+      http = TestBed.inject(HttpTestingController),
+      language = TestBed.inject(LanguageService);
+    const tick = async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    f.detectChanges();
+    http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
+      {
+        id: 'clinic',
+        nameAr: 'Clinic',
+        nameEn: 'Clinic',
+        isActive: true,
+        permissionCodes: [
+          'PracticeReservations.View',
+          'PracticeReservations.Create',
+          'Patients.SearchBasic',
+        ],
+      },
+    ]);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/filter-options')).flush({ segments: [] });
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/reservations')).flush({
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 20,
+    });
+    await f.whenStable();
+    f.detectChanges();
+
+    const emptyBox = f.nativeElement.querySelector('.table-empty-box');
+    expect(emptyBox).toBeTruthy();
+    expect(emptyBox.querySelector('.empty-title')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.emptyToday'),
+    );
+
+    const bookBtn = emptyBox.querySelector('.btn-primary') as HTMLButtonElement;
+    expect(bookBtn).toBeTruthy();
+    expect(bookBtn.textContent?.trim()).toBe(language.t('reception.appointments.book'));
+
+    const openEditorSpy = vi.spyOn(f.componentInstance.store, 'openEditor');
+    bookBtn.click();
+    expect(openEditorSpy).toHaveBeenCalledWith('create');
+  });
+
+  it('renders Reset filters in filtered empty state and clicking it restores Today view', async () => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: { data: { actor: 'Reception' }, queryParamMap: convertToParamMap({}) },
+      },
+    });
+    TestBed.overrideProvider(AuthSession, {
+      useValue: { user: () => ({ userType: 'Reception' }), hasPermission: () => true },
+    });
+    const f = TestBed.createComponent(ReservationWorkspaceComponent),
+      http = TestBed.inject(HttpTestingController),
+      language = TestBed.inject(LanguageService);
+    const tick = async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    f.detectChanges();
+    http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
+      {
+        id: 'clinic',
+        nameAr: 'Clinic',
+        nameEn: 'Clinic',
+        isActive: true,
+        permissionCodes: ['PracticeReservations.View', 'PracticeReservations.Create'],
+      },
+    ]);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/filter-options')).flush({ segments: [] });
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/reservations')).flush({
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 20,
+    });
+    await f.whenStable();
+    f.detectChanges();
+
+    // Now apply a filter
+    f.componentInstance.store.query.update((q) => ({ ...q, search: 'NonExistent' }));
+    f.detectChanges();
+
+    const emptyBox = f.nativeElement.querySelector('.table-empty-box');
+    expect(emptyBox.querySelector('.empty-title')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.empty'),
+    );
+
+    const resetBtn = emptyBox.querySelector('.btn-secondary') as HTMLButtonElement;
+    expect(resetBtn).toBeTruthy();
+    expect(resetBtn.textContent?.trim()).toBe(language.t('reception.appointments.resetFilters'));
+
+    const resetFiltersSpy = vi.spyOn(f.componentInstance, 'resetFilters');
+    resetBtn.click();
+    expect(resetFiltersSpy).toHaveBeenCalled();
+    http.expectOne((r) => r.url.endsWith('/reservations')).flush({
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 20,
+    });
+  });
 });
