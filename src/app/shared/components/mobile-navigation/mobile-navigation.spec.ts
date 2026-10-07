@@ -72,4 +72,14 @@ describe('MobileNavigation', () => {
     (fixture.nativeElement as HTMLElement).querySelector('a')!.click();
     expect(navigate).toHaveBeenCalledOnce();
   });
+  it('does not mark the catalog root active when the imports page is open', async () => {
+    fixture.componentRef.setInput('items', [
+      { id: 'drug-catalog', labelKey: 'medications.title', route: '/home', icon: 'clipboard-list' },
+    ]);
+    await router.navigateByUrl('/home/detail');
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('a')?.getAttribute('aria-current')).toBeNull();
+    expect(root.querySelector('button')?.classList.contains('active')).toBe(true);
+  });
 });

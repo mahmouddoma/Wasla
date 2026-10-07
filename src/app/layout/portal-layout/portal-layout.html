@@ -1,4 +1,4 @@
-<div class="portal-shell" [class.reception-portal]="isReception()" [dir]="langService.dir()">
+<div class="portal-shell" [dir]="langService.dir()">
   <!-- Mobile Sidebar Backdrop Overlay -->
   @if (isSidebarOpen()) {
     <div class="sidebar-backdrop" (click)="closeSidebar()" aria-hidden="true"></div>
@@ -87,29 +87,34 @@
 
     <!-- Navigation List -->
     <nav class="sidebar-nav">
-      @for (item of roleNavItems(); track item.id) {
-        <a
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          ariaCurrentWhenActive="page"
-          class="sidebar-nav-item"
-          [title]="item.labelKey | t"
-          (click)="closeSidebar()"
-        >
-          <svg
-            class="sidebar-nav-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+      @for (section of navigationSections(); track section.id) {
+        <h2 class="sidebar-group-title">{{ section.labelKey | t }}</h2>
+        @for (item of section.items; track item.id) {
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            [routerLinkActiveOptions]="{ exact: item.id === 'drug-catalog' }"
+            [attr.aria-label]="item.labelKey | t"
+            class="sidebar-nav-item"
+            [title]="item.labelKey | t"
+            (click)="closeSidebar()"
           >
-            <path [attr.d]="navigationIcons[item.icon]" />
-          </svg>
-          <span class="nav-text">{{ item.labelKey | t }}</span>
-        </a>
+            <svg
+              class="sidebar-nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path [attr.d]="navigationIcons[item.icon]" />
+            </svg>
+            <span class="nav-text">{{ item.labelKey | t }}</span>
+          </a>
+        }
       }
     </nav>
 
@@ -152,7 +157,7 @@
       (menuToggle)="toggleSidebar()"
       (logout)="logout()"
     >
-      @if (user()?.userType === 'Reception') {
+      @if (isReception()) {
         <div class="topbar-practice-selector" [dir]="langService.dir()">
           <label for="reception-current-practice" class="practice-selector-label">
             <svg
@@ -166,7 +171,7 @@
             >
               <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
             </svg>
-            <span>{{ 'reservations.practice' | t }}</span>
+            <span>{{ 'workspace.currentPractice' | t }}</span>
           </label>
           <div class="practice-select-wrap">
             <select

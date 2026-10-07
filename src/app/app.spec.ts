@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
-import { PortalLayout } from './shared/components/portal-layout/portal-layout';
+import { PortalLayout } from './layout/portal-layout/portal-layout';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthSession } from './core/auth/auth-session';

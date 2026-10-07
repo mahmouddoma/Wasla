@@ -1,11 +1,18 @@
-import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
+﻿import { DOCUMENT } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PortalNavigation } from '../../../../layout/navigation/portal-navigation';
+import { NavigationItem, NAVIGATION_ICONS } from '../../../../layout/navigation/navigation-item';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/core';
+
+interface WorkspaceTask extends NavigationItem {
+  readonly descriptionKey: string;
+  readonly queryParams?: Readonly<Record<string, string>>;
+}
 
 @Component({
   selector: 'app-workspace',
@@ -16,107 +23,102 @@ import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/c
 })
 export class Workspace {
   readonly langService = inject(LanguageService);
-  private readonly reception = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
-  protected readonly user = this.session.user;
-
-  protected readonly canManageDoctorProfile =
-    this.session.hasPermission(PERMISSIONS.doctorSpecializationsViewOwn) ||
-    this.session.hasPermission(PERMISSIONS.doctorPracticeLocationManageOwn);
-  protected readonly canViewDoctorPractices = this.session.hasPermission(
-    PERMISSIONS.doctorPracticesViewOwn,
-  );
-  protected readonly canViewReceptionUsers = this.session.hasPermission(
-    PERMISSIONS.receptionUsersViewOwn,
-  );
-  protected readonly canManagePatients =
-    this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
-    this.session.hasPermission(PERMISSIONS.patientsRegister);
-  protected readonly canManageAssistedFamilyRequests =
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsCreateAssisted) ||
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewAssisted) ||
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsResubmitAssisted);
-  protected readonly canManagePatientProfile =
-    this.session.hasPermission(PERMISSIONS.patientProfileViewOwn) ||
-    this.session.hasPermission(PERMISSIONS.patientProfileUpdateOwn) ||
-    this.session.hasPermission(PERMISSIONS.patientContactsViewOwn) ||
-    this.session.hasPermission(PERMISSIONS.patientContactsManageOwn);
-  protected readonly canManageFamily =
-    this.session.hasPermission(PERMISSIONS.familiesViewOwn) ||
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsViewOwn) ||
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsCreate) ||
-    this.session.hasPermission(PERMISSIONS.familyRelationshipRequestsResubmitOwn);
-
-  readonly reservationPath = computed(() => {
-    const type = this.user()?.userType;
-    if (type === 'SuperAdmin' && this.session.hasPermission('Reservations.ViewAdministrative'))
-      return '/admin/reservations';
-    if (type === 'Patient') return '/patient/reservations';
-    if (
-      type === 'Reception' &&
-      this.reception.hasAnyPracticeWithAnyPermission([
-        PERMISSIONS.practiceReservationsView,
-        PERMISSIONS.practiceReservationsCreate,
-      ])
-    )
-      return '/reception/reservations';
-    if (type === 'Doctor' && this.session.hasPermission('DoctorPracticeReservations.ViewOwn'))
-      return '/doctor/reservations';
-    return '';
+  private readonly navigation = inject(PortalNavigation);
+  private readonly document = inject(DOCUMENT);
+  protected readonly reception = this.navigation.practiceContext;
+  protected readonly icons = NAVIGATION_ICONS;
+  protected readonly role = computed(() => this.session.user()?.userType ?? 'Patient');
+  protected readonly copyRole = computed(() => {
+    const role = this.role();
+    return role === 'Reception'
+      ? 'reception'
+      : role === 'Doctor'
+        ? 'doctor'
+        : role === 'Patient'
+          ? 'patient'
+          : 'other';
   });
-  readonly ticketPath = computed(() => {
-    const type = this.user()?.userType;
-    if (type === 'Patient' && this.session.hasPermission(PERMISSIONS.ticketsViewOwn))
-      return '/patient/tickets';
-    if (
-      type === 'Reception' &&
-      this.reception.hasAnyPracticeWithPermission(PERMISSIONS.practiceTicketsView)
-    )
-      return '/reception/queue';
-    if (type === 'Doctor') return '/doctor/queue';
-    return '';
+  protected readonly practiceName = computed(() => {
+    const practice = this.reception.currentPractice();
+    return practice
+      ? this.langService.isRtl()
+        ? practice.nameAr
+        : practice.nameEn || practice.nameAr
+      : '';
   });
-  protected readonly hasAnyModules = computed(
-    () =>
-      !!this.reservationPath() ||
-      !!this.ticketPath() ||
-      this.canManageDoctorProfile ||
-      this.canViewDoctorPractices ||
-      this.canViewReceptionUsers ||
-      this.canManagePatients ||
-      this.canManageAssistedFamilyRequests ||
-      this.canManagePatientProfile ||
-      this.canManageFamily,
-  );
-
-  protected readonly illustrationPath = computed(() => {
-    const type = this.user()?.userType;
-    if (type === 'Doctor') return '/SVG-AVATAR/Online Doctor-rafiki.svg';
-    if (type === 'Patient') return '/SVG-AVATAR/Medical prescription-rafiki.svg';
-    return '/SVG-AVATAR/Doctors-bro.svg';
-  });
-
-  protected readonly roleBadge = computed(() => {
-    const type = this.user()?.userType;
-    switch (type) {
-      case 'DrugCatalogManager':
-        return { label: this.langService.t('medications.managerRole'), icon: 'shield' };
-      case 'Doctor':
-        return {
-          label: this.langService.t('ui.full.765'),
-          icon: 'stethoscope',
-        };
-      case 'Reception':
-        return { label: this.langService.t('ui.full.766'), icon: 'desk' };
-      case 'Patient':
-        return {
-          label: this.langService.t('ui.full.767'),
-          icon: 'user',
-        };
-      case 'SuperAdmin':
-        return { label: this.langService.t('ui.full.768'), icon: 'shield' };
-      default:
-        return { label: type ?? '', icon: 'user' };
+  protected readonly tasks = computed<WorkspaceTask[]>(() => {
+    const task = (
+      id: string,
+      key: string,
+      queryParams?: Readonly<Record<string, string>>,
+    ): WorkspaceTask[] => {
+      const item = this.navigation.items().find((item) => item.id === id);
+      return item
+        ? [
+            {
+              ...item,
+              labelKey: 'workspace.task.' + key,
+              descriptionKey: 'workspace.task.' + key + 'Desc',
+              queryParams,
+            },
+          ]
+        : [];
+    };
+    if (this.role() === 'Reception') {
+      const query = { practiceId: this.reception.currentPracticeId() };
+      // Existing reservation entry point opens its editor when supplied a date.
+      const today = new Date();
+      const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      return [
+        ...(this.reception.allows(PERMISSIONS.practiceReservationsCreate)
+          ? task('reservations', 'newReservation', { ...query, date })
+          : []),
+        ...task(
+          'patients',
+          this.session.hasPermission(PERMISSIONS.patientsSearchBasic)
+            ? 'findPatient'
+            : 'registerPatient',
+        ),
+        ...(this.reception.allows(PERMISSIONS.practiceReservationsView)
+          ? task('reservations', 'openReservations', query)
+          : []),
+        ...(this.reception.allows(PERMISSIONS.practiceTicketsView)
+          ? task('queue', 'openQueue')
+          : []),
+      ];
     }
+    if (this.role() === 'Doctor') {
+      return [
+        ...task('queue', 'nextPatient'),
+        ...task('reservations', 'openReservations'),
+        ...task('encounters', 'openEncounters'),
+      ];
+    }
+    if (this.role() === 'Patient') {
+      return [
+        ...task('find-doctor', 'bookAppointment'),
+        ...task('reservations', 'myAppointments'),
+        ...task('tickets', 'myTurn'),
+      ];
+    }
+    return [];
   });
+  protected readonly secondary = computed(() => {
+    const ids =
+      this.role() === 'Doctor' ? ['practices'] : this.role() === 'Patient' ? ['follow-ups'] : [];
+    return this.navigation.items().filter((item) => ids.includes(item.id));
+  });
+  protected readonly illustration = computed(() =>
+    this.role() === 'Patient'
+      ? '/SVG-AVATAR/Medical prescription-bro.svg'
+      : '/SVG-AVATAR/Doctors-bro.svg',
+  );
+
+  protected choosePractice(): void {
+    this.document.getElementById('reception-current-practice')?.focus();
+  }
+  protected retryPractices(): void {
+    void this.reception.refresh();
+  }
 }

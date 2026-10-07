@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const origin = process.env.WASLA_ORIGIN || 'http://127.0.0.1:4201';
 const debug = process.env.WASLA_DEBUG_ORIGIN || 'http://127.0.0.1:9244';
 const output = process.env.WASLA_OUTPUT || 'docs/browser-verification/responsive/portal';
-const widths = [320, 390, 600, 768, 820, 1024, 1280, 1440];
+const widths = [320, 390, 576, 768, 820, 1024, 1280, 1440];
 const permissions = [
   ...fs.readFileSync('src/app/core/auth/permissions.ts', 'utf8').matchAll(/:\s*'([^']+)'/g),
 ].map((m) => m[1]);
@@ -57,6 +57,7 @@ const doctor = {
   qualifications: [],
 };
 const cases = [
+  ['Reception', 'workspace/reception', 'app-workspace'],
   ['Doctor', 'workspace/doctor', 'app-workspace'],
   ['Doctor', 'doctor/practices', 'app-doctor-practices'],
   ['Doctor', 'doctor/practices/p1', 'app-doctor-practices'],
@@ -91,6 +92,8 @@ const cases = [
 
 function response(path, state) {
   const list = (items) => (state === 'empty' ? [] : items);
+  if (path.endsWith('/reception/practices'))
+    return list([{ ...practice, permissionCodes: permissions }]);
   if (path.endsWith('/onboarding'))
     return {
       doctorId: 'd1',
@@ -342,7 +345,7 @@ async function main() {
           });
           await call('Page.addScriptToEvaluateOnNewDocument', {
             source:
-              `sessionStorage.clear();localStorage.setItem('wasla_lang',${JSON.stringify(language)});` +
+              `sessionStorage.clear();localStorage.setItem('wasla_portal_sidebar_collapsed','false');localStorage.setItem('wasla_lang',${JSON.stringify(language)});` +
               (actor === 'Anonymous'
                 ? ''
                 : `sessionStorage.setItem('wasla.auth.session',${JSON.stringify(storedSession)});`),
@@ -377,6 +380,53 @@ async function main() {
             assert.ok(metrics.scrollWidth <= width, JSON.stringify(metrics));
             assert.equal(metrics.direction, language === 'ar' ? 'rtl' : 'ltr');
             assert.equal(Math.round(metrics.footerWidth), metrics.clientWidth);
+            if (route.startsWith('workspace/')) {
+              assert.deepEqual(metrics.overflowing, [], 'Workspace content is clipped');
+              const workspace = await evaluate(`(() => {
+                const primary = document.querySelector('.workspace-primary');
+                const tasks = [...document.querySelectorAll('.workspace-primary, .task-link')];
+                return { primary: primary?.getAttribute('href'), sizes: tasks.map(a => a.getBoundingClientRect().height),
+                  moduleGrid: !!document.querySelector('.modules-grid'), selectors: document.querySelectorAll('#reception-current-practice').length,
+                  activeHome: document.querySelector('.sidebar-nav-item[aria-current="page"]')?.getAttribute('href') };
+              })()`);
+              assert.equal(workspace.moduleGrid, false);
+              assert.ok(workspace.sizes.every((height) => height >= 44));
+              assert.equal(workspace.activeHome, '/' + route);
+              if (actor === 'Reception') assert.equal(workspace.selectors, 1);
+              if (context.state === 'populated') {
+                assert.ok(
+                  workspace.primary?.startsWith(
+                    actor === 'Reception'
+                      ? '/reception/reservations?'
+                      : actor === 'Doctor'
+                        ? '/doctor/queue'
+                        : '/doctors',
+                  ),
+                );
+              }
+              if (width < 768) {
+                const uncovered = await evaluate(`(() => {
+                  const last = [...document.querySelectorAll('.workspace-primary, .task-link, .workspace-secondary a')].at(-1);
+                  if (!last) return true;
+                  last.scrollIntoView({ block: 'center', behavior: 'instant' });
+                  return last.getBoundingClientRect().bottom <= document.querySelector('app-mobile-navigation nav').getBoundingClientRect().top;
+                })()`);
+                assert.ok(uncovered, 'Mobile navigation covers a workspace action');
+                await evaluate("scrollTo({ top: 0, behavior: 'instant' })");
+              }
+              if (width === 1440) {
+                await evaluate("document.querySelector('.btn-sidebar-collapse').click()");
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                assert.equal(
+                  await evaluate(
+                    "document.querySelector('.portal-sidebar').classList.contains('collapsed')",
+                  ),
+                  true,
+                );
+                await evaluate("document.querySelector('.btn-sidebar-collapse').click()");
+                await new Promise((resolve) => setTimeout(resolve, 300));
+              }
+            }
             if (['privacy', 'terms', 'help'].includes(route)) {
               const clippedNavigation =
                 await evaluate(`Array.from(document.querySelectorAll('.legal-brand, .legal-tabs, .legal-tab, .legal-nav-actions')).filter(element => {

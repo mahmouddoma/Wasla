@@ -1,60 +1,24 @@
-import { AppHeader } from '../app-header/app-header';
-import {
-  MobileNavigation,
-  NavigationItem,
-  NAVIGATION_ICONS,
-} from '../mobile-navigation/mobile-navigation';
-import { PERMISSIONS } from '../../../core/auth/permissions';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-  HostListener,
-} from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthSession } from '../../../core/auth/auth-session';
-import { LanguageService } from '../../../core/i18n/language.service';
-import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { ReceptionPracticeContext } from '../../../domains/reception-practices';
+import { computed, inject, Injectable } from '@angular/core';
+import { AuthSession } from '../../core/auth/auth-session';
+import { PERMISSIONS } from '../../core/auth/permissions';
+import { ReceptionPracticeContext } from '../../domains/reception-practices';
+import { NavigationItem } from './navigation-item';
 
-@Component({
-  selector: 'app-portal-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, AppHeader, TranslatePipe, MobileNavigation],
-  templateUrl: './portal-layout.html',
-  styleUrl: './portal-layout.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class PortalLayout {
-  protected readonly navigationIcons = NAVIGATION_ICONS;
-  readonly langService = inject(LanguageService);
-  protected readonly practiceContext = inject(ReceptionPracticeContext);
+export type NavigationGroup = 'daily' | 'health' | 'management' | 'finance' | 'account';
+export interface NavigationSection {
+  readonly id: NavigationGroup;
+  readonly labelKey: string;
+  readonly items: readonly NavigationItem[];
+}
+
+/** Application navigation only: no API orchestration or duplicated feature state. */
+@Injectable({ providedIn: 'root' })
+export class PortalNavigation {
   private readonly session = inject(AuthSession);
-  private readonly router = inject(Router);
-
-  constructor() {
-    effect(() => {
-      if (this.session.user()?.userType.toLowerCase() === 'reception') {
-        void this.practiceContext.ensureLoaded();
-      }
-    });
-  }
-
-  protected selectPractice(event: Event): void {
-    this.practiceContext.select((event.currentTarget as HTMLSelectElement).value);
-  }
-
-  protected readonly isSidebarOpen = signal(false);
-  protected readonly isSidebarCollapsed = signal<boolean>(
-    typeof localStorage !== 'undefined' &&
-      localStorage.getItem('wasla_portal_sidebar_collapsed') === 'true',
-  );
-
-  protected readonly user = this.session.user;
-  protected readonly isReception = computed(() => this.user()?.userType === 'Reception');
-  protected readonly mobileNavItems = computed(() => {
+  readonly practiceContext = inject(ReceptionPracticeContext);
+  private readonly user = this.session.user;
+  private readonly isReception = computed(() => this.user()?.userType === 'Reception');
+  readonly mobileItems = computed(() => {
     const primaryIds = this.isReception()
       ? ['workspace', 'reservations', 'queue', 'patients']
       : this.user()?.userType.toLowerCase() === 'doctor'
@@ -63,33 +27,61 @@ export class PortalLayout {
           ? ['drug-catalog', 'drug-imports', 'medication-requests']
           : ['workspace', 'reservations', 'find-doctor', 'tickets'];
     return primaryIds
-      .flatMap((id) => this.roleNavItems().filter((item) => item.id === id))
-      .map((item) => ({ ...item, mobileLabelKey: 'navigation.' + item.id }));
+      .flatMap((id) => this.items().filter((item) => item.id === id))
+      .map((item) => ({
+        ...item,
+        mobileLabelKey: item.id === 'tickets' ? 'portal.mobile.myTurn' : 'navigation.' + item.id,
+      }));
   });
 
-  protected readonly home = computed(() => {
-    const user = this.user();
-    return user ? this.session.destinationFor(user) : '/login';
-  });
-
-  protected readonly roleNavItems = computed<NavigationItem[]>(() => {
+  private readonly permittedItems = computed<NavigationItem[]>(() => {
     const userType = this.user()?.userType?.toLowerCase();
 
     if (userType === 'drugcatalogmanager') {
       const items: NavigationItem[] = [
-        { id: 'drug-catalog', labelKey: 'medications.title', route: '/drug-catalog', icon: 'clipboard-list' },
-        { id: 'drug-imports', labelKey: 'imports.title', route: '/drug-catalog/imports', icon: 'clipboard-list' },
-        { id: 'medication-requests', labelKey: 'requests.title', route: '/drug-catalog-requests', icon: 'clipboard-list' },
+        {
+          id: 'drug-catalog',
+          labelKey: 'medications.title',
+          route: '/drug-catalog',
+          icon: 'clipboard-list',
+        },
+        {
+          id: 'drug-imports',
+          labelKey: 'imports.title',
+          route: '/drug-catalog/imports',
+          icon: 'clipboard-list',
+        },
+        {
+          id: 'medication-requests',
+          labelKey: 'requests.title',
+          route: '/drug-catalog-requests',
+          icon: 'clipboard-list',
+        },
       ];
-      return items.filter(item => item.id === 'drug-catalog' ? this.session.hasPermission('DrugCatalog.View')
-        : item.id === 'drug-imports' ? ['DrugCatalog.Import', 'DrugCatalog.ImportHistory'].some(p => this.session.hasPermission(p))
-        : this.session.hasPermission('DrugCatalogRequests.View'));
+      return items.filter((item) =>
+        item.id === 'drug-catalog'
+          ? this.session.hasPermission('DrugCatalog.View')
+          : item.id === 'drug-imports'
+            ? ['DrugCatalog.Import', 'DrugCatalog.ImportHistory'].some((p) =>
+                this.session.hasPermission(p),
+              )
+            : this.session.hasPermission('DrugCatalogRequests.View'),
+      );
     }
 
     if (userType === 'doctor') {
       const items: NavigationItem[] = [
-        ...(this.session.hasPermission('DrugCatalogRequests.ViewOwn') || this.session.hasPermission('DrugCatalogRequests.CreateOwn')
-          ? [{ id: 'medication-requests', labelKey: 'requests.title', route: '/doctor/medication-requests', icon: 'clipboard-list' as const }] : []),
+        ...(this.session.hasPermission('DrugCatalogRequests.ViewOwn') ||
+        this.session.hasPermission('DrugCatalogRequests.CreateOwn')
+          ? [
+              {
+                id: 'medication-requests',
+                labelKey: 'requests.title',
+                route: '/doctor/medication-requests',
+                icon: 'clipboard-list' as const,
+              },
+            ]
+          : []),
         ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn)
           ? [
               {
@@ -216,7 +208,15 @@ export class PortalLayout {
     // Default: Patient
     const items: NavigationItem[] = [
       ...(this.session.hasPermission('Prescriptions.ViewOwnCompleted')
-        ? [{ id: 'prescriptions', labelKey: 'medications.prescription', route: '/patient/prescriptions', icon: 'clipboard-list' as const }] : []),
+        ? [
+            {
+              id: 'prescriptions',
+              labelKey: 'medications.prescription',
+              route: '/patient/prescriptions',
+              icon: 'clipboard-list' as const,
+            },
+          ]
+        : []),
       ...(this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwnCompleted)
         ? [
             {
@@ -318,31 +318,59 @@ export class PortalLayout {
     );
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.closeSidebar();
-  }
-
-  protected logout(): void {
-    this.session.clear();
-    void this.router.navigate(['/login']);
-  }
-
-  protected toggleSidebar(): void {
-    this.isSidebarOpen.update((open) => !open);
-  }
-
-  protected toggleSidebarCollapse(): void {
-    this.isSidebarCollapsed.update((collapsed) => {
-      const next = !collapsed;
-      try {
-        localStorage.setItem('wasla_portal_sidebar_collapsed', String(next));
-      } catch {}
-      return next;
-    });
-  }
-
-  protected closeSidebar(): void {
-    this.isSidebarOpen.set(false);
-  }
+  readonly items = computed(() =>
+    this.permittedItems().map((item) => ({
+      ...item,
+      labelKey:
+        (
+          {
+            workspace: 'navigation.workspace',
+            reservations: 'portal.nav.appointments',
+            queue: 'portal.nav.queue',
+            patients: 'navigation.patients',
+            'find-doctor': 'portal.nav.findDoctor',
+            tickets: 'portal.nav.myTurn',
+            encounters: 'navigation.encounters',
+            practices: 'portal.nav.clinics',
+          } as Readonly<Record<string, string>>
+        )[item.id] ?? item.labelKey,
+    })),
+  );
+  readonly sections = computed<NavigationSection[]>(() => {
+    const groupIds: Record<NavigationGroup, readonly string[]> = {
+      daily: this.isReception()
+        ? ['workspace', 'reservations', 'patients', 'queue']
+        : [
+            'workspace',
+            'reservations',
+            'find-doctor',
+            'queue',
+            'tickets',
+            ...(this.user()?.userType === 'Doctor' ? ['encounters'] : []),
+          ],
+      health:
+        this.user()?.userType === 'Patient' ? ['encounters', 'prescriptions', 'follow-ups'] : [],
+      management: [
+        'practices',
+        'receptions',
+        'medication-requests',
+        'drug-catalog',
+        'drug-imports',
+        'family-requests',
+        ...(this.user()?.userType === 'Doctor' ? ['profile'] : []),
+      ],
+      finance: this.user()?.userType === 'Patient' ? [] : ['finance', 'revenue'],
+      account: this.user()?.userType === 'Patient' ? ['profile', 'family', 'finance'] : [],
+    };
+    return (Object.keys(groupIds) as NavigationGroup[])
+      .map((id) => ({
+        id,
+        labelKey:
+          id === 'management' && this.user()?.userType === 'DrugCatalogManager'
+            ? 'portal.group.catalog'
+            : 'portal.group.' + id,
+        items: groupIds[id].flatMap((itemId) => this.items().filter((item) => item.id === itemId)),
+      }))
+      .filter((section) => section.items.length > 0);
+  });
 }

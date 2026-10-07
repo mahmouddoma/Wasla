@@ -53,7 +53,7 @@ export const routes: Routes = [
     path: '',
     canActivate: [authenticatedGuard],
     loadComponent: () =>
-      import('./shared/components/portal-layout/portal-layout').then((m) => m.PortalLayout),
+      import('./layout/portal-layout/portal-layout').then((m) => m.PortalLayout),
     canActivateChild: [catalogManagerAreaGuard],
     children: [
       {

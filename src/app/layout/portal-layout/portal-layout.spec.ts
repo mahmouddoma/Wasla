@@ -1,11 +1,12 @@
-import { ReceptionPracticeContext } from '../../../domains/reception-practices';
+import { PortalNavigation } from '../navigation/portal-navigation';
+import { ReceptionPracticeContext } from '../../domains/reception-practices';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
 import { PortalLayout } from './portal-layout';
-import { AuthSession } from '../../../core/auth/auth-session';
-import { LanguageService } from '../../../core/i18n/language.service';
-import { CurrentUser } from '../../../core/auth/auth.models';
+import { AuthSession } from '../../core/auth/auth-session';
+import { LanguageService } from '../../core/i18n/language.service';
+import { CurrentUser } from '../../core/auth/auth.models';
 
 describe('PortalLayout', () => {
   let fixture: ComponentFixture<PortalLayout>;
@@ -140,7 +141,11 @@ describe('PortalLayout', () => {
     userSignal.set({ ...doctorUser, permissions: [] });
     fixture.detectChanges();
     expect(component['mobileNavItems']().map((item) => item.id)).toEqual(['workspace', 'queue']);
-    expect(component['roleNavItems']().some((item) => item.id === 'practices')).toBe(false);
+    expect(
+      TestBed.inject(PortalNavigation)
+        .items()
+        .some((item) => item.id === 'practices'),
+    ).toBe(false);
     userSignal.set(patientUser);
     fixture.detectChanges();
     expect(component['mobileNavItems']().map((item) => item.id)).toEqual([
@@ -148,13 +153,15 @@ describe('PortalLayout', () => {
       'reservations',
       'find-doctor',
     ]);
-    expect(component['roleNavItems']().some((item) => item.id === 'family')).toBe(false);
+    expect(
+      TestBed.inject(PortalNavigation)
+        .items()
+        .some((item) => item.id === 'family'),
+    ).toBe(false);
   });
 
   it('should compute Doctor nav items when userType is Doctor', () => {
-    const items = (
-      component as unknown as { roleNavItems: () => { route: string }[] }
-    ).roleNavItems();
+    const items = TestBed.inject(PortalNavigation).items();
     const routes = items.map((i) => i.route);
     expect(routes).toContain('/workspace/doctor');
     expect(routes).toContain('/doctor/reservations');
@@ -168,9 +175,7 @@ describe('PortalLayout', () => {
     userSignal.set(patientUser);
     fixture.detectChanges();
 
-    const items = (
-      component as unknown as { roleNavItems: () => { route: string }[] }
-    ).roleNavItems();
+    const items = TestBed.inject(PortalNavigation).items();
     const routes = items.map((i) => i.route);
     expect(routes).toContain('/workspace/patient');
     expect(routes).toContain('/patient/reservations');
@@ -183,9 +188,7 @@ describe('PortalLayout', () => {
     userSignal.set(receptionUser);
     fixture.detectChanges();
 
-    const items = (
-      component as unknown as { roleNavItems: () => { route: string }[] }
-    ).roleNavItems();
+    const items = TestBed.inject(PortalNavigation).items();
     const routes = items.map((i) => i.route);
     expect(routes).toContain('/workspace/reception');
     expect(routes).not.toContain('/reception/reservations');

@@ -1,519 +1,120 @@
-<main class="workspace-shell" [dir]="langService.dir()">
+﻿<div class="workspace-shell" [dir]="langService.dir()">
   <div class="workspace-content">
-    <!-- Standardized Page Header -->
     <app-page-header
-      [heading]="('workspace.welcome' | t) + '، ' + (user()?.userName || '')"
-      [description]="'workspace.readyNotice' | t"
+      [heading]="'workspace.home.' + copyRole() | t"
+      [description]="'workspace.intro.' + copyRole() | t"
       icon="workspace"
-    >
-      <div pageHeaderDeck class="workspace-user-deck">
-        @if (roleBadge().label) {
-          <div class="user-info-chip role-chip">
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            <span>{{ roleBadge().label }}</span>
+    />
+    @if (role() === 'Reception') {
+      <section class="practice-context" aria-labelledby="current-practice-title" aria-live="polite">
+        <h2 id="current-practice-title">{{ 'workspace.currentPractice' | t }}</h2>
+        @if (reception.isLoading()) {
+          <p role="status">{{ 'workspace.loadingPractices' | t }}</p>
+        } @else if (reception.messages().length) {
+          <p role="alert">{{ 'workspace.practiceLoadError' | t }}</p>
+          <button type="button" class="btn btn-primary" (click)="retryPractices()">
+            {{ 'workspace.retry' | t }}
+          </button>
+        } @else if (practiceName()) {
+          <strong>{{ practiceName() }}</strong>
+          <p>{{ 'workspace.practiceScope' | t }}</p>
+        } @else {
+          <div class="workspace-empty">
+            <img
+              class="state-empty-illustration"
+              src="/SVG-AVATAR/Doctors-bro.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <div>
+              <h3>
+                {{
+                  (reception.practices().length
+                    ? 'workspace.choosePractice'
+                    : 'workspace.noPractices'
+                  ) | t
+                }}
+              </h3>
+              <p>
+                {{
+                  (reception.practices().length
+                    ? 'workspace.choosePracticeHint'
+                    : 'workspace.noPracticesHint'
+                  ) | t
+                }}
+              </p>
+              @if (reception.practices().length) {
+                <button type="button" class="btn btn-primary" (click)="choosePractice()">
+                  {{ 'workspace.choosePractice' | t }}
+                </button>
+              } @else {
+                <button type="button" class="btn btn-primary" (click)="retryPractices()">
+                  {{ 'workspace.retry' | t }}
+                </button>
+              }
+            </div>
           </div>
         }
-        @if (user()?.email) {
-          <div class="user-info-chip">
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path
-                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-              />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-            <span dir="ltr">{{ user()?.email }}</span>
-          </div>
-        }
-        @if (user()?.phoneNumber) {
-          <div class="user-info-chip">
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path
-                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-              />
-            </svg>
-            <span dir="ltr">{{ user()?.phoneNumber }}</span>
-          </div>
-        }
-      </div>
-
-      <div pageHeaderActions class="workspace-header-actions">
-        <span class="session-status-badge">
-          <svg
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <span>{{ 'workspace.secureSession' | t }}</span>
-        </span>
-      </div>
-    </app-page-header>
-
-    <!-- Available Modules Section -->
-    @if (hasAnyModules()) {
-      <section class="workspace-modules-section">
-        <div class="section-title-wrap">
-          <div class="title-with-pill">
-            <h2>{{ 'workspace.availableModules' | t }}</h2>
-            <span class="badge-count">
-              {{
-                (canManageDoctorProfile ? 1 : 0) +
-                  (reservationPath() ? 1 : 0) +
-                  (ticketPath() ? 1 : 0) +
-                  (canViewDoctorPractices ? 1 : 0) +
-                  (canViewReceptionUsers ? 1 : 0) +
-                  (canManagePatients ? 1 : 0) +
-                  (canManageAssistedFamilyRequests ? 1 : 0) +
-                  (canManagePatientProfile ? 1 : 0) +
-                  (canManageFamily ? 1 : 0)
-              }}
-            </span>
-          </div>
-        </div>
-
-        <div class="modules-grid">
-          @if (reservationPath()) {
-            <a class="module-link" [routerLink]="reservationPath()">
-              <div class="module-icon-wrap icon-teal">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'reservations.title' | t }}</h3>
-                <p>{{ 'reservations.subtitle' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-          @if (ticketPath()) {
-            <a class="module-link" [routerLink]="ticketPath()">
-              <div class="module-icon-wrap icon-teal" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M4 5h16v14H4z" />
-                  <path d="M8 9h8M8 13h5" />
-                  <path d="M7 5V3M17 5V3" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>
-                  {{
-                    (user()?.userType === 'Patient' ? 'tickets.mine.title' : 'tickets.queue.title')
-                      | t
-                  }}
-                </h3>
-                <p>
-                  {{
-                    (user()?.userType === 'Patient'
-                      ? 'tickets.mine.subtitle'
-                      : 'tickets.queue.subtitle'
-                    ) | t
-                  }}
-                </p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-          @if (canManageDoctorProfile) {
-            <a class="module-link" routerLink="/doctor/profile">
-              <div class="module-icon-wrap icon-teal">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"
-                  />
-                  <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
-                  <circle cx="20" cy="10" r="2" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'workspace.manageDoctorProfile' | t }}</h3>
-                <p>{{ 'workspace.doctorProfileDesc' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-
-          @if (canViewDoctorPractices) {
-            <a class="module-link" routerLink="/doctor/practices">
-              <div class="module-icon-wrap icon-blue">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M3 21h18" />
-                  <path d="M5 21V8l7-5 7 5v13" />
-                  <path d="M9 21v-6h6v6" />
-                  <path d="M9 10h.01M15 10h.01" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'workspace.myPractices' | t }}</h3>
-                <p>{{ 'workspace.myPracticesDesc' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-
-          @if (canViewReceptionUsers) {
-            <a class="module-link" routerLink="/doctor/receptions">
-              <div class="module-icon-wrap icon-teal" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M19 8v6M22 11h-6" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'common.receptionTeam' | t }}</h3>
-                <p>{{ 'ui.full.763' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-
-          @if (canManagePatients) {
-            <a class="module-link" routerLink="/reception/patients">
-              <div class="module-icon-wrap icon-blue">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'workspace.managePatients' | t }}</h3>
-                <p>{{ 'workspace.managePatientsDesc' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-
-          @if (canManageAssistedFamilyRequests) {
-            <a class="module-link" routerLink="/reception/family-requests">
-              <div class="module-icon-wrap icon-amber">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                  <polyline points="10 9 9 9 8 9" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'workspace.familyRequests' | t }}</h3>
-                <p>{{ 'workspace.familyRequestsDesc' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-
-          @if (canManagePatientProfile) {
-            <a class="module-link" routerLink="/patient/profile">
-              <div class="module-icon-wrap icon-teal">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'workspace.myHealthProfile' | t }}</h3>
-                <p>{{ 'workspace.myHealthProfileDesc' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-
-          @if (canManageFamily) {
-            <a class="module-link" routerLink="/patient/family">
-              <div class="module-icon-wrap icon-blue">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div class="module-info">
-                <h3>{{ 'workspace.familyAndRequests' | t }}</h3>
-                <p>{{ 'workspace.familyAndRequestsDesc' | t }}</p>
-              </div>
-              <div class="module-action-arrow" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </a>
-          }
-        </div>
       </section>
     }
-
-    <!-- Reception Operational Workflow Guidelines Hub -->
-    @if (user()?.userType === 'Reception') {
-      <section class="workspace-guidelines-section">
-        <details class="guidelines-card">
-          <summary class="guidelines-header">
-            <div class="guidelines-title-wrap">
-              <div class="guide-badge">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <section class="workspace-tasks" aria-labelledby="daily-tasks-title">
+      <h2 id="daily-tasks-title">{{ 'workspace.dailyTasks' | t }}</h2>
+      @if (tasks().length) {
+        @let primary = tasks()[0];
+        <a
+          class="workspace-primary"
+          [routerLink]="primary.route"
+          [queryParams]="primary.queryParams"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons[primary.icon]" /></svg>
+          <span
+            ><strong>{{ primary.labelKey | t }}</strong
+            ><span>{{ primary.descriptionKey | t }}</span></span
+          >
+        </a>
+        <div class="row g-0 task-list">
+          @for (task of tasks().slice(1); track task.labelKey) {
+            <div class="col-12 col-md-6">
+              <a class="task-link" [routerLink]="task.route" [queryParams]="task.queryParams">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path [attr.d]="icons[task.icon]" />
                 </svg>
-                <span>{{ 'workspace.receptionGuideTitle' | t }}</span>
-              </div>
-              <p class="guide-sub">{{ 'workspace.receptionGuideSub' | t }}</p>
+                <span
+                  ><strong>{{ task.labelKey | t }}</strong
+                  ><span>{{ task.descriptionKey | t }}</span></span
+                >
+              </a>
             </div>
-            <div class="guide-visual-badge">
-              <img [src]="illustrationPath()" alt="" class="guide-visual-img" />
-            </div>
-          </summary>
-
-          <ol class="guidelines-grid">
-            <li class="guide-step">
-              <div class="guide-step-body">
-                <h3>{{ 'workspace.receptionGuide1Title' | t }}</h3>
-                <p>{{ 'workspace.receptionGuide1Desc' | t }}</p>
-              </div>
-            </li>
-
-            <li class="guide-step">
-              <div class="guide-step-body">
-                <h3>{{ 'workspace.receptionGuide2Title' | t }}</h3>
-                <p>{{ 'workspace.receptionGuide2Desc' | t }}</p>
-              </div>
-            </li>
-
-            <li class="guide-step">
-              <div class="guide-step-body">
-                <h3>{{ 'workspace.receptionGuide3Title' | t }}</h3>
-                <p>{{ 'workspace.receptionGuide3Desc' | t }}</p>
-              </div>
-            </li>
-
-            <li class="guide-step">
-              <div class="guide-step-body">
-                <h3>{{ 'workspace.receptionGuide4Title' | t }}</h3>
-                <p>{{ 'workspace.receptionGuide4Desc' | t }}</p>
-              </div>
-            </li>
-          </ol>
-        </details>
+          }
+        </div>
+      } @else {
+        <div class="workspace-empty">
+          <img
+            class="state-empty-illustration"
+            [src]="illustration()"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <div>
+            <h3>{{ 'workspace.noTasks' | t }}</h3>
+            <p>{{ 'workspace.noTasksHint' | t }}</p>
+            <a class="btn btn-primary" routerLink="/help">{{ 'workspace.getHelp' | t }}</a>
+          </div>
+        </div>
+      }
+    </section>
+    @if (secondary().length) {
+      <section class="workspace-secondary" aria-labelledby="secondary-title">
+        <h2 id="secondary-title">
+          {{ (role() === 'Doctor' ? 'portal.group.management' : 'portal.group.health') | t }}
+        </h2>
+        @for (item of secondary(); track item.id) {
+          <a class="secondary-link" [routerLink]="item.route">{{ item.labelKey | t }}</a>
+        }
+        <p>{{ (role() === 'Doctor' ? 'workspace.clinicHint' : 'workspace.healthHint') | t }}</p>
       </section>
     }
   </div>
-</main>
+</div>

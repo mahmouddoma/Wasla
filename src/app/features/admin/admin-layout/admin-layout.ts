@@ -1,9 +1,6 @@
 import { AppHeader } from '../../../shared/components/app-header/app-header';
-import {
-  MobileNavigation,
-  NavigationItem,
-  NAVIGATION_ICONS,
-} from '../../../shared/components/mobile-navigation/mobile-navigation';
+import { MobileNavigation } from '../../../shared/components/mobile-navigation/mobile-navigation';
+import { NavigationItem, NAVIGATION_ICONS } from '../../../layout/navigation/navigation-item';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../core/auth/permissions';
@@ -40,8 +37,11 @@ export class AdminLayout {
   protected readonly navItems = computed<NavigationItem[]>(() => {
     const definitions: (NavigationItem & { permission: string })[] = [
       {
-        id: 'drug-catalog-managers', labelKey: 'medications.managers',
-        route: '/admin/drug-catalog-managers', icon: 'users', permission: 'DrugCatalogManagers.ViewAll',
+        id: 'drug-catalog-managers',
+        labelKey: 'medications.managers',
+        route: '/admin/drug-catalog-managers',
+        icon: 'users',
+        permission: 'DrugCatalogManagers.ViewAll',
       },
       {
         id: 'revenue',
