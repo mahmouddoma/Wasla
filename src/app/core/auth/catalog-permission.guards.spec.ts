@@ -50,6 +50,34 @@ describe('Medication actor boundaries', () => {
     );
     expect((result as UrlTree).toString()).toBe('/drug-catalog');
   });
+  it('isolates medical managers from drug, patient and clinical areas and gates first login', () => {
+    session.complete({
+      ...manager,
+      userType: 'MedicalCatalogManager',
+      roles: ['MedicalCatalogManager'],
+      permissions: ['LabCatalog.View', 'Prescriptions.ViewOwn'],
+      isFirstLogin: true,
+    });
+    expect(session.requiresPasswordChange()).toBe(true);
+    for (const data of [
+      {},
+      { catalogManagerArea: true },
+      { catalogManagerArea: 'DrugCatalogManager' },
+    ]) {
+      const result = TestBed.runInInjectionContext(() =>
+        catalogManagerAreaGuard(route(data), state),
+      );
+      expect((result as UrlTree).toString()).toBe('/medical-catalog/lab');
+    }
+    expect(
+      TestBed.runInInjectionContext(() =>
+        catalogManagerAreaGuard(
+          route({ catalogManagerArea: 'MedicalCatalogManager' }, 'medical-catalog'),
+          state,
+        ),
+      ),
+    ).toBe(true);
+  });
   it('allows only declared catalog areas and derives limited-manager destinations from permissions', () => {
     expect(
       TestBed.runInInjectionContext(() =>

@@ -23,10 +23,21 @@ import {
 } from '../../../../domains/encounters';
 import { EncounterWorkspaceStore } from '../../state/encounter-workspace.store';
 import { PrescriptionWorkspaceComponent } from '../../../prescriptions';
+import { DiagnosticDraftComponent } from '../../../diagnostics';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-encounter-workspace',
-  imports: [LocalizedDatePipe, TranslatePipe, PageHeader, FormField, SideDrawer, PrescriptionWorkspaceComponent],
+  imports: [
+    LocalizedDatePipe,
+    TranslatePipe,
+    PageHeader,
+    FormField,
+    SideDrawer,
+    PrescriptionWorkspaceComponent,
+    DiagnosticDraftComponent,
+    RouterLink,
+  ],
   providers: [EncounterWorkspaceStore],
   templateUrl: './encounter-workspace.component.html',
   styleUrl: './encounter-workspace.component.css',
@@ -92,10 +103,7 @@ export class EncounterWorkspaceComponent implements OnInit {
   });
 
   readonly canSubmitAmendment = computed(
-    () =>
-      !this.store.busy() &&
-      !!this.amendmentReason().trim() &&
-      this.stagedChanges().length > 0,
+    () => !this.store.busy() && !!this.amendmentReason().trim() && this.stagedChanges().length > 0,
   );
 
   startAmendment(): void {

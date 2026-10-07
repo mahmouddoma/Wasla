@@ -19,6 +19,7 @@ import {
 } from '../../../domains/encounters';
 import { TicketsApi } from '../../../domains/tickets';
 import { PrescriptionState } from '../../../domains/prescriptions';
+import { DiagnosticRequestStateResponse } from '../../../domains/diagnostics';
 
 @Injectable()
 export class EncounterWorkspaceStore {
@@ -39,6 +40,8 @@ export class EncounterWorkspaceStore {
   readonly detailLoading = signal(false);
   readonly busy = signal(false);
   readonly prescriptionBusy = signal(false);
+  readonly diagnosticBusy = signal(false);
+  readonly clinicalBusy = computed(() => this.prescriptionBusy() || this.diagnosticBusy());
   readonly failed = signal(false);
   readonly messages = signal<readonly string[]>([]);
   private generation = 0;
@@ -53,19 +56,22 @@ export class EncounterWorkspaceStore {
   );
   readonly canEditNotes = computed(
     () =>
-      !this.prescriptionBusy() && this.detail()?.status === 'InProgress' &&
+      !this.clinicalBusy() &&
+      this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canEditClinicalNotes &&
       this.session.hasPermission(PERMISSIONS.medicalEncountersUpdateOwn),
   );
   readonly canManageDiagnoses = computed(
     () =>
-      !this.prescriptionBusy() && this.detail()?.status === 'InProgress' &&
+      !this.clinicalBusy() &&
+      this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canManageDiagnoses &&
       this.session.hasPermission(PERMISSIONS.diagnosesManageOwn),
   );
   readonly canComplete = computed(
     () =>
-      !this.prescriptionBusy() && this.detail()?.status === 'InProgress' &&
+      !this.clinicalBusy() &&
+      this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canComplete &&
       this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn),
   );
@@ -83,7 +89,18 @@ export class EncounterWorkspaceStore {
   );
 
   prescriptionChanged(prescription: PrescriptionState | null) {
-    this.detail.update(detail => detail ? { ...detail, prescription } : null);
+    this.detail.update((detail) => (detail ? { ...detail, prescription } : null));
+  }
+  diagnosticChanged(kind: 'lab' | 'radiology', state: DiagnosticRequestStateResponse) {
+    this.detail.update((detail) =>
+      detail
+        ? {
+            ...detail,
+            [kind === 'lab' ? 'labRequestDraft' : 'radiologyRequestDraft']:
+              state.requestId && state.status === 'Draft' ? state : null,
+          }
+        : null,
+    );
   }
 
   async initialize(doctor: boolean, practiceId = '', encounterId = '', ticketId = '') {
@@ -120,7 +137,8 @@ export class EncounterWorkspaceStore {
     }
   }
   async selectPractice(id: string) {
-    if (this.busy() || this.prescriptionBusy() || (id && !this.practices().some((p) => p.id === id))) return;
+    if (this.busy() || this.clinicalBusy() || (id && !this.practices().some((p) => p.id === id)))
+      return;
     this.generation++;
     this.close();
     this.practiceId.set(id);
@@ -153,7 +171,7 @@ export class EncounterWorkspaceStore {
     }
   }
   async inspect(id: string) {
-    if (!this.canReadDetails() || this.busy() || this.prescriptionBusy()) return;
+    if (!this.canReadDetails() || this.busy() || this.clinicalBusy()) return;
     this.close();
     const sequence = ++this.detailSequence,
       generation = this.generation;
@@ -228,8 +246,17 @@ export class EncounterWorkspaceStore {
       this.detail.set(latest);
       if (latest.status !== 'InProgress' || !this.canComplete()) return;
       const prescription = latest.prescription;
+      if (latest.completionBlockers?.length) {
+        this.messages.set(
+          latest.completionBlockers.map(
+            (blocker) => blocker.message || 'diagnostics.resolveBlockers',
+          ),
+        );
+        this.toast.error('medications.resolveBlockers');
+        return;
+      }
       if (prescription?.draft && prescription.completionBlockers.length) {
-        this.messages.set(prescription.completionBlockers.map(blocker => blocker.message));
+        this.messages.set(prescription.completionBlockers.map((blocker) => blocker.message));
         this.toast.error('medications.resolveBlockers');
         return;
       }
@@ -237,6 +264,12 @@ export class EncounterWorkspaceStore {
         ticketRowVersion: ticket.rowVersion,
         encounterRowVersion: latest.rowVersion,
         ...(prescription?.draft ? { prescriptionRowVersion: prescription.rowVersion } : {}),
+        ...(latest.labRequestDraft?.requestId
+          ? { labRequestRowVersion: latest.labRequestDraft.rowVersion }
+          : {}),
+        ...(latest.radiologyRequestDraft?.requestId
+          ? { radiologyRequestRowVersion: latest.radiologyRequestDraft.rowVersion }
+          : {}),
       };
       const signature = JSON.stringify({ ticketId: detail.ticketId, ...body });
       if (this.completionIntent?.signature !== signature)
@@ -316,7 +349,7 @@ export class EncounterWorkspaceStore {
     }
   }
   close() {
-    if (this.busy() || this.prescriptionBusy()) return;
+    if (this.busy() || this.clinicalBusy()) return;
     this.detailSequence++;
     this.detail.set(null);
     this.patientDetail.set(null);
@@ -325,7 +358,7 @@ export class EncounterWorkspaceStore {
     this.completionIntent = null;
   }
   private async mutate(request: Observable<EncounterDetails>) {
-    if (this.busy() || this.prescriptionBusy()) return;
+    if (this.busy() || this.clinicalBusy()) return;
     this.busy.set(true);
     this.messages.set([]);
     try {

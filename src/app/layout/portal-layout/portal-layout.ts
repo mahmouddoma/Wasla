@@ -32,7 +32,10 @@ export class PortalLayout {
   private readonly router = inject(Router);
 
   protected selectPractice(event: Event): void {
-    this.practiceContext.select((event.currentTarget as HTMLSelectElement).value);
+    const el = (event.target || event.currentTarget) as HTMLSelectElement | null;
+    if (el) {
+      this.practiceContext.select(el.value);
+    }
   }
 
   protected readonly isSidebarOpen = signal(false);

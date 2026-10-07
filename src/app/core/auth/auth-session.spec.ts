@@ -4,6 +4,22 @@ import { AuthSession } from './auth-session';
 import { PERMISSIONS } from './permissions';
 
 describe('AuthSession doctor destination', () => {
+  it('routes medical catalog managers only to their granted reference-data workspace', () => {
+    const session = TestBed.inject(AuthSession);
+    const manager: CurrentUser = {
+      ...doctor,
+      userType: 'MedicalCatalogManager',
+      roles: ['MedicalCatalogManager'],
+      permissions: ['RadiologyCatalog.View', 'MedicalEncounters.ViewOwn'],
+    };
+    expect(session.destinationFor(manager)).toBe('/medical-catalog/radiology');
+    expect(session.destinationFor({ ...manager, permissions: ['LabCatalog.ImportHistory'] })).toBe(
+      '/medical-catalog/lab/imports',
+    );
+    expect(session.destinationFor({ ...manager, permissions: [] })).toBe(
+      '/workspace/medical-catalog-manager',
+    );
+  });
   let session: AuthSession;
   const doctor: CurrentUser = {
     applicationUserId: '1bbac680-bda0-4cb0-b531-7cc1d61e22b6',
@@ -25,14 +41,27 @@ describe('AuthSession doctor destination', () => {
   });
 
   it('routes catalog managers to their own area and enforces first login independently of nullable clinical IDs', () => {
-    const manager: CurrentUser = { ...doctor, userType: 'DrugCatalogManager', roles: ['DrugCatalogManager'],
-      permissions: ['DrugCatalog.View'], doctorId: null, patientId: null, isFirstLogin: true };
-    session.begin({ accessToken: 'synthetic-token', expiresOnUtc: new Date(Date.now() + 60000).toISOString(), passwordChangeRequired: true });
+    const manager: CurrentUser = {
+      ...doctor,
+      userType: 'DrugCatalogManager',
+      roles: ['DrugCatalogManager'],
+      permissions: ['DrugCatalog.View'],
+      doctorId: null,
+      patientId: null,
+      isFirstLogin: true,
+    };
+    session.begin({
+      accessToken: 'synthetic-token',
+      expiresOnUtc: new Date(Date.now() + 60000).toISOString(),
+      passwordChangeRequired: true,
+    });
     session.complete(manager);
     expect(session.destinationFor(manager)).toBe('/drug-catalog');
     expect(session.requiresPasswordChange()).toBe(true);
     expect(session.hasPermission('Prescriptions.ViewOwn')).toBe(false);
-    expect(session.destinationFor({ ...manager, permissions: [] })).toBe('/workspace/drug-catalog-manager');
+    expect(session.destinationFor({ ...manager, permissions: [] })).toBe(
+      '/workspace/drug-catalog-manager',
+    );
   });
 
   it('keeps an onboarding-only doctor out of the operational workspace', () => {

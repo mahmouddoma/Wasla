@@ -1,0 +1,504 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="title() | t"
+    [description]="(doctor ? 'diagnostics.doctorHelp' : 'diagnostics.patientHelp') | t"
+    icon="requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  >
+    <div pageHeaderActions class="actions">
+      @for (tab of views(); track tab) {
+        <button
+          class="btn"
+          [class.btn-primary]="view() === tab"
+          [class.btn-outline-secondary]="!(view() === tab)"
+          [attr.aria-pressed]="view() === tab"
+          (click)="switchView(tab)"
+          [disabled]="busy()"
+        >
+          {{ 'diagnostics.view.' + tab | t }}
+        </button>
+      }
+    </div>
+    <div pageHeaderDeck class="toolbar">
+      <label
+        >{{ 'reservations.status' | t
+        }}<span class="select-control"
+          ><select
+            class="field-input"
+            [ngModel]="status()"
+            (ngModelChange)="status.set($event); load()"
+            [disabled]="busy()"
+          >
+            <option value="">{{ 'common.all' | t }}</option>
+            @for (value of statuses(); track value) {
+              <option [value]="value">{{ 'diagnostics.status.' + value | t }}</option>
+            }</select
+          ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></span></label
+      ><label
+        >{{ 'diagnostics.from' | t
+        }}<input
+          class="field-input ltr-text"
+          dir="ltr"
+          type="date"
+          [ngModel]="from()"
+          (ngModelChange)="from.set($event); load()"
+          [disabled]="busy()" /></label
+      ><label
+        >{{ 'diagnostics.to' | t
+        }}<input
+          class="field-input ltr-text"
+          dir="ltr"
+          type="date"
+          [ngModel]="to()"
+          (ngModelChange)="to.set($event); load()"
+          [disabled]="busy()"
+      /></label>
+    </div>
+  </app-page-header>
+  @for (message of messages(); track $index) {
+    <p class="error-text" role="alert">{{ message | t }}</p>
+  }
+  <section class="directory" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'diagnostics.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!page().items.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medical prescription-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'diagnostics.empty' | t }}</h2>
+        <p>{{ (doctor ? 'diagnostics.doctorHelp' : 'diagnostics.patientHelp') | t }}</p>
+        <button class="btn btn-primary" (click)="status.set(''); from.set(''); to.set(''); load()">
+          {{ 'medications.resetSearch' | t }}
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              title() | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'diagnostics.view.' + view() | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'diagnostics.date' | t }}</th>
+              <th scope="col">{{ 'common.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page().items; track row.id) {
+              <tr>
+                <td>
+                  {{
+                    row.title ||
+                      ((row.reference === 'order'
+                        ? 'diagnostics.orderReference'
+                        : 'diagnostics.reportReference'
+                      ) | t: { reference: row.id.slice(0, 12) })
+                  }}
+                </td>
+                <td>
+                  <span class="status-badge">{{ 'diagnostics.status.' + row.status | t }}</span>
+                </td>
+                <td>
+                  <time class="ltr-text" dir="ltr">{{
+                    row.date | localizedDate: language.currentLang()
+                  }}</time>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    (click)="inspect(row.id)"
+                    [disabled]="busy()"
+                  >
+                    {{ 'common.details' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="load(page().pageNumber - 1)"
+          [disabled]="busy() || page().pageNumber <= 1"
+        >
+          {{ 'common.previous' | t }}</button
+        ><span>{{ page().pageNumber }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="load(page().pageNumber + 1)"
+          [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
+        >
+          {{ 'common.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="title() | t"
+    width="680px"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+    @if (request(); as r) {
+      <h2>
+        {{ (kind === 'lab' ? 'diagnostics.labRequests' : 'diagnostics.radiologyRequests') | t }}
+      </h2>
+      <p>
+        {{
+          language.currentLang() === 'ar'
+            ? r.doctor.nameAr || r.doctor.nameEn
+            : r.doctor.nameEn || r.doctor.nameAr
+        }}
+        ·
+        {{
+          language.currentLang() === 'ar'
+            ? r.practice.nameAr || r.practice.nameEn
+            : r.practice.nameEn || r.practice.nameAr
+        }}
+      </p>
+      <p>{{ 'diagnostics.status.' + r.status | t }}</p>
+      <p>{{ r.patientInstructions }}</p>
+      <ul class="history">
+        @for (item of r.items; track item.itemId) {
+          <li>
+            <strong>{{
+              language.currentLang() === 'ar'
+                ? item.nameArSnapshot || item.nameEnSnapshot
+                : item.nameEnSnapshot || item.nameArSnapshot
+            }}</strong>
+            <p>{{ 'diagnostics.status.' + item.status | t }}</p>
+            @if (doctor) {
+              <p>{{ item.doctorInstructions }}</p>
+            }
+            <p>{{ item.cancellationReason }}</p>
+            @if (canCancel(item.itemId)) {
+              <button
+                class="btn btn-outline-secondary"
+                (click)="prepare('cancel', item.itemId)"
+                [disabled]="busy()"
+              >
+                {{ 'diagnostics.cancelItem' | t }}
+              </button>
+            }
+          </li>
+        }
+      </ul>
+      <div class="actions">
+        @if (canCancel(null)) {
+          <button class="btn btn-outline-secondary" (click)="prepare('cancel')" [disabled]="busy()">
+            {{ 'diagnostics.cancelRemaining' | t }}
+          </button>
+        }
+        @if (
+          doctor
+            ? r.capabilities.canUploadResult && allowed('Results', 'UploadOwn')
+            : allowed('ResultSubmissions', 'CreateOwn') &&
+              r.status !== 'Draft' &&
+              r.status !== 'Cancelled'
+        ) {
+          <button class="btn btn-primary" (click)="openUpload()" [disabled]="busy()">
+            {{ (doctor ? 'diagnostics.uploadOfficial' : 'diagnostics.submitReport') | t }}
+          </button>
+        }
+      </div>
+      @if (r.currentResults?.length && allowedView('results')) {
+        <section class="section">
+          <h3>{{ 'diagnostics.view.results' | t }}</h3>
+          <ul class="history">
+            @for (res of r.currentResults; track res.resultId) {
+              <li>
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="inspect(res.resultId, 'results')"
+                  [disabled]="busy()"
+                >
+                  {{ res.current.externalProviderName || ('common.details' | t) }}
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      @if (allowed('ResultSubmissions', 'ViewOwn')) {
+        <section class="section">
+          <h3>{{ 'diagnostics.view.submissions' | t }}</h3>
+          @if (!doctor) {
+            <button
+              class="btn btn-outline-secondary"
+              (click)="loadSubmissions()"
+              [disabled]="busy()"
+            >
+              {{ 'common.refresh' | t }}
+            </button>
+          }
+          <ul class="history">
+            @for (
+              sub of doctor ? r.submissions : patientSubmissions().items;
+              track sub.submissionId
+            ) {
+              <li>
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="inspect(sub.submissionId, 'submissions')"
+                  [disabled]="busy()"
+                >
+                  {{ 'diagnostics.status.' + sub.status | t }} ·
+                  {{ sub.submittedAtUtc | localizedDate: language.currentLang() }}
+                </button>
+              </li>
+            }
+          </ul>
+          @if (!doctor) {
+            <nav class="actions">
+              <button
+                class="btn btn-outline-secondary"
+                (click)="loadSubmissions(patientSubmissions().pageNumber - 1)"
+                [disabled]="busy() || patientSubmissions().pageNumber <= 1"
+              >
+                {{ 'common.previous' | t }}</button
+              ><button
+                class="btn btn-outline-secondary"
+                (click)="loadSubmissions(patientSubmissions().pageNumber + 1)"
+                [disabled]="
+                  busy() ||
+                  patientSubmissions().pageNumber * patientSubmissions().pageSize >=
+                    patientSubmissions().totalCount
+                "
+              >
+                {{ 'common.next' | t }}
+              </button>
+            </nav>
+          }
+        </section>
+      }
+      @if (doctor) {
+        <section class="section">
+          <h3>{{ 'diagnostics.history' | t }}</h3>
+          <button class="btn btn-outline-secondary" (click)="loadHistory()" [disabled]="busy()">
+            {{ 'diagnostics.history' | t }}
+          </button>
+          <ul class="history">
+            @for (entry of history(); track entry.id) {
+              <li>
+                {{ 'diagnostics.historyAction.' + entry.action | t }}
+                <p>{{ entry.reason }}</p>
+                <time class="ltr-text" dir="ltr">{{
+                  entry.occurredAtUtc | localizedDate: language.currentLang()
+                }}</time>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+    @if (result(); as res) {
+      <section class="section">
+        <h3>{{ 'diagnostics.view.results' | t }}</h3>
+        <div class="actions">
+          @if (canActCorrection()) {
+            <button class="btn btn-primary" (click)="openUpload(true)" [disabled]="busy()">
+              {{ 'diagnostics.correct' | t }}
+            </button>
+          }
+          @if (canAct('void')) {
+            <button class="btn btn-outline-secondary" (click)="prepare('void')" [disabled]="busy()">
+              {{ 'diagnostics.void' | t }}
+            </button>
+          }
+          @if (doctor) {
+            <button class="btn btn-outline-secondary" (click)="loadVersions()" [disabled]="busy()">
+              {{ 'diagnostics.versions' | t }}
+            </button>
+          }
+        </div>
+        @if (version(); as v) {
+          <p>
+            {{ v.externalProviderName }} ·
+            {{ v.externalReportDate | localizedDate: language.currentLang() }}
+          </p>
+          <p>{{ 'diagnostics.status.' + v.status | t }}</p>
+          @if (doctor) {
+            <p>{{ v.correctionReason }}</p>
+            <p>{{ v.voidReason }}</p>
+          }
+          <ul class="history">
+            @for (file of v.attachments; track file.attachmentId) {
+              <li>
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="download(file, 'results')"
+                  [disabled]="busy()"
+                >
+                  {{ 'diagnostics.download' | t }} · {{ file.originalFileName }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+        @if (doctor) {
+          <ul class="history">
+            @for (v of versions(); track v.versionId) {
+              <li>
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="inspectVersion(v.versionNumber)"
+                  [disabled]="busy()"
+                >
+                  {{ 'diagnostics.version' | t }} {{ v.versionNumber }} ·
+                  {{ 'diagnostics.status.' + v.status | t }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+    @if (submission(); as sub) {
+      <section class="section">
+        <h3>{{ 'diagnostics.view.submissions' | t }}</h3>
+        <p>{{ 'diagnostics.status.' + sub.status | t }}</p>
+        <p>
+          {{ sub.externalProviderName }} ·
+          {{ sub.externalReportDate | localizedDate: language.currentLang() }}
+        </p>
+        <p>{{ sub.patientNote }}</p>
+        <p>{{ sub.patientVisibleReason }}</p>
+        <ul class="history">
+          @for (file of sub.attachments; track file.attachmentId) {
+            <li>
+              <button
+                class="btn btn-outline-secondary"
+                (click)="download(file, 'result-submissions')"
+                [disabled]="busy()"
+              >
+                {{ 'diagnostics.download' | t }} · {{ file.originalFileName }}
+              </button>
+            </li>
+          }
+        </ul>
+        <div class="actions">
+          @if (canAct('accept')) {
+            <button class="btn btn-primary" (click)="prepare('accept')" [disabled]="busy()">
+              {{ 'diagnostics.accept' | t }}
+            </button>
+          }
+          @if (canAct('reject')) {
+            <button
+              class="btn btn-outline-secondary"
+              (click)="prepare('reject')"
+              [disabled]="busy()"
+            >
+              {{ 'diagnostics.reject' | t }}
+            </button>
+          }
+          @if (canAct('withdraw')) {
+            <button
+              class="btn btn-outline-secondary"
+              (click)="prepare('withdraw')"
+              [disabled]="busy()"
+            >
+              {{ 'diagnostics.withdraw' | t }}
+            </button>
+          }
+        </div>
+      </section>
+    }
+    @if (pending()) {
+      <section class="section">
+        <h3>{{ 'diagnostics.confirmAction' | t }}</h3>
+        @if (pending() === 'accept') {
+          <p>{{ 'diagnostics.coveredItems' | t }}</p>
+          <ul class="history">
+            @for (item of request()?.items; track item.itemId) {
+              @if (item.status === 'Requested') {
+                <li>
+                  <button
+                    class="btn"
+                    [class.btn-primary]="coverage().includes(item.itemId)"
+                    [class.btn-outline-secondary]="!coverage().includes(item.itemId)"
+                    [attr.aria-pressed]="coverage().includes(item.itemId)"
+                    (click)="toggleCoverage(item.itemId)"
+                    [disabled]="busy()"
+                  >
+                    {{
+                      language.currentLang() === 'ar'
+                        ? item.nameArSnapshot || item.nameEnSnapshot
+                        : item.nameEnSnapshot || item.nameArSnapshot
+                    }}
+                  </button>
+                </li>
+              }
+            }
+          </ul>
+        } @else {
+          <label
+            >{{
+              (pending() === 'reject' || pending() === 'cancel'
+                ? 'diagnostics.patientVisibleReason'
+                : 'diagnostics.reason'
+              ) | t
+            }}<input
+              class="field-input"
+              [ngModel]="reason()"
+              (ngModelChange)="reason.set($event)"
+              [disabled]="busy()"
+          /></label>
+        }
+        <div class="actions mt-3">
+          <button
+            class="btn btn-primary"
+            (click)="execute()"
+            [disabled]="busy() || (pending() === 'accept' ? !coverage().length : !reason().trim())"
+          >
+            {{ 'common.confirm' | t }}</button
+          ><button
+            class="btn btn-outline-secondary"
+            (click)="pending.set(null)"
+            [disabled]="busy()"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </section>
+    }
+    @if (uploadOpen()) {
+      <app-diagnostic-upload
+        [doctor]="doctor"
+        [correction]="correction()"
+        [rowVersion]="
+          correction() ? (result()?.rowVersion ?? null) : (request()?.rowVersion ?? null)
+        "
+        [items]="request()?.items ?? []"
+        [busy]="busy()"
+        (submitted)="upload($event)"
+        (cancelled)="uploadOpen.set(false)"
+      />
+    }
+  </app-side-drawer>
+</main>

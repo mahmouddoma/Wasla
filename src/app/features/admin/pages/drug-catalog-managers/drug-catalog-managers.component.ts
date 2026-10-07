@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { ToastService } from '../../../../core/notifications/toast.service';
@@ -8,7 +9,10 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
-import { DrugCatalogManagersApi } from '../../services/drug-catalog-managers/drug-catalog-managers-api';
+import {
+  CATALOG_MANAGER_KIND,
+  DrugCatalogManagersApi,
+} from '../../services/drug-catalog-managers/drug-catalog-managers-api';
 import {
   DrugCatalogManager,
   ManagerPage,
@@ -17,6 +21,16 @@ import {
 @Component({
   selector: 'app-drug-catalog-managers',
   imports: [ReactiveFormsModule, TranslatePipe, PageHeader, SideDrawer],
+  providers: [
+    DrugCatalogManagersApi,
+    {
+      provide: CATALOG_MANAGER_KIND,
+      useFactory: () =>
+        inject(ActivatedRoute, { optional: true })?.snapshot.data['managerKind'] === 'medical'
+          ? 'medical'
+          : 'drug',
+    },
+  ],
   templateUrl: './drug-catalog-managers.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',
@@ -25,6 +39,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DrugCatalogManagersComponent implements OnInit {
+  readonly medical = inject(CATALOG_MANAGER_KIND) === 'medical';
+  readonly managerTitle = this.medical ? 'diagnostics.managers' : 'medications.managers';
+  readonly managerHelp = this.medical ? 'diagnostics.managersHelp' : 'medications.managersHelp';
   private readonly api = inject(DrugCatalogManagersApi);
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
@@ -57,7 +74,9 @@ export class DrugCatalogManagersComponent implements OnInit {
   allowed(action: string) {
     return (
       this.session.user()?.userType === 'SuperAdmin' &&
-      this.session.hasPermission('DrugCatalogManagers.' + action)
+      this.session.hasPermission(
+        (this.medical ? 'MedicalCatalogManagers.' : 'DrugCatalogManagers.') + action,
+      )
     );
   }
   async load(pageNumber = 1) {

@@ -37,6 +37,13 @@ export class AdminLayout {
   protected readonly navItems = computed<NavigationItem[]>(() => {
     const definitions: (NavigationItem & { permission: string })[] = [
       {
+        id: 'medical-catalog-managers',
+        labelKey: 'diagnostics.managers',
+        route: '/admin/medical-catalog-managers',
+        icon: 'users',
+        permission: 'MedicalCatalogManagers.ViewAll',
+      },
+      {
         id: 'drug-catalog-managers',
         labelKey: 'medications.managers',
         route: '/admin/drug-catalog-managers',
@@ -113,6 +120,7 @@ export class AdminLayout {
       'specializations',
       'family-requests',
       'drug-catalog-managers',
+      'medical-catalog-managers',
     ];
     return priorities
       .flatMap((id) => this.navItems().filter((item) => item.id === id))

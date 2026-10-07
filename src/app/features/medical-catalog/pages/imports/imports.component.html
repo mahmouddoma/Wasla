@@ -1,0 +1,219 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="title | t"
+    [description]="'diagnostics.importHelp' | t"
+    icon="specializations"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  />
+  @if (allowed('Import')) {
+    <form class="toolbar" (ngSubmit)="preview()">
+      <label
+        >{{ 'diagnostics.importFile' | t
+        }}<input
+          class="field-input"
+          type="file"
+          accept=".csv,.json"
+          (change)="chooseFile($event)"
+          [disabled]="busy()" /></label
+      ><label
+        >{{ 'diagnostics.sourceVersion' | t
+        }}<input
+          class="field-input"
+          name="version"
+          [ngModel]="sourceVersion()"
+          (ngModelChange)="sourceVersion.set($event)"
+          [disabled]="busy()" /></label
+      ><button
+        class="btn btn-primary"
+        type="submit"
+        [disabled]="busy() || !file() || !sourceVersion().trim()"
+      >
+        {{ 'diagnostics.preview' | t }}
+      </button>
+    </form>
+  }
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+  }
+  @if (allowed('ImportHistory')) {
+    <section class="directory" [attr.aria-busy]="loading()">
+      @if (loading()) {
+        <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+      } @else if (failed()) {
+        <div class="empty-state">
+          <h2>{{ 'diagnostics.failed' | t }}</h2>
+          <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+        </div>
+      } @else if (!page().items?.length) {
+        <div class="empty-state">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Medicine-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h2>{{ 'diagnostics.empty' | t }}</h2>
+          <p>{{ 'diagnostics.importHelp' | t }}</p>
+          <button class="btn btn-primary" (click)="load()">{{ 'common.refresh' | t }}</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <caption class="visually-hidden">
+              {{
+                title | t
+              }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">{{ 'diagnostics.importFile' | t }}</th>
+                <th scope="col">{{ 'diagnostics.sourceVersion' | t }}</th>
+                <th scope="col">{{ 'reservations.status' | t }}</th>
+                <th scope="col">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of page().items; track item.batchId) {
+                <tr>
+                  <td>{{ item.originalFileName }}</td>
+                  <td>{{ item.sourceVersion }}</td>
+                  <td>{{ 'diagnostics.status.' + item.status | t }}</td>
+                  <td>
+                    <button
+                      class="btn btn-outline-secondary"
+                      (click)="inspect(item.batchId)"
+                      [disabled]="busy()"
+                    >
+                      {{ 'common.details' | t }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+          <button
+            class="btn btn-outline-secondary"
+            (click)="load(page().pageNumber - 1)"
+            [disabled]="busy() || page().pageNumber <= 1"
+          >
+            {{ 'common.previous' | t }}</button
+          ><span>{{ page().pageNumber }}</span
+          ><button
+            class="btn btn-outline-secondary"
+            (click)="load(page().pageNumber + 1)"
+            [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
+          >
+            {{ 'common.next' | t }}
+          </button>
+        </nav>
+      }
+    </section>
+  }
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="'diagnostics.preview' | t"
+    (closed)="close()"
+  >
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+
+    @if (!detailLoading() && messages().length && !batch()) {
+      <button class="btn btn-outline-secondary" (click)="retryDetail()" [disabled]="busy()">
+        {{ 'common.retry' | t }}
+      </button>
+    }
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @if (batch(); as b) {
+      <h2>{{ b.originalFileName }}</h2>
+      <p>{{ 'diagnostics.status.' + b.status | t }}</p>
+      <dl>
+        @for (count of counts(); track count[0]) {
+          <dt>{{ 'diagnostics.change.' + count[0] | t }}</dt>
+          <dd>{{ count[1] }}</dd>
+        }
+      </dl>
+      @if (allowed('Import') && b.capabilities.canApply) {
+        <section class="section">
+          <h3>{{ 'diagnostics.applyHelp' | t }}</h3>
+          <div class="actions">
+            @if (!confirmApply()) {
+              <button class="btn btn-primary" (click)="confirmApply.set(true)" [disabled]="busy()">
+                {{ 'diagnostics.apply' | t }}
+              </button>
+            } @else {
+              <button class="btn btn-primary" (click)="apply()" [disabled]="busy()">
+                {{ 'diagnostics.confirmApply' | t }}</button
+              ><button
+                class="btn btn-outline-secondary"
+                (click)="confirmApply.set(false)"
+                [disabled]="busy()"
+              >
+                {{ 'common.cancel' | t }}
+              </button>
+            }
+          </div>
+        </section>
+      }
+      @if (allowed('Import') && b.capabilities.canDiscard) {
+        <section class="section">
+          <label
+            >{{ 'diagnostics.discardReason' | t
+            }}<input
+              class="field-input"
+              [ngModel]="reason()"
+              (ngModelChange)="reason.set($event)"
+              [disabled]="busy()" /></label
+          ><button
+            class="btn btn-outline-secondary mt-3"
+            (click)="discard()"
+            [disabled]="busy() || !reason().trim()"
+          >
+            {{ 'diagnostics.discard' | t }}
+          </button>
+        </section>
+      }
+      @if (allowed('ImportHistory')) {
+        <section class="section">
+          <h3>{{ 'diagnostics.importChanges' | t }}</h3>
+          <ul class="history">
+            @for (change of changes().items; track change.recordId) {
+              <li>
+                <strong>{{ changeName(change) }}</strong>
+                <p>{{ 'diagnostics.change.' + change.disposition | t }}</p>
+              </li>
+            }
+          </ul>
+          <nav class="actions">
+            <button
+              class="btn btn-outline-secondary"
+              (click)="loadChanges(changes().pageNumber - 1)"
+              [disabled]="busy() || changes().pageNumber <= 1"
+            >
+              {{ 'common.previous' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              (click)="loadChanges(changes().pageNumber + 1)"
+              [disabled]="
+                busy() || changes().pageNumber * changes().pageSize >= changes().totalCount
+              "
+            >
+              {{ 'common.next' | t }}
+            </button>
+          </nav>
+        </section>
+      }
+    }
+  </app-side-drawer>
+</main>

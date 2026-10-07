@@ -1,0 +1,301 @@
+<main class="directory-workspace" [dir]="language.dir()">
+  <app-page-header
+    [heading]="title | t"
+    [description]="'diagnostics.catalogRequestHelp' | t"
+    icon="requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load(page().pageNumber)"
+  >
+    <div pageHeaderActions>
+      @if (doctor && allowed('CreateOwn')) {
+        <button class="btn btn-primary" (click)="create()" [disabled]="busy()">
+          {{ 'diagnostics.requestMissing' | t }}
+        </button>
+      }
+    </div>
+    <div pageHeaderDeck class="toolbar">
+      <label
+        >{{ 'reservations.status' | t
+        }}<span class="select-control"
+          ><select
+            class="field-input"
+            [ngModel]="status()"
+            (ngModelChange)="status.set($event); load()"
+            [disabled]="busy()"
+          >
+            <option value="">{{ 'common.all' | t }}</option>
+            @for (value of ['Pending', 'NeedsMoreInfo', 'Approved', 'Rejected']; track value) {
+              <option [value]="value">{{ 'diagnostics.status.' + value | t }}</option>
+            }</select
+          ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></span
+      ></label>
+    </div>
+  </app-page-header>
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+  }
+  <section class="directory" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+    } @else if (failed()) {
+      <div class="empty-state">
+        <h2>{{ 'diagnostics.failed' | t }}</h2>
+        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+      </div>
+    } @else if (!page().items?.length) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medical prescription-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'diagnostics.empty' | t }}</h2>
+        <p>{{ 'diagnostics.catalogRequestHelp' | t }}</p>
+        <button class="btn btn-primary" (click)="status.set(''); load()">
+          {{ 'medications.resetSearch' | t }}
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <caption class="visually-hidden">
+            {{
+              title | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'diagnostics.name' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'common.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of page().items; track item.requestId) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>
+                  <span class="status-badge">{{ 'diagnostics.status.' + item.status | t }}</span>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    (click)="inspect(item.requestId)"
+                    [disabled]="busy()"
+                  >
+                    {{ 'common.details' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="load(page().pageNumber - 1)"
+          [disabled]="busy() || page().pageNumber <= 1"
+        >
+          {{ 'common.previous' | t }}</button
+        ><span>{{ page().pageNumber }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="load(page().pageNumber + 1)"
+          [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
+        >
+          {{ 'common.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+  <app-side-drawer [opened]="opened()" [busy]="busy()" [title]="title | t" (closed)="close()">
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+
+    @if (!detailLoading() && messages().length && !editing() && !detail()) {
+      <button class="btn btn-outline-secondary" (click)="retryDetail()" [disabled]="busy()">
+        {{ 'common.retry' | t }}
+      </button>
+    }
+    @if (detailLoading()) {
+      <p role="status">{{ 'reservations.loading' | t }}</p>
+    }
+    @if (editing()) {
+      <form class="detail-form" (ngSubmit)="save()">
+        <fieldset class="full" [disabled]="busy()">
+          <label class="mb-3"
+            >{{ 'diagnostics.name' | t
+            }}<input
+              class="field-input"
+              name="name"
+              [ngModel]="name()"
+              (ngModelChange)="name.set($event)"
+              required /></label
+          ><label class="mb-3"
+            >{{ 'diagnostics.specimen' | t
+            }}<input
+              class="field-input"
+              name="specimen"
+              [ngModel]="specimen()"
+              (ngModelChange)="specimen.set($event)" /></label
+          ><label
+            >{{ 'diagnostics.catalogNote' | t
+            }}<textarea
+              class="field-input note-input"
+              name="note"
+              [ngModel]="note()"
+              (ngModelChange)="note.set($event)"
+            ></textarea>
+          </label>
+        </fieldset>
+        <div class="actions full">
+          <button class="btn btn-primary" type="submit" [disabled]="busy() || !name().trim()">
+            {{ 'common.save' | t }}</button
+          ><button
+            class="btn btn-outline-secondary"
+            type="button"
+            (click)="editing.set(false)"
+            [disabled]="busy()"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </form>
+    } @else if (detail(); as d) {
+      <h2>{{ d.name }}</h2>
+      <p>{{ 'diagnostics.status.' + d.status | t }}</p>
+      <dl>
+        <dt>{{ 'diagnostics.specimen' | t }}</dt>
+        <dd>{{ d.specimen }}</dd>
+        <dt>{{ 'diagnostics.catalogNote' | t }}</dt>
+        <dd>{{ d.catalogClarificationNote }}</dd>
+        <dt>{{ 'diagnostics.reviewReason' | t }}</dt>
+        <dd>{{ d.reviewReason }}</dd>
+      </dl>
+      <div class="actions">
+        @if (doctor && allowed('UpdateOwn') && d.capabilities.canEdit) {
+          <button class="btn btn-primary" (click)="edit()" [disabled]="busy()">
+            {{ 'common.edit' | t }}
+          </button>
+        }
+        @if (!doctor) {
+          @for (action of reviewActions; track action) {
+            @if (canReview(action)) {
+              <button
+                class="btn btn-outline-secondary"
+                (click)="prepare(action)"
+                [disabled]="busy()"
+              >
+                {{ 'diagnostics.review.' + action | t }}
+              </button>
+            }
+          }
+        }
+      </div>
+      @if (reviewAction()) {
+        <section class="section">
+          <h3>{{ 'diagnostics.review.' + reviewAction() | t }}</h3>
+          <label
+            >{{ 'diagnostics.reviewReason' | t
+            }}<input
+              class="field-input"
+              [ngModel]="reason()"
+              (ngModelChange)="reason.set($event)"
+              [disabled]="busy()"
+          /></label>
+          @if (reviewAction() === 'approve') {
+            <label class="mt-3"
+              >{{ 'diagnostics.linkCatalog' | t
+              }}<input
+                class="field-input"
+                type="search"
+                [ngModel]="targetSearch()"
+                (ngModelChange)="targetSearch.set($event)"
+                (change)="loadTargets()"
+                [disabled]="busy()"
+            /></label>
+            <ul class="history">
+              @for (target of targets(); track target.catalogId) {
+                <li>
+                  <button
+                    class="btn"
+                    [class.btn-primary]="targetId() === target.catalogId"
+                    [class.btn-outline-secondary]="!(targetId() === target.catalogId)"
+                    (click)="targetId.set(target.catalogId)"
+                    [attr.aria-pressed]="targetId() === target.catalogId"
+                    [disabled]="busy()"
+                  >
+                    {{
+                      language.currentLang() === 'ar'
+                        ? target.nameAr || target.nameEn
+                        : target.nameEn || target.nameAr
+                    }}
+                  </button>
+                </li>
+              }
+            </ul>
+            <button
+              class="btn btn-outline-secondary"
+              (click)="targetId.set('')"
+              [disabled]="busy()"
+            >
+              {{ 'diagnostics.createApproved' | t }}
+            </button>
+            @if (!targetId()) {
+              <label class="mt-3"
+                >{{ 'diagnostics.field.displayNameAr' | t
+                }}<input
+                  class="field-input"
+                  [ngModel]="approvedNameAr()"
+                  (ngModelChange)="approvedNameAr.set($event)"
+                  [disabled]="busy()" /></label
+              ><label class="mt-3"
+                >{{ 'diagnostics.field.displayNameEn' | t
+                }}<input
+                  class="field-input"
+                  [ngModel]="approvedNameEn()"
+                  (ngModelChange)="approvedNameEn.set($event)"
+                  [disabled]="busy()"
+              /></label>
+            }
+          }
+          <div class="actions mt-3">
+            <button
+              class="btn btn-primary"
+              (click)="review()"
+              [disabled]="busy() || (reviewAction() !== 'approve' && !reason().trim())"
+            >
+              {{ 'common.confirm' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              (click)="reviewAction.set(null)"
+              [disabled]="busy()"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+          </div>
+        </section>
+      }
+      <section class="section">
+        <h3>{{ 'diagnostics.history' | t }}</h3>
+        <ul class="history">
+          @for (entry of d.history; track entry.id) {
+            <li>
+              {{ 'diagnostics.historyAction.' + entry.action | t }}
+              <p>{{ entry.reason }}</p>
+              <time class="ltr-text" dir="ltr">{{ entry.occurredAtUtc }}</time>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </app-side-drawer>
+</main>

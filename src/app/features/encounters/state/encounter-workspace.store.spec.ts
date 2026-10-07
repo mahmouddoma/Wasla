@@ -10,6 +10,58 @@ import { EncounterWorkspaceStore } from './encounter-workspace.store';
 import { encounterFixture } from '../encounter-test-fixtures';
 
 describe('Encounter workspace workflow', () => {
+  it('renders a localized actionable blocker when the API returns code without message', async () => {
+    tickets.details.mockReturnValue(of({ rowVersion: 'tv2' }));
+    api.byTicket.mockReturnValue(
+      of({
+        ...encounterFixture,
+        completionBlockers: [{ code: 'Lab.Invalid', itemId: 'item', field: 'name' }],
+      }),
+    );
+    await store.complete();
+    expect(tickets.complete).not.toHaveBeenCalled();
+    expect(store.messages()).toEqual(['diagnostics.resolveBlockers']);
+  });
+  it('sends independent diagnostic root tokens only for existing drafts', async () => {
+    tickets.details.mockReturnValue(of({ rowVersion: 'tv2' }));
+    tickets.complete.mockReturnValue(of({ status: 'Completed' }));
+    const lab = { requestId: 'lab', rowVersion: 'lab-rv', status: 'Draft' };
+    const radiology = { requestId: 'radiology', rowVersion: 'radiology-rv', status: 'Draft' };
+    api.byTicket.mockReturnValue(
+      of({ ...encounterFixture, labRequestDraft: lab, radiologyRequestDraft: radiology }),
+    );
+    await store.complete();
+    expect(tickets.complete.mock.calls[0][2]).toEqual(
+      expect.objectContaining({
+        ticketRowVersion: 'tv2',
+        encounterRowVersion: encounterFixture.rowVersion,
+        labRequestRowVersion: 'lab-rv',
+        radiologyRequestRowVersion: 'radiology-rv',
+      }),
+    );
+  });
+  it('renders all diagnostic completion blockers before sending a completion command', async () => {
+    tickets.details.mockReturnValue(of({ rowVersion: 'tv2' }));
+    api.byTicket.mockReturnValue(
+      of({
+        ...encounterFixture,
+        completionBlockers: [
+          { code: 'Lab.Invalid', message: 'Review lab order' },
+          { code: 'Radiology.Invalid', message: 'Review imaging order' },
+        ],
+      }),
+    );
+    await store.complete();
+    expect(tickets.complete).not.toHaveBeenCalled();
+    expect(store.messages()).toEqual(['Review lab order', 'Review imaging order']);
+  });
+  it('blocks parent mutations during diagnostic writes', async () => {
+    store.diagnosticBusy.set(true);
+    await store.saveNotes('Concurrent notes');
+    await store.complete();
+    expect(api.updateNotes).not.toHaveBeenCalled();
+    expect(tickets.complete).not.toHaveBeenCalled();
+  });
   const api = {
     details: vi.fn(),
     list: vi.fn(),
@@ -105,22 +157,65 @@ describe('Encounter workspace workflow', () => {
 
   it('refetches and sends prescription concurrency separately when a draft exists', async () => {
     tickets.details.mockReturnValue(of({ rowVersion: 'tv3' }));
-    api.byTicket.mockReturnValue(of({ ...encounterFixture, rowVersion: 'ev7',
-      prescription: { prescriptionId: 'rx1', practiceId: 'p1', medicalEncounterId: 'e1', current: null, draft: { versionNumber: 1, status: 'Draft', items: [] }, capabilities: {}, rowVersion: 'rx9', completionBlockers: [] } }));
+    api.byTicket.mockReturnValue(
+      of({
+        ...encounterFixture,
+        rowVersion: 'ev7',
+        prescription: {
+          prescriptionId: 'rx1',
+          practiceId: 'p1',
+          medicalEncounterId: 'e1',
+          current: null,
+          draft: { versionNumber: 1, status: 'Draft', items: [] },
+          capabilities: {},
+          rowVersion: 'rx9',
+          completionBlockers: [],
+        },
+      }),
+    );
     tickets.complete.mockReturnValue(of({ ticketId: 't1' }));
     await store.complete();
-    expect(tickets.complete).toHaveBeenCalledWith('p1', 't1', {
-      ticketRowVersion: 'tv3', encounterRowVersion: 'ev7', prescriptionRowVersion: 'rx9',
-    }, expect.any(String));
+    expect(tickets.complete).toHaveBeenCalledWith(
+      'p1',
+      't1',
+      {
+        ticketRowVersion: 'tv3',
+        encounterRowVersion: 'ev7',
+        prescriptionRowVersion: 'rx9',
+      },
+      expect.any(String),
+    );
   });
   it('displays all prescription blockers and never sends a completion request for invalid draft', async () => {
     tickets.details.mockReturnValue(of({ rowVersion: 'tv3' }));
-    api.byTicket.mockReturnValue(of({ ...encounterFixture, prescription: {
-      prescriptionId: 'rx1', practiceId: 'p1', medicalEncounterId: 'e1', current: null, draft: { versionNumber: 1, status: 'Draft', items: [] }, capabilities: {}, rowVersion: 'rx9', completionBlockers: [
-        { code: 'DoseRequired', message: 'First item dose required', itemId: 'i1', field: 'dose' },
-        { code: 'DoseRequired', message: 'Second item dose required', itemId: 'i2', field: 'dose' },
-      ],
-    } }));
+    api.byTicket.mockReturnValue(
+      of({
+        ...encounterFixture,
+        prescription: {
+          prescriptionId: 'rx1',
+          practiceId: 'p1',
+          medicalEncounterId: 'e1',
+          current: null,
+          draft: { versionNumber: 1, status: 'Draft', items: [] },
+          capabilities: {},
+          rowVersion: 'rx9',
+          completionBlockers: [
+            {
+              code: 'DoseRequired',
+              message: 'First item dose required',
+              itemId: 'i1',
+              field: 'dose',
+            },
+            {
+              code: 'DoseRequired',
+              message: 'Second item dose required',
+              itemId: 'i2',
+              field: 'dose',
+            },
+          ],
+        },
+      }),
+    );
     await store.complete();
     expect(tickets.complete).not.toHaveBeenCalled();
     expect(store.messages()).toEqual(['First item dose required', 'Second item dose required']);
@@ -129,9 +224,22 @@ describe('Encounter workspace workflow', () => {
   it('refreshes independent prescription state after a completion conflict', async () => {
     tickets.details.mockReturnValue(of({ rowVersion: 'tv3' }));
     tickets.complete.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-    const refreshed = { ...encounterFixture, prescription: { prescriptionId: 'rx1', practiceId: 'p1', medicalEncounterId: 'e1', current: null, draft: { versionNumber: 1, status: 'Draft', items: [] }, capabilities: {}, rowVersion: 'rx10', completionBlockers: [] } };
+    const refreshed = {
+      ...encounterFixture,
+      prescription: {
+        prescriptionId: 'rx1',
+        practiceId: 'p1',
+        medicalEncounterId: 'e1',
+        current: null,
+        draft: { versionNumber: 1, status: 'Draft', items: [] },
+        capabilities: {},
+        rowVersion: 'rx10',
+        completionBlockers: [],
+      },
+    };
     api.details.mockReturnValue(of(refreshed));
-    await store.complete(); expect(store.detail()?.prescription?.rowVersion).toBe('rx10');
+    await store.complete();
+    expect(store.detail()?.prescription?.rowVersion).toBe('rx10');
   });
   it('patient details use the self-only API and never fetch doctor history', async () => {
     store.doctor.set(false);
@@ -163,7 +271,12 @@ describe('Encounter workspace workflow', () => {
     expect(api.byTicket).toHaveBeenCalledWith('p1', 't1');
   });
   it('WAS-202 creates an amendment on completed encounter, updating details and reloading history', async () => {
-    store.detail.set({ ...encounterFixture, status: 'Completed', rowVersion: 'ev5', capabilities: { ...encounterFixture.capabilities, canAmend: true } });
+    store.detail.set({
+      ...encounterFixture,
+      status: 'Completed',
+      rowVersion: 'ev5',
+      capabilities: { ...encounterFixture.capabilities, canAmend: true },
+    });
     const updatedEncounter = {
       ...encounterFixture,
       status: 'Completed' as const,
@@ -192,4 +305,3 @@ describe('Encounter workspace workflow', () => {
     expect(api.createAmendment).not.toHaveBeenCalled();
   });
 });
-

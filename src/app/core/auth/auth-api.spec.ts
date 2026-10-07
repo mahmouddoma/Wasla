@@ -19,6 +19,20 @@ describe('AuthApi password recovery', () => {
 
   afterEach(() => http.verify());
 
+  it('signs in a first-login medical manager through the shared login contract', async () => {
+    const body = { identifier: 'manager@example.invalid', password: 'SyntheticPassword123' };
+    const result = firstValueFrom(api.login(body));
+    const request = http.expectOne(`${environment.apiBaseUrl}/api/v1/auth/login`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(body);
+    request.flush({
+      accessToken: 'synthetic',
+      expiresOnUtc: '2099-01-01T00:00:00Z',
+      passwordChangeRequired: true,
+    });
+    expect((await result).passwordChangeRequired).toBe(true);
+  });
+
   it('loads the complete current-user session from auth/me', async () => {
     const result = firstValueFrom(api.currentUser());
     const request = http.expectOne(`${environment.apiBaseUrl}/api/v1/auth/me`);

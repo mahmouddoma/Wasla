@@ -99,6 +99,8 @@ export interface CompleteTicketRequest {
   readonly ticketRowVersion: string;
   readonly encounterRowVersion: string;
   readonly prescriptionRowVersion?: string | null;
+  readonly labRequestRowVersion?: string | null;
+  readonly radiologyRequestRowVersion?: string | null;
 }
 
 export interface TicketReasonRequest extends TicketVersionRequest {

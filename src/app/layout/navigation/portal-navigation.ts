@@ -23,20 +23,75 @@ export class PortalNavigation {
       ? ['workspace', 'reservations', 'queue', 'patients']
       : this.user()?.userType.toLowerCase() === 'doctor'
         ? ['workspace', 'reservations', 'queue', 'encounters']
-        : this.user()?.userType === 'DrugCatalogManager'
-          ? ['drug-catalog', 'drug-imports', 'medication-requests']
-          : ['workspace', 'reservations', 'find-doctor', 'tickets'];
+        : this.user()?.userType === 'MedicalCatalogManager'
+          ? [
+              'lab-catalog',
+              'radiology-catalog',
+              'lab-catalog-requests',
+              'radiology-catalog-requests',
+            ]
+          : this.user()?.userType === 'DrugCatalogManager'
+            ? ['drug-catalog', 'drug-imports', 'medication-requests']
+            : ['workspace', 'reservations', 'find-doctor', 'tickets'];
     return primaryIds
       .flatMap((id) => this.items().filter((item) => item.id === id))
       .map((item) => ({
         ...item,
-        mobileLabelKey: item.id === 'tickets' ? 'portal.mobile.myTurn' : 'navigation.' + item.id,
+        mobileLabelKey:
+          item.id === 'tickets'
+            ? 'portal.mobile.myTurn'
+            : [
+                  'lab-catalog',
+                  'radiology-catalog',
+                  'lab-catalog-requests',
+                  'radiology-catalog-requests',
+                ].includes(item.id)
+              ? item.labelKey
+              : 'navigation.' + item.id,
       }));
   });
 
   private readonly permittedItems = computed<NavigationItem[]>(() => {
     const userType = this.user()?.userType?.toLowerCase();
 
+    if (userType === 'medicalcatalogmanager') {
+      return (['lab', 'radiology'] as const).flatMap((kind) => {
+        const prefix = kind === 'lab' ? 'Lab' : 'Radiology';
+        return [
+          ...(this.session.hasPermission(prefix + 'Catalog.View')
+            ? [
+                {
+                  id: `${kind}-catalog`,
+                  labelKey: `diagnostics.${kind}Catalog`,
+                  route: `/medical-catalog/${kind}`,
+                  icon: 'clipboard-list' as const,
+                },
+              ]
+            : []),
+          ...(this.session.hasPermission(prefix + 'Catalog.Import') ||
+          this.session.hasPermission(prefix + 'Catalog.ImportHistory')
+            ? [
+                {
+                  id: `${kind}-imports`,
+                  labelKey: `diagnostics.${kind}Imports`,
+                  route: `/medical-catalog/${kind}/imports`,
+                  icon: 'clipboard-list' as const,
+                },
+              ]
+            : []),
+          ...(this.session.hasPermission(prefix + 'CatalogRequests.View')
+            ? [
+                {
+                  id: `${kind}-catalog-requests`,
+                  labelKey: `diagnostics.${kind}CatalogRequests`,
+                  route: `/medical-catalog/${kind}/requests`,
+                  icon: 'clipboard-list' as const,
+                },
+              ]
+            : []),
+        ];
+      });
+    }
     if (userType === 'drugcatalogmanager') {
       const items: NavigationItem[] = [
         {
@@ -71,6 +126,24 @@ export class PortalNavigation {
 
     if (userType === 'doctor') {
       const items: NavigationItem[] = [
+        ...this.diagnosticItems('Doctor'),
+        ...(['lab', 'radiology'] as const).flatMap((kind) =>
+          this.session.hasPermission(
+            (kind === 'lab' ? 'Lab' : 'Radiology') + 'CatalogRequests.ViewOwn',
+          ) ||
+          this.session.hasPermission(
+            (kind === 'lab' ? 'Lab' : 'Radiology') + 'CatalogRequests.CreateOwn',
+          )
+            ? [
+                {
+                  id: `${kind}-catalog-requests`,
+                  labelKey: `diagnostics.${kind}CatalogRequests`,
+                  route: `/doctor/catalog-requests/${kind}`,
+                  icon: 'clipboard-list' as const,
+                },
+              ]
+            : [],
+        ),
         ...(this.session.hasPermission('DrugCatalogRequests.ViewOwn') ||
         this.session.hasPermission('DrugCatalogRequests.CreateOwn')
           ? [
@@ -207,6 +280,7 @@ export class PortalNavigation {
 
     // Default: Patient
     const items: NavigationItem[] = [
+      ...this.diagnosticItems('Patient'),
       ...(this.session.hasPermission('Prescriptions.ViewOwnCompleted')
         ? [
             {
@@ -278,6 +352,29 @@ export class PortalNavigation {
     return items.filter((item) => this.canAccessPatientItem(item.id));
   });
 
+  private diagnosticItems(actor: 'Doctor' | 'Patient'): NavigationItem[] {
+    return (['lab', 'radiology'] as const).flatMap((kind) => {
+      const prefix = kind === 'lab' ? 'Lab' : 'Radiology';
+      const permissions =
+        actor === 'Doctor'
+          ? [
+              prefix + 'Requests.ViewOwn',
+              prefix + 'Results.ViewOwn',
+              prefix + 'ResultSubmissions.ViewOwn',
+            ]
+          : [prefix + 'Requests.ViewOwnIssued', prefix + 'Results.ViewOwnCurrent'];
+      return permissions.some((p) => this.session.hasPermission(p))
+        ? [
+            {
+              id: `${kind}-requests`,
+              labelKey: `diagnostics.${kind}Requests`,
+              route: `/diagnostics/${actor.toLowerCase()}/${kind}`,
+              icon: 'clipboard-list' as const,
+            },
+          ]
+        : [];
+    });
+  }
   private canAccessDoctorItem(id: string): boolean {
     const required: Record<string, readonly string[]> = {
       reservations: ['DoctorPracticeReservations.ViewOwn'],
@@ -349,13 +446,23 @@ export class PortalNavigation {
             ...(this.user()?.userType === 'Doctor' ? ['encounters'] : []),
           ],
       health:
-        this.user()?.userType === 'Patient' ? ['encounters', 'prescriptions', 'follow-ups'] : [],
+        this.user()?.userType === 'Patient'
+          ? ['encounters', 'prescriptions', 'follow-ups', 'lab-requests', 'radiology-requests']
+          : this.user()?.userType === 'Doctor'
+            ? ['lab-requests', 'radiology-requests']
+            : [],
       management: [
         'practices',
         'receptions',
         'medication-requests',
         'drug-catalog',
         'drug-imports',
+        'lab-catalog',
+        'lab-imports',
+        'lab-catalog-requests',
+        'radiology-catalog',
+        'radiology-imports',
+        'radiology-catalog-requests',
         'family-requests',
         ...(this.user()?.userType === 'Doctor' ? ['profile'] : []),
       ],

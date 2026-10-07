@@ -103,6 +103,7 @@ describe('DoctorDetails', () => {
       ],
     }).compileComponents();
 
+    TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(DoctorDetails);
     component = fixture.componentInstance;
     fixture.detectChanges();

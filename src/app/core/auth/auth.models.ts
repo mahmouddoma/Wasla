@@ -1,4 +1,10 @@
-export type UserType = 'SuperAdmin' | 'Doctor' | 'Reception' | 'Patient' | 'DrugCatalogManager';
+export type UserType =
+  | 'SuperAdmin'
+  | 'Doctor'
+  | 'Reception'
+  | 'Patient'
+  | 'DrugCatalogManager'
+  | 'MedicalCatalogManager';
 export type Gender = 'Male' | 'Female';
 
 export interface LoginRequest {

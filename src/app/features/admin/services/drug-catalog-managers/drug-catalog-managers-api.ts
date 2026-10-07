@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, InjectionToken, inject } from '@angular/core';
 import { environment } from '../../../../../environments/environment';
 import {
   CreateManagerRequest,
@@ -8,10 +8,15 @@ import {
   ManagerPage,
 } from './drug-catalog-managers.models';
 
+export const CATALOG_MANAGER_KIND = new InjectionToken<'drug' | 'medical'>('catalog manager kind', {
+  providedIn: 'root',
+  factory: () => 'drug',
+});
+
 @Injectable({ providedIn: 'root' })
 export class DrugCatalogManagersApi {
   private readonly http = inject(HttpClient);
-  private readonly root = `${environment.apiBaseUrl}/api/v1/admin/drug-catalog-managers`;
+  private readonly root = `${environment.apiBaseUrl}/api/v1/admin/${inject(CATALOG_MANAGER_KIND)}-catalog-managers`;
   list(search: string, pageNumber: number, pageSize = 20) {
     let params = new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize);
     if (search.trim()) params = params.set('search', search.trim());

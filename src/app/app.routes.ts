@@ -52,34 +52,73 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./layout/portal-layout/portal-layout').then((m) => m.PortalLayout),
+    loadComponent: () => import('./layout/portal-layout/portal-layout').then((m) => m.PortalLayout),
     canActivateChild: [catalogManagerAreaGuard],
     children: [
       {
+        path: 'medical-catalog',
+        data: { catalogManagerArea: 'MedicalCatalogManager' },
+        loadChildren: () =>
+          import('./features/medical-catalog/medical-catalog.routes').then(
+            (m) => m.MEDICAL_CATALOG_ROUTES,
+          ),
+      },
+      {
+        path: 'doctor/catalog-requests',
+        loadChildren: () =>
+          import('./features/medical-catalog/medical-catalog.routes').then(
+            (m) => m.DOCTOR_CATALOG_REQUEST_ROUTES,
+          ),
+      },
+      {
+        path: 'diagnostics',
+        loadChildren: () =>
+          import('./features/diagnostics/diagnostics.routes').then((m) => m.DIAGNOSTIC_ROUTES),
+      },
+      {
         path: 'drug-catalog',
         data: { catalogManagerArea: true },
-        loadChildren: () => import('./features/drug-catalog/drug-catalog.routes').then(m => m.DRUG_CATALOG_ROUTES),
+        loadChildren: () =>
+          import('./features/drug-catalog/drug-catalog.routes').then((m) => m.DRUG_CATALOG_ROUTES),
       },
       {
         path: 'doctor/medication-requests',
-        data: { actor: 'Doctor', permission: ['DrugCatalogRequests.ViewOwn', 'DrugCatalogRequests.CreateOwn'] },
-        loadChildren: () => import('./features/medication-requests/medication-requests.routes').then(m => m.MEDICATION_REQUEST_ROUTES),
+        data: {
+          actor: 'Doctor',
+          permission: ['DrugCatalogRequests.ViewOwn', 'DrugCatalogRequests.CreateOwn'],
+        },
+        loadChildren: () =>
+          import('./features/medication-requests/medication-requests.routes').then(
+            (m) => m.MEDICATION_REQUEST_ROUTES,
+          ),
       },
       {
         path: 'drug-catalog-requests',
-        data: { actor: 'DrugCatalogManager', permission: 'DrugCatalogRequests.View', catalogManagerArea: true },
-        loadChildren: () => import('./features/medication-requests/medication-requests.routes').then(m => m.MEDICATION_REQUEST_ROUTES),
+        data: {
+          actor: 'DrugCatalogManager',
+          permission: 'DrugCatalogRequests.View',
+          catalogManagerArea: true,
+        },
+        loadChildren: () =>
+          import('./features/medication-requests/medication-requests.routes').then(
+            (m) => m.MEDICATION_REQUEST_ROUTES,
+          ),
       },
       {
         path: 'doctor/prescriptions',
         data: { actor: 'Doctor', permission: 'Prescriptions.ViewOwn' },
-        loadChildren: () => import('./features/prescriptions/prescriptions.routes').then(m => m.PRESCRIPTION_ROUTES),
+        loadChildren: () =>
+          import('./features/prescriptions/prescriptions.routes').then(
+            (m) => m.PRESCRIPTION_ROUTES,
+          ),
       },
       {
         path: 'patient/prescriptions',
         data: { actor: 'Patient', permission: 'Prescriptions.ViewOwnCompleted' },
-        loadChildren: () => import('./features/prescriptions/prescriptions.routes').then(m => m.PRESCRIPTION_ROUTES),
+        loadChildren: () =>
+          import('./features/prescriptions/prescriptions.routes').then(
+            (m) => m.PRESCRIPTION_ROUTES,
+          ),
       },
       {
         path: 'doctor/encounters',

@@ -1,26 +1,25 @@
 <main class="finance-workspace" [dir]="language.dir()">
   <!-- Enterprise Page Header -->
   <app-page-header
-    [heading]="(view() === 'revenue' ? 'finance.revenue.title' : 'finance.title') | t"
-    [description]="(view() === 'revenue' ? 'finance.revenue.subtitle' : 'finance.subtitle') | t"
+    [heading]="(isReception() ? 'finance.reception.title' : view() === 'revenue' ? 'finance.revenue.title' : 'finance.title') | t"
+    [description]="(isReception() ? 'finance.reception.subtitle' : view() === 'revenue' ? 'finance.revenue.subtitle' : 'finance.subtitle') | t"
     [icon]="view() === 'revenue' ? 'revenue' : 'finance'"
     [actionLabel]="'finance.refresh' | t"
     actionIcon="refresh"
-    [actionLoading]="loading()"
-    [actionDisabled]="loading()"
+    [actionLoading]="listLoading()"
+    [actionDisabled]="listLoading()"
     (actionClicked)="load(page().pageNumber)"
   >
-    <!-- Header Actions (View Switcher + Clinic Selector) -->
+    <!-- Header Actions (Doctor View Switcher + Doctor Clinic Selector) -->
     <div pageHeaderActions class="header-actions-cluster">
-      @if (canSwitchView()) {
-        <div class="view-switcher-pill" role="tablist" [attr.aria-label]="'finance.title' | t">
-          <button
-            type="button"
+      @if (isDoctor()) {
+        <nav class="view-switcher-pill" role="tablist" [attr.aria-label]="'finance.title' | t">
+          <a
+            routerLink="/doctor/finance"
             role="tab"
             class="view-switch-btn"
             [class.active]="view() === 'transactions'"
             [attr.aria-selected]="view() === 'transactions'"
-            (click)="switchView('transactions')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect width="20" height="14" x="2" y="5" rx="2" />
@@ -28,35 +27,35 @@
               <path d="M6 15h2m4 0h6" />
             </svg>
             <span>{{ 'finance.viewTransactions' | t }}</span>
-          </button>
+          </a>
 
-          <button
-            type="button"
+          <a
+            routerLink="/doctor/revenue"
             role="tab"
             class="view-switch-btn"
             [class.active]="view() === 'revenue'"
             [attr.aria-selected]="view() === 'revenue'"
-            (click)="switchView('revenue')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
               <polyline points="16 7 22 7 22 13" />
             </svg>
             <span>{{ 'finance.viewRevenue' | t }}</span>
-          </button>
-        </div>
+          </a>
+        </nav>
       }
 
-      @if (isStaff() && practices().length) {
+      <!-- Doctor-only local clinic selector -->
+      @if (isDoctor() && practices().length) {
         <div class="practice-selector-pill">
           <svg class="practice-selector-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
           </svg>
           <select
-            id="header-practice-select"
+            id="doctor-practice-select"
             class="practice-select-input"
             [value]="practiceId()"
-            (change)="selectPractice($event)"
+            (change)="selectDoctorPractice($event)"
             [attr.aria-label]="'finance.practice' | t"
           >
             @for (practice of practices(); track practice.id) {
@@ -72,9 +71,9 @@
 
     <!-- Integrated Filter Deck in Page Header -->
     <div pageHeaderDeck class="finance-filter-deck">
-      <form class="deck-form" (submit)="$event.preventDefault(); loadFromForm()">
-        @if (view() === 'revenue') {
-          <!-- Revenue Date Range Deck -->
+      @if (view() === 'revenue') {
+        <!-- Revenue Date Range Deck -->
+        <form class="deck-form" (submit)="$event.preventDefault(); load(1)">
           <div class="revenue-deck-layout">
             <div class="deck-field-group">
               <div class="deck-field">
@@ -97,8 +96,8 @@
             </div>
 
             <div class="deck-actions-group">
-              <button class="btn-deck-submit" type="submit" [disabled]="loading()">
-                @if (loading()) {
+              <button class="btn-deck-submit" type="submit" [disabled]="listLoading()">
+                @if (listLoading()) {
                   <span class="btn-spinner" aria-hidden="true"></span>
                 } @else {
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -112,7 +111,7 @@
                 class="btn-deck-reset"
                 type="button"
                 (click)="resetFilters()"
-                [disabled]="loading()"
+                [disabled]="listLoading()"
                 [title]="'common.resetFilters' | t"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -123,109 +122,96 @@
               </button>
             </div>
           </div>
-        } @else {
-          <!-- Transactions Multi-Filter Deck -->
-          <div class="transactions-deck-layout">
-            <div class="deck-row-primary">
-              <!-- From Date -->
-              <div class="deck-field">
-                <label class="deck-field-label" for="tx-filter-from">{{
-                  'finance.fromDate' | t
-                }}</label>
-                <div class="deck-input-wrap">
-                  <input id="tx-filter-from" type="date" [formField]="filters.fromDate" />
-                </div>
-              </div>
-
-              <!-- To Date -->
-              <div class="deck-field">
-                <label class="deck-field-label" for="tx-filter-to">{{
-                  'finance.toDate' | t
-                }}</label>
-                <div class="deck-input-wrap">
-                  <input id="tx-filter-to" type="date" [formField]="filters.toDate" />
-                </div>
-              </div>
-
-              <!-- Transaction Type -->
-              <div class="deck-field">
-                <label class="deck-field-label" for="tx-filter-type">{{
-                  'finance.type' | t
-                }}</label>
-                <div class="custom-select-wrap">
-                  <select id="tx-filter-type" [formField]="filters.transactionType">
-                    <option value="">{{ 'finance.allTypes' | t }}</option>
-                    <option value="Payment">{{ 'finance.type.Payment' | t }}</option>
-                    <option value="Refund">{{ 'finance.type.Refund' | t }}</option>
-                  </select>
-                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </div>
-              </div>
-
-              <!-- Payment Method -->
-              <div class="deck-field">
-                <label class="deck-field-label" for="tx-filter-method">{{
-                  'finance.method' | t
-                }}</label>
-                <div class="custom-select-wrap">
-                  <select id="tx-filter-method" [formField]="filters.method">
-                    <option value="">{{ 'finance.allMethods' | t }}</option>
-                    <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
-                    <option value="Card">{{ 'finance.method.Card' | t }}</option>
-                    <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
-                  </select>
-                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </div>
-              </div>
+        </form>
+      } @else {
+        <!-- Task-First Transactions Filter Deck -->
+        <div class="task-first-filter-deck">
+          <!-- Top Row: Quick Periods + Search + Toggles -->
+          <div class="filter-deck-primary-row">
+            <!-- Quick Periods -->
+            <div class="quick-periods-group" role="group" [attr.aria-label]="'finance.quickFilters' | t">
+              <button
+                type="button"
+                class="btn-period-pill"
+                [class.active]="activePeriod() === 'today'"
+                (click)="setQuickPeriod('today')"
+              >
+                {{ 'finance.quick.today' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn-period-pill"
+                [class.active]="activePeriod() === 'month'"
+                (click)="setQuickPeriod('month')"
+              >
+                {{ 'finance.quick.month' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn-period-pill"
+                [class.active]="activePeriod() === 'custom'"
+                (click)="setQuickPeriod('custom')"
+              >
+                {{ 'finance.quick.custom' | t }}
+              </button>
             </div>
 
-            <div class="deck-row-secondary">
-              <!-- Transaction Number Search -->
-              <div class="deck-search-box">
-                <svg class="deck-search-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                  id="tx-filter-num"
-                  dir="ltr"
-                  type="text"
-                  [placeholder]="'finance.transactionNumber' | t"
-                  [formField]="filters.transactionNumber"
-                />
-              </div>
-
-              <!-- Ticket Number Search -->
-              <div class="deck-search-box">
-                <svg class="deck-search-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"
+            <!-- Common Search (Ticket Number & Transaction Number) -->
+            <form class="common-search-form" (submit)="$event.preventDefault(); loadFromSearch()">
+              <div class="search-inputs-cluster">
+                <div class="search-input-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"
+                    />
+                    <path d="M13 5v2m0 4v2m0 4v2" />
+                  </svg>
+                  <input
+                    id="common-search-ticket"
+                    dir="ltr"
+                    type="text"
+                    [placeholder]="'finance.ticketNumber' | t"
+                    [formField]="filters.ticketNumber"
                   />
-                  <path d="M13 5v2m0 4v2m0 4v2" />
-                </svg>
-                <input
-                  id="tx-filter-ticket"
-                  dir="ltr"
-                  type="text"
-                  [placeholder]="'finance.ticketNumber' | t"
-                  [formField]="filters.ticketNumber"
-                />
-              </div>
+                </div>
 
-              <div class="deck-actions-group">
-                <button class="btn-deck-submit" type="submit" [disabled]="loading()">
-                  @if (loading()) {
+                <div class="search-input-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    id="common-search-tx"
+                    dir="ltr"
+                    type="text"
+                    [placeholder]="'finance.transactionNumber' | t"
+                    [formField]="filters.transactionNumber"
+                  />
+                </div>
+
+                <button class="btn-deck-submit" type="submit" [disabled]="listLoading()">
+                  @if (listLoading()) {
                     <span class="btn-spinner" aria-hidden="true"></span>
                   } @else {
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                   }
-                  <span>{{ 'finance.applyFilters' | t }}</span>
+                  <span>{{ 'finance.search' | t }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-advanced-toggle"
+                  [class.is-active]="showAdvancedFilters() || hasActiveFilters()"
+                  (click)="toggleAdvancedFilters()"
+                  [attr.aria-expanded]="showAdvancedFilters()"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                  <span>{{ (showAdvancedFilters() ? 'finance.hideAdditionalFilters' : 'finance.additionalFilters') | t }}</span>
                 </button>
 
                 @if (hasActiveFilters()) {
@@ -233,21 +219,7 @@
                     class="btn-deck-reset active-reset"
                     type="button"
                     (click)="resetFilters()"
-                    [disabled]="loading()"
-                    [title]="'common.resetFilters' | t"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                      <path d="M3 3v5h5" />
-                    </svg>
-                    <span>{{ 'common.reset' | t }}</span>
-                  </button>
-                } @else {
-                  <button
-                    class="btn-deck-reset"
-                    type="button"
-                    (click)="resetFilters()"
-                    [disabled]="loading()"
+                    [disabled]="listLoading()"
                     [title]="'common.resetFilters' | t"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -258,13 +230,137 @@
                   </button>
                 }
               </div>
-            </div>
+            </form>
           </div>
-        }
-      </form>
+
+          <!-- Conditional Patient Search Pill (if selected) -->
+          @if (selectedPatient(); as patient) {
+            <div class="selected-patient-bar">
+              <span class="patient-pill-label">{{ 'finance.patient' | t }}:</span>
+              <strong class="patient-pill-name">{{ label(patient) }}</strong>
+              <button
+                type="button"
+                class="btn-clear-patient"
+                (click)="clearSelectedPatient()"
+                [attr.aria-label]="'finance.patientSearch.clear' | t"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          }
+
+          <!-- Progressive Disclosure: Additional Filters -->
+          @if (showAdvancedFilters()) {
+            <div class="advanced-filters-panel">
+              <div class="advanced-filters-grid">
+                <!-- Transaction Type -->
+                <div class="deck-field">
+                  <label class="deck-field-label" for="adv-filter-type">{{
+                    'finance.type' | t
+                  }}</label>
+                  <div class="custom-select-wrap">
+                    <select id="adv-filter-type" [formField]="filters.transactionType" (change)="load(1)">
+                      <option value="">{{ 'finance.allTypes' | t }}</option>
+                      <option value="Payment">{{ 'finance.type.Payment' | t }}</option>
+                      <option value="Refund">{{ 'finance.type.Refund' | t }}</option>
+                    </select>
+                    <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="deck-field">
+                  <label class="deck-field-label" for="adv-filter-method">{{
+                    'finance.method' | t
+                  }}</label>
+                  <div class="custom-select-wrap">
+                    <select id="adv-filter-method" [formField]="filters.method" (change)="load(1)">
+                      <option value="">{{ 'finance.allMethods' | t }}</option>
+                      <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
+                      <option value="Card">{{ 'finance.method.Card' | t }}</option>
+                      <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
+                    </select>
+                    <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Custom Dates (always available under advanced or custom period) -->
+                <div class="deck-field">
+                  <label class="deck-field-label" for="adv-filter-from">{{
+                    'finance.fromDate' | t
+                  }}</label>
+                  <div class="deck-input-wrap">
+                    <input id="adv-filter-from" type="date" [formField]="filters.fromDate" (change)="load(1)" />
+                  </div>
+                </div>
+
+                <div class="deck-field">
+                  <label class="deck-field-label" for="adv-filter-to">{{
+                    'finance.toDate' | t
+                  }}</label>
+                  <div class="deck-input-wrap">
+                    <input id="adv-filter-to" type="date" [formField]="filters.toDate" (change)="load(1)" />
+                  </div>
+                </div>
+
+                <!-- Patient Search (conditional if granted Patients.SearchBasic) -->
+                @if (canSearchPatient()) {
+                  <div class="deck-field patient-search-field">
+                    <label class="deck-field-label" for="adv-patient-query">{{
+                      'finance.patientSearch.title' | t
+                    }}</label>
+                    <div class="patient-query-box">
+                      <input
+                        id="adv-patient-query"
+                        type="text"
+                        [placeholder]="'finance.patientSearch.placeholder' | t"
+                        [value]="patientSearchQuery()"
+                        (input)="onPatientQueryInput($event)"
+                        (keydown.enter)="$event.preventDefault(); searchPatients()"
+                      />
+                      <button
+                        type="button"
+                        class="btn-patient-search-trigger"
+                        (click)="searchPatients()"
+                        [disabled]="patientSearching()"
+                      >
+                        {{ 'finance.search' | t }}
+                      </button>
+                    </div>
+
+                    @if (patientSearchResults().length > 0) {
+                      <div class="patient-search-results-flyout">
+                        @for (p of patientSearchResults(); track p.patientId) {
+                          <button
+                            type="button"
+                            class="patient-result-row"
+                            (click)="selectPatient(p)"
+                          >
+                            <strong>{{ label(p) }}</strong>
+                            <small dir="ltr">{{ p.phoneNumber }}</small>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
     </div>
   </app-page-header>
-  @if (actor() === 'Reception' && !canView()) {
+
+  <!-- Reception Clinic Context Error / Empty States -->
+  @if (isReception() && !practiceId()) {
     <div class="state-empty-display" role="status">
       <img
         class="state-empty-illustration"
@@ -273,29 +369,59 @@
         loading="lazy"
         decoding="async"
       />
-      <h3 class="state-empty-title">{{ 'reception.accessTitle' | t }}</h3>
-      <p class="state-empty-subtitle">{{ 'reception.financeAccessHelp' | t }}</p>
+      <h3 class="state-empty-title">{{ 'finance.reception.noClinicTitle' | t }}</h3>
+      <p class="state-empty-subtitle">{{ 'finance.reception.noClinicHelp' | t }}</p>
     </div>
-  }
-
-  <!-- Error Alerts Feed -->
-  @for (message of messages(); track $index) {
-    <div class="state-alert-banner" role="alert">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      <span>{{ message | t }}</span>
+  } @else if (isReception() && !canView()) {
+    <div class="state-empty-display" role="status">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Payment Information-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h3 class="state-empty-title">{{ 'finance.reception.noViewTitle' | t }}</h3>
+      <p class="state-empty-subtitle">{{ 'finance.reception.noViewHelp' | t }}</p>
     </div>
-  }
+  } @else {
+    <!-- Error Alerts Feed -->
+    @for (message of messages(); track $index) {
+      <div class="state-alert-banner" role="alert">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>{{ message | t }}</span>
+      </div>
+    }
 
-  <!-- Loading State Indicator -->
-  @if (canView()) {
-    @if (loading()) {
+    <!-- Loading State Indicator -->
+    @if (listLoading()) {
       <div class="finance-loading-skeleton" role="status" [attr.aria-label]="'finance.loading' | t">
         <div class="skeleton-pulse-ring" aria-hidden="true"></div>
         <p class="skeleton-text">{{ 'finance.loading' | t }}</p>
+      </div>
+    } @else if (listFailed()) {
+      <!-- Load Failed State (Distinguishable from empty results) -->
+      <div class="state-error-display" role="alert">
+        <div class="error-icon-bubble" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 class="state-error-title">{{ 'finance.loadFailedTitle' | t }}</h3>
+        <p class="state-error-subtitle">{{ 'finance.loadFailedHelp' | t }}</p>
+        <button class="btn-deck-submit" type="button" (click)="retryLoad()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+          <span>{{ 'finance.retry' | t }}</span>
+        </button>
       </div>
     } @else if (view() === 'revenue') {
       <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -303,17 +429,11 @@
       <!-- ═══════════════════════════════════════════════════════════════════ -->
       @if (isAdmin() ? aggregates()?.summary : dashboard()?.summary; as summary) {
         <div class="revenue-dashboard-view">
-          <!-- 3 High-Impact KPI Stat Cards -->
+          <!-- 3 High-Impact KPI Stat Cards (No Carditis, Clean Surfaces) -->
           <section class="revenue-kpi-deck" [attr.aria-label]="'finance.revenue.summary' | t">
-            <!-- 1. Net Revenue (صافي الإيراد) -->
+            <!-- 1. Net Revenue -->
             <article class="kpi-stat-card is-net">
               <div class="kpi-card-header">
-                <div class="kpi-icon-bubble bubble-teal">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                    <polyline points="17 6 23 6 23 12" />
-                  </svg>
-                </div>
                 <span class="kpi-tag-badge badge-teal">{{ 'finance.revenue.net' | t }}</span>
               </div>
               <div class="kpi-card-body">
@@ -325,15 +445,9 @@
               </div>
             </article>
 
-            <!-- 2. Refunds (المبالغ المستردة) -->
+            <!-- 2. Refunds -->
             <article class="kpi-stat-card is-refunds">
               <div class="kpi-card-header">
-                <div class="kpi-icon-bubble bubble-rose">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <polyline points="1 4 1 10 7 10" />
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                  </svg>
-                </div>
                 <span class="kpi-tag-badge badge-rose">{{ 'finance.revenue.refunds' | t }}</span>
               </div>
               <div class="kpi-card-body">
@@ -347,19 +461,9 @@
               </div>
             </article>
 
-            <!-- 3. Gross Revenue (إجمالي الدخل) -->
+            <!-- 3. Gross Revenue -->
             <article class="kpi-stat-card is-gross">
               <div class="kpi-card-header">
-                <div class="kpi-icon-bubble bubble-navy">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                      d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"
-                    />
-                    <path d="M16 8H8" />
-                    <path d="M16 12H8" />
-                    <path d="M13 16H8" />
-                  </svg>
-                </div>
                 <span class="kpi-tag-badge badge-navy">{{ 'finance.revenue.gross' | t }}</span>
               </div>
               <div class="kpi-card-body">
@@ -378,17 +482,7 @@
             <!-- Admin Doctor & Clinic Breakdown Table -->
             <section class="revenue-analytics-card">
               <div class="analytics-card-header">
-                <div class="analytics-title-cluster">
-                  <div class="analytics-icon-wrap">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  </div>
-                  <h2>{{ 'finance.revenue.byDoctorPractice' | t }}</h2>
-                </div>
+                <h2>{{ 'finance.revenue.byDoctorPractice' | t }}</h2>
               </div>
 
               <div class="analytics-table-container">
@@ -425,16 +519,7 @@
                     } @empty {
                       <tr>
                         <td colspan="5" class="cell-empty">
-                          <div class="empty-state-compact">
-                            <img
-                              class="empty-illustration-compact"
-                              src="/SVG-AVATAR/Payment Information-bro.svg"
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                            />
-                            <p>{{ 'finance.empty' | t }}</p>
-                          </div>
+                          <p>{{ 'finance.empty' | t }}</p>
                         </td>
                       </tr>
                     }
@@ -443,24 +528,13 @@
               </div>
             </section>
           } @else {
-            <!-- Doctor Analytical Grids (Daily Trend, Clinics, Methods, Refunds) -->
+            <!-- Doctor Analytical Grids -->
             <div class="revenue-analytics-grid">
-              <!-- 1. Daily Trend (الحركة اليومية) -->
+              <!-- 1. Daily Trend -->
               <section class="revenue-analytics-card">
                 <div class="analytics-card-header">
-                  <div class="analytics-title-cluster">
-                    <div class="analytics-icon-wrap">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                    </div>
-                    <h2>{{ 'finance.revenue.daily' | t }}</h2>
-                  </div>
+                  <h2>{{ 'finance.revenue.daily' | t }}</h2>
                 </div>
-
                 <div class="analytics-card-content">
                   @for (row of dashboard()?.dailyTrend || []; track row.date) {
                     <div class="breakdown-item-row">
@@ -477,33 +551,17 @@
                     </div>
                   } @empty {
                     <div class="empty-state-compact">
-                      <svg viewBox="0 0 24 24" class="empty-glyph" aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
                       <p>{{ 'finance.empty' | t }}</p>
                     </div>
                   }
                 </div>
               </section>
 
-              <!-- 2. By Clinic (حسب العيادة) -->
+              <!-- 2. By Clinic -->
               <section class="revenue-analytics-card">
                 <div class="analytics-card-header">
-                  <div class="analytics-title-cluster">
-                    <div class="analytics-icon-wrap">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                          d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
-                        />
-                      </svg>
-                    </div>
-                    <h2>{{ 'finance.revenue.byPractice' | t }}</h2>
-                  </div>
+                  <h2>{{ 'finance.revenue.byPractice' | t }}</h2>
                 </div>
-
                 <div class="analytics-card-content">
                   @for (row of dashboard()?.byPractice || []; track row.practiceId) {
                     <div class="breakdown-item-row">
@@ -521,31 +579,17 @@
                     </div>
                   } @empty {
                     <div class="empty-state-compact">
-                      <svg viewBox="0 0 24 24" class="empty-glyph" aria-hidden="true">
-                        <path
-                          d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
-                        />
-                      </svg>
                       <p>{{ 'finance.empty' | t }}</p>
                     </div>
                   }
                 </div>
               </section>
 
-              <!-- 3. Payment Methods (طرق الدفع) -->
+              <!-- 3. Payment Methods -->
               <section class="revenue-analytics-card">
                 <div class="analytics-card-header">
-                  <div class="analytics-title-cluster">
-                    <div class="analytics-icon-wrap">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                        <line x1="1" y1="10" x2="23" y2="10" />
-                      </svg>
-                    </div>
-                    <h2>{{ 'finance.revenue.paymentMethods' | t }}</h2>
-                  </div>
+                  <h2>{{ 'finance.revenue.paymentMethods' | t }}</h2>
                 </div>
-
                 <div class="analytics-card-content">
                   @for (row of dashboard()?.paymentMethods || []; track row.method) {
                     <div class="breakdown-item-row">
@@ -563,30 +607,17 @@
                     </div>
                   } @empty {
                     <div class="empty-state-compact">
-                      <svg viewBox="0 0 24 24" class="empty-glyph" aria-hidden="true">
-                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                        <line x1="1" y1="10" x2="23" y2="10" />
-                      </svg>
                       <p>{{ 'finance.empty' | t }}</p>
                     </div>
                   }
                 </div>
               </section>
 
-              <!-- 4. Refund Methods (طرق الاسترداد) -->
+              <!-- 4. Refund Methods -->
               <section class="revenue-analytics-card">
                 <div class="analytics-card-header">
-                  <div class="analytics-title-cluster">
-                    <div class="analytics-icon-wrap">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <polyline points="1 4 1 10 7 10" />
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                      </svg>
-                    </div>
-                    <h2>{{ 'finance.revenue.refundMethods' | t }}</h2>
-                  </div>
+                  <h2>{{ 'finance.revenue.refundMethods' | t }}</h2>
                 </div>
-
                 <div class="analytics-card-content">
                   @for (row of dashboard()?.refundMethods || []; track row.method) {
                     <div class="breakdown-item-row">
@@ -604,10 +635,6 @@
                     </div>
                   } @empty {
                     <div class="empty-state-compact">
-                      <svg viewBox="0 0 24 24" class="empty-glyph" aria-hidden="true">
-                        <polyline points="1 4 1 10 7 10" />
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                      </svg>
                       <p>{{ 'finance.empty' | t }}</p>
                     </div>
                   }
@@ -617,7 +644,6 @@
           }
         </div>
       } @else {
-        <!-- Empty Revenue State with Rich SVG-AVATAR Illustration -->
         <div class="state-empty-display">
           <img
             class="state-empty-illustration"
@@ -642,16 +668,10 @@
       <!-- VIEW 2: TRANSACTIONS WORKSPACE (الحركات المالية)                   -->
       <!-- ═══════════════════════════════════════════════════════════════════ -->
       <section class="transactions-view-surface medical-table-card">
-        <!-- Table Meta Bar (inside the same surface — no detached header) -->
+        <!-- Table Meta Bar -->
         <div class="table-meta-bar">
           <div class="meta-start">
-            <div class="meta-title-cluster">
-              <svg class="meta-section-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="12" y1="1" x2="12" y2="23" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-              <h2 class="meta-heading">{{ 'finance.transactions' | t }}</h2>
-            </div>
+            <h2 class="meta-heading">{{ (isReception() ? 'finance.reception.title' : 'finance.transactions') | t }}</h2>
             <span class="meta-counter-pill">{{ page().totalCount }}</span>
           </div>
 
@@ -679,59 +699,45 @@
             >
               <thead>
                 <tr>
-                  <th scope="col" style="width: 130px">{{ 'finance.type' | t }}</th>
-                  <th scope="col" style="width: 170px">{{ 'finance.transactionNumber' | t }}</th>
+                  <th scope="col" style="width: 140px">{{ 'finance.type' | t }}</th>
+                  <th scope="col" style="width: 160px">{{ 'finance.amount' | t }}</th>
                   <th scope="col">{{ 'finance.context' | t }}</th>
-                  <th scope="col" style="width: 150px">{{ 'finance.amount' | t }}</th>
-                  <th scope="col" style="width: 160px">{{ 'finance.method' | t }}</th>
+                  <th scope="col" style="width: 150px">{{ 'finance.method' | t }}</th>
                   <th scope="col" style="width: 140px">{{ 'finance.date' | t }}</th>
-                  <th scope="col" style="width: 80px" class="text-center">
-                    {{ 'finance.inspect' | t }}
+                  <th scope="col" style="width: 100px" class="text-center">
+                    {{ 'finance.detail.view' | t }}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 @for (item of page().items; track item.transactionType + item.transactionId) {
-                  <tr
-                    class="clickable-table-row"
-                    tabindex="0"
-                    (click)="inspect(item)"
-                    (keydown.enter)="inspect(item)"
-                    [title]="'finance.inspect' | t"
-                  >
-                    <!-- Transaction Type Badge -->
+                  <tr class="modern-table-row clickable-table-row">
+                    <!-- Type Badge -->
                     <td>
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.type' | t
-                      }}</span>
                       <span
                         class="modern-status-badge"
                         [class.badge-refund]="item.transactionType === 'Refund'"
                         [class.badge-payment]="item.transactionType === 'Payment'"
                       >
                         <span class="badge-status-dot" aria-hidden="true"></span>
-                        <span>{{ 'finance.type.' + item.transactionType | t }}</span>
+                        <span>{{ (item.transactionType === 'Refund' ? 'finance.refundStatus' : 'finance.paidStatus') | t }}</span>
                       </span>
                     </td>
 
-                    <!-- Transaction Number (LTR Monospace) -->
-                    <td dir="ltr">
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.transactionNumber' | t
-                      }}</span>
-                      <strong class="tx-code-number">{{ item.transactionNumber }}</strong>
-                      @if (item.originalPaymentTransactionNumber) {
-                        <div class="tx-orig-badge" [title]="'finance.originalPaymentNumber' | t">
-                          <small>↩ {{ item.originalPaymentTransactionNumber }}</small>
-                        </div>
-                      }
+                    <!-- Amount & Currency -->
+                    <td
+                      dir="ltr"
+                      class="cell-amount-box"
+                      [class.is-refund-amount]="item.transactionType === 'Refund'"
+                    >
+                      <span class="tx-amount-digits">
+                        {{ item.transactionType === 'Refund' ? '−' : '+' }}{{ item.amount }}
+                      </span>
+                      <span class="tx-currency-label">{{ item.currencyCode }}</span>
                     </td>
 
-                    <!-- Context (Patient / Doctor / Practice / Ticket) -->
+                    <!-- Context (Patient Name, Ticket Number, Clinic) -->
                     <td>
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.context' | t
-                      }}</span>
                       <div class="tx-context-block">
                         <strong class="tx-context-person">
                           {{
@@ -744,32 +750,18 @@
                           <span class="tx-practice-tag">{{
                             label({ nameAr: item.practiceNameAr, nameEn: item.practiceNameEn })
                           }}</span>
+                          @if (item.ticketNumber !== undefined && item.ticketNumber !== null) {
+                            <span class="tx-separator" aria-hidden="true">·</span>
+                            <span class="tx-ticket-badge" dir="ltr">#{{ item.ticketNumber }}</span>
+                          }
                           <span class="tx-separator" aria-hidden="true">·</span>
-                          <span class="tx-ticket-badge" dir="ltr">#{{ item.ticketNumber }}</span>
+                          <span class="tx-code-number" dir="ltr">{{ item.transactionNumber }}</span>
                         </div>
                       </div>
                     </td>
 
-                    <!-- Amount & Currency -->
-                    <td
-                      dir="ltr"
-                      class="cell-amount-box"
-                      [class.is-refund-amount]="item.transactionType === 'Refund'"
-                    >
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.amount' | t
-                      }}</span>
-                      <span class="tx-amount-digits">
-                        {{ item.transactionType === 'Refund' ? '−' : '+' }}{{ item.amount }}
-                      </span>
-                      <span class="tx-currency-label">{{ item.currencyCode }}</span>
-                    </td>
-
-                    <!-- Method & Correction Status -->
+                    <!-- Method & Corrected Chip -->
                     <td>
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.method' | t
-                      }}</span>
                       <div class="tx-method-wrap">
                         <span class="tx-method-label">{{
                           'finance.method.' + item.method | t
@@ -780,25 +772,20 @@
                       </div>
                     </td>
 
-                    <!-- Business Date -->
+                    <!-- Business Date / Time -->
                     <td dir="ltr" class="tx-date-cell">
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.date' | t
-                      }}</span>
                       <span class="tx-date-text">{{ item.businessDate }}</span>
                     </td>
 
-                    <!-- Action / Arrow -->
+                    <!-- Action: View Button -->
                     <td class="text-center">
-                      <span class="mobile-transaction-label" aria-hidden="true">{{
-                        'finance.inspect' | t
-                      }}</span>
                       <button
                         type="button"
                         class="btn-row-action"
-                        (click)="$event.stopPropagation(); inspect(item)"
-                        [attr.aria-label]="'finance.inspect' | t"
+                        (click)="inspect(item)"
+                        [attr.aria-label]="'finance.detail.view' | t"
                       >
+                        <span>{{ 'finance.detail.view' | t }}</span>
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
@@ -806,9 +793,8 @@
                     </td>
                   </tr>
                 } @empty {
-                  <!-- Empty State Table Row with SVG-AVATAR Illustration -->
                   <tr>
-                    <td colspan="7" class="cell-empty-table">
+                    <td colspan="6" class="cell-empty-table">
                       <div class="state-empty-display inside-table">
                         <img
                           class="state-empty-illustration"
@@ -817,16 +803,19 @@
                           loading="lazy"
                           decoding="async"
                         />
-                        <h3 class="state-empty-title">{{ 'finance.empty' | t }}</h3>
-                        <p class="state-empty-subtitle">{{ 'finance.emptySub' | t }}</p>
-                        @if (hasActiveFilters()) {
+                        @if (activePeriod() === 'today' && !hasActiveFilters()) {
+                          <h3 class="state-empty-title">{{ 'finance.emptyToday' | t }}</h3>
+                        } @else if (hasActiveFilters()) {
+                          <h3 class="state-empty-title">{{ 'finance.emptyFiltered' | t }}</h3>
                           <button class="btn-deck-submit" type="button" (click)="resetFilters()">
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                               <path d="M3 3v5h5" />
                             </svg>
-                            <span>{{ 'common.resetFilters' | t }}</span>
+                            <span>{{ 'finance.resetFilters' | t }}</span>
                           </button>
+                        } @else {
+                          <h3 class="state-empty-title">{{ 'finance.empty' | t }}</h3>
                         }
                       </div>
                     </td>
@@ -836,7 +825,7 @@
             </table>
           </div>
 
-          <!-- Sleek Pagination Bar -->
+          <!-- Pagination Bar -->
           @if (page().totalCount > page().pageSize) {
             <nav class="table-pagination-deck" [attr.aria-label]="'finance.pagination' | t">
               <div class="pagination-info">
@@ -882,541 +871,698 @@
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- SLIDE-OVER DRAWER: REVIEWS & DETAIL INSPECTION (سايدبار مش صفحة)  -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    @if (detail() || receipt()) {
-      <dialog #drawer class="drawer-modal" (cancel)="$event.preventDefault(); close()">
-        <div class="drawer-panel">
-          <header class="drawer-topbar">
-            <div class="drawer-topbar-start">
-              <div class="drawer-type-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-              </div>
-              <h2 class="drawer-heading">
-                {{ (receipt() ? 'finance.receipt' : 'finance.paymentDetails') | t }}
-              </h2>
-            </div>
-
-            <div class="drawer-topbar-actions">
-              @if (receipt()) {
-                <button type="button" class="btn-drawer-action" (click)="print()">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <polyline points="6 9 6 2 18 2 18 9" />
-                    <path
-                      d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
-                    />
-                    <rect x="6" y="14" width="12" height="8" />
-                  </svg>
-                  <span>{{ 'finance.print' | t }}</span>
-                </button>
-              }
-
-              <button
-                type="button"
-                class="btn-drawer-close"
-                (click)="close()"
-                [attr.aria-label]="'common.close' | t"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          </header>
-
-          <div class="drawer-content-scroll">
-            @if (receipt(); as value) {
-              <!-- Medical Financial Receipt Voucher Sheet -->
-              <article class="receipt-voucher-sheet">
-                <div class="voucher-header">
-                  <span class="voucher-stamp-badge">{{ 'finance.receipt' | t }}</span>
-                  <h3 class="voucher-id-number" dir="ltr">{{ receiptNumber(value) }}</h3>
-                  @if ('originalPaymentTransactionNumber' in value) {
-                    <p class="voucher-orig-sub" dir="ltr">
-                      {{ value.originalPaymentTransactionNumber }}
-                    </p>
-                  }
-                </div>
-
-                <dl class="voucher-metadata-list">
-                  <div class="voucher-row">
-                    <dt>{{ 'finance.patient' | t }}</dt>
-                    <dd>
-                      <strong>{{
-                        label({ nameAr: value.patientNameAr, nameEn: value.patientNameEn })
-                      }}</strong>
-                    </dd>
-                  </div>
-
-                  <div class="voucher-row">
-                    <dt>{{ 'finance.doctor' | t }}</dt>
-                    <dd>{{ label({ nameAr: value.doctorNameAr, nameEn: value.doctorNameEn }) }}</dd>
-                  </div>
-
-                  <div class="voucher-row">
-                    <dt>{{ 'finance.practice' | t }}</dt>
-                    <dd>
-                      {{ label({ nameAr: value.practiceNameAr, nameEn: value.practiceNameEn }) }}
-                    </dd>
-                  </div>
-
-                  <div class="voucher-row">
-                    <dt>{{ 'finance.ticketNumber' | t }}</dt>
-                    <dd dir="ltr">
-                      <strong>#{{ value.ticketNumber }}</strong>
-                    </dd>
-                  </div>
-
-                  <div class="voucher-row total-highlight">
-                    <dt>{{ 'finance.amount' | t }}</dt>
-                    <dd dir="ltr" class="voucher-amount-val">
-                      <strong>{{ value.amount }} {{ value.currencyCode }}</strong>
-                    </dd>
-                  </div>
-
-                  <div class="voucher-row">
-                    <dt>{{ 'finance.method' | t }}</dt>
-                    <dd>{{ 'finance.method.' + receiptMethod(value) | t }}</dd>
-                  </div>
-
-                  <div class="voucher-row">
-                    <dt>{{ 'finance.businessDate' | t }}</dt>
-                    <dd dir="ltr">{{ value.businessDate }}</dd>
-                  </div>
-
-                  @if (value.referenceNumber) {
-                    <div class="voucher-row">
-                      <dt>{{ 'finance.referenceNumber' | t }}</dt>
-                      <dd dir="ltr">{{ value.referenceNumber }}</dd>
-                    </div>
-                  }
-
-                  @if (value.recordedByDisplayName && !isPatient()) {
-                    <div class="voucher-row">
-                      <dt>{{ 'finance.recordedBy' | t }}</dt>
-                      <dd>{{ value.recordedByDisplayName }}</dd>
-                    </div>
-                  }
-                </dl>
-              </article>
-            } @else if (detail(); as value) {
-              <!-- Payment Detail Inspection Sheet -->
-              <article class="detail-inspection-sheet">
-                <!-- Summary Card -->
-                <div class="detail-summary-surface">
-                  <span class="detail-eyebrow-chip">{{ 'finance.paymentDetails' | t }}</span>
-                  <h3 class="detail-code-id" dir="ltr">{{ value.payment.transactionNumber }}</h3>
-                  <p class="detail-context-line">
-                    {{ label(value.patient) }} · {{ label(value.practice) }} · #{{
-                      value.ticketNumber
-                    }}
-                  </p>
-
-                  <div class="quick-receipt-actions">
-                    <button
-                      type="button"
-                      class="btn-receipt-shortcut"
-                      (click)="openDetailReceipt('Payment')"
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                      <span>{{ 'finance.paymentReceipt' | t }}</span>
-                    </button>
-
-                    @if (value.refund) {
-                      <button
-                        type="button"
-                        class="btn-receipt-shortcut"
-                        (click)="openDetailReceipt('Refund')"
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <polyline points="1 4 1 10 7 10" />
-                          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                        </svg>
-                        <span>{{ 'finance.refundReceipt' | t }}</span>
-                      </button>
-                    }
-                  </div>
-                </div>
-
-                <!-- Key Facts List (No Carditis, Clean Unified Rows) -->
-                <div class="detail-facts-surface">
-                  <div class="fact-row">
-                    <span class="fact-label">{{ 'finance.amount' | t }}</span>
-                    <strong class="fact-value-bold" dir="ltr">
-                      {{ value.payment.amount }} {{ value.payment.currencyCode }}
-                    </strong>
-                  </div>
-
-                  <div class="fact-row">
-                    <span class="fact-label">{{ 'finance.method' | t }}</span>
-                    <span class="fact-value">{{
-                      'finance.method.' + value.payment.paymentMethod | t
-                    }}</span>
-                  </div>
-
-                  <div class="fact-row">
-                    <span class="fact-label">{{ 'finance.status' | t }}</span>
-                    <span
-                      class="modern-status-badge"
-                      [class.badge-refund]="value.isRefunded"
-                      [class.badge-payment]="!value.isRefunded"
-                    >
-                      <span class="badge-status-dot" aria-hidden="true"></span>
-                      <span>{{
-                        value.isRefunded ? ('finance.refunded' | t) : value.payment.status
-                      }}</span>
-                    </span>
-                  </div>
-
-                  <div class="fact-row">
-                    <span class="fact-label">{{ 'finance.recordedBy' | t }}</span>
-                    <span class="fact-value">{{
-                      value.payment.collectedByDisplayName || '—'
-                    }}</span>
-                  </div>
-                </div>
-
-                <!-- Refund Mutation Action Form (With Toast Feedback) -->
-                @if (canRefund()) {
-                  <form class="mutation-action-form" (submit)="$event.preventDefault(); refund()">
-                    <div class="mutation-form-header">
-                      <div class="mutation-icon-circle is-rose">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <polyline points="1 4 1 10 7 10" />
-                          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                        </svg>
-                      </div>
-                      <h3>
-                        {{ 'finance.refund.action' | t }} · {{ value.refundableAmount }}
-                        {{ value.payment.currencyCode }}
-                      </h3>
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="drawer-refund-method">{{
-                        'finance.method' | t
-                      }}</label>
-                      <div class="custom-select-wrap">
-                        <select id="drawer-refund-method" [formField]="refundForm.refundMethod">
-                          <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
-                          <option value="Card">{{ 'finance.method.Card' | t }}</option>
-                          <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
-                        </select>
-                        <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="drawer-refund-reason-code">{{
-                        'finance.refund.reasonCode' | t
-                      }}</label>
-                      <div class="custom-select-wrap">
-                        <select
-                          id="drawer-refund-reason-code"
-                          [formField]="refundForm.refundReasonCode"
-                        >
-                          @for (code of reasonCodes; track code) {
-                            <option [value]="code">{{ 'finance.reason.' + code | t }}</option>
-                          }
-                        </select>
-                        <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    @if (refundModel().refundReasonCode === 'Other') {
-                      <div class="drawer-field">
-                        <label class="drawer-label" for="drawer-refund-reason">{{
-                          'finance.reason' | t
-                        }}</label>
-                        <input
-                          id="drawer-refund-reason"
-                          [placeholder]="'finance.reason' | t"
-                          [formField]="refundForm.reason"
-                        />
-                      </div>
-                    }
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="drawer-refund-ref">{{
-                        'finance.referenceNumber' | t
-                      }}</label>
-                      <input
-                        id="drawer-refund-ref"
-                        dir="ltr"
-                        [placeholder]="'finance.referenceNumber' | t"
-                        [formField]="refundForm.referenceNumber"
-                      />
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="drawer-refund-notes">{{
-                        'finance.notesOptional' | t
-                      }}</label>
-                      <textarea
-                        id="drawer-refund-notes"
-                        rows="2"
-                        [placeholder]="'finance.notesOptional' | t"
-                        [formField]="refundForm.notes"
-                      ></textarea>
-                    </div>
-
-                    <button
-                      class="btn-mutation-submit btn-danger-action"
-                      type="submit"
-                      [disabled]="busy() || refundForm().invalid()"
-                    >
-                      @if (busy()) {
-                        <span class="btn-spinner" aria-hidden="true"></span>
-                      }
-                      <span>{{ 'finance.refund.confirm' | t }}</span>
-                    </button>
-                  </form>
-                }
-
-                <!-- Correct Payment Details Form -->
-                @if (!value.isRefunded && canCorrect()) {
-                  <form
-                    class="mutation-action-form"
-                    (submit)="$event.preventDefault(); correctPayment()"
-                  >
-                    <div class="mutation-form-header">
-                      <div class="mutation-icon-circle is-teal">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </div>
-                      <h3>{{ 'finance.payment.correct' | t }}</h3>
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="correct-pay-method">{{
-                        'finance.method' | t
-                      }}</label>
-                      <div class="custom-select-wrap">
-                        <select
-                          id="correct-pay-method"
-                          [formField]="paymentCorrectionForm.paymentMethod"
-                        >
-                          <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
-                          <option value="Card">{{ 'finance.method.Card' | t }}</option>
-                          <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
-                        </select>
-                        <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="correct-pay-ref">{{
-                        'finance.referenceNumber' | t
-                      }}</label>
-                      <input
-                        id="correct-pay-ref"
-                        dir="ltr"
-                        [placeholder]="'finance.referenceNumber' | t"
-                        [formField]="paymentCorrectionForm.referenceNumber"
-                      />
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="correct-pay-notes">{{
-                        'finance.notesOptional' | t
-                      }}</label>
-                      <textarea
-                        id="correct-pay-notes"
-                        rows="2"
-                        [placeholder]="'finance.notesOptional' | t"
-                        [formField]="paymentCorrectionForm.notes"
-                      ></textarea>
-                    </div>
-
-                    <div class="drawer-field">
-                      <label class="drawer-label" for="correct-pay-reason">{{
-                        'finance.correctionReason' | t
-                      }}</label>
-                      <input
-                        id="correct-pay-reason"
-                        [placeholder]="'finance.correctionReason' | t"
-                        [formField]="paymentCorrectionForm.correctionReason"
-                      />
-                    </div>
-
-                    <button
-                      class="btn-mutation-submit btn-primary-action"
-                      type="submit"
-                      [disabled]="busy() || paymentCorrectionForm().invalid()"
-                    >
-                      @if (busy()) {
-                        <span class="btn-spinner" aria-hidden="true"></span>
-                      }
-                      <span>{{ 'finance.saveCorrection' | t }}</span>
-                    </button>
-                  </form>
-                }
-
-                <!-- Correct Refund Details Form (if refund exists) -->
-                @if (value.refund; as refund) {
-                  <div class="refund-detail-summary-strip">
-                    <strong dir="ltr">{{ refund.transactionNumber }}</strong>
-                    <span
-                      >{{ 'finance.method.' + refund.refundMethod | t }} ·
-                      {{ 'finance.reason.' + refund.refundReasonCode | t }}</span
-                    >
-                  </div>
-
-                  @if (canCorrect()) {
-                    <form
-                      class="mutation-action-form"
-                      (submit)="$event.preventDefault(); correctRefund()"
-                    >
-                      <div class="mutation-form-header">
-                        <div class="mutation-icon-circle is-rose">
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </div>
-                        <h3>{{ 'finance.refund.correct' | t }}</h3>
-                      </div>
-
-                      <div class="drawer-field">
-                        <label class="drawer-label" for="correct-ref-method">{{
-                          'finance.method' | t
-                        }}</label>
-                        <div class="custom-select-wrap">
-                          <select
-                            id="correct-ref-method"
-                            [formField]="refundCorrectionForm.refundMethod"
-                          >
-                            <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
-                            <option value="Card">{{ 'finance.method.Card' | t }}</option>
-                            <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
-                          </select>
-                          <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </div>
-                      </div>
-
-                      <div class="drawer-field">
-                        <label class="drawer-label" for="correct-ref-reason-code">{{
-                          'finance.refund.reasonCode' | t
-                        }}</label>
-                        <div class="custom-select-wrap">
-                          <select
-                            id="correct-ref-reason-code"
-                            [formField]="refundCorrectionForm.refundReasonCode"
-                          >
-                            @for (code of reasonCodes; track code) {
-                              <option [value]="code">{{ 'finance.reason.' + code | t }}</option>
-                            }
-                          </select>
-                          <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </div>
-                      </div>
-
-                      @if (refundCorrectionModel().refundReasonCode === 'Other') {
-                        <div class="drawer-field">
-                          <label class="drawer-label" for="correct-ref-reason-other">{{
-                            'finance.reason' | t
-                          }}</label>
-                          <input
-                            id="correct-ref-reason-other"
-                            [placeholder]="'finance.reason' | t"
-                            [formField]="refundCorrectionForm.reason"
-                          />
-                        </div>
-                      }
-
-                      <div class="drawer-field">
-                        <label class="drawer-label" for="correct-ref-reason">{{
-                          'finance.correctionReason' | t
-                        }}</label>
-                        <input
-                          id="correct-ref-reason"
-                          [placeholder]="'finance.correctionReason' | t"
-                          [formField]="refundCorrectionForm.correctionReason"
-                        />
-                      </div>
-
-                      <button
-                        class="btn-mutation-submit btn-primary-action"
-                        type="submit"
-                        [disabled]="busy() || refundCorrectionForm().invalid()"
-                      >
-                        @if (busy()) {
-                          <span class="btn-spinner" aria-hidden="true"></span>
-                        }
-                        <span>{{ 'finance.saveCorrection' | t }}</span>
-                      </button>
-                    </form>
-                  }
-                }
-
-                <!-- Audit Trail Timeline -->
-                @if (value.paymentCorrections.length || value.refundCorrections.length) {
-                  <section class="audit-trail-timeline">
-                    <div class="audit-timeline-header">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      <h4>{{ 'finance.audit' | t }}</h4>
-                    </div>
-                    <div class="audit-timeline-entries">
-                      @for (entry of value.paymentCorrections; track entry.id) {
-                        <div class="timeline-entry-node">
-                          <span class="timeline-dot" aria-hidden="true"></span>
-                          <div class="timeline-content">
-                            <div class="entry-meta">
-                              <strong class="entry-author">{{
-                                entry.correctedByDisplayName
-                              }}</strong>
-                              <time class="entry-timestamp" dir="ltr">{{
-                                entry.correctedOnUtc
-                              }}</time>
-                            </div>
-                            <p class="entry-reason-text">{{ entry.correctionReason }}</p>
-                          </div>
-                        </div>
-                      }
-                      @for (entry of value.refundCorrections; track entry.id) {
-                        <div class="timeline-entry-node">
-                          <span class="timeline-dot dot-rose" aria-hidden="true"></span>
-                          <div class="timeline-content">
-                            <div class="entry-meta">
-                              <strong class="entry-author">{{
-                                entry.correctedByDisplayName
-                              }}</strong>
-                              <time class="entry-timestamp" dir="ltr">{{
-                                entry.correctedOnUtc
-                              }}</time>
-                            </div>
-                            <p class="entry-reason-text">{{ entry.correctionReason }}</p>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </section>
-                }
-              </article>
+    <app-side-drawer
+      [opened]="isDrawerOpen()"
+      [busy]="busy()"
+      [title]="(receipt() ? 'finance.receipt' : refundDone() ? 'finance.refund.doneNumber' : 'finance.detail.title') | t"
+      [width]="'580px'"
+      (closed)="closeDrawer()"
+    >
+      @if (receiptLoading() || detailLoading()) {
+        <div class="drawer-loading-skeleton" role="status">
+          <div class="skeleton-pulse-ring" aria-hidden="true"></div>
+          <p class="skeleton-text">{{ 'finance.loading' | t }}</p>
+        </div>
+      } @else if (receipt(); as value) {
+        <!-- Receipt Voucher Sheet -->
+        <article class="receipt-voucher-sheet">
+          <div class="voucher-header">
+            <span class="voucher-stamp-badge">{{ 'finance.receipt' | t }}</span>
+            <h3 class="voucher-id-number" dir="ltr">{{ receiptNumber(value) }}</h3>
+            @if ('originalPaymentTransactionNumber' in value) {
+              <p class="voucher-orig-sub" dir="ltr">
+                {{ value.originalPaymentTransactionNumber }}
+              </p>
             }
           </div>
-        </div>
-      </dialog>
-    }
+
+          <dl class="voucher-metadata-list">
+            <div class="voucher-row">
+              <dt>{{ 'finance.patient' | t }}</dt>
+              <dd>
+                <strong>{{
+                  label({ nameAr: value.patientNameAr, nameEn: value.patientNameEn })
+                }}</strong>
+              </dd>
+            </div>
+
+            <div class="voucher-row">
+              <dt>{{ 'finance.doctor' | t }}</dt>
+              <dd>{{ label({ nameAr: value.doctorNameAr, nameEn: value.doctorNameEn }) }}</dd>
+            </div>
+
+            <div class="voucher-row">
+              <dt>{{ 'finance.practice' | t }}</dt>
+              <dd>
+                {{ label({ nameAr: value.practiceNameAr, nameEn: value.practiceNameEn }) }}
+              </dd>
+            </div>
+
+            <div class="voucher-row">
+              <dt>{{ 'finance.ticketNumber' | t }}</dt>
+              <dd dir="ltr">
+                <strong>#{{ value.ticketNumber }}</strong>
+              </dd>
+            </div>
+
+            <div class="voucher-row total-highlight">
+              <dt>{{ 'finance.amount' | t }}</dt>
+              <dd dir="ltr" class="voucher-amount-val">
+                <strong>{{ value.amount }} {{ value.currencyCode }}</strong>
+              </dd>
+            </div>
+
+            <div class="voucher-row">
+              <dt>{{ 'finance.method' | t }}</dt>
+              <dd>{{ 'finance.method.' + receiptMethod(value) | t }}</dd>
+            </div>
+
+            <div class="voucher-row">
+              <dt>{{ 'finance.businessDate' | t }}</dt>
+              <dd dir="ltr">{{ value.businessDate }}</dd>
+            </div>
+
+            @if (value.referenceNumber) {
+              <div class="voucher-row">
+                <dt>{{ 'finance.referenceNumber' | t }}</dt>
+                <dd dir="ltr">{{ value.referenceNumber }}</dd>
+              </div>
+            }
+
+            @if (value.recordedByDisplayName && !isPatient()) {
+              <div class="voucher-row">
+                <dt>{{ 'finance.recordedBy' | t }}</dt>
+                <dd>{{ value.recordedByDisplayName }}</dd>
+              </div>
+            }
+          </dl>
+
+          <div class="voucher-actions-bar">
+            <button type="button" class="btn-deck-submit" (click)="print()">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path
+                  d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+                />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              <span>{{ 'finance.print' | t }}</span>
+            </button>
+
+            <button type="button" class="btn-cancel-action btn-close-voucher" (click)="closeReceipt()">
+              <span>{{ 'finance.detail.done' | t }}</span>
+            </button>
+          </div>
+        </article>
+      } @else if (refundDone(); as done) {
+        <!-- Refund Done State Card -->
+        <article class="refund-done-sheet">
+          <div class="refund-done-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <h3 class="refund-done-title">
+            {{ 'finance.refund.done' | t: { amount: done.amount, currency: done.currencyCode } }}
+          </h3>
+          <p class="refund-done-sub">
+            {{ 'finance.refund.doneNumber' | t }}: <strong dir="ltr">{{ done.transactionNumber }}</strong>
+          </p>
+
+          <div class="refund-done-actions">
+            <button
+              type="button"
+              class="btn-deck-submit"
+              (click)="openRefundDoneReceipt()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span>{{ 'finance.refund.doneReceipt' | t }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="btn-cancel-action"
+              (click)="closeDrawer()"
+            >
+              <span>{{ 'finance.detail.done' | t }}</span>
+            </button>
+          </div>
+        </article>
+      } @else if (detail(); as value) {
+        <!-- Payment Detail Inspection Sheet -->
+        <article class="detail-inspection-sheet">
+          @if (conflictNotice(); as notice) {
+            <div class="conflict-alert-banner" role="alert">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>{{ notice | t }}</span>
+            </div>
+          }
+
+          <!-- FOCUSED MODE: REFUND -->
+          @if (drawerMode() === 'refund') {
+            <form class="focused-refund-form" (submit)="$event.preventDefault(); refund()">
+              <div class="focused-action-header">
+                <h3>{{ 'finance.refund.start' | t }}</h3>
+                <p class="focused-action-sub">
+                  {{ 'finance.patient' | t }}: <strong>{{ label(value.patient) }}</strong>
+                </p>
+                <div class="full-refund-callout">
+                  <strong>{{ 'finance.refund.fullAmountTitle' | t }}:</strong>
+                  <span class="full-refund-amount" dir="ltr">{{ value.refundableAmount }} {{ value.payment.currencyCode }}</span>
+                  <p class="consequence-note">{{ 'finance.refund.fullAmountHelp' | t }}</p>
+                </div>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="drawer-refund-method">{{
+                  'finance.method' | t
+                }}</label>
+                <div class="custom-select-wrap">
+                  <select id="drawer-refund-method" [formField]="refundForm.refundMethod">
+                    <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
+                    <option value="Card">{{ 'finance.method.Card' | t }}</option>
+                    <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
+                  </select>
+                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="drawer-refund-reason-code">{{
+                  'finance.refund.reasonCode' | t
+                }}</label>
+                <div class="custom-select-wrap">
+                  <select
+                    id="drawer-refund-reason-code"
+                    [formField]="refundForm.refundReasonCode"
+                  >
+                    @for (code of reasonCodes; track code) {
+                      <option [value]="code">{{ 'finance.reason.' + code | t }}</option>
+                    }
+                  </select>
+                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+
+              @if (refundModel().refundReasonCode === 'Other') {
+                <div class="drawer-field">
+                  <label class="drawer-label" for="drawer-refund-reason">{{
+                    'finance.reason' | t
+                  }}</label>
+                  <input
+                    id="drawer-refund-reason"
+                    [placeholder]="'finance.reason' | t"
+                    [formField]="refundForm.reason"
+                  />
+                </div>
+              }
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="drawer-refund-ref">{{
+                  'finance.referenceNumber' | t
+                }}</label>
+                <input
+                  id="drawer-refund-ref"
+                  dir="ltr"
+                  [placeholder]="'finance.referenceNumber' | t"
+                  [formField]="refundForm.referenceNumber"
+                />
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="drawer-refund-notes">{{
+                  'finance.notesOptional' | t
+                }}</label>
+                <textarea
+                  id="drawer-refund-notes"
+                  rows="2"
+                  [placeholder]="'finance.notesOptional' | t"
+                  [formField]="refundForm.notes"
+                ></textarea>
+              </div>
+
+              <div class="form-actions-cluster">
+                <button
+                  class="btn-mutation-submit btn-danger-action"
+                  type="submit"
+                  [disabled]="busy() || refundForm().invalid()"
+                >
+                  @if (busy()) {
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                  }
+                  <span>{{ 'finance.refund.amountAction' | t: { amount: value.refundableAmount, currency: value.payment.currencyCode } }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-cancel-action"
+                  (click)="cancelDrawerAction()"
+                  [disabled]="busy()"
+                >
+                  <span>{{ 'finance.refund.cancel' | t }}</span>
+                </button>
+              </div>
+            </form>
+          } @else if (drawerMode() === 'paymentCorrection') {
+            <!-- FOCUSED MODE: PAYMENT CORRECTION -->
+            <form
+              class="focused-mutation-form"
+              (submit)="$event.preventDefault(); correctPayment()"
+            >
+              <div class="focused-action-header">
+                <h3>{{ 'finance.payment.correct' | t }}</h3>
+                <p class="immutable-notice">{{ 'finance.correction.paymentHelp' | t }}</p>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-pay-method">{{
+                  'finance.method' | t
+                }}</label>
+                <div class="custom-select-wrap">
+                  <select
+                    id="correct-pay-method"
+                    [formField]="paymentCorrectionForm.paymentMethod"
+                  >
+                    <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
+                    <option value="Card">{{ 'finance.method.Card' | t }}</option>
+                    <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
+                  </select>
+                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-pay-ref">{{
+                  'finance.referenceNumber' | t
+                }}</label>
+                <input
+                  id="correct-pay-ref"
+                  dir="ltr"
+                  [placeholder]="'finance.referenceNumber' | t"
+                  [formField]="paymentCorrectionForm.referenceNumber"
+                />
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-pay-notes">{{
+                  'finance.notesOptional' | t
+                }}</label>
+                <textarea
+                  id="correct-pay-notes"
+                  rows="2"
+                  [placeholder]="'finance.notesOptional' | t"
+                  [formField]="paymentCorrectionForm.notes"
+                ></textarea>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-pay-reason">{{
+                  'finance.correctionReason' | t
+                }}</label>
+                <input
+                  id="correct-pay-reason"
+                  [placeholder]="'finance.correctionReason' | t"
+                  [formField]="paymentCorrectionForm.correctionReason"
+                />
+              </div>
+
+              <div class="form-actions-cluster">
+                <button
+                  class="btn-mutation-submit btn-primary-action"
+                  type="submit"
+                  [disabled]="busy() || paymentCorrectionForm().invalid()"
+                >
+                  @if (busy()) {
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                  }
+                  <span>{{ 'finance.saveCorrection' | t }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-cancel-action"
+                  (click)="cancelDrawerAction()"
+                  [disabled]="busy()"
+                >
+                  <span>{{ 'finance.refund.cancel' | t }}</span>
+                </button>
+              </div>
+            </form>
+          } @else if (drawerMode() === 'refundCorrection') {
+            <!-- FOCUSED MODE: REFUND CORRECTION -->
+            <form
+              class="focused-mutation-form"
+              (submit)="$event.preventDefault(); correctRefund()"
+            >
+              <div class="focused-action-header">
+                <h3>{{ 'finance.refund.correct' | t }}</h3>
+                <p class="immutable-notice">{{ 'finance.correction.refundHelp' | t }}</p>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-ref-method">{{
+                  'finance.method' | t
+                }}</label>
+                <div class="custom-select-wrap">
+                  <select
+                    id="correct-ref-method"
+                    [formField]="refundCorrectionForm.refundMethod"
+                  >
+                    <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
+                    <option value="Card">{{ 'finance.method.Card' | t }}</option>
+                    <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
+                  </select>
+                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-ref-reason-code">{{
+                  'finance.refund.reasonCode' | t
+                }}</label>
+                <div class="custom-select-wrap">
+                  <select
+                    id="correct-ref-reason-code"
+                    [formField]="refundCorrectionForm.refundReasonCode"
+                  >
+                    @for (code of reasonCodes; track code) {
+                      <option [value]="code">{{ 'finance.reason.' + code | t }}</option>
+                    }
+                  </select>
+                  <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+
+              @if (refundCorrectionModel().refundReasonCode === 'Other') {
+                <div class="drawer-field">
+                  <label class="drawer-label" for="correct-ref-reason-other">{{
+                    'finance.reason' | t
+                  }}</label>
+                  <input
+                    id="correct-ref-reason-other"
+                    [placeholder]="'finance.reason' | t"
+                    [formField]="refundCorrectionForm.reason"
+                  />
+                </div>
+              }
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-ref-ref">{{
+                  'finance.referenceNumber' | t
+                }}</label>
+                <input
+                  id="correct-ref-ref"
+                  dir="ltr"
+                  [placeholder]="'finance.referenceNumber' | t"
+                  [formField]="refundCorrectionForm.referenceNumber"
+                />
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-ref-notes">{{
+                  'finance.notesOptional' | t
+                }}</label>
+                <textarea
+                  id="correct-ref-notes"
+                  rows="2"
+                  [placeholder]="'finance.notesOptional' | t"
+                  [formField]="refundCorrectionForm.notes"
+                ></textarea>
+              </div>
+
+              <div class="drawer-field">
+                <label class="drawer-label" for="correct-ref-reason">{{
+                  'finance.correctionReason' | t
+                }}</label>
+                <input
+                  id="correct-ref-reason"
+                  [placeholder]="'finance.correctionReason' | t"
+                  [formField]="refundCorrectionForm.correctionReason"
+                />
+              </div>
+
+              <div class="form-actions-cluster">
+                <button
+                  class="btn-mutation-submit btn-primary-action"
+                  type="submit"
+                  [disabled]="busy() || refundCorrectionForm().invalid()"
+                >
+                  @if (busy()) {
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                  }
+                  <span>{{ 'finance.saveCorrection' | t }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-cancel-action"
+                  (click)="cancelDrawerAction()"
+                  [disabled]="busy()"
+                >
+                  <span>{{ 'finance.refund.cancel' | t }}</span>
+                </button>
+              </div>
+            </form>
+          } @else {
+            <!-- DEFAULT MODE: PAYMENT SUMMARY & HIERARCHY -->
+            <!-- Summary Header Surface -->
+            <div class="detail-summary-surface">
+              <div class="summary-topline">
+                <span
+                  class="modern-status-badge"
+                  [class.badge-refund]="value.isRefunded"
+                  [class.badge-payment]="!value.isRefunded"
+                >
+                  <span class="badge-status-dot" aria-hidden="true"></span>
+                  <span>{{
+                    value.isRefunded ? ('finance.refunded' | t) : ('finance.paidStatus' | t)
+                  }}</span>
+                </span>
+                <span class="detail-code-id" dir="ltr">{{ value.payment.transactionNumber }}</span>
+              </div>
+
+              <h3 class="detail-patient-title">{{ label(value.patient) }}</h3>
+              <p class="detail-context-line">
+                {{ label(value.practice) }} · #{{ value.ticketNumber }}
+              </p>
+
+              <!-- Safe Primary Action: View Receipt -->
+              <div class="receipt-shortcuts-row">
+                <button
+                  type="button"
+                  class="btn-receipt-shortcut"
+                  (click)="openDetailReceipt('Payment')"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span>{{ 'finance.detail.viewReceipt' | t }}</span>
+                </button>
+
+                @if (value.refund) {
+                  <button
+                    type="button"
+                    class="btn-receipt-shortcut"
+                    (click)="openDetailReceipt('Refund')"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <polyline points="1 4 1 10 7 10" />
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                    </svg>
+                    <span>{{ 'finance.detail.viewRefundReceipt' | t }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Key Facts List (Clean Unified Rows) -->
+            <div class="detail-facts-surface">
+              <div class="fact-row">
+                <span class="fact-label">{{ 'finance.amount' | t }}</span>
+                <strong class="fact-value-bold" dir="ltr">
+                  {{ value.payment.amount }} {{ value.payment.currencyCode }}
+                </strong>
+              </div>
+
+              <div class="fact-row">
+                <span class="fact-label">{{ 'finance.method' | t }}</span>
+                <span class="fact-value">{{
+                  'finance.method.' + value.payment.paymentMethod | t
+                }}</span>
+              </div>
+
+              <div class="fact-row">
+                <span class="fact-label">{{ 'finance.businessDate' | t }}</span>
+                <span class="fact-value" dir="ltr">{{ value.payment.businessDate }}</span>
+              </div>
+
+              @if (value.payment.referenceNumber) {
+                <div class="fact-row">
+                  <span class="fact-label">{{ 'finance.referenceNumber' | t }}</span>
+                  <span class="fact-value" dir="ltr">{{ value.payment.referenceNumber }}</span>
+                </div>
+              }
+
+              @if (value.payment.collectedByDisplayName) {
+                <div class="fact-row">
+                  <span class="fact-label">{{ 'finance.recordedBy' | t }}</span>
+                  <span class="fact-value">{{ value.payment.collectedByDisplayName }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Primary Action: Refund (if canRefund) -->
+            @if (canRefund()) {
+              <div class="primary-action-card">
+                <button
+                  type="button"
+                  class="btn-refund-launch"
+                  (click)="startRefund()"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>
+                  <span>{{ 'finance.refund.start' | t }} · {{ value.refundableAmount }} {{ value.payment.currencyCode }}</span>
+                </button>
+              </div>
+            }
+
+            <!-- Secondary Actions under [ المزيد ] -->
+            <div class="more-actions-container">
+              <button
+                type="button"
+                class="btn-toggle-more"
+                (click)="toggleMoreActions()"
+                [attr.aria-expanded]="showMoreActions()"
+              >
+                <span>{{ (showMoreActions() ? 'finance.detail.closeMore' : 'finance.detail.more') | t }}</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" [class.rotated]="showMoreActions()">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              @if (showMoreActions()) {
+                <div class="more-actions-drawer-panel">
+                  @if (!value.isRefunded && canCorrect()) {
+                    <button
+                      type="button"
+                      class="btn-secondary-tool"
+                      (click)="startPaymentCorrection()"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>{{ 'finance.payment.correct' | t }}</span>
+                    </button>
+                  }
+
+                  @if (value.refund && canCorrect()) {
+                    <button
+                      type="button"
+                      class="btn-secondary-tool"
+                      (click)="startRefundCorrection()"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>{{ 'finance.refund.correct' | t }}</span>
+                    </button>
+                  }
+
+                  <!-- Audit Trail Timeline -->
+                  @if (value.paymentCorrections.length || value.refundCorrections.length) {
+                    <section class="audit-trail-timeline">
+                      <div class="audit-timeline-header">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <h4>{{ 'finance.audit' | t }}</h4>
+                      </div>
+
+                      <div class="audit-timeline-entries">
+                        @for (entry of formatAuditEntries(value.paymentCorrections); track entry.id) {
+                          <div class="timeline-entry-node">
+                            <span class="timeline-dot" aria-hidden="true"></span>
+                            <div class="timeline-content">
+                              <div class="entry-meta">
+                                <strong class="entry-author">{{ entry.correctedByDisplayName }}</strong>
+                                <time class="entry-timestamp" dir="ltr">{{ entry.correctedOnUtc }}</time>
+                              </div>
+                              <p class="entry-reason-text">{{ entry.correctionReason }}</p>
+
+                              @if (entry.diffs.length > 0) {
+                                <div class="audit-diffs-list">
+                                  @for (diff of entry.diffs; track diff.labelKey) {
+                                    <div class="diff-field-row">
+                                      <span class="diff-field-name">{{ diff.labelKey | t }}:</span>
+                                      <span class="diff-val-old">{{ diff.oldVal }}</span>
+                                      <span class="diff-arrow" aria-hidden="true">←</span>
+                                      <span class="diff-val-new">{{ diff.newVal }}</span>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        @for (entry of formatAuditEntries(value.refundCorrections); track entry.id) {
+                          <div class="timeline-entry-node">
+                            <span class="timeline-dot dot-rose" aria-hidden="true"></span>
+                            <div class="timeline-content">
+                              <div class="entry-meta">
+                                <strong class="entry-author">{{ entry.correctedByDisplayName }}</strong>
+                                <time class="entry-timestamp" dir="ltr">{{ entry.correctedOnUtc }}</time>
+                              </div>
+                              <p class="entry-reason-text">{{ entry.correctionReason }}</p>
+
+                              @if (entry.diffs.length > 0) {
+                                <div class="audit-diffs-list">
+                                  @for (diff of entry.diffs; track diff.labelKey) {
+                                    <div class="diff-field-row">
+                                      <span class="diff-field-name">{{ diff.labelKey | t }}:</span>
+                                      <span class="diff-val-old">{{ diff.oldVal }}</span>
+                                      <span class="diff-arrow" aria-hidden="true">←</span>
+                                      <span class="diff-val-new">{{ diff.newVal }}</span>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </section>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </article>
+      }
+    </app-side-drawer>
   }
 </main>

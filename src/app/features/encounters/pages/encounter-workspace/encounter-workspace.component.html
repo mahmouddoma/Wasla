@@ -96,7 +96,7 @@
                 <td>{{ label(item.practice) }}</td>
                 <td dir="ltr">
                   {{
-                    item.completedOnUtc || item.startedOnUtc | localizedDate: language.currentLang()
+                    item.completedAtUtc || item.startedAtUtc | localizedDate: language.currentLang()
                   }}
                 </td>
                 <td>{{ 'encounters.status.' + item.status | t }}</td>
@@ -139,7 +139,7 @@
   @if (store.detail() || store.patientDetail() || store.detailLoading()) {
     <app-side-drawer
       [opened]="true"
-      [busy]="store.busy() || store.prescriptionBusy()"
+      [busy]="store.busy() || store.clinicalBusy()"
       [title]="'encounters.details' | t"
       width="640px"
       (closed)="store.close()"
@@ -240,11 +240,52 @@
               detail.status === 'InProgress' && !!detail.capabilities.canManagePrescription
             "
             [canRequest]="!!detail.capabilities.canRequestNewMedication"
-            [disabled]="store.busy() || store.detailLoading()"
+            [disabled]="store.busy() || store.diagnosticBusy() || store.detailLoading()"
             (changed)="store.prescriptionChanged($event)"
             (busyChanged)="store.prescriptionBusy.set($event)"
           />
         </section>
+        @for (kind of ['lab', 'radiology']; track kind) {
+          @if (
+            detail.capabilities[
+              kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
+            ] ||
+            detail.capabilities[
+              kind === 'lab' ? 'canCreatePostVisitLabRequest' : 'canCreatePostVisitRadiologyRequest'
+            ] ||
+            detail[kind === 'lab' ? 'labRequestDraft' : 'radiologyRequestDraft']
+          ) {
+            <app-diagnostic-draft
+              [kind]="kind === 'lab' ? 'lab' : 'radiology'"
+              [practiceId]="store.practiceId()"
+              [encounterId]="detail.encounterId"
+              [canManageEncounter]="
+                !!detail.capabilities[
+                  kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
+                ]
+              "
+              [completed]="detail.status === 'Completed'"
+              [canPostVisit]="
+                !!detail.capabilities[
+                  kind === 'lab'
+                    ? 'canCreatePostVisitLabRequest'
+                    : 'canCreatePostVisitRadiologyRequest'
+                ]
+              "
+              [locked]="store.busy() || store.clinicalBusy()"
+              (changed)="store.diagnosticChanged(kind === 'lab' ? 'lab' : 'radiology', $event)"
+              (busyChanged)="store.diagnosticBusy.set($event)"
+            />
+          }
+          <a
+            class="btn btn-outline-secondary my-3"
+            [routerLink]="'/diagnostics/doctor/' + kind"
+            [queryParams]="{ encounterId: detail.encounterId, practiceId: store.practiceId() }"
+            >{{
+              (kind === 'lab' ? 'diagnostics.labRequests' : 'diagnostics.radiologyRequests') | t
+            }}</a
+          >
+        }
         @if (store.canComplete()) {
           <button
             class="btn btn-primary"
@@ -488,7 +529,7 @@
       }
       @if (store.patientDetail(); as detail) {
         <p>{{ label(detail.doctor) }} · {{ label(detail.practice) }}</p>
-        <time dir="ltr">{{ detail.completedOnUtc | localizedDate: language.currentLang() }}</time>
+        <time dir="ltr">{{ detail.completedAtUtc | localizedDate: language.currentLang() }}</time>
         <section class="detail-section">
           <h3>{{ 'encounters.diagnoses' | t }}</h3>
           @for (diagnosis of detail.diagnoses; track diagnosis.diagnosisId) {

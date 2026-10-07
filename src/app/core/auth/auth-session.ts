@@ -45,9 +45,29 @@ export class AuthSession {
     return this.user()?.permissions.includes(permission) ?? false;
   }
   destinationFor(user: CurrentUser): string {
+    if (user.userType === 'MedicalCatalogManager') {
+      for (const kind of ['lab', 'radiology']) {
+        const prefix = kind === 'lab' ? 'Lab' : 'Radiology';
+        if (user.permissions.includes(prefix + 'Catalog.View')) return `/medical-catalog/${kind}`;
+        if (
+          user.permissions.some((p) =>
+            [prefix + 'Catalog.Import', prefix + 'Catalog.ImportHistory'].includes(p),
+          )
+        )
+          return `/medical-catalog/${kind}/imports`;
+        if (user.permissions.includes(prefix + 'CatalogRequests.View'))
+          return `/medical-catalog/${kind}/requests`;
+      }
+      return '/workspace/medical-catalog-manager';
+    }
     if (user.userType === 'DrugCatalogManager') {
       if (user.permissions.includes('DrugCatalog.View')) return '/drug-catalog';
-      if (user.permissions.some(p => ['DrugCatalog.Import', 'DrugCatalog.ImportHistory'].includes(p))) return '/drug-catalog/imports';
+      if (
+        user.permissions.some((p) =>
+          ['DrugCatalog.Import', 'DrugCatalog.ImportHistory'].includes(p),
+        )
+      )
+        return '/drug-catalog/imports';
       if (user.permissions.includes('DrugCatalogRequests.View')) return '/drug-catalog-requests';
       return '/workspace/drug-catalog-manager';
     }
@@ -66,7 +86,10 @@ export class AuthSession {
       if (user.permissions.includes(PERMISSIONS.familyRelationshipRequestsViewAll)) {
         return '/admin/family-relationship-requests';
       }
-      if (user.permissions.includes('DrugCatalogManagers.ViewAll')) return '/admin/drug-catalog-managers';
+      if (user.permissions.includes('DrugCatalogManagers.ViewAll'))
+        return '/admin/drug-catalog-managers';
+      if (user.permissions.includes('MedicalCatalogManagers.ViewAll'))
+        return '/admin/medical-catalog-managers';
     }
     if (user.userType === 'Doctor' && !this.hasDoctorOperationalAccess(user)) {
       return '/doctor/onboarding';
@@ -78,6 +101,7 @@ export class AuthSession {
         Reception: '/workspace/reception',
         Patient: '/workspace/patient',
         DrugCatalogManager: '/workspace/drug-catalog-manager',
+        MedicalCatalogManager: '/workspace/medical-catalog-manager',
       } as const
     )[user.userType];
   }

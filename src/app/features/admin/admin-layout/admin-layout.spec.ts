@@ -93,7 +93,7 @@ describe('AdminLayout', () => {
       'requests',
       'revenue',
     ]);
-    expect(component['navItems']()).toHaveLength(9);
+    expect(component['navItems']()).toHaveLength(10);
   });
 
   it('should toggle and close sidebar', () => {

@@ -4,10 +4,27 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'medical-catalog-managers',
+    canActivate: [permissionGuard],
+    data: {
+      actor: 'SuperAdmin',
+      permission: 'MedicalCatalogManagers.ViewAll',
+      managerKind: 'medical',
+    },
+    loadComponent: () =>
+      import('./pages/drug-catalog-managers/drug-catalog-managers.component').then(
+        (m) => m.DrugCatalogManagersComponent,
+      ),
+    title: 'diagnostics.managers',
+  },
+  {
     path: 'drug-catalog-managers',
     canActivate: [permissionGuard],
     data: { permission: 'DrugCatalogManagers.ViewAll' },
-    loadComponent: () => import('./pages/drug-catalog-managers/drug-catalog-managers.component').then(m => m.DrugCatalogManagersComponent),
+    loadComponent: () =>
+      import('./pages/drug-catalog-managers/drug-catalog-managers.component').then(
+        (m) => m.DrugCatalogManagersComponent,
+      ),
     title: 'medications.managers',
   },
   {

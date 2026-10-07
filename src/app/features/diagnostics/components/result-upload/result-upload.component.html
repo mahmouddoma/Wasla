@@ -1,0 +1,120 @@
+<form class="detail-form section" (ngSubmit)="submit()">
+  <h3 class="full">
+    {{
+      (correction()
+        ? 'diagnostics.correct'
+        : doctor()
+          ? 'diagnostics.uploadOfficial'
+          : 'diagnostics.submitReport'
+      ) | t
+    }}
+  </h3>
+  @if (error()) {
+    <p class="error-text full" role="alert">{{ error() | t }}</p>
+  }
+  <fieldset class="full" [disabled]="busy()">
+    @if (doctor()) {
+      <legend class="h6">{{ 'diagnostics.coveredItems' | t }}</legend>
+      <ul class="history">
+        @for (item of items(); track item.itemId) {
+          @if (item.status !== 'Cancelled') {
+            <li>
+              <button
+                class="btn"
+                [class.btn-primary]="covered().includes(item.itemId)"
+                [class.btn-outline-secondary]="!covered().includes(item.itemId)"
+                type="button"
+                [attr.aria-pressed]="covered().includes(item.itemId)"
+                (click)="toggle(item.itemId)"
+              >
+                {{
+                  language.currentLang() === 'ar'
+                    ? item.nameArSnapshot || item.nameEnSnapshot
+                    : item.nameEnSnapshot || item.nameArSnapshot
+                }}
+              </button>
+            </li>
+          }
+        }
+      </ul>
+    }
+    <label class="mb-3"
+      >{{ 'diagnostics.provider' | t
+      }}<input
+        class="field-input"
+        name="provider"
+        [ngModel]="provider()"
+        (ngModelChange)="provider.set($event)"
+        maxlength="200"
+    /></label>
+    <label class="mb-3"
+      >{{ 'diagnostics.reportDate' | t
+      }}<input
+        class="field-input ltr-text"
+        dir="ltr"
+        type="date"
+        name="date"
+        [ngModel]="date()"
+        (ngModelChange)="date.set($event)"
+    /></label>
+    <label class="mb-3"
+      >{{ 'diagnostics.attachments' | t
+      }}<input class="field-input" type="file" multiple [accept]="accept" (change)="choose($event)"
+    /></label>
+    <ul class="history">
+      @for (file of files(); track $index) {
+        <li>
+          <label
+            >{{ file.name
+            }}<span class="select-control"
+              ><select
+                class="field-input"
+                [name]="'kind-' + $index"
+                [ngModel]="kinds()[$index]"
+                (ngModelChange)="setKind($index, $event)"
+              >
+                <option value="Report">{{ 'diagnostics.attachment.Report' | t }}</option>
+                <option value="Image">{{ 'diagnostics.attachment.Image' | t }}</option></select
+              ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></span
+          ></label>
+        </li>
+      }
+    </ul>
+    <label class="mb-3"
+      >{{ 'diagnostics.patientNote' | t
+      }}<textarea
+        class="field-input note-input"
+        name="note"
+        [ngModel]="note()"
+        (ngModelChange)="note.set($event)"
+      ></textarea>
+    </label>
+    @if (correction()) {
+      <label
+        >{{ 'diagnostics.correctionReason' | t
+        }}<input
+          class="field-input"
+          name="reason"
+          [ngModel]="reason()"
+          (ngModelChange)="reason.set($event)"
+          required
+      /></label>
+    }
+  </fieldset>
+  <div class="actions full">
+    <button
+      class="btn btn-primary"
+      type="submit"
+      [disabled]="busy() || !files().length || (doctor() && !covered().length)"
+    >
+      {{ 'common.save' | t }}</button
+    ><button
+      class="btn btn-outline-secondary"
+      type="button"
+      (click)="cancelled.emit()"
+      [disabled]="busy()"
+    >
+      {{ 'common.cancel' | t }}
+    </button>
+  </div>
+</form>

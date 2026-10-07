@@ -21,10 +21,18 @@ export const authenticatedGuard: CanActivateFn = () => {
 export const catalogManagerAreaGuard: CanActivateFn = (route) => {
   const session = inject(AuthSession);
   const user = session.user();
-  if (user?.userType !== 'DrugCatalogManager') return true;
-  return route.data['catalogManagerArea'] === true ||
-    (route.routeConfig?.path === 'workspace/:area' && route.paramMap.get('area') === 'drug-catalog-manager')
-    ? true : inject(Router).createUrlTree([session.destinationFor(user)]);
+  const area =
+    user?.userType === 'DrugCatalogManager'
+      ? 'drug-catalog-manager'
+      : user?.userType === 'MedicalCatalogManager'
+        ? 'medical-catalog-manager'
+        : null;
+  if (!area) return true;
+  return route.data['catalogManagerArea'] === user?.userType ||
+    (user?.userType === 'DrugCatalogManager' && route.data['catalogManagerArea'] === true) ||
+    (route.routeConfig?.path === 'workspace/:area' && route.paramMap.get('area') === area)
+    ? true
+    : inject(Router).createUrlTree([session.destinationFor(user!)]);
 };
 
 export const accountAreaGuard: CanActivateFn = (route) => {

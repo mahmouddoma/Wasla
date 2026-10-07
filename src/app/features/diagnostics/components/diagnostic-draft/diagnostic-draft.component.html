@@ -1,0 +1,223 @@
+<section class="section" [attr.aria-busy]="loading() || busy()">
+  <h3>{{ title() | t }}</h3>
+  @for (message of messages(); track $index) {
+    <p class="error-text" role="alert">{{ message | t }}</p>
+  }
+  @if (loading()) {
+    <p role="status">{{ 'reservations.loading' | t }}</p>
+  } @else if (failed()) {
+    <p>{{ 'diagnostics.failed' | t }}</p>
+    <button class="btn btn-outline-secondary" (click)="load()" [disabled]="locked()">
+      {{ 'common.retry' | t }}
+    </button>
+  } @else if (!state()?.items?.length && !completed()) {
+    <div class="empty-state">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Medical prescription-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h2>{{ 'diagnostics.emptyDraft' | t }}</h2>
+      <p>{{ 'diagnostics.draftHelp' | t }}</p>
+      @if (canManage()) {
+        <button class="btn btn-primary" (click)="openEditor()" [disabled]="locked()">
+          {{ 'diagnostics.addItem' | t }}
+        </button>
+      }
+    </div>
+  }
+  @if (state()?.items?.length) {
+    <ul class="history">
+      @for (item of state()?.items; track item.itemId) {
+        <li>
+          <strong>{{
+            language.currentLang() === 'ar'
+              ? item.nameArSnapshot || item.nameEnSnapshot
+              : item.nameEnSnapshot || item.nameArSnapshot
+          }}</strong>
+          <p>{{ item.doctorInstructions }}</p>
+          <div class="actions">
+            @if (canManage() && item.capabilities.canEdit) {
+              <button
+                class="btn btn-outline-secondary"
+                (click)="edit(item.itemId)"
+                [disabled]="locked()"
+              >
+                {{ 'common.edit' | t }}
+              </button>
+            }
+            @if (canManage() && item.capabilities.canRemove) {
+              <button
+                class="btn btn-outline-secondary"
+                (click)="removingId.set(item.itemId)"
+                [disabled]="locked()"
+              >
+                {{ 'common.delete' | t }}
+              </button>
+            }
+          </div>
+          @if (removingId() === item.itemId) {
+            <p>{{ 'diagnostics.confirmRemove' | t }}</p>
+            <div class="actions">
+              <button class="btn btn-danger" (click)="remove()" [disabled]="locked()">
+                {{ 'common.confirm' | t }}</button
+              ><button
+                class="btn btn-outline-secondary"
+                (click)="removingId.set('')"
+                [disabled]="locked()"
+              >
+                {{ 'common.cancel' | t }}
+              </button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+    @if (canManage()) {
+      <button class="btn btn-primary" (click)="openEditor()" [disabled]="locked()">
+        {{ 'diagnostics.addItem' | t }}
+      </button>
+    }
+  }
+  @if (completed() && canPostVisit() && allowed('Requests', 'CreatePostVisitOwn')) {
+    <button class="btn btn-primary" (click)="openEditor()" [disabled]="locked()">
+      {{ 'diagnostics.postVisit' | t }}
+    </button>
+  }
+  @if (editor()) {
+    <form class="detail-form section" (ngSubmit)="save()">
+      <fieldset class="full" [disabled]="busy() || locked()">
+        @if (!editingId()) {
+          <label
+            >{{ 'diagnostics.searchCatalog' | t
+            }}<input
+              class="field-input"
+              name="search"
+              type="search"
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+              (change)="searchCatalog()"
+          /></label>
+          @if (searchLoading()) {
+            <p role="status">{{ 'reservations.loading' | t }}</p>
+          }
+          <ul class="history">
+            @for (item of results().items; track item.catalogId) {
+              <li>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [attr.aria-pressed]="catalogId() === item.catalogId && !missing()"
+                  (click)="select(item.catalogId)"
+                >
+                  {{
+                    language.currentLang() === 'ar'
+                      ? item.nameAr || item.nameEn
+                      : item.nameEn || item.nameAr
+                  }}
+                </button>
+              </li>
+            }
+          </ul>
+          <nav class="actions">
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              (click)="searchCatalog(results().pageNumber - 1)"
+              [disabled]="results().pageNumber <= 1"
+            >
+              {{ 'common.previous' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              type="button"
+              (click)="searchCatalog(results().pageNumber + 1)"
+              [disabled]="results().pageNumber * results().pageSize >= results().totalCount"
+            >
+              {{ 'common.next' | t }}
+            </button>
+          </nav>
+          @if (allowed('CatalogRequests', 'CreateOwn')) {
+            <button
+              class="btn btn-outline-secondary my-3"
+              type="button"
+              (click)="missing.set(!missing()); catalogId.set('')"
+              [attr.aria-pressed]="missing()"
+            >
+              {{ 'diagnostics.requestMissing' | t }}
+            </button>
+          }
+          @if (missing()) {
+            <label class="mb-3"
+              >{{ 'diagnostics.name' | t
+              }}<input
+                class="field-input"
+                name="name"
+                [ngModel]="name()"
+                (ngModelChange)="name.set($event)"
+                required /></label
+            ><label class="mb-3"
+              >{{ 'diagnostics.specimen' | t
+              }}<input
+                class="field-input"
+                name="specimen"
+                [ngModel]="specimen()"
+                (ngModelChange)="specimen.set($event)" /></label
+            ><label class="mb-3"
+              >{{ 'diagnostics.catalogNote' | t
+              }}<input
+                class="field-input"
+                name="note"
+                [ngModel]="note()"
+                (ngModelChange)="note.set($event)"
+            /></label>
+          }
+        }
+        <label class="mb-3"
+          >{{ 'diagnostics.doctorInstructions' | t
+          }}<textarea
+            class="field-input note-input"
+            name="instructions"
+            [ngModel]="instructions()"
+            (ngModelChange)="instructions.set($event)"
+          ></textarea>
+        </label>
+        @if (!editingId()) {
+          <label class="mb-3"
+            >{{ 'diagnostics.patientInstructions' | t
+            }}<textarea
+              class="field-input note-input"
+              name="patientInstructions"
+              [ngModel]="patientInstructions()"
+              (ngModelChange)="patientInstructions.set($event)"
+            ></textarea>
+          </label>
+        }
+        @if (completed()) {
+          <label
+            >{{ 'diagnostics.postVisitReason' | t
+            }}<input
+              class="field-input"
+              name="reason"
+              [ngModel]="postVisitReason()"
+              (ngModelChange)="postVisitReason.set($event)"
+              required
+          /></label>
+        }
+      </fieldset>
+      <div class="actions full">
+        <button class="btn btn-primary" type="submit" [disabled]="busy() || locked()">
+          {{ 'common.save' | t }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          type="button"
+          (click)="editor.set(false)"
+          [disabled]="busy() || locked()"
+        >
+          {{ 'common.cancel' | t }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

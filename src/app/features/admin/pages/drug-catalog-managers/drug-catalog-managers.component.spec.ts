@@ -53,6 +53,9 @@ describe('Drug catalog manager governance UI', () => {
         },
       ],
     });
+    TestBed.overrideComponent(DrugCatalogManagersComponent, {
+      set: { providers: [{ provide: DrugCatalogManagersApi, useValue: api }] },
+    });
     TestBed.inject(LanguageService).setLanguage('en');
     fixture = TestBed.createComponent(DrugCatalogManagersComponent);
     component = fixture.componentInstance;

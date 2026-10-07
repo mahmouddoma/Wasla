@@ -1,4 +1,5 @@
 import type { PrescriptionState } from '../prescriptions';
+import type { DiagnosticRequestStateResponse, DiagnosticRequestSummary } from '../diagnostics';
 export interface ClinicalIdentity {
   readonly id: string;
   readonly nameAr: string;
@@ -21,8 +22,8 @@ export interface EncounterSummary {
   readonly practice: ClinicalIdentity;
   readonly visitType?: ClinicalIdentity;
   readonly status: EncounterStatus;
-  readonly startedOnUtc: string;
-  readonly completedOnUtc: string | null;
+  readonly startedAtUtc: string;
+  readonly completedAtUtc: string | null;
   readonly hasDiagnosis: boolean;
   readonly hasFollowUpEligibility: boolean;
   readonly rowVersion: string;
@@ -31,8 +32,8 @@ export interface PatientEncounterDetails {
   readonly encounterId: string;
   readonly doctor: ClinicalIdentity;
   readonly practice: ClinicalIdentity;
-  readonly startedOnUtc: string;
-  readonly completedOnUtc: string;
+  readonly startedAtUtc: string;
+  readonly completedAtUtc: string;
   readonly diagnoses: readonly Diagnosis[];
   readonly followUpEligibility?: {
     readonly eligibilityId: string;
@@ -41,6 +42,16 @@ export interface PatientEncounterDetails {
   } | null;
 }
 export interface EncounterDetails extends EncounterSummary {
+  readonly labRequestDraft?: DiagnosticRequestStateResponse | null;
+  readonly radiologyRequestDraft?: DiagnosticRequestStateResponse | null;
+  readonly labRequestsSummary?: readonly DiagnosticRequestSummary[];
+  readonly radiologyRequestsSummary?: readonly DiagnosticRequestSummary[];
+  readonly completionBlockers?: readonly {
+    readonly message?: string | null;
+    readonly code: string;
+    readonly itemId?: string;
+    readonly field?: string;
+  }[];
   readonly prescription?: EncounterPrescription | null;
   readonly clinicalNotes: string;
   readonly diagnoses: readonly Diagnosis[];
@@ -57,6 +68,10 @@ export interface EncounterDetails extends EncounterSummary {
     readonly canCreateFollowUpEligibility: boolean;
     readonly canManagePrescription?: boolean;
     readonly canRequestNewMedication?: boolean;
+    readonly canManageLabRequest?: boolean;
+    readonly canManageRadiologyRequest?: boolean;
+    readonly canCreatePostVisitLabRequest?: boolean;
+    readonly canCreatePostVisitRadiologyRequest?: boolean;
   };
 }
 
@@ -113,13 +128,10 @@ export interface DiagnosisAmendmentChange {
   readonly diagnosis?: DiagnosisDraft;
 }
 
-export type EncounterAmendmentChange =
-  | ClinicalNotesAmendmentChange
-  | DiagnosisAmendmentChange;
+export type EncounterAmendmentChange = ClinicalNotesAmendmentChange | DiagnosisAmendmentChange;
 
 export interface CreateEncounterAmendmentRequest {
   readonly reason: string;
   readonly encounterRowVersion: string;
   readonly changes: readonly EncounterAmendmentChange[];
 }
-
