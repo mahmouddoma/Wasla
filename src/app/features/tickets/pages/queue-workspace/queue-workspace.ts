@@ -2,18 +2,22 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   OnInit,
-  afterRenderEffect,
   computed,
   effect,
   untracked,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
-import { FormField, form, min, required, submit, validate } from '@angular/forms/signals';
+import { FormField, form, min, required, submit, validate, disabled } from '@angular/forms/signals';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
+import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
+import { PatientsApi, PatientSearchItem } from '../../../../domains/patients';
+import {
+  WalkInPatientSearchComponent,
+  WalkInPatientSearch,
+} from '../../components/walk-in-patient-search/walk-in-patient-search.component';
 import { firstValueFrom, Observable } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -36,25 +40,34 @@ import {
   TicketsApi,
 } from '../../../../domains/tickets';
 
-type QueueAction =
-  'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
+type QueueAction = 'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
 
 /**
- * Queue workspace managing practice queues, live calling, and direct walk-in tickets.
+ * Practice-scoped Queue, calling actions, and walk-in arrival workflow.
  */
 @Component({
   selector: 'app-queue-workspace',
-  imports: [FormField, RouterLink, TranslatePipe, PageHeader],
+  imports: [
+    FormField,
+    RouterLink,
+    TranslatePipe,
+    PageHeader,
+    NgTemplateOutlet,
+    SideDrawer,
+    WalkInPatientSearchComponent,
+  ],
   templateUrl: './queue-workspace.html',
   styleUrl: './queue-workspace.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QueueWorkspace implements OnInit {
   private readonly api = inject(TicketsApi);
+  private readonly patientsApi = inject(PatientsApi);
   private readonly followUps = inject(FollowUpsApi);
   protected readonly eligibilities = signal<readonly FollowUpEligibility[]>([]);
   protected readonly eligibility = signal<FollowUpEligibility | null>(null);
   protected readonly optionsLoading = signal(false);
+  protected readonly optionsFailed = signal(false);
   private optionsSequence = 0;
   private readonly doctorPractices = inject(DoctorPracticesApi);
   protected readonly reception = inject(ReceptionPracticeContext);
@@ -62,9 +75,13 @@ export class QueueWorkspace implements OnInit {
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
   protected readonly language = inject(LanguageService);
-  private readonly drawer = viewChild<ElementRef<HTMLDialogElement>>('drawer');
   private initialized = false;
   private generation = 0;
+  private queueSequence = 0;
+  private detailSequence = 0;
+  private eligibilitySequence = 0;
+  private patientSearchSequence = 0;
+  private accessStamp = '';
   private readonly intents = new Map<string, string>();
 
   protected readonly actor = signal<TicketActor>('Doctor');
@@ -75,9 +92,24 @@ export class QueueWorkspace implements OnInit {
   protected readonly queue = signal<PracticeQueue>(this.emptyQueue());
   protected readonly selected = signal<PracticeTicket | null>(null);
   protected readonly loading = signal(false);
+  protected readonly loadFailed = signal(false);
   protected readonly detailLoading = signal(false);
   protected readonly busy = signal(false);
   protected readonly messages = signal<readonly string[]>([]);
+  protected readonly walkInOpen = signal(false);
+  protected readonly walkInDone = signal<PracticeTicket | null>(null);
+  protected readonly acceptedWalkIn = signal<{
+    paidAmount: number;
+    paymentMethod: PaymentMethod;
+    patientName: string;
+  } | null>(null);
+  protected readonly selectedPatient = signal<PatientSearchItem | null>(null);
+  protected readonly patientResults = signal<PatientSearchItem[]>([]);
+  protected readonly patientSearchLoading = signal(false);
+  protected readonly patientSearched = signal(false);
+  protected readonly patientSearchFailed = signal(false);
+  protected readonly pendingAction = signal<'manual-call' | 'cancel' | null>(null);
+  protected readonly paymentMethods = ['Cash', 'Card', 'Wallet'] as const;
   protected readonly segments = signal<readonly WalkInSegmentOption[]>([]);
   protected readonly visitTypes = computed(
     () =>
@@ -99,10 +131,24 @@ export class QueueWorkspace implements OnInit {
       this.visitTypes().find((visit) => visit.visitTypeId === this.walkInModel().visitTypeId)
         ?.price,
   );
+  protected readonly walkInChoices = computed(() =>
+    this.segments().flatMap((segment) =>
+      segment.visitTypes.map((visit) => ({
+        key: segment.segmentId + ':' + visit.visitTypeId,
+        segmentId: segment.segmentId,
+        ...visit,
+        segment,
+      })),
+    ),
+  );
   protected readonly reasonForm = form(this.reasonModel, (path) => {
+    disabled(path.reason, () => this.busy());
     required(path.reason, { message: 'tickets.validation.reasonRequired' });
   });
   protected readonly walkInForm = form(this.walkInModel, (path) => {
+    disabled(path.patientId, () => this.busy());
+    disabled(path.referenceNumber, () => this.busy());
+    disabled(path.notes, () => this.busy());
     required(path.patientId, { message: 'tickets.validation.patientRequired' });
     required(path.segmentId, { message: 'tickets.validation.segmentRequired' });
     required(path.visitTypeId, { message: 'tickets.validation.visitTypeRequired' });
@@ -128,7 +174,8 @@ export class QueueWorkspace implements OnInit {
   protected readonly canRefund = computed(
     () =>
       this.isDoctor() ||
-      (this.reception.allows(PERMISSIONS.practicePaymentsView) &&
+      (this.reception.currentPracticeId() === this.practiceId() &&
+        this.reception.allows(PERMISSIONS.practicePaymentsView) &&
         this.reception.allows(PERMISSIONS.practicePaymentsRefund)),
   );
   protected readonly canWalkIn = computed(
@@ -137,6 +184,12 @@ export class QueueWorkspace implements OnInit {
       this.reception.currentPracticeId() === this.practiceId() &&
       this.reception.allows(PERMISSIONS.practiceTicketsCreateWalkIn) &&
       this.reception.allows(PERMISSIONS.practiceTicketsRecordPayment),
+  );
+  protected readonly canSearchPatient = computed(
+    () =>
+      this.canWalkIn() &&
+      this.session.hasPermission(PERMISSIONS.patientsSearchBasic) &&
+      this.reception.allows(PERMISSIONS.patientsSearchBasic),
   );
 
   private permitted(permission: string): boolean {
@@ -150,25 +203,47 @@ export class QueueWorkspace implements OnInit {
     () => !!this.queue().called || !!this.queue().inProgress,
   );
   protected readonly canStart = computed(
-    () => this.isDoctor() && this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsStartOwn) && this.session.hasPermission(PERMISSIONS.medicalEncountersStartOwn),
+    () =>
+      this.isDoctor() &&
+      this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsStartOwn) &&
+      this.session.hasPermission(PERMISSIONS.medicalEncountersStartOwn),
   );
   protected readonly canOpenClinical = computed(
     () =>
-      this.isDoctor() && this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn) && this.session.hasPermission(PERMISSIONS.diagnosesViewOwn),
+      this.isDoctor() &&
+      this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn) &&
+      this.session.hasPermission(PERMISSIONS.diagnosesViewOwn),
   );
 
   constructor() {
     effect(() => {
       const id = this.reception.currentPracticeId();
-      if (this.initialized && this.actor() === 'Reception' && id !== this.practiceId()) {
+      const stamp =
+        [
+          PERMISSIONS.practiceTicketsView,
+          PERMISSIONS.practiceTicketsCall,
+          PERMISSIONS.practiceTicketsManualCall,
+          PERMISSIONS.practiceTicketsCancel,
+          PERMISSIONS.practiceTicketsRestoreNoShow,
+          PERMISSIONS.practiceTicketsCreateWalkIn,
+          PERMISSIONS.practiceTicketsRecordPayment,
+          PERMISSIONS.patientsSearchBasic,
+          PERMISSIONS.followUpEligibilityViewBookingEligibility,
+        ]
+          .map((code) => this.reception.allows(code))
+          .join(':') +
+        ':' +
+        this.session.hasPermission(PERMISSIONS.patientsSearchBasic);
+      if (
+        this.initialized &&
+        this.actor() === 'Reception' &&
+        (id !== this.practiceId() || stamp !== this.accessStamp)
+      ) {
         untracked(() => {
+          this.accessStamp = stamp;
           void this.selectPractice(id);
         });
-      }
-    });
-    afterRenderEffect(() => {
-      const dialog = this.drawer()?.nativeElement;
-      if (dialog && !dialog.open) dialog.showModal();
+      } else this.accessStamp = stamp;
     });
   }
 
@@ -210,54 +285,73 @@ export class QueueWorkspace implements OnInit {
       typeof idOrEvent === 'string' ? idOrEvent : (idOrEvent.target as HTMLSelectElement).value;
     if (id && !this.practices().some((item) => item.id === id)) return;
     const generation = ++this.generation;
+    this.queueSequence++;
+    this.detailSequence++;
+    this.eligibilitySequence++;
     this.practiceId.set(id);
     if (this.actor() === 'Reception') this.reception.select(id);
     this.selected.set(null);
+    this.pendingAction.set(null);
     this.detailLoading.set(false);
     this.queue.set(this.emptyQueue());
+    this.loading.set(false);
+    this.loadFailed.set(false);
+    this.messages.set([]);
     this.resetWalkIn();
     this.intents.clear();
-    if (id && this.canViewQueue()) {
-      await this.loadQueue();
-      if (generation === this.generation && this.canWalkIn()) await this.loadWalkInOptions();
-    }
+    if (id && this.canViewQueue()) await this.loadQueue();
+    if (generation === this.generation && this.canWalkIn()) await this.loadWalkInOptions();
   }
 
   protected async loadQueue(): Promise<void> {
     if (!this.practiceId() || !this.canViewQueue() || this.busy()) return;
     const id = this.practiceId(),
-      generation = this.generation;
+      generation = this.generation,
+      sequence = ++this.queueSequence;
     this.loading.set(true);
+    this.loadFailed.set(false);
     this.messages.set([]);
     try {
       const queue = await firstValueFrom(this.api.queue(id));
-      if (generation === this.generation && this.canViewQueue()) this.queue.set(queue);
+      if (this.current(id, generation) && sequence === this.queueSequence && this.canViewQueue())
+        this.queue.set(queue);
     } catch (error) {
-      if (generation === this.generation) await this.failure(error);
+      if (this.current(id, generation) && sequence === this.queueSequence) {
+        this.loadFailed.set(true);
+        await this.failure(error, id, generation);
+      }
     } finally {
-      if (generation === this.generation) this.loading.set(false);
+      if (this.current(id, generation) && sequence === this.queueSequence) this.loading.set(false);
     }
   }
 
   protected async inspect(ticketId: string): Promise<void> {
-    if (!this.practiceId() || !this.canViewQueue()) return;
-    const generation = this.generation;
+    if (!this.practiceId() || !this.canViewQueue() || this.busy()) return;
+    this.walkInOpen.set(false);
+    this.walkInDone.set(null);
+    this.pendingAction.set(null);
+    const generation = this.generation,
+      id = this.practiceId(),
+      sequence = ++this.detailSequence;
     this.detailLoading.set(true);
     this.messages.set([]);
     this.selected.set(null);
     this.reasonModel.set({ reason: '' });
     try {
-      const ticket = await firstValueFrom(this.api.details(this.practiceId(), ticketId));
-      if (generation === this.generation && this.canViewQueue()) this.selected.set(ticket);
+      const ticket = await firstValueFrom(this.api.details(id, ticketId));
+      if (this.current(id, generation) && sequence === this.detailSequence && this.canViewQueue())
+        this.selected.set(ticket);
     } catch (error) {
-      if (generation === this.generation) await this.failure(error);
+      if (this.current(id, generation) && sequence === this.detailSequence)
+        await this.failure(error, id, generation);
     } finally {
-      if (generation === this.generation) this.detailLoading.set(false);
+      if (this.current(id, generation) && sequence === this.detailSequence)
+        this.detailLoading.set(false);
     }
   }
 
   protected async callNext(): Promise<void> {
-    if (!this.canCallNext() || !this.practiceId()) return;
+    if (!this.canCallNext() || !this.practiceId() || this.busy() || this.queueOccupied()) return;
     await this.runMutation(
       'call-next',
       this.api.callNext(this.practiceId(), this.intentKey('call-next')),
@@ -266,21 +360,32 @@ export class QueueWorkspace implements OnInit {
 
   protected submitWalkIn(): void {
     submit(this.walkInForm, async () => {
-      if (!this.canWalkIn() || !this.practiceId() || this.optionsLoading()) return;
+      if (!this.canWalkIn() || !this.practiceId() || this.optionsLoading() || this.busy()) return;
       const price = this.walkInPrice();
       if (price === undefined) return;
       const value = this.walkInModel();
+      const patientName = this.selectedPatient() ? this.label(this.selectedPatient()!) : '';
       const eligibility = this.eligibility();
-      const visit = this.visitTypes().find(v => v.visitTypeId === value.visitTypeId);
-      if (!visit || (visit.code === 'FollowUp' && (!eligibility?.canBook || eligibility.patientId !== value.patientId))) return;
+      const visit = this.visitTypes().find((v) => v.visitTypeId === value.visitTypeId);
+      if (
+        !visit ||
+        (visit.code === 'FollowUp' &&
+          (!eligibility?.canBook || eligibility.patientId !== value.patientId))
+      )
+        return;
       const body: CreateWalkInTicketRequest = {
         ...value,
         paidAmount: price,
         referenceNumber: value.referenceNumber.trim() || null,
         notes: value.notes.trim() || null,
-        ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId, followUpEligibilityRowVersion: eligibility.rowVersion } : {}),
+        ...(eligibility
+          ? {
+              followUpEligibilityId: eligibility.eligibilityId,
+              followUpEligibilityRowVersion: eligibility.rowVersion,
+            }
+          : {}),
       };
-      await this.runMutation(
+      const succeeded = await this.runMutation(
         `walk-in:${JSON.stringify(body)}`,
         this.api.createWalkIn(
           this.practiceId(),
@@ -288,33 +393,35 @@ export class QueueWorkspace implements OnInit {
           this.intentKey(`walk-in:${JSON.stringify(body)}`),
         ),
       );
-      this.resetWalkInForm();
+      if (succeeded && this.selected()) {
+        this.walkInDone.set(this.selected());
+        this.acceptedWalkIn.set({
+          paidAmount: price,
+          paymentMethod: value.paymentMethod,
+          patientName,
+        });
+        this.walkInOpen.set(false);
+        this.selected.set(null);
+        this.resetWalkInForm();
+        this.selectedPatient.set(null);
+      }
     });
   }
 
-  protected selectWalkInOption(field: 'segmentId' | 'visitTypeId', event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.walkInModel.update((model) => ({
-      ...model,
-      [field]: value,
-      ...(field === 'segmentId' ? { visitTypeId: '' } : {}),
-    }));
-    this.walkInModel.update((model) => ({ ...model, paidAmount: this.walkInPrice() ?? 0 }));
-  }
-
   protected canRecall(ticket: PracticeTicket): boolean {
-    const latestAttempt = ticket.callAttempts.at(-1);
-    return (
-      latestAttempt?.outcome
-        ?.toLowerCase()
-        .replaceAll(/[^a-z]/g, '')
-        .includes('noresponse') ?? false
-    );
+    return ticket.callAttempts.at(-1)?.outcome === 'NoResponse';
   }
 
-  protected async act(action: QueueAction): Promise<void> {
-    const ticket = this.selected();
-    if (!ticket || !this.practiceId()) return;
+  protected async act(action: QueueAction, ticket = this.selected()): Promise<void> {
+    if (!ticket || !this.practiceId() || this.busy()) return;
+    if (action === 'manual-call' && ticket.status !== 'Waiting') return;
+    if (
+      (action === 'recall' || action === 'no-response' || action === 'start') &&
+      ticket.status !== 'Called'
+    )
+      return;
+    if (action === 'restore' && ticket.status !== 'NoShow') return;
+    if (action === 'cancel' && !['Waiting', 'Called', 'NoShow'].includes(ticket.status)) return;
     const reason = this.reasonModel().reason.trim();
     if ((action === 'manual-call' || action === 'cancel') && !reason) return;
     if (action === 'manual-call' && this.queueOccupied()) return;
@@ -357,63 +464,234 @@ export class QueueWorkspace implements OnInit {
         request = this.api.cancel(this.practiceId(), ticket.ticketId, reasonBody, key);
         break;
     }
-    await this.runMutation(signature, request);
+    if (await this.runMutation(signature, request)) this.pendingAction.set(null);
+  }
+
+  protected async openWalkIn(): Promise<void> {
+    if (!this.canWalkIn() || this.busy()) return;
+    this.detailSequence++;
+    this.selected.set(null);
+    this.detailLoading.set(false);
+    this.resetWalkIn();
+    this.pendingAction.set(null);
+    this.messages.set([]);
+    this.walkInOpen.set(true);
+    await this.loadWalkInOptions();
+  }
+
+  protected async searchPatients(query: WalkInPatientSearch): Promise<void> {
+    if (!this.canSearchPatient() || this.busy()) return;
+    this.messages.set([]);
+    const id = this.practiceId(),
+      generation = this.generation,
+      sequence = ++this.patientSearchSequence;
+    this.patientSearchLoading.set(true);
+    this.patientSearchFailed.set(false);
+    this.patientSearched.set(false);
+    this.patientResults.set([]);
+    try {
+      const result = await firstValueFrom(
+        this.patientsApi.search({ ...query, doctorPracticeId: id, pageNumber: 1, pageSize: 20 }),
+      );
+      if (
+        this.current(id, generation) &&
+        sequence === this.patientSearchSequence &&
+        this.canSearchPatient()
+      ) {
+        this.patientResults.set(result.items);
+        this.patientSearched.set(true);
+      }
+    } catch (error) {
+      if (this.current(id, generation) && sequence === this.patientSearchSequence) {
+        this.patientSearchFailed.set(true);
+        await this.failure(error, id, generation);
+      }
+    } finally {
+      if (this.current(id, generation) && sequence === this.patientSearchSequence)
+        this.patientSearchLoading.set(false);
+    }
+  }
+
+  protected async choosePatient(patientId: string): Promise<void> {
+    if (!this.canSearchPatient() || this.busy()) return;
+    const patient = this.patientResults().find((item) => item.patientId === patientId);
+    if (!patient) return;
+    this.selectedPatient.set(patient);
+    this.walkInModel.update((model) => ({ ...model, patientId }));
+    await this.refreshWalkInPatient();
+  }
+
+  protected changePatient(): void {
+    if (this.busy()) return;
+    this.optionsSequence++;
+    this.eligibilitySequence++;
+    this.optionsLoading.set(false);
+    this.selectedPatient.set(null);
+    this.eligibilities.set([]);
+    this.eligibility.set(null);
+    this.segments.set([]);
+    this.walkInModel.update((model) => ({
+      ...model,
+      patientId: '',
+      segmentId: '',
+      visitTypeId: '',
+      paidAmount: 0,
+    }));
+  }
+
+  protected async refreshChoices(): Promise<void> {
+    if (this.busy()) return;
+    this.walkInModel.update((model) => ({
+      ...model,
+      segmentId: '',
+      visitTypeId: '',
+      paidAmount: 0,
+    }));
+    await this.loadWalkInOptions();
+  }
+
+  protected selectChoice(event: Event): void {
+    if (this.busy() || this.optionsLoading()) return;
+    const key = (event.target as HTMLSelectElement).value;
+    const choice = this.walkInChoices().find((item) => item.key === key);
+    if (choice)
+      this.walkInModel.update((model) => ({
+        ...model,
+        segmentId: choice.segmentId,
+        visitTypeId: choice.visitTypeId,
+        paidAmount: choice.price,
+      }));
+  }
+  protected choosePayment(paymentMethod: PaymentMethod): void {
+    if (!this.busy()) this.walkInModel.update((model) => ({ ...model, paymentMethod }));
+  }
+
+  protected chooseAction(action: 'manual-call' | 'cancel'): void {
+    if (this.busy()) return;
+    this.pendingAction.set(action);
+    this.reasonModel.set({ reason: '' });
+  }
+  protected sourceLabel(value: string): string {
+    return this.language.t(
+      ['Reservation', 'WalkIn'].includes(value)
+        ? 'tickets.source.' + value
+        : 'tickets.source.unknown',
+    );
+  }
+  protected outcomeLabel(value?: string | null): string {
+    if (!value) return this.language.t('tickets.pendingOutcome');
+    return this.language.t(
+      ['NoResponse', 'Responded', 'Started'].includes(value)
+        ? 'tickets.outcome.' + value
+        : 'tickets.outcome.unknown',
+    );
   }
 
   protected close(): void {
     if (this.busy()) return;
+    this.detailSequence++;
     this.selected.set(null);
     this.detailLoading.set(false);
     this.reasonModel.set({ reason: '' });
-  }
-
-  protected cancelDialog(event: Event): void {
-    event.preventDefault();
-    this.close();
-  }
-
-  protected back(): string {
-    return `/workspace/${this.actor().toLowerCase()}`;
+    this.pendingAction.set(null);
+    this.walkInOpen.set(false);
+    this.walkInDone.set(null);
+    this.acceptedWalkIn.set(null);
+    this.patientSearchSequence++;
+    this.optionsSequence++;
+    this.eligibilitySequence++;
+    this.optionsLoading.set(false);
+    this.patientSearchLoading.set(false);
   }
 
   protected statusKey(status: string): string {
     return `tickets.status.${status}`;
   }
 
-  private async runMutation(signature: string, request: Observable<PracticeTicket>): Promise<void> {
-    if (this.busy()) return;
-    const generation = this.generation;
+  private async runMutation(
+    signature: string,
+    request: Observable<PracticeTicket>,
+  ): Promise<boolean> {
+    if (this.busy()) return false;
+    const generation = this.generation,
+      id = this.practiceId();
+    let accessRejected = false;
+    this.queueSequence++;
+    this.detailSequence++;
     this.busy.set(true);
     this.messages.set([]);
     try {
       const ticket = await firstValueFrom(request);
+      if (!this.current(id, generation)) return false;
       this.intents.delete(signature);
       this.toast.success('tickets.mutationSuccess');
-      if (generation !== this.generation) return;
       this.selected.set(ticket);
-      await this.loadQueueAfterMutation();
+      await this.loadQueueAfterMutation(id, generation);
+      return this.current(id, generation);
     } catch (error) {
-      await this.failure(error);
-      if (!(error instanceof HttpErrorResponse && error.status === 403))
-        {
-          await this.loadQueueAfterMutation();
-          if (this.selected()) await this.inspect(this.selected()!.ticketId);
-          if (this.canWalkIn()) await this.refreshWalkInPatient();
+      if (!this.current(id, generation)) return false;
+      accessRejected = error instanceof HttpErrorResponse && error.status === 403;
+      await this.failure(error, id, generation);
+      if (
+        this.current(id, generation) &&
+        !(error instanceof HttpErrorResponse && error.status === 403)
+      ) {
+        await this.loadQueueAfterMutation(id, generation);
+        if (this.current(id, generation) && this.selected()) {
+          const ticketId = this.selected()!.ticketId;
+          const sequence = ++this.detailSequence;
+          try {
+            const ticket = await firstValueFrom(this.api.details(id, ticketId));
+            if (this.current(id, generation) && sequence === this.detailSequence)
+              this.selected.set(ticket);
+          } catch (detailError) {
+            if (this.current(id, generation) && sequence === this.detailSequence)
+              await this.failure(detailError, id, generation);
+          }
         }
+        if (
+          this.current(id, generation) &&
+          signature.startsWith('walk-in:') &&
+          error instanceof HttpErrorResponse &&
+          error.status === 409
+        ) {
+          this.walkInModel.update((model) => ({
+            ...model,
+            segmentId: '',
+            visitTypeId: '',
+            paidAmount: 0,
+          }));
+          await this.loadWalkInOptions();
+        }
+      }
+      return false;
     } finally {
       this.busy.set(false);
+      if (
+        (!accessRejected || id !== this.practiceId()) &&
+        !this.current(id, generation) &&
+        this.practiceId()
+      )
+        await this.loadQueue();
     }
   }
 
-  private async loadQueueAfterMutation(): Promise<void> {
-    if (!this.canViewQueue()) return;
-    const id = this.practiceId(),
-      generation = this.generation;
+  private async loadQueueAfterMutation(id: string, generation: number): Promise<void> {
+    if (!this.current(id, generation) || !this.canViewQueue()) return;
+    const sequence = ++this.queueSequence;
     try {
       const queue = await firstValueFrom(this.api.queue(id));
-      if (generation === this.generation && this.canViewQueue()) this.queue.set(queue);
+      if (this.current(id, generation) && sequence === this.queueSequence && this.canViewQueue()) {
+        this.queue.set(queue);
+        this.loading.set(false);
+        this.loadFailed.set(false);
+      }
     } catch (error) {
-      await this.failure(error);
+      if (this.current(id, generation) && sequence === this.queueSequence) {
+        this.loading.set(false);
+        this.loadFailed.set(true);
+        await this.failure(error, id, generation);
+      }
     }
   }
 
@@ -421,50 +699,107 @@ export class QueueWorkspace implements OnInit {
     if (!this.canWalkIn()) return;
     const sequence = ++this.optionsSequence;
     this.optionsLoading.set(true);
+    this.optionsFailed.set(false);
     this.segments.set([]);
     const id = this.practiceId(),
       generation = this.generation;
     try {
-      const eligibility = this.eligibility(), patientId = this.walkInModel().patientId;
-      const options = await firstValueFrom(this.api.walkInOptions(id, {
-        ...(patientId ? { patientId } : {}),
-        ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId } : {}),
-      }));
+      const eligibility = this.eligibility(),
+        patientId = this.walkInModel().patientId;
+      const options = await firstValueFrom(
+        this.api.walkInOptions(id, {
+          ...(patientId ? { patientId } : {}),
+          ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId } : {}),
+        }),
+      );
       if (sequence === this.optionsSequence && generation === this.generation && this.canWalkIn())
-        this.segments.set(options.segments.map(segment => ({ ...segment, visitTypes: segment.visitTypes.filter(v => v.code === (eligibility ? 'FollowUp' : 'NewConsultation')) })));
+        this.segments.set(
+          options.segments.map((segment) => ({
+            ...segment,
+            visitTypes: segment.visitTypes.filter(
+              (v) => v.code === (eligibility ? 'FollowUp' : 'NewConsultation'),
+            ),
+          })),
+        );
     } catch (error) {
-      if (generation === this.generation) await this.failure(error);
+      if (this.current(id, generation) && sequence === this.optionsSequence) {
+        this.optionsFailed.set(true);
+        await this.failure(error, id, generation);
+      }
     } finally {
       if (sequence === this.optionsSequence) this.optionsLoading.set(false);
     }
   }
   protected async refreshWalkInPatient(): Promise<void> {
     this.optionsSequence++;
-    const generation = this.generation, patientId = this.walkInModel().patientId;
-    this.eligibility.set(null); this.eligibilities.set([]); this.segments.set([]);
-    this.walkInModel.update(model => ({ ...model, segmentId: '', visitTypeId: '', paidAmount: 0 }));
+    const generation = this.generation,
+      id = this.practiceId(),
+      patientId = this.walkInModel().patientId,
+      sequence = ++this.eligibilitySequence;
+    this.eligibility.set(null);
+    this.eligibilities.set([]);
+    this.segments.set([]);
+    this.walkInModel.update((model) => ({
+      ...model,
+      segmentId: '',
+      visitTypeId: '',
+      paidAmount: 0,
+    }));
     if (patientId && this.reception.allows(PERMISSIONS.followUpEligibilityViewBookingEligibility)) {
       try {
         const items = await firstValueFrom(this.followUps.reception(this.practiceId(), patientId));
-        if (generation !== this.generation || patientId !== this.walkInModel().patientId) return;
-        this.eligibilities.set(items.filter(e => e.patientId === patientId && e.practiceId === this.practiceId()));
-      } catch (error) { await this.failure(error); }
+        if (
+          !this.current(id, generation) ||
+          sequence !== this.eligibilitySequence ||
+          patientId !== this.walkInModel().patientId
+        )
+          return;
+        this.eligibilities.set(
+          items.filter((e) => e.patientId === patientId && e.practiceId === this.practiceId()),
+        );
+      } catch (error) {
+        if (this.current(id, generation) && sequence === this.eligibilitySequence)
+          await this.failure(error, id, generation);
+      }
     }
-    if (generation === this.generation && patientId === this.walkInModel().patientId) await this.loadWalkInOptions();
+    if (
+      this.current(id, generation) &&
+      sequence === this.eligibilitySequence &&
+      patientId === this.walkInModel().patientId
+    )
+      await this.loadWalkInOptions();
   }
   protected async selectWalkInEligibility(event: Event): Promise<void> {
     if (this.busy()) return;
     const id = (event.target as HTMLSelectElement).value;
-    const eligibility = this.eligibilities().find(e => e.eligibilityId === id && e.canBook);
+    const eligibility = this.eligibilities().find((e) => e.eligibilityId === id && e.canBook);
     if (id && !eligibility) return;
     this.eligibility.set(eligibility || null);
-    this.walkInModel.update(model => ({ ...model, segmentId: '', visitTypeId: '', paidAmount: 0 }));
+    this.walkInModel.update((model) => ({
+      ...model,
+      segmentId: '',
+      visitTypeId: '',
+      paidAmount: 0,
+    }));
     await this.loadWalkInOptions();
   }
 
   private resetWalkIn(): void {
-    this.optionsSequence++; this.optionsLoading.set(false);
-    this.eligibilities.set([]); this.eligibility.set(null);
+    this.patientSearchSequence++;
+    this.patientResults.set([]);
+    this.selectedPatient.set(null);
+    this.patientSearchLoading.set(false);
+    this.patientSearchFailed.set(false);
+    this.patientSearched.set(false);
+    this.walkInOpen.set(false);
+    this.walkInDone.set(null);
+    this.acceptedWalkIn.set(null);
+    this.eligibilitySequence++;
+    this.optionsSequence++;
+    this.optionsLoading.set(false);
+    this.optionsFailed.set(false);
+    this.eligibilities.set([]);
+    this.eligibility.set(null);
     this.resetWalkInForm();
     this.segments.set([]);
   }
@@ -489,17 +824,35 @@ export class QueueWorkspace implements OnInit {
     return key;
   }
 
-  private async failure(error: unknown): Promise<void> {
+  private current(id: string, generation: number): boolean {
+    return (
+      generation === this.generation &&
+      id === this.practiceId() &&
+      (this.isDoctor() || id === this.reception.currentPracticeId())
+    );
+  }
+
+  private async failure(
+    error: unknown,
+    id = this.practiceId(),
+    generation = this.generation,
+  ): Promise<void> {
+    if (!this.current(id, generation)) return;
     if (
       error instanceof HttpErrorResponse &&
       error.status === 403 &&
       this.actor() === 'Reception'
     ) {
       await this.reception.refresh();
+      if (!this.current(id, generation)) return;
       this.practices.set(this.reception.practices());
       this.generation++;
       this.queue.set(this.emptyQueue());
       this.selected.set(null);
+      this.pendingAction.set(null);
+      this.detailLoading.set(false);
+      this.loading.set(false);
+      this.loadFailed.set(this.canViewQueue());
       this.resetWalkIn();
       this.messages.set(['reception.accessChanged']);
       this.toast.error('reception.accessChanged');

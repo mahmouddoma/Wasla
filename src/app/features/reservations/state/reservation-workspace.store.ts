@@ -168,6 +168,9 @@ export class ReservationWorkspaceStore {
   readonly bookingLoading = signal(false);
   readonly busy = signal(false);
   readonly checkedInTicket = signal<PracticeTicket | null>(null);
+  readonly acceptedArrival = signal<CheckInSubmission | null>(null);
+  readonly arrivalPatient = signal<Reservation['patient'] | null>(null);
+  readonly arrival = signal(false);
   private patientSearchSequence = 0;
   private listSequence = 0;
   private bookingSequence = 0;
@@ -223,10 +226,33 @@ export class ReservationWorkspaceStore {
   );
 
   constructor() {
+    let arrivalAccess: string | null = null;
+    effect(() => {
+      const stamp = [
+        PERMISSIONS.practiceTicketsCheckIn,
+        PERMISSIONS.practiceTicketsForceCheckIn,
+        PERMISSIONS.practiceTicketsRecordPayment,
+      ]
+        .map((code) => this.reception.allows(code))
+        .join(':');
+      if (
+        arrivalAccess !== null &&
+        stamp !== arrivalAccess &&
+        (this.arrival() || this.checkedInTicket())
+      )
+        untracked(() => {
+          this.scopeGeneration++;
+          this.resetDrawer();
+        });
+      arrivalAccess = stamp;
+    });
     effect(() => {
       const id = this.reception.currentPracticeId();
       if (this.actor() === 'Reception' && this.busy() && id !== this.practiceId())
-        untracked(() => this.resetDrawer());
+        untracked(() => {
+          this.scopeGeneration++;
+          this.resetDrawer();
+        });
       if (
         this.actor() === 'Reception' &&
         !this.initializing &&
@@ -346,6 +372,10 @@ export class ReservationWorkspaceStore {
     }
   }
   async inspect(id: string): Promise<void> {
+    this.arrival.set(false);
+    this.checkedInTicket.set(null);
+    this.acceptedArrival.set(null);
+    this.arrivalPatient.set(null);
     if (!this.canView() || (this.scoped() && !this.practiceId())) return;
     const sequence = ++this.detailSequence;
     this.detailLoading.set(true);
@@ -362,6 +392,10 @@ export class ReservationWorkspaceStore {
   }
   async openEditor(mode: ReservationEditorMode): Promise<void> {
     if (this.busy() || !this.actionAllowed(mode)) return;
+    this.arrival.set(false);
+    this.checkedInTicket.set(null);
+    this.acceptedArrival.set(null);
+    this.arrivalPatient.set(null);
     this.editor.set(mode);
     this.messages.set([]);
     this.resetAvailability();
@@ -623,6 +657,30 @@ export class ReservationWorkspaceStore {
       this.busy.set(false);
     }
   }
+  canArrive(reservation: Reservation): boolean {
+    return (
+      this.actor() === 'Reception' &&
+      this.reception.currentPracticeId() === this.practiceId() &&
+      reservation.status === 'Active' &&
+      reservation.price !== undefined &&
+      this.reception.allows(PERMISSIONS.practiceTicketsRecordPayment) &&
+      (this.reception.allows(PERMISSIONS.practiceTicketsCheckIn) ||
+        this.reception.allows(PERMISSIONS.practiceTicketsForceCheckIn))
+    );
+  }
+  async openArrival(id: string): Promise<void> {
+    if (this.busy()) return;
+    await this.inspect(id);
+    if (this.detail() && this.detail()!.reservationId === id && this.canArrive(this.detail()!))
+      this.arrival.set(true);
+  }
+  readonly canOpenQueue = computed(
+    () =>
+      this.actor() === 'Reception' &&
+      this.reception.currentPracticeId() === this.practiceId() &&
+      this.reception.allows(PERMISSIONS.practiceTicketsView),
+  );
+
   async checkIn(draft: CheckInSubmission): Promise<void> {
     const reservation = this.detail();
     const allowed = draft.force ? this.canForceCheckIn() : this.canCheckIn();
@@ -634,7 +692,14 @@ export class ReservationWorkspaceStore {
       draft.paidAmount !== reservation.price
     )
       return;
-    if (draft.force && (!this.canForceCheckIn() || !draft.reason)) return;
+    if (draft.force && (!this.canForceCheckIn() || !draft.reason.trim())) return;
+    const practiceId = this.practiceId(),
+      generation = this.scopeGeneration;
+    const submitted = { ...draft };
+    const current = () =>
+      generation === this.scopeGeneration &&
+      practiceId === this.practiceId() &&
+      practiceId === this.reception.currentPracticeId();
     this.busy.set(true);
     this.messages.set([]);
     try {
@@ -648,7 +713,7 @@ export class ReservationWorkspaceStore {
           notes: draft.notes,
         };
         request = this.ticketsApi.forceCheckIn(
-          this.practiceId(),
+          practiceId,
           reservation.reservationId,
           body,
           this.intentKey('force-check-in', body),
@@ -661,23 +726,39 @@ export class ReservationWorkspaceStore {
           notes: draft.notes,
         };
         request = this.ticketsApi.checkIn(
-          this.practiceId(),
+          practiceId,
           reservation.reservationId,
           body,
           this.intentKey('check-in', body),
         );
       }
       const ticket = await firstValueFrom(request);
+      if (!current()) return;
       this.intent = null;
       this.toast.success('tickets.checkIn.success');
       this.resetDrawer();
-      await this.loadList();
       this.checkedInTicket.set(ticket);
+      this.acceptedArrival.set(submitted);
+      this.arrivalPatient.set(reservation.patient);
+      await this.loadList();
     } catch (error) {
+      if (!current()) return;
       await this.failure(error);
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        await this.inspect(reservation.reservationId);
-        await this.loadList();
+      if (current() && error instanceof HttpErrorResponse && error.status === 409) {
+        // Keep the mounted arrival form and its draft while revalidating the reservation.
+        const sequence = ++this.detailSequence;
+        try {
+          const fresh = await firstValueFrom(
+            this.api.details(this.scope(), reservation.reservationId),
+          );
+          if (current() && sequence === this.detailSequence) {
+            this.detail.set(fresh);
+            if (!this.canArrive(fresh)) this.arrival.set(false);
+          }
+        } catch (refreshError) {
+          if (current() && sequence === this.detailSequence) await this.failure(refreshError);
+        }
+        if (current()) await this.loadList();
       }
     } finally {
       this.busy.set(false);
@@ -688,6 +769,10 @@ export class ReservationWorkspaceStore {
     this.resetDrawer();
   }
   private resetDrawer(): void {
+    this.arrival.set(false);
+    this.checkedInTicket.set(null);
+    this.acceptedArrival.set(null);
+    this.arrivalPatient.set(null);
     this.eligibilitySequence++;
     this.bookingPatientId.set('');
     this.bookingPatient.set(null);
@@ -888,6 +973,10 @@ export class ReservationWorkspaceStore {
       error.status === 403 &&
       this.actor() === 'Reception'
     ) {
+      this.checkedInTicket.set(null);
+      this.acceptedArrival.set(null);
+      this.arrivalPatient.set(null);
+      this.arrival.set(false);
       this.scopeGeneration++;
       this.patientSearchSequence++;
       this.patientResults.set([]);
@@ -910,7 +999,9 @@ export class ReservationWorkspaceStore {
       this.messages.set(['reception.accessChanged']);
       this.toast.error('reception.accessChanged');
       this.filters.set(null);
+      const rejectedPractice = this.practiceId();
       await this.reception.refresh();
+      if (this.reception.currentPracticeId() !== rejectedPractice) return;
       this.practices.set(this.reception.practices());
       this.practiceId.set(this.reception.currentPracticeId());
       this.detailLoading.set(false);

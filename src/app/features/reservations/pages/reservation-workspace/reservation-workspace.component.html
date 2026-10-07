@@ -588,10 +588,21 @@
                   </div>
                 </td>
                 <td class="td-actions">
+                  @if (store.canArrive(r)) {
+                    <button
+                      type="button"
+                      class="btn-arrival-action btn btn-primary"
+                      (click)="store.openArrival(r.reservationId)"
+                      [disabled]="store.busy()"
+                    >
+                      {{ 'reception.arrival.patientArrived' | t }}
+                    </button>
+                  }
                   <button
                     type="button"
                     class="btn-inspect-action"
                     (click)="store.inspect(r.reservationId)"
+                    [disabled]="store.busy()"
                     [title]="
                       (store.actor() === 'Reception'
                         ? 'reception.appointments.open'
@@ -758,14 +769,75 @@
 
   <!-- ═══ Side Drawer: Reservation Details & Editor ═══ -->
   <app-side-drawer
-    [opened]="!!store.detail() || store.detailLoading() || !!store.editor()"
+    [opened]="
+      !!store.detail() || store.detailLoading() || !!store.editor() || !!store.checkedInTicket()
+    "
     [busy]="store.busy()"
     [title]="drawerTitle()"
     [description]="drawerDescription()"
     width="640px"
     (closed)="store.close()"
   >
-    @if (store.editor(); as mode) {
+    @if (store.checkedInTicket(); as ticket) {
+      <section class="arrival-done" role="status">
+        <h3>{{ label(ticket.patient) || label(store.arrivalPatient()) }}</h3>
+        <dl class="arrival-result">
+          <dt>{{ 'reception.arrival.ticketNumber' | t }}</dt>
+          <dd>
+            <bdi>{{ ticket.ticketNumber }}</bdi>
+          </dd>
+          <dt>{{ 'reception.arrival.ahead' | t }}</dt>
+          <dd>
+            <bdi>{{ ticket.patientsAheadNow }}</bdi>
+          </dd>
+          @if (store.acceptedArrival(); as accepted) {
+            @if (accepted.paidAmount === 0) {
+              <dt>{{ 'reception.arrival.noPayment' | t }}</dt>
+              <dd>—</dd>
+            } @else {
+              <dt>{{ 'reception.arrival.paymentRecorded' | t }}</dt>
+              <dd>
+                <bdi
+                  >{{ accepted.paidAmount }}
+                  {{
+                    (ticket.currencyCode || ticket.currency || 'EGP') === 'EGP'
+                      ? ('tickets.currency' | t)
+                      : ticket.currencyCode || ticket.currency
+                  }}</bdi
+                >
+                · {{ 'finance.method.' + accepted.paymentMethod | t }}
+              </dd>
+            }
+          }
+        </dl>
+        <div class="arrival-actions">
+          @if (store.canOpenQueue()) {
+            <a
+              class="btn btn-primary"
+              routerLink="/reception/queue"
+              [queryParams]="{ practiceId: store.practiceId() }"
+              >{{ 'reception.arrival.openQueue' | t }}</a
+            >
+          }
+          <button type="button" class="btn btn-outline-secondary" (click)="store.close()">
+            {{ 'reception.arrival.closeDone' | t }}
+          </button>
+        </div>
+      </section>
+    } @else if (store.arrival() && store.detail(); as r) {
+      <app-reservation-check-in
+        [patientName]="label(r.patient)"
+        [appointmentDate]="r.appointment.businessDate"
+        [appointmentTime]="r.appointment.slotStartTime"
+        [visitName]="label(r.visitType) + (r.segment ? ' · ' + label(r.segment) : '')"
+        [currency]="r.currency || 'EGP'"
+        [expectedPrice]="r.price"
+        [canNormal]="store.canCheckIn()"
+        [canForce]="store.canForceCheckIn()"
+        [busy]="store.busy()"
+        (checkIn)="store.checkIn($event)"
+      />
+    } @else if (store.editor(); as mode) {
       <app-reservation-editor
         [mode]="mode"
         [provider]="store.actor() !== 'Patient'"
@@ -809,13 +881,14 @@
         (action)="store.openEditor($event)"
       />
       @if (store.canCheckIn() || store.canForceCheckIn()) {
-        <app-reservation-check-in
-          [expectedPrice]="r.price"
-          [canNormal]="store.canCheckIn()"
-          [canForce]="store.canForceCheckIn()"
-          [busy]="store.busy()"
-          (checkIn)="store.checkIn($event)"
-        />
+        <button
+          class="btn btn-primary btn-arrival-action"
+          type="button"
+          (click)="store.arrival.set(true)"
+          [disabled]="store.busy()"
+        >
+          {{ 'reception.arrival.patientArrived' | t }}
+        </button>
       }
     } @else {
       <div class="drawer-loading" id="reservation-loading-heading" role="status">

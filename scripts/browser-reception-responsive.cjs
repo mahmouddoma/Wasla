@@ -18,6 +18,11 @@ const patient = {
 };
 const requests = [];
 const failedLists = new Set();
+const queueStates = new Map();
+const walkInFailures = new Set();
+const searchFailures = new Set();
+const browserModes = new Map();
+const heldRequests = new Map();
 const grants = [
   'PracticeReservations.View',
   'PracticeReservations.Create',
@@ -25,8 +30,16 @@ const grants = [
   'PracticeReservations.Reschedule',
   'PracticeReservations.RestoreNoShow',
   'PracticeTickets.View',
-  'PracticeTickets.CallNext',
+  'PracticeTickets.Call',
+  'PracticeTickets.CheckIn',
+  'PracticeTickets.ForceCheckIn',
+  'PracticeTickets.RecordPayment',
+  'PracticeTickets.CreateWalkIn',
+  'PracticeTickets.ManualCall',
+  'PracticeTickets.Cancel',
+  'PracticeTickets.RestoreNoShow',
   'PracticePayments.View',
+  'PracticePayments.Refund',
   'Patients.SearchBasic',
   'Patients.Register',
   'FamilyRelationshipRequests.CreateAssisted',
@@ -53,7 +66,7 @@ const user = {
   patientId: null,
 };
 const metadata = {
-  statuses: [{ code: 'Confirmed', nameAr: 'مؤكد', nameEn: 'Confirmed' }],
+  statuses: [{ code: 'Active', nameAr: 'محجوز', nameEn: 'Booked' }],
   bookingSources: [],
   patientCancellationReasons: [],
   providerCancellationReasons: [],
@@ -63,7 +76,7 @@ const metadata = {
 const reservation = {
   reservationId: 'r1',
   reference: 'SYNTHETIC-R-100',
-  status: 'Confirmed',
+  status: 'Active',
   isLate: false,
   patient: { id: 'p1', nameAr: 'مريض اختبار', nameEn: 'Synthetic patient' },
   practice,
@@ -121,10 +134,15 @@ async function main() {
   });
   let sequence = 0;
   const pending = new Map();
+  const createdTargets = new Set();
   function send(method, params = {}, sessionId) {
     return new Promise((resolve, reject) => {
       const id = ++sequence;
       pending.set(id, { resolve, reject });
+      const timeout = setTimeout(() => {
+        if (pending.delete(id)) reject(Error('CDP timeout: ' + method));
+      }, 30000);
+      timeout.unref();
       socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
   }
@@ -133,12 +151,13 @@ async function main() {
     if (m.id) {
       const p = pending.get(m.id);
       pending.delete(m.id);
-      m.error ? p.reject(m.error) : p.resolve(m.result);
+      if (p) m.error ? p.reject(m.error) : p.resolve(m.result);
     }
     if (m.method === 'Fetch.requestPaused') {
       const { requestId, request } = m.params;
       const url = new URL(request.url),
         path = url.pathname;
+      const mode = browserModes.get(m.sessionId) || {};
       requests.push({
         method: request.method,
         path,
@@ -152,10 +171,117 @@ async function main() {
       else if (path.endsWith('/metadata')) data = metadata;
       else if (path.endsWith('/filter-options'))
         data = { statuses: metadata.statuses, bookingSources: [], segments: [] };
-      else if (path.endsWith('/reception/practices')) data = [practice];
+      else if (path.endsWith('/reception/practices'))
+        data = mode.twoClinics
+          ? [
+              practice,
+              {
+                ...practice,
+                id: 'c2',
+                nameAr: 'عيادة ب',
+                nameEn: 'Clinic B',
+                permissionCodes: mode.noView
+                  ? grants.filter((p) => p !== 'PracticeTickets.View')
+                  : grants,
+              },
+            ]
+          : [practice];
       else if (path.endsWith('/queue'))
-        data = { inProgress: null, called: null, waiting: [ticket], noShow: [] };
-      else if (path.endsWith('/financial-transactions'))
+        data = queueStates.get(m.sessionId) || {
+          inProgress: null,
+          called: null,
+          waiting: [ticket],
+          noShow: [],
+        };
+      else if (path.endsWith('/walk-in/options'))
+        data = {
+          practiceId: 'c1',
+          currencyCode: 'EGP',
+          segments: [
+            {
+              segmentId: 'segment',
+              nameAr: 'كشف عادي',
+              nameEn: 'Standard visit',
+              priority: 1,
+              visitTypes: [
+                {
+                  visitTypeId: 'visit',
+                  code: 'NewConsultation',
+                  nameAr: 'كشف جديد',
+                  nameEn: 'New consultation',
+                  price: 300,
+                },
+                {
+                  visitTypeId: 'free',
+                  code: 'NewConsultation',
+                  nameAr: 'زيارة مجانية',
+                  nameEn: 'Free visit',
+                  price: 0,
+                },
+              ],
+            },
+          ],
+        };
+      else if (request.method === 'POST' && /\/(check-in|force-check-in|walk-in)$/.test(path)) {
+        if (path.endsWith('/walk-in') && !walkInFailures.has(m.sessionId)) {
+          walkInFailures.add(m.sessionId);
+          responseCode = 500;
+          data = { errors: [{ code: 'Common.Unknown', message: 'Synthetic create failure' }] };
+        } else
+          data = {
+            ...ticket,
+            ticketNumber: '12',
+            patientsAheadNow: 2,
+            source: path.endsWith('/walk-in') ? 'WalkIn' : 'Reservation',
+          };
+      } else if (path.includes('/tickets/t1') || path.endsWith('/call-next')) {
+        const state = queueStates.get(m.sessionId) || {
+          inProgress: null,
+          called: null,
+          waiting: [ticket],
+          noShow: [],
+        };
+        const active = state.called || state.waiting[0] || state.noShow[0] || ticket;
+        data = active;
+        if (request.method === 'POST') {
+          if (path.endsWith('/call-next') || path.endsWith('/manual-call'))
+            data = { ...active, status: 'Called', rowVersion: 'v2' };
+          else if (path.endsWith('/confirm-no-response'))
+            data = {
+              ...active,
+              status: active.callAttempts.length >= 2 ? 'NoShow' : 'Called',
+              callAttempts: [
+                ...active.callAttempts,
+                {
+                  attemptNumber: active.callAttempts.length + 1,
+                  calledOnUtc: '2026-10-07T10:00:00Z',
+                  outcome: 'NoResponse',
+                },
+              ],
+              rowVersion: 'v3',
+            };
+          else if (path.endsWith('/recall'))
+            data = { ...active, status: 'Called', rowVersion: 'v4' };
+          else if (path.endsWith('/restore-no-show'))
+            data = { ...active, status: 'Waiting', callAttempts: [], rowVersion: 'v5' };
+          else if (path.endsWith('/cancel'))
+            data = {
+              ...active,
+              status: 'Cancelled',
+              canRefund: true,
+              paymentId: 'payment1',
+              refundableAmount: 300,
+              currencyCode: 'EGP',
+              rowVersion: 'v6',
+            };
+          queueStates.set(m.sessionId, {
+            inProgress: null,
+            called: data.status === 'Called' ? data : null,
+            waiting: data.status === 'Waiting' ? [data] : [],
+            noShow: data.status === 'NoShow' ? [data] : [],
+          });
+        }
+      } else if (path.endsWith('/financial-transactions'))
         data = { items: [transaction], totalCount: 1, pageNumber: 1, pageSize: 20 };
       else if (path.endsWith('/assisted'))
         data = { items: [], totalCount: 0, pageNumber: 1, pageSize: 20 };
@@ -205,7 +331,7 @@ async function main() {
           totalCount: url.searchParams.get('search') === 'Zero' ? 0 : 1,
           pageNumber: 1,
           pageSize: 20,
-          summary: { Confirmed: 1 },
+          summary: { Active: 1 },
         };
       if (
         path.endsWith('/reservations') &&
@@ -216,6 +342,42 @@ async function main() {
         failedLists.add(m.sessionId);
         responseCode = 500;
         data = { errors: [{ code: 'Common.Unknown', message: 'Synthetic list failure' }] };
+      }
+      if (
+        request.method === 'GET' &&
+        path.endsWith('/patients/search') &&
+        url.searchParams.get('name') === 'Error' &&
+        !searchFailures.has(m.sessionId)
+      ) {
+        searchFailures.add(m.sessionId);
+        responseCode = 500;
+        data = { errors: [{ code: 'Common.Unknown', message: 'Synthetic search failure' }] };
+      }
+      if (path.includes('/practices/c2/') && path.endsWith('/queue'))
+        data = {
+          inProgress: null,
+          called: null,
+          waiting: [
+            {
+              ...ticket,
+              practice: { ...practice, id: 'c2' },
+              patient: { ...ticket.patient, nameAr: 'مريض العيادة ب', nameEn: 'Clinic B patient' },
+            },
+          ],
+          noShow: [],
+        };
+      if (mode.queueFailure && request.method === 'GET' && path.endsWith('/queue')) {
+        responseCode = 500;
+        data = { errors: [{ code: 'Common.Unknown', message: 'Synthetic Queue failure' }] };
+      }
+      if (mode.hold && mode.hold.method === request.method && path.endsWith(mode.hold.suffix)) {
+        mode.hold = null;
+        const override = await new Promise((resolve) => heldRequests.set(m.sessionId, resolve));
+        heldRequests.delete(m.sessionId);
+        if (override?.status) {
+          responseCode = override.status;
+          data = { errors: [{ code: 'Common.Unknown', message: 'Synthetic stale failure' }] };
+        }
       }
       await send(
         'Fetch.fulfillRequest',
@@ -234,7 +396,13 @@ async function main() {
           body: Buffer.from(JSON.stringify(data)).toString('base64'),
         },
         m.sessionId,
-      );
+      ).catch((error) => {
+        // Navigation or closing a synthetic target can cancel an intercepted request.
+        if (
+          !['Session with given id not found.', 'Invalid InterceptionId.'].includes(error.message)
+        )
+          throw error;
+      });
     }
   };
   const results = [];
@@ -247,9 +415,12 @@ async function main() {
       'reception/reservations',
       'reception/queue',
       'reception/finance',
-    ])
+    ].filter(
+      (route) => !process.env.WASLA_ROUTES || process.env.WASLA_ROUTES.split(',').includes(route),
+    ))
       for (const lang of ['ar', 'en']) {
         const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+        createdTargets.add(targetId);
         const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
         const call = (method, params) => send(method, params, sessionId);
         const evaluate = async (expression) => {
@@ -266,6 +437,14 @@ async function main() {
             if (await evaluate(expression)) return;
             await new Promise((r) => setTimeout(r, 50));
           }
+          fs.writeFileSync(
+            '.tmp/p2-browser-failed-dom.txt',
+            await evaluate('document.body.innerText'),
+          );
+          fs.writeFileSync(
+            '.tmp/p2-browser-failed-requests.json',
+            JSON.stringify(requests.slice(-30), null, 2),
+          );
           throw Error('Timed out: ' + expression);
         };
         const change = async (selector, value, event = 'change') =>
@@ -278,14 +457,43 @@ async function main() {
               JSON.stringify(event) +
               ',{bubbles:true}));})()',
           );
-        const screenshot = async (name, width) => {
+        const click = async (selector) =>
+          evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+        const waitHeld = async () => {
+          for (let attempt = 0; attempt < 200 && !heldRequests.has(sessionId); attempt++)
+            await new Promise((r) => setTimeout(r, 20));
+          assert.ok(heldRequests.has(sessionId), 'expected delayed synthetic request');
+        };
+        const clickText = async (selector, ar, en) =>
+          evaluate(
+            `(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.textContent.trim()===${JSON.stringify(lang === 'ar' ? ar : en)});if(!b)throw Error('Missing action');b.click();})()`,
+          );
+        const assertDrawer = async () => {
+          assert.ok(
+            await evaluate('document.documentElement.scrollWidth<=innerWidth'),
+            'drawer page overflow',
+          );
+          const bounds = await evaluate(
+            "(()=>{const p=document.querySelector('.side-drawer-panel');const r=p.getBoundingClientRect();return {left:r.left,right:r.right,scroll:p.scrollWidth,width:p.clientWidth}})()",
+          );
+          assert.ok(
+            bounds.left >= -1 &&
+              bounds.right <= (await evaluate('innerWidth')) + 1 &&
+              bounds.scroll <= bounds.width + 1,
+            JSON.stringify(bounds),
+          );
+        };
+        const screenshot = async (name, width, phase = 'p1') => {
           if (![390, 820, 1440].includes(width)) return;
+          await evaluate(
+            "[...document.querySelectorAll('.toast-close')].forEach(button=>button.click())",
+          );
           const shot = await call('Page.captureScreenshot', {
             format: 'png',
             captureBeyondViewport: false,
           });
           fs.writeFileSync(
-            '.tmp/reception-responsive/p1-' + name + '-' + lang + '-' + width + '.png',
+            '.tmp/reception-responsive/' + phase + '-' + name + '-' + lang + '-' + width + '.png',
             Buffer.from(shot.data, 'base64'),
           );
         };
@@ -315,6 +523,14 @@ async function main() {
         );
         for (const width of [320, 390, 576, 768, 820, 1024, 1280, 1440]) {
           failedLists.delete(sessionId);
+          walkInFailures.delete(sessionId);
+          searchFailures.delete(sessionId);
+          queueStates.delete(sessionId);
+          browserModes.delete(sessionId);
+          if (route === 'reception/queue') {
+            await call('Page.navigate', { url: origin + '/' + route });
+            await waitFor("!!document.querySelector('.ticket-rows-list .ticket-row')");
+          }
           await call('Emulation.setDeviceMetricsOverride', {
             width,
             height: 900,
@@ -375,7 +591,9 @@ async function main() {
             await screenshot('patient-selected', width);
             await evaluate("document.querySelector('.selected-context button').click()");
             await waitFor(
-              "!!document.querySelector('app-reservation-editor .selected-patient') && document.querySelector('app-reservation-editor select')?.value !== ''",
+              "document.querySelector('app-reservation-editor .selected-patient')?.textContent.includes(" +
+                JSON.stringify(lang === 'ar' ? patient.nameAr : patient.nameEn) +
+                ") && document.querySelector('app-reservation-editor select')?.value !== ''",
             );
             assert.ok(
               await evaluate(
@@ -538,9 +756,380 @@ async function main() {
               journey: 'today-open, list failure/retry, filtered empty, booking phone search',
               passed: true,
             });
+            // A row arrival action only opens fresh details; the user explicitly submits payment.
+            for (const arrival of ['normal', 'free', 'exceptional']) {
+              reservation.price = arrival === 'free' ? 0 : 300;
+              const countBefore = requests.filter(
+                (r) => /\/(check-in|force-check-in)$/.test(r.path) && r.method === 'POST',
+              ).length;
+              await click('tbody .btn-arrival-action');
+              await waitFor("!!document.querySelector('app-reservation-check-in .amount-due')");
+              assert.equal(
+                requests.filter(
+                  (r) => /\/(check-in|force-check-in)$/.test(r.path) && r.method === 'POST',
+                ).length,
+                countBefore,
+                'row click mutated arrival',
+              );
+              assert.ok(
+                await evaluate(
+                  "!document.querySelector('app-reservation-check-in input[type=number]')",
+                ),
+                'editable amount returned',
+              );
+              assert.ok(
+                await evaluate(
+                  "!document.querySelector('app-reservation-check-in .exception-options').open",
+                ),
+                'exception expanded by default',
+              );
+              if (arrival === 'exceptional') {
+                await click('app-reservation-check-in .exception-options summary');
+                await click('app-reservation-check-in .exception-toggle');
+                await change(
+                  'app-reservation-check-in .exception-options textarea',
+                  'Synthetic early arrival reason',
+                  'input',
+                );
+              }
+              await assertDrawer();
+              await screenshot('arrival-' + arrival, width, 'p2');
+              await evaluate(
+                "document.querySelector('app-reservation-check-in form').requestSubmit()",
+              );
+              await waitFor("!!document.querySelector('.arrival-done')");
+              await assertDrawer();
+              assert.ok(
+                await evaluate(
+                  "document.querySelector('.arrival-done').textContent.includes('12')",
+                ),
+                'returned ticket number missing',
+              );
+              assert.ok(
+                await evaluate(
+                  "document.querySelector('.arrival-done a').href.includes('/reception/queue')",
+                ),
+                'scoped Queue link missing',
+              );
+              assert.ok(
+                await evaluate("location.pathname==='/reception/reservations'"),
+                'arrival auto-navigated',
+              );
+              await screenshot('arrival-done-' + arrival, width, 'p2');
+              if (arrival === 'normal') {
+                await click('.arrival-done a');
+                await waitFor("!!document.querySelector('.queue-waiting')");
+                await call('Page.navigate', { url: origin + '/reception/reservations' });
+                await waitFor("!!document.querySelector('tbody .btn-arrival-action')");
+              } else if (arrival === 'free') {
+                await click('.arrival-actions button');
+                await waitFor("!document.querySelector('.side-drawer-panel')");
+              } else {
+                await call('Input.dispatchKeyEvent', {
+                  type: 'keyDown',
+                  key: 'Escape',
+                  code: 'Escape',
+                });
+                await call('Input.dispatchKeyEvent', {
+                  type: 'keyUp',
+                  key: 'Escape',
+                  code: 'Escape',
+                });
+                await waitFor("!document.querySelector('.side-drawer-panel')");
+              }
+            }
+            reservation.price = 300;
+            results.push({
+              route,
+              lang,
+              width,
+              journey: 'P2 scheduled fixed-price, free and exceptional arrival, scoped Done',
+              passed: true,
+            });
           }
+          if (route === 'reception/queue') {
+            assert.ok(
+              await evaluate("!document.querySelector('#queue-practice-select')"),
+              'duplicate Reception clinic selector',
+            );
+            await click('.walk-in-trigger');
+            await waitFor("!!document.querySelector('app-walk-in-patient-search')");
+            await change('app-walk-in-patient-search input[type=search]', 'Zero', 'input');
+            await click('app-walk-in-patient-search button');
+            await waitFor("!!document.querySelector('app-walk-in-patient-search .empty-state')");
+            await screenshot('walk-in-search-empty', width, 'p2');
+            await change('app-walk-in-patient-search input[type=search]', 'Error', 'input');
+            await click('app-walk-in-patient-search button');
+            await waitFor("!!document.querySelector('app-walk-in-patient-search [role=alert]')");
+            assert.ok(
+              await evaluate("!document.querySelector('app-walk-in-patient-search .empty-state')"),
+              'search error shown as no results',
+            );
+            await screenshot('walk-in-search-error', width, 'p2');
+            await change('app-walk-in-patient-search input[type=search]', '', 'input');
+            await change(
+              'app-walk-in-patient-search input[type=tel]',
+              patient.phoneNumber,
+              'input',
+            );
+            await click('app-walk-in-patient-search button');
+            await waitFor("!!document.querySelector('app-walk-in-patient-search .patient-option')");
+            await assertDrawer();
+            await screenshot('walk-in-search', width, 'p2');
+            await click('app-walk-in-patient-search .patient-option');
+            await waitFor(
+              '!!document.querySelector(\'.visit-choice option[value="segment:visit"]\')',
+            );
+            await change('.visit-choice', 'segment:visit');
+            await clickText('.walk-in-form .payment-methods button', 'بطاقة', 'Card');
+            await click('.walk-in-form details summary');
+            await change('.walk-in-form details input', 'POS-SYNTHETIC', 'input');
+            await change('.walk-in-form details textarea', 'Synthetic retained note', 'input');
+            await assertDrawer();
+            await screenshot('walk-in-payment', width, 'p2');
+            await evaluate("document.querySelector('.walk-in-form').requestSubmit()");
+            await waitFor(
+              "!!document.querySelector('.drawer-body [role=alert]') && !document.querySelector('.walk-in-form button[type=submit]').disabled",
+            );
+            assert.equal(
+              await evaluate("document.querySelector('.walk-in-form details textarea').value"),
+              'Synthetic retained note',
+            );
+            const attempts = requests.filter(
+              (r) => r.path.endsWith('/tickets/walk-in') && r.method === 'POST',
+            );
+            await screenshot('walk-in-failed', width, 'p2');
+            await evaluate("document.querySelector('.walk-in-form').requestSubmit()");
+            await waitFor("!!document.querySelector('.ticket-done')");
+            const retried = requests.filter(
+              (r) => r.path.endsWith('/tickets/walk-in') && r.method === 'POST',
+            );
+            assert.equal(
+              retried.at(-1).idempotencyKey,
+              attempts.at(-1).idempotencyKey,
+              'retry intent changed',
+            );
+            assert.equal(JSON.parse(retried.at(-1).body).paidAmount, 300);
+            assert.equal(JSON.parse(retried.at(-1).body).paymentMethod, 'Card');
+            await assertDrawer();
+            await screenshot('walk-in-done', width, 'p2');
+            await click('.ticket-done .btn-primary');
+            await waitFor(
+              "!!document.querySelector('.call-next') && !document.querySelector('.side-drawer-panel')",
+            );
+            await click('.walk-in-trigger');
+            await waitFor("!!document.querySelector('app-walk-in-patient-search')");
+            await change(
+              'app-walk-in-patient-search input[type=tel]',
+              patient.phoneNumber,
+              'input',
+            );
+            await evaluate(
+              "document.querySelector('app-walk-in-patient-search input[type=tel]').focus()",
+            );
+            await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' });
+            await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
+            await waitFor("!!document.querySelector('app-walk-in-patient-search .patient-option')");
+            await click('app-walk-in-patient-search .patient-option');
+            await waitFor("!!document.querySelector('.visit-choice')");
+            await change('.visit-choice', 'segment:free');
+            await clickText('.walk-in-form .payment-methods button', 'محفظة إلكترونية', 'Wallet');
+            await screenshot('walk-in-free', width, 'p2');
+            await click('.btn-submit-walk-in');
+            await waitFor("!!document.querySelector('.ticket-done')");
+            assert.equal(
+              JSON.parse(
+                requests
+                  .filter((r) => r.path.endsWith('/tickets/walk-in') && r.method === 'POST')
+                  .at(-1).body,
+              ).paidAmount,
+              0,
+            );
+            await screenshot('walk-in-free-done', width, 'p2');
+            await click('.ticket-done .btn-primary');
+            await waitFor(
+              "!!document.querySelector('.call-next') && !document.querySelector('.side-drawer-panel')",
+            );
+            await click('.call-next');
+            await waitFor(
+              "!!document.querySelector('.current-patient') && !!document.querySelector('.ticket-actions')",
+            );
+            assert.ok(
+              await evaluate("!document.querySelector('.call-next')"),
+              'occupied Queue offers Call Next',
+            );
+            await screenshot('called', width, 'p2');
+            await clickText('.ticket-actions button', 'لم يرد', 'No response');
+            await waitFor(
+              `!![...document.querySelectorAll('.ticket-actions button')].find(b=>b.textContent.trim()===${JSON.stringify(lang === 'ar' ? 'إعادة النداء' : 'Recall')})`,
+            );
+            await clickText('.ticket-actions button', 'إعادة النداء', 'Recall');
+            await waitFor("!document.querySelector('.ticket-actions button:disabled')");
+            await clickText('.ticket-actions button', 'لم يرد', 'No response');
+            await waitFor("!document.querySelector('.ticket-actions button:disabled')");
+            await clickText('.ticket-actions button', 'لم يرد', 'No response');
+            await waitFor("!!document.querySelector('.restore-waiting')");
+            await screenshot('no-show', width, 'p2');
+            await click('.restore-waiting');
+            await waitFor("!!document.querySelector('.manual-call')");
+            assert.ok(
+              await evaluate("!document.querySelector('.reason-form')"),
+              'reason appears before choosing action',
+            );
+            await click('.manual-call');
+            await change('#ticket-action-reason', 'Synthetic priority reason', 'input');
+            await assertDrawer();
+            await screenshot('manual-call-reason', width, 'p2');
+            await evaluate("document.querySelector('.reason-form').requestSubmit()");
+            await waitFor(
+              "!!document.querySelector('.cancel-ticket') && !document.querySelector('.reason-form')",
+            );
+            await click('.cancel-ticket');
+            await change('#ticket-action-reason', 'Synthetic patient left', 'input');
+            await screenshot('cancel-reason', width, 'p2');
+            await evaluate("document.querySelector('.reason-form').requestSubmit()");
+            await waitFor("!!document.querySelector('.refund-action')");
+            assert.ok(
+              await evaluate(
+                "document.querySelector('.refund-action').href.includes('/reception/finance')",
+              ),
+              'refund boundary changed',
+            );
+            assert.ok(
+              !requests.some((r) => r.method === 'POST' && /refund/.test(r.path)),
+              'Queue performed refund',
+            );
+            await assertDrawer();
+            await screenshot('cancelled-finance-link', width, 'p2');
+            await click('.drawer-close-btn');
+            await screenshot('queue-empty', width, 'p2');
+            // Exercise loading/error and no-clinic/no-View states without changing route authorization.
+            const mode = { twoClinics: true, noView: true };
+            browserModes.set(sessionId, mode);
+            await call('Page.navigate', { url: origin + '/reception/queue' });
+            await waitFor(
+              "document.querySelector('#reception-current-practice')?.options.length===3 && !!document.querySelector('.queue-board .state-block img')",
+            );
+            await screenshot('queue-no-clinic', width, 'p2');
+            await change('#reception-current-practice', 'c2');
+            await waitFor(
+              "!document.querySelector('.queue-waiting') && !!document.querySelector('.queue-board .state-block img')",
+            );
+            await screenshot('queue-no-view', width, 'p2');
+            await change('#reception-current-practice', 'c1');
+            await waitFor("!!document.querySelector('.queue-waiting')");
+            mode.queueFailure = true;
+            await click('app-page-header .queue-actions button');
+            await waitFor("!!document.querySelector('.queue-board [role=alert]')");
+            await screenshot('queue-failure', width, 'p2');
+            mode.queueFailure = false;
+            await click('.queue-board [role=alert] button');
+            await waitFor("!!document.querySelector('.queue-waiting')");
+            mode.hold = { method: 'GET', suffix: '/queue' };
+            await click('app-page-header .queue-actions button');
+            await waitFor(
+              "document.querySelector('.queue-board')?.getAttribute('aria-busy')==='true'",
+            );
+            await screenshot('queue-loading', width, 'p2');
+            await waitFor('true');
+            await waitHeld();
+            heldRequests.get(sessionId)();
+            await waitFor("!!document.querySelector('.queue-waiting')");
+            mode.noView = false;
+            queueStates.delete(sessionId);
+            await call('Page.navigate', { url: origin + '/reception/queue' });
+            await waitFor(
+              "document.querySelector('#reception-current-practice')?.options.length===3",
+            );
+            await change('#reception-current-practice', 'c1');
+            await waitFor("!!document.querySelector('.ticket-rows-list .ticket-row')");
+            for (const status of [200, 403, 409]) {
+              mode.hold = { method: 'GET', suffix: '/tickets/t1' };
+              await click('.ticket-rows-list .ticket-row');
+              await waitHeld();
+              await change('#reception-current-practice', 'c2');
+              await waitFor(
+                "document.querySelector('.ticket-rows-list')?.textContent.includes(" +
+                  JSON.stringify(lang === 'ar' ? 'مريض العيادة ب' : 'Clinic B patient') +
+                  ')',
+              );
+              await change('#reception-current-practice', 'c1');
+              await waitFor("!!document.querySelector('.ticket-rows-list .ticket-row')");
+              heldRequests.get(sessionId)(status === 200 ? undefined : { status });
+              await new Promise((r) => setTimeout(r, 100));
+              assert.ok(
+                await evaluate(
+                  "!document.querySelector('.side-drawer-panel') && !document.querySelector('.queue-alert')",
+                ),
+                'stale detail/error restored after A-B-A',
+              );
+            }
+            mode.hold = { method: 'GET', suffix: '/queue' };
+            await click('app-page-header .queue-actions button');
+            await waitHeld();
+            await change('#reception-current-practice', 'c2');
+            await waitFor(
+              "document.querySelector('.ticket-rows-list')?.textContent.includes(" +
+                JSON.stringify(lang === 'ar' ? 'مريض العيادة ب' : 'Clinic B patient') +
+                ')',
+            );
+            heldRequests.get(sessionId)({ status: 500 });
+            await new Promise((r) => setTimeout(r, 100));
+            assert.ok(
+              await evaluate("!document.querySelector('.queue-alert')"),
+              'stale Queue failure surfaced',
+            );
+            await screenshot('queue-clinic-b', width, 'p2');
+            await change('#reception-current-practice', 'c1');
+            await waitFor(
+              "!!document.querySelector('.walk-in-trigger') && !!document.querySelector('.ticket-rows-list .ticket-row')",
+            );
+            await click('.walk-in-trigger');
+            await waitFor("!!document.querySelector('app-walk-in-patient-search')");
+            await change('#reception-current-practice', 'c2');
+            await waitFor(
+              "!document.querySelector('.side-drawer-panel') && document.querySelector('.ticket-rows-list')?.textContent.includes(" +
+                JSON.stringify(lang === 'ar' ? 'مريض العيادة ب' : 'Clinic B patient') +
+                ')',
+            );
+            // A pending check-in settles after a new clinic has become the shared context.
+            await call('Page.navigate', { url: origin + '/reception/reservations' });
+            await waitFor(
+              "document.querySelector('#reception-current-practice')?.options.length===3",
+            );
+            await change('#reception-current-practice', 'c1');
+            await waitFor("!!document.querySelector('tbody .btn-arrival-action')");
+            await click('tbody .btn-arrival-action');
+            await waitFor("!!document.querySelector('app-reservation-check-in')");
+            mode.hold = { method: 'POST', suffix: '/check-in' };
+            await evaluate(
+              "document.querySelector('app-reservation-check-in form').requestSubmit()",
+            );
+            await waitHeld();
+            await change('#reception-current-practice', 'c2');
+            await waitFor("!document.querySelector('.side-drawer-panel')");
+            heldRequests.get(sessionId)();
+            await waitFor("!!document.querySelector('tr.table-row')");
+            assert.ok(
+              await evaluate(
+                "!document.querySelector('.arrival-done') && document.querySelector('#reception-current-practice').value==='c2'",
+              ),
+              'stale arrival Done surfaced',
+            );
+            results.push({
+              route,
+              lang,
+              width,
+              journey:
+                'P2 structured walk-in search, failed retry, Done, call/no-response/recall/no-show/restore/manual-call/cancel and separate Finance link',
+              passed: true,
+            });
+            browserModes.delete(sessionId);
+          }
+          console.log('PASS', route, lang, width);
         }
         await send('Target.closeTarget', { targetId });
+        createdTargets.delete(targetId);
       }
     fs.writeFileSync('.tmp/reception-responsive/requests.json', JSON.stringify(requests, null, 2));
     fs.writeFileSync('.tmp/reception-responsive/results.json', JSON.stringify(results, null, 2));
@@ -548,6 +1137,8 @@ async function main() {
       `PASS: ${results.length} responsive cases; no page overflow, row clipping, or hidden phone numbers.`,
     );
   } finally {
+    for (const targetId of createdTargets)
+      await send('Target.closeTarget', { targetId }).catch(() => undefined);
     socket.close();
   }
 }

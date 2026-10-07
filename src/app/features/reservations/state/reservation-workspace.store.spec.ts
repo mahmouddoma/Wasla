@@ -12,6 +12,100 @@ import { TicketsApi } from '../../../domains/tickets';
 import { ReservationWorkspaceStore, ReservationDraft } from './reservation-workspace.store';
 import { reservationFixture, metadataFixture } from '../reservation-test-fixtures';
 describe('ReservationWorkspaceStore', () => {
+  it('retains focused arrival and submitted context after a conflict while refreshing details', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    const active = { ...reservationFixture, status: 'Active', price: 250 };
+    store.detail.set(active);
+    store.arrival.set(true);
+    grants.set([
+      'PracticeReservations.View',
+      'PracticeTickets.CheckIn',
+      'PracticeTickets.RecordPayment',
+    ]);
+    TestBed.tick();
+    ticketsApi.checkIn.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    api.details.mockReturnValue(of({ ...active, rowVersion: 'fresh' }));
+    await store.checkIn({
+      paidAmount: 250,
+      paymentMethod: 'Wallet',
+      referenceNumber: 'POS',
+      notes: 'Keep',
+      force: false,
+      reason: '',
+    });
+    expect(store.arrival()).toBe(true);
+    expect(store.detail()?.rowVersion).toBe('fresh');
+    expect(store.checkedInTicket()).toBeNull();
+  });
+  it('stores accepted payment method and patient name without requiring Queue View', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    store.detail.set({ ...reservationFixture, status: 'Active', price: 0 });
+    grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
+    TestBed.tick();
+    ticketsApi.checkIn.mockReturnValue(
+      of({ ticketId: 'ticket', ticketNumber: '12', patientsAheadNow: 2 }),
+    );
+    await store.checkIn({
+      paidAmount: 0,
+      paymentMethod: 'Card',
+      referenceNumber: null,
+      notes: null,
+      force: false,
+      reason: '',
+    });
+    expect(store.acceptedArrival()?.paymentMethod).toBe('Card');
+    expect(store.arrivalPatient()).toEqual(reservationFixture.patient);
+    expect(store.canOpenQueue()).toBe(false);
+    store.close();
+    expect(store.checkedInTicket()).toBeNull();
+  });
+  it('invalidates an arrival draft when same-clinic payment permission is removed', () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
+    TestBed.tick();
+    store.arrival.set(true);
+    store.detail.set({ ...reservationFixture, status: 'Active', price: 250 });
+    TestBed.tick();
+    grants.set(['PracticeTickets.CheckIn']);
+    TestBed.tick();
+    expect(store.arrival()).toBe(false);
+    expect(store.detail()).toBeNull();
+  });
+  it.each([200, 403, 409])(
+    'ignores late check-in outcome %s after switching clinics and returning',
+    async (status) => {
+      store.actor.set('Reception');
+      store.practiceId.set('clinic');
+      store.detail.set({ ...reservationFixture, status: 'Active', price: 250 });
+      grants.set(['PracticeTickets.CheckIn', 'PracticeTickets.RecordPayment']);
+      const pending = new Subject();
+      ticketsApi.checkIn.mockReturnValue(pending);
+      const operation = store.checkIn({
+        paidAmount: 250,
+        paymentMethod: 'Card',
+        referenceNumber: 'POS',
+        notes: null,
+        force: false,
+        reason: '',
+      });
+      currentPracticeId.set('other');
+      TestBed.tick();
+      currentPracticeId.set('clinic');
+      TestBed.tick();
+      if (status === 200) {
+        pending.next({ ticketId: 'old-ticket' });
+        pending.complete();
+      } else pending.error(new HttpErrorResponse({ status }));
+      await operation;
+      expect(store.checkedInTicket()).toBeNull();
+      expect(store.acceptedArrival()).toBeNull();
+      expect(reception.refresh).not.toHaveBeenCalled();
+      expect(api.details).not.toHaveBeenCalled();
+    },
+  );
   afterEach(() => localStorage.removeItem('wasla_lang'));
   const api = {
     filterOptions: vi.fn(() => of({ segments: [] })),

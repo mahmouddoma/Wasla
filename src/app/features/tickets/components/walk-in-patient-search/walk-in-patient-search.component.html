@@ -1,0 +1,82 @@
+<section
+  class="patient-search"
+  [attr.aria-label]="'reception.patients.find' | t"
+  [attr.aria-busy]="busy()"
+>
+  <div class="row g-3">
+    <label class="col-12 col-sm-6"
+      >{{ 'reception.patients.name' | t
+      }}<input
+        type="search"
+        [formField]="fields.name"
+        (keydown.enter)="$event.preventDefault(); find()"
+    /></label>
+    <label class="col-12 col-sm-6"
+      >{{ 'workspace.phone' | t
+      }}<input
+        type="tel"
+        class="ltr-text"
+        dir="ltr"
+        [formField]="fields.phoneNumber"
+        (keydown.enter)="$event.preventDefault(); find()"
+    /></label>
+    <div class="col-12">
+      <details>
+        <summary>{{ 'reception.patients.birth' | t }}</summary>
+        <label
+          >{{ 'reception.patients.birth' | t
+          }}<input
+            type="date"
+            dir="ltr"
+            [formField]="fields.dateOfBirth"
+            (keydown.enter)="$event.preventDefault(); find()"
+        /></label>
+      </details>
+    </div>
+  </div>
+  <button
+    type="button"
+    class="btn btn-outline-secondary"
+    (click)="find()"
+    [disabled]="
+      busy() || (!model().name.trim() && !model().phoneNumber.trim() && !model().dateOfBirth)
+    "
+  >
+    {{ (busy() ? 'reservations.loading' : 'reception.patients.search') | t }}
+  </button>
+  @if (failed()) {
+    <p role="alert">{{ 'reception.patients.searchFailed' | t }}</p>
+  } @else if (searched() && !busy() && !results().length) {
+    <div class="empty-state">
+      <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" /><strong>{{
+        'reception.patients.noMatches' | t
+      }}</strong>
+      <p>{{ 'reception.patients.trySearch' | t }}</p>
+    </div>
+  }
+  <div class="search-results" aria-live="polite">
+    @for (patient of results(); track patient.patientId) {
+      <button
+        type="button"
+        class="patient-option"
+        [attr.aria-pressed]="selectedId() === patient.patientId"
+        [disabled]="busy()"
+        (click)="selected.emit(patient.patientId)"
+      >
+        <strong>{{ name(patient) }}</strong
+        ><span
+          ><bdi>{{ patient.phoneNumber }}</bdi>
+          @if (!patient.phoneNumber) {
+            {{
+              (patient.hasContactPhone
+                ? 'reception.patients.contactPhone'
+                : 'reception.patients.noPhone'
+              ) | t
+            }}
+          }
+          · <bdi>{{ patient.dateOfBirth }}</bdi></span
+        >
+      </button>
+    }
+  </div>
+</section>

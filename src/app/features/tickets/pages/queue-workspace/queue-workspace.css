@@ -1,1353 +1,327 @@
-/* ==========================================================================
-   QUEUE WORKSPACE — Wasla Healthcare 
-   ========================================================================== */
-
 :host {
   display: block;
-  min-height: 0;
-  background-color: var(--wasla-app, #f5f8fa);
   min-width: 0;
-  container-type: inline-size;
 }
-
 .queue-shell {
-  max-width: 1540px;
-  width: 100%;
-  margin-inline: auto;
-  padding: 20px clamp(16px, 3.5vw, 48px) 48px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  background: var(--wasla-app);
-  position: relative;
-}
-
-/* ── Ambient Backdrop Lighting ─────────────────────────────────────────── */
-.ambient-glow-mesh {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.ambient-circle {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.45;
-}
-
-.circle-teal {
-  top: -80px;
-  inset-inline-start: 10%;
-  width: 500px;
-  height: 500px;
-  background: rgba(11, 165, 160, 0.12);
-}
-
-.circle-navy {
-  top: 100px;
-  inset-inline-end: 5%;
-  width: 480px;
-  height: 480px;
-  background: rgba(18, 52, 81, 0.05);
-}
-
-app-page-header {
-  display: block;
-  width: 100%;
-  position: relative;
-  z-index: 5;
-}
-
-/* ── 1. Page Header Elements & Deck ─────────────────────────────────────── */
-.queue-header-deck {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.practice-selector-pill {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 38px;
-  background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  border-radius: var(--radius-control, 10px);
-  padding-inline-start: 10px;
-  padding-inline-end: 28px;
-  min-width: 220px;
-  max-width: 320px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.practice-selector-pill:focus-within {
-  border-color: var(--wasla-border);
-  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
-}
-
-.practice-selector-icon {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: var(--wasla-teal-600, #078c88);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-  pointer-events: none;
-}
-
-.practice-label-text {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--wasla-slate, #66788a);
-  margin-inline-start: 6px;
-  margin-inline-end: 4px;
-  white-space: nowrap;
-}
-
-.practice-select-input {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  outline: none;
-  height: 100%;
-  width: 100%;
-  font-size: 0.825rem;
-  font-weight: 700;
-  color: var(--wasla-navy-900, #0b2239);
-  padding: 0;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.practice-chevron {
-  position: absolute;
-  inset-inline-end: 10px;
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: var(--wasla-slate, #66788a);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  pointer-events: none;
-}
-
-.queue-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.btn-secondary-action,
-.btn-primary-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 8px 18px;
-  border-radius: var(--radius-control, 10px);
-  font-size: 0.82rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  text-decoration: none;
-}
-
-.btn-secondary-action {
-  background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  color: var(--wasla-navy-800, #123451);
-  box-shadow: 0 1px 3px rgba(12, 39, 66, 0.04);
-}
-
-.btn-secondary-action:hover:not(:disabled) {
-  background: var(--wasla-navy-50, #f4f7f9);
-  border-color: var(--wasla-border);
-  color: var(--wasla-teal-700, #047c79);
-}
-
-.btn-primary-action {
-  background: linear-gradient(
-    135deg,
-    var(--wasla-teal-600, #078c88),
-    var(--wasla-teal-700, #047c79)
-  );
-  border: 1px solid var(--wasla-teal-600, #078c88);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(7, 140, 136, 0.24);
-}
-
-.btn-primary-action:hover:not(:disabled) {
-  background: linear-gradient(
-    135deg,
-    var(--wasla-teal-500, #0ba5a0),
-    var(--wasla-teal-600, #078c88)
-  );
-  box-shadow: 0 4px 12px rgba(7, 140, 136, 0.32);
-  transform: translateY(-1px);
-}
-
-.btn-secondary-action:disabled,
-.btn-primary-action:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.spin-icon {
-  animation: icon-spin 0.85s linear infinite;
-}
-
-@keyframes icon-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ── 2. Error / Alerts Banner ────────────────────────────────────────────── */
-.queue-alerts-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.queue-alert-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  background: var(--color-danger-bg, #fff0f1);
-  border: 1px solid #fecdd3;
-  border-radius: var(--radius-control, 8px);
-  color: #9f1239;
-  font-size: 0.84rem;
-  font-weight: 700;
-  box-shadow: 0 1px 4px rgba(225, 29, 72, 0.06);
-}
-
-.queue-alert-card svg {
-  flex-shrink: 0;
-  color: #e11d48;
-}
-
-/* ── 3. Queue Board Container ────────────────────────────────────────────── */
-.queue-board {
-  position: relative;
-  z-index: 5;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 0;
-}
-
-/* ── 3.1 Live Status Strip (قيد الكشف + تم النداء) ───────────────────────── */
-.live-status-strip {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  width: 100%;
-  margin-bottom: 0;
-}
-
-.live-status-card {
-  background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 16px);
-  padding: 20px 24px;
-  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
-  transition: all 0.2s ease;
-}
-
-.live-status-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 14px rgba(12, 39, 66, 0.07);
-}
-
-.live-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
-}
-
-.status-indicator-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-indicator-tag h2 {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 850;
-  color: var(--wasla-navy-900, #0b2239);
-}
-
-.live-pulse-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background-color: var(--wasla-teal-500, #0ba5a0);
-  box-shadow: 0 0 0 0 rgba(11, 165, 160, 0.7);
-  animation: pulse-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-}
-
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(11, 165, 160, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(11, 165, 160, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(11, 165, 160, 0);
-  }
-}
-
-.called-speaker-icon {
-  display: inline-flex;
-  align-items: center;
-  color: #d97706;
-}
-
-.live-card-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 99px;
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-700, #047c79);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.live-card-badge.muted {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.active-ticket-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-control, 8px);
-}
-
-.ticket-badge-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 14px;
-  background: linear-gradient(
-    135deg,
-    var(--wasla-teal-600, #078c88),
-    var(--wasla-navy-800, #123451)
-  );
-  color: #ffffff;
-  font-size: 1.15rem;
-  font-weight: 900;
-  border-radius: 8px;
-  letter-spacing: 0.03em;
-  box-shadow: 0 2px 6px rgba(7, 140, 136, 0.2);
-}
-
-.ticket-badge-pill.amber-badge {
-  background: linear-gradient(135deg, #d97706, #92400e);
-  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
-}
-
-.ticket-symbol {
-  opacity: 0.75;
-  font-size: 0.9em;
-}
-
-.ticket-patient-details {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1 1 auto;
+  gap: 24px;
+  padding: 20px clamp(16px, 3.5vw, 48px) 48px;
   min-width: 0;
 }
-
-.patient-name {
+.queue-board {
+  background: var(--wasla-surface, #fff);
+  border: 1px solid var(--wasla-border-subtle);
+  border-radius: var(--radius-panel);
+  min-width: 0;
+}
+.queue-now,
+.queue-waiting,
+.queue-exceptions {
+  padding: 24px;
+}
+.queue-now,
+.queue-waiting {
+  border-bottom: 1px solid var(--wasla-border-subtle);
+}
+h2,
+h3,
+h4,
+p,
+dl,
+dd {
   margin: 0;
-  font-size: 0.92rem;
-  font-weight: 850;
-  color: var(--wasla-navy-950, #071c30);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-
-.visit-type-chip {
-  width: fit-content;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--wasla-slate, #66788a);
-}
-
-.btn-inspect-ticket {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 6px;
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  background: #ffffff;
-  color: var(--wasla-navy-800, #123451);
-  font-size: 0.78rem;
+h2 {
+  font-size: 1.125rem;
   font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
+  color: var(--wasla-navy-950);
 }
-
-.btn-inspect-ticket:hover {
-  background: var(--wasla-teal-50, #f0fbfa);
-  border-color: var(--wasla-border);
-  color: var(--wasla-teal-700, #047c79);
+h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950);
+  overflow-wrap: anywhere;
 }
-
-.live-empty-placeholder {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 12px;
-  color: var(--wasla-slate, #66788a);
-}
-
-.live-empty-placeholder p {
-  margin: 0;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
-
-.live-empty-placeholder svg {
-  color: #94a3b8;
-}
-
-/* ── 3.2 Two-Column Queue Grid (الانتظار + لم يحضر) ───────────────────────── */
-.queue-grid-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 20px;
-  width: 100%;
-}
-
-.queue-panel {
-  background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 16px);
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
-}
-
-.queue-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
-  background: #ffffff;
-}
-
-.panel-title-cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.panel-title-cluster h2 {
-  margin: 0;
+h4 {
   font-size: 1rem;
-  font-weight: 850;
-  color: var(--wasla-navy-950, #071c30);
+  margin-block: 16px;
 }
-
-.panel-icon-circle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+p,
+.quiet-state {
+  color: var(--wasla-slate);
+  line-height: 1.65;
 }
-
-.waiting-icon {
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-600, #078c88);
+.quiet-state {
+  margin-top: 12px;
 }
-
-.noshow-icon {
-  background: #f1f5f9;
-  color: var(--wasla-slate, #66788a);
-}
-
-.count-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 99px;
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.waiting-count {
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-700, #047c79);
-}
-
-.noshow-count {
-  background: #f1f5f9;
-  color: var(--wasla-slate, #66788a);
-}
-
-/* ── Ticket Rows List ── */
-.ticket-rows-list {
+.section-heading,
+.current-patient {
   display: flex;
-  flex-direction: column;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }
-
+.current-patient {
+  padding-block: 16px;
+  border-bottom: 1px solid var(--wasla-border-subtle);
+}
+.current-patient:last-child {
+  border-bottom: 0;
+}
+.current-patient h3 {
+  margin-block: 8px;
+}
+.current-patient > div {
+  min-width: 0;
+}
+.queue-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.btn {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.waiting-count {
+  font-weight: 700;
+  color: var(--wasla-teal-700);
+  margin-inline-start: 8px;
+}
 .ticket-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
-  gap: 14px;
-  min-height: 64px;
-  padding: 14px 22px;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
   text-align: start;
-  cursor: pointer;
-  transition: all 0.15s ease;
   width: 100%;
+  padding: 16px 0;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--wasla-border-subtle);
+  background: transparent;
+  color: var(--wasla-navy-950);
+  font: inherit;
+  cursor: pointer;
 }
-
 .ticket-row:last-child {
   border-bottom: 0;
 }
-
 .ticket-row:hover {
-  background: var(--wasla-teal-50, #f0fbfa);
+  background: var(--wasla-app);
 }
-
-.position-circle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  color: var(--wasla-navy-800, #123451);
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.ticket-row:hover .position-circle {
-  background: var(--wasla-teal-600, #078c88);
-  color: #ffffff;
-}
-
-.ticket-meta-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.ticket-meta-block,
+.row-context {
+  display: grid;
+  gap: 4px;
   min-width: 0;
 }
-
-.patient-name-title {
-  color: var(--wasla-navy-950, #071c30);
-  font-size: 0.88rem;
-  font-weight: 850;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.ticket-meta-block strong {
+  overflow-wrap: anywhere;
 }
-
-.ticket-subtitle {
-  color: var(--wasla-slate, #66788a);
-  font-size: 0.74rem;
-  font-weight: 600;
+.ticket-meta-block > span,
+.row-context {
+  font-size: 0.875rem;
+  color: var(--wasla-slate);
 }
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 0.7rem;
+.position-circle {
   font-weight: 800;
-  white-space: nowrap;
-}
-
-.status-badge.fast-track {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
-.status-badge.muted {
-  background: #f1f5f9;
-  color: var(--wasla-slate, #66788a);
-}
-
-.ahead-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 99px;
-  background: #f8fafc;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  color: var(--wasla-slate, #66788a);
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.row-arrow {
-  color: #94a3b8;
-  display: inline-flex;
-  align-items: center;
-  transition: transform 0.15s ease;
-}
-
-.ticket-row:hover .row-arrow {
-  color: var(--wasla-teal-600, #078c88);
-  transform: translateX(-3px);
-}
-
-[dir='ltr'] .ticket-row:hover .row-arrow {
-  transform: translateX(3px);
-}
-
-.empty-queue-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 44px 20px;
-  color: var(--wasla-slate, #66788a);
+  min-width: 28px;
   text-align: center;
 }
-
-.empty-queue-state svg {
-  color: #cbd5e1;
-}
-
-.empty-queue-state p {
-  margin: 0;
-  font-size: 0.86rem;
+.priority-label {
+  color: var(--wasla-teal-700);
   font-weight: 700;
 }
-
-/* ── 4. Walk-In Direct Registration Section ─────────────────────────────── */
-.walk-in-section {
-  position: relative;
-  z-index: 5;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 0;
-  padding: 24px 28px;
-  background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 16px);
-  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.03);
+summary {
+  min-height: 44px;
+  padding-block: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--wasla-navy-950);
 }
-
-.walk-in-header {
-  margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
-}
-
-.walk-in-title-cluster {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.walk-in-icon-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-600, #078c88);
-}
-
-.walk-in-title-cluster h2 {
-  margin: 0 0 2px;
-  font-size: 1.05rem;
-  font-weight: 850;
-  color: var(--wasla-navy-950, #071c30);
-}
-
-.walk-in-title-cluster p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--wasla-slate, #66788a);
-  font-weight: 600;
-}
-
-/* Walk-in Form Grid */
-.walk-in-form-grid {
+.state-block {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: center;
   gap: 16px;
-  align-items: flex-end;
+  padding: 32px 16px;
+  text-align: center;
 }
-
-.col-field {
-  grid-column: span 1;
+.state-block h2,
+.state-block h3 {
+  font-size: 1.25rem;
 }
-
-.col-field-wide {
-  grid-column: span 2;
+.state-empty-illustration {
+  width: 160px;
+  max-width: 100%;
+  height: 120px;
+  object-fit: contain;
 }
-
-.walk-in-action-bar {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 16px;
-  border-top: 1px solid var(--wasla-border-subtle, #f1f5f9);
-  margin-top: 6px;
+.queue-alert {
+  color: var(--color-danger, #9f1239);
+  padding: 12px 0;
+  overflow-wrap: anywhere;
 }
-
-.form-group-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.clinic-control {
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  width: 100%;
 }
-
-.field-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--wasla-navy-800, #123451);
+.walk-in-form,
+.ticket-details,
+.ticket-done,
+.reason-form {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
 }
-
-.req-star {
-  color: #e11d48;
+.field {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+  margin-block: 12px;
 }
-
-.optional-tag {
-  margin-inline-start: auto;
-  font-size: 0.7rem;
-  color: var(--wasla-slate, #94a3b8);
-  font-weight: 600;
-}
-
-.amount-badge {
-  margin-inline-start: auto;
-  padding: 1px 8px;
-  border-radius: 6px;
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-700, #047c79);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
 .field-input,
 .field-select {
   width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  border-radius: var(--radius-control, 10px);
-  background-color: #ffffff;
-  color: var(--wasla-navy-950, #071c30);
-  font-family: inherit;
-  font-size: 0.84rem;
-  font-weight: 700;
-  transition: all 0.15s ease;
-  outline: none;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--wasla-border);
+  border-radius: var(--radius-control);
+  padding: 10px 14px;
+  background: #fcfdfe;
+  color: var(--wasla-navy-950);
+  font: inherit;
 }
-
 .field-select {
   appearance: none;
-  cursor: pointer;
-  padding-inline-end: 36px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-inline-end: 38px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366788a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: left 12px center;
+  background-position: right 14px center;
 }
-
-[dir='ltr'] .field-select {
-  background-position: right 12px center;
+[dir='rtl'] .field-select {
+  background-position: left 14px center;
 }
-
-.field-input:focus,
-.field-select:focus {
-  border-color: var(--wasla-border);
-  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
-  background-color: #ffffff;
-}
-
-.field-input.readonly-amount {
-  background-color: #f8fafc;
-  color: var(--wasla-teal-700, #047c79);
-  font-weight: 850;
-  font-size: 0.95rem;
-}
-
-.field-validation-error {
-  color: #e11d48;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.btn-submit-walk-in {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 28px;
-  border: 1px solid var(--wasla-teal-600, #078c88);
-  border-radius: var(--radius-control, 8px);
-  background: linear-gradient(
-    135deg,
-    var(--wasla-teal-600, #078c88),
-    var(--wasla-teal-700, #047c79)
-  );
-  color: #ffffff;
-  font-size: 0.86rem;
-  font-weight: 850;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(7, 140, 136, 0.25);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  width: 100%;
-}
-
-.btn-submit-walk-in:hover:not(:disabled) {
-  background: linear-gradient(
-    135deg,
-    var(--wasla-teal-500, #0ba5a0),
-    var(--wasla-teal-600, #078c88)
-  );
-  box-shadow: 0 4px 14px rgba(7, 140, 136, 0.32);
-  transform: translateY(-1px);
-}
-
-.btn-submit-walk-in:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* ── 5. Slide-Over Side Drawer ───────────────────────────────────────────── */
-.drawer {
-  position: fixed;
-  inset-block: 0;
-  inset-inline-end: 0;
-  width: min(580px, 100vw);
-  height: 100vh;
-  max-height: 100vh;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-inline-start: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  background: #ffffff;
-  box-shadow: -16px 0 40px rgba(7, 28, 48, 0.14);
-  overflow-y: auto;
-  z-index: 1050;
-}
-
-[dir='rtl'] .drawer {
-  box-shadow: 16px 0 40px rgba(7, 28, 48, 0.14);
-}
-
-.drawer::backdrop {
-  background: rgba(7, 28, 48, 0.45);
-  backdrop-filter: blur(4px);
-}
-
-.drawer-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #ffffff;
-  border-bottom: 1px solid var(--wasla-border-subtle, #e2e8f0);
-}
-
-.drawer-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.drawer-icon-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-600, #078c88);
-}
-
-.drawer-title-wrap h2 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 850;
-  color: var(--wasla-navy-950, #071c30);
-}
-
-.btn-drawer-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--wasla-slate, #66788a);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-drawer-close:hover {
-  background: var(--wasla-navy-50, #f4f7f9);
-  color: var(--wasla-navy-950, #071c30);
-}
-
-.drawer-body {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 24px;
-}
-
-.ticket-headline-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 22px;
-  background: #f8fafc;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-control, 10px);
-}
-
-.headline-number-wrap {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.ticket-prefix {
-  font-size: 1.1rem;
-  color: var(--wasla-teal-600, #078c88);
-  font-weight: 800;
-}
-
-.ticket-main-num {
-  font-size: 1.7rem;
-  font-weight: 900;
-  color: var(--wasla-navy-950, #071c30);
-  letter-spacing: 0.02em;
-}
-
-.headline-meta-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.status-badge-lg {
-  padding: 4px 12px;
-  border-radius: 99px;
-  background: var(--wasla-teal-50, #f0fbfa);
-  color: var(--wasla-teal-700, #047c79);
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.ahead-chip {
-  padding: 4px 10px;
-  border-radius: 99px;
-  background: #ffffff;
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  color: var(--wasla-slate, #66788a);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.details-section-box,
-.attempts-history-box {
-  background: #ffffff;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-control, 10px);
-  padding: 18px 20px;
-}
-
-.section-subheading {
-  margin: 0 0 14px;
-  font-size: 0.88rem;
-  font-weight: 850;
-  color: var(--wasla-navy-900, #0b2239);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
-}
-
-.details-dl {
+.selected-patient {
   display: grid;
-  grid-template-columns: minmax(130px, 0.85fr) minmax(0, 1.4fr);
-  gap: 10px 14px;
-  margin: 0;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--wasla-border-subtle);
 }
-
-.details-dl dt {
-  color: var(--wasla-slate, #66788a);
-  font-size: 0.8rem;
-  font-weight: 700;
+.selected-patient .btn {
+  justify-self: start;
 }
-
-.details-dl dd {
-  margin: 0;
-  color: var(--wasla-navy-950, #071c30);
-  font-size: 0.82rem;
-  font-weight: 800;
-  overflow-wrap: anywhere;
-}
-
-.attempts-list {
+.amount-due {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.attempt-item {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-block: 16px;
+  border-block: 1px solid var(--wasla-border-subtle);
 }
-
-.attempt-badge {
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+legend {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.payment-methods {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.payment-methods button {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--wasla-border);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--wasla-navy-950);
+  font: inherit;
+  cursor: pointer;
+}
+.payment-methods button[aria-pressed='true'] {
+  color: var(--wasla-teal-700);
+  background: var(--wasla-teal-50);
   font-weight: 800;
-  color: var(--wasla-navy-800, #123451);
 }
-
-.attempt-outcome {
-  color: var(--wasla-slate, #66788a);
+.ticket-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 16px;
+}
+.ticket-facts dt {
+  color: var(--wasla-slate);
   font-weight: 600;
 }
-
-.attempt-time {
-  color: var(--wasla-slate, #94a3b8);
-  font-size: 0.74rem;
+.ticket-facts dd {
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
-
-.reason-input-cluster {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.ticket-actions {
+  padding-block: 16px;
+  border-block: 1px solid var(--wasla-border-subtle);
 }
-
-.reason-label {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--wasla-navy-900, #0b2239);
+.attempts-list {
+  padding-inline-start: 24px;
+  margin: 0;
 }
-
-.reason-textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  border-radius: var(--radius-control, 8px);
-  font-family: inherit;
-  font-size: 0.84rem;
-  color: var(--wasla-navy-950, #071c30);
-  resize: vertical;
-  outline: none;
-  transition: all 0.15s ease;
+.attempts-list li {
+  padding-block: 12px;
+  border-bottom: 1px solid var(--wasla-border-subtle);
 }
-
-.reason-textarea:focus {
-  border-color: var(--wasla-border);
-  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
+.attempts-list time {
+  display: block;
+  overflow-wrap: anywhere;
 }
-
-.drawer-actions-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--wasla-border-subtle, #e2e8f0);
-}
-
-.btn-drawer-primary,
-.btn-drawer-secondary,
-.btn-drawer-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: var(--radius-control, 8px);
-  font-size: 0.82rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-decoration: none;
-}
-
-.btn-drawer-primary {
-  background: var(--wasla-teal-600, #078c88);
-  border: 1px solid var(--wasla-teal-600, #078c88);
-  color: #ffffff;
-}
-
-.btn-drawer-primary:hover:not(:disabled) {
-  background: var(--wasla-teal-700, #047c79);
-}
-
-.btn-drawer-secondary {
-  background: #ffffff;
-  border: 1px solid var(--wasla-border, #e3eaf0);
-  color: var(--wasla-navy-800, #123451);
-}
-
-.btn-drawer-secondary:hover:not(:disabled) {
-  background: var(--wasla-navy-50, #f4f7f9);
-}
-
-.btn-drawer-danger {
-  background: #ffffff;
-  border: 1px solid #fecdd3;
-  color: #e11d48;
-}
-
-.btn-drawer-danger:hover:not(:disabled) {
-  background: var(--color-danger-bg, #fff0f1);
-}
-
-.btn-drawer-primary:disabled,
-.btn-drawer-secondary:disabled,
-.btn-drawer-danger:disabled {
-  opacity: 0.45;
+button:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
-
-/* ── 6. States & Loading ─────────────────────────────────────────────────── */
-.state-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 56px 20px;
-  background: var(--wasla-surface, #ffffff);
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-panel, 14px);
-  color: var(--wasla-slate, #66788a);
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
 }
-
-.state-empty-illustration {
-  width: clamp(160px, 22vw, 220px);
-  height: auto;
-  max-height: 180px;
-  margin-bottom: 14px;
-}
-
-.state-block h2 {
-  margin: 0 0 6px;
-  color: var(--wasla-navy-950, #071c30);
-  font-size: 1.15rem;
-  font-weight: 850;
-}
-
-.state-block p {
-  margin: 0;
-  max-width: 52ch;
-  font-size: 0.86rem;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--wasla-teal-100, #ddf7f5);
-  border-top-color: var(--wasla-teal-600, #078c88);
-  border-radius: 50%;
-  animation: spinner-rotate 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-
-@keyframes spinner-rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.drawer-loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 24px;
-  color: var(--wasla-slate, #66788a);
-}
-
-/* ── 7. Responsive Breakpoints ───────────────────────────────────────────── */
-@container (max-width: 1080px) {
-  .walk-in-form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .col-field,
-  .col-field-wide {
-    grid-column: span 1;
-  }
-
-  .walk-in-action-bar {
-    grid-column: 1 / -1;
-  }
-}
-
-@container (max-width: 960px) {
-  .queue-grid-columns {
-    grid-template-columns: 1fr;
-  }
-
-  .live-status-strip {
-    grid-template-columns: 1fr;
-  }
-}
-
-@container (max-width: 768px) {
+@media (max-width: 575.98px) {
   .queue-shell {
+    padding: 16px 12px 32px;
+    gap: 16px;
+  }
+  .queue-now,
+  .queue-waiting,
+  .queue-exceptions {
     padding: 16px;
-    gap: 1.25rem;
   }
-
-  .active-ticket-box {
-    flex-wrap: wrap;
-  }
-
-  .btn-inspect-ticket {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .walk-in-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .col-field,
-  .col-field-wide {
-    grid-column: span 1;
-  }
-
-  .btn-submit-walk-in {
-    width: 100%;
-  }
-
   .ticket-row {
+    gap: 8px 12px;
     grid-template-columns: auto minmax(0, 1fr);
-    row-gap: 8px;
   }
-
-  .ticket-row .status-badge,
-  .ticket-row .ahead-badge,
-  .ticket-row .row-arrow {
+  .row-context {
     grid-column: 2;
   }
-
-  .walk-in-section {
-    padding: 18px 16px;
+  .current-patient .queue-actions {
+    width: 100%;
   }
-}
-
-/* ── 8. Drawer Animation ─────────────────────────────────────────────────── */
-@media (prefers-reduced-motion: no-preference) {
-  .drawer {
-    animation: drawer-slide-rtl 0.26s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  [dir='ltr'] .drawer {
-    animation: drawer-slide-ltr 0.26s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes drawer-slide-rtl {
-    from {
-      opacity: 0;
-      transform: translateX(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes drawer-slide-ltr {
-    from {
-      opacity: 0;
-      transform: translateX(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-}
-@container (max-width: 640px) {
-  input:not([type='checkbox']):not([type='radio']),
-  select {
-    min-width: 0;
+  input,
+  select,
+  textarea {
     font-size: 1rem;
-  }
-  .practice-selector-pill {
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-  .practice-select-input {
-    min-width: 0;
-    flex: 1;
   }
 }

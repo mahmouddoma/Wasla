@@ -1,120 +1,68 @@
-<!-- ── Queue Workspace (شاشة إدارة الطابور والانتظار) ────────────────── -->
 <main class="queue-shell" [dir]="language.dir()">
-  <!-- Ambient backdrop lighting -->
-  <div class="ambient-glow-mesh" aria-hidden="true">
-    <div class="ambient-circle circle-teal"></div>
-    <div class="ambient-circle circle-navy"></div>
-  </div>
-
-  <!-- ── 1. Enterprise Page Header ────────────────────────────────────── -->
   <app-page-header
     [heading]="'tickets.queue.title' | t"
     [description]="'tickets.queue.subtitle' | t"
     icon="queue"
   >
-    <!-- Practice Selector in Header Deck -->
-    <div pageHeaderDeck class="queue-header-deck">
-      <div class="practice-selector-pill">
-        <svg class="practice-selector-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-        </svg>
-        <span class="practice-label-text">{{ 'reservations.practice' | t }}:</span>
+    @if (isDoctor()) {
+      <div pageHeaderDeck class="clinic-control">
+        <label for="queue-practice-select">{{ 'reservations.practice' | t }}</label>
         <select
           id="queue-practice-select"
-          class="practice-select-input"
+          class="field-select"
           [value]="practiceId()"
           (change)="selectPractice($event)"
           [disabled]="busy()"
-          [attr.aria-label]="'reservations.practice' | t"
         >
           <option value="">{{ 'reservations.choose' | t }}</option>
           @for (practice of practices(); track practice.id) {
-            <option [value]="practice.id">{{ label(practice) }}</option>
+            <option [value]="practice.id" [selected]="practiceId() === practice.id">
+              {{ label(practice) }}
+            </option>
           }
         </select>
-        <svg class="practice-chevron" viewBox="0 0 24 24" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
       </div>
-    </div>
-
-    <!-- Header Actions -->
-    <div pageHeaderActions class="queue-header-actions">
+    }
+    <div pageHeaderActions class="queue-actions">
       <button
         type="button"
-        class="btn-secondary-action"
+        class="btn btn-outline-secondary"
         (click)="loadQueue()"
-        [disabled]="loading() || !practiceId()"
-        [title]="'reservations.refresh' | t"
+        [disabled]="loading() || busy() || !practiceId() || !canViewQueue()"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          [class.spin-icon]="loading()"
-          aria-hidden="true"
-        >
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <polyline points="1 20 1 14 7 14"></polyline>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-        <span>{{ 'reservations.refresh' | t }}</span>
+        {{ 'reservations.refresh' | t }}
       </button>
-
-      @if (canCallNext()) {
+      @if (canWalkIn()) {
         <button
           type="button"
-          class="btn-primary-action"
-          (click)="callNext()"
-          [disabled]="busy() || !practiceId() || !!queue().called || !!queue().inProgress"
+          class="btn btn-outline-secondary walk-in-trigger"
+          (click)="openWalkIn()"
+          [disabled]="busy()"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            aria-hidden="true"
-          >
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          <span>{{ 'tickets.callNext' | t }}</span>
+          + {{ 'tickets.walkIn.patientWithoutAppointment' | t }}
         </button>
       }
     </div>
   </app-page-header>
-
-  <!-- ── 2. Error / Notice Alert Banner ─────────────────────────────── -->
-  @if (messages().length > 0) {
-    <div class="queue-alerts-container">
-      @for (message of messages(); track $index) {
-        <div class="queue-alert-card" role="alert">
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span>{{ message | t }}</span>
-        </div>
-      }
-    </div>
+  @if (!walkInOpen() && !walkInDone() && !selected() && !detailLoading()) {
+    @for (message of messages(); track $index) {
+      <p role="alert" class="queue-alert">{{ message | t }}</p>
+    }
   }
-
-  <!-- ── 3. Main Live Queue Workspace Board ─────────────────────────── -->
   <section class="queue-board" [attr.aria-busy]="loading()">
-    @if (practiceId() && !canViewQueue()) {
+    @if (!practiceId()) {
+      <div class="state-block">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Online Doctor-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'tickets.choosePracticeTitle' | t }}</h2>
+        <p>{{ (isDoctor() ? 'tickets.choosePracticeHelp' : 'tickets.queue.globalClinic') | t }}</p>
+      </div>
+    } @else if (!canViewQueue()) {
       <div class="state-block">
         <img
           class="state-empty-illustration"
@@ -126,796 +74,677 @@
         <h2>{{ 'tickets.noPermissionTitle' | t }}</h2>
         <p>{{ 'tickets.noPermissionHelp' | t }}</p>
       </div>
-    } @else if (!practiceId()) {
-      <div class="state-block">
+    } @else if (loading()) {
+      <div class="state-block" role="status">
+        <p>{{ 'tickets.loading' | t }}</p>
+      </div>
+    } @else if (loadFailed()) {
+      <div class="state-block" role="alert">
         <img
           class="state-empty-illustration"
-          src="/SVG-AVATAR/Online Doctor-bro.svg"
+          src="/SVG-AVATAR/Doctors-bro.svg"
           alt=""
           loading="lazy"
           decoding="async"
         />
-        <h2>{{ 'tickets.choosePracticeTitle' | t }}</h2>
-        <p>{{ 'tickets.choosePracticeHelp' | t }}</p>
-      </div>
-    } @else if (loading()) {
-      <div class="state-block state-loading" role="status">
-        <span class="spinner"></span>
-        <p>{{ 'tickets.loading' | t }}</p>
+        <h2>{{ 'tickets.queue.failed' | t }}</h2>
+        <button type="button" class="btn btn-primary" (click)="loadQueue()">
+          {{ 'tickets.queue.retry' | t }}
+        </button>
       </div>
     } @else {
-      <!-- ── 3.1 Live Consultation Status Strip (قيد الكشف & تم النداء) ── -->
-      <section class="live-status-strip">
-        <!-- Slot: قيد الكشف الآن (In Progress) -->
-        <article class="live-status-card in-progress-card">
-          <header class="live-card-header">
-            <div class="status-indicator-tag in-progress-tag">
-              <span class="live-pulse-dot" aria-hidden="true"></span>
-              <h2>{{ 'tickets.inProgress' | t }}</h2>
-            </div>
-            <span class="live-card-badge">{{ 'tickets.activeNow' | t }}</span>
-          </header>
-
-          <div class="live-card-body">
-            @if (queue().inProgress; as ticket) {
-              <div class="active-ticket-box">
-                <div class="ticket-badge-pill" dir="ltr">
-                  <span class="ticket-symbol">#</span>{{ ticket.ticketNumber }}
-                </div>
-                <div class="ticket-patient-details">
-                  <h3 class="patient-name">
-                    {{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}
-                  </h3>
-                  @if (ticket.visitType) {
-                    <span class="visit-type-chip">{{ label(ticket.visitType) }}</span>
-                  }
-                </div>
-                <button
-                  type="button"
-                  class="btn-inspect-ticket"
-                  (click)="inspect(ticket.ticketId)"
-                  [title]="'tickets.details' | t"
-                >
-                  <span>{{ 'tickets.details' | t }}</span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    aria-hidden="true"
-                  >
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-              </div>
-            } @else {
-              <div class="live-empty-placeholder">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M8 12h8" />
-                </svg>
-                <p>{{ 'tickets.none' | t }}</p>
-              </div>
-            }
-          </div>
-        </article>
-
-        <!-- Slot: تم النداء / في انتظار الدخول (Called) -->
-        <article class="live-status-card called-card">
-          <header class="live-card-header">
-            <div class="status-indicator-tag called-tag">
-              <span class="called-speaker-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
-              </span>
-              <h2>{{ 'tickets.called' | t }}</h2>
-            </div>
-            <span class="live-card-badge muted">{{ 'tickets.nextTurn' | t }}</span>
-          </header>
-
-          <div class="live-card-body">
-            @if (queue().called; as ticket) {
-              <div class="active-ticket-box">
-                <div class="ticket-badge-pill amber-badge" dir="ltr">
-                  <span class="ticket-symbol">#</span>{{ ticket.ticketNumber }}
-                </div>
-                <div class="ticket-patient-details">
-                  <h3 class="patient-name">
-                    {{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}
-                  </h3>
-                  @if (ticket.visitType) {
-                    <span class="visit-type-chip">{{ label(ticket.visitType) }}</span>
-                  }
-                </div>
-                <button
-                  type="button"
-                  class="btn-inspect-ticket"
-                  (click)="inspect(ticket.ticketId)"
-                  [title]="'tickets.details' | t"
-                >
-                  <span>{{ 'tickets.details' | t }}</span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    aria-hidden="true"
-                  >
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-              </div>
-            } @else {
-              <div class="live-empty-placeholder">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M8 12h8" />
-                </svg>
-                <p>{{ 'tickets.none' | t }}</p>
-              </div>
-            }
-          </div>
-        </article>
+      <section class="queue-now" aria-labelledby="queue-now-heading">
+        <h2 id="queue-now-heading">{{ 'tickets.queue.now' | t }}</h2>
+        @if (queue().inProgress; as ticket) {
+          <ng-container
+            [ngTemplateOutlet]="nowTicket"
+            [ngTemplateOutletContext]="{ $implicit: ticket, called: false }"
+          />
+        }
+        @if (queue().called; as ticket) {
+          <ng-container
+            [ngTemplateOutlet]="nowTicket"
+            [ngTemplateOutletContext]="{ $implicit: ticket, called: true }"
+          />
+        }
+        @if (!queueOccupied()) {
+          <p class="quiet-state">{{ 'tickets.queue.noneNow' | t }}</p>
+        }
       </section>
-
-      <!-- ── 3.2 Two-Column Queue Board (الانتظار + لم يحضر) ──────────── -->
-      <div class="queue-grid-columns">
-        <!-- Column 1: قائمة الانتظار (Waiting) -->
-        <section class="queue-panel waiting-panel">
-          <header class="queue-panel-header">
-            <div class="panel-title-cluster">
-              <span class="panel-icon-circle waiting-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </span>
-              <h2>{{ 'tickets.waiting' | t }}</h2>
-            </div>
-            <span class="count-badge waiting-count">{{ queue().waiting.length }}</span>
-          </header>
-
-          <div class="ticket-rows-list">
-            @for (ticket of queue().waiting; track ticket.ticketId; let position = $index) {
-              <button
-                type="button"
-                class="ticket-row"
-                (click)="inspect(ticket.ticketId)"
-                [attr.aria-label]="ticket.patient ? label(ticket.patient) : ticket.ticketNumber"
+      <section class="queue-waiting" aria-labelledby="queue-waiting-heading">
+        <header class="section-heading">
+          <h2 id="queue-waiting-heading">
+            {{ 'tickets.waiting' | t }}
+            <span class="waiting-count" aria-live="polite">{{ queue().waiting.length }}</span>
+          </h2>
+          @if (canCallNext() && !queueOccupied()) {
+            <button
+              type="button"
+              class="btn btn-primary call-next"
+              (click)="callNext()"
+              [disabled]="busy() || !queue().waiting.length"
+            >
+              {{ 'tickets.callNext' | t }}
+            </button>
+          }
+        </header>
+        <div class="ticket-rows-list">
+          @for (ticket of queue().waiting; track ticket.ticketId; let position = $index) {
+            <button
+              type="button"
+              class="ticket-row"
+              (click)="inspect(ticket.ticketId)"
+              [disabled]="busy()"
+              [attr.aria-label]="ticket.patient ? label(ticket.patient) : ticket.ticketNumber"
+            >
+              <span class="position-circle" dir="ltr">{{ position + 1 }}</span>
+              <span class="ticket-meta-block"
+                ><strong>{{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}</strong
+                ><span
+                  >{{ 'reception.arrival.ticketNumber' | t }} <bdi>{{ ticket.ticketNumber }}</bdi>
+                  @if (ticket.visitType) {
+                    · {{ label(ticket.visitType) }}
+                  }
+                </span></span
               >
-                <span class="position-circle" dir="ltr">{{ position + 1 }}</span>
-                <div class="ticket-meta-block">
-                  <b class="patient-name-title">{{
-                    ticket.patient ? label(ticket.patient) : ticket.ticketNumber
-                  }}</b>
-                  <small class="ticket-subtitle" dir="ltr">
-                    #{{ ticket.ticketNumber }} ·
-                    {{ ticket.queueOrderTime || ticket.lastUpdatedOnUtc }}
-                  </small>
-                </div>
+              <span class="row-context">
                 @if (ticket.fastTrack) {
-                  <span class="status-badge fast-track">{{ 'tickets.fastTrack' | t }}</span>
+                  <span class="priority-label">{{ 'tickets.fastTrack' | t }}</span>
                 }
-                <span class="ahead-badge">
-                  {{ ticket.patientsAheadNow }} {{ 'tickets.aheadShort' | t }}
-                </span>
-                <span class="row-arrow" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                  >
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </span>
-              </button>
-            } @empty {
-              <div class="empty-queue-state">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="32"
-                  height="32"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 14 14" />
-                </svg>
-                <p>{{ 'tickets.waitingEmpty' | t }}</p>
-              </div>
-            }
-          </div>
-        </section>
-
-        <!-- Column 2: لم يحضروا اليوم (No-Show) -->
-        <section class="queue-panel noshow-panel">
-          <header class="queue-panel-header">
-            <div class="panel-title-cluster">
-              <span class="panel-icon-circle noshow-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="17" y1="8" x2="23" y2="14" />
-                  <line x1="23" y1="8" x2="17" y2="14" />
-                </svg>
-              </span>
-              <h2>{{ 'tickets.noShow' | t }}</h2>
-            </div>
-            <span class="count-badge noshow-count">{{ queue().noShow.length }}</span>
-          </header>
-
-          <div class="ticket-rows-list">
-            @for (ticket of queue().noShow; track ticket.ticketId) {
-              <button
-                type="button"
-                class="ticket-row noshow-row"
-                (click)="inspect(ticket.ticketId)"
-                [attr.aria-label]="ticket.patient ? label(ticket.patient) : ticket.ticketNumber"
+                <span
+                  ><bdi>{{ ticket.patientsAheadNow }}</bdi> {{ 'tickets.aheadShort' | t }}</span
+                ></span
               >
-                <div class="ticket-meta-block">
-                  <b class="patient-name-title">{{
-                    ticket.patient ? label(ticket.patient) : ticket.ticketNumber
-                  }}</b>
-                  <small class="ticket-subtitle" dir="ltr">#{{ ticket.ticketNumber }}</small>
-                </div>
-                <span class="status-badge muted">{{ statusKey(ticket.status) | t }}</span>
-                <span class="row-arrow" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                  >
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </span>
-              </button>
-            } @empty {
-              <div class="empty-queue-state">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="32"
-                  height="32"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  aria-hidden="true"
+            </button>
+          } @empty {
+            <div class="state-block">
+              <img
+                class="state-empty-illustration"
+                src="/SVG-AVATAR/Medical prescription-bro.svg"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <h3>{{ 'tickets.queue.empty' | t }}</h3>
+              <p>{{ 'tickets.queue.emptyHelp' | t }}</p>
+              @if (canWalkIn()) {
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="openWalkIn()"
+                  [disabled]="busy()"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <p>{{ 'tickets.noShowEmpty' | t }}</p>
-              </div>
-            }
-          </div>
-        </section>
-      </div>
+                  {{ 'tickets.walkIn.patientWithoutAppointment' | t }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </section>
+      <details class="queue-exceptions">
+        <summary>
+          {{ 'tickets.queue.exceptions' | t }} (<bdi>{{ queue().noShow.length }}</bdi
+          >)
+        </summary>
+        @for (ticket of queue().noShow; track ticket.ticketId) {
+          <button
+            type="button"
+            class="ticket-row"
+            (click)="inspect(ticket.ticketId)"
+            [disabled]="busy()"
+          >
+            <span class="ticket-meta-block"
+              ><strong>{{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}</strong
+              ><span
+                >{{ 'reception.arrival.ticketNumber' | t }}
+                <bdi>{{ ticket.ticketNumber }}</bdi></span
+              ></span
+            ><span>{{ 'tickets.status.NoShow' | t }}</span>
+          </button>
+        } @empty {
+          <p class="quiet-state">{{ 'tickets.noShowEmpty' | t }}</p>
+        }
+      </details>
     }
   </section>
-
-  <!-- ── 4. Walk-In Direct Ticket Registration (زيارة مباشرة) ────────── -->
-  @if (canWalkIn() && practiceId()) {
-    <section class="walk-in-section" [attr.aria-labelledby]="'walk-in-heading'">
-      <header class="walk-in-header">
-        <div class="walk-in-title-cluster">
-          <span class="walk-in-icon-badge" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
+  <ng-template #nowTicket let-ticket let-called="called">
+    <article class="current-patient">
+      <div>
+        <span>{{
+          (called ? 'tickets.queue.calledHelp' : 'tickets.queue.inProgressHelp') | t
+        }}</span>
+        <h3>{{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}</h3>
+        <p>
+          {{ 'reception.arrival.ticketNumber' | t }} <bdi>{{ ticket.ticketNumber }}</bdi>
+          @if (ticket.visitType) {
+            · {{ label(ticket.visitType) }}
+          }
+        </p>
+      </div>
+      <div class="queue-actions">
+        @if (called && canCallNext()) {
+          @if (canRecall(ticket)) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="act('recall', ticket)"
+              [disabled]="busy()"
             >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" y1="8" x2="19" y2="14" />
-              <line x1="22" y1="11" x2="16" y2="11" />
-            </svg>
-          </span>
-          <div>
-            <h2 id="walk-in-heading">{{ 'tickets.walkIn.title' | t }}</h2>
-            <p>{{ 'tickets.walkIn.help' | t }}</p>
-          </div>
-        </div>
-      </header>
-
-      <form class="walk-in-form-grid" (submit)="$event.preventDefault(); submitWalkIn()">
-        @if (eligibilities().length) {
-          <div class="form-group-item col-field">
-            <label class="field-label" for="walk-in-follow-up">{{ 'followUps.bookingType' | t }}</label>
-            <select id="walk-in-follow-up" class="field-select" [value]="eligibility()?.eligibilityId || ''" (change)="selectWalkInEligibility($event)" [disabled]="busy() || optionsLoading()">
-              <option value="">{{ 'followUps.newConsultation' | t }}</option>
-              @for (e of eligibilities(); track e.eligibilityId) { <option [value]="e.eligibilityId" [disabled]="!e.canBook">{{ 'followUps.followUp' | t }} · {{ e.validUntil }}</option> }
-            </select>
-          </div>
-        }
-        <!-- Field 1: معرف المريض -->
-        <div class="form-group-item col-field">
-          <label class="field-label" for="walk-in-patient-id">
-            <span>{{ 'tickets.patientId' | t }}</span>
-            <span class="req-star" aria-hidden="true">*</span>
-          </label>
-          <input
-            id="walk-in-patient-id"
-            class="field-input"
-            dir="ltr"
-            [placeholder]="'tickets.patientIdPlaceholder' | t"
-            [formField]="walkInForm.patientId"
-            (change)="refreshWalkInPatient()"
-          />
-          @if (walkInForm.patientId().touched() && walkInForm.patientId().errors()[0]; as error) {
-            <small class="field-validation-error" role="alert">
-              {{ error.message || 'tickets.validation.patientRequired' | t }}
-            </small>
+              {{ 'tickets.recall' | t }}
+            </button>
           }
-        </div>
-
-        <!-- Field 2: الشريحة -->
-        <div class="form-group-item col-field">
-          <label class="field-label" for="walk-in-segment-select">
-            <span>{{ 'reservations.segment' | t }}</span>
-            <span class="req-star" aria-hidden="true">*</span>
-          </label>
-          <select
-            id="walk-in-segment-select"
-            class="field-select"
-            [value]="walkInModel().segmentId"
-            (change)="selectWalkInOption('segmentId', $event)"
-          >
-            <option value="">{{ 'reservations.choose' | t }}</option>
-            @for (segment of segments(); track segment.segmentId) {
-              <option [value]="segment.segmentId">{{ label(segment) }}</option>
-            }
-          </select>
-          @if (walkInForm.segmentId().touched() && walkInForm.segmentId().errors()[0]; as error) {
-            <small class="field-validation-error" role="alert">
-              {{ error.message || 'tickets.validation.segmentRequired' | t }}
-            </small>
-          }
-        </div>
-
-        <!-- Field 3: نوع الزيارة -->
-        <div class="form-group-item col-field">
-          <label class="field-label" for="walk-in-visit-type-select">
-            <span>{{ 'reservations.visitType' | t }}</span>
-            <span class="req-star" aria-hidden="true">*</span>
-          </label>
-          <select
-            id="walk-in-visit-type-select"
-            class="field-select"
-            [value]="walkInModel().visitTypeId"
-            (change)="selectWalkInOption('visitTypeId', $event)"
-          >
-            <option value="">{{ 'reservations.choose' | t }}</option>
-            @for (visitType of visitTypes(); track visitType.visitTypeId) {
-              <option [value]="visitType.visitTypeId">{{ label(visitType) }}</option>
-            }
-          </select>
-          @if (
-            walkInForm.visitTypeId().touched() && walkInForm.visitTypeId().errors()[0];
-            as error
-          ) {
-            <small class="field-validation-error" role="alert">
-              {{ error.message || 'tickets.validation.visitTypeRequired' | t }}
-            </small>
-          }
-        </div>
-
-        <!-- Field 4: المبلغ المدفوع -->
-        <div class="form-group-item col-field">
-          <label class="field-label" for="walk-in-paid-amount">
-            <span>{{ 'tickets.payment' | t }}</span>
-            @if (walkInPrice() !== undefined) {
-              <span class="amount-badge">{{ walkInPrice() }} {{ 'tickets.currency' | t }}</span>
-            }
-          </label>
-          <input
-            id="walk-in-paid-amount"
-            class="field-input readonly-amount"
-            type="number"
-            dir="ltr"
-            readonly
-            [value]="walkInModel().paidAmount"
-          />
-          @if (walkInForm.paidAmount().touched() && walkInForm.paidAmount().errors()[0]; as error) {
-            <small class="field-validation-error" role="alert">
-              {{ error.message || 'tickets.validation.paymentExact' | t }}
-            </small>
-          }
-        </div>
-
-        <!-- Field 5: طريقة الدفع -->
-        <div class="form-group-item col-field">
-          <label class="field-label" for="walk-in-payment-method">
-            <span>{{ 'finance.method' | t }}</span>
-            <span class="req-star" aria-hidden="true">*</span>
-          </label>
-          <select
-            id="walk-in-payment-method"
-            class="field-select"
-            [formField]="walkInForm.paymentMethod"
-          >
-            <option value="Cash">{{ 'finance.method.Cash' | t }}</option>
-            <option value="Card">{{ 'finance.method.Card' | t }}</option>
-            <option value="Wallet">{{ 'finance.method.Wallet' | t }}</option>
-          </select>
-        </div>
-
-        <!-- Field 6: رقم المرجع (اختياري) -->
-        <div class="form-group-item col-field">
-          <label class="field-label" for="walk-in-reference">
-            <span>{{ 'finance.referenceNumber' | t }}</span>
-            <span class="optional-tag">{{ 'common.optional' | t }}</span>
-          </label>
-          <input
-            id="walk-in-reference"
-            class="field-input"
-            dir="ltr"
-            [placeholder]="'tickets.referencePlaceholder' | t"
-            [formField]="walkInForm.referenceNumber"
-          />
-        </div>
-
-        <!-- Field 7: ملاحظات (اختياري) -->
-        <div class="form-group-item col-field-wide">
-          <label class="field-label" for="walk-in-notes">
-            <span>{{ 'finance.notesOptional' | t }}</span>
-          </label>
-          <input
-            id="walk-in-notes"
-            class="field-input"
-            placeholder="{{ 'tickets.notesPlaceholder' | t }}"
-            [formField]="walkInForm.notes"
-          />
-        </div>
-
-        <!-- Submit Action Row -->
-        <div class="walk-in-action-bar">
           <button
-            type="submit"
-            class="btn-submit-walk-in"
-            [disabled]="busy() || optionsLoading() || walkInForm().invalid()"
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="act('no-response', ticket)"
+            [disabled]="busy()"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>{{ 'tickets.walkIn.action' | t }}</span>
+            {{ 'tickets.queue.noResponse' | t }}
           </button>
-        </div>
-      </form>
-    </section>
-  }
-
-  <!-- ── 5. Slide-Over Side Drawer for Ticket Details ───────────────── -->
-  @if (selected() || detailLoading()) {
-    <dialog
-      #drawer
-      class="drawer"
-      (cancel)="cancelDialog($event)"
-      [attr.aria-labelledby]="'ticket-details-heading'"
-    >
-      <header class="drawer-header">
-        <div class="drawer-title-wrap">
-          <span class="drawer-icon-badge" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-              <line x1="16" x2="16" y1="2" y2="6" />
-              <line x1="8" x2="8" y1="2" y2="6" />
-              <line x1="3" x2="21" y1="10" y2="10" />
-            </svg>
-          </span>
-          <h2 id="ticket-details-heading">{{ 'tickets.details' | t }}</h2>
-        </div>
+        }
+        @if (called && canStart()) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="act('start', ticket)"
+            [disabled]="busy()"
+          >
+            {{ 'tickets.start' | t }}
+          </button>
+        }
+        @if (!called && canOpenClinical()) {
+          <a
+            class="btn btn-primary"
+            routerLink="/doctor/encounters"
+            [queryParams]="{ practiceId: practiceId(), ticketId: ticket.ticketId }"
+            >{{ 'encounters.open' | t }}</a
+          >
+        }
         <button
           type="button"
-          class="btn-drawer-close"
-          (click)="close()"
+          class="btn btn-outline-secondary btn-inspect-ticket"
+          (click)="inspect(ticket.ticketId)"
           [disabled]="busy()"
-          [title]="'reservations.close' | t"
-          [attr.aria-label]="'reservations.close' | t"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          {{ 'tickets.details' | t }}
         </button>
-      </header>
-
-      @if (selected(); as ticket) {
-        <div class="drawer-body">
-          <!-- Ticket Header Banner in Drawer -->
-          <div class="ticket-headline-card">
-            <div class="headline-number-wrap">
-              <span class="ticket-prefix">#</span>
-              <span class="ticket-main-num" dir="ltr">{{ ticket.ticketNumber }}</span>
-            </div>
-            <div class="headline-meta-wrap">
-              <span class="status-badge-lg">{{ statusKey(ticket.status) | t }}</span>
-              <span class="ahead-chip">
-                {{ ticket.patientsAheadNow }} {{ 'tickets.ahead' | t }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Key Details Grid -->
-          <div class="details-section-box">
-            <h3 class="section-subheading">{{ 'tickets.patientDetails' | t }}</h3>
-            <dl class="details-dl">
-              @if (ticket.patient) {
-                <dt>{{ 'reservations.patient' | t }}</dt>
-                <dd>{{ label(ticket.patient) }}</dd>
-              }
-              <dt>{{ 'reservations.practice' | t }}</dt>
-              <dd>{{ label(ticket.practice) }}</dd>
-              <dt>{{ 'reservations.doctor' | t }}</dt>
-              <dd>{{ label(ticket.doctor) }}</dd>
-              <dt>{{ 'tickets.businessDate' | t }}</dt>
-              <dd dir="ltr">{{ ticket.businessDate }}</dd>
-              <dt>{{ 'reservations.source' | t }}</dt>
-              <dd>{{ ticket.source }}</dd>
-              @if (ticket.segment) {
-                <dt>{{ 'reservations.segment' | t }}</dt>
-                <dd>{{ label(ticket.segment) }}</dd>
-              }
-              @if (ticket.visitType) {
-                <dt>{{ 'reservations.visitType' | t }}</dt>
-                <dd>{{ label(ticket.visitType) }}</dd>
-              }
-              @if (ticket.paymentTransactionNumber) {
-                <dt>{{ 'finance.transactionNumber' | t }}</dt>
-                <dd dir="ltr">{{ ticket.paymentTransactionNumber }}</dd>
-              }
-              @if (ticket.refundTransactionNumber) {
-                <dt>{{ 'finance.refunded' | t }}</dt>
-                <dd dir="ltr">{{ ticket.refundTransactionNumber }}</dd>
-              }
-              @if (ticket.refundableAmount !== undefined) {
-                <dt>{{ 'finance.amount' | t }}</dt>
-                <dd dir="ltr">
-                  {{ ticket.refundableAmount }} {{ ticket.currencyCode || ticket.currency }}
-                </dd>
-              }
-              <dt>{{ 'tickets.callAttempts' | t }}</dt>
-              <dd>{{ ticket.callAttempts.length }}</dd>
-              @if (ticket.checkedInOnUtc) {
-                <dt>{{ 'tickets.checkedInOn' | t }}</dt>
-                <dd dir="ltr">{{ ticket.checkedInOnUtc }}</dd>
-              }
-              @if (ticket.queueOrderTime) {
-                <dt>{{ 'tickets.queuedOn' | t }}</dt>
-                <dd dir="ltr">{{ ticket.queueOrderTime }}</dd>
-              }
-              @if (ticket.calledOnUtc) {
-                <dt>{{ 'tickets.calledOn' | t }}</dt>
-                <dd dir="ltr">{{ ticket.calledOnUtc }}</dd>
-              }
-              @if (ticket.startedOnUtc) {
-                <dt>{{ 'tickets.startedOn' | t }}</dt>
-                <dd dir="ltr">{{ ticket.startedOnUtc }}</dd>
-              }
-              @if (ticket.completedOnUtc) {
-                <dt>{{ 'tickets.completedOn' | t }}</dt>
-                <dd dir="ltr">{{ ticket.completedOnUtc }}</dd>
-              }
-              <dt>{{ 'tickets.lastUpdated' | t }}</dt>
-              <dd dir="ltr">{{ ticket.lastUpdatedOnUtc }}</dd>
-            </dl>
-          </div>
-
-          <!-- Call Attempts History -->
-          @if (ticket.callAttempts.length) {
-            <section class="attempts-history-box" [attr.aria-labelledby]="'call-attempts-heading'">
-              <h3 id="call-attempts-heading" class="section-subheading">
-                {{ 'tickets.callAttempts' | t }}
-              </h3>
-              <ol class="attempts-list">
-                @for (attempt of ticket.callAttempts; track attempt.attemptNumber) {
-                  <li class="attempt-item">
-                    <span class="attempt-badge"
-                      >{{ 'tickets.attempt' | t }} {{ attempt.attemptNumber }}</span
-                    >
-                    <span class="attempt-outcome">{{
-                      attempt.outcome || ('tickets.pendingOutcome' | t)
-                    }}</span>
-                    <time class="attempt-time" dir="ltr">{{
-                      attempt.confirmedOnUtc || attempt.calledOnUtc
-                    }}</time>
-                  </li>
-                }
-              </ol>
-            </section>
+      </div>
+    </article>
+  </ng-template>
+  <app-side-drawer
+    [opened]="walkInOpen() || !!walkInDone() || !!selected() || detailLoading()"
+    [busy]="busy()"
+    [title]="
+      (walkInDone()
+        ? 'tickets.walkIn.done'
+        : walkInOpen()
+          ? 'tickets.walkIn.patientWithoutAppointment'
+          : 'tickets.details'
+      ) | t
+    "
+    width="640px"
+    (closed)="close()"
+  >
+    @if (walkInDone(); as ticket) {
+      <section class="ticket-done" role="status">
+        <h3>
+          {{
+            ticket.patient
+              ? label(ticket.patient)
+              : acceptedWalkIn()?.patientName || ('reception.patients.selected' | t)
+          }}
+        </h3>
+        <dl class="ticket-facts">
+          <dt>{{ 'reception.arrival.ticketNumber' | t }}</dt>
+          <dd>
+            <bdi>{{ ticket.ticketNumber }}</bdi>
+          </dd>
+          <dt>{{ 'reception.arrival.ahead' | t }}</dt>
+          <dd>{{ ticket.patientsAheadNow }}</dd>
+          @if (acceptedWalkIn(); as accepted) {
+            @if (accepted.paidAmount === 0) {
+              <dt>{{ 'reception.arrival.noPayment' | t }}</dt>
+              <dd>—</dd>
+            } @else {
+              <dt>{{ 'reception.arrival.paymentRecorded' | t }}</dt>
+              <dd>
+                <bdi>{{ accepted.paidAmount }} {{ 'tickets.currency' | t }}</bdi> ·
+                {{ 'finance.method.' + accepted.paymentMethod | t }}
+              </dd>
+            }
           }
-
-          <!-- Reason Field for Status Transitions -->
-          @if (
-            ticket.status === 'Waiting' || ticket.status === 'Called' || ticket.status === 'NoShow'
-          ) {
-            <div class="reason-input-cluster">
-              <label class="reason-label" for="ticket-action-reason">
-                <span>{{ 'tickets.reason' | t }}</span>
-              </label>
-              <textarea
+        </dl>
+        <div class="queue-actions">
+          @if (canViewQueue()) {
+            <button type="button" class="btn btn-primary" (click)="close(); loadQueue()">
+              {{ 'reception.arrival.openQueue' | t }}
+            </button>
+          }
+          <button type="button" class="btn btn-outline-secondary" (click)="close()">
+            {{ 'reception.arrival.closeDone' | t }}
+          </button>
+        </div>
+      </section>
+    } @else if (walkInOpen()) {
+      <form
+        class="walk-in-form"
+        (submit)="$event.preventDefault(); submitWalkIn()"
+        [attr.aria-busy]="busy()"
+      >
+        @if (walkInModel().patientId) {
+          <div class="selected-patient">
+            <span>{{ 'reception.patients.selected' | t }}</span>
+            <h3>
+              {{
+                selectedPatient() ? label(selectedPatient()!) : ('tickets.walkIn.knownRecord' | t)
+              }}
+            </h3>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="changePatient()"
+              [disabled]="busy()"
+            >
+              {{ 'tickets.walkIn.changePatient' | t }}
+            </button>
+          </div>
+        } @else if (canSearchPatient()) {
+          <h3>{{ 'reception.patients.find' | t }}</h3>
+          <p>{{ 'reception.patients.searchHelp' | t }}</p>
+          <app-walk-in-patient-search
+            [results]="patientResults()"
+            [busy]="patientSearchLoading() || busy()"
+            [searched]="patientSearched()"
+            [failed]="patientSearchFailed()"
+            (search)="searchPatients($event)"
+            (selected)="choosePatient($event)"
+          />
+        }
+        @if (!canSearchPatient()) {
+          <details class="record-fallback">
+            <summary>{{ 'tickets.walkIn.advanced' | t }}</summary>
+            <p>{{ 'tickets.walkIn.recordHelp' | t }}</p>
+            <label class="field"
+              >{{ 'tickets.walkIn.advancedRecordNumber' | t
+              }}<input
+                class="field-input"
+                dir="ltr"
+                [formField]="walkInForm.patientId"
+                (change)="refreshWalkInPatient()"
+            /></label>
+          </details>
+        }
+        @if (walkInModel().patientId) {
+          @if (optionsLoading()) {
+            <p role="status">{{ 'tickets.loading' | t }}</p>
+          } @else {
+            @if (eligibilities().length) {
+              <label class="field"
+                >{{ 'followUps.bookingType' | t
+                }}<select
+                  class="field-select"
+                  [value]="eligibility()?.eligibilityId || ''"
+                  (change)="selectWalkInEligibility($event)"
+                  [disabled]="busy()"
+                >
+                  <option value="">{{ 'followUps.newConsultation' | t }}</option>
+                  @for (e of eligibilities(); track e.eligibilityId) {
+                    <option
+                      [value]="e.eligibilityId"
+                      [disabled]="!e.canBook"
+                      [selected]="eligibility()?.eligibilityId === e.eligibilityId"
+                    >
+                      {{ 'followUps.followUp' | t }} · {{ e.validUntil }}
+                    </option>
+                  }
+                </select></label
+              >
+            }
+            @if (walkInChoices().length) {
+              <label class="field"
+                >{{ 'tickets.walkIn.visitAndPrice' | t
+                }}<select
+                  class="field-select visit-choice"
+                  [value]="walkInModel().segmentId + ':' + walkInModel().visitTypeId"
+                  (change)="selectChoice($event)"
+                  [disabled]="busy()"
+                >
+                  <option value="">{{ 'tickets.walkIn.chooseVisit' | t }}</option>
+                  @for (choice of walkInChoices(); track choice.key) {
+                    <option
+                      [value]="choice.key"
+                      [selected]="
+                        walkInModel().segmentId === choice.segmentId &&
+                        walkInModel().visitTypeId === choice.visitTypeId
+                      "
+                    >
+                      {{ label(choice) }} · {{ label(choice.segment) }} — {{ choice.price }}
+                      {{ 'tickets.currency' | t }}
+                    </option>
+                  }
+                </select></label
+              >
+            } @else {
+              <div class="state-block">
+                <img
+                  class="state-empty-illustration"
+                  src="/SVG-AVATAR/Doctors-bro.svg"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+                <h3>
+                  {{
+                    (optionsFailed()
+                      ? 'tickets.walkIn.optionsFailed'
+                      : 'tickets.walkIn.optionsEmpty'
+                    ) | t
+                  }}
+                </h3>
+                <p>
+                  {{
+                    (optionsFailed() ? 'common.requestFailed' : 'tickets.walkIn.optionsHelp') | t
+                  }}
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="refreshChoices()"
+                  [disabled]="busy()"
+                >
+                  {{ 'tickets.queue.retry' | t }}
+                </button>
+              </div>
+            }
+            @if (walkInPrice() !== undefined) {
+              <div class="amount-due">
+                <span>{{ 'reception.arrival.amountDue' | t }}</span
+                ><strong>
+                  @if (walkInPrice() === 0) {
+                    {{ 'reception.arrival.noPayment' | t }}
+                  } @else {
+                    <bdi>{{ walkInPrice() }} {{ 'tickets.currency' | t }}</bdi>
+                  }
+                </strong>
+              </div>
+              <fieldset [disabled]="busy()">
+                <legend>{{ 'finance.method' | t }}</legend>
+                <div class="payment-methods">
+                  @for (method of paymentMethods; track method) {
+                    <button
+                      type="button"
+                      [attr.aria-pressed]="walkInModel().paymentMethod === method"
+                      (click)="choosePayment(method)"
+                    >
+                      {{ 'finance.method.' + method | t }}
+                    </button>
+                  }
+                </div>
+              </fieldset>
+              <details>
+                <summary>{{ 'common.additionalDetails' | t }}</summary>
+                <label class="field"
+                  >{{ 'finance.referenceNumber' | t
+                  }}<input
+                    class="field-input"
+                    dir="ltr"
+                    [formField]="walkInForm.referenceNumber" /></label
+                ><label class="field"
+                  >{{ 'finance.notesOptional' | t
+                  }}<textarea
+                    class="field-input"
+                    rows="2"
+                    [formField]="walkInForm.notes"
+                  ></textarea>
+                </label>
+              </details>
+            }
+          }
+        }
+        <button
+          type="submit"
+          class="btn btn-primary btn-submit-walk-in"
+          [disabled]="busy() || optionsLoading() || walkInForm().invalid() || !canWalkIn()"
+        >
+          {{ 'tickets.walkIn.addToWaiting' | t }}
+        </button>
+      </form>
+    } @else if (selected(); as ticket) {
+      <section class="ticket-details">
+        <h3>{{ ticket.patient ? label(ticket.patient) : ticket.ticketNumber }}</h3>
+        <dl class="ticket-facts">
+          <dt>{{ 'reception.arrival.ticketNumber' | t }}</dt>
+          <dd>
+            <bdi>{{ ticket.ticketNumber }}</bdi>
+          </dd>
+          <dt>{{ 'reservations.status' | t }}</dt>
+          <dd>{{ statusKey(ticket.status) | t }}</dd>
+          <dt>{{ 'tickets.ahead' | t }}</dt>
+          <dd>{{ ticket.patientsAheadNow }}</dd>
+          @if (ticket.visitType) {
+            <dt>{{ 'tickets.walkIn.visitAndPrice' | t }}</dt>
+            <dd>
+              {{ label(ticket.visitType) }}
+              @if (ticket.priceSnapshot !== undefined) {
+                · <bdi>{{ ticket.priceSnapshot }} {{ ticket.currencyCode || ticket.currency }}</bdi>
+              }
+            </dd>
+          }
+        </dl>
+        @if (pendingAction(); as action) {
+          <form class="reason-form" (submit)="$event.preventDefault(); act(action)">
+            <p>
+              {{
+                (action === 'cancel' ? 'tickets.queue.cancelHelp' : 'tickets.queue.manualHelp') | t
+              }}
+            </p>
+            <label class="field"
+              >{{ 'tickets.reason' | t }} *<textarea
+                class="field-input"
                 id="ticket-action-reason"
-                class="reason-textarea"
                 rows="3"
-                placeholder="{{ 'tickets.reasonPlaceholder' | t }}"
                 [formField]="reasonForm.reason"
               ></textarea>
-            </div>
-          }
-
-          <!-- Action Buttons Bar -->
-          <div class="drawer-actions-bar">
-            @if (ticket.canRefund && ticket.paymentId && canRefund()) {
-              <a
-                class="btn-drawer-primary refund-action"
-                [routerLink]="['/' + actor().toLowerCase() + '/finance']"
-                [queryParams]="{ practiceId: practiceId(), paymentId: ticket.paymentId }"
+            </label>
+            <div class="queue-actions">
+              <button
+                type="submit"
+                class="btn"
+                [class.btn-danger]="action === 'cancel'"
+                [class.btn-primary]="action === 'manual-call'"
+                [disabled]="
+                  busy() ||
+                  !reasonModel().reason.trim() ||
+                  (action === 'manual-call' && queueOccupied())
+                "
               >
-                {{ 'finance.refund.action' | t }} · {{ ticket.refundableAmount }}
-                {{ ticket.currencyCode || ticket.currency }}
-              </a>
-            }
-
+                {{
+                  (action === 'cancel' ? 'tickets.cancel' : 'tickets.queue.confirmCall') | t
+                }}</button
+              ><button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="pendingAction.set(null)"
+                [disabled]="busy()"
+              >
+                {{ 'tickets.queue.back' | t }}
+              </button>
+            </div>
+          </form>
+        } @else {
+          <div class="queue-actions ticket-actions">
             @if (ticket.status === 'Waiting' && canManualCall()) {
               <button
                 type="button"
-                class="btn-drawer-secondary"
-                (click)="act('manual-call')"
-                [disabled]="busy() || queueOccupied() || reasonForm().invalid()"
+                class="btn btn-outline-secondary manual-call"
+                (click)="chooseAction('manual-call')"
+                [disabled]="busy() || queueOccupied()"
               >
                 {{ 'tickets.manualCall' | t }}
               </button>
             }
-
             @if (ticket.status === 'Called' && canCallNext()) {
-              <button
-                type="button"
-                class="btn-drawer-danger"
-                (click)="act('no-response')"
-                [disabled]="busy()"
-              >
-                {{ 'tickets.noResponse' | t }}
-              </button>
               @if (canRecall(ticket)) {
                 <button
                   type="button"
-                  class="btn-drawer-secondary"
+                  class="btn btn-outline-secondary"
                   (click)="act('recall')"
                   [disabled]="busy()"
                 >
                   {{ 'tickets.recall' | t }}
                 </button>
               }
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="act('no-response')"
+                [disabled]="busy()"
+              >
+                {{ 'tickets.queue.noResponse' | t }}
+              </button>
             }
-
             @if (ticket.status === 'NoShow' && canRestore() && !ticket.isRefunded) {
               <button
                 type="button"
-                class="btn-drawer-secondary"
+                class="btn btn-primary restore-waiting"
                 (click)="act('restore')"
                 [disabled]="busy()"
               >
-                {{ 'tickets.restore' | t }}
+                {{ 'tickets.queue.restoreWaiting' | t }}
               </button>
             }
-
             @if (ticket.status === 'Called' && canStart()) {
               <button
                 type="button"
-                class="btn-drawer-primary"
+                class="btn btn-primary"
                 (click)="act('start')"
                 [disabled]="busy()"
               >
                 {{ 'tickets.start' | t }}
               </button>
             }
-
             @if (ticket.status === 'InProgress' && canOpenClinical()) {
-              <a class="btn-drawer-primary" routerLink="/doctor/encounters" [queryParams]="{ practiceId: practiceId(), ticketId: ticket.ticketId }">
-                {{ 'encounters.open' | t }}
-              </a>
+              <a
+                class="btn btn-primary"
+                routerLink="/doctor/encounters"
+                [queryParams]="{ practiceId: practiceId(), ticketId: ticket.ticketId }"
+                >{{ 'encounters.open' | t }}</a
+              >
             }
-
-            @if (
-              (ticket.status === 'Waiting' ||
-                ticket.status === 'Called' ||
-                ticket.status === 'NoShow') &&
-              canCancel()
-            ) {
+            @if (['Waiting', 'Called', 'NoShow'].includes(ticket.status) && canCancel()) {
               <button
                 type="button"
-                class="btn-drawer-danger"
-                (click)="act('cancel')"
-                [disabled]="busy() || reasonForm().invalid()"
+                class="btn btn-outline-secondary cancel-ticket"
+                (click)="chooseAction('cancel')"
+                [disabled]="busy()"
               >
                 {{ 'tickets.cancel' | t }}
               </button>
             }
           </div>
-        </div>
-      } @else {
-        <div class="drawer-loading-state" role="status">
-          <span class="spinner"></span>
-          <p>{{ 'tickets.loading' | t }}</p>
-        </div>
-      }
-    </dialog>
-  }
+        }
+        @if (ticket.canRefund && ticket.paymentId && canRefund()) {
+          <a
+            class="btn btn-outline-secondary refund-action"
+            [routerLink]="['/' + actor().toLowerCase() + '/finance']"
+            [queryParams]="{ practiceId: practiceId(), paymentId: ticket.paymentId }"
+            >{{ 'finance.refund.action' | t }} ·
+            <bdi>{{ ticket.refundableAmount }} {{ ticket.currencyCode || ticket.currency }}</bdi></a
+          >
+        }
+        <details class="ticket-additional">
+          <summary>{{ 'common.additionalDetails' | t }}</summary>
+          <dl class="ticket-facts">
+            <dt>{{ 'reservations.practice' | t }}</dt>
+            <dd>{{ label(ticket.practice) }}</dd>
+            <dt>{{ 'reservations.doctor' | t }}</dt>
+            <dd>{{ label(ticket.doctor) }}</dd>
+            <dt>{{ 'tickets.businessDate' | t }}</dt>
+            <dd>
+              <bdi>{{ ticket.businessDate }}</bdi>
+            </dd>
+            <dt>{{ 'reservations.source' | t }}</dt>
+            <dd>{{ sourceLabel(ticket.source) }}</dd>
+            @if (ticket.segment) {
+              <dt>{{ 'tickets.walkIn.visitAndPrice' | t }}</dt>
+              <dd>{{ label(ticket.segment) }}</dd>
+            }
+            @if (ticket.paymentTransactionNumber) {
+              <dt>{{ 'finance.transactionNumber' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.paymentTransactionNumber }}</bdi>
+              </dd>
+            }
+            @if (ticket.refundTransactionNumber) {
+              <dt>{{ 'finance.refunded' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.refundTransactionNumber }}</bdi>
+              </dd>
+            }
+            @if (ticket.refundableAmount !== undefined) {
+              <dt>{{ 'finance.amount' | t }}</dt>
+              <dd>
+                <bdi
+                  >{{ ticket.refundableAmount }} {{ ticket.currencyCode || ticket.currency }}</bdi
+                >
+              </dd>
+            }
+            <dt>{{ 'tickets.callAttempts' | t }}</dt>
+            <dd>{{ ticket.callAttempts.length }}</dd>
+            @if (ticket.checkedInOnUtc) {
+              <dt>{{ 'tickets.checkedInOn' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.checkedInOnUtc }}</bdi>
+              </dd>
+            }
+            @if (ticket.queueOrderTime) {
+              <dt>{{ 'tickets.queuedOn' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.queueOrderTime }}</bdi>
+              </dd>
+            }
+            @if (ticket.calledOnUtc) {
+              <dt>{{ 'tickets.calledOn' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.calledOnUtc }}</bdi>
+              </dd>
+            }
+            @if (ticket.startedOnUtc) {
+              <dt>{{ 'tickets.startedOn' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.startedOnUtc }}</bdi>
+              </dd>
+            }
+            @if (ticket.completedOnUtc) {
+              <dt>{{ 'tickets.completedOn' | t }}</dt>
+              <dd>
+                <bdi>{{ ticket.completedOnUtc }}</bdi>
+              </dd>
+            }
+            <dt>{{ 'tickets.lastUpdated' | t }}</dt>
+            <dd>
+              <bdi>{{ ticket.lastUpdatedOnUtc }}</bdi>
+            </dd>
+          </dl>
+          @if (ticket.callAttempts.length) {
+            <h4>{{ 'tickets.callAttempts' | t }}</h4>
+            <ol class="attempts-list">
+              @for (attempt of ticket.callAttempts; track attempt.attemptNumber) {
+                <li>
+                  {{ 'tickets.attempt' | t }} {{ attempt.attemptNumber }} ·
+                  {{ outcomeLabel(attempt.outcome)
+                  }}<time dir="ltr">{{ attempt.confirmedOnUtc || attempt.calledOnUtc }}</time>
+                </li>
+              }
+            </ol>
+          }
+        </details>
+      </section>
+    } @else if (detailLoading()) {
+      <p role="status">{{ 'tickets.loading' | t }}</p>
+    }
+    @for (message of messages(); track $index) {
+      <p role="alert" class="queue-alert">{{ message | t }}</p>
+    }
+  </app-side-drawer>
 </main>

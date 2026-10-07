@@ -48,6 +48,8 @@ export class ReservationWorkspaceComponent implements OnInit {
   }
 
   drawerTitle(): string {
+    if (this.store.checkedInTicket()) return this.language.t('reception.arrival.done');
+    if (this.store.arrival()) return this.language.t('reception.arrival.title');
     if (this.store.editor()) {
       const mode = this.store.editor();
       return mode === 'create'
