@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import {
   accountAreaGuard,
+  accountActorGuard,
   anonymousOnlyMatchGuard,
   authenticatedGuard,
   catalogManagerAreaGuard,
@@ -41,7 +42,9 @@ export const routes: Routes = [
   // SuperAdmin Portal (wrapped with AdminLayout)
   {
     path: 'admin',
-    canActivate: [authenticatedGuard, catalogManagerAreaGuard],
+    data: { actor: 'SuperAdmin' },
+    canActivate: [authenticatedGuard, accountActorGuard],
+    canActivateChild: [authenticatedGuard, accountActorGuard],
     loadComponent: () =>
       import('./features/admin/admin-layout/admin-layout').then((m) => m.AdminLayout),
     loadChildren: () =>
@@ -53,7 +56,7 @@ export const routes: Routes = [
     path: '',
     canActivate: [authenticatedGuard],
     loadComponent: () => import('./layout/portal-layout/portal-layout').then((m) => m.PortalLayout),
-    canActivateChild: [catalogManagerAreaGuard],
+    canActivateChild: [authenticatedGuard, accountActorGuard, catalogManagerAreaGuard],
     children: [
       {
         path: 'medical-catalog',
@@ -152,7 +155,7 @@ export const routes: Routes = [
       },
       {
         path: 'reception/queue',
-        data: { actor: 'Reception' },
+        data: { actor: 'Reception', practicePermission: 'PracticeTickets.View' },
         loadChildren: () =>
           import('./features/tickets/tickets.routes').then((module) => module.TICKET_ROUTES),
       },
@@ -166,25 +169,33 @@ export const routes: Routes = [
       },
       {
         path: 'doctor/finance',
-        data: { actor: 'Doctor', view: 'transactions' },
+        data: {
+          actor: 'Doctor',
+          view: 'transactions',
+          permission: 'DoctorPracticePayments.ViewOwn',
+        },
         loadChildren: () =>
           import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'doctor/revenue',
-        data: { actor: 'Doctor', view: 'revenue' },
+        data: { actor: 'Doctor', view: 'revenue', permission: 'DoctorRevenue.ViewOwn' },
         loadChildren: () =>
           import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'reception/finance',
-        data: { actor: 'Reception', view: 'transactions' },
+        data: {
+          actor: 'Reception',
+          view: 'transactions',
+          practicePermission: 'PracticePayments.View',
+        },
         loadChildren: () =>
           import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
         path: 'patient/finance',
-        data: { actor: 'Patient', view: 'transactions' },
+        data: { actor: 'Patient', view: 'transactions', permission: 'Payments.ViewOwn' },
         loadChildren: () =>
           import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
@@ -202,12 +213,16 @@ export const routes: Routes = [
       },
       {
         path: 'reception/reservations',
-        data: { actor: 'Reception' },
+        data: {
+          actor: 'Reception',
+          practicePermission: ['PracticeReservations.View', 'PracticeReservations.Create'],
+        },
         loadChildren: () =>
           import('./features/reservations/reservations.routes').then((m) => m.RESERVATION_ROUTES),
       },
       {
         path: 'doctor/practices',
+        data: { actor: 'Doctor' },
         loadChildren: () =>
           import('./features/doctor-practices/doctor-practices.routes').then(
             (m) => m.FEATURE_ROUTES,
@@ -215,11 +230,13 @@ export const routes: Routes = [
       },
       {
         path: 'doctor/profile',
+        data: { actor: 'Doctor' },
         loadChildren: () =>
           import('./features/doctor-profile/doctor-profile.routes').then((m) => m.FEATURE_ROUTES),
       },
       {
         path: 'doctor/receptions',
+        data: { actor: 'Doctor' },
         loadChildren: () =>
           import('./features/doctor-receptions/doctor-receptions.routes').then(
             (m) => m.FEATURE_ROUTES,
@@ -227,6 +244,7 @@ export const routes: Routes = [
       },
       {
         path: 'doctor/onboarding',
+        data: { actor: 'Doctor' },
         loadChildren: () =>
           import('./features/doctor-onboarding/doctor-onboarding.routes').then(
             (m) => m.FEATURE_ROUTES,
@@ -234,11 +252,13 @@ export const routes: Routes = [
       },
       {
         path: 'reception',
+        data: { actor: 'Reception' },
         loadChildren: () =>
           import('./features/reception/reception.routes').then((m) => m.FEATURE_ROUTES),
       },
       {
         path: 'patient',
+        data: { actor: 'Patient' },
         loadChildren: () =>
           import('./features/patient/patient.routes').then((m) => m.FEATURE_ROUTES),
       },

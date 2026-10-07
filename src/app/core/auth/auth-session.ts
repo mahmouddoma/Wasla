@@ -17,7 +17,10 @@ export class AuthSession {
   private readonly state = signal<AuthSessionState | null>(this.restore());
   readonly session = this.state.asReadonly();
   readonly user = computed(() => this.state()?.user ?? null);
-  readonly isAuthenticated = computed(() => this.token() !== null && this.user() !== null);
+  // Time is not a signal: evaluate expiry on every authorization check.
+  isAuthenticated(): boolean {
+    return this.token() !== null && this.user() !== null;
+  }
 
   begin(response: LoginResponse): boolean {
     if (!response.accessToken || !this.isFutureDate(response.expiresOnUtc)) return false;
@@ -73,6 +76,8 @@ export class AuthSession {
     }
     if (user.userType === 'SuperAdmin') {
       if (user.permissions.includes(PERMISSIONS.doctorsViewAll)) return '/admin/doctors';
+      if (user.permissions.includes(PERMISSIONS.platformRevenueViewAggregates))
+        return '/admin/revenue';
       if (user.permissions.includes(PERMISSIONS.superAdminsViewAll)) return '/admin/superadmins';
       if (user.permissions.includes(PERMISSIONS.rolesView)) return '/admin/roles';
       if (user.permissions.includes(PERMISSIONS.specializationsView)) {
@@ -91,7 +96,11 @@ export class AuthSession {
       if (user.permissions.includes('MedicalCatalogManagers.ViewAll'))
         return '/admin/medical-catalog-managers';
     }
-    if (user.userType === 'Doctor' && !this.hasDoctorOperationalAccess(user)) {
+    if (
+      user.userType === 'Doctor' &&
+      !this.hasDoctorOperationalAccess(user) &&
+      user.permissions.includes(PERMISSIONS.doctorOnboardingViewOwn)
+    ) {
       return '/doctor/onboarding';
     }
     return (

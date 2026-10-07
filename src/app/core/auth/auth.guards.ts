@@ -18,6 +18,19 @@ export const authenticatedGuard: CanActivateFn = () => {
   return session.requiresPasswordChange() ? router.createUrlTree(['/change-password']) : true;
 };
 
+/** Account type is independent of permission codes and custom role names. */
+export const accountActorGuard: CanActivateFn = (route) => {
+  const session = inject(AuthSession);
+  const user = session.user();
+  const actor = [...route.pathFromRoot]
+    .reverse()
+    .map((snapshot) => snapshot.data['actor'])
+    .find((value) => typeof value === 'string');
+  return user && (!actor || user.userType === actor)
+    ? true
+    : inject(Router).createUrlTree([user ? session.destinationFor(user) : '/login']);
+};
+
 export const catalogManagerAreaGuard: CanActivateFn = (route) => {
   const session = inject(AuthSession);
   const user = session.user();
@@ -64,6 +77,8 @@ export const doctorProfileGuard: CanActivateFn = () => {
   const user = session.user();
   if (!user) return router.createUrlTree(['/login']);
   const permissions = [
+    PERMISSIONS.doctorProfileViewOwn,
+    PERMISSIONS.doctorProfileUpdateOwn,
     PERMISSIONS.doctorSpecializationsViewOwn,
     PERMISSIONS.doctorPracticeLocationViewOwn,
     PERMISSIONS.doctorPracticeLocationManageOwn,

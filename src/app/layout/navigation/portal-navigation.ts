@@ -127,6 +127,16 @@ export class PortalNavigation {
     if (userType === 'doctor') {
       const items: NavigationItem[] = [
         ...this.diagnosticItems('Doctor'),
+        ...(this.session.hasPermission('Prescriptions.ViewOwn')
+          ? [
+              {
+                id: 'prescriptions',
+                labelKey: 'medications.prescription',
+                route: '/doctor/prescriptions',
+                icon: 'clipboard-list' as const,
+              },
+            ]
+          : []),
         ...(['lab', 'radiology'] as const).flatMap((kind) =>
           this.session.hasPermission(
             (kind === 'lab' ? 'Lab' : 'Radiology') + 'CatalogRequests.ViewOwn',
@@ -168,7 +178,7 @@ export class PortalNavigation {
         {
           id: 'workspace',
           labelKey: 'sidebar.workspace',
-          route: '/workspace/doctor',
+          route: this.session.destinationFor(this.user()!),
           icon: 'home',
         },
         {
@@ -278,7 +288,7 @@ export class PortalNavigation {
       });
     }
 
-    // Default: Patient
+    if (userType !== 'patient') return [];
     const items: NavigationItem[] = [
       ...this.diagnosticItems('Patient'),
       ...(this.session.hasPermission('Prescriptions.ViewOwnCompleted')
@@ -376,9 +386,12 @@ export class PortalNavigation {
     });
   }
   private canAccessDoctorItem(id: string): boolean {
+    if (id === 'queue') return this.session.hasDoctorOperationalAccess(this.user()!);
     const required: Record<string, readonly string[]> = {
       reservations: ['DoctorPracticeReservations.ViewOwn'],
       profile: [
+        PERMISSIONS.doctorProfileViewOwn,
+        PERMISSIONS.doctorProfileUpdateOwn,
         PERMISSIONS.doctorSpecializationsViewOwn,
         PERMISSIONS.doctorPracticeLocationViewOwn,
         PERMISSIONS.doctorPracticeLocationManageOwn,
@@ -449,7 +462,7 @@ export class PortalNavigation {
         this.user()?.userType === 'Patient'
           ? ['encounters', 'prescriptions', 'follow-ups', 'lab-requests', 'radiology-requests']
           : this.user()?.userType === 'Doctor'
-            ? ['lab-requests', 'radiology-requests']
+            ? ['prescriptions', 'lab-requests', 'radiology-requests']
             : [],
       management: [
         'practices',

@@ -3,9 +3,11 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { TicketsApi } from '../../../../domains/tickets';
 import { PatientTickets } from './patient-tickets';
+import { LanguageService } from '../../../../core/i18n/language.service';
 
 describe('PatientTickets', () => {
   let fixture: ComponentFixture<PatientTickets>;
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   const api = {
     myActive: vi.fn(() =>
       of([
@@ -28,6 +30,7 @@ describe('PatientTickets', () => {
       imports: [PatientTickets],
       providers: [provideRouter([]), { provide: TicketsApi, useValue: api }],
     }).compileComponents();
+    TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(PatientTickets);
     await fixture.whenStable();
   });

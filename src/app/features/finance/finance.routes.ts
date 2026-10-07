@@ -1,21 +1,21 @@
 import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { AuthSession } from '../../core/auth/auth-session';
 import { authenticatedGuard, permissionGuard } from '../../core/auth/auth.guards';
+import { receptionPracticeGuard } from '../../domains/reception-practices';
 
 export const FINANCE_ROUTES: Routes = [
   {
     path: '',
-    canActivate: [authenticatedGuard],
-    loadComponent: () => import('./pages/finance-workspace/finance-workspace').then((m) => m.FinanceWorkspace),
+    canActivate: [
+      authenticatedGuard,
+      (route, state) =>
+        inject(AuthSession).user()?.userType === 'Reception'
+          ? receptionPracticeGuard(route, state)
+          : permissionGuard(route, state),
+    ],
+    loadComponent: () =>
+      import('./pages/finance-workspace/finance-workspace').then((m) => m.FinanceWorkspace),
     title: 'finance.title',
-  },
-];
-
-export const ADMIN_FINANCE_ROUTES: Routes = [
-  {
-    path: '',
-    canActivate: [authenticatedGuard, permissionGuard],
-    data: { actor: 'Admin', view: 'revenue', permission: 'PlatformRevenue.ViewAggregates' },
-    loadComponent: () => import('./pages/finance-workspace/finance-workspace').then((m) => m.FinanceWorkspace),
-    title: 'finance.revenue.title',
   },
 ];

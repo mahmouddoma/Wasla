@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { AuthSession } from '../../core/auth/auth-session';
 import { permissionGuard } from '../../core/auth/auth.guards';
 import { PERMISSIONS } from '../../core/auth/permissions';
 
@@ -38,9 +40,12 @@ export const ADMIN_ROUTES: Routes = [
   {
     path: 'reservations',
     canActivate: [permissionGuard],
-    data: { actor: 'Admin', permission: 'Reservations.ViewAdministrative' },
-    loadChildren: () =>
-      import('../reservations/reservations.routes').then((m) => m.RESERVATION_ROUTES),
+    data: {
+      actor: 'SuperAdmin',
+      reservationActor: 'Admin',
+      permission: 'Reservations.ViewAdministrative',
+    },
+    loadChildren: () => import('../reservations').then((m) => m.RESERVATION_ROUTES),
     title: 'reservations.title',
   },
   {
@@ -163,5 +168,13 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./doctors-list/doctors-list').then((m) => m.DoctorsList),
     title: 'routes.doctors',
   },
-  { path: '', pathMatch: 'full', redirectTo: 'doctors' },
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: () => {
+      const session = inject(AuthSession);
+      const user = session.user();
+      return user ? session.destinationFor(user) : '/login';
+    },
+  },
 ];

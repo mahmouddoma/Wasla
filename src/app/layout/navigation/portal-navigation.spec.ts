@@ -17,6 +17,9 @@ describe('PortalNavigation', () => {
           provide: AuthSession,
           useValue: {
             user,
+            destinationFor: () => '/workspace/doctor',
+            hasDoctorOperationalAccess: (current: CurrentUser) =>
+              current.permissions.some((code) => code !== PERMISSIONS.doctorOnboardingViewOwn),
             hasPermission: (code: string) => user()?.permissions.includes(code) ?? false,
           },
         },

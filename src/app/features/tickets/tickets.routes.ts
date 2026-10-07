@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router, Routes } from '@angular/router';
 import { AuthSession } from '../../core/auth/auth-session';
 import { authenticatedGuard } from '../../core/auth/auth.guards';
+import { receptionPracticeGuard } from '../../domains/reception-practices';
 
 const ticketActorGuard: CanActivateFn = (route) => {
   const session = inject(AuthSession);
@@ -9,7 +10,9 @@ const ticketActorGuard: CanActivateFn = (route) => {
   const user = session.user();
   const actor = route.data['actor'];
   const permission = route.data['permission'];
-  return user?.userType === actor &&
+  return user !== null &&
+    user.userType === actor &&
+    (actor !== 'Doctor' || session.hasDoctorOperationalAccess(user)) &&
     (typeof permission !== 'string' || session.hasPermission(permission))
     ? true
     : router.createUrlTree([user ? session.destinationFor(user) : '/login']);
@@ -18,7 +21,7 @@ const ticketActorGuard: CanActivateFn = (route) => {
 export const TICKET_ROUTES: Routes = [
   {
     path: '',
-    canActivate: [authenticatedGuard, ticketActorGuard],
+    canActivate: [authenticatedGuard, ticketActorGuard, receptionPracticeGuard],
     loadComponent: () =>
       import('./pages/queue-workspace/queue-workspace').then((module) => module.QueueWorkspace),
     title: 'tickets.queue.title',

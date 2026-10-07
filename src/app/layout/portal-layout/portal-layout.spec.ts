@@ -21,7 +21,7 @@ describe('PortalLayout', () => {
     phoneNumber: '+201000000000',
     roles: ['Doctor'],
     userType: 'Doctor',
-    permissions: [],
+    permissions: ['DoctorPractices.ViewOwn'],
     isFirstLogin: false,
     doctorId: '101',
     patientId: null,
@@ -56,6 +56,7 @@ describe('PortalLayout', () => {
   const mockSession = {
     user: userSignal,
     hasPermission: vi.fn(() => true),
+    hasDoctorOperationalAccess: (current: CurrentUser) => current.permissions.length > 0,
     clear: vi.fn(),
     destinationFor: vi.fn((u: CurrentUser) => `/workspace/${u.userType.toLowerCase()}`),
   };
@@ -140,7 +141,7 @@ describe('PortalLayout', () => {
     mockSession.hasPermission.mockImplementation(() => false);
     userSignal.set({ ...doctorUser, permissions: [] });
     fixture.detectChanges();
-    expect(component['mobileNavItems']().map((item) => item.id)).toEqual(['workspace', 'queue']);
+    expect(component['mobileNavItems']().map((item) => item.id)).toEqual(['workspace']);
     expect(
       TestBed.inject(PortalNavigation)
         .items()

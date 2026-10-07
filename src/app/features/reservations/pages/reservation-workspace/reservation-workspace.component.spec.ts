@@ -34,7 +34,12 @@ describe('ReservationWorkspaceComponent', () => {
   );
   it('shows an administrative list failure instead of empty results and retries the same request', async () => {
     TestBed.overrideProvider(ActivatedRoute, {
-      useValue: { snapshot: { data: { actor: 'Admin' }, queryParamMap: convertToParamMap({}) } },
+      useValue: {
+        snapshot: {
+          data: { actor: 'SuperAdmin', reservationActor: 'Admin' },
+          queryParamMap: convertToParamMap({}),
+        },
+      },
     });
     TestBed.overrideProvider(AuthSession, {
       useValue: { user: () => ({ userType: 'SuperAdmin' }), hasPermission: () => true },
@@ -294,28 +299,32 @@ describe('ReservationWorkspaceComponent', () => {
     f.detectChanges();
     http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
     await tick();
-    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
-      {
-        id: 'clinic',
-        nameAr: 'Clinic',
-        nameEn: 'Clinic',
-        isActive: true,
-        permissionCodes: [
-          'PracticeReservations.View',
-          'PracticeReservations.Create',
-          'Patients.SearchBasic',
-        ],
-      },
-    ]);
+    http
+      .expectOne((r) => r.url.endsWith('/reception/practices'))
+      .flush([
+        {
+          id: 'clinic',
+          nameAr: 'Clinic',
+          nameEn: 'Clinic',
+          isActive: true,
+          permissionCodes: [
+            'PracticeReservations.View',
+            'PracticeReservations.Create',
+            'Patients.SearchBasic',
+          ],
+        },
+      ]);
     await tick();
     http.expectOne((r) => r.url.endsWith('/filter-options')).flush({ segments: [] });
     await tick();
-    http.expectOne((r) => r.url.endsWith('/reservations')).flush({
-      items: [],
-      totalCount: 0,
-      pageNumber: 1,
-      pageSize: 20,
-    });
+    http
+      .expectOne((r) => r.url.endsWith('/reservations'))
+      .flush({
+        items: [],
+        totalCount: 0,
+        pageNumber: 1,
+        pageSize: 20,
+      });
     await f.whenStable();
     f.detectChanges();
 
@@ -355,24 +364,28 @@ describe('ReservationWorkspaceComponent', () => {
     f.detectChanges();
     http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
     await tick();
-    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
-      {
-        id: 'clinic',
-        nameAr: 'Clinic',
-        nameEn: 'Clinic',
-        isActive: true,
-        permissionCodes: ['PracticeReservations.View', 'PracticeReservations.Create'],
-      },
-    ]);
+    http
+      .expectOne((r) => r.url.endsWith('/reception/practices'))
+      .flush([
+        {
+          id: 'clinic',
+          nameAr: 'Clinic',
+          nameEn: 'Clinic',
+          isActive: true,
+          permissionCodes: ['PracticeReservations.View', 'PracticeReservations.Create'],
+        },
+      ]);
     await tick();
     http.expectOne((r) => r.url.endsWith('/filter-options')).flush({ segments: [] });
     await tick();
-    http.expectOne((r) => r.url.endsWith('/reservations')).flush({
-      items: [],
-      totalCount: 0,
-      pageNumber: 1,
-      pageSize: 20,
-    });
+    http
+      .expectOne((r) => r.url.endsWith('/reservations'))
+      .flush({
+        items: [],
+        totalCount: 0,
+        pageNumber: 1,
+        pageSize: 20,
+      });
     await f.whenStable();
     f.detectChanges();
 
@@ -395,12 +408,14 @@ describe('ReservationWorkspaceComponent', () => {
     const resetFiltersSpy = vi.spyOn(f.componentInstance, 'resetFilters');
     resetBtn.click();
     expect(resetFiltersSpy).toHaveBeenCalled();
-    http.expectOne((r) => r.url.endsWith('/reservations')).flush({
-      items: [],
-      totalCount: 0,
-      pageNumber: 1,
-      pageSize: 20,
-    });
+    http
+      .expectOne((r) => r.url.endsWith('/reservations'))
+      .flush({
+        items: [],
+        totalCount: 0,
+        pageNumber: 1,
+        pageSize: 20,
+      });
   });
 
   it('renders choose clinic title and selector guidance when no clinic is selected, without filter/date guidance', async () => {
@@ -421,22 +436,24 @@ describe('ReservationWorkspaceComponent', () => {
     f.detectChanges();
     http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
     await tick();
-    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
-      {
-        id: 'clinic-1',
-        nameAr: 'Clinic 1',
-        nameEn: 'Clinic 1',
-        isActive: true,
-        permissionCodes: ['PracticeReservations.View'],
-      },
-      {
-        id: 'clinic-2',
-        nameAr: 'Clinic 2',
-        nameEn: 'Clinic 2',
-        isActive: true,
-        permissionCodes: ['PracticeReservations.View'],
-      },
-    ]);
+    http
+      .expectOne((r) => r.url.endsWith('/reception/practices'))
+      .flush([
+        {
+          id: 'clinic-1',
+          nameAr: 'Clinic 1',
+          nameEn: 'Clinic 1',
+          isActive: true,
+          permissionCodes: ['PracticeReservations.View'],
+        },
+        {
+          id: 'clinic-2',
+          nameAr: 'Clinic 2',
+          nameEn: 'Clinic 2',
+          isActive: true,
+          permissionCodes: ['PracticeReservations.View'],
+        },
+      ]);
     await tick();
     await f.whenStable();
     f.detectChanges();
@@ -473,15 +490,17 @@ describe('ReservationWorkspaceComponent', () => {
     f.detectChanges();
     http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
     await tick();
-    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
-      {
-        id: 'clinic',
-        nameAr: 'Clinic',
-        nameEn: 'Clinic',
-        isActive: true,
-        permissionCodes: ['PracticeReservations.Create'],
-      },
-    ]);
+    http
+      .expectOne((r) => r.url.endsWith('/reception/practices'))
+      .flush([
+        {
+          id: 'clinic',
+          nameAr: 'Clinic',
+          nameEn: 'Clinic',
+          isActive: true,
+          permissionCodes: ['PracticeReservations.Create'],
+        },
+      ]);
     await tick();
     await f.whenStable();
     f.detectChanges();

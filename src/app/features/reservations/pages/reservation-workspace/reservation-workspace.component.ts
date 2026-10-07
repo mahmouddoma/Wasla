@@ -106,7 +106,8 @@ export class ReservationWorkspaceComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const p = this.route.snapshot.queryParamMap;
     await this.store.initialize(
-      this.route.snapshot.data['actor'] as ReservationActor,
+      (this.route.snapshot.data['reservationActor'] ??
+        this.route.snapshot.data['actor']) as ReservationActor,
       p.get('practiceId') || '',
     );
     const initialPractice = this.store.practiceId();

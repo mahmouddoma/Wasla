@@ -64,7 +64,12 @@ describe('Workspace daily tasks', () => {
         provideRouter([]),
         {
           provide: AuthSession,
-          useValue: { user, hasPermission: (code: string) => user().permissions.includes(code) },
+          useValue: {
+            user,
+            hasPermission: (code: string) => user().permissions.includes(code),
+            destinationFor: () => '/workspace/doctor',
+            hasDoctorOperationalAccess: (current: CurrentUser) => current.permissions.length > 0,
+          },
         },
         { provide: ReceptionPracticeContext, useValue: context },
       ],
