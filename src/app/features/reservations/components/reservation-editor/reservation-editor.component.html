@@ -1,51 +1,84 @@
 <form (submit)="submit($event)" class="editor" [attr.aria-busy]="busy() || loading()">
-  <header>
-    <h2 id="reservation-editor-heading">{{ 'reservations.' + mode() | t }}</h2>
-  </header>
+  @if (!reception()) {
+    <header>
+      <h2 id="reservation-editor-heading">{{ 'reservations.' + mode() | t }}</h2>
+    </header>
+  }
   <fieldset [disabled]="busy()">
     @if (loading()) {
       <p role="status">{{ 'reservations.loading' | t }}</p>
     }
     @if (mode() === 'create') {
-      @if (reception() && canSearch()) {
+      @if (reception()) {
+        @if (patientId()) {
+          <section class="selected-patient" aria-live="polite">
+            <span>{{ 'reception.patients.selected' | t }}</span
+            ><strong>{{
+              selectedPatient()
+                ? label(selectedPatient()!)
+                : ('reception.appointments.linkedPatient' | t)
+            }}</strong>
+          </section>
+        }
+        @if (canSearch()) {
+          <details [open]="!patientId()">
+            <summary>
+              {{
+                (patientId() ? 'reception.appointments.changePatient' : 'reception.patients.find')
+                  | t
+              }}
+            </summary>
+            <app-reservation-patient-search
+              [results]="patientResults()"
+              [busy]="patientSearchLoading() || busy()"
+              [searched]="patientSearched()"
+              [failed]="patientSearchFailed()"
+              [selectedId]="patientId()"
+              (search)="search.emit($event)"
+              (selected)="patientChange.emit($event)"
+            />
+          </details>
+        } @else if (!patientId()) {
+          <p>
+            {{
+              (canRegister()
+                ? 'reception.appointments.selectFromPatients'
+                : 'reception.appointments.patientSelectionUnavailable'
+              ) | t
+            }}
+          </p>
+        }
+        @if (canRegister()) {
+          <a routerLink="/reception/patients">{{ 'reception.patients.add' | t }}</a>
+        }
+      } @else {
         <label
-          >{{ 'reservations.patientSearch' | t
-          }}<input type="search" #searchInput (change)="search.emit(searchInput.value)"
-        /></label>
-      }
-      @if (reception() && canRegister()) {
-        <a routerLink="/reception/patients">{{ 'reservations.registerPatient' | t }}</a>
-      }
-      <label
-        >{{ 'reservations.patient' | t }}
-        @if (reception() && !patients().length) {
-          <input
-            dir="ltr"
-            [formField]="fields.patientId"
-            (change)="patientChange.emit(value($event))"
-            [placeholder]="'reservations.patientId' | t"
-          />
-        } @else {
-          <select [formField]="fields.patientId" (change)="patientChange.emit(value($event))">
-            <option value="">{{ 'reservations.choose' | t }}</option>
+          >{{ 'reservations.patient' | t
+          }}<select [formField]="fields.patientId" (change)="patientChange.emit(value($event))">
+            <option value="">
+              {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+            </option>
             @for (p of patients(); track p.patientId) {
               <option [value]="p.patientId">{{ label(p) }}</option>
             }
-          </select>
-        }
-      </label>
+          </select></label
+        >
+      }
       @if (eligibilities().length) {
-        <label>{{ 'followUps.bookingType' | t }}
+        <label
+          >{{ 'followUps.bookingType' | t }}
           <select [value]="eligibilityId()" (change)="eligibilityChange.emit(value($event))">
             <option value="">{{ 'followUps.newConsultation' | t }}</option>
             @for (e of eligibilities(); track e.eligibilityId) {
-              <option [value]="e.eligibilityId" [disabled]="!e.canBook">{{ 'followUps.followUp' | t }} · {{ e.validUntil }}</option>
+              <option [value]="e.eligibilityId" [disabled]="!e.canBook">
+                {{ 'followUps.followUp' | t }} · {{ e.validUntil }}
+              </option>
             }
           </select>
         </label>
       }
     }
-    @if (mode() === 'create' || mode() === 'reschedule') {
+    @if (mode() === 'reschedule' || (mode() === 'create' && (!reception() || patientId()))) {
       <label
         >{{ 'reservations.date' | t
         }}<select
@@ -54,66 +87,87 @@
           (change)="dateChange.emit(value($event))"
           [disabled]="loading() || busy()"
         >
-          <option value="">{{ 'reservations.choose' | t }}</option>
+          <option value="">
+            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+          </option>
           @for (d of dates(); track d.date) {
             @if (d.isAvailable) {
-              <option [value]="d.date">{{ d.date }}</option>
+              <option [value]="d.date" [selected]="date() === d.date">{{ d.date }}</option>
             }
           }
         </select></label
       >
-      <label
-        >{{ 'reservations.time' | t
-        }}<select
-          dir="ltr"
-          [value]="time()"
-          (change)="timeChange.emit(value($event))"
-          [disabled]="loading() || busy()"
-        >
-          <option value="">{{ 'reservations.choose' | t }}</option>
-          @for (s of slots(); track s.time) {
-            <option [value]="s.time">
-              {{ s.time }}
-              @if (s.slotDurationMinutes) {
-                ({{ s.slotDurationMinutes }} {{ 'reservations.minutes' | t }})
-              }
+      @if (!reception() || date()) {
+        <label
+          >{{ 'reservations.time' | t
+          }}<select
+            dir="ltr"
+            [value]="time()"
+            (change)="timeChange.emit(value($event))"
+            [disabled]="loading() || busy()"
+          >
+            <option value="">
+              {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
             </option>
-          }
-        </select></label
-      >
+            @for (s of slots(); track s.time) {
+              <option [value]="s.time" [selected]="time() === s.time">
+                {{ s.time }}
+                @if (s.slotDurationMinutes) {
+                  ({{ s.slotDurationMinutes }} {{ 'reservations.minutes' | t }})
+                }
+              </option>
+            }
+          </select></label
+        >
+      }
       @if (!loading() && dates().length === 0) {
         <p>{{ 'reservations.noAvailability' | t }}</p>
       }
     }
-    @if (mode() === 'create') {
+    @if (mode() === 'create' && (!reception() || time())) {
       <label
         >{{ 'reservations.visitType' | t
         }}<select [formField]="fields.visitTypeId">
-          <option value="">{{ 'reservations.choose' | t }}</option>
+          <option value="">
+            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+          </option>
           @for (v of options()?.visitTypes || []; track v.visitTypeId) {
             <option [value]="v.visitTypeId">{{ label(v) }}</option>
           }
         </select></label
       >
       <label
-        >{{ 'reservations.segment' | t
+        >{{ (reception() ? 'reception.appointments.visitPrice' : 'reservations.segment') | t
         }}<select [formField]="fields.segmentId">
-          <option value="">{{ 'reservations.choose' | t }}</option>
+          <option value="">
+            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+          </option>
           @for (s of segments(); track s.segmentId) {
             <option [value]="s.segmentId">{{ label(s) }} · {{ s.price }}</option>
           }
         </select></label
       >
-      <label
-        >{{ 'reservations.bookingNote' | t
-        }}<textarea [formField]="fields.bookingNote" rows="3"></textarea>
-      </label>
+      @if (reception()) {
+        <details>
+          <summary>{{ 'reception.common.additional' | t }}</summary>
+          <ng-container [ngTemplateOutlet]="bookingNote" />
+        </details>
+      } @else {
+        <ng-container [ngTemplateOutlet]="bookingNote" />
+      }
+      <ng-template #bookingNote
+        ><label
+          >{{ 'reservations.bookingNote' | t
+          }}<textarea [formField]="fields.bookingNote" rows="3"></textarea></label
+      ></ng-template>
     }
     @if (mode() === 'cancel') {
       <label
         >{{ 'reservations.reason' | t
         }}<select [formField]="fields.reasonCode">
-          <option value="">{{ 'reservations.choose' | t }}</option>
+          <option value="">
+            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+          </option>
           @for (r of reasons(); track r.code) {
             <option [value]="r.code">
               {{ label(r) }}
@@ -146,7 +200,7 @@
   </fieldset>
   <footer>
     <button type="submit" class="primary" [disabled]="!valid() || busy() || loading()">
-      {{ 'reservations.confirm' | t }}
+      {{ actionLabel() | t }}
     </button>
   </footer>
 </form>

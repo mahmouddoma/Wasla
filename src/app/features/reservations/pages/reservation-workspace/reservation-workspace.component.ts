@@ -1,15 +1,10 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { LanguageService } from '../../../../core/i18n/language.service';
-import { AuthSession } from '../../../../core/auth/auth-session';
 import {
   ReservationActor,
   ReservationLabel,
@@ -23,6 +18,7 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
   selector: 'app-reservation-workspace',
   imports: [
     TranslatePipe,
+    NgTemplateOutlet,
     RouterLink,
     PageHeader,
     SideDrawer,
@@ -36,16 +32,11 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationWorkspaceComponent implements OnInit {
+  readonly receptionViews = ['Today', 'Upcoming', 'All'] as const;
   readonly store = inject(ReservationWorkspaceStore);
   readonly language = inject(LanguageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly session = inject(AuthSession, { optional: true });
-
-  logout(): void {
-    this.session?.clear?.();
-    void this.router.navigate(['/login']);
-  }
 
   statusClass(code: string): string {
     const lower = (code || '').toLowerCase();
@@ -60,25 +51,37 @@ export class ReservationWorkspaceComponent implements OnInit {
     if (this.store.editor()) {
       const mode = this.store.editor();
       return mode === 'create'
-        ? this.language.t('reservations.create')
+        ? this.language.t(
+            this.store.actor() === 'Reception'
+              ? 'reception.appointments.book'
+              : 'reservations.create',
+          )
         : mode === 'reschedule'
           ? this.language.t('reservations.reschedule')
-          : this.language.t('reservations.cancel');
+          : this.language.t(mode === 'restore' ? 'reservations.restore' : 'reservations.cancel');
     }
     if (this.store.detail()) {
-      return this.language.currentLang() === 'en' ? 'Reservation Details' : 'تفاصيل الحجز';
+      return this.language.t(
+        this.store.actor() === 'Reception'
+          ? 'reception.appointments.details'
+          : 'reservations.detailsTitle',
+      );
     }
     return this.language.t('reservations.loading');
   }
 
   drawerDescription(): string {
     if (this.store.detail()) {
-      return this.store.detail()?.reference || '';
+      return this.store.actor() === 'Reception'
+        ? this.label(this.store.detail()?.patient)
+        : this.store.detail()?.reference || '';
     }
     if (this.store.editor()) {
-      return this.language.currentLang() === 'en'
-        ? 'Manage appointment time and details'
-        : 'إدارة بيانات وتوقيت الحجز';
+      return this.language.t(
+        this.store.actor() === 'Reception'
+          ? 'reception.appointments.editorHelp'
+          : 'reservations.editorHelp',
+      );
     }
     return '';
   }
@@ -88,18 +91,59 @@ export class ReservationWorkspaceComponent implements OnInit {
       this.route.snapshot.data['actor'] as ReservationActor,
       p.get('practiceId') || '',
     );
-    if (p.get('eligibilityId') && p.get('patientId') && this.store.canCreate()) {
-      await this.store.openEditor('create');
-      await this.store.choosePatient(p.get('patientId')!);
-      await this.store.chooseEligibility(p.get('eligibilityId')!);
+    const initialPractice = this.store.practiceId();
+    const validReceptionScope =
+      this.store.actor() !== 'Reception' ||
+      !p.get('practiceId') ||
+      p.get('practiceId') === initialPractice;
+    if (!validReceptionScope) {
+      this.store.messages.set(['reception.appointments.linkClinicUnavailable']);
+      return;
     }
-    else if (p.get('reservationId')) await this.store.inspect(p.get('reservationId')!);
-    else if (p.get('date') && this.store.canCreate()) {
+    const linkedEligibility =
+      !!p.get('eligibilityId') && !!p.get('patientId') && this.store.canCreate();
+    if (p.get('reservationId') && !linkedEligibility)
+      await this.store.inspect(p.get('reservationId')!);
+    else if (
+      (linkedEligibility ||
+        p.get('date') ||
+        (this.store.actor() === 'Reception' && p.get('patientId'))) &&
+      this.store.canCreate()
+    ) {
       await this.store.openEditor('create');
-      await this.store.chooseDate(p.get('date')!);
+      if (this.store.practiceId() !== initialPractice || !this.store.editor()) return;
+      if (p.get('patientId')) {
+        await this.store.choosePatient(p.get('patientId')!);
+        if (this.store.practiceId() !== initialPractice || !this.store.editor()) return;
+        // Names are display hints from an existing search/create result. API validation owns identity.
+        const state: unknown =
+          this.router.lastSuccessfulNavigation()?.extras.state?.['receptionPatient'] ||
+          history.state?.receptionPatient;
+        if (
+          state &&
+          typeof state === 'object' &&
+          'patientId' in state &&
+          'practiceId' in state &&
+          'nameAr' in state &&
+          state.patientId === p.get('patientId') &&
+          state.practiceId === initialPractice &&
+          typeof state.nameAr === 'string'
+        ) {
+          this.store.bookingPatient.set({
+            patientId: p.get('patientId')!,
+            nameAr: state.nameAr,
+            nameEn: 'nameEn' in state && typeof state.nameEn === 'string' ? state.nameEn : null,
+          });
+        }
+      }
+      if (p.get('eligibilityId') && p.get('patientId'))
+        await this.store.chooseEligibility(p.get('eligibilityId')!);
+      if (this.store.practiceId() !== initialPractice || !this.store.editor()) return;
+      if (p.get('date')) await this.store.chooseDate(p.get('date')!);
       if (p.get('time')) await this.store.chooseTime(p.get('time')!);
     }
   }
+
   label(item?: { nameAr?: string; nameEn?: string | null } | null): string {
     if (!item) return '';
     return this.language.currentLang() === 'en'
@@ -123,12 +167,31 @@ export class ReservationWorkspaceComponent implements OnInit {
   }
   setFilter(key: keyof ReservationQuery, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
+    if (this.store.actor() === 'Reception' && (key === 'fromDate' || key === 'toDate'))
+      this.store.receptionView.set('Custom');
     this.store.query.update((q) => ({
       ...q,
       [key]: key === 'isLate' ? (value === '' ? undefined : value === 'true') : value || undefined,
       pageNumber: 1,
     }));
     void this.store.loadList();
+  }
+  async choosePatient(patientId: string): Promise<void> {
+    const practiceId = this.store.practiceId(),
+      date = this.store.date();
+    await this.store.choosePatient(patientId);
+    if (
+      this.store.actor() === 'Reception' &&
+      date &&
+      this.store.practiceId() === practiceId &&
+      this.store.bookingPatientId() === patientId &&
+      this.store.editor() === 'create'
+    )
+      await this.store.chooseDate(date);
+  }
+  resetFilters(): void {
+    this.store.query.set({ pageNumber: 1, pageSize: 20 });
+    this.store.setReceptionView('Today');
   }
   practice(event: Event): void {
     void this.store.selectPractice((event.target as HTMLSelectElement).value);
@@ -146,10 +209,5 @@ export class ReservationWorkspaceComponent implements OnInit {
     return this.store.actor() === 'Patient'
       ? this.store.metadata()?.patientCancellationReasons || []
       : this.store.metadata()?.providerCancellationReasons || [];
-  }
-  back(): string {
-    return this.store.actor() === 'Admin'
-      ? '/admin'
-      : '/workspace/' + this.store.actor().toLowerCase();
   }
 }

@@ -1,24 +1,19 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { Reservation, ReservationLabel } from '../../../../domains/reservations';
 
 @Component({
   selector: 'app-reservation-details',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, NgTemplateOutlet],
   templateUrl: './reservation-details.component.html',
   styleUrl: './reservation-details.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationDetailsComponent {
   readonly reservation = input.required<Reservation>();
+  readonly reception = input(false);
   readonly administrative = input(false);
   readonly canCancel = input(false);
   readonly canReschedule = input(false);
@@ -27,15 +22,6 @@ export class ReservationDetailsComponent {
   readonly bookingSources = input<ReservationLabel[]>([]);
   readonly action = output<'cancel' | 'reschedule' | 'restore'>();
   readonly language = inject(LanguageService);
-
-  readonly copied = signal(false);
-
-  copyReference(ref: string): void {
-    if (!ref) return;
-    void navigator.clipboard?.writeText(ref);
-    this.copied.set(true);
-    setTimeout(() => this.copied.set(false), 2000);
-  }
 
   label(item: { nameAr: string; nameEn?: string | null }): string {
     return this.language.currentLang() === 'en' ? item.nameEn || item.nameAr : item.nameAr;

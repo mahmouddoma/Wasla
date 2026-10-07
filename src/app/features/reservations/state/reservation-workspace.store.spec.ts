@@ -6,14 +6,18 @@ import { provideHttpClient } from '@angular/common/http';
 import { of, throwError, Subject } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '../../../core/auth/auth-session';
-import { ReservationsApi } from '../../../domains/reservations';
+import { PatientsApi, PatientSearchItem, PagedResponse } from '../../../domains/patients';
+import { Reservation, ReservationsApi } from '../../../domains/reservations';
 import { TicketsApi } from '../../../domains/tickets';
 import { ReservationWorkspaceStore, ReservationDraft } from './reservation-workspace.store';
 import { reservationFixture, metadataFixture } from '../reservation-test-fixtures';
 describe('ReservationWorkspaceStore', () => {
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   const api = {
     filterOptions: vi.fn(() => of({ segments: [] })),
     cancel: vi.fn(),
+    reschedule: vi.fn(),
+    restoreNoShow: vi.fn(),
     details: vi.fn(),
     list: vi.fn(),
     createPatient: vi.fn(),
@@ -64,7 +68,12 @@ describe('ReservationWorkspaceStore', () => {
         { provide: ReceptionPracticeContext, useValue: reception },
         {
           provide: AuthSession,
-          useValue: { user: () => ({ userType: 'Patient' }), hasPermission: () => false },
+          useValue: {
+            user: () => ({ userType: 'Patient' }),
+            hasPermission: vi.fn(
+              (code: string) => code.startsWith('PracticeReservations.') && grants().includes(code),
+            ),
+          },
         },
       ],
     });
@@ -318,5 +327,154 @@ describe('ReservationWorkspaceStore', () => {
     expect(store.detail()?.reservationId).toBe(reservationFixture.reservationId);
     expect(store.busy()).toBe(false);
     expect(toast).toHaveBeenCalled();
+  });
+  it('uses server dates for Today, Upcoming and All without changing other actors', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['PracticeReservations.View']);
+    store.setReceptionView('Today');
+    await Promise.resolve();
+    expect(api.list.mock.calls.at(-1)?.[1]).toEqual(
+      expect.objectContaining({ fromDate: expect.any(String), toDate: expect.any(String) }),
+    );
+    store.setReceptionView('Upcoming');
+    await Promise.resolve();
+    expect(store.query().toDate).toBeUndefined();
+    expect(store.query().fromDate).toBeTruthy();
+    store.setReceptionView('All');
+    await Promise.resolve();
+    expect(store.query().fromDate).toBeUndefined();
+    store.actor.set('Doctor');
+    const before = store.query();
+    store.setReceptionView('Today');
+    expect(store.query()).toEqual(before);
+  });
+  it('requires both account and selected clinic permissions for structured patient search', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['Patients.SearchBasic']);
+    const search = vi.spyOn(TestBed.inject(PatientsApi), 'search');
+    await store.searchPatients({ phoneNumber: '01011122233' });
+    expect(search).not.toHaveBeenCalled();
+  });
+  it('retains search phone/DOB context and clears it on clinic switch, including pending errors', async () => {
+    vi.spyOn(TestBed.inject(AuthSession), 'hasPermission').mockReturnValue(true);
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['Patients.SearchBasic']);
+    const patient: PatientSearchItem = {
+      patientId: 'p1',
+      nameAr: 'Synthetic',
+      nameEn: 'Synthetic',
+      dateOfBirth: '1990-01-01',
+      gender: 'Male',
+      phoneNumber: '01011122233',
+      hasContactPhone: false,
+    };
+    const search = vi
+      .spyOn(TestBed.inject(PatientsApi), 'search')
+      .mockReturnValue(of({ items: [patient], totalCount: 1, pageNumber: 1, pageSize: 20 }));
+    await store.searchPatients({
+      phoneNumber: patient.phoneNumber!,
+      dateOfBirth: patient.dateOfBirth,
+    });
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        doctorPracticeId: 'clinic',
+        phoneNumber: patient.phoneNumber,
+        dateOfBirth: patient.dateOfBirth,
+      }),
+    );
+    expect(store.patientResults()[0].phoneNumber).toBe(patient.phoneNumber);
+    const pending = new Subject<PagedResponse<PatientSearchItem>>();
+    search.mockReturnValue(pending);
+    const request = store.searchPatients({ name: 'Synthetic' });
+    await Promise.resolve();
+    store.practices.set([{ id: 'clinic', nameAr: 'Clinic', nameEn: 'Clinic' }]);
+    await store.selectPractice('');
+    pending.error(new HttpErrorResponse({ status: 403 }));
+    await request;
+    expect(store.patientResults()).toEqual([]);
+    expect(store.bookingPatientId()).toBe('');
+    expect(reception.refresh).not.toHaveBeenCalled();
+    expect(store.patientSearchLoading()).toBe(false);
+  });
+  it('clears a pending drawer on clinic switch without attaching its result to the new clinic', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['PracticeReservations.Cancel']);
+    store.metadata.set({
+      ...metadataFixture,
+      providerCancellationReasons: metadataFixture.patientCancellationReasons,
+    });
+    const pending = new Subject<Reservation>();
+    api.cancel.mockReturnValue(pending);
+    const save = store.save(draft);
+    expect(store.busy()).toBe(true);
+    currentPracticeId.set('');
+    TestBed.tick();
+    expect(store.editor()).toBeNull();
+    expect(store.detail()).toBeNull();
+    pending.next(reservationFixture);
+    pending.complete();
+    await save;
+    TestBed.tick();
+    expect(store.detail()).toBeNull();
+    expect(store.busy()).toBe(false);
+    expect(store.practiceId()).toBe('');
+  });
+  it('reschedules Reception appointments only with consent and reason and preserves the row version', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['PracticeReservations.Reschedule']);
+    store.editor.set('reschedule');
+    store.date.set('2026-10-07');
+    store.time.set('17:30');
+    store.slots.set([{ date: '2026-10-07', time: '17:30' }]);
+    api.reschedule.mockReturnValue(of(reservationFixture));
+    await store.save(draft);
+    expect(api.reschedule).not.toHaveBeenCalled();
+    await store.save({
+      ...draft,
+      patientConsentConfirmed: true,
+      reason: 'Patient requested change',
+    });
+    expect(api.reschedule).toHaveBeenCalledWith(
+      { actor: 'Reception', practiceId: 'clinic' },
+      reservationFixture.reservationId,
+      {
+        businessDate: '2026-10-07',
+        slotStartTime: '17:30',
+        rowVersion: reservationFixture.rowVersion,
+        patientConsentConfirmed: true,
+        reason: 'Patient requested change',
+      },
+      expect.any(String),
+    );
+  });
+  it('restores no-show only with delegated permission and the server capability', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    grants.set(['PracticeReservations.RestoreNoShow']);
+    store.editor.set('restore');
+    store.detail.set({
+      ...reservationFixture,
+      status: 'NoShow',
+      capabilities: { ...reservationFixture.capabilities, canRestoreFromNoShow: false },
+    });
+    await store.save(draft);
+    expect(api.restoreNoShow).not.toHaveBeenCalled();
+    store.detail.update((detail) => ({
+      ...detail!,
+      capabilities: { ...detail!.capabilities, canRestoreFromNoShow: true },
+    }));
+    api.restoreNoShow.mockReturnValue(of(reservationFixture));
+    await store.save(draft);
+    expect(api.restoreNoShow).toHaveBeenCalledWith(
+      'clinic',
+      reservationFixture.reservationId,
+      reservationFixture.rowVersion,
+      expect.any(String),
+    );
   });
 });

@@ -8,7 +8,7 @@ import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { createIdempotencyKey } from '../../../core/http/create-idempotency-key';
 import { DoctorPracticesApi } from '../../../domains/doctor-practices';
-import { PatientsApi } from '../../../domains/patients';
+import { PatientSearchItem, PatientSearchQuery, PatientsApi } from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import {
   AvailableDate,
@@ -51,12 +51,51 @@ export class ReservationWorkspaceStore {
   private readonly api = inject(ReservationsApi);
   private readonly followUps = inject(FollowUpsApi);
   readonly bookingPatientId = signal('');
+  readonly bookingPatient = signal<Pick<
+    PatientSearchItem,
+    'patientId' | 'nameAr' | 'nameEn'
+  > | null>(null);
+  readonly patientResults = signal<PatientSearchItem[]>([]);
+  readonly patientSearchLoading = signal(false);
+  readonly patientSearched = signal(false);
+  readonly patientSearchFailed = signal(false);
+  readonly canSearchPatient = computed(
+    () =>
+      this.actor() === 'Reception' &&
+      this.reception.currentPracticeId() === this.practiceId() &&
+      this.session.hasPermission(PERMISSIONS.patientsSearchBasic) &&
+      this.reception.allows(PERMISSIONS.patientsSearchBasic),
+  );
+  readonly receptionView = signal<'Today' | 'Upcoming' | 'All' | 'Custom'>('Today');
+  setReceptionView(view: 'Today' | 'Upcoming' | 'All'): void {
+    if (this.actor() !== 'Reception') return;
+    this.receptionView.set(view);
+    const date = this.today();
+    this.query.update((q) => ({
+      ...q,
+      pageNumber: 1,
+      fromDate: view === 'All' ? undefined : date,
+      toDate: view === 'Today' ? date : undefined,
+    }));
+    void this.loadList();
+  }
+  private today(): string {
+    const date = new Date();
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-');
+  }
   readonly eligibilities = signal<readonly FollowUpEligibility[]>([]);
   readonly eligibility = signal<FollowUpEligibility | null>(null);
   private eligibilitySequence = 0;
-  readonly canViewFollowUps = computed(() => this.actor() === 'Patient'
-    ? this.session.hasPermission(PERMISSIONS.followUpEligibilityViewOwn)
-    : this.actor() === 'Reception' && this.reception.allows(PERMISSIONS.followUpEligibilityViewBookingEligibility));
+  readonly canViewFollowUps = computed(() =>
+    this.actor() === 'Patient'
+      ? this.session.hasPermission(PERMISSIONS.followUpEligibilityViewOwn)
+      : this.actor() === 'Reception' &&
+        this.reception.allows(PERMISSIONS.followUpEligibilityViewBookingEligibility),
+  );
   private readonly ticketsApi = inject(TicketsApi);
   private readonly publicApi = inject(PublicDiscoveryApi);
   private readonly practicesApi = inject(DoctorPracticesApi);
@@ -149,6 +188,8 @@ export class ReservationWorkspaceStore {
   constructor() {
     effect(() => {
       const id = this.reception.currentPracticeId();
+      if (this.actor() === 'Reception' && this.busy() && id !== this.practiceId())
+        untracked(() => this.resetDrawer());
       if (
         this.actor() === 'Reception' &&
         !this.initializing &&
@@ -164,6 +205,8 @@ export class ReservationWorkspaceStore {
   async initialize(actor: ReservationActor, practiceId = ''): Promise<void> {
     this.initializing = true;
     this.actor.set(actor);
+    if (actor === 'Reception')
+      this.query.update((q) => ({ ...q, fromDate: this.today(), toDate: this.today() }));
     this.loading.set(true);
     try {
       this.metadata.set(await firstValueFrom(this.api.metadata()));
@@ -222,6 +265,8 @@ export class ReservationWorkspaceStore {
     if (this.actor() === 'Reception') this.reception.select(id);
     this.close();
     this.filters.set(null);
+    this.loading.set(false);
+    this.listFailed.set(false);
     this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
     this.query.update((q) => ({ ...q, pageNumber: 1, segmentId: undefined }));
     if (this.scoped() && !id) return;
@@ -354,7 +399,9 @@ export class ReservationWorkspaceStore {
       if (sequence === this.bookingSequence)
         this.options.set({
           ...options,
-          visitTypes: options.visitTypes.filter((v) => v.type === (this.eligibility() ? 'FollowUp' : 'NewConsultation')),
+          visitTypes: options.visitTypes.filter(
+            (v) => v.type === (this.eligibility() ? 'FollowUp' : 'NewConsultation'),
+          ),
         });
     } catch (error) {
       if (sequence === this.bookingSequence) await this.failure(error);
@@ -362,38 +409,38 @@ export class ReservationWorkspaceStore {
       if (sequence === this.bookingSequence) this.bookingLoading.set(false);
     }
   }
-  async searchPatients(searchText: string): Promise<void> {
+  async searchPatients(
+    fields: Pick<PatientSearchQuery, 'name' | 'phoneNumber' | 'dateOfBirth'>,
+  ): Promise<void> {
     if (
-      this.actor() !== 'Reception' ||
-      !this.session.hasPermission(PERMISSIONS.patientsSearchBasic) ||
-      !searchText.trim()
+      !this.canSearchPatient() ||
+      this.busy() ||
+      !Object.values(fields).some((value) => value?.trim())
     )
       return;
     const generation = this.scopeGeneration,
       sequence = ++this.patientSearchSequence;
+    this.patientSearchLoading.set(true);
+    this.patientSearchFailed.set(false);
+    this.patientSearched.set(true);
+    this.patientResults.set([]);
     try {
       const page = await firstValueFrom(
         this.patientsApi.search({
-          name: searchText,
+          ...fields,
           doctorPracticeId: this.practiceId(),
           pageNumber: 1,
           pageSize: 20,
         }),
       );
-      if (generation === this.scopeGeneration && sequence === this.patientSearchSequence)
-        this.patients.set(
-          page.items.map((p) => ({
-            patientId: p.patientId,
-            nameAr: p.nameAr,
-            nameEn: p.nameEn,
-            dateOfBirth: p.dateOfBirth,
-            gender: p.gender,
-            isSelf: false,
-            relationshipType: null,
-          })),
-        );
+      if (generation !== this.scopeGeneration || sequence !== this.patientSearchSequence) return;
+      this.patientResults.set(page.items);
     } catch (error) {
+      if (generation !== this.scopeGeneration || sequence !== this.patientSearchSequence) return;
+      this.patientSearchFailed.set(true);
       await this.failure(error);
+    } finally {
+      if (sequence === this.patientSearchSequence) this.patientSearchLoading.set(false);
     }
   }
   async save(draft: ReservationDraft): Promise<void> {
@@ -414,7 +461,14 @@ export class ReservationWorkspaceStore {
       const visit = this.options()?.visitTypes.find((v) => v.visitTypeId === draft.visitTypeId);
       if (!visit?.segments.some((s) => s.segmentId === draft.segmentId)) return;
       const eligibility = this.eligibility();
-      if (eligibility && (!eligibility.canBook || eligibility.patientId !== draft.patientId || eligibility.practiceId !== this.practiceId() || !eligibility.rowVersion)) return;
+      if (
+        eligibility &&
+        (!eligibility.canBook ||
+          eligibility.patientId !== draft.patientId ||
+          eligibility.practiceId !== this.practiceId() ||
+          !eligibility.rowVersion)
+      )
+        return;
       const body: CreateReservationRequest = {
         patientId: draft.patientId,
         businessDate: this.date(),
@@ -422,7 +476,12 @@ export class ReservationWorkspaceStore {
         segmentId: draft.segmentId,
         visitTypeId: draft.visitTypeId,
         bookingNote: draft.bookingNote.trim() || null,
-        ...(eligibility ? { followUpEligibilityId: eligibility.eligibilityId, followUpEligibilityRowVersion: eligibility.rowVersion } : {}),
+        ...(eligibility
+          ? {
+              followUpEligibilityId: eligibility.eligibilityId,
+              followUpEligibilityRowVersion: eligibility.rowVersion,
+            }
+          : {}),
       };
       request =
         this.actor() === 'Patient'
@@ -494,6 +553,10 @@ export class ReservationWorkspaceStore {
       this.toast.success(this.language.t('reservations.saved'));
       await this.loadList();
     } catch (error) {
+      if (this.actor() === 'Reception' && this.reception.currentPracticeId() !== scope.practiceId) {
+        this.toast.error(this.language.t('common.requestFailed'));
+        return;
+      }
       await this.failure(error);
       if (error instanceof HttpErrorResponse && error.status === 409) {
         const date = this.date(),
@@ -604,7 +667,10 @@ export class ReservationWorkspaceStore {
     if (eligibility) {
       await this.choosePatient(eligibility.patientId);
       await this.chooseEligibility(eligibility.eligibilityId);
-      if (!this.eligibility()?.canBook) { this.resetAvailability(); return; }
+      if (!this.eligibility()?.canBook) {
+        this.resetAvailability();
+        return;
+      }
     }
     await this.openEditor(mode);
     this.intent = intent;
@@ -623,17 +689,34 @@ export class ReservationWorkspaceStore {
     const sequence = ++this.eligibilitySequence;
     this.bookingSequence++;
     this.bookingPatientId.set(patientId);
+    if (this.actor() === 'Reception')
+      this.bookingPatient.set(
+        this.patientResults().find((p) => p.patientId === patientId) ||
+          (this.bookingPatient()?.patientId === patientId ? this.bookingPatient() : null),
+      );
     this.eligibility.set(null);
     this.eligibilities.set([]);
     this.resetAvailability();
     this.intent = null;
     if (patientId && this.canViewFollowUps()) {
       try {
-        const items = this.actor() === 'Reception'
-          ? await firstValueFrom(this.followUps.reception(this.practiceId(), patientId))
-          : (await firstValueFrom(this.followUps.mine({ patientId, status: 'Available', pageNumber: 1, pageSize: 100 }))).items;
+        const items =
+          this.actor() === 'Reception'
+            ? await firstValueFrom(this.followUps.reception(this.practiceId(), patientId))
+            : (
+                await firstValueFrom(
+                  this.followUps.mine({
+                    patientId,
+                    status: 'Available',
+                    pageNumber: 1,
+                    pageSize: 100,
+                  }),
+                )
+              ).items;
         if (sequence === this.eligibilitySequence) {
-          this.eligibilities.set(items.filter(e => e.patientId === patientId && e.practiceId === this.practiceId()));
+          this.eligibilities.set(
+            items.filter((e) => e.patientId === patientId && e.practiceId === this.practiceId()),
+          );
         }
       } catch (error) {
         if (sequence === this.eligibilitySequence) await this.failure(error);
@@ -649,11 +732,20 @@ export class ReservationWorkspaceStore {
     this.resetAvailability();
     if (id) {
       try {
-        const selected = this.actor() === 'Patient'
-          ? await firstValueFrom(this.followUps.details(id))
-          : (await firstValueFrom(this.followUps.reception(this.practiceId(), this.bookingPatientId()))).find(e => e.eligibilityId === id);
+        const selected =
+          this.actor() === 'Patient'
+            ? await firstValueFrom(this.followUps.details(id))
+            : (
+                await firstValueFrom(
+                  this.followUps.reception(this.practiceId(), this.bookingPatientId()),
+                )
+              ).find((e) => e.eligibilityId === id);
         if (sequence !== this.eligibilitySequence) return;
-        if (!selected?.canBook || selected.patientId !== this.bookingPatientId() || selected.practiceId !== this.practiceId()) {
+        if (
+          !selected?.canBook ||
+          selected.patientId !== this.bookingPatientId() ||
+          selected.practiceId !== this.practiceId()
+        ) {
           this.messages.set(['followUps.unavailable']);
           return;
         }
@@ -700,6 +792,7 @@ export class ReservationWorkspaceStore {
     if (this.actor() === 'Reception')
       return (
         this.reception.currentPracticeId() === this.practiceId() &&
+        this.session.hasPermission(`PracticeReservations.${action}`) &&
         this.reception.allows(`PracticeReservations.${action}`)
       );
     return this.session.hasPermission(`DoctorPracticeReservations.${action}Own`);
@@ -751,6 +844,11 @@ export class ReservationWorkspaceStore {
       this.actor() === 'Reception'
     ) {
       this.scopeGeneration++;
+      this.patientSearchSequence++;
+      this.patientResults.set([]);
+      this.patients.set([]);
+      this.bookingPatient.set(null);
+      this.patientSearchLoading.set(false);
       this.eligibilitySequence++;
       this.eligibility.set(null);
       this.eligibilities.set([]);

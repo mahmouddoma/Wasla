@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ReservationEditorComponent } from './reservation-editor.component';
 import { metadataFixture, patientFixture } from '../../reservation-test-fixtures';
 describe('ReservationEditorComponent', () => {
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   function create(mode: 'create' | 'cancel' | 'reschedule' | 'restore') {
     const f = TestBed.createComponent(ReservationEditorComponent);
     f.componentRef.setInput('mode', mode);
@@ -53,5 +54,32 @@ describe('ReservationEditorComponent', () => {
     const emit = vi.spyOn(f.componentInstance.save, 'emit');
     f.componentInstance.submit(new Event('submit'));
     expect(emit).not.toHaveBeenCalled();
+  });
+  it('shows structured Reception search and hides manual patient ID and premature date fields', () => {
+    const f = create('create');
+    f.componentRef.setInput('reception', true);
+    f.componentRef.setInput('canSearch', true);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('app-reservation-patient-search')).toBeTruthy();
+    expect(f.nativeElement.querySelector('select')).toBeNull();
+    expect(f.nativeElement.querySelector('input[placeholder]')).toBeNull();
+    f.componentRef.setInput('patientId', 'internal-id');
+    f.componentRef.setInput('selectedPatient', { nameAr: 'Synthetic', nameEn: 'Synthetic' });
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.selected-patient').textContent).toContain('Synthetic');
+    expect(f.nativeElement.textContent).not.toContain('internal-id');
+    expect(f.nativeElement.querySelector('select')).toBeTruthy();
+  });
+  it('uses action-specific Reception labels and retains entered notes after a failed save', () => {
+    const f = create('cancel');
+    f.componentRef.setInput('reception', true);
+    f.componentInstance.model.update((m) => ({ ...m, comment: 'Keep this comment' }));
+    f.detectChanges();
+    expect(f.componentInstance.actionLabel()).toBe('reception.appointments.cancel');
+    f.componentRef.setInput('busy', true);
+    f.detectChanges();
+    f.componentRef.setInput('busy', false);
+    f.detectChanges();
+    expect(f.componentInstance.model().comment).toBe('Keep this comment');
   });
 });

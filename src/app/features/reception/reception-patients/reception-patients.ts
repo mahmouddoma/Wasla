@@ -2,7 +2,15 @@ import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   FormField,
   email,
@@ -14,8 +22,9 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
@@ -31,7 +40,7 @@ import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 
 @Component({
   selector: 'app-reception-patients',
-  imports: [FormField, TranslatePipe, PageHeader, RouterLink],
+  imports: [FormField, TranslatePipe, PageHeader, SideDrawer, NgTemplateOutlet],
   templateUrl: './reception-patients.html',
   styleUrl: './reception-patients.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -93,6 +102,7 @@ export class ReceptionPatients {
   protected readonly profileImage = signal<File | undefined>(undefined);
   protected readonly results = signal<PagedResponse<PatientSearchItem> | null>(null);
   protected readonly selectedPatientId = signal('');
+  protected readonly selectedPatient = signal<PatientSearchItem | null>(null);
   protected readonly createdPatientId = signal('');
   protected readonly messages = signal<string[]>([]);
   protected readonly isCreating = signal(false);
@@ -100,27 +110,44 @@ export class ReceptionPatients {
   protected readonly pageNumber = signal(1);
   protected readonly practices = this.practiceContext.practices;
   protected readonly selectedPracticeId = this.practiceContext.currentPracticeId;
-  protected readonly canSearch = this.session.hasPermission(PERMISSIONS.patientsSearchBasic);
-  protected readonly canRegister = this.session.hasPermission(PERMISSIONS.patientsRegister);
-  protected readonly activePanel = signal<'search' | 'register'>(
-    this.canSearch ? 'search' : 'register',
+  protected readonly canSearch = computed(() =>
+    this.session.hasPermission(PERMISSIONS.patientsSearchBasic),
   );
+  protected readonly canRegister = computed(() =>
+    this.session.hasPermission(PERMISSIONS.patientsRegister),
+  );
+  protected readonly registrationOpen = signal(false);
+  protected readonly canBook = computed(
+    () =>
+      this.session.hasPermission(PERMISSIONS.practiceReservationsCreate) &&
+      this.practiceContext.allows(PERMISSIONS.practiceReservationsCreate),
+  );
+  private contextGeneration = 0;
+  private searchSequence = 0;
 
   constructor() {
-    if (this.canSearch && !this.practices().length) void this.loadPractices();
+    if (!this.practices().length) void this.loadPractices();
     effect(() => {
       this.selectedPracticeId();
+      this.contextGeneration++;
+      this.searchSequence++;
       this.results.set(null);
       this.selectedPatientId.set('');
+      this.selectedPatient.set(null);
+      this.createdPatientId.set('');
+      this.messages.set([]);
+      this.isSearching.set(false);
     });
   }
 
   protected async createPatient(event: Event): Promise<void> {
     event.preventDefault();
+    if (!this.canRegister()) return;
     await submit(this.createForm, async () => {
       if (this.isCreating()) return;
       this.isCreating.set(true);
       this.clearFeedback();
+      const generation = this.contextGeneration;
       try {
         const value = this.createModel();
         const response = await firstValueFrom(
@@ -131,9 +158,21 @@ export class ReceptionPatients {
             profileImage: this.profileImage(),
           }),
         );
-        this.createdPatientId.set(response.patientId);
         this.toast.success(this.uiLanguage.t('patient.registered'));
-        this.selectedPatientId.set(response.patientId);
+        if (generation === this.contextGeneration) {
+          this.createdPatientId.set(response.patientId);
+          this.selectedPatientId.set(response.patientId);
+          this.selectedPatient.set({
+            patientId: response.patientId,
+            nameAr: value.nameAr,
+            nameEn: value.nameEn || null,
+            dateOfBirth: value.dateOfBirth,
+            gender: value.gender as 'Male' | 'Female',
+            phoneNumber: value.phoneNumber || null,
+            hasContactPhone: !!value.primaryContactPhoneNumber,
+          });
+        }
+        this.registrationOpen.set(false);
         this.createModel.set({
           nameAr: '',
           nameEn: '',
@@ -150,6 +189,7 @@ export class ReceptionPatients {
         this.createForm().reset();
       } catch (error) {
         this.messages.set(flattenErrors(error));
+        this.toast.error(this.messages().join(' ') || this.uiLanguage.t('common.requestFailed'));
       } finally {
         this.isCreating.set(false);
       }
@@ -159,6 +199,7 @@ export class ReceptionPatients {
   protected async search(pageNumber = 1, event?: Event): Promise<void> {
     event?.preventDefault();
     if (
+      !this.canSearch() ||
       !this.selectedPracticeId() ||
       !this.selectedPracticeAllows(PERMISSIONS.patientsSearchBasic)
     ) {
@@ -169,6 +210,10 @@ export class ReceptionPatients {
       if (this.isSearching()) return;
       this.isSearching.set(true);
       this.clearFeedback();
+      this.results.set(null);
+      this.selectedPatient.set(null);
+      this.selectedPatientId.set('');
+      const sequence = ++this.searchSequence;
       const practiceId = this.selectedPracticeId();
       try {
         this.pageNumber.set(pageNumber);
@@ -179,20 +224,38 @@ export class ReceptionPatients {
             pageNumber,
           }),
         );
-        if (this.selectedPracticeId() === practiceId) this.results.set(result);
+        if (sequence === this.searchSequence && this.selectedPracticeId() === practiceId)
+          this.results.set(result);
       } catch (error) {
+        if (sequence !== this.searchSequence) return;
         this.messages.set(flattenErrors(error));
         if (error instanceof HttpErrorResponse && error.status === 403) {
           await this.refreshAccessContext();
         }
       } finally {
-        this.isSearching.set(false);
+        if (sequence === this.searchSequence) this.isSearching.set(false);
       }
     });
   }
 
   protected choose(patientId: string): void {
+    const patient = this.results()?.items.find((item) => item.patientId === patientId);
+    if (!patient) return;
     this.selectedPatientId.set(patientId);
+    this.selectedPatient.set(patient);
+    this.createdPatientId.set('');
+  }
+
+  protected book(): void {
+    const patient = this.selectedPatient();
+    const practiceId = this.selectedPracticeId();
+    if (!patient || !practiceId || !this.canBook()) return;
+    const date = new Date();
+    const localDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    void this.router.navigate(['/reception/reservations'], {
+      queryParams: { practiceId, patientId: patient.patientId, date: localDate },
+      state: { receptionPatient: { ...patient, practiceId } },
+    });
   }
 
   protected fileChanged(event: Event): void {
@@ -203,13 +266,10 @@ export class ReceptionPatients {
     return this.practiceContext.allows(permission);
   }
 
-  protected logout(): void {
-    this.session.clear();
-    void this.router.navigate(['/login']);
-  }
-
   protected displayName(patient: PatientSearchItem): string {
-    return patient.nameEn ? `${patient.nameAr} · ${patient.nameEn}` : patient.nameAr;
+    return this.uiLanguage.currentLang() === 'en'
+      ? patient.nameEn || patient.nameAr
+      : patient.nameAr;
   }
 
   private clearFeedback(): void {

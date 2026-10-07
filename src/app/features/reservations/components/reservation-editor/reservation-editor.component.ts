@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,11 +15,22 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { AvailableDate, AvailableSlot, BookingOptions } from '../../../../domains/public-discovery';
 import { BookablePatient, ReservationLabel } from '../../../../domains/reservations';
+import {
+  ReservationPatientSearchComponent,
+  ReservationPatientSearch,
+} from '../reservation-patient-search/reservation-patient-search.component';
+import { PatientSearchItem } from '../../../../domains/patients';
 import { FollowUpEligibility } from '../../../../domains/follow-ups';
 import { ReservationDraft, ReservationEditorMode } from '../../state/reservation-workspace.store';
 @Component({
   selector: 'app-reservation-editor',
-  imports: [FormField, TranslatePipe, RouterLink],
+  imports: [
+    FormField,
+    TranslatePipe,
+    RouterLink,
+    ReservationPatientSearchComponent,
+    NgTemplateOutlet,
+  ],
   templateUrl: './reservation-editor.component.html',
   styleUrl: './reservation-editor.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,7 +58,22 @@ export class ReservationEditorComponent {
   readonly save = output<ReservationDraft>();
   readonly dateChange = output<string>();
   readonly timeChange = output<string>();
-  readonly search = output<string>();
+  readonly search = output<ReservationPatientSearch>();
+  readonly patientResults = input<PatientSearchItem[]>([]);
+  readonly patientSearchLoading = input(false);
+  readonly patientSearched = input(false);
+  readonly patientSearchFailed = input(false);
+  readonly selectedPatient = input<{ nameAr: string; nameEn: string | null } | null>(null);
+  readonly actionLabel = computed(() =>
+    this.reception()
+      ? {
+          create: 'reception.appointments.book',
+          reschedule: 'reception.appointments.saveTime',
+          cancel: 'reception.appointments.cancel',
+          restore: 'reception.appointments.restore',
+        }[this.mode()]
+      : 'reservations.confirm',
+  );
   readonly language = inject(LanguageService);
   readonly model = signal<ReservationDraft>({
     patientId: '',
@@ -62,11 +89,11 @@ export class ReservationEditorComponent {
   constructor() {
     effect(() => {
       const patientId = this.patientId();
-      this.model.update(model => ({ ...model, patientId, segmentId: '', visitTypeId: '' }));
+      this.model.update((model) => ({ ...model, patientId, segmentId: '', visitTypeId: '' }));
     });
     effect(() => {
       this.options();
-      this.model.update(model => ({ ...model, segmentId: '', visitTypeId: '' }));
+      this.model.update((model) => ({ ...model, segmentId: '', visitTypeId: '' }));
     });
   }
   readonly segments = computed(

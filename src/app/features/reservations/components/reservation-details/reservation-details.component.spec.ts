@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ReservationDetailsComponent } from './reservation-details.component';
 import { reservationFixture } from '../../reservation-test-fixtures';
 describe('ReservationDetailsComponent', () => {
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   beforeEach(() => TestBed.configureTestingModule({ imports: [ReservationDetailsComponent] }));
   function create(admin = false) {
     const f = TestBed.createComponent(ReservationDetailsComponent);
@@ -28,5 +29,18 @@ describe('ReservationDetailsComponent', () => {
     f.componentRef.setInput('canCancel', false);
     f.detectChanges();
     expect(f.nativeElement.querySelector('button')).toBeNull();
+  });
+  it('keeps Reception identity primary and puts reference and timeline inside Additional details', () => {
+    const f = create();
+    f.componentRef.setInput('reception', true);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.res-reception-identity').textContent).not.toContain(
+      'R-100',
+    );
+    expect(f.nativeElement.querySelector('.res-reception-identity h3')).toBeTruthy();
+    const details = f.nativeElement.querySelector('details');
+    expect(details.open).toBe(false);
+    expect(details.textContent).toContain('R-100');
+    expect(f.nativeElement.querySelector('.status-dot-pulse')).toBeNull();
   });
 });

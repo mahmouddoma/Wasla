@@ -5,8 +5,13 @@ import { ActivatedRoute, provideRouter, convertToParamMap } from '@angular/route
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { ReservationWorkspaceComponent } from './reservation-workspace.component';
 import { LanguageService } from '../../../../core/i18n/language.service';
-import { metadataFixture, reservationFixture } from '../../reservation-test-fixtures';
+import {
+  metadataFixture,
+  patientFixture,
+  reservationFixture,
+} from '../../reservation-test-fixtures';
 describe('ReservationWorkspaceComponent', () => {
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   beforeEach(() =>
     TestBed.configureTestingModule({
       imports: [ReservationWorkspaceComponent],
@@ -156,6 +161,118 @@ describe('ReservationWorkspaceComponent', () => {
     expect(f.componentInstance.store.canView()).toBe(true);
     expect(f.componentInstance.store.canCreate()).toBe(false);
     expect(f.nativeElement.querySelector('tbody')).toBeTruthy();
+    http.verify();
+  });
+  for (const query of [
+    { patientId: 'p1', practiceId: 'clinic', date: '2026-10-07' },
+    { practiceId: 'clinic', date: '2026-10-07' },
+  ]) {
+    it(
+      'preserves Reception patient and Home date deep links: ' + Object.keys(query).join(', '),
+      async () => {
+        TestBed.overrideProvider(ActivatedRoute, {
+          useValue: {
+            snapshot: { data: { actor: 'Reception' }, queryParamMap: convertToParamMap(query) },
+          },
+        });
+        TestBed.overrideProvider(AuthSession, {
+          useValue: { user: () => ({ userType: 'Reception' }), hasPermission: () => true },
+        });
+        const f = TestBed.createComponent(ReservationWorkspaceComponent),
+          http = TestBed.inject(HttpTestingController);
+        const tick = async () => {
+          for (let i = 0; i < 10; i++) await Promise.resolve();
+        };
+        f.detectChanges();
+        http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
+        await tick();
+        http
+          .expectOne((r) => r.url.endsWith('/reception/practices'))
+          .flush([
+            {
+              id: 'clinic',
+              nameAr: 'Synthetic',
+              nameEn: 'Synthetic',
+              isActive: true,
+              permissionCodes: [
+                'PracticeReservations.View',
+                'PracticeReservations.Create',
+                'Patients.SearchBasic',
+              ],
+            },
+          ]);
+        await tick();
+        http.expectOne((r) => r.url.endsWith('/filter-options')).flush({ segments: [] });
+        await tick();
+        const list = http.expectOne((r) => r.url.endsWith('/reservations'));
+        expect(list.request.params.get('fromDate')).toBe(list.request.params.get('toDate'));
+        list.flush({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+        await tick();
+        http
+          .expectOne((r) => r.url.endsWith('/available-dates'))
+          .flush([{ date: '2026-10-07', isAvailable: true }]);
+        await tick();
+        if ('patientId' in query) {
+          const dates = http.expectOne((r) => r.url.endsWith('/available-dates'));
+          expect(dates.request.params.get('patientId')).toBe('p1');
+          dates.flush([{ date: '2026-10-07', isAvailable: true }]);
+          await tick();
+        }
+        http
+          .expectOne((r) => r.url.endsWith('/available-slots'))
+          .flush([{ date: '2026-10-07', time: '17:00' }]);
+        await f.whenStable();
+        f.detectChanges();
+        expect(f.componentInstance.store.date()).toBe('2026-10-07');
+        expect(f.componentInstance.store.bookingPatientId()).toBe('patientId' in query ? 'p1' : '');
+        expect(f.nativeElement.querySelector('.quick-views')).toBeTruthy();
+        expect(f.nativeElement.querySelector('.ambient-glow-mesh')).toBeNull();
+        expect(
+          f.nativeElement.querySelector('app-reservation-editor input[placeholder]'),
+        ).toBeNull();
+        http.verify();
+      },
+    );
+  }
+  it('retains the Home date after selecting a Reception patient, using fresh availability', async () => {
+    const f = TestBed.createComponent(ReservationWorkspaceComponent),
+      store = f.componentInstance.store;
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    store.date.set('2026-10-07');
+    vi.spyOn(store, 'choosePatient').mockImplementation(async (patientId) => {
+      store.bookingPatientId.set(patientId);
+      store.date.set('');
+      store.editor.set('create');
+    });
+    const chooseDate = vi.spyOn(store, 'chooseDate').mockResolvedValue(undefined);
+    await f.componentInstance.choosePatient('p1');
+    expect(chooseDate).toHaveBeenCalledWith('2026-10-07');
+  });
+  it('keeps a Patient patientId-only link from opening a new booking workflow', async () => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: {
+          data: { actor: 'Patient' },
+          queryParamMap: convertToParamMap({ patientId: 'p1' }),
+        },
+      },
+    });
+    const f = TestBed.createComponent(ReservationWorkspaceComponent),
+      http = TestBed.inject(HttpTestingController);
+    const tick = async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    f.detectChanges();
+    http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/bookable-patients')).flush([patientFixture]);
+    await tick();
+    http
+      .expectOne((r) => r.url.endsWith('/reservations/mine'))
+      .flush({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+    await f.whenStable();
+    expect(f.componentInstance.store.editor()).toBeNull();
     http.verify();
   });
 });
