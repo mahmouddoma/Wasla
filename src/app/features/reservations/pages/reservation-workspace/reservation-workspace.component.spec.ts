@@ -324,6 +324,9 @@ describe('ReservationWorkspaceComponent', () => {
     expect(emptyBox.querySelector('.empty-title')?.textContent?.trim()).toBe(
       language.t('reception.appointments.emptyToday'),
     );
+    expect(emptyBox.querySelector('.empty-subtitle')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.emptyTodayHelp'),
+    );
 
     const bookBtn = emptyBox.querySelector('.btn-primary') as HTMLButtonElement;
     expect(bookBtn).toBeTruthy();
@@ -381,6 +384,9 @@ describe('ReservationWorkspaceComponent', () => {
     expect(emptyBox.querySelector('.empty-title')?.textContent?.trim()).toBe(
       language.t('reception.appointments.empty'),
     );
+    expect(emptyBox.querySelector('.empty-subtitle')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.emptyHelp'),
+    );
 
     const resetBtn = emptyBox.querySelector('.btn-secondary') as HTMLButtonElement;
     expect(resetBtn).toBeTruthy();
@@ -395,5 +401,127 @@ describe('ReservationWorkspaceComponent', () => {
       pageNumber: 1,
       pageSize: 20,
     });
+  });
+
+  it('renders choose clinic title and selector guidance when no clinic is selected, without filter/date guidance', async () => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: { data: { actor: 'Reception' }, queryParamMap: convertToParamMap({}) },
+      },
+    });
+    TestBed.overrideProvider(AuthSession, {
+      useValue: { user: () => ({ userType: 'Reception' }), hasPermission: () => true },
+    });
+    const f = TestBed.createComponent(ReservationWorkspaceComponent),
+      http = TestBed.inject(HttpTestingController),
+      language = TestBed.inject(LanguageService);
+    const tick = async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    f.detectChanges();
+    http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
+      {
+        id: 'clinic-1',
+        nameAr: 'Clinic 1',
+        nameEn: 'Clinic 1',
+        isActive: true,
+        permissionCodes: ['PracticeReservations.View'],
+      },
+      {
+        id: 'clinic-2',
+        nameAr: 'Clinic 2',
+        nameEn: 'Clinic 2',
+        isActive: true,
+        permissionCodes: ['PracticeReservations.View'],
+      },
+    ]);
+    await tick();
+    await f.whenStable();
+    f.detectChanges();
+
+    const emptyBox = f.nativeElement.querySelector('.table-empty-box');
+    expect(emptyBox).toBeTruthy();
+    expect(emptyBox.querySelector('.empty-title')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.chooseClinic'),
+    );
+    expect(emptyBox.querySelector('.empty-subtitle')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.chooseClinicHelp'),
+    );
+    expect(emptyBox.querySelector('.empty-subtitle')?.textContent).not.toContain(
+      language.t('reception.appointments.emptyHelp'),
+    );
+    expect(emptyBox.querySelector('button')).toBeNull();
+  });
+
+  it('renders view unavailable title and permission guidance when View permission is missing, without filter/date guidance', async () => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: { data: { actor: 'Reception' }, queryParamMap: convertToParamMap({}) },
+      },
+    });
+    TestBed.overrideProvider(AuthSession, {
+      useValue: { user: () => ({ userType: 'Reception' }), hasPermission: () => false },
+    });
+    const f = TestBed.createComponent(ReservationWorkspaceComponent),
+      http = TestBed.inject(HttpTestingController),
+      language = TestBed.inject(LanguageService);
+    const tick = async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    f.detectChanges();
+    http.expectOne((r) => r.url.endsWith('/reservations/metadata')).flush(metadataFixture);
+    await tick();
+    http.expectOne((r) => r.url.endsWith('/reception/practices')).flush([
+      {
+        id: 'clinic',
+        nameAr: 'Clinic',
+        nameEn: 'Clinic',
+        isActive: true,
+        permissionCodes: ['PracticeReservations.Create'],
+      },
+    ]);
+    await tick();
+    await f.whenStable();
+    f.detectChanges();
+
+    const emptyBox = f.nativeElement.querySelector('.table-empty-box');
+    expect(emptyBox).toBeTruthy();
+    expect(emptyBox.querySelector('.empty-title')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.viewUnavailable'),
+    );
+    expect(emptyBox.querySelector('.empty-subtitle')?.textContent?.trim()).toBe(
+      language.t('reception.appointments.viewUnavailableHelp'),
+    );
+    expect(emptyBox.querySelector('.empty-subtitle')?.textContent).not.toContain(
+      language.t('reception.appointments.emptyHelp'),
+    );
+    expect(emptyBox.querySelector('button')).toBeNull();
+  });
+
+  it('has valid Arabic and English translations for all empty-state keys', () => {
+    const language = TestBed.inject(LanguageService);
+    const keys = [
+      'reception.appointments.chooseClinic',
+      'reception.appointments.chooseClinicHelp',
+      'reception.appointments.viewUnavailable',
+      'reception.appointments.viewUnavailableHelp',
+      'reception.appointments.emptyToday',
+      'reception.appointments.emptyTodayHelp',
+      'reception.appointments.empty',
+      'reception.appointments.emptyHelp',
+    ];
+    for (const key of keys) {
+      language.setLanguage('ar');
+      const arVal = language.t(key);
+      expect(arVal).not.toBe(key);
+      expect(arVal.length).toBeGreaterThan(0);
+
+      language.setLanguage('en');
+      const enVal = language.t(key);
+      expect(enVal).not.toBe(key);
+      expect(enVal.length).toBeGreaterThan(0);
+    }
   });
 });

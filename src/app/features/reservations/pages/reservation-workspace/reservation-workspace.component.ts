@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
@@ -37,6 +37,22 @@ export class ReservationWorkspaceComponent implements OnInit {
   readonly language = inject(LanguageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  readonly emptyTitleKey = computed(() => {
+    if (this.store.actor() !== 'Reception') return 'reservations.empty';
+    if (!this.store.practiceId()) return 'reception.appointments.chooseClinic';
+    if (!this.store.canView()) return 'reception.appointments.viewUnavailable';
+    if (this.store.isReceptionTodayEmpty()) return 'reception.appointments.emptyToday';
+    return 'reception.appointments.empty';
+  });
+
+  readonly emptySubtitleKey = computed(() => {
+    if (this.store.actor() !== 'Reception') return 'reservations.subtitle';
+    if (!this.store.practiceId()) return 'reception.appointments.chooseClinicHelp';
+    if (!this.store.canView()) return 'reception.appointments.viewUnavailableHelp';
+    if (this.store.isReceptionTodayEmpty()) return 'reception.appointments.emptyTodayHelp';
+    return 'reception.appointments.emptyHelp';
+  });
 
   statusClass(code: string): string {
     const lower = (code || '').toLowerCase();

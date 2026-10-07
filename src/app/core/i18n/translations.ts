@@ -156,9 +156,18 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'لا توجد مواعيد مجدولة لهذا اليوم حتى الآن.',
     en: 'No appointments scheduled for today yet.',
   },
+  'reception.appointments.chooseClinic': { ar: 'اختر العيادة', en: 'Choose a clinic' },
+  'reception.appointments.chooseClinicHelp': {
+    ar: 'اختر العيادة من أعلى الصفحة لعرض مواعيدها.',
+    en: 'Choose a clinic at the top of the page to view its appointments.',
+  },
   'reception.appointments.viewUnavailable': {
     ar: 'عرض المواعيد غير متاح لك في هذه العيادة',
     en: 'Appointment viewing is unavailable for you in this clinic.',
+  },
+  'reception.appointments.viewUnavailableHelp': {
+    ar: 'لا تملك صلاحية عرض مواعيد هذه العيادة.',
+    en: 'You do not have permission to view appointments for this clinic.',
   },
   'reception.appointments.resetFilters': { ar: 'إعادة ضبط الفلاتر', en: 'Reset filters' },
   'portal.mobile.myTurn': { ar: 'دوري', en: 'My turn' },
