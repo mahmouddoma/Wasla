@@ -5167,6 +5167,43 @@ export const TRANSLATIONS: TranslationDictionary = {
   'register.submitPatient': { ar: 'إنشاء حساب مريض', en: 'Create Patient Account' },
   'register.submitDoctor': { ar: 'تقديم طلب تسجيل الطبيب', en: 'Submit Doctor Application' },
   'register.submitting': { ar: 'جارٍ تسجيل الحساب…', en: 'Registering account…' },
+  'register.stepAccount': { ar: 'بيانات الحساب', en: 'Account Info' },
+  'register.stepPersonal': { ar: 'البيانات الشخصية', en: 'Personal Info' },
+  'register.stepDocs': { ar: 'المستندات والتحقق', en: 'Documents' },
+  'register.next': { ar: 'المتابعة', en: 'Continue' },
+  'register.prev': { ar: 'الرجوع للخطوة السابقة', en: 'Previous step' },
+  'register.stepProgress': { ar: 'خطوات التسجيل', en: 'Registration Steps' },
+  'register.step1Badge': { ar: 'الخطوة ١ من ٣', en: 'Step 1 of 3' },
+  'register.step2Badge': { ar: 'الخطوة ٢ من ٣', en: 'Step 2 of 3' },
+  'register.step3Badge': { ar: 'الخطوة ٣ من ٣', en: 'Step 3 of 3' },
+  'register.step1Desc': {
+    ar: 'أدخل بيانات الدخول وكلمة المرور الخاصة بحسابك للبدء.',
+    en: 'Enter your credentials and choose a strong password to start.',
+  },
+  'register.step2Desc': {
+    ar: 'أدخل بياناتك الشخصية الأساسية بدقة لإتمام ملفك الطبي.',
+    en: 'Enter your personal details accurately to complete your profile.',
+  },
+  'register.step3DescDoctor': {
+    ar: 'أرفق مستندات إثبات الشخصية ومزاولة المهنة لاعتماد حسابك.',
+    en: 'Upload your ID and syndicate license for official accreditation.',
+  },
+  'register.step3DescPatient': {
+    ar: 'أرفق صورتك الشخصية وبطاقتك (اختياري للبدء الفوري).',
+    en: 'Upload your photo and ID (optional for immediate start).',
+  },
+  'register.toStepPersonal': {
+    ar: 'المتابعة للبيانات الشخصية',
+    en: 'Continue to Personal Details',
+  },
+  'register.toStepDocs': {
+    ar: 'المتابعة لرفع المستندات',
+    en: 'Continue to Documents',
+  },
+  'register.stepValidationNotice': {
+    ar: 'يرجى استكمال الحقول المطلوبة بشكل صحيح قبل الانتقال للخطوة التالية.',
+    en: 'Please complete the required fields correctly before proceeding.',
+  },
 
   // Post-login: Admin Layout
   'admin.navDoctors': { ar: 'إدارة الأطباء', en: 'Doctors' },

@@ -17,7 +17,6 @@ import { AuthApi } from '../../../core/auth/auth-api';
 import { Gender } from '../../../core/auth/auth.models';
 import { NoFutureDate } from '../../../shared/no-future-date/no-future-date';
 import { FileUpload } from '../file-upload/file-upload';
-
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
@@ -29,11 +28,16 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 })
 export class PatientRegistration {
   private readonly toast = inject(ToastService);
-  protected readonly uiLanguage = inject(LanguageService);
+  readonly uiLanguage = inject(LanguageService);
 
   private readonly api = inject(AuthApi);
   private readonly router = inject(Router);
-  protected readonly model = signal({
+
+  readonly currentStep = signal<1 | 2 | 3>(1);
+  readonly step1Attempted = signal(false);
+  readonly step2Attempted = signal(false);
+
+  readonly model = signal({
     userName: '',
     email: '',
     phoneNumber: '',
@@ -44,7 +48,8 @@ export class PatientRegistration {
     dateOfBirth: '',
     gender: '' as Gender | '',
   });
-  protected readonly registrationForm = form(this.model, (field) => {
+
+  readonly registrationForm = form(this.model, (field) => {
     required(field.userName, { message: 'validation.usernameRequired' });
     maxLength(field.userName, 100, { message: 'validation.max100' });
     required(field.email, { message: 'validation.emailRequired' });
@@ -70,15 +75,114 @@ export class PatientRegistration {
     );
     required(field.gender, { message: 'validation.genderRequired' });
   });
-  protected readonly profileImage = signal<File | undefined>(undefined);
-  protected readonly personalIdFrontImage = signal<File | undefined>(undefined);
-  protected readonly personalIdBackImage = signal<File | undefined>(undefined);
-  protected readonly isSubmitting = signal(false);
-  protected readonly showPasswords = signal(false);
-  protected readonly apiMessages = signal<string[]>([]);
-  protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
-  protected async onSubmit(event: Event): Promise<void> {
+
+  readonly profileImage = signal<File | undefined>(undefined);
+  readonly personalIdFrontImage = signal<File | undefined>(undefined);
+  readonly personalIdBackImage = signal<File | undefined>(undefined);
+  readonly isSubmitting = signal(false);
+  readonly showPasswords = signal(false);
+  readonly stepNotice = signal('');
+  readonly apiMessages = signal<string[]>([]);
+  readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
+
+  isStep1Valid(): boolean {
+    const m = this.model();
+    const f = this.registrationForm;
+    return !!(
+      m.userName.trim() &&
+      !f.userName().errors().length &&
+      m.email.trim() &&
+      !f.email().errors().length &&
+      m.phoneNumber.trim() &&
+      !f.phoneNumber().errors().length &&
+      m.password &&
+      !f.password().errors().length &&
+      m.confirmPassword &&
+      !f.confirmPassword().errors().length &&
+      m.password === m.confirmPassword
+    );
+  }
+
+  isStep2Valid(): boolean {
+    const m = this.model();
+    const f = this.registrationForm;
+    return !!(
+      m.nameAr.trim() &&
+      !f.nameAr().errors().length &&
+      m.dateOfBirth &&
+      !f.dateOfBirth().errors().length &&
+      m.gender &&
+      !f.gender().errors().length
+    );
+  }
+
+  nextStep(): void {
+    this.stepNotice.set('');
+    if (this.currentStep() === 1) {
+      if (!this.isStep1Valid()) {
+        this.step1Attempted.set(true);
+        this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+        return;
+      }
+      this.currentStep.set(2);
+    } else if (this.currentStep() === 2) {
+      if (!this.isStep2Valid()) {
+        this.step2Attempted.set(true);
+        this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+        return;
+      }
+      this.currentStep.set(3);
+    }
+  }
+
+  prevStep(): void {
+    this.stepNotice.set('');
+    if (this.currentStep() === 3) {
+      this.currentStep.set(2);
+    } else if (this.currentStep() === 2) {
+      this.currentStep.set(1);
+    }
+  }
+
+  goToStep(target: 1 | 2 | 3): void {
+    if (target === this.currentStep()) return;
+    this.stepNotice.set('');
+    if (target < this.currentStep()) {
+      this.currentStep.set(target);
+      return;
+    }
+    if (target === 2 && this.isStep1Valid()) {
+      this.currentStep.set(2);
+    } else if (target === 3 && this.isStep1Valid() && this.isStep2Valid()) {
+      this.currentStep.set(3);
+    } else {
+      if (!this.isStep1Valid()) {
+        this.step1Attempted.set(true);
+      } else if (!this.isStep2Valid()) {
+        this.step2Attempted.set(true);
+      }
+      this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+    }
+  }
+
+  async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
+    this.stepNotice.set('');
+
+    if (!this.isStep1Valid()) {
+      this.step1Attempted.set(true);
+      this.currentStep.set(1);
+      this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+      return;
+    }
+
+    if (!this.isStep2Valid()) {
+      this.step2Attempted.set(true);
+      this.currentStep.set(2);
+      this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+      return;
+    }
+
     await submit(this.registrationForm, async () => {
       if (this.isSubmitting()) return;
       this.isSubmitting.set(true);
@@ -100,15 +204,36 @@ export class PatientRegistration {
         const parsed = parseApiErrors(error);
         this.apiMessages.set(parsed.messages);
         this.fieldErrors.set(parsed.fields);
+
+        if (
+          this.serverError('UserName') ||
+          this.serverError('Email') ||
+          this.serverError('PhoneNumber') ||
+          this.serverError('Password') ||
+          this.serverError('ConfirmPassword')
+        ) {
+          this.currentStep.set(1);
+        } else if (
+          this.serverError('NameAr') ||
+          this.serverError('NameEn') ||
+          this.serverError('DateOfBirth') ||
+          this.serverError('Gender')
+        ) {
+          this.currentStep.set(2);
+        } else {
+          this.currentStep.set(3);
+        }
       } finally {
         this.isSubmitting.set(false);
       }
     });
   }
-  protected serverError(field: string): string {
+
+  serverError(field: string): string {
     return this.fieldErrors()[field.toLowerCase()]?.[0] ?? '';
   }
-  protected togglePasswords(): void {
+
+  togglePasswords(): void {
     this.showPasswords.update((visible) => !visible);
   }
 }

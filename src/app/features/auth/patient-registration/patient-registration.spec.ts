@@ -103,4 +103,56 @@ describe('PatientRegistration', () => {
     component['togglePasswords']();
     expect(component['showPasswords']()).toBe(true);
   });
+
+  it('navigates through steps when valid and blocks when invalid', () => {
+    expect(component['currentStep']()).toBe(1);
+
+    // Attempting next without filling step 1 should block
+    component['nextStep']();
+    expect(component['currentStep']()).toBe(1);
+    expect(component['step1Attempted']()).toBe(true);
+    expect(component['stepNotice']()).not.toBe('');
+
+    // Fill valid step 1 data
+    component['model'].update((m) => ({
+      ...m,
+      userName: 'patient_mary',
+      email: 'mary@example.com',
+      phoneNumber: '01099887766',
+      password: 'StrongPassword123!',
+      confirmPassword: 'StrongPassword123!',
+    }));
+    fixture.detectChanges();
+
+    component['nextStep']();
+    expect(component['currentStep']()).toBe(2);
+
+    // Attempting next without filling step 2 should block
+    component['nextStep']();
+    expect(component['currentStep']()).toBe(2);
+    expect(component['step2Attempted']()).toBe(true);
+
+    // Fill valid step 2 data
+    component['model'].update((m) => ({
+      ...m,
+      nameAr: 'مريم أحمد',
+      dateOfBirth: '1995-02-14',
+      gender: 'Female',
+    }));
+    fixture.detectChanges();
+
+    component['nextStep']();
+    expect(component['currentStep']()).toBe(3);
+
+    // Prev step navigates backwards
+    component['prevStep']();
+    expect(component['currentStep']()).toBe(2);
+    component['prevStep']();
+    expect(component['currentStep']()).toBe(1);
+
+    // Can jump directly to step 2 because step 1 is valid
+    component['goToStep'](2);
+    expect(component['currentStep']()).toBe(2);
+  });
 });
+
