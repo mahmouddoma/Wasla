@@ -103,17 +103,68 @@ export class PracticeOperations implements OnInit, OnDestroy {
     this.releaseLogoPreview();
   }
 
+  protected readonly confirmDeactivate = signal(false);
+  protected readonly confirmDeleteLogo = signal(false);
+
+  protected readonly colorPresets = [
+    {
+      name: 'الأزرق الطبي (الافتراضي)',
+      primary: '#008C8C',
+      secondary: '#0B2942',
+      bg: '#FFFFFF',
+      text: '#102A43',
+    },
+    {
+      name: 'الأزرق الملكي',
+      primary: '#1D4ED8',
+      secondary: '#1E293B',
+      bg: '#FFFFFF',
+      text: '#0F172A',
+    },
+    {
+      name: 'الأخضر الصحي',
+      primary: '#059669',
+      secondary: '#064E3B',
+      bg: '#FFFFFF',
+      text: '#111827',
+    },
+    {
+      name: 'الكحلي والذهبي',
+      primary: '#0F172A',
+      secondary: '#D97706',
+      bg: '#FFFFFF',
+      text: '#1E293B',
+    },
+  ];
+
+  protected readonly supportedTimezones = [
+    { id: 'Africa/Cairo', label: 'توقيت القاهرة (مصر - GMT+2)' },
+    { id: 'Asia/Riyadh', label: 'توقيت مكة المكرمة (السعودية - GMT+3)' },
+    { id: 'Asia/Dubai', label: 'توقيت دبي (الإمارات - GMT+4)' },
+    { id: 'Africa/Tripoli', label: 'توقيت طرابلس (ليبيا - GMT+2)' },
+    { id: 'Asia/Amman', label: 'توقيت عمّان (الأردن - GMT+3)' },
+  ];
+
+  protected applyColorPreset(preset: { primary: string; secondary: string; bg: string; text: string }): void {
+    this.brandingModel.set({
+      primaryColor: preset.primary,
+      secondaryColor: preset.secondary,
+      backgroundColor: preset.bg,
+      textColor: preset.text,
+    });
+  }
+
   protected async toggleStatus(): Promise<void> {
     if (!this.canActivate() || this.activeAction()) return;
     const practice = this.practice();
-    const action = practice.isActive
-      ? this.uiLanguage.t('common.deactivate')
-      : this.uiLanguage.t('common.activate');
-    const warning = practice.isActive
-      ? this.uiLanguage.t('ui.full.349')
-      : this.uiLanguage.t('ui.full.350');
-    if (!window.confirm(`${action}\n${warning}`)) return;
 
+    // If currently active, request user confirmation inline before deactivating
+    if (practice.isActive && !this.confirmDeactivate()) {
+      this.confirmDeactivate.set(true);
+      return;
+    }
+
+    this.confirmDeactivate.set(false);
     this.activeAction.set('status');
     this.messages.set([]);
     this.reservationImpact.set(null);
@@ -135,6 +186,10 @@ export class PracticeOperations implements OnInit, OnDestroy {
     } finally {
       this.activeAction.set(null);
     }
+  }
+
+  protected cancelDeactivate(): void {
+    this.confirmDeactivate.set(false);
   }
 
   protected async saveConfiguration(event: Event): Promise<void> {
@@ -190,8 +245,13 @@ export class PracticeOperations implements OnInit, OnDestroy {
       this.activeAction()
     )
       return;
-    if (!window.confirm(this.uiLanguage.t('ui.full.355'))) return;
 
+    if (!this.confirmDeleteLogo()) {
+      this.confirmDeleteLogo.set(true);
+      return;
+    }
+
+    this.confirmDeleteLogo.set(false);
     this.activeAction.set('logo');
     this.messages.set([]);
     this.reservationImpact.set(null);
@@ -214,8 +274,22 @@ export class PracticeOperations implements OnInit, OnDestroy {
     }
   }
 
+  protected cancelDeleteLogo(): void {
+    this.confirmDeleteLogo.set(false);
+  }
+
   protected chooseLogo(event: Event): void {
-    this.selectedLogo.set((event.currentTarget as HTMLInputElement).files?.[0] ?? null);
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) return;
+
+    this.selectedLogo.set(file);
+    this.releaseLogoPreview();
+    this.logoPreviewUrl.set(URL.createObjectURL(file));
+
+    // Upload immediately upon selection without requiring a second button click
+    void this.uploadLogo(file);
+    input.value = '';
   }
 
   protected onColorPicked(
@@ -271,9 +345,9 @@ export class PracticeOperations implements OnInit, OnDestroy {
     });
   }
 
-  protected async uploadLogo(): Promise<void> {
+  protected async uploadLogo(targetFile?: File): Promise<void> {
     const current = this.branding();
-    const file = this.selectedLogo();
+    const file = targetFile ?? this.selectedLogo();
     if (!this.canManageBranding() || !current || !file || this.activeAction()) return;
     this.activeAction.set('logo');
     this.messages.set([]);

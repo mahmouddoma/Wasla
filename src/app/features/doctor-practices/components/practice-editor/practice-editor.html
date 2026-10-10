@@ -62,7 +62,9 @@
           </span>
           <div>
             <h3>{{ 'practice.basicIdentityTitle' | t }}</h3>
-            <p>{{ 'practice.basicIdentityDesc' | t }}</p>
+            @if (!isDrawer()) {
+              <p>{{ 'practice.basicIdentityDesc' | t }}</p>
+            }
           </div>
         </div>
 
@@ -129,7 +131,9 @@
           </span>
           <div>
             <h3>{{ 'practice.locationAddressTitle' | t }}</h3>
-            <p>{{ 'practice.locationAddressDesc' | t }}</p>
+            @if (!isDrawer()) {
+              <p>{{ 'practice.locationAddressDesc' | t }}</p>
+            }
           </div>
         </div>
 
@@ -195,6 +199,81 @@
               [placeholder]="'ui.full.298' | t"
             />
           </label>
+
+          <!-- Location Detect & External Link Bar -->
+          <div class="location-detect-bar">
+            <button
+              type="button"
+              class="btn-detect-location"
+              [disabled]="isLocating()"
+              (click)="useCurrentLocation()"
+            >
+              @if (isLocating()) {
+                <span class="btn-spinner" aria-hidden="true"></span>
+                <span>{{ 'ui.full.525' | t }}</span>
+              } @else {
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                </svg>
+                <span>{{ 'ui.full.526' | t }}</span>
+              }
+            </button>
+            @if (hasValidCoordinates()) {
+              <a
+                [href]="googleMapsDirectUrl()"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="map-external-link"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                <span>{{ 'ui.full.530' | t }}</span>
+              </a>
+            }
+          </div>
+
+          <!-- Interactive Live Map Preview Box -->
+          <div class="map-preview-card">
+            <div class="map-frame-box">
+              @if (mapEmbedUrl(); as url) {
+                <iframe
+                  [src]="url"
+                  class="practice-map-iframe"
+                  loading="lazy"
+                  [title]="'ui.full.531' | t"
+                  [attr.aria-label]="'ui.full.532' | t"
+                ></iframe>
+              }
+            </div>
+            <div class="map-caption" [class.is-empty]="!hasValidCoordinates()">
+              @if (hasValidCoordinates()) {
+                <span class="map-pin-dot" aria-hidden="true"></span>
+                <span>{{ model().latitude }}, {{ model().longitude }}</span>
+              } @else {
+                <span>{{ 'ui.full.527' | t }}</span>
+              }
+            </div>
+          </div>
 
           <!-- Coordinates Row -->
           <div class="coordinates-row">

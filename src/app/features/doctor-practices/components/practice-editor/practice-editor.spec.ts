@@ -155,5 +155,21 @@ describe('PracticeEditor', () => {
       expect(toast.error).toHaveBeenCalled();
       expect(toast.success).toHaveBeenCalledTimes(1);
     });
+
+    it('populates coordinates when useCurrentLocation succeeds', async () => {
+      const fixture = await start();
+      const mockGeolocation = {
+        getCurrentPosition: vi.fn((success) =>
+          success({ coords: { latitude: 30.0444, longitude: 31.2357 } }),
+        ),
+      };
+      vi.stubGlobal('navigator', { ...navigator, geolocation: mockGeolocation });
+      fixture.componentInstance['useCurrentLocation']();
+      expect(fixture.componentInstance['model']().latitude).toBe(30.0444);
+      expect(fixture.componentInstance['model']().longitude).toBe(31.2357);
+      expect(fixture.componentInstance['hasValidCoordinates']()).toBe(true);
+      expect(toast.success).toHaveBeenCalled();
+      vi.unstubAllGlobals();
+    });
   });
 });

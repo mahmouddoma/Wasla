@@ -1,9 +1,11 @@
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
   OnInit,
@@ -37,12 +39,45 @@ export class PracticeEditor implements OnInit {
   private readonly api = inject(DoctorPracticesApi);
   private readonly locationApi = inject(DoctorProfileApi);
   private readonly toast = inject(ToastService);
+  private readonly sanitizer = inject(DomSanitizer);
 
+  protected readonly isLocating = signal(false);
   protected readonly governorates = signal<EgyptLocationOption[]>([]);
   protected readonly cities = signal<EgyptLocationOption[]>([]);
   protected readonly areas = signal<EgyptLocationOption[]>([]);
   protected readonly isLoadingLocations = signal(false);
   protected readonly isSubmitting = signal(false);
+
+  protected readonly hasValidCoordinates = computed(() => {
+    const lat = Number(this.model().latitude);
+    const lng = Number(this.model().longitude);
+    return Boolean(
+      lat && lng && !Number.isNaN(lat) && !Number.isNaN(lng) && lat !== 0 && lng !== 0,
+    );
+  });
+
+  protected readonly mapEmbedUrl = computed<SafeResourceUrl | null>(() => {
+    const lat = Number(this.model().latitude);
+    const lng = Number(this.model().longitude);
+    if (!lat || !lng || Number.isNaN(lat) || Number.isNaN(lng) || (lat === 0 && lng === 0)) {
+      return this.sanitizer.bypassSecurityTrustResourceUrl(
+        'https://www.openstreetmap.org/export/embed.html?bbox=31.18%2C29.98%2C31.32%2C30.10&layer=mapnik&marker=30.0444%2C31.2357',
+      );
+    }
+    const delta = 0.007;
+    const bbox = `${lng - delta}%2C${lat - delta}%2C${lng + delta}%2C${lat + delta}`;
+    const marker = `${lat}%2C${lng}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(
+      `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}`,
+    );
+  });
+
+  protected readonly googleMapsDirectUrl = computed<string>(() => {
+    const lat = Number(this.model().latitude);
+    const lng = Number(this.model().longitude);
+    if (!lat || !lng) return 'https://maps.google.com';
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  });
   protected readonly messages = signal<string[]>([]);
   private rowVersion: string | null = null;
   protected readonly model = signal({
@@ -84,7 +119,15 @@ export class PracticeEditor implements OnInit {
 
   protected async governorateChanged(event: Event): Promise<void> {
     const governorateId = (event.currentTarget as HTMLSelectElement).value;
-    this.model.update((value) => ({ ...value, governorateId, cityId: '', areaId: '' }));
+    this.model.update((value) => ({
+      ...value,
+      governorateId,
+      cityId: '',
+      areaId: '',
+      ...(value.latitude === 0 && value.longitude === 0 && governorateId === '1'
+        ? { latitude: 30.0444, longitude: 31.2357 }
+        : {}),
+    }));
     this.cities.set([]);
     this.areas.set([]);
     if (governorateId) await this.loadCities(Number(governorateId));
@@ -95,6 +138,175 @@ export class PracticeEditor implements OnInit {
     this.model.update((value) => ({ ...value, cityId, areaId: '' }));
     this.areas.set([]);
     if (cityId) await this.loadAreas(Number(cityId));
+  }
+
+  protected useCurrentLocation(): void {
+    if (this.isLocating()) return;
+    if (!navigator.geolocation) {
+      this.toast.error(this.uiLanguage.t('ui.full.546'));
+      return;
+    }
+    this.isLocating.set(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const lat = Number(coords.latitude.toFixed(6));
+        const lng = Number(coords.longitude.toFixed(6));
+        this.model.update((value) => ({
+          ...value,
+          latitude: lat,
+          longitude: lng,
+        }));
+        this.toast.success(this.uiLanguage.t('ui.full.547'));
+        try {
+          await this.autoFillLocationFromCoordinates(lat, lng);
+        } catch {
+          // ignore geocode fallback error
+        } finally {
+          this.isLocating.set(false);
+        }
+      },
+      () => {
+        this.toast.error(this.uiLanguage.t('ui.full.548'));
+        this.isLocating.set(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
+
+  private async autoFillLocationFromCoordinates(lat: number, lng: number): Promise<void> {
+    if (!this.governorates().length) {
+      await this.loadGovernorates();
+    }
+    const govs = this.governorates();
+    if (!govs.length) return;
+
+    let stateName = '';
+    let cityName = '';
+    let localityName = '';
+    let streetName = '';
+
+    try {
+      const nomRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`,
+        { headers: { 'Accept-Language': 'ar' } },
+      );
+      if (nomRes.ok) {
+        const nomData = await nomRes.json();
+        const addr = nomData.address || {};
+        stateName = addr.state || addr.province || '';
+        cityName = addr.city || addr.town || addr.suburb || addr.city_district || addr.county || '';
+        localityName = addr.neighbourhood || addr.suburb || addr.quarter || '';
+        streetName = [addr.road, addr.neighbourhood, addr.quarter].filter(Boolean).join('، ');
+      }
+    } catch {
+      // Nominatim failed, try fallback
+    }
+
+    if (!stateName) {
+      try {
+        const bdcRes = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ar`,
+        );
+        if (bdcRes.ok) {
+          const bdcData = await bdcRes.json();
+          stateName = bdcData.principalSubdivision || '';
+          cityName = bdcData.locality || bdcData.city || '';
+          streetName = [bdcData.locality, bdcData.city, bdcData.principalSubdivision].filter(Boolean).join('، ');
+        }
+      } catch {
+        // fallback
+      }
+    }
+
+    if (!stateName) {
+      if (lat >= 29.8 && lat <= 30.45 && lng >= 30.95 && lng <= 31.65) {
+        stateName = lng < 31.22 ? 'الجيزة' : 'القاهرة';
+      } else if (lat >= 31.0 && lat <= 31.4 && lng >= 29.7 && lng <= 30.2) {
+        stateName = 'الإسكندرية';
+      } else if (lat >= 30.9 && lat <= 31.25 && lng >= 31.2 && lng <= 31.6) {
+        stateName = 'الدقهلية';
+      }
+    }
+
+    const normalize = (text: string) =>
+      text
+        .toLowerCase()
+        .replace(/محافظة\s*/g, '')
+        .replace(/governorate\s*/g, '')
+        .replace(/قسم\s*/g, '')
+        .replace(/مركز\s*/g, '')
+        .replace(/مدينة\s*/g, '')
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .trim();
+
+    const normState = normalize(stateName);
+    const matchedGov = govs.find((g) => {
+      const gAr = normalize(g.nameAr);
+      const gEn = normalize(g.nameEn || '');
+      return (
+        (normState && (normState.includes(gAr) || gAr.includes(normState))) ||
+        (gEn && normState && (normState.includes(gEn) || gEn.includes(normState)))
+      );
+    }) || (govs.find(g => normalize(g.nameAr).includes('قاهره')) ?? govs[0]);
+
+    if (matchedGov) {
+      this.model.update((val) => ({
+        ...val,
+        governorateId: String(matchedGov.id),
+        cityId: '',
+        areaId: '',
+      }));
+      await this.loadCities(matchedGov.id);
+
+      const cities = this.cities();
+      if (cities.length) {
+        const normCity = normalize(cityName || localityName);
+        let matchedCity = cities.find((c) => {
+          const cAr = normalize(c.nameAr);
+          const cEn = normalize(c.nameEn || '');
+          return (
+            (normCity && (normCity.includes(cAr) || cAr.includes(normCity))) ||
+            (cEn && normCity && (normCity.includes(cEn) || cEn.includes(normCity)))
+          );
+        });
+
+        if (!matchedCity && cities.length === 1) {
+          matchedCity = cities[0];
+        }
+
+        if (matchedCity) {
+          this.model.update((val) => ({
+            ...val,
+            cityId: String(matchedCity!.id),
+            areaId: '',
+          }));
+          await this.loadAreas(matchedCity.id);
+
+          const areas = this.areas();
+          if (areas.length) {
+            const normArea = normalize(localityName || cityName);
+            const matchedArea = areas.find((a) => {
+              const aAr = normalize(a.nameAr);
+              const aEn = normalize(a.nameEn || '');
+              return (
+                (normArea && (normArea.includes(aAr) || aAr.includes(normArea))) ||
+                (aEn && normArea && (normArea.includes(aEn) || aEn.includes(normArea)))
+              );
+            }) || (areas.length === 1 ? areas[0] : null);
+
+            if (matchedArea) {
+              this.model.update((val) => ({ ...val, areaId: String(matchedArea.id) }));
+            }
+          }
+        }
+      }
+    }
+
+    if (streetName && !this.model().detailedAddress) {
+      this.model.update((val) => ({ ...val, detailedAddress: streetName }));
+    }
   }
 
   protected async save(event: Event): Promise<void> {

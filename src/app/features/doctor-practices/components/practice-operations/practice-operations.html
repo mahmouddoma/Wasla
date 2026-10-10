@@ -1,716 +1,562 @@
 <section class="operations-layout">
   @if (messages().length) {
-    <div class="operation-feedback" role="alert">
-      @for (message of messages(); track message) {
-        <p>{{ message | t }}</p>
-      }
-    </div>
+  <div class="operation-feedback" role="alert">
+    @for (message of messages(); track message) {
+    <p>{{ message | t }}</p>
+    }
+  </div>
   }
 
   <!-- ── Top Grid: حالة التشغيل جنباً إلى جنب مع الهوية البصرية ── -->
   <div class="operations-top-grid">
     <!-- ── 1. حالة التشغيل والجاهزية ── -->
     @if (canActivate()) {
-      <section class="operation-card status-card">
-        <div class="card-header">
-          <div class="header-title-group">
-            <span
-              class="status-indicator-dot"
-              [class.active]="practice().isActive"
-              [class.inactive]="!practice().isActive"
-              aria-hidden="true"
-            ></span>
-            <h2>{{ 'ui.full.307' | t }}</h2>
-          </div>
-          <span
-            class="status-badge"
-            [class.active]="practice().isActive"
-            [class.inactive]="!practice().isActive"
-          >
-            {{
-              practice().isActive
-                ? uiLanguage.t('ui.expressions.9')
-                : uiLanguage.t('ui.expressions.5')
-            }}
-          </span>
+    <section class="operation-card status-card">
+      <div class="card-header">
+        <div class="header-title-group">
+          <span class="status-indicator-dot" [class.active]="practice().isActive"
+            [class.inactive]="!practice().isActive" aria-hidden="true"></span>
+          <h2>{{ 'ui.full.307' | t }}</h2>
         </div>
-
-        <p class="card-desc">
+        <span class="status-badge" [class.active]="practice().isActive" [class.inactive]="!practice().isActive">
           {{
-            practice().isActive
-              ? uiLanguage.t('ui.expressions.153')
-              : uiLanguage.t('ui.expressions.154')
+          practice().isActive
+          ? uiLanguage.t('ui.expressions.9')
+          : uiLanguage.t('ui.expressions.5')
           }}
-        </p>
+        </span>
+      </div>
 
-        <!-- مؤشرات الجاهزية -->
-        <div class="readiness-indicators">
-          <div class="readiness-item" [class.ready]="branding()?.hasLogo">
-            <span class="readiness-icon" aria-hidden="true">
-              @if (branding()?.hasLogo) {
-                <svg
-                  viewBox="0 0 24 24"
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              } @else {
-                <svg
-                  viewBox="0 0 24 24"
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-              }
-            </span>
-            <span>{{
-              branding()?.hasLogo
-                ? uiLanguage.t('ui.expressions.155')
-                : uiLanguage.t('ui.expressions.156')
-            }}</span>
-          </div>
+      <p class="card-desc">
+        {{
+        practice().isActive
+        ? uiLanguage.t('ui.expressions.153')
+        : uiLanguage.t('ui.expressions.154')
+        }}
+      </p>
 
-          @if (configuration(); as config) {
-            <div class="readiness-item ready">
-              <span class="readiness-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </span>
-              <span
-                >{{ 'ui.full.308' | t }} {{ config.defaultSlotDurationMinutes }}
-                {{ 'practice.minutesUnit' | t }}</span
-              >
-            </div>
-          }
-        </div>
-
-        <div class="status-action-row">
-          <button
-            class="btn btn-status-toggle"
-            [class.btn-outline-danger]="practice().isActive"
-            [class.btn-primary]="!practice().isActive"
-            type="button"
-            [disabled]="activeAction() === 'status'"
-            (click)="toggleStatus()"
-          >
-            @if (activeAction() === 'status') {
-              <span class="btn-spinner" aria-hidden="true"></span>
-              <span>{{ uiLanguage.t('common.updating') }}</span>
-            } @else if (practice().isActive) {
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="10" y1="15" x2="10" y2="9"></line>
-                <line x1="14" y1="15" x2="14" y2="9"></line>
-              </svg>
-              <span>{{ uiLanguage.t('ui.expressions.157') }}</span>
+      <!-- مؤشرات الجاهزية -->
+      <div class="readiness-indicators">
+        <div class="readiness-item" [class.ready]="branding()?.hasLogo">
+          <span class="readiness-icon" aria-hidden="true">
+            @if (branding()?.hasLogo) {
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
             } @else {
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              <span>{{ uiLanguage.t('ui.expressions.158') }}</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
             }
-          </button>
+          </span>
+          <span>{{
+            branding()?.hasLogo
+            ? uiLanguage.t('ui.expressions.155')
+            : uiLanguage.t('ui.expressions.156')
+            }}</span>
         </div>
-      </section>
+
+        @if (configuration(); as config) {
+        <div class="readiness-item ready">
+          <span class="readiness-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span>{{ 'ui.full.308' | t }} {{ config.defaultSlotDurationMinutes }}
+            {{ 'practice.minutesUnit' | t }}</span>
+        </div>
+        }
+      </div>
+
+      <div class="status-action-row">
+        @if (confirmDeactivate()) {
+        <div class="inline-confirm-box" role="alert">
+          <p class="inline-confirm-text">تأكيد إيقاف تشغيل العيادة مؤقتاً؟ لن يتمكن المرضى من حجز مواعيد جديدة حتى إعادة تفعيلها.</p>
+          <div class="inline-confirm-actions">
+            <button class="btn btn-danger btn-sm" type="button" [disabled]="activeAction() === 'status'" (click)="toggleStatus()">
+              @if (activeAction() === 'status') {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              }
+              <span>تأكيد الإيقاف</span>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cancelDeactivate()">
+              تراجع
+            </button>
+          </div>
+        </div>
+        } @else {
+        <button class="btn btn-status-toggle" [class.btn-outline-danger]="practice().isActive"
+          [class.btn-primary]="!practice().isActive" type="button" [disabled]="activeAction() === 'status'"
+          (click)="toggleStatus()">
+          @if (activeAction() === 'status') {
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span>{{ uiLanguage.t('common.updating') }}</span>
+          } @else if (practice().isActive) {
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="10" y1="15" x2="10" y2="9"></line>
+            <line x1="14" y1="15" x2="14" y2="9"></line>
+          </svg>
+          <span>{{ uiLanguage.t('ui.expressions.157') }}</span>
+          } @else {
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>{{ uiLanguage.t('ui.expressions.158') }}</span>
+          }
+        </button>
+        }
+      </div>
+    </section>
     }
 
     <!-- ── 2. الهوية البصرية والشعار ── -->
     @if (canViewBranding() || canManageBranding()) {
-      <section class="operation-card branding-card">
-        <div class="card-header">
-          <div>
-            <h2>{{ 'ui.full.309' | t }}</h2>
-            <p class="card-desc-compact">{{ 'ui.full.310' | t }}</p>
-          </div>
-          @if (branding(); as theme) {
-            <span class="logo-status-chip" [class.ready]="theme.hasLogo">
-              {{
-                theme.hasLogo
-                  ? uiLanguage.t('ui.expressions.159')
-                  : uiLanguage.t('ui.expressions.160')
-              }}
-            </span>
-          }
+    <section class="operation-card branding-card">
+      <div class="card-header">
+        <div>
+          <h2>{{ 'ui.full.309' | t }}</h2>
+          <p class="card-desc-compact">{{ 'ui.full.310' | t }}</p>
         </div>
-
         @if (branding(); as theme) {
-          <div class="branding-content-grid">
-            <!-- الشعار والمعاينة -->
-            <div class="logo-col">
-              <div class="logo-preview-box" [class.empty]="!logoPreviewUrl()">
-                @if (logoPreviewUrl(); as logoUrl) {
-                  <img [src]="logoUrl" [alt]="'ui.full.311' | t" />
-                } @else {
-                  <div class="empty-logo-msg">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="28"
-                      height="28"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    <span>{{ 'ui.full.312' | t }}</span>
-                  </div>
-                }
-              </div>
+        <span class="logo-status-chip" [class.ready]="theme.hasLogo">
+          {{
+          theme.hasLogo
+          ? uiLanguage.t('ui.expressions.159')
+          : uiLanguage.t('ui.expressions.160')
+          }}
+        </span>
+        }
+      </div>
 
-              @if (canManageBranding()) {
-                <div class="logo-action-buttons">
-                  <label class="btn-file-select" [title]="'ui.full.313' | t">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                    <span>{{
-                      theme.hasLogo
-                        ? uiLanguage.t('ui.expressions.161')
-                        : uiLanguage.t('ui.expressions.162')
-                    }}</span>
-                    <input type="file" accept="image/*" (change)="chooseLogo($event)" />
-                  </label>
+      @if (branding(); as theme) {
+      <div class="branding-content-grid">
+        <!-- الشعار والمعاينة -->
+        <div class="logo-col">
+          <div class="logo-preview-box" [class.empty]="!logoPreviewUrl()">
+            @if (logoPreviewUrl(); as logoUrl) {
+            <img [src]="logoUrl" [alt]="'ui.full.311' | t" />
+            } @else {
+            <div class="empty-logo-msg">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>{{ 'ui.full.312' | t }}</span>
+            </div>
+            }
+          </div>
 
-                  @if (selectedLogo()) {
-                    <button
-                      class="btn btn-primary btn-sm"
-                      type="button"
-                      [disabled]="activeAction() === 'logo'"
-                      (click)="uploadLogo()"
-                    >
-                      {{
-                        activeAction() === 'logo'
-                          ? uiLanguage.t('ui.expressions.163')
-                          : uiLanguage.t('ui.expressions.164')
-                      }}
-                    </button>
-                  }
+          @if (canManageBranding()) {
+          <div class="logo-action-buttons">
+            <label class="btn-file-select" [class.loading]="activeAction() === 'logo'" [title]="'ui.full.313' | t">
+              @if (activeAction() === 'logo') {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span>{{ uiLanguage.t('ui.expressions.163') }}</span>
+              } @else {
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>{{
+                theme.hasLogo
+                ? uiLanguage.t('ui.expressions.161')
+                : uiLanguage.t('ui.expressions.162')
+                }}</span>
+              }
+              <input type="file" accept="image/*" [disabled]="activeAction() === 'logo'"
+                (change)="chooseLogo($event)" />
+            </label>
 
-                  @if (theme.hasLogo) {
-                    <button
-                      class="btn btn-outline-danger btn-sm"
-                      type="button"
-                      [disabled]="practice().isActive || activeAction() === 'logo'"
-                      (click)="removeLogo()"
-                      [title]="
+            @if (theme.hasLogo) {
+            @if (confirmDeleteLogo()) {
+            <div class="inline-confirm-pill" role="alert">
+              <span>حذف الشعار؟</span>
+              <button class="btn btn-danger btn-xs" type="button" [disabled]="activeAction() === 'logo'" (click)="removeLogo()">نعم</button>
+              <button class="btn btn-outline-secondary btn-xs" type="button" (click)="cancelDeleteLogo()">إلغاء</button>
+            </div>
+            } @else {
+            <button class="btn btn-outline-danger btn-sm" type="button"
+              [disabled]="practice().isActive || activeAction() === 'logo'" (click)="removeLogo()" [title]="
                         practice().isActive
                           ? uiLanguage.t('ui.expressions.165')
                           : uiLanguage.t('ui.expressions.166')
-                      "
-                    >
-                      {{ 'common.delete' | t }}
-                    </button>
-                  }
-                </div>
-
-                @if (selectedLogo(); as file) {
-                  <span class="file-name-tag" dir="ltr">{{ file.name }}</span>
-                }
-              }
-            </div>
-
-            <!-- ألوان الهوية مع ميزة الـ Color Picker -->
-            <div class="colors-col">
-              @if (canManageBranding()) {
-                <form class="branding-color-form" (submit)="saveBranding($event)" novalidate>
-                  <div class="color-inputs-grid">
-                    <!-- اللون الأساسي -->
-                    <div class="color-control-unit">
-                      <span class="color-unit-title">{{ 'ui.full.314' | t }}</span>
-                      <div class="color-picker-box">
-                        <label
-                          class="color-swatch-box"
-                          [style.background-color]="brandingModel().primaryColor || '#008C8C'"
-                          [title]="'ui.full.316' | t"
-                        >
-                          <input
-                            type="color"
-                            class="native-color-picker"
-                            [value]="getValidHex(brandingModel().primaryColor, '#008C8C')"
-                            (input)="onColorPicked('primaryColor', $event)"
-                            [attr.aria-label]="'ui.full.315' | t"
-                          />
-                        </label>
-                        <input
-                          class="color-hex-input"
-                          dir="ltr"
-                          placeholder="#008C8C"
-                          [formField]="brandingForm.primaryColor"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- اللون الثانوي -->
-                    <div class="color-control-unit">
-                      <span class="color-unit-title">{{ 'ui.full.317' | t }}</span>
-                      <div class="color-picker-box">
-                        <label
-                          class="color-swatch-box"
-                          [style.background-color]="brandingModel().secondaryColor || '#0B2942'"
-                          [title]="'ui.full.319' | t"
-                        >
-                          <input
-                            type="color"
-                            class="native-color-picker"
-                            [value]="getValidHex(brandingModel().secondaryColor, '#0B2942')"
-                            (input)="onColorPicked('secondaryColor', $event)"
-                            [attr.aria-label]="'ui.full.318' | t"
-                          />
-                        </label>
-                        <input
-                          class="color-hex-input"
-                          dir="ltr"
-                          placeholder="#0B2942"
-                          [formField]="brandingForm.secondaryColor"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- لون الخلفية -->
-                    <div class="color-control-unit">
-                      <span class="color-unit-title">{{ 'ui.full.320' | t }}</span>
-                      <div class="color-picker-box">
-                        <label
-                          class="color-swatch-box"
-                          [style.background-color]="brandingModel().backgroundColor || '#FFFFFF'"
-                          [title]="'ui.full.322' | t"
-                        >
-                          <input
-                            type="color"
-                            class="native-color-picker"
-                            [value]="getValidHex(brandingModel().backgroundColor, '#FFFFFF')"
-                            (input)="onColorPicked('backgroundColor', $event)"
-                            [attr.aria-label]="'ui.full.321' | t"
-                          />
-                        </label>
-                        <input
-                          class="color-hex-input"
-                          dir="ltr"
-                          [placeholder]="'practice.backgroundExample' | t"
-                          [formField]="brandingForm.backgroundColor"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- لون النص -->
-                    <div class="color-control-unit">
-                      <span class="color-unit-title">{{ 'ui.full.323' | t }}</span>
-                      <div class="color-picker-box">
-                        <label
-                          class="color-swatch-box"
-                          [style.background-color]="brandingModel().textColor || '#102A43'"
-                          [title]="'ui.full.325' | t"
-                        >
-                          <input
-                            type="color"
-                            class="native-color-picker"
-                            [value]="getValidHex(brandingModel().textColor, '#102A43')"
-                            (input)="onColorPicked('textColor', $event)"
-                            [attr.aria-label]="'ui.full.324' | t"
-                          />
-                        </label>
-                        <input
-                          class="color-hex-input"
-                          dir="ltr"
-                          placeholder="#102A43"
-                          [formField]="brandingForm.textColor"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="save-colors-row">
-                    <button
-                      class="btn btn-primary btn-save-colors"
-                      type="submit"
-                      [disabled]="activeAction() === 'branding'"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="14"
-                        height="14"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
-                        ></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                      </svg>
-                      <span>
-                        {{
-                          activeAction() === 'branding'
-                            ? uiLanguage.t('common.saving')
-                            : uiLanguage.t('ui.expressions.167')
-                        }}
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              } @else {
-                <div class="color-list" [attr.aria-label]="'ui.full.326' | t">
-                  <span
-                    ><i [style.background-color]="theme.primaryColor"></i
-                    ><code>{{ theme.primaryColor || uiLanguage.t('ui.expressions.0') }}</code></span
-                  >
-                  <span
-                    ><i [style.background-color]="theme.secondaryColor"></i
-                    ><code>{{
-                      theme.secondaryColor || uiLanguage.t('ui.expressions.0')
-                    }}</code></span
-                  >
-                  <span
-                    ><i [style.background-color]="theme.backgroundColor"></i
-                    ><code>{{
-                      theme.backgroundColor || uiLanguage.t('ui.expressions.0')
-                    }}</code></span
-                  >
-                  <span
-                    ><i [style.background-color]="theme.textColor"></i
-                    ><code>{{ theme.textColor || uiLanguage.t('ui.expressions.0') }}</code></span
-                  >
-                </div>
-              }
-            </div>
+                      ">
+              {{ 'common.delete' | t }}
+            </button>
+            }
+            }
           </div>
-        } @else if (isLoading()) {
-          <p class="loading-copy">{{ 'ui.full.327' | t }}</p>
-        }
-      </section>
+          }
+        </div>
+
+        <!-- ألوان الهوية مع ميزة الـ Color Picker -->
+        <div class="colors-col">
+          @if (canManageBranding()) {
+          <form class="branding-color-form" (submit)="saveBranding($event)" novalidate>
+            <!-- نماذج الألوان الجاهزة بنقرة واحدة -->
+            <div class="color-presets-wrapper">
+              <span class="presets-intro-label">نماذج ألوان مقترحة:</span>
+              <div class="presets-chips-row">
+                @for (preset of colorPresets; track preset.name) {
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  [class.is-selected]="brandingModel().primaryColor === preset.primary"
+                  (click)="applyColorPreset(preset)"
+                >
+                  <span class="chip-color-swatches" aria-hidden="true">
+                    <span class="chip-dot" [style.background-color]="preset.primary"></span>
+                    <span class="chip-dot" [style.background-color]="preset.secondary"></span>
+                  </span>
+                  <span>{{ preset.name }}</span>
+                </button>
+                }
+              </div>
+            </div>
+
+            <div class="color-inputs-grid">
+              <!-- اللون الأساسي -->
+              <div class="color-control-unit">
+                <span class="color-unit-title">{{ 'ui.full.314' | t }}</span>
+                <div class="color-picker-box">
+                  <label class="color-swatch-box" [style.background-color]="brandingModel().primaryColor || '#008C8C'"
+                    [title]="'ui.full.316' | t">
+                    <input type="color" class="native-color-picker"
+                      [value]="getValidHex(brandingModel().primaryColor, '#008C8C')"
+                      (input)="onColorPicked('primaryColor', $event)" [attr.aria-label]="'ui.full.315' | t" />
+                  </label>
+                  <input class="color-hex-input" dir="ltr" placeholder="#008C8C"
+                    [formField]="brandingForm.primaryColor" />
+                </div>
+              </div>
+
+              <!-- اللون الثانوي -->
+              <div class="color-control-unit">
+                <span class="color-unit-title">{{ 'ui.full.317' | t }}</span>
+                <div class="color-picker-box">
+                  <label class="color-swatch-box" [style.background-color]="brandingModel().secondaryColor || '#0B2942'"
+                    [title]="'ui.full.319' | t">
+                    <input type="color" class="native-color-picker"
+                      [value]="getValidHex(brandingModel().secondaryColor, '#0B2942')"
+                      (input)="onColorPicked('secondaryColor', $event)" [attr.aria-label]="'ui.full.318' | t" />
+                  </label>
+                  <input class="color-hex-input" dir="ltr" placeholder="#0B2942"
+                    [formField]="brandingForm.secondaryColor" />
+                </div>
+              </div>
+
+              <!-- لون الخلفية -->
+              <div class="color-control-unit">
+                <span class="color-unit-title">{{ 'ui.full.320' | t }}</span>
+                <div class="color-picker-box">
+                  <label class="color-swatch-box"
+                    [style.background-color]="brandingModel().backgroundColor || '#FFFFFF'" [title]="'ui.full.322' | t">
+                    <input type="color" class="native-color-picker"
+                      [value]="getValidHex(brandingModel().backgroundColor, '#FFFFFF')"
+                      (input)="onColorPicked('backgroundColor', $event)" [attr.aria-label]="'ui.full.321' | t" />
+                  </label>
+                  <input class="color-hex-input" dir="ltr" [placeholder]="'practice.backgroundExample' | t"
+                    [formField]="brandingForm.backgroundColor" />
+                </div>
+              </div>
+
+              <!-- لون النص -->
+              <div class="color-control-unit">
+                <span class="color-unit-title">{{ 'ui.full.323' | t }}</span>
+                <div class="color-picker-box">
+                  <label class="color-swatch-box" [style.background-color]="brandingModel().textColor || '#102A43'"
+                    [title]="'ui.full.325' | t">
+                    <input type="color" class="native-color-picker"
+                      [value]="getValidHex(brandingModel().textColor, '#102A43')"
+                      (input)="onColorPicked('textColor', $event)" [attr.aria-label]="'ui.full.324' | t" />
+                  </label>
+                  <input class="color-hex-input" dir="ltr" placeholder="#102A43" [formField]="brandingForm.textColor" />
+                </div>
+              </div>
+            </div>
+
+            <div class="save-colors-row">
+              <button class="btn btn-primary btn-save-colors" type="submit" [disabled]="activeAction() === 'branding'">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span>
+                  {{
+                  activeAction() === 'branding'
+                  ? uiLanguage.t('common.saving')
+                  : uiLanguage.t('ui.expressions.167')
+                  }}
+                </span>
+              </button>
+            </div>
+          </form>
+          } @else {
+          <div class="color-list" [attr.aria-label]="'ui.full.326' | t">
+            <span><i
+                [style.background-color]="theme.primaryColor"></i><code>{{ theme.primaryColor || uiLanguage.t('ui.expressions.0') }}</code></span>
+            <span><i [style.background-color]="theme.secondaryColor"></i><code>{{
+                      theme.secondaryColor || uiLanguage.t('ui.expressions.0')
+                    }}</code></span>
+            <span><i [style.background-color]="theme.backgroundColor"></i><code>{{
+                      theme.backgroundColor || uiLanguage.t('ui.expressions.0')
+                    }}</code></span>
+            <span><i
+                [style.background-color]="theme.textColor"></i><code>{{ theme.textColor || uiLanguage.t('ui.expressions.0') }}</code></span>
+          </div>
+          }
+        </div>
+      </div>
+      } @else if (isLoading()) {
+      <p class="loading-copy">{{ 'ui.full.327' | t }}</p>
+      }
+    </section>
     }
   </div>
 
   <!-- ── 3. الإعدادات التشغيلية ── -->
   @if (canViewConfiguration() || canManageConfiguration()) {
-    <section class="operation-card config-card">
-      <div class="card-header config-card-header">
-        <div>
-          <h2>{{ 'ui.full.328' | t }}</h2>
-          <p class="card-desc-compact">{{ 'ui.full.329' | t }}</p>
+  <section class="operation-card config-card">
+    <div class="card-header config-card-header">
+      <div>
+        <h2>{{ 'ui.full.328' | t }}</h2>
+        <p class="card-desc-compact">{{ 'ui.full.329' | t }}</p>
+      </div>
+    </div>
+
+    @if (configuration(); as config) {
+    @if (canManageConfiguration()) {
+    <form class="config-form" (submit)="saveConfiguration($event)" novalidate>
+      <div class="config-sections-grid">
+        <!-- القسم الأول: مواعيد وسياسات الحجز -->
+        <div class="config-group-panel">
+          <div class="group-header">
+            <span class="group-header-icon icon-teal" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <div>
+              <h3>{{ 'practice.bookingPolicies' | t }}</h3>
+              <p>{{ 'practice.bookingPoliciesHint' | t }}</p>
+            </div>
+          </div>
+
+          <!-- Toggles Row: 2 clean inline toggle switches -->
+          <div class="toggles-grid">
+            <label class="primary-toggle-row">
+              <div class="toggle-text-wrap">
+                <span class="toggle-label">{{ 'ui.full.330' | t }}</span>
+                <span class="toggle-hint">{{ 'practice.onlineBookingHint' | t }}</span>
+              </div>
+              <div class="switch-toggle-wrap">
+                <input type="checkbox" class="sr-only-chk" [formField]="configForm.allowOnlineBooking" />
+                <span class="switch-toggle-track" [class.is-checked]="configModel().allowOnlineBooking">
+                  <span class="switch-toggle-thumb"></span>
+                </span>
+              </div>
+            </label>
+
+            <label class="primary-toggle-row">
+              <div class="toggle-text-wrap">
+                <span class="toggle-label">{{ 'ui.full.331' | t }}</span>
+                <span class="toggle-hint">{{ 'practice.walkInHint' | t }}</span>
+              </div>
+              <div class="switch-toggle-wrap">
+                <input type="checkbox" class="sr-only-chk" [formField]="configForm.allowWalkIn" />
+                <span class="switch-toggle-track" [class.is-checked]="configModel().allowWalkIn">
+                  <span class="switch-toggle-thumb"></span>
+                </span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Timings 3 Fields -->
+          <div class="timings-grid">
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'ui.full.332' | t }}
+                <span class="unit-badge">{{ 'practice.minutesUnit' | t }}</span>
+              </span>
+              <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
+              <small class="field-micro-hint">{{ 'practice.slotDurationHint' | t }}</small>
+            </label>
+
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'ui.full.333' | t }}
+                <span class="unit-badge">{{ 'practice.minutesUnit' | t }}</span>
+              </span>
+              <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
+              <small class="field-micro-hint">{{ 'practice.checkInGraceHint' | t }}</small>
+            </label>
+
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'ui.full.334' | t }}
+                <span class="unit-badge">{{ 'practice.minutesUnit' | t }}</span>
+              </span>
+              <input type="number" [formField]="configForm.patientSelfCancellationCutoffMinutes" />
+              <small class="field-micro-hint">{{
+                'practice.cancellationCutoffHint' | t
+                }}</small>
+            </label>
+          </div>
+        </div>
+
+        <!-- القسم الثاني: سعة العيادة وإدارة الطابور -->
+        <div class="config-group-panel">
+          <div class="group-header">
+            <span class="group-header-icon icon-navy" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <div>
+              <h3>{{ 'practice.queueCapacity' | t }}</h3>
+              <p>{{ 'practice.queueCapacityHint' | t }}</p>
+            </div>
+          </div>
+
+          <div class="capacity-grid">
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'ui.full.335' | t }}
+              </span>
+              <input inputmode="numeric" [formField]="configForm.maximumDailyPatients"
+                [placeholder]="'ui.full.336' | t" />
+              <small class="field-micro-hint">{{
+                'practice.unlimitedPatientsHint' | t
+                }}</small>
+            </label>
+
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'ui.full.337' | t }}
+              </span>
+              <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
+              <small class="field-micro-hint">{{ 'practice.callAttemptsHint' | t }}</small>
+            </label>
+
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'practice.noShowPassedPatients' | t }}
+              </span>
+              <input type="number" [formField]="configForm.noShowAfterPassedPatientsCount" />
+              <small class="field-micro-hint">{{ 'practice.noShowHint' | t }}</small>
+            </label>
+
+            <label class="form-field">
+              <span class="field-label-text">
+                {{ 'practice.timeZone' | t }}
+              </span>
+              <div class="custom-select-wrapper">
+                <select class="form-select timezone-select" [formField]="configForm.timeZoneId">
+                  @for (tz of supportedTimezones; track tz.id) {
+                  <option [value]="tz.id">{{ tz.label }}</option>
+                  }
+                </select>
+                <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+              <small class="field-micro-hint">{{ 'practice.localTimeHint' | t }}</small>
+            </label>
+          </div>
         </div>
       </div>
 
-      @if (configuration(); as config) {
-        @if (canManageConfiguration()) {
-          <form class="config-form" (submit)="saveConfiguration($event)" novalidate>
-            <div class="config-sections-grid">
-              <!-- القسم الأول: مواعيد وسياسات الحجز -->
-              <div class="config-group-panel">
-                <div class="group-header">
-                  <span class="group-header-icon icon-teal" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                      <line x1="16" y1="2" x2="16" y2="6"></line>
-                      <line x1="8" y1="2" x2="8" y2="6"></line>
-                      <line x1="3" y1="10" x2="21" y2="10"></line>
-                    </svg>
-                  </span>
-                  <div>
-                    <h3>{{ 'practice.bookingPolicies' | t }}</h3>
-                    <p>{{ 'practice.bookingPoliciesHint' | t }}</p>
-                  </div>
-                </div>
+      <!-- شريط الحفظ والتنبيه السفلي -->
+      <div class="config-footer-bar">
+        <div class="config-footer-note">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>{{ 'practice.settingsEffectiveHint' | t }}</span>
+        </div>
 
-                <!-- Toggles Row: 2 clean inline toggle switches -->
-                <div class="toggles-grid">
-                  <label class="primary-toggle-row">
-                    <div class="toggle-text-wrap">
-                      <span class="toggle-label">{{ 'ui.full.330' | t }}</span>
-                      <span class="toggle-hint">{{ 'practice.onlineBookingHint' | t }}</span>
-                    </div>
-                    <div class="switch-toggle-wrap">
-                      <input
-                        type="checkbox"
-                        class="sr-only-chk"
-                        [formField]="configForm.allowOnlineBooking"
-                      />
-                      <span
-                        class="switch-toggle-track"
-                        [class.is-checked]="configModel().allowOnlineBooking"
-                      >
-                        <span class="switch-toggle-thumb"></span>
-                      </span>
-                    </div>
-                  </label>
-
-                  <label class="primary-toggle-row">
-                    <div class="toggle-text-wrap">
-                      <span class="toggle-label">{{ 'ui.full.331' | t }}</span>
-                      <span class="toggle-hint">{{ 'practice.walkInHint' | t }}</span>
-                    </div>
-                    <div class="switch-toggle-wrap">
-                      <input
-                        type="checkbox"
-                        class="sr-only-chk"
-                        [formField]="configForm.allowWalkIn"
-                      />
-                      <span
-                        class="switch-toggle-track"
-                        [class.is-checked]="configModel().allowWalkIn"
-                      >
-                        <span class="switch-toggle-thumb"></span>
-                      </span>
-                    </div>
-                  </label>
-                </div>
-
-                <!-- Timings 3 Fields -->
-                <div class="timings-grid">
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'ui.full.332' | t }}
-                      <span class="unit-badge">{{ 'practice.minutesUnit' | t }}</span>
-                    </span>
-                    <input type="number" [formField]="configForm.defaultSlotDurationMinutes" />
-                    <small class="field-micro-hint">{{ 'practice.slotDurationHint' | t }}</small>
-                  </label>
-
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'ui.full.333' | t }}
-                      <span class="unit-badge">{{ 'practice.minutesUnit' | t }}</span>
-                    </span>
-                    <input type="number" [formField]="configForm.checkInGracePeriodMinutes" />
-                    <small class="field-micro-hint">{{ 'practice.checkInGraceHint' | t }}</small>
-                  </label>
-
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'ui.full.334' | t }}
-                      <span class="unit-badge">{{ 'practice.minutesUnit' | t }}</span>
-                    </span>
-                    <input
-                      type="number"
-                      [formField]="configForm.patientSelfCancellationCutoffMinutes"
-                    />
-                    <small class="field-micro-hint">{{
-                      'practice.cancellationCutoffHint' | t
-                    }}</small>
-                  </label>
-                </div>
-              </div>
-
-              <!-- القسم الثاني: سعة العيادة وإدارة الطابور -->
-              <div class="config-group-panel">
-                <div class="group-header">
-                  <span class="group-header-icon icon-navy" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="9" cy="7" r="4"></circle>
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                  </span>
-                  <div>
-                    <h3>{{ 'practice.queueCapacity' | t }}</h3>
-                    <p>{{ 'practice.queueCapacityHint' | t }}</p>
-                  </div>
-                </div>
-
-                <div class="capacity-grid">
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'ui.full.335' | t }}
-                    </span>
-                    <input
-                      inputmode="numeric"
-                      [formField]="configForm.maximumDailyPatients"
-                      [placeholder]="'ui.full.336' | t"
-                    />
-                    <small class="field-micro-hint">{{
-                      'practice.unlimitedPatientsHint' | t
-                    }}</small>
-                  </label>
-
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'ui.full.337' | t }}
-                    </span>
-                    <input type="number" [formField]="configForm.maximumTicketCallAttempts" />
-                    <small class="field-micro-hint">{{ 'practice.callAttemptsHint' | t }}</small>
-                  </label>
-
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'practice.noShowPassedPatients' | t }}
-                    </span>
-                    <input type="number" [formField]="configForm.noShowAfterPassedPatientsCount" />
-                    <small class="field-micro-hint">{{ 'practice.noShowHint' | t }}</small>
-                  </label>
-
-                  <label class="form-field">
-                    <span class="field-label-text">
-                      {{ 'practice.timeZone' | t }}
-                    </span>
-                    <input
-                      dir="ltr"
-                      class="timezone-input"
-                      [formField]="configForm.timeZoneId"
-                      [placeholder]="'practice.cairoTime' | t"
-                    />
-                    <small class="field-micro-hint">{{ 'practice.localTimeHint' | t }}</small>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- شريط الحفظ والتنبيه السفلي -->
-            <div class="config-footer-bar">
-              <div class="config-footer-note">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <span>{{ 'practice.settingsEffectiveHint' | t }}</span>
-              </div>
-
-              <div class="config-footer-actions">
-                <button
-                  class="btn btn-primary btn-save-config"
-                  type="submit"
-                  [disabled]="activeAction() === 'configuration'"
-                >
-                  @if (activeAction() === 'configuration') {
-                    <span class="btn-spinner" aria-hidden="true"></span>
-                    <span>{{ uiLanguage.t('common.saving') }}</span>
-                  } @else {
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
-                      ></path>
-                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                      <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                    <span>{{ uiLanguage.t('ui.expressions.168') }}</span>
-                  }
-                </button>
-              </div>
-            </div>
-          </form>
-        } @else {
-          <!-- Read-only view -->
-          <dl class="config-summary">
-            <div class="summary-item">
-              <dt>{{ 'ui.full.338' | t }}</dt>
-              <dd>
-                {{
-                  config.allowOnlineBooking
-                    ? uiLanguage.t('ui.expressions.10')
-                    : uiLanguage.t('ui.expressions.11')
-                }}
-              </dd>
-            </div>
-            <div class="summary-item">
-              <dt>{{ 'ui.full.339' | t }}</dt>
-              <dd>
-                {{
-                  config.allowWalkIn
-                    ? uiLanguage.t('ui.expressions.10')
-                    : uiLanguage.t('ui.expressions.11')
-                }}
-              </dd>
-            </div>
-            <div class="summary-item">
-              <dt>{{ 'ui.full.340' | t }}</dt>
-              <dd>{{ config.defaultSlotDurationMinutes }} {{ 'practice.minutesUnit' | t }}</dd>
-            </div>
-            <div class="summary-item">
-              <dt>{{ 'ui.full.341' | t }}</dt>
-              <dd>{{ config.maximumDailyPatients ?? uiLanguage.t('ui.full.336') }}</dd>
-            </div>
-            <div class="summary-item">
-              <dt>{{ 'practice.noShowPassedPatients' | t }}</dt>
-              <dd>{{ config.noShowAfterPassedPatientsCount }}</dd>
-            </div>
-            <div class="summary-item">
-              <dt>{{ 'practice.timeZone' | t }}</dt>
-              <dd dir="ltr">{{ config.timeZoneId }}</dd>
-            </div>
-          </dl>
-        }
-      } @else if (isLoading()) {
-        <p class="loading-copy">{{ 'ui.full.342' | t }}</p>
-      }
-    </section>
+        <div class="config-footer-actions">
+          <button class="btn btn-primary btn-save-config" type="submit" [disabled]="activeAction() === 'configuration'">
+            @if (activeAction() === 'configuration') {
+            <span class="btn-spinner" aria-hidden="true"></span>
+            <span>{{ uiLanguage.t('common.saving') }}</span>
+            } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>{{ uiLanguage.t('ui.expressions.168') }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+    } @else {
+    <!-- Read-only view -->
+    <dl class="config-summary">
+      <div class="summary-item">
+        <dt>{{ 'ui.full.338' | t }}</dt>
+        <dd>
+          {{
+          config.allowOnlineBooking
+          ? uiLanguage.t('ui.expressions.10')
+          : uiLanguage.t('ui.expressions.11')
+          }}
+        </dd>
+      </div>
+      <div class="summary-item">
+        <dt>{{ 'ui.full.339' | t }}</dt>
+        <dd>
+          {{
+          config.allowWalkIn
+          ? uiLanguage.t('ui.expressions.10')
+          : uiLanguage.t('ui.expressions.11')
+          }}
+        </dd>
+      </div>
+      <div class="summary-item">
+        <dt>{{ 'ui.full.340' | t }}</dt>
+        <dd>{{ config.defaultSlotDurationMinutes }} {{ 'practice.minutesUnit' | t }}</dd>
+      </div>
+      <div class="summary-item">
+        <dt>{{ 'ui.full.341' | t }}</dt>
+        <dd>{{ config.maximumDailyPatients ?? uiLanguage.t('ui.full.336') }}</dd>
+      </div>
+      <div class="summary-item">
+        <dt>{{ 'practice.noShowPassedPatients' | t }}</dt>
+        <dd>{{ config.noShowAfterPassedPatientsCount }}</dd>
+      </div>
+      <div class="summary-item">
+        <dt>{{ 'practice.timeZone' | t }}</dt>
+        <dd dir="ltr">{{ config.timeZoneId }}</dd>
+      </div>
+    </dl>
+    }
+    } @else if (isLoading()) {
+    <p class="loading-copy">{{ 'ui.full.342' | t }}</p>
+    }
+  </section>
   }
 </section>
 

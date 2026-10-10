@@ -77,8 +77,7 @@
 .doctor-row-enterprise {
   display: grid;
   grid-template-columns:
-    minmax(0, 1.5fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.8fr)
-    minmax(0, 0.9fr) minmax(0, 0.7fr);
+    minmax(0, 1.5fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 0.7fr);
   align-items: center;
   gap: 12px;
 }
@@ -473,18 +472,20 @@
 /* ── 5. Grid View Cards ──────────────────────────────────── */
 .doctors-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 18px;
 }
 
 .doctor-card-item {
   display: flex;
   flex-direction: column;
-  padding: 18px;
+  padding: 18px 20px;
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-subtle);
+  container-type: inline-size;
+  box-sizing: border-box;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -500,7 +501,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .card-top-info {
@@ -508,7 +509,7 @@
   flex-direction: column;
   min-width: 0;
   flex: 1;
-  gap: 3px;
+  gap: 4px;
 }
 
 .card-doctor-name {
@@ -516,6 +517,7 @@
   font-size: 0.95rem;
   font-weight: 800;
   color: var(--color-text-primary);
+  line-height: 1.35;
 }
 
 .card-doctor-name button {
@@ -525,6 +527,7 @@
   border: 0;
   background: transparent;
   font: inherit;
+  font-weight: 800;
   text-align: start;
   cursor: pointer;
 }
@@ -533,31 +536,71 @@
   color: var(--color-teal-600);
 }
 
-.card-item-body {
+.card-top-info .doctor-sub-cluster {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-block: 10px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.card-status-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.card-status-label {
+  color: var(--color-text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.card-item-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 14px 12px;
+  padding-block: 12px;
   border-block: 1px solid var(--color-border-soft);
 }
 
-.card-contact-row {
+@container (max-width: 320px) {
+  .card-item-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card-section {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.card-section-label {
+  color: var(--color-text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.card-contact-items {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
 }
 
 .card-contact-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--color-text-secondary);
   text-decoration: none;
   min-width: 0;
   max-width: 100%;
+  transition: color 0.15s ease;
 }
 
 .card-contact-item:hover {
@@ -566,48 +609,50 @@
 
 .card-contact-item svg {
   flex-shrink: 0;
-  color: var(--wasla-slate, #64748b);
+  color: var(--color-teal-600);
 }
 
-.card-docs-row {
+.card-contact-item.contact-phone {
+  font-family: var(--font-en);
+}
+
+.card-docs-items {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.card-progress-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-}
-
-.card-progress-row .card-row-label {
-  white-space: nowrap;
-  font-size: 0.71rem;
-  color: var(--color-text-muted);
-  font-weight: 600;
-}
-
-.card-progress-row .progress-bar-wrap {
-  flex: 1;
+  flex-direction: column;
+  gap: 5px;
   min-width: 0;
 }
 
-.card-row-label {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+.card-progress-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.card-progress-row .progress-bar-wrap {
+  width: 100%;
 }
 
 .card-item-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
-  gap: 8px;
+  margin-top: 12px;
+  gap: 10px;
+}
+
+.card-date-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-date-label {
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 /* ── 6. Numbered Pagination Bar ──────────────────────────── */
@@ -745,28 +790,35 @@
   .medical-table-header {
     display: none;
   }
+
   .doctor-row-enterprise {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas: 'doctor status' 'contact license' 'progress date' 'action action';
     gap: 16px;
     padding: 20px;
   }
+
   .col-doctor {
     grid-area: doctor;
   }
+
   .col-contact {
     grid-area: contact;
   }
+
   .col-license {
     grid-area: license;
   }
+
   .col-progress {
     grid-area: progress;
   }
+
   .col-status {
     grid-area: status;
     justify-content: flex-end;
   }
+
   .col-date {
     grid-area: date;
     display: flex;
@@ -774,17 +826,21 @@
     align-items: flex-start;
     gap: 6px;
   }
+
   .col-action {
     grid-area: action;
   }
+
   .mobile-col-label {
     display: block;
     color: var(--color-text-secondary);
     font-size: 0.75rem;
   }
+
   .col-progress .mobile-col-label {
     display: none;
   }
+
   .btn-inspect-enterprise {
     min-height: 44px;
   }
@@ -797,19 +853,23 @@
     gap: 12px;
     padding: 16px;
   }
+
   .col-status {
     justify-content: flex-start;
     gap: 8px;
     flex-wrap: wrap;
   }
+
   .contact-pill-link {
     min-height: 32px;
   }
+
   .col-date {
     flex-direction: row;
     justify-content: space-between;
     flex-wrap: wrap;
   }
+
   .btn-inspect-enterprise {
     width: 100%;
   }
@@ -819,25 +879,31 @@
   .card-item-top {
     flex-wrap: wrap;
   }
+
   .card-contact-row {
     flex-direction: column;
   }
+
   .card-item-footer {
     flex-wrap: wrap;
   }
+
   .pagination-bar-enterprise {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
+
   .pagination-info {
     flex-wrap: wrap;
     gap: 12px;
   }
+
   .pagination-buttons-group {
     justify-content: center;
     flex-wrap: wrap;
   }
+
   .btn-pagination-step,
   .btn-pagination-num {
     min-width: 44px;

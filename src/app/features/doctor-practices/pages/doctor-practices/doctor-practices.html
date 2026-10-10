@@ -216,7 +216,7 @@
         </div>
 
         <div class="practice-detail-side">
-          <div class="readiness-note">
+          <div class="readiness-note" [class.ready]="practice.isActive">
             <svg
               viewBox="0 0 24 24"
               width="16"
@@ -225,11 +225,21 @@
               stroke="currentColor"
               stroke-width="2"
             >
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              @if (practice.isActive) {
+                <polyline points="20 6 9 17 4 12"></polyline>
+              } @else {
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              }
             </svg>
-            <span>{{ 'ui.full.504' | t }}</span>
+            <span>
+              {{
+                practice.isActive
+                  ? ('practice.readyForBookingGuide' | t)
+                  : ('practice.activationGuide' | t)
+              }}
+            </span>
           </div>
         </div>
       </div>
@@ -559,7 +569,6 @@
   <app-side-drawer
     [opened]="isCreateDrawerOpen()"
     [title]="'practice.createClinic' | t"
-    [description]="'ui.full.513' | t"
     width="680px"
     (closed)="closeCreateDrawer()"
   >

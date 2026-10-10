@@ -1,157 +1,138 @@
 @if (canView || canUpdate) {
-  <section class="panel public-profile-panel" aria-labelledby="public-profile-heading">
-    <div class="section-heading">
-      <div class="heading-meta">
-        <h2 id="public-profile-heading">{{ 'profile.publicTitle' | t }}</h2>
-        <p>{{ 'profile.publicHelp' | t }}</p>
-      </div>
+<section class="panel public-profile-panel" aria-labelledby="public-profile-heading">
+  <div class="section-heading">
+    <div class="heading-meta">
+      <h2 id="public-profile-heading">{{ 'profile.publicTitle' | t }}</h2>
+      <p>{{ 'profile.publicHelp' | t }}</p>
+    </div>
+  </div>
+
+  @if (messages().length) {
+  <div class="profile-feedback" role="alert">
+    @for (message of messages(); track message) {
+    <p>{{ message | t }}</p>
+    }
+  </div>
+  }
+
+  @if (isLoading()) {
+  <div class="loading-panel" role="status">
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <span>{{ 'profile.loading' | t }}</span>
+  </div>
+  } @else {
+  <div class="public-profile-grid">
+    <!-- Col 1: Bio Editor -->
+    <div class="bio-col">
+      @if (profile()) {
+      <form class="bio-editor" (submit)="saveBio($event)" novalidate>
+        <div class="sub-heading">
+          <h3>{{ 'profile.bio' | t }}</h3>
+          <span class="char-counter">{{ bioModel().bio.length }} / 2000</span>
+        </div>
+        <label class="form-field">
+          <textarea rows="6" [placeholder]="'profile.bioPlaceholder' | t" [formField]="bioForm.bio"
+            class="field-input bio-textarea"></textarea>
+        </label>
+        @if (canUpdate) {
+        <div class="form-action-row">
+          <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            <span>{{ 'profile.saveBio' | t }}</span>
+          </button>
+        </div>
+        }
+      </form>
+      }
     </div>
 
-    @if (messages().length) {
-      <div class="profile-feedback" role="alert">
-        @for (message of messages(); track message) {
-          <p>{{ message | t }}</p>
-        }
-      </div>
-    }
-
-    @if (isLoading()) {
-      <div class="loading-panel" role="status">
-        <div class="loading-spinner" aria-hidden="true"></div>
-        <span>{{ 'profile.loading' | t }}</span>
-      </div>
-    } @else {
-      <div class="public-profile-grid">
-        <!-- Col 1: Bio Editor -->
-        <div class="bio-col">
-          @if (profile()) {
-            <form class="bio-editor" (submit)="saveBio($event)" novalidate>
-              <div class="sub-heading">
-                <h3>{{ 'profile.bio' | t }}</h3>
-                <span class="char-counter">{{ bioModel().bio.length }} / 2000</span>
-              </div>
-              <label class="form-field">
-                <textarea
-                  rows="6"
-                  [placeholder]="'profile.bioPlaceholder' | t"
-                  [formField]="bioForm.bio"
-                  class="field-input bio-textarea"
-                ></textarea>
-              </label>
-              @if (canUpdate) {
-                <div class="form-action-row">
-                  <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                      <polyline points="17 21 17 13 7 13 7 21" />
-                      <polyline points="7 3 7 8 15 8" />
-                    </svg>
-                    <span>{{ 'profile.saveBio' | t }}</span>
-                  </button>
-                </div>
-              }
-            </form>
-          }
+    <!-- Col 2: Qualifications -->
+    <div class="qualifications-col">
+      <div class="qualification-list-block">
+        <div class="sub-heading">
+          <h3>{{ 'doctor.qualifications' | t }}</h3>
         </div>
-
-        <!-- Col 2: Qualifications -->
-        <div class="qualifications-col">
-          @if (canUpdate) {
-            <form class="qualification-form" (submit)="saveQualification($event)" novalidate>
-              <div class="sub-heading">
-                <h3>
-                  {{
-                    editingQualificationId()
-                      ? uiLanguage.t('profile.editQualification')
-                      : uiLanguage.t('profile.newQualification')
-                  }}
-                </h3>
-              </div>
-              <div class="qualification-fields-grid">
-                <label class="form-field">
-                  <span class="field-label">{{ 'profile.qualificationNameAr' | t }}</span>
-                  <input class="field-input" [formField]="qualificationForm.nameAr" />
-                </label>
-                <label class="form-field">
-                  <span class="field-label">{{ 'profile.qualificationNameEn' | t }}</span>
-                  <input class="field-input" dir="ltr" [formField]="qualificationForm.nameEn" />
-                </label>
-                <label class="form-field">
-                  <span class="field-label">{{ 'common.displayOrder' | t }}</span>
-                  <input
-                    class="field-input"
-                    type="number"
-                    [formField]="qualificationForm.displayOrder"
-                  />
-                </label>
-              </div>
-              <div class="qualification-actions">
-                <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
-                  {{
-                    editingQualificationId()
-                      ? uiLanguage.t('profile.saveQualification')
-                      : uiLanguage.t('profile.addQualification')
-                  }}
-                </button>
-                @if (editingQualificationId()) {
-                  <button class="btn-cancel" type="button" (click)="cancelQualificationEdit()">
-                    {{ 'common.cancel' | t }}
-                  </button>
-                }
-              </div>
-            </form>
-          }
-
-          <div class="qualification-list-block">
-            <div class="sub-heading">
-              <h3>{{ 'doctor.qualifications' | t }}</h3>
-            </div>
-            <div class="qualification-items">
-              @for (item of qualifications(); track item.id) {
-                <article class="qual-card">
-                  <div class="qual-main-info">
-                    <strong class="qual-ar">{{
-                      uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr
-                    }}</strong>
-                    @if (item.nameEn) {
-                      <small class="qual-en" [dir]="uiLanguage.isRtl() ? 'ltr' : 'rtl'">{{
-                        uiLanguage.isRtl() ? item.nameEn : item.nameAr
-                      }}</small>
-                    }
-                    <span class="qual-order">{{ 'common.order' | t }} {{ item.displayOrder }}</span>
-                  </div>
-                  @if (canUpdate) {
-                    <div class="qual-actions">
-                      <button type="button" class="btn-qual-edit" (click)="editQualification(item)">
-                        {{ 'common.edit' | t }}
-                      </button>
-                      <button
-                        class="btn-qual-delete"
-                        type="button"
-                        (click)="deleteQualification(item)"
-                      >
-                        {{ 'common.delete' | t }}
-                      </button>
-                    </div>
-                  }
-                </article>
-              } @empty {
-                <div class="empty-state-notice">
-                  <p>{{ 'profile.noQualifications' | t }}</p>
-                </div>
+        <div class="qualification-items">
+          @for (item of qualifications(); track item.id) {
+          <article class="qual-card">
+            <div class="qual-main-info">
+              <strong class="qual-ar">{{
+                uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr
+                }}</strong>
+              @if (item.nameEn) {
+              <small class="qual-en" [dir]="uiLanguage.isRtl() ? 'ltr' : 'rtl'">{{
+                uiLanguage.isRtl() ? item.nameEn : item.nameAr
+                }}</small>
               }
+              <span class="qual-order">{{ 'common.order' | t }} {{ item.displayOrder }}</span>
             </div>
+            @if (canUpdate) {
+            <div class="qual-actions">
+              <button type="button" class="btn-qual-edit" (click)="editQualification(item)">
+                {{ 'common.edit' | t }}
+              </button>
+              <button class="btn-qual-delete" type="button" (click)="deleteQualification(item)">
+                {{ 'common.delete' | t }}
+              </button>
+            </div>
+            }
+          </article>
+          } @empty {
+          <div class="empty-state-notice">
+            <p>{{ 'profile.noQualifications' | t }}</p>
           </div>
+          }
         </div>
       </div>
-    }
-  </section>
+
+      @if (canUpdate) {
+      <form class="qualification-form" (submit)="saveQualification($event)" novalidate>
+        <div class="sub-heading">
+          <h3>
+            {{
+            editingQualificationId()
+            ? uiLanguage.t('profile.editQualification')
+            : uiLanguage.t('profile.newQualification')
+            }}
+          </h3>
+        </div>
+        <div class="qualification-fields-grid">
+          <label class="form-field">
+            <span class="field-label">{{ 'profile.qualificationNameAr' | t }}</span>
+            <input class="field-input" [formField]="qualificationForm.nameAr" />
+          </label>
+          <label class="form-field">
+            <span class="field-label">{{ 'profile.qualificationNameEn' | t }}</span>
+            <input class="field-input" dir="ltr" [formField]="qualificationForm.nameEn" />
+          </label>
+          <label class="form-field">
+            <span class="field-label">{{ 'common.displayOrder' | t }}</span>
+            <input class="field-input" type="number" [formField]="qualificationForm.displayOrder" />
+          </label>
+        </div>
+        <div class="qualification-actions">
+          <button class="btn-primary-medical" type="submit" [disabled]="isSubmitting()">
+            {{
+            editingQualificationId()
+            ? uiLanguage.t('profile.saveQualification')
+            : uiLanguage.t('profile.addQualification')
+            }}
+          </button>
+          @if (editingQualificationId()) {
+          <button class="btn-cancel" type="button" (click)="cancelQualificationEdit()">
+            {{ 'common.cancel' | t }}
+          </button>
+          }
+        </div>
+      </form>
+      }
+    </div>
+  </div>
+  }
+</section>
 }

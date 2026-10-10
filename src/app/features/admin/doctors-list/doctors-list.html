@@ -1,16 +1,9 @@
 <section class="management-page">
   <!-- Page Header with Integrated KPI Cards -->
-  <app-page-header
-    [heading]="'admin.navDoctors' | t"
-    [description]="'admin.doctorsHelp' | t"
-    icon="doctors"
-    [actionLabel]="'common.refreshData' | t"
-    actionIcon="refresh"
-    [actionDisabled]="isLoading()"
-    [actionLoading]="isLoading()"
-    (actionClicked)="loadMetrics(); load()"
-  >
-    <!-- Catchy Integrated Controls Deck (Search + Compact Status Chips) -->
+  <app-page-header [heading]="'admin.navDoctors' | t" [description]="'admin.doctorsHelp' | t" icon="doctors"
+    [actionLabel]="'common.refreshData' | t" actionIcon="refresh" [actionDisabled]="isLoading()"
+    [actionLoading]="isLoading()" (actionClicked)="loadMetrics(); load()">
+    <!-- Catchy Integrated Controls Deck -->
     <div pageHeaderDeck class="header-control-grid">
       <!-- Search Box & Quick Reset -->
       <div class="search-box-wrap">
@@ -19,59 +12,37 @@
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input
-            id="doctors-search-input"
-            type="text"
-            role="searchbox"
-            enterkeyhint="search"
-            autocomplete="off"
-            [placeholder]="'doctor.searchPlaceholder' | t"
-            [formField]="filterForm.searchText"
-            (input)="scheduleSearch()"
-          />
+          <input id="doctors-search-input" type="text" role="searchbox" enterkeyhint="search" autocomplete="off"
+            [placeholder]="'doctor.searchPlaceholder' | t" [formField]="filterForm.searchText"
+            (input)="scheduleSearch()" />
           @if (filterModel().searchText) {
-            <button
-              type="button"
-              class="btn-clear-search-integrated"
-              [attr.aria-label]="'common.clearSearch' | t"
-              (click)="clearSearch()"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+          <button type="button" class="btn-clear-search-integrated" [attr.aria-label]="'common.clearSearch' | t"
+            (click)="clearSearch()">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
           }
         </div>
 
         @if (hasActiveFilter()) {
-          <button
-            type="button"
-            class="btn-reset-filters-chip"
-            (click)="clearAllFilters()"
-            [title]="'common.resetFilters' | t"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
-            <span>{{ 'common.reset' | t }}</span>
-          </button>
+        <button type="button" class="btn-reset-filters-chip" (click)="clearAllFilters()"
+          [title]="'common.resetFilters' | t">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+          <span>{{ 'common.reset' | t }}</span>
+        </button>
         }
       </div>
 
       <!-- Compact Catchy KPI Chips -->
       <div class="kpi-chips-cluster" role="tablist" [attr.aria-label]="'doctor.filterStatus' | t">
         <!-- Total -->
-        <button
-          type="button"
-          role="tab"
-          class="kpi-chip kpi-chip--total"
-          [class.active]="selectedStatus() === ''"
-          [attr.aria-selected]="selectedStatus() === ''"
-          (click)="filterBy('')"
-          [title]="'doctor.showAll' | t"
-        >
+        <button type="button" role="tab" class="kpi-chip kpi-chip--total" [class.active]="selectedStatus() === ''"
+          [attr.aria-selected]="selectedStatus() === ''" (click)="filterBy('')" [title]="'doctor.showAll' | t">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
@@ -81,19 +52,13 @@
           <span class="chip-label">{{ 'common.all' | t }}</span>
           <span class="chip-count">{{
             metrics().loaded ? metrics().total : (result()?.totalCount ?? 0)
-          }}</span>
+            }}</span>
         </button>
 
         <!-- Approved -->
-        <button
-          type="button"
-          role="tab"
-          class="kpi-chip kpi-chip--approved"
-          [class.active]="selectedStatus() === 'Approved'"
-          [attr.aria-selected]="selectedStatus() === 'Approved'"
-          (click)="filterBy('Approved')"
-          [title]="'doctor.activeApproved' | t"
-        >
+        <button type="button" role="tab" class="kpi-chip kpi-chip--approved"
+          [class.active]="selectedStatus() === 'Approved'" [attr.aria-selected]="selectedStatus() === 'Approved'"
+          (click)="filterBy('Approved')" [title]="'doctor.activeApproved' | t">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             <polyline points="9 12 11 14 15 10" />
@@ -103,15 +68,9 @@
         </button>
 
         <!-- Pending -->
-        <button
-          type="button"
-          role="tab"
-          class="kpi-chip kpi-chip--pending"
-          [class.active]="selectedStatus() === 'Pending'"
-          [attr.aria-selected]="selectedStatus() === 'Pending'"
-          (click)="filterBy('Pending')"
-          [title]="'doctor.awaitingApproval' | t"
-        >
+        <button type="button" role="tab" class="kpi-chip kpi-chip--pending"
+          [class.active]="selectedStatus() === 'Pending'" [attr.aria-selected]="selectedStatus() === 'Pending'"
+          (click)="filterBy('Pending')" [title]="'doctor.awaitingApproval' | t">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
@@ -121,15 +80,9 @@
         </button>
 
         <!-- Rejected -->
-        <button
-          type="button"
-          role="tab"
-          class="kpi-chip kpi-chip--rejected"
-          [class.active]="selectedStatus() === 'Rejected'"
-          [attr.aria-selected]="selectedStatus() === 'Rejected'"
-          (click)="filterBy('Rejected')"
-          [title]="'doctor.rejectedApplications' | t"
-        >
+        <button type="button" role="tab" class="kpi-chip kpi-chip--rejected"
+          [class.active]="selectedStatus() === 'Rejected'" [attr.aria-selected]="selectedStatus() === 'Rejected'"
+          (click)="filterBy('Rejected')" [title]="'doctor.rejectedApplications' | t">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
@@ -140,15 +93,9 @@
         </button>
 
         <!-- Suspended -->
-        <button
-          type="button"
-          role="tab"
-          class="kpi-chip kpi-chip--suspended"
-          [class.active]="selectedStatus() === 'Suspended'"
-          [attr.aria-selected]="selectedStatus() === 'Suspended'"
-          (click)="filterBy('Suspended')"
-          [title]="'doctor.suspendedAccounts' | t"
-        >
+        <button type="button" role="tab" class="kpi-chip kpi-chip--suspended"
+          [class.active]="selectedStatus() === 'Suspended'" [attr.aria-selected]="selectedStatus() === 'Suspended'"
+          (click)="filterBy('Suspended')" [title]="'doctor.suspendedAccounts' | t">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="9" y1="9" x2="9" y2="15" />
@@ -162,9 +109,9 @@
   </app-page-header>
 
   @if (searchError()) {
-    <div class="state error compact-error" role="alert">
-      <small>{{ searchError() }}</small>
-    </div>
+  <div class="state error compact-error" role="alert">
+    <small>{{ searchError() }}</small>
+  </div>
   }
 
   <!-- Meta Header Bar (Results Count, View Toggle, Sorting) -->
@@ -174,30 +121,17 @@
         <strong>{{ result()?.totalCount ?? 0 }}</strong> {{ 'common.doctor' | t }}
       </span>
       @if (isLoading()) {
-        <span role="status">{{ 'common.updating' | t }}</span>
+      <span role="status">{{ 'common.updating' | t }}</span>
       }
     </div>
 
     <div class="meta-end">
       <!-- View Switcher (Table / Grid) -->
       <div class="view-toggle-group" role="group" [attr.aria-label]="'admin.viewMode' | t">
-        <button
-          type="button"
-          class="view-toggle-btn"
-          [class.active]="viewMode() === 'table'"
-          (click)="toggleViewMode('table')"
-          [title]="'admin.tableView' | t"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
+        <button type="button" class="view-toggle-btn" [class.active]="viewMode() === 'table'"
+          (click)="toggleViewMode('table')" [title]="'admin.tableView' | t">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6" />
             <line x1="8" y1="12" x2="21" y2="12" />
             <line x1="8" y1="18" x2="21" y2="18" />
@@ -206,23 +140,10 @@
             <line x1="3" y1="18" x2="3.01" y2="18" />
           </svg>
         </button>
-        <button
-          type="button"
-          class="view-toggle-btn"
-          [class.active]="viewMode() === 'grid'"
-          (click)="toggleViewMode('grid')"
-          [title]="'admin.cardView' | t"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
+        <button type="button" class="view-toggle-btn" [class.active]="viewMode() === 'grid'"
+          (click)="toggleViewMode('grid')" [title]="'admin.cardView' | t">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7" />
             <rect x="14" y="3" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" />
@@ -235,447 +156,359 @@
 
   <!-- Main Content Area -->
   @if (apiMessages().length) {
-    <div class="state error" role="alert">
-      <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
-      <h2>{{ 'admin.doctorsLoadFailed' | t }}</h2>
-      @for (message of apiMessages(); track message) {
-        <p>{{ message | t }}</p>
-      }
-      <button class="btn btn-outline-secondary" type="button" (click)="load()">
-        {{ 'discovery.retry' | t }}
-      </button>
-    </div>
+  <div class="state error" role="alert">
+    <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
+    <h2>{{ 'admin.doctorsLoadFailed' | t }}</h2>
+    @for (message of apiMessages(); track message) {
+    <p>{{ message | t }}</p>
+    }
+    <button class="btn btn-outline-secondary" type="button" (click)="load()">
+      {{ 'discovery.retry' | t }}
+    </button>
+  </div>
   } @else if (isLoading() && !result()) {
-    <div class="state" role="status">
-      <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>{{ 'admin.doctorsRefreshing' | t }}</h2>
-    </div>
+  <div class="state" role="status">
+    <span class="loading-indicator" aria-hidden="true"></span>
+    <h2>{{ 'admin.doctorsRefreshing' | t }}</h2>
+  </div>
   } @else if (result(); as doctorsPage) {
-    @if (doctors().length) {
-      @if (viewMode() === 'table') {
-        <!-- Enterprise Medical Data Table -->
-        <div class="medical-table-card">
-          <div class="medical-table-header" aria-hidden="true">
-            <span class="col-head col-head--doctor">{{ 'common.theDoctor' | t }}</span>
-            <span class="col-head col-head--contact">{{ 'common.contactDetails' | t }}</span>
-            <span class="col-head col-head--license">{{ 'admin.licenseAndDocuments' | t }}</span>
-            <span class="col-head col-head--progress">{{ 'common.profileCompletion' | t }}</span>
-            <span class="col-head col-head--status">{{ 'doctor.onboardingStatus' | t }}</span>
-            <span class="col-head col-head--date">{{ 'admin.lastUpdate' | t }}</span>
-            <span class="col-head col-head--action">{{ 'common.actions' | t }}</span>
-          </div>
+  @if (doctors().length) {
+  @if (viewMode() === 'table') {
+  <!-- Enterprise Medical Data Table -->
+  <div class="medical-table-card">
+    <div class="medical-table-header" aria-hidden="true">
+      <span class="col-head col-head--doctor">{{ 'common.theDoctor' | t }}</span>
+      <span class="col-head col-head--contact">{{ 'common.contactDetails' | t }}</span>
+      <span class="col-head col-head--license">{{ 'admin.licenseAndDocuments' | t }}</span>
+      <span class="col-head col-head--progress">{{ 'common.profileCompletion' | t }}</span>
+      <span class="col-head col-head--status">{{ 'doctor.onboardingStatus' | t }}</span>
+      <span class="col-head col-head--date">{{ 'admin.lastUpdate' | t }}</span>
+      <span class="col-head col-head--action">{{ 'common.actions' | t }}</span>
+    </div>
 
-          <div class="medical-table-body">
-            @for (doctor of doctors(); track doctor.doctorId) {
-              <article class="doctor-row-enterprise">
-                <!-- Col 1: Doctor Identity -->
-                <div class="col-doctor">
-                  <div class="doctor-avatar-circle">
-                    <span>{{ doctorInitials(doctor) }}</span>
-                    @if (doctor.approvalStatus === 'Approved') {
-                      <span class="verified-indicator" [title]="'admin.approvedVerifiedDoctor' | t">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="9"
-                          height="9"
-                          fill="none"
-                          stroke="white"
-                          stroke-width="3"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </span>
-                    }
-                  </div>
-
-                  <div class="doctor-name-cluster">
-                    @if (canViewDetails) {
-                      <button type="button"
-                        class="doctor-title-link"
-                        (click)="openDoctor(doctor)"
-                      >
-                        {{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
-                      </button>
-                    } @else {
-                      <strong class="doctor-title-text">{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</strong>
-                    }
-
-                    <div class="doctor-sub-cluster">
-                      <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
-                      @if (doctor.nameEn) {
-                        <span class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</span>
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Col 2: Contact Info -->
-                <div class="col-contact">
-                  <span class="mobile-col-label">{{ 'common.contactPrefix' | t }}</span>
-                  <a
-                    class="contact-pill-link"
-                    [href]="'mailto:' + doctor.email"
-                    [title]="'admin.sendEmail' | t"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <rect x="2" y="4" width="20" height="16" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
-                    <span class="contact-text-truncate">{{ doctor.email }}</span>
-                  </a>
-                  <a
-                    class="contact-pill-link contact-phone"
-                    [href]="'tel:' + doctor.phone"
-                    dir="ltr"
-                    [title]="doctor.phone"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-                      />
-                    </svg>
-                    <span class="contact-phone-text">{{ doctor.phone }}</span>
-                  </a>
-                  <span class="demographics-line"
-                    >{{ doctor.age }} {{ 'ui.full.5' | t }} {{ doctor.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span
-                  >
-                </div>
-
-                <!-- Col 3: License & Documents -->
-                <div class="col-license">
-                  <span class="mobile-col-label">{{ 'admin.documentsPrefix' | t }}</span>
-                  <div class="license-status-line">
-                    <span
-                      class="license-dot"
-                      [class.license-dot--valid]="doctor.hasSyndicateFront"
-                      [class.license-dot--missing]="!doctor.hasSyndicateFront"
-                      aria-hidden="true"
-                    ></span>
-                    <span class="license-text">
-                      {{
-                        doctor.hasSyndicateFront ? uiLanguage.t('ui.expressions.21') : uiLanguage.t('ui.expressions.22')
-                      }}
-                    </span>
-                  </div>
-                  <span class="docs-count-sub">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                    <span>{{ availableDocuments(doctor) }} {{ 'admin.outOfFiveDocuments' | t }}</span>
-                  </span>
-                </div>
-
-                <!-- Col 4: Completion Progress Bar -->
-                <div class="col-progress">
-                  <span class="mobile-col-label">{{ 'admin.completionPrefix' | t }}</span>
-                  <div class="progress-bar-wrap">
-                    <div class="progress-header-row">
-                      <span class="progress-label">{{ 'common.profileCompletion' | t }}</span>
-                      <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
-                    </div>
-                    <div
-                      class="progress-track"
-                      role="progressbar"
-                      [attr.aria-valuenow]="completionPercentage(doctor)"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    >
-                      <div
-                        class="progress-fill"
-                        [style.width.%]="completionPercentage(doctor)"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Col 5: Approval Status Badge -->
-                <div class="col-status">
-                  <span class="mobile-col-label">{{ 'admin.approvalPrefix' | t }}</span>
-                  <span
-                    [class]="'enterprise-status-badge status--' + doctor.approvalStatus.toLowerCase()"
-                  >
-                    <span class="status-living-dot" aria-hidden="true"></span>
-                    <span>{{ statusLabel(doctor.approvalStatus) }}</span>
-                  </span>
-                </div>
-
-                <!-- Col 6: Date -->
-                <div class="col-date">
-                  <span class="mobile-col-label">{{ 'admin.registeredPrefix' | t }}</span>
-                  <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">
-                    {{ formatDate(doctor.createdOnUtc) }}
-                  </time>
-                </div>
-
-                <!-- Col 7: Actions -->
-                <div class="col-action">
-                  @if (canViewDetails) {
-                    <button type="button"
-                      class="btn-inspect-enterprise"
-                      (click)="openDoctor(doctor)"
-                    >
-                      <span>{{ 'common.viewProfile' | t }}</span>
-                    </button>
-                  }
-                </div>
-              </article>
+    <div class="medical-table-body">
+      @for (doctor of doctors(); track doctor.doctorId) {
+      <article class="doctor-row-enterprise">
+        <!-- Col 1: Doctor Identity -->
+        <div class="col-doctor">
+          <div class="doctor-avatar-circle">
+            <span>{{ doctorInitials(doctor) }}</span>
+            @if (doctor.approvalStatus === 'Approved') {
+            <span class="verified-indicator" [title]="'admin.approvedVerifiedDoctor' | t">
+              <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
             }
           </div>
-        </div>
-      } @else {
-        <!-- Grid View Mode -->
-        <div class="doctors-cards-grid">
-          @for (doctor of doctors(); track doctor.doctorId) {
-            <article class="doctor-card-item">
-              <div class="card-item-top">
-                <div class="doctor-avatar-circle large">
-                  <span>{{ doctorInitials(doctor) }}</span>
-                  @if (doctor.approvalStatus === 'Approved') {
-                    <span class="verified-indicator" [title]="'admin.approvedDoctor' | t">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="10"
-                        height="10"
-                        fill="none"
-                        stroke="white"
-                        stroke-width="3"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </span>
-                  }
-                </div>
-                <div class="card-top-info">
-                  <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
-                  <h3 class="card-doctor-name">
-                    @if (canViewDetails) {
-                      <button type="button" (click)="openDoctor(doctor)">{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</button>
-                    } @else {
-                      {{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
-                    }
-                  </h3>
-                  @if (doctor.nameEn) {
-                    <p class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</p>
-                  }
-                </div>
-                <span
-                  [class]="'enterprise-status-badge status--' + doctor.approvalStatus.toLowerCase()"
-                >
-                  <span class="status-living-dot" aria-hidden="true"></span>
-                  <span>{{ statusLabel(doctor.approvalStatus) }}</span>
-                </span>
-              </div>
 
-              <div class="card-item-body">
-                <!-- ROW 2: Email + Phone -->
-                <div class="card-contact-row">
-                  @if (doctor.email) {
-                    <a class="card-contact-item" [href]="'mailto:' + doctor.email" [title]="doctor.email">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <rect x="2" y="4" width="20" height="16" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                      <span class="contact-text-truncate">{{ doctor.email }}</span>
-                    </a>
-                  }
-                  @if (doctor.phone) {
-                    <a class="card-contact-item" [href]="'tel:' + doctor.phone" dir="ltr" [title]="doctor.phone">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                      </svg>
-                      <span>{{ doctor.phone }}</span>
-                    </a>
-                  }
-                </div>
-
-                <!-- ROW 3: License Status + Documents Count -->
-                <div class="card-docs-row">
-                  <div class="license-status-line">
-                    <span
-                      class="license-dot"
-                      [class.license-dot--valid]="doctor.hasSyndicateFront"
-                      [class.license-dot--missing]="!doctor.hasSyndicateFront"
-                      aria-hidden="true"
-                    ></span>
-                    <span class="license-text">
-                      {{ doctor.hasSyndicateFront ? uiLanguage.t('ui.expressions.21') : uiLanguage.t('ui.expressions.22') }}
-                    </span>
-                  </div>
-                  <span class="docs-count-sub">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                    <span>{{ availableDocuments(doctor) }} {{ 'admin.outOfFiveDocuments' | t }}</span>
-                  </span>
-                </div>
-
-                <!-- ROW 4: Profile Completion + Progress Bar -->
-                <div class="card-progress-row">
-                  <div class="progress-bar-wrap">
-                    <div class="progress-header-row">
-                      <span class="card-row-label">{{ 'common.profileCompletion' | t }}</span>
-                      <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
-                    </div>
-                    <div class="progress-track" role="progressbar" [attr.aria-valuenow]="completionPercentage(doctor)" aria-valuemin="0" aria-valuemax="100">
-                      <div class="progress-fill" [style.width.%]="completionPercentage(doctor)"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ROW 5: Registration Date + View Profile Button -->
-              <div class="card-item-footer">
-                <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">{{ formatDate(doctor.createdOnUtc) }}</time>
-                @if (canViewDetails) {
-                  <button type="button"
-                    class="btn-inspect-enterprise"
-                    (click)="openDoctor(doctor)"
-                  >
-                    <span>{{ 'common.viewProfile' | t }}</span>
-                  </button>
-                }
-              </div>
-            </article>
-          }
-        </div>
-      }
-
-      <!-- Numbered Enterprise Pagination Bar -->
-      <nav class="pagination-bar-enterprise" [attr.aria-label]="'review.doctorPages' | t">
-        <!-- Range Indicator -->
-        <div class="pagination-info">
-          <span
-            >{{ 'common.view' | t }} {{ pageItemRange().start }} - {{ pageItemRange().end }} {{ 'discovery.of' | t }}
-            {{ pageItemRange().total }} {{ 'common.doctor' | t }}</span
-          >
-          <div class="page-size-picker">
-            <select
-              [value]="pageSize()"
-              (change)="onPageSizeChange($event)"
-              [attr.aria-label]="'review.pageSize' | t"
-            >
-              @for (size of pageSizeOptions; track size) {
-                <option [value]="size">{{ size }}</option>
-              }
-            </select>
-            <span>{{ 'review.perPage' | t }}</span>
-          </div>
-        </div>
-
-        <!-- Numbered Page Controls -->
-        <div class="pagination-buttons-group">
-          <!-- Previous Button -->
-          <button
-            class="btn-pagination-step"
-            type="button"
-            [disabled]="pageNumber() <= 1 || isLoading()"
-            (click)="goToPage(pageNumber() - 1)"
-            [attr.aria-label]="'review.previousPage' | t"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-
-          <!-- Numbered Pages -->
-          @for (p of visiblePages(); track $index) {
-            @if (p === '...') {
-              <span class="pagination-ellipsis">…</span>
+          <div class="doctor-name-cluster">
+            @if (canViewDetails) {
+            <button type="button" class="doctor-title-link" (click)="openDoctor(doctor)">
+              {{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
+            </button>
             } @else {
-              <button
-                type="button"
-                class="btn-pagination-num"
-                [class.active]="p === pageNumber()"
-                (click)="goToPage(+p)"
-              >
-                {{ p }}
-              </button>
+            <strong class="doctor-title-text">{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr
+              }}</strong>
             }
-          }
 
-          <!-- Next Button -->
-          <button
-            class="btn-pagination-step"
-            type="button"
-            [disabled]="pageNumber() >= totalPages() || isLoading()"
-            (click)="goToPage(pageNumber() + 1)"
-            [attr.aria-label]="'review.nextPage' | t"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
+            <div class="doctor-sub-cluster">
+              <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
+              @if (doctor.nameEn) {
+              <span class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</span>
+              }
+            </div>
+          </div>
         </div>
-      </nav>
-    } @else {
-      <!-- Empty Search / Filter Results State -->
-      <div class="state medical-empty-state">
-        <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
-        <h2>{{ 'common.noMatches' | t }}</h2>
-        <p>
-          {{ 'review.noDoctorsHelp' | t }}
-        </p>
 
-        @if (hasActiveFilter()) {
-          <button class="btn btn-outline-secondary" type="button" (click)="clearAllFilters()">
-            {{ 'review.resetSearch' | t }}
+        <!-- Col 2: Contact Info -->
+        <div class="col-contact">
+          <span class="mobile-col-label">{{ 'common.contactPrefix' | t }}</span>
+          <a class="contact-pill-link" [href]="'mailto:' + doctor.email" [title]="'admin.sendEmail' | t">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            <span class="contact-text-truncate">{{ doctor.email }}</span>
+          </a>
+          <a class="contact-pill-link contact-phone" [href]="'tel:' + doctor.phone" dir="ltr" [title]="doctor.phone">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            <span class="contact-phone-text">{{ doctor.phone }}</span>
+          </a>
+          <span class="demographics-line">{{ doctor.age }} {{ 'ui.full.5' | t }} {{ doctor.gender === 'Male' ?
+            uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
+        </div>
+
+        <!-- Col 3: License & Documents -->
+        <div class="col-license">
+          <span class="mobile-col-label">{{ 'admin.documentsPrefix' | t }}</span>
+          <div class="license-status-line">
+            <span class="license-dot" [class.license-dot--valid]="doctor.hasSyndicateFront"
+              [class.license-dot--missing]="!doctor.hasSyndicateFront" aria-hidden="true"></span>
+            <span class="license-text">
+              {{
+              doctor.hasSyndicateFront ? uiLanguage.t('ui.expressions.21') : uiLanguage.t('ui.expressions.22')
+              }}
+            </span>
+          </div>
+          <span class="docs-count-sub">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span>{{ availableDocuments(doctor) }} {{ 'admin.outOfFiveDocuments' | t }}</span>
+          </span>
+        </div>
+
+        <!-- Col 4: Completion Progress Bar -->
+        <div class="col-progress">
+          <span class="mobile-col-label">{{ 'admin.completionPrefix' | t }}</span>
+          <div class="progress-bar-wrap">
+            <div class="progress-header-row">
+              <span class="progress-label">{{ 'common.profileCompletion' | t }}</span>
+              <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+            </div>
+            <div class="progress-track" role="progressbar" [attr.aria-valuenow]="completionPercentage(doctor)"
+              aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-fill" [style.width.%]="completionPercentage(doctor)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 5: Approval Status Badge -->
+        <div class="col-status">
+          <span class="mobile-col-label">{{ 'admin.approvalPrefix' | t }}</span>
+          <span [class]="'enterprise-status-badge status--' + doctor.approvalStatus.toLowerCase()">
+            <span class="status-living-dot" aria-hidden="true"></span>
+            <span>{{ statusLabel(doctor.approvalStatus) }}</span>
+          </span>
+        </div>
+
+        <!-- Col 6: Date -->
+        <div class="col-date">
+          <span class="mobile-col-label">{{ 'admin.registeredPrefix' | t }}</span>
+          <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">
+            {{ formatDate(doctor.createdOnUtc) }}
+          </time>
+        </div>
+
+        <!-- Col 7: Actions -->
+        <div class="col-action">
+          @if (canViewDetails) {
+          <button type="button" class="btn-inspect-enterprise" (click)="openDoctor(doctor)">
+            <span>{{ 'common.viewProfile' | t }}</span>
           </button>
+          }
+        </div>
+      </article>
+      }
+    </div>
+  </div>
+  } @else {
+  <!-- Grid View Mode -->
+  <div class="doctors-cards-grid">
+    @for (doctor of doctors(); track doctor.doctorId) {
+    <article class="doctor-card-item">
+      <div class="card-item-top">
+        <div class="doctor-avatar-circle large">
+          <span>{{ doctorInitials(doctor) }}</span>
+          @if (doctor.approvalStatus === 'Approved') {
+          <span class="verified-indicator" [title]="'admin.approvedDoctor' | t">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="white" stroke-width="3">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          }
+        </div>
+        <div class="card-top-info">
+          <h3 class="card-doctor-name">
+            @if (canViewDetails) {
+            <button type="button" (click)="openDoctor(doctor)">{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn ||
+              doctor.nameAr }}</button>
+            } @else {
+            {{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}
+            }
+          </h3>
+          <div class="doctor-sub-cluster">
+            <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
+            @if (doctor.nameEn) {
+            <span class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</span>
+            }
+          </div>
+        </div>
+        <div class="card-status-col">
+          <span class="card-status-label">{{ 'admin.approvalPrefix' | t }}</span>
+          <span [class]="'enterprise-status-badge status--' + doctor.approvalStatus.toLowerCase()">
+            <span class="status-living-dot" aria-hidden="true"></span>
+            <span>{{ statusLabel(doctor.approvalStatus) }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="card-item-body">
+        <!-- Contact Section -->
+        <div class="card-section card-contact-section">
+          <span class="card-section-label">{{ 'common.contactPrefix' | t }}</span>
+          <div class="card-contact-items">
+            @if (doctor.email) {
+            <a class="card-contact-item" [href]="'mailto:' + doctor.email" [title]="doctor.email">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span class="contact-text-truncate">{{ doctor.email }}</span>
+            </a>
+            }
+            @if (doctor.phone) {
+            <a class="card-contact-item contact-phone" [href]="'tel:' + doctor.phone" dir="ltr" [title]="doctor.phone">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              <span class="contact-phone-text">{{ doctor.phone }}</span>
+            </a>
+            }
+            @if (doctor.age || doctor.gender) {
+            <span class="demographics-line">
+              {{ doctor.age }} {{ 'ui.full.5' | t }} {{ doctor.gender === 'Male' ? uiLanguage.t('register.male') :
+              uiLanguage.t('register.female') }}
+            </span>
+            }
+          </div>
+        </div>
+
+        <!-- License & Documents Section -->
+        <div class="card-section card-docs-section">
+          <span class="card-section-label">{{ 'admin.documentsPrefix' | t }}</span>
+          <div class="card-docs-items">
+            <div class="license-status-line">
+              <span class="license-dot" [class.license-dot--valid]="doctor.hasSyndicateFront"
+                [class.license-dot--missing]="!doctor.hasSyndicateFront" aria-hidden="true"></span>
+              <span class="license-text">
+                {{ doctor.hasSyndicateFront ? uiLanguage.t('ui.expressions.21') : uiLanguage.t('ui.expressions.22') }}
+              </span>
+            </div>
+            <span class="docs-count-sub">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span>{{ availableDocuments(doctor) }} {{ 'admin.outOfFiveDocuments' | t }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Profile Completion + Progress Bar -->
+        <div class="card-progress-row">
+          <div class="progress-bar-wrap">
+            <div class="progress-header-row">
+              <span class="card-row-label">{{ 'common.profileCompletion' | t }}</span>
+              <span class="progress-percent-text">{{ completionPercentage(doctor) }}%</span>
+            </div>
+            <div class="progress-track" role="progressbar" [attr.aria-valuenow]="completionPercentage(doctor)"
+              aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-fill" [style.width.%]="completionPercentage(doctor)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registration Date + View Profile Button -->
+      <div class="card-item-footer">
+        <div class="card-date-cluster">
+          <span class="card-date-label">{{ 'admin.registeredPrefix' | t }}</span>
+          <time class="date-time-text" [attr.datetime]="doctor.createdOnUtc">{{ formatDate(doctor.createdOnUtc)
+            }}</time>
+        </div>
+        @if (canViewDetails) {
+        <button type="button" class="btn-inspect-enterprise" (click)="openDoctor(doctor)">
+          <span>{{ 'common.viewProfile' | t }}</span>
+        </button>
         }
       </div>
+    </article>
     }
+  </div>
   }
-<app-side-drawer
-  [opened]="selectedDoctor() !== null"
-  [title]="selectedDoctor()?.nameAr || uiLanguage.t('common.theDoctor')"
-  [busy]="doctorReview()?.busy() ?? false"
-  width="960px"
-  (closed)="closeDoctorDrawer()"
->
-  @if (selectedDoctor(); as selected) {
+
+  <!-- Numbered Enterprise Pagination Bar -->
+  <nav class="pagination-bar-enterprise" [attr.aria-label]="'review.doctorPages' | t">
+    <!-- Range Indicator -->
+    <div class="pagination-info">
+      <span>{{ 'common.view' | t }} {{ pageItemRange().start }} - {{ pageItemRange().end }} {{ 'discovery.of' | t }}
+        {{ pageItemRange().total }} {{ 'common.doctor' | t }}</span>
+      <div class="page-size-picker">
+        <select [value]="pageSize()" (change)="onPageSizeChange($event)" [attr.aria-label]="'review.pageSize' | t">
+          @for (size of pageSizeOptions; track size) {
+          <option [value]="size">{{ size }}</option>
+          }
+        </select>
+        <span>{{ 'review.perPage' | t }}</span>
+      </div>
+    </div>
+
+    <!-- Numbered Page Controls -->
+    <div class="pagination-buttons-group">
+      <!-- Previous Button -->
+      <button class="btn-pagination-step" type="button" [disabled]="pageNumber() <= 1 || isLoading()"
+        (click)="goToPage(pageNumber() - 1)" [attr.aria-label]="'review.previousPage' | t">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
+      <!-- Numbered Pages -->
+      @for (p of visiblePages(); track $index) {
+      @if (p === '...') {
+      <span class="pagination-ellipsis">…</span>
+      } @else {
+      <button type="button" class="btn-pagination-num" [class.active]="p === pageNumber()" (click)="goToPage(+p)">
+        {{ p }}
+      </button>
+      }
+      }
+
+      <!-- Next Button -->
+      <button class="btn-pagination-step" type="button" [disabled]="pageNumber() >= totalPages() || isLoading()"
+        (click)="goToPage(pageNumber() + 1)" [attr.aria-label]="'review.nextPage' | t">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    </div>
+  </nav>
+  } @else {
+  <!-- Empty Search / Filter Results State -->
+  <div class="state medical-empty-state">
+    <img class="state-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
+    <h2>{{ 'common.noMatches' | t }}</h2>
+    <p>
+      {{ 'review.noDoctorsHelp' | t }}
+    </p>
+
+    @if (hasActiveFilter()) {
+    <button class="btn btn-outline-secondary" type="button" (click)="clearAllFilters()">
+      {{ 'review.resetSearch' | t }}
+    </button>
+    }
+  </div>
+  }
+  }
+  <app-side-drawer [opened]="selectedDoctor() !== null"
+    [title]="selectedDoctor()?.nameAr || uiLanguage.t('common.theDoctor')" [busy]="doctorReview()?.busy() ?? false"
+    width="680px" (closed)="closeDoctorDrawer()">
+    @if (selectedDoctor(); as selected) {
     <app-doctor-details [doctorIdInput]="selected.doctorId" [isDrawer]="true" (reviewed)="doctorReviewed()" />
-  }
-</app-side-drawer>
+    }
+  </app-side-drawer>
 </section>

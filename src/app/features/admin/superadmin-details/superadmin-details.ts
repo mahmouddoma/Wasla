@@ -71,7 +71,6 @@ export class SuperAdminDetails {
   protected readonly fieldErrors = signal<Readonly<Record<string, string[]>>>({});
   protected readonly pendingAction = signal<AccountAction | null>(null);
   protected readonly actionMessages = signal<string[]>([]);
-  protected readonly idCopied = signal(false);
 
   protected readonly canUpdate = computed(() => {
     const admin = this.details();
@@ -179,13 +178,6 @@ export class SuperAdminDetails {
     } finally {
       this.isLoading.set(false);
     }
-  }
-
-  protected copyText(text: string): void {
-    if (!text) return;
-    navigator.clipboard?.writeText(text);
-    this.idCopied.set(true);
-    setTimeout(() => this.idCopied.set(false), 2000);
   }
 
   protected startEditing(): void {

@@ -1,4 +1,4 @@
-﻿import { DOCUMENT } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -47,6 +47,25 @@ export class Workspace {
         : practice.nameEn || practice.nameAr
       : '';
   });
+  protected readonly userDisplayName = computed(() => {
+    const user = this.session.user();
+    if (!user) return '';
+    return user.userName || '';
+  });
+  protected readonly todayFormatted = computed(() => {
+    const isAr = this.langService.isRtl();
+    const date = new Date();
+    try {
+      return date.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch {
+      return date.toDateString();
+    }
+  });
   protected readonly tasks = computed<WorkspaceTask[]>(() => {
     const task = (
       id: string,
@@ -56,13 +75,13 @@ export class Workspace {
       const item = this.navigation.items().find((item) => item.id === id);
       return item
         ? [
-            {
-              ...item,
-              labelKey: 'workspace.task.' + key,
-              descriptionKey: 'workspace.task.' + key + 'Desc',
-              queryParams,
-            },
-          ]
+          {
+            ...item,
+            labelKey: 'workspace.task.' + key,
+            descriptionKey: 'workspace.task.' + key + 'Desc',
+            queryParams,
+          },
+        ]
         : [];
     };
     if (this.role() === 'Reception') {

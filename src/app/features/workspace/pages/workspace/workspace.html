@@ -1,120 +1,256 @@
-﻿<div class="workspace-shell" [dir]="langService.dir()">
+<div class="workspace-shell" [dir]="langService.dir()">
   <div class="workspace-content">
-    <app-page-header
-      [heading]="'workspace.home.' + copyRole() | t"
-      [description]="'workspace.intro.' + copyRole() | t"
-      icon="workspace"
-    />
+    <app-page-header [heading]="'workspace.home.' + copyRole() | t" [description]="'workspace.intro.' + copyRole() | t"
+      icon="workspace">
+      <div pageHeaderDeck class="workspace-header-meta">
+        <div class="meta-chip">
+          <span class="status-indicator-dot" aria-hidden="true"></span>
+          <span class="meta-chip-text">{{ 'workspace.clinicReady' | t }}</span>
+        </div>
+        <div class="meta-chip meta-chip--date">
+          <svg class="meta-chip-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+            <line x1="16" x2="16" y1="2" y2="6" />
+            <line x1="8" x2="8" y1="2" y2="6" />
+            <line x1="3" x2="21" y1="10" y2="10" />
+          </svg>
+          <span class="meta-chip-text">{{ todayFormatted() }}</span>
+        </div>
+      </div>
+    </app-page-header>
+
     @if (role() === 'Reception') {
-      <section class="practice-context" aria-labelledby="current-practice-title" aria-live="polite">
-        <h2 id="current-practice-title">{{ 'workspace.currentPractice' | t }}</h2>
-        @if (reception.isLoading()) {
-          <p role="status">{{ 'workspace.loadingPractices' | t }}</p>
-        } @else if (reception.messages().length) {
-          <p role="alert">{{ 'workspace.practiceLoadError' | t }}</p>
+    <section class="practice-context" aria-labelledby="current-practice-title" aria-live="polite">
+      <div class="practice-context__header">
+        <div class="practice-context__icon-box" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+          </svg>
+        </div>
+        <div class="practice-context__titles">
+          <h2 id="current-practice-title">{{ 'workspace.currentPractice' | t }}</h2>
+          @if (practiceName()) {
+          <strong class="practice-context__name">{{ practiceName() }}</strong>
+          <p class="practice-context__scope">{{ 'workspace.practiceScope' | t }}</p>
+          }
+        </div>
+      </div>
+      @if (reception.isLoading()) {
+      <div class="practice-context__state" role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>{{ 'workspace.loadingPractices' | t }}</p>
+      </div>
+      } @else if (reception.messages().length) {
+      <div class="practice-context__state practice-context__state--alert" role="alert">
+        <p>{{ 'workspace.practiceLoadError' | t }}</p>
+        <button type="button" class="btn btn-primary" (click)="retryPractices()">
+          {{ 'workspace.retry' | t }}
+        </button>
+      </div>
+      } @else if (!practiceName()) {
+      <div class="workspace-empty">
+        <img class="state-empty-illustration" src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy"
+          decoding="async" />
+        <div class="workspace-empty__content">
+          <h3>
+            {{
+            (reception.practices().length
+            ? 'workspace.choosePractice'
+            : 'workspace.noPractices'
+            ) | t
+            }}
+          </h3>
+          <p>
+            {{
+            (reception.practices().length
+            ? 'workspace.choosePracticeHint'
+            : 'workspace.noPracticesHint'
+            ) | t
+            }}
+          </p>
+          @if (reception.practices().length) {
+          <button type="button" class="btn btn-primary" (click)="choosePractice()">
+            {{ 'workspace.choosePractice' | t }}
+          </button>
+          } @else {
           <button type="button" class="btn btn-primary" (click)="retryPractices()">
             {{ 'workspace.retry' | t }}
           </button>
-        } @else if (practiceName()) {
-          <strong>{{ practiceName() }}</strong>
-          <p>{{ 'workspace.practiceScope' | t }}</p>
-        } @else {
-          <div class="workspace-empty">
-            <img
-              class="state-empty-illustration"
-              src="/SVG-AVATAR/Doctors-bro.svg"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-            <div>
-              <h3>
-                {{
-                  (reception.practices().length
-                    ? 'workspace.choosePractice'
-                    : 'workspace.noPractices'
-                  ) | t
-                }}
-              </h3>
-              <p>
-                {{
-                  (reception.practices().length
-                    ? 'workspace.choosePracticeHint'
-                    : 'workspace.noPracticesHint'
-                  ) | t
-                }}
-              </p>
-              @if (reception.practices().length) {
-                <button type="button" class="btn btn-primary" (click)="choosePractice()">
-                  {{ 'workspace.choosePractice' | t }}
-                </button>
-              } @else {
-                <button type="button" class="btn btn-primary" (click)="retryPractices()">
-                  {{ 'workspace.retry' | t }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-      </section>
-    }
-    <section class="workspace-tasks" aria-labelledby="daily-tasks-title">
-      <h2 id="daily-tasks-title">{{ 'workspace.dailyTasks' | t }}</h2>
-      @if (tasks().length) {
-        @let primary = tasks()[0];
-        <a
-          class="workspace-primary"
-          [routerLink]="primary.route"
-          [queryParams]="primary.queryParams"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons[primary.icon]" /></svg>
-          <span
-            ><strong>{{ primary.labelKey | t }}</strong
-            ><span>{{ primary.descriptionKey | t }}</span></span
-          >
-        </a>
-        <div class="row g-0 task-list">
-          @for (task of tasks().slice(1); track task.labelKey) {
-            <div class="col-12 col-md-6">
-              <a class="task-link" [routerLink]="task.route" [queryParams]="task.queryParams">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path [attr.d]="icons[task.icon]" />
-                </svg>
-                <span
-                  ><strong>{{ task.labelKey | t }}</strong
-                  ><span>{{ task.descriptionKey | t }}</span></span
-                >
-              </a>
-            </div>
           }
         </div>
-      } @else {
-        <div class="workspace-empty">
-          <img
-            class="state-empty-illustration"
-            [src]="illustration()"
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-          <div>
-            <h3>{{ 'workspace.noTasks' | t }}</h3>
-            <p>{{ 'workspace.noTasksHint' | t }}</p>
-            <a class="btn btn-primary" routerLink="/help">{{ 'workspace.getHelp' | t }}</a>
-          </div>
-        </div>
+      </div>
       }
     </section>
+    }
+
+    <section class="workspace-tasks" aria-labelledby="daily-tasks-title">
+      <div class="section-title-wrap">
+        <h2 id="daily-tasks-title">{{ 'workspace.dailyTasks' | t }}</h2>
+        <span class="section-badge">{{ 'workspace.badgeSecondary' | t }}</span>
+      </div>
+
+      @if (tasks().length) {
+      @let primary = tasks()[0];
+      <!-- Primary Action Card (Hero Task) -->
+      <a class="workspace-primary" [routerLink]="primary.route" [queryParams]="primary.queryParams">
+        <div class="workspace-primary__main">
+          <div class="workspace-primary__badge">
+            <span class="badge-sparkle" aria-hidden="true">⚡</span>
+            <span>{{ 'workspace.badgePrimary' | t }}</span>
+          </div>
+          <div class="workspace-primary__body">
+            <div class="workspace-primary__icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path [attr.d]="icons[primary.icon]" />
+              </svg>
+            </div>
+            <div class="workspace-primary__text">
+              <strong>{{ primary.labelKey | t }}</strong>
+              <span>{{ primary.descriptionKey | t }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="workspace-primary__action" aria-hidden="true">
+          <span class="action-btn-pill">
+            <span>{{ 'workspace.actionStartNow' | t }}</span>
+            <svg class="action-arrow" viewBox="0 0 24 24">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+      </a>
+
+      <!-- Secondary Tasks Grid -->
+      <div class="task-grid">
+        @for (task of tasks().slice(1); track task.labelKey) {
+        <a class="task-link" [routerLink]="task.route" [queryParams]="task.queryParams">
+          <div class="task-link__header">
+            <div class="task-link__icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path [attr.d]="icons[task.icon]" />
+              </svg>
+            </div>
+            <div class="task-link__meta" aria-hidden="true">
+              <span class="task-link__cue">
+                <span>{{ 'workspace.actionView' | t }}</span>
+                <svg class="action-arrow" viewBox="0 0 24 24">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </div>
+          <div class="task-link__text">
+            <strong>{{ task.labelKey | t }}</strong>
+            <span>{{ task.descriptionKey | t }}</span>
+          </div>
+        </a>
+        }
+      </div>
+      } @else {
+      <div class="workspace-empty">
+        <img class="state-empty-illustration" [src]="illustration()" alt="" loading="lazy" decoding="async" />
+        <div class="workspace-empty__content">
+          <h3>{{ 'workspace.noTasks' | t }}</h3>
+          <p>{{ 'workspace.noTasksHint' | t }}</p>
+          <a class="btn btn-primary" routerLink="/help">{{ 'workspace.getHelp' | t }}</a>
+        </div>
+      </div>
+      }
+    </section>
+
+    <!-- Beginner 3-Step Guided Workflow Guide -->
+    @if (tasks().length) {
+    <section class="workspace-workflow-guide" aria-label="Workflow Guide">
+      <div class="guide-header">
+        <div class="guide-header__badge">
+          <span class="guide-badge-dot" aria-hidden="true"></span>
+          <span>{{ 'workspace.quickWorkflowTitle' | t }}</span>
+        </div>
+        <p class="guide-header__sub">{{ 'workspace.quickWorkflowSubtitle' | t }}</p>
+      </div>
+      <div class="guide-steps">
+        @if (role() === 'Patient') {
+        <div class="guide-step-card">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>{{ 'workspace.quickPatientStep1Title' | t }}</h4>
+            <p>{{ 'workspace.quickPatientStep1Desc' | t }}</p>
+          </div>
+        </div>
+        <div class="guide-step-connector" aria-hidden="true"></div>
+        <div class="guide-step-card">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>{{ 'workspace.quickPatientStep2Title' | t }}</h4>
+            <p>{{ 'workspace.quickPatientStep2Desc' | t }}</p>
+          </div>
+        </div>
+        <div class="guide-step-connector" aria-hidden="true"></div>
+        <div class="guide-step-card">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>{{ 'workspace.quickPatientStep3Title' | t }}</h4>
+            <p>{{ 'workspace.quickPatientStep3Desc' | t }}</p>
+          </div>
+        </div>
+        } @else {
+        <div class="guide-step-card">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>{{ 'workspace.quickStep1Title' | t }}</h4>
+            <p>{{ 'workspace.quickStep1Desc' | t }}</p>
+          </div>
+        </div>
+        <div class="guide-step-connector" aria-hidden="true"></div>
+        <div class="guide-step-card">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>{{ 'workspace.quickStep2Title' | t }}</h4>
+            <p>{{ 'workspace.quickStep2Desc' | t }}</p>
+          </div>
+        </div>
+        <div class="guide-step-connector" aria-hidden="true"></div>
+        <div class="guide-step-card">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>{{ 'workspace.quickStep3Title' | t }}</h4>
+            <p>{{ 'workspace.quickStep3Desc' | t }}</p>
+          </div>
+        </div>
+        }
+      </div>
+    </section>
+    }
+
     @if (secondary().length) {
-      <section class="workspace-secondary" aria-labelledby="secondary-title">
+    <section class="workspace-secondary" aria-labelledby="secondary-title">
+      <div class="section-title-wrap">
         <h2 id="secondary-title">
           {{ (role() === 'Doctor' ? 'portal.group.management' : 'portal.group.health') | t }}
         </h2>
+      </div>
+      <div class="secondary-grid">
         @for (item of secondary(); track item.id) {
-          <a class="secondary-link" [routerLink]="item.route">{{ item.labelKey | t }}</a>
+        <a class="secondary-link" [routerLink]="item.route">
+          <div class="secondary-link__icon-box" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path [attr.d]="icons[item.icon]" />
+            </svg>
+          </div>
+          <div class="secondary-link__content">
+            <strong>{{ item.labelKey | t }}</strong>
+            <span>{{ (role() === 'Doctor' ? 'workspace.manageClinicsDesc' : 'workspace.healthHint') | t }}</span>
+          </div>
+          <div class="secondary-link__cue" aria-hidden="true">
+            <svg class="action-arrow" viewBox="0 0 24 24">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </div>
+        </a>
         }
-        <p>{{ (role() === 'Doctor' ? 'workspace.clinicHint' : 'workspace.healthHint') | t }}</p>
-      </section>
+      </div>
+      <p class="secondary-note">{{ (role() === 'Doctor' ? 'workspace.clinicHint' : 'workspace.healthHint') | t }}</p>
+    </section>
     }
   </div>
 </div>
