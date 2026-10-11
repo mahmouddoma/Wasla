@@ -6,21 +6,36 @@
   container-name: wasla-encounter-workspace;
 }
 .clinical-shell {
-  max-width: 1440px;
+  position: relative;
+  max-width: 1540px;
+  width: 100%;
   margin-inline: auto;
-  padding: 24px clamp(16px, 2.5vw, 36px) 48px;
+  box-sizing: border-box;
+  padding: 24px clamp(16px, 3.5vw, 44px) 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+app-page-header {
+  display: block;
+  width: 100%;
 }
 .filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
+  gap: 14px;
   width: 100%;
+  padding-top: 4px;
 }
+.filters label,
 label {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   font-weight: 700;
-  margin-block-end: 16px;
+  font-size: 0.82rem;
+  color: var(--wasla-navy-900);
+  margin-block-end: 0;
 }
 input,
 select,
@@ -65,9 +80,12 @@ button:focus-visible {
   outline-offset: 3px;
 }
 .directory {
+  width: 100%;
   background: var(--wasla-surface, #fff);
+  border: 1px solid var(--wasla-border-subtle);
   border-radius: var(--radius-panel, 14px);
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(11, 34, 57, 0.04);
 }
 th,
 td {
@@ -314,3 +332,381 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Encounters Table Styling ── */
+.table-data-row {
+  border-bottom: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  transition: background-color 0.15s ease;
+}
+
+.table-data-row:hover {
+  background-color: #f8fafc;
+}
+
+.table-data-row td {
+  padding: 16px 18px;
+  vertical-align: middle;
+}
+
+.table-doctor-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doctor-avatar-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(11, 165, 160, 0.08);
+  color: var(--wasla-primary, #0ba5a0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cell-primary-text {
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: var(--wasla-navy-950, #0c2742);
+}
+
+.cell-subtle-text {
+  font-size: 0.88rem;
+  color: var(--wasla-slate, #64748b);
+  font-weight: 500;
+}
+
+.cell-date-text {
+  font-size: 0.86rem;
+  color: var(--wasla-navy-900, #0f172a);
+  font-weight: 600;
+}
+
+/* Status Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.status-pill.status-completed {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #d1fae5;
+}
+
+.status-pill.status-completed .pill-dot {
+  background: #10b981;
+}
+
+.status-pill.status-inprogress {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #dbeafe;
+}
+
+.status-pill.status-inprogress .pill-dot {
+  background: #3b82f6;
+}
+
+/* Inspect Action Button */
+.btn-inspect-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--wasla-border, #cbd5e1);
+  color: var(--wasla-navy-900, #0f172a);
+  transition: all 0.18s ease;
+}
+
+.btn-inspect-action:hover {
+  background: rgba(11, 165, 160, 0.08);
+  border-color: var(--wasla-primary, #0ba5a0);
+  color: var(--wasla-primary, #0ba5a0);
+}
+
+/* ── Patient Visit Report Sheet (Drawer) ── */
+.patient-visit-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  font-family: inherit;
+  color: var(--wasla-navy-950, #0c2742);
+}
+
+.visit-header-banner {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-panel, 14px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.visit-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.visit-date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: var(--wasla-slate, #64748b);
+  font-weight: 600;
+}
+
+.visit-meta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.visit-doctor-name {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950, #0c2742);
+}
+
+.visit-doctor-name svg {
+  color: var(--wasla-primary, #0ba5a0);
+  flex-shrink: 0;
+}
+
+.visit-clinic-name {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  color: var(--wasla-slate, #64748b);
+  font-weight: 600;
+}
+
+.visit-clinic-name svg {
+  color: var(--wasla-primary, #0ba5a0);
+  flex-shrink: 0;
+}
+
+/* Diagnoses Section */
+.visit-diagnoses-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.visit-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wasla-navy-950, #0c2742);
+}
+
+.visit-section-heading h5 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.section-icon {
+  font-size: 1.2rem;
+}
+
+.diagnoses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.diagnosis-card {
+  background: var(--wasla-surface, #fff);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-panel, 14px);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(11, 34, 57, 0.04);
+}
+
+.diagnosis-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.diagnosis-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.diagnosis-icon-badge {
+  font-size: 1.1rem;
+}
+
+.diagnosis-name {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950, #0c2742);
+}
+
+.diagnosis-type-pill {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.diagnosis-type-pill.primary {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #dbeafe;
+}
+
+.diagnosis-notes-box {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--wasla-slate, #64748b);
+}
+
+.notes-content {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--wasla-navy-900, #0f172a);
+}
+
+.empty-diagnosis-box {
+  padding: 24px;
+  text-align: center;
+  color: var(--wasla-slate, #64748b);
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed var(--wasla-border-subtle, #e2e8f0);
+}
+
+/* Follow-up card */
+.visit-followup-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 12px;
+}
+
+.followup-icon {
+  font-size: 1.5rem;
+}
+
+.followup-info strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #166534;
+  margin-bottom: 2px;
+}
+
+.followup-info p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #15803d;
+}
+
+/* Footer card */
+.visit-footer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 12px;
+}
+
+.visit-footer-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tip-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.visit-footer-tip p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--wasla-slate, #64748b);
+  line-height: 1.5;
+}
+
+.btn-goto-rx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--wasla-primary, #0ba5a0);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.btn-goto-rx:hover {
+  opacity: 0.92;
+}
+

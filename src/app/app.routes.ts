@@ -27,9 +27,9 @@ export const routes: Routes = [
     path: 'doctors/:doctorId',
     canMatch: [anonymousOnlyMatchGuard],
     loadComponent: () =>
-      import('./features/public-doctor-details/pages/public-doctor-details/public-doctor-details').then(
-        (m) => m.PublicDoctorDetailsPage,
-      ),
+      import(
+        './features/public-doctor-details/pages/public-doctor-details/public-doctor-details'
+      ).then((m) => m.PublicDoctorDetailsPage),
     title: 'routes.doctorDetails',
   },
 

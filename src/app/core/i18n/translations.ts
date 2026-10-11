@@ -4322,8 +4322,11 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Write brief symptoms or notes…',
   },
   'booking.viewMyReservations': { ar: 'عرض حجوزاتي', en: 'View My Bookings' },
+  'booking.viewMyTicket': { ar: 'متابعة دوري في العيادة', en: 'Track my queue turn' },
   'booking.doneAndClose': { ar: 'تم وإغلاق', en: 'Done & Close' },
   'booking.loginToBook': { ar: 'تسجيل الدخول لتأكيد الحجز', en: 'Log in to confirm booking' },
+  'workspace.title': { ar: 'مساحة العمل', en: 'Workspace' },
+  'discovery.ratingFive': { ar: 'تقييم 5 نجوم', en: '5-star rating' },
   'booking.loginRequiredHint': {
     ar: 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام حجزك.',
     en: 'Please log in or create an account to complete your booking.',
@@ -4859,8 +4862,44 @@ export const TRANSLATIONS: TranslationDictionary = {
   'common.basicData': { ar: 'البيانات الأساسية', en: 'Basic information' },
   'common.approvalDate': { ar: 'تاريخ الاعتماد', en: 'Approval date' },
   'discovery.description': {
-    ar: 'النتائج مرتبة من الخادم حسب الشعبية ثم أقرب موعد، وتعرض كل العيادات النشطة لكل طبيب.',
-    en: 'Results are sorted by popularity and next available appointment, showing all active practices for each doctor.',
+    ar: 'اختر طبيبك المناسب وتعرف على مواعيد الكشف وسعر الزيارة بسهولة.',
+    en: 'Find the right doctor, check consultation fees, and book your visit easily.',
+  },
+  'discovery.searchPlaceholder': {
+    ar: 'ابحث باسم الطبيب، التخصص، أو العيادة...',
+    en: 'Search by doctor name, specialty, or clinic...',
+  },
+  'discovery.detailedLocation': {
+    ar: 'تحديد المدينة والمنطقة',
+    en: 'Filter by city and area',
+  },
+  'discovery.hideDetailedLocation': {
+    ar: 'إخفاء تفاصيل المنطقة',
+    en: 'Hide location details',
+  },
+  'discovery.feeDeterminedAtClinic': {
+    ar: 'يُحدد بالعيادة',
+    en: 'Determined at clinic',
+  },
+  'discovery.viewClinicDetails': {
+    ar: 'عرض بيانات ومواعيد العيادة',
+    en: 'View clinic details & schedule',
+  },
+  'discovery.bookInClinicNote': {
+    ar: 'الحجز المباشر بالعيادة بأسبقية الحضور · بدون رسوم إضافية',
+    en: 'Direct clinic booking or walk-in · No extra fees',
+  },
+  'discovery.clinicAddress': {
+    ar: 'عنوان وموقع العيادة',
+    en: 'Clinic address & location',
+  },
+  'discovery.clinicInstructions': {
+    ar: 'تعليمات الحضور والكشف',
+    en: 'Visit & consultation notes',
+  },
+  'discovery.walkInNotice': {
+    ar: 'تستقبل العيادة المرضى مباشرة خلال مواعيد العمل الرسمية، ويتم تنظيم الدخول بأسبقية الحضور والتسجيل لدى سكرتارية العيادة.',
+    en: 'The clinic welcomes patients directly during official working hours; entry is organized on a first-come basis at reception.',
   },
   'discovery.empty': {
     ar: 'لا توجد نتائج مطابقة. غيّر معايير البحث وحاول مجددًا.',
@@ -5900,6 +5939,13 @@ export const TRANSLATIONS: TranslationDictionary = {
   'common.breadcrumb': { ar: 'مسار الصفحة', en: 'Breadcrumb' },
   'booking.findAnotherDoctor': { ar: 'البحث عن طبيب آخر', en: 'Find another doctor' },
   'discovery.doctor': { ar: 'الطبيب', en: 'Doctor' },
-  'discovery.ratingFive': { ar: 'التقييم ٥ من ٥', en: 'Rating 5 of 5' },
   'discovery.schedulePreview': { ar: 'المواعيد المتاحة', en: 'Available appointments' },
+  'schedule.quickTipTitle': { ar: 'دليل تنظيم مواعيد العيادة', en: 'Clinic Schedule Guide' },
+  'schedule.quickTipDesc': {
+    ar: 'حدد أيام وساعات العمل المنتظمة للعيادة، وستقوم المنظومة تلقائياً بتقسيم الوقت لمواعيد كشوفات يستطيع موظف الاستقبال أو المرضى حجزها فوراً. يمكنك أيضاً تسجيل أيام الإجازات والعطلات بالأسفل.',
+    en: 'Set regular clinic working days and hours, and the system will automatically generate appointment slots for reception and patients to book. You can also record holidays and days off below.',
+  },
+  'schedule.closedDay': { ar: 'العيادة مغلقة في هذا اليوم', en: 'Clinic closed on this day' },
+  'schedule.addAnotherPeriod': { ar: 'فترة إضافية', en: 'Extra shift' },
+  'schedule.availableSlotsCount': { ar: 'موعد كشف متاح', en: 'slots available' },
 };

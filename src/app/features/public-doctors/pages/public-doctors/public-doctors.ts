@@ -109,7 +109,23 @@ export class PublicDoctors {
   protected readonly bookingNote = signal<string>('');
   protected readonly bookingSubmitting = signal(false);
   protected readonly bookingConfirmedReservation = signal<Reservation | null>(null);
+  protected readonly selectedSegment = signal<{
+    segmentId: string;
+    nameAr: string;
+    nameEn?: string | null;
+    price: number;
+  } | null>(null);
+  protected readonly selectedVisitType = signal<{
+    visitTypeId: string;
+    nameAr: string;
+    nameEn?: string | null;
+  } | null>(null);
   protected readonly currentUrl = computed(() => this.router.url);
+  protected readonly showDetailedLocation = signal(false);
+
+  protected toggleDetailedLocation(): void {
+    this.showDetailedLocation.update((v) => !v);
+  }
 
   constructor() {
     void this.initialize();
@@ -226,9 +242,9 @@ export class PublicDoctors {
 
       const targetPractice = practiceId
         ? details.practices.find((p) => p.id === practiceId)
-        : details.practices.length === 1
-          ? details.practices[0]
-          : null;
+        : details.practices.find((p) => p.isBookable && p.onlineBookingEnabled !== false) ||
+          details.practices[0] ||
+          null;
 
       if (
         targetPractice &&
@@ -236,11 +252,14 @@ export class PublicDoctors {
         targetPractice.onlineBookingEnabled !== false
       ) {
         await this.chooseDrawerPractice(targetPractice);
-        if (
+        const targetDate =
           preselectedDate &&
           this.drawerDates().some((d) => d.date === preselectedDate && d.isAvailable)
-        ) {
-          await this.chooseDrawerDate(preselectedDate);
+            ? preselectedDate
+            : this.drawerDates().find((d) => d.isAvailable)?.date;
+
+        if (targetDate) {
+          await this.chooseDrawerDate(targetDate);
           if (preselectedTime) {
             const cleanTime = preselectedTime.slice(0, 5);
             const matched = this.drawerSlots().find((s) => s.time.startsWith(cleanTime));
@@ -249,6 +268,8 @@ export class PublicDoctors {
             }
           }
         }
+      } else if (targetPractice) {
+        this.drawerSelectedPractice.set(targetPractice);
       }
     } catch (error) {
       this.drawerMessages.set(this.mapDrawerError(error));
@@ -262,6 +283,8 @@ export class PublicDoctors {
     this.bookingConfirmedReservation.set(null);
     this.bookingNote.set('');
     this.bookingSubmitting.set(false);
+    this.selectedSegment.set(null);
+    this.selectedVisitType.set(null);
   }
 
   protected updateBookingNote(event: Event): void {
@@ -348,8 +371,6 @@ export class PublicDoctors {
   }
 
   protected async chooseDrawerPractice(practice: PublicPracticeSummary): Promise<void> {
-    if (!practice.isBookable || practice.onlineBookingEnabled === false) return;
-    const request = ++this.drawerBookingRequest;
     this.drawerSelectedPractice.set(practice);
     this.drawerDates.set([]);
     this.drawerSelectedDate.set('');
@@ -357,11 +378,20 @@ export class PublicDoctors {
     this.drawerSelectedTime.set('');
     this.drawerOptions.set(null);
     this.drawerMessages.set([]);
+
+    if (!practice.isBookable || practice.onlineBookingEnabled === false) return;
+    const request = ++this.drawerBookingRequest;
     this.drawerBookingLoading.set(true);
 
     try {
       const dates = await firstValueFrom(this.api.availableDates(practice.id));
-      if (request === this.drawerBookingRequest) this.drawerDates.set(dates);
+      if (request === this.drawerBookingRequest) {
+        this.drawerDates.set(dates);
+        const firstAvailable = dates.find((d) => d.isAvailable);
+        if (firstAvailable) {
+          await this.chooseDrawerDate(firstAvailable.date);
+        }
+      }
     } catch (error) {
       if (request === this.drawerBookingRequest) {
         this.drawerMessages.set(this.mapDrawerError(error));
@@ -379,6 +409,8 @@ export class PublicDoctors {
     this.drawerSlots.set([]);
     this.drawerSelectedTime.set('');
     this.drawerOptions.set(null);
+    this.selectedSegment.set(null);
+    this.selectedVisitType.set(null);
     this.drawerMessages.set([]);
     this.drawerBookingLoading.set(true);
 
@@ -401,12 +433,26 @@ export class PublicDoctors {
     const request = ++this.drawerBookingRequest;
     this.drawerSelectedTime.set(time);
     this.drawerOptions.set(null);
+    this.selectedSegment.set(null);
+    this.selectedVisitType.set(null);
     this.drawerMessages.set([]);
     this.drawerBookingLoading.set(true);
 
     try {
       const options = await firstValueFrom(this.api.bookingOptions(practice.id, date, time));
-      if (request === this.drawerBookingRequest) this.drawerOptions.set(options);
+      if (request === this.drawerBookingRequest) {
+        this.drawerOptions.set(options);
+        const normalVisit =
+          options.visitTypes.find((vt) => vt.type !== 'FollowUp') || options.visitTypes[0];
+        if (normalVisit) {
+          this.selectedVisitType.set(normalVisit);
+          const defSegment =
+            normalVisit.segments.find((s) => s.isDefault) || normalVisit.segments[0];
+          if (defSegment) {
+            this.selectedSegment.set(defSegment);
+          }
+        }
+      }
     } catch (error) {
       if (request !== this.drawerBookingRequest) return;
       this.drawerMessages.set(this.mapDrawerError(error));
@@ -416,6 +462,21 @@ export class PublicDoctors {
     } finally {
       if (request === this.drawerBookingRequest) this.drawerBookingLoading.set(false);
     }
+  }
+
+  protected selectSegment(
+    segment: { segmentId: string; nameAr: string; nameEn?: string | null; price: number },
+    visitType: { visitTypeId: string; nameAr: string; nameEn?: string | null },
+  ): void {
+    this.selectedSegment.set(segment);
+    this.selectedVisitType.set(visitType);
+  }
+
+  protected async confirmQuickBooking(): Promise<void> {
+    const segment = this.selectedSegment();
+    const visitType = this.selectedVisitType();
+    if (!segment || !visitType) return;
+    await this.confirmBooking(segment, visitType);
   }
 
   protected formatSlot(date: string | null | undefined, time: string | null | undefined): string {

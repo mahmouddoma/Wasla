@@ -115,8 +115,21 @@ export class PrescriptionsComponent implements OnInit {
       this.doctorPrescriptionId.set('');
     }
   }
-  label(item: { nameAr: string; nameEn: string | null }) {
+  label(item?: { nameAr: string; nameEn: string | null } | null) {
+    if (!item) return '';
     return this.language.currentLang() === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
+  }
+  doctorName(item: any): string {
+    const isAr = this.language.currentLang() === 'ar';
+    const ar = item?.doctor?.nameAr || item?.doctorNameAr;
+    const en = item?.doctor?.nameEn || item?.doctorNameEn;
+    return isAr ? (ar || en || '') : (en || ar || '');
+  }
+  practiceName(item: any): string {
+    const isAr = this.language.currentLang() === 'ar';
+    const ar = item?.practice?.nameAr || item?.practiceNameAr;
+    const en = item?.practice?.nameEn || item?.practiceNameEn;
+    return isAr ? (ar || en || '') : (en || ar || '');
   }
   private failure(error: unknown) {
     const parsed = parseApiErrors(error);

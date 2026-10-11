@@ -1046,6 +1046,30 @@ These rules address recurring user feedback and enforce strict aesthetic and fun
 
 ---
 
+# 33. PATIENT MODULE & FRICTIONLESS BOOKING STANDARD (معيار تجربة المريض والحجز الفوري)
+
+Refer to the master document at `.agents/PATIENT_UX_GUIDELINES.md`.
+
+### 33.1 The 3-Click Rule (قاعدة الـ ٣ نقرات)
+- Maximum 3 clicks from discovery to confirmed booking:
+  1. Select Slot (Day & Time)
+  2. Review summary (Patient + Price pre-selected)
+  3. Confirm Booking
+- Instant receipt & confirmation code on-screen.
+
+### 33.2 In-Place Booking (الحجز يكتمل في نفس المكان)
+- When a patient starts booking from `/doctors`, the booking MUST complete in-place.
+- **NEVER redirect a patient to `/doctors/:doctorId` in the middle of a booking flow to re-select clinics, dates, and times.**
+- `/doctors/:doctorId` is an informative profile page (biography, qualifications, map, reviews) — NOT a second duplicate booking engine.
+
+### 33.3 Smart Defaults (القيم الافتراضية الذكية)
+- Auto-select primary clinic.
+- Auto-select logged-in patient (`Self`).
+- Auto-select standard consultation fee.
+
+---
+
 ## ARCHITECTURE NORTH STAR
 
 > **Build every feature as an independent, testable business capability that can evolve without forcing unrelated parts of the system to change, adhering strictly to Wasla's clean, borderless, card-minimalist, bilingual (AR/EN), and doctor-and-assistant-friendly design language.**
+

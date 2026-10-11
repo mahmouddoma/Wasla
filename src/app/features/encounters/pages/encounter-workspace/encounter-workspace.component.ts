@@ -191,12 +191,48 @@ export class EncounterWorkspaceComponent implements OnInit {
       params.get('ticketId') || '',
     );
   }
-  label(item: { nameAr: string; nameEn?: string | null } | undefined) {
-    return item
-      ? this.language.currentLang() === 'en'
-        ? item.nameEn || item.nameAr
-        : item.nameAr
-      : '';
+  label(item: any) {
+    if (!item) return '';
+    const nameAr = item.nameAr || item.practiceNameAr || item.doctorNameAr || item.patientNameAr;
+    const nameEn = item.nameEn || item.practiceNameEn || item.doctorNameEn || item.patientNameEn;
+    return this.language.currentLang() === 'en'
+      ? (nameEn || nameAr || '')
+      : (nameAr || nameEn || '');
+  }
+  doctorOrPatient(item: any): string {
+    if (this.store.doctor()) {
+      const ar = item.patient?.nameAr || item.patientNameAr;
+      const en = item.patient?.nameEn || item.patientNameEn;
+      return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
+    }
+    const ar = item.doctor?.nameAr || item.doctorNameAr;
+    const en = item.doctor?.nameEn || item.doctorNameEn;
+    if (ar || en) {
+      return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
+    }
+    if (item.practiceNameAr) {
+      const match = item.practiceNameAr.match(/(د\.\s*[^ل]+)/);
+      if (match) return match[1].trim();
+      return item.practiceNameAr;
+    }
+    return '';
+  }
+  practiceLabel(item: any): string {
+    const ar = item.practice?.nameAr || item.practiceNameAr;
+    const en = item.practice?.nameEn || item.practiceNameEn;
+    return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
+  }
+  doctorNameDetail(detail: any): string {
+    const isAr = this.language.currentLang() === 'ar';
+    const ar = detail?.doctor?.nameAr || detail?.doctorNameAr;
+    const en = detail?.doctor?.nameEn || detail?.doctorNameEn;
+    return isAr ? (ar || en || '') : (en || ar || '');
+  }
+  practiceNameDetail(detail: any): string {
+    const isAr = this.language.currentLang() === 'ar';
+    const ar = detail?.practice?.nameAr || detail?.practiceNameAr;
+    const en = detail?.practice?.nameEn || detail?.practiceNameEn;
+    return isAr ? (ar || en || '') : (en || ar || '');
   }
   value(event: Event) {
     return (event.target as HTMLInputElement).value;

@@ -52,14 +52,29 @@
           </thead>
           <tbody>
             @for (item of page().items; track item.prescriptionId) {
-              <tr>
-                <td>{{ label(item.doctor) }}</td>
-                <td>{{ label(item.practice) }}</td>
-                <td dir="ltr">{{ item.visitDateUtc | localizedDate: language.currentLang() }}</td>
-                <td>{{ 'prescriptions.status.' + item.status | t }}</td>
+              <tr class="table-data-row">
                 <td>
-                  <button class="btn btn-outline-secondary" (click)="inspect(item.prescriptionId)">
-                    {{ 'reservations.inspect' | t }}
+                  <div class="table-doctor-cell">
+                    <div class="doctor-avatar-badge">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <span class="cell-primary-text">{{ doctorName(item) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="cell-subtle-text">{{ practiceName(item) }}</span>
+                </td>
+                <td dir="ltr" class="cell-date-text">{{ item.visitDateUtc | localizedDate: language.currentLang() }}</td>
+                <td>
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    <span class="pill-dot"></span>
+                    {{ 'prescriptions.status.' + item.status | t }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn-inspect-action" (click)="inspect(item.prescriptionId)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>{{ 'reservations.inspect' | t }}</span>
                   </button>
                 </td>
               </tr>

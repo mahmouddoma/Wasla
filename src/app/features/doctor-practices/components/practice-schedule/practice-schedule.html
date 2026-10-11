@@ -55,6 +55,28 @@
   <div class="schedule-dashboard-grid">
     <!-- Main Column: 7-Day Weekly Timetable -->
     <main class="weekly-schedule-column">
+      <!-- Onboarding Guidance for Clinic Staff & Doctors -->
+      <div class="schedule-quick-tip">
+        <div class="tip-icon-cluster" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </div>
+        <div class="tip-text-content">
+          <strong>{{ 'schedule.quickTipTitle' | t }}</strong>
+          <p>{{ 'schedule.quickTipDesc' | t }}</p>
+        </div>
+      </div>
+
       <div class="column-header">
         <div class="header-title-meta">
           <h3>{{ 'ui.full.365' | t }}</h3>
@@ -109,7 +131,10 @@
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
           <span class="glance-label">{{ 'schedule.consultationDuration' | t }}</span>
-          <strong>{{ schedule().periods[0]?.slotDurationMinutes || 30 }} {{ 'practice.minutesUnit' | t }}</strong>
+          <strong
+            >{{ schedule().periods[0]?.slotDurationMinutes || 30 }}
+            {{ 'practice.minutesUnit' | t }}</strong
+          >
         </div>
       </div>
 
@@ -180,7 +205,18 @@
                               formatTime(period.startTime)
                             }}</strong>
                           </span>
-                          <span class="time-arrow" aria-hidden="true">⬅️</span>
+                          <span class="time-arrow" aria-hidden="true">
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="12"
+                              height="12"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.2"
+                            >
+                              <path d="M19 12H5M12 19l-7-7 7-7" />
+                            </svg>
+                          </span>
                           <span class="time-segment">
                             <span class="time-marker">{{ 'schedule.toLabel' | t }}</span>
                             <strong class="time-main-text" dir="ltr">{{
@@ -249,33 +285,55 @@
               } @else {
                 <div class="strip-off-status">
                   <span class="off-badge">{{ 'ui.full.370' | t }}</span>
-                  <span class="off-caption">{{ 'schedule.noAppointmentsForDay' | t }}</span>
+                  <span class="off-caption">{{ 'schedule.closedDay' | t }}</span>
                 </div>
               }
             </div>
 
             <!-- Strip Quick Action -->
             <div class="strip-side-action">
-              @if (canManage() && dayPeriods.length === 0) {
-                <button
-                  type="button"
-                  class="btn-strip-add"
-                  (click)="openAddPeriodModal(day.value)"
-                  [title]="'ui.full.372' | t"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
+              @if (canManage()) {
+                @if (dayPeriods.length === 0) {
+                  <button
+                    type="button"
+                    class="btn-strip-add"
+                    (click)="openAddPeriodModal(day.value)"
+                    [title]="'ui.full.372' | t"
                   >
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  <span>{{ 'ui.full.371' | t }}</span>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>{{ 'ui.full.371' | t }}</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-strip-add-another"
+                    (click)="openAddPeriodModal(day.value)"
+                    [title]="'schedule.addAnotherPeriod' | t"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>{{ 'schedule.addAnotherPeriod' | t }}</span>
+                  </button>
+                }
               }
             </div>
           </div>
@@ -283,7 +341,7 @@
       </div>
     </main>
 
-    <!-- Side Column: Daily Inspector & Exceptions -->
+    <!-- Side Column: Daily Inspector & Exceptions (Placed harmoniously side-by-side or stacked) -->
     <aside class="schedule-side-column">
       <!-- Widget 1: Daily Schedule Inspector -->
       <section class="side-widget-card inspector-widget">
@@ -303,7 +361,14 @@
               </svg>
             </div>
             <div>
-              <h4>{{ 'ui.full.373' | t }}</h4>
+              <div class="widget-title-row">
+                <h4>{{ 'ui.full.373' | t }}</h4>
+                @if (effectivePeriods().length > 0) {
+                  <span class="slots-total-pill">
+                    {{ totalEffectiveSlots() }} {{ 'schedule.availableSlotsCount' | t }}
+                  </span>
+                }
+              </div>
               <p>{{ 'ui.full.374' | t }}</p>
             </div>
           </div>
@@ -853,7 +918,11 @@
             <label class="form-field">
               <span class="field-label">{{ 'ui.full.399' | t }}</span>
               <div class="select-wrapper">
-                <select class="field-select" [formField]="exceptionForm.type">
+                <select
+                  class="field-select"
+                  [formField]="exceptionForm.type"
+                  (change)="onExceptionTypeChange($any($event.target).value)"
+                >
                   <option value="DayOff">{{ 'practice.dayOff' | t }}</option>
                   <option value="Vacation">{{ 'schedule.vacation' | t }}</option>
                   <option value="CustomWorkingHours">{{ 'schedule.customHours' | t }}</option>
@@ -863,24 +932,156 @@
             </label>
 
             @if (exceptionNeedsTimes()) {
-              <label class="form-field">
-                <span class="field-label">{{ 'ui.full.400' | t }}</span>
-                <input
-                  type="time"
-                  dir="ltr"
-                  class="field-input"
-                  [formField]="exceptionForm.startTime"
-                />
-              </label>
-              <label class="form-field">
-                <span class="field-label">{{ 'ui.full.401' | t }}</span>
-                <input
-                  type="time"
-                  dir="ltr"
-                  class="field-input"
-                  [formField]="exceptionForm.endTime"
-                />
-              </label>
+              <!-- Presets for Exception Hours -->
+              <div class="presets-section">
+                <span class="presets-label">{{ 'ui.full.389' | t }}</span>
+                <div class="presets-chips">
+                  <button
+                    type="button"
+                    class="preset-chip"
+                    (click)="applyExceptionPreset('17:00', '22:00', 30)"
+                  >
+                    {{ 'ui.full.390' | t }}
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip"
+                    (click)="applyExceptionPreset('16:00', '21:00', 30)"
+                  >
+                    {{ 'ui.full.391' | t }}
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip"
+                    (click)="applyExceptionPreset('09:00', '14:00', 30)"
+                  >
+                    {{ 'ui.full.392' | t }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- 12-Hour Interactive Time Selectors for Exception -->
+              <div class="time-pickers-block">
+                <!-- Start Time 12h Picker -->
+                <div class="time-picker-card">
+                  <div class="time-card-header">
+                    <span class="time-badge-label">{{ 'ui.full.400' | t }}</span>
+                    <strong class="time-preview-badge" dir="ltr">{{
+                      formatTime(exceptionModel().startTime) || language.t('ui.expressions.171')
+                    }}</strong>
+                  </div>
+                  <div class="time-select-inputs">
+                    <div class="select-group">
+                      <span class="sub-label">{{ 'practice.hour' | t }}</span>
+                      <select
+                        class="field-select select-sm"
+                        #excStartHourControl
+                        (change)="setExceptionStartHour(excStartHourControl.value)"
+                      >
+                        @for (h of hoursList; track h) {
+                          <option [value]="h" [selected]="h === exceptionStartHour()">
+                            {{ h }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="select-group">
+                      <span class="sub-label">{{ 'practice.minute' | t }}</span>
+                      <select
+                        class="field-select select-sm"
+                        #excStartMinuteControl
+                        (change)="setExceptionStartMinute(excStartMinuteControl.value)"
+                      >
+                        @for (m of minutesList; track m) {
+                          <option [value]="m" [selected]="m === exceptionStartMinute()">
+                            :{{ m }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="select-group">
+                      <span class="sub-label">{{ 'practice.period' | t }}</span>
+                      <div class="period-toggle-pills">
+                        <button
+                          type="button"
+                          class="toggle-pill"
+                          [class.active]="exceptionStartPeriod() === 'PM'"
+                          (click)="setExceptionStartPeriod('PM')"
+                        >
+                          {{ 'common.pm' | t }}
+                        </button>
+                        <button
+                          type="button"
+                          class="toggle-pill"
+                          [class.active]="exceptionStartPeriod() === 'AM'"
+                          (click)="setExceptionStartPeriod('AM')"
+                        >
+                          {{ 'common.am' | t }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- End Time 12h Picker -->
+                <div class="time-picker-card">
+                  <div class="time-card-header">
+                    <span class="time-badge-label">{{ 'ui.full.401' | t }}</span>
+                    <strong class="time-preview-badge" dir="ltr">{{
+                      formatTime(exceptionModel().endTime) || language.t('ui.expressions.172')
+                    }}</strong>
+                  </div>
+                  <div class="time-select-inputs">
+                    <div class="select-group">
+                      <span class="sub-label">{{ 'practice.hour' | t }}</span>
+                      <select
+                        class="field-select select-sm"
+                        #excEndHourControl
+                        (change)="setExceptionEndHour(excEndHourControl.value)"
+                      >
+                        @for (h of hoursList; track h) {
+                          <option [value]="h" [selected]="h === exceptionEndHour()">{{ h }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="select-group">
+                      <span class="sub-label">{{ 'practice.minute' | t }}</span>
+                      <select
+                        class="field-select select-sm"
+                        #excEndMinuteControl
+                        (change)="setExceptionEndMinute(excEndMinuteControl.value)"
+                      >
+                        @for (m of minutesList; track m) {
+                          <option [value]="m" [selected]="m === exceptionEndMinute()">
+                            :{{ m }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="select-group">
+                      <span class="sub-label">{{ 'practice.period' | t }}</span>
+                      <div class="period-toggle-pills">
+                        <button
+                          type="button"
+                          class="toggle-pill"
+                          [class.active]="exceptionEndPeriod() === 'PM'"
+                          (click)="setExceptionEndPeriod('PM')"
+                        >
+                          {{ 'common.pm' | t }}
+                        </button>
+                        <button
+                          type="button"
+                          class="toggle-pill"
+                          [class.active]="exceptionEndPeriod() === 'AM'"
+                          (click)="setExceptionEndPeriod('AM')"
+                        >
+                          {{ 'common.am' | t }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             }
 
             @if (exceptionNeedsDuration()) {

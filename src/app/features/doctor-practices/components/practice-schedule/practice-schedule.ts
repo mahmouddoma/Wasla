@@ -48,6 +48,9 @@ export class PracticeSchedule implements OnInit {
 
   protected readonly schedule = signal<DoctorPracticeSchedule>({ periods: [], exceptions: [] });
   protected readonly effectivePeriods = signal<EffectiveSchedulePeriod[]>([]);
+  protected readonly totalEffectiveSlots = computed(() =>
+    this.effectivePeriods().reduce((sum, p) => sum + (p.slotStarts?.length || 0), 0),
+  );
   protected readonly effectiveDate = signal(localDate());
   protected readonly editingPeriod = signal<DoctorPracticeSchedulePeriod | null>(null);
   protected readonly editingException = signal<DoctorPracticeScheduleException | null>(null);
@@ -96,6 +99,19 @@ export class PracticeSchedule implements OnInit {
   protected readonly endHour = computed(() => this.endParts().hour);
   protected readonly endMinute = computed(() => this.endParts().minute);
   protected readonly endPeriod = computed(() => this.endParts().period);
+
+  private readonly exceptionStartParts = computed(() =>
+    this.parseTo12Hour(this.exceptionModel().startTime),
+  );
+  private readonly exceptionEndParts = computed(() =>
+    this.parseTo12Hour(this.exceptionModel().endTime),
+  );
+  protected readonly exceptionStartHour = computed(() => this.exceptionStartParts().hour);
+  protected readonly exceptionStartMinute = computed(() => this.exceptionStartParts().minute);
+  protected readonly exceptionStartPeriod = computed(() => this.exceptionStartParts().period);
+  protected readonly exceptionEndHour = computed(() => this.exceptionEndParts().hour);
+  protected readonly exceptionEndMinute = computed(() => this.exceptionEndParts().minute);
+  protected readonly exceptionEndPeriod = computed(() => this.exceptionEndParts().period);
 
   protected get days(): ReadonlyArray<{
     value: PracticeDayOfWeek;
@@ -267,6 +283,55 @@ export class PracticeSchedule implements OnInit {
     }));
   }
 
+  protected setExceptionStartHour(hour: number | string): void {
+    this.updateExceptionTime('startTime', { hour: Number(hour) });
+  }
+  protected setExceptionStartMinute(minute: string): void {
+    this.updateExceptionTime('startTime', { minute });
+  }
+  protected setExceptionStartPeriod(period: 'AM' | 'PM'): void {
+    this.updateExceptionTime('startTime', { period });
+  }
+  protected setExceptionEndHour(hour: number | string): void {
+    this.updateExceptionTime('endTime', { hour: Number(hour) });
+  }
+  protected setExceptionEndMinute(minute: string): void {
+    this.updateExceptionTime('endTime', { minute });
+  }
+  protected setExceptionEndPeriod(period: 'AM' | 'PM'): void {
+    this.updateExceptionTime('endTime', { period });
+  }
+
+  private updateExceptionTime(
+    field: 'startTime' | 'endTime',
+    change: Partial<{ hour: number; minute: string; period: 'AM' | 'PM' }>,
+  ): void {
+    this.exceptionModel.update((model) => {
+      const current = model[field] || (field === 'startTime' ? '17:00' : '22:00');
+      const value = { ...this.parseTo12Hour(current), ...change };
+      return { ...model, [field]: this.to24Hour(value.hour, value.minute, value.period) };
+    });
+  }
+
+  protected applyExceptionPreset(start: string, end: string, duration = 30): void {
+    this.exceptionModel.update((model) => ({
+      ...model,
+      startTime: start,
+      endTime: end,
+      slotDurationMinutes: duration,
+    }));
+  }
+
+  protected onExceptionTypeChange(type: ScheduleExceptionType): void {
+    const needs = ['CustomWorkingHours', 'BlockedTimeRange'].includes(type);
+    this.exceptionModel.update((m) => ({
+      ...m,
+      type,
+      startTime: needs && !m.startTime ? '17:00' : m.startTime,
+      endTime: needs && !m.endTime ? '22:00' : m.endTime,
+    }));
+  }
+
   // Modal actions
   protected openAddPeriodModal(day?: PracticeDayOfWeek): void {
     this.cancelPeriodEdit();
@@ -310,6 +375,7 @@ export class PracticeSchedule implements OnInit {
 
   protected openAddExceptionModal(): void {
     this.cancelExceptionEdit();
+    this.applyExceptionPreset('17:00', '22:00', 30);
     this.isExceptionModalOpen.set(true);
   }
 
@@ -324,8 +390,8 @@ export class PracticeSchedule implements OnInit {
     this.exceptionModel.set({
       date: exception.date,
       type: exception.type,
-      startTime: exception.startTime ?? '',
-      endTime: exception.endTime ?? '',
+      startTime: exception.startTime ?? '17:00',
+      endTime: exception.endTime ?? '22:00',
       slotDurationMinutes: exception.slotDurationMinutes ?? 30,
     });
     this.exceptionForm().reset();

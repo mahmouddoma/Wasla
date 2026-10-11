@@ -34,7 +34,8 @@ export interface PatientEncounterDetails {
   readonly practice: ClinicalIdentity;
   readonly startedAtUtc: string;
   readonly completedAtUtc: string;
-  readonly diagnoses: readonly Diagnosis[];
+  readonly diagnoses?: readonly Diagnosis[];
+  readonly currentActiveDiagnoses?: readonly Diagnosis[];
   readonly followUpEligibility?: {
     readonly eligibilityId: string;
     readonly validUntil: string;

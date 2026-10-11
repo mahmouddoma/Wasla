@@ -7,40 +7,128 @@
     <p role="status">{{ 'reservations.loading' | t }}</p>
   }
   @if (patientView(); as patient) {
-    <p>
-      {{ 'prescriptions.status.' + patient.status | t }} · {{ 'prescriptions.version' | t }}
-      {{ patient.versionNumber }}
-    </p>
-    <p>
-      {{
-        language.currentLang() === 'ar'
-          ? patient.doctor.nameAr
-          : patient.doctor.nameEn || patient.doctor.nameAr
-      }}
-      ·
-      {{
-        language.currentLang() === 'ar'
-          ? patient.practice.nameAr
-          : patient.practice.nameEn || patient.practice.nameAr
-      }}
-    </p>
-    <time dir="ltr">{{ patient.visitDateUtc | localizedDate: language.currentLang() }}</time>
-    @for (item of patient.items; track $index) {
-      <div class="medication-row">
-        <strong>{{ itemName(item) }}</strong>
-        @for (field of clinicalFields; track field) {
-          @if (item[field]) {
-            <p>{{ 'prescriptions.' + field | t }}: {{ item[field] }}</p>
+    <div class="patient-rx-sheet">
+      <!-- Rx Official Header -->
+      <header class="rx-header-banner">
+        <div class="rx-emblem-row">
+          <div class="rx-symbol-box">
+            <span class="rx-symbol">℞</span>
+          </div>
+          <div class="rx-meta-pill">
+            <span class="rx-status-dot"></span>
+            <span class="rx-status-text">{{ 'prescriptions.status.' + patient.status | t }}</span>
+            <span class="rx-version-tag">{{ 'prescriptions.version' | t }} {{ patient.versionNumber }}</span>
+          </div>
+        </div>
+
+        <div class="rx-header-info">
+          <h4 class="rx-doctor-title">
+            {{ doctorNamePatient(patient) }}
+          </h4>
+          <p class="rx-clinic-title">
+            <svg class="rx-info-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3h6v4H9z"/></svg>
+            {{ practiceNamePatient(patient) }}
+          </p>
+          <div class="rx-date-stamp">
+            <svg class="rx-info-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <time dir="ltr">{{ patient.visitDateUtc | localizedDate: language.currentLang() }}</time>
+          </div>
+        </div>
+      </header>
+
+      <!-- Prescription Items List -->
+      <section class="rx-medications-section">
+        <div class="rx-section-heading">
+          <span class="rx-heading-icon">💊</span>
+          <h5>الأدوية والجرعات المقررة ({{ patient.items.length }})</h5>
+        </div>
+
+        <div class="rx-items-list">
+          @for (item of patient.items; track $index) {
+            <article class="rx-item-card">
+              <div class="rx-item-header">
+                <div class="rx-drug-info">
+                  <span class="rx-drug-number">#{{ $index + 1 }}</span>
+                  <h6 class="rx-drug-name">{{ itemName(item) }}</h6>
+                </div>
+                <div class="rx-chip-group">
+                  @if (fieldVal(item, 'strength'); as str) {
+                    <span class="rx-chip strength">{{ str }}</span>
+                  }
+                  @if (fieldVal(item, 'dosageForm'); as form) {
+                    <span class="rx-chip form">{{ form }}</span>
+                  }
+                  @if (fieldVal(item, 'route'); as rt) {
+                    <span class="rx-chip route">{{ rt }}</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Detailed Dosage Grid -->
+              <div class="rx-posology-grid">
+                @if (fieldVal(item, 'dose'); as d) {
+                  <div class="rx-grid-cell">
+                    <span class="cell-label">{{ 'prescriptions.dose' | t }}</span>
+                    <strong class="cell-val">{{ d }}</strong>
+                  </div>
+                }
+                @if (fieldVal(item, 'frequency'); as freq) {
+                  <div class="rx-grid-cell">
+                    <span class="cell-label">{{ 'prescriptions.frequency' | t }}</span>
+                    <strong class="cell-val">{{ freq }}</strong>
+                  </div>
+                }
+                @if (fieldVal(item, 'duration'); as dur) {
+                  <div class="rx-grid-cell">
+                    <span class="cell-label">{{ 'prescriptions.duration' | t }}</span>
+                    <strong class="cell-val">{{ dur }}</strong>
+                  </div>
+                }
+                @if (quantityLabel(item); as qty) {
+                  <div class="rx-grid-cell">
+                    <span class="cell-label">{{ 'prescriptions.quantity' | t }}</span>
+                    <strong class="cell-val">{{ qty }}</strong>
+                  </div>
+                }
+                @if (isPrn(item)) {
+                  <div class="rx-grid-cell prn-cell">
+                    <span class="rx-prn-pill">{{ 'prescriptions.isPrn' | t }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Instructions Notice -->
+              @if (fieldVal(item, 'instructions'); as inst) {
+                <div class="rx-instructions-callout">
+                  <span class="inst-icon">💡</span>
+                  <p class="inst-text">
+                    <strong>{{ 'prescriptions.instructions' | t }}:</strong> {{ inst }}
+                  </p>
+                </div>
+              }
+            </article>
           }
-        }
-        @if (item.isPrn) {
-          <p>{{ 'prescriptions.isPrn' | t }}</p>
-        }
-        @if (item.quantity !== null) {
-          <p>{{ 'prescriptions.quantity' | t }}: {{ item.quantity }}</p>
-        }
-      </div>
-    }
+        </div>
+      </section>
+
+      <!-- Reassuring Patient Health Notice -->
+      <footer class="rx-patient-footer">
+        <div class="rx-advice-card">
+          <div class="rx-advice-icon">🩺</div>
+          <div class="rx-advice-content">
+            <strong>إرشادات السلامة الدوائية</strong>
+            <p>يُرجى الالتزام بالجرعات المحددة ومواعيد تناول الدواء بدقة. عند حدوث أي أعراض غير معتادة، يُرجى استشارة الطبيب المعالج فوراً.</p>
+          </div>
+        </div>
+
+        <div class="rx-footer-actions">
+          <button type="button" class="btn-rx-action print-btn" (click)="printPrescription()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+            <span>طباعة الروشتة أو الحفظ كـ PDF</span>
+          </button>
+        </div>
+      </footer>
+    </div>
   } @else {
     @if (historical(); as version) {
       <p>

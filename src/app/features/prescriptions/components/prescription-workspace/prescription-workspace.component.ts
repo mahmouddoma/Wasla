@@ -217,6 +217,56 @@ export class PrescriptionWorkspaceComponent {
       ''
     );
   }
+  fieldVal(item: any, field: string): string | null {
+    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
+      return String(item[field]);
+    }
+    const c = item?.clinical;
+    if (!c) return null;
+    if (field === 'frequency') {
+      return c.frequencyText || c.frequencyCode || null;
+    }
+    if (field === 'duration') {
+      if (c.durationValue && c.durationUnit) {
+        return `${c.durationValue} ${c.durationUnit}`;
+      }
+      return c.durationValue ? String(c.durationValue) : null;
+    }
+    if (field === 'instructions') {
+      return c.instructions || null;
+    }
+    if (c[field] !== undefined && c[field] !== null && c[field] !== '') {
+      return String(c[field]);
+    }
+    return null;
+  }
+  isPrn(item: any): boolean {
+    return !!(item.isPrn || item.clinical?.asNeeded);
+  }
+  quantityLabel(item: any): string | null {
+    if (item.quantity !== null && item.quantity !== undefined) {
+      return String(item.quantity);
+    }
+    if (item.clinical?.quantityValue) {
+      return `${item.clinical.quantityValue} ${item.clinical.quantityUnit || ''}`.trim();
+    }
+    return null;
+  }
+  doctorNamePatient(patient: any): string {
+    const isAr = this.language.currentLang() === 'ar';
+    const ar = patient?.doctor?.nameAr || patient?.doctorNameAr;
+    const en = patient?.doctor?.nameEn || patient?.doctorNameEn;
+    return isAr ? (ar || en || '') : (en || ar || '');
+  }
+  practiceNamePatient(patient: any): string {
+    const isAr = this.language.currentLang() === 'ar';
+    const ar = patient?.practice?.nameAr || patient?.practiceNameAr;
+    const en = patient?.practice?.nameEn || patient?.practiceNameEn;
+    return isAr ? (ar || en || '') : (en || ar || '');
+  }
+  printPrescription(): void {
+    window.print();
+  }
   async load() {
     const id = this.prescriptionId() || this.state()?.prescriptionId;
     if (!id || !this.allowed('Prescriptions.ViewOwn')) return;

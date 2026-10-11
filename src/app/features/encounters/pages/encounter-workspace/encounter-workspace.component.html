@@ -91,22 +91,37 @@
           </thead>
           <tbody>
             @for (item of store.page().items; track item.encounterId) {
-              <tr>
-                <td>{{ store.doctor() ? label(item.patient) : label(item.doctor) }}</td>
-                <td>{{ label(item.practice) }}</td>
-                <td dir="ltr">
+              <tr class="table-data-row">
+                <td>
+                  <div class="table-doctor-cell">
+                    <div class="doctor-avatar-badge">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <span class="cell-primary-text">{{ doctorOrPatient(item) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="cell-subtle-text">{{ practiceLabel(item) }}</span>
+                </td>
+                <td dir="ltr" class="cell-date-text">
                   {{
                     item.completedAtUtc || item.startedAtUtc | localizedDate: language.currentLang()
                   }}
                 </td>
-                <td>{{ 'encounters.status.' + item.status | t }}</td>
+                <td>
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    <span class="pill-dot"></span>
+                    {{ 'encounters.status.' + item.status | t }}
+                  </span>
+                </td>
                 <td>
                   <button
-                    class="btn btn-outline-secondary"
+                    class="btn-inspect-action"
                     [disabled]="!store.canReadDetails()"
                     (click)="store.inspect(item.encounterId)"
                   >
-                    {{ 'reservations.inspect' | t }}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>{{ 'reservations.inspect' | t }}</span>
                   </button>
                 </td>
               </tr>
@@ -528,25 +543,95 @@
         }
       }
       @if (store.patientDetail(); as detail) {
-        <p>{{ label(detail.doctor) }} · {{ label(detail.practice) }}</p>
-        <time dir="ltr">{{ detail.completedAtUtc | localizedDate: language.currentLang() }}</time>
-        <section class="detail-section">
-          <h3>{{ 'encounters.diagnoses' | t }}</h3>
-          @for (diagnosis of detail.diagnoses; track diagnosis.diagnosisId) {
-            @if (!diagnosis.isVoided) {
-              <p>
-                <b>{{ diagnosis.displayText }}</b> ·
-                {{ 'encounters.diagnosis.' + diagnosis.type | t }}
+        <div class="patient-visit-sheet">
+          <!-- Visit Header Banner -->
+          <header class="visit-header-banner">
+            <div class="visit-status-row">
+              <span class="status-pill status-completed">
+                <span class="pill-dot"></span>
+                <span>زيارة طبية مكتملة</span>
+              </span>
+              <div class="visit-date-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <time dir="ltr">{{ detail.completedAtUtc | localizedDate: language.currentLang() }}</time>
+              </div>
+            </div>
+
+            <div class="visit-meta-info">
+              <h4 class="visit-doctor-name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>{{ doctorNameDetail(detail) }}</span>
+              </h4>
+              <p class="visit-clinic-name">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3h6v4H9z"/></svg>
+                <span>{{ practiceNameDetail(detail) }}</span>
               </p>
-            }
+            </div>
+          </header>
+
+          <!-- Diagnoses Section -->
+          <section class="visit-diagnoses-section">
+            <div class="visit-section-heading">
+              <span class="section-icon">🩺</span>
+              <h5>التشخيص الطبي والتوصيات</h5>
+            </div>
+
+            <div class="diagnoses-list">
+              @for (diagnosis of (detail.diagnoses?.length ? detail.diagnoses : (detail.currentActiveDiagnoses || [])); track diagnosis.diagnosisId) {
+                @if (!diagnosis.isVoided) {
+                  <article class="diagnosis-card">
+                    <div class="diagnosis-header-row">
+                      <div class="diagnosis-main">
+                        <span class="diagnosis-icon-badge">📋</span>
+                        <h6 class="diagnosis-name">{{ diagnosis.displayText }}</h6>
+                      </div>
+                      <span class="diagnosis-type-pill" [class.primary]="diagnosis.type === 'Primary'">
+                        {{ 'encounters.diagnosis.' + diagnosis.type | t }}
+                      </span>
+                    </div>
+
+                    @if (diagnosis.notes) {
+                      <div class="diagnosis-notes-box">
+                        <div class="notes-header">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          <span>إرشادات وتوجيهات الطبيب:</span>
+                        </div>
+                        <p class="notes-content">{{ diagnosis.notes }}</p>
+                      </div>
+                    }
+                  </article>
+                }
+              } @empty {
+                <div class="empty-diagnosis-box">
+                  <p>تم استكمال الفحص السريري دون تسجيل تشخيصات إضافية.</p>
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- Follow-up Eligibility if present -->
+          @if (detail.followUpEligibility; as eligibility) {
+            <section class="visit-followup-card">
+              <div class="followup-icon">🗓️</div>
+              <div class="followup-info">
+                <strong>{{ 'followUps.followUp' | t }} متاحة</strong>
+                <p>الحالة: {{ 'followUps.status.' + eligibility.status | t }} · صالحة حتى: <time dir="ltr">{{ eligibility.validUntil }}</time></p>
+              </div>
+            </section>
           }
-        </section>
-        @if (detail.followUpEligibility; as eligibility) {
-          <p>
-            {{ 'followUps.followUp' | t }} · {{ 'followUps.status.' + eligibility.status | t }} ·
-            <time dir="ltr">{{ eligibility.validUntil }}</time>
-          </p>
-        }
+
+          <!-- Quick Navigation to Prescription -->
+          <footer class="visit-footer-card">
+            <div class="visit-footer-tip">
+              <span class="tip-icon">💊</span>
+              <p>يمكنك الاطلاع على الأدوية والروشتات الموصوفة لك خلال هذه الزيارة من قسم <strong>الروشتة</strong>.</p>
+            </div>
+            <a routerLink="/patient/prescriptions" class="btn-goto-rx" (click)="store.close()">
+              <span>الانتقال إلى الروشتة</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+          </footer>
+        </div>
       }
       @for (message of store.messages(); track $index) {
         <p role="alert">{{ message | t }}</p>

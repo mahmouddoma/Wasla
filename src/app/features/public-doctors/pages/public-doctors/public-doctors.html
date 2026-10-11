@@ -146,7 +146,7 @@
             id="doctor-search-input"
             type="search"
             class="field-control"
-            [placeholder]="'discovery.namePlaceholder' | t"
+            [placeholder]="'discovery.searchPlaceholder' | t"
             [value]="filters().searchText"
             (input)="updateFilter('searchText', $event)"
           />
@@ -246,105 +246,6 @@
         </div>
       </div>
 
-      <!-- 4. City -->
-      <div class="field-item">
-        <label for="doctor-city-select">
-          <span class="field-label">{{ 'discovery.city' | t }}</span>
-        </label>
-        <div class="control-wrap select-wrap">
-          <svg
-            class="control-icon"
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-            <path
-              d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"
-            />
-          </svg>
-          <select
-            id="doctor-city-select"
-            class="field-control field-select"
-            [value]="filters().cityId"
-            [disabled]="!filters().governorateId"
-            (change)="cityChanged($event)"
-          >
-            <option value="">{{ 'discovery.allCities' | t }}</option>
-            @for (item of cities(); track item.id) {
-              <option [value]="item.id">
-                {{ language.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
-              </option>
-            }
-          </select>
-          <svg
-            class="select-chevron"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
-      </div>
-
-      <!-- 5. Area -->
-      <div class="field-item">
-        <label for="doctor-area-select">
-          <span class="field-label">{{ 'discovery.area' | t }}</span>
-        </label>
-        <div class="control-wrap select-wrap">
-          <svg
-            class="control-icon"
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-            <line x1="8" y1="2" x2="8" y2="18" />
-            <line x1="16" y1="6" x2="16" y2="22" />
-          </svg>
-          <select
-            id="doctor-area-select"
-            class="field-control field-select"
-            [value]="filters().areaId"
-            [disabled]="!filters().cityId"
-            (change)="updateFilter('areaId', $event)"
-          >
-            <option value="">{{ 'discovery.allAreas' | t }}</option>
-            @for (item of areas(); track item.id) {
-              <option [value]="item.id">
-                {{ language.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
-              </option>
-            }
-          </select>
-          <svg
-            class="select-chevron"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
-      </div>
-
       <!-- Search Actions -->
       <div class="search-actions">
         <button type="submit" class="btn-search-submit" [disabled]="isLoading()">
@@ -387,6 +288,68 @@
         }
       </div>
     </form>
+
+    <!-- Optional Detailed City/Area Sub-deck when Governorate selected -->
+    @if (filters().governorateId) {
+      <div class="location-sub-deck">
+        <button type="button" class="btn-toggle-sub-location" (click)="toggleDetailedLocation()">
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+          </svg>
+          <span>
+            {{
+              showDetailedLocation()
+                ? ('discovery.hideDetailedLocation' | t)
+                : ('discovery.detailedLocation' | t)
+            }}
+          </span>
+        </button>
+
+        @if (showDetailedLocation()) {
+          <div class="sub-location-inputs">
+            <div class="control-wrap select-wrap sub-select-wrap">
+              <select
+                id="doctor-city-select"
+                class="field-control field-select field-control-sm"
+                [value]="filters().cityId"
+                (change)="cityChanged($event)"
+              >
+                <option value="">{{ 'discovery.allCities' | t }}</option>
+                @for (item of cities(); track item.id) {
+                  <option [value]="item.id">
+                    {{ language.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
+                  </option>
+                }
+              </select>
+            </div>
+            <div class="control-wrap select-wrap sub-select-wrap">
+              <select
+                id="doctor-area-select"
+                class="field-control field-select field-control-sm"
+                [value]="filters().areaId"
+                [disabled]="!filters().cityId"
+                (change)="updateFilter('areaId', $event)"
+              >
+                <option value="">{{ 'discovery.allAreas' | t }}</option>
+                @for (item of areas(); track item.id) {
+                  <option [value]="item.id">
+                    {{ language.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}
+                  </option>
+                }
+              </select>
+            </div>
+          </div>
+        }
+      </div>
+    }
   </section>
 
   <!-- Error Alert -->
@@ -664,7 +627,9 @@
                             <strong class="val-num">{{ practice.publicSearchPrice }}</strong>
                             <span class="val-curr">{{ 'discovery.currency' | t }}</span>
                           } @else {
-                            <span class="val-muted">{{ 'discovery.priceUnavailable' | t }}</span>
+                            <span class="val-muted">{{
+                              'discovery.feeDeterminedAtClinic' | t
+                            }}</span>
                           }
                         </div>
                       </div>
@@ -748,73 +713,101 @@
                     </span>
                   </div>
 
-                  <!-- 3-Day Schedule Grid (Vezeeta Pattern) -->
-                  <div
-                    class="vezeeta-days-grid"
-                    role="region"
-                    [attr.aria-label]="'discovery.schedulePreview' | t"
-                  >
-                    @for (day of getScheduleDays(practice); track day.key) {
-                      <div class="schedule-day-column" [class.is-available]="day.isAvailable">
-                        <div class="schedule-day-header">
-                          <span class="day-title">{{ day.label }}</span>
-                          <span class="day-subtitle">{{ day.subLabel }}</span>
-                        </div>
+                  @if (practice.isBookable && practice.onlineBookingEnabled !== false) {
+                    <!-- 3-Day Schedule Grid (Vezeeta Pattern) -->
+                    <div
+                      class="vezeeta-days-grid"
+                      role="region"
+                      [attr.aria-label]="'discovery.schedulePreview' | t"
+                    >
+                      @for (day of getScheduleDays(practice); track day.key) {
+                        <div class="schedule-day-column" [class.is-available]="day.isAvailable">
+                          <div class="schedule-day-header">
+                            <span class="day-title">{{ day.label }}</span>
+                            <span class="day-subtitle">{{ day.subLabel }}</span>
+                          </div>
 
-                        <div class="schedule-day-body">
-                          @if (day.slotTime) {
-                            <button
-                              type="button"
-                              class="slot-btn"
-                              (click)="openDoctorDrawer(doctor, practice.id, day.key, day.slotTime)"
-                              [title]="'booking.bookNow' | t"
-                            >
-                              {{ day.slotTime }}
-                            </button>
-                          } @else if (day.isAvailable) {
-                            <button
-                              type="button"
-                              class="slot-btn"
-                              (click)="openDoctorDrawer(doctor, practice.id, day.key)"
-                            >
-                              {{ 'booking.available' | t }}
-                            </button>
-                          } @else {
-                            <span class="no-slot-text">—</span>
-                          }
+                          <div class="schedule-day-body">
+                            @if (day.slotTime) {
+                              <button
+                                type="button"
+                                class="slot-btn"
+                                (click)="
+                                  openDoctorDrawer(doctor, practice.id, day.key, day.slotTime)
+                                "
+                                [title]="'booking.bookNow' | t"
+                              >
+                                {{ day.slotTime }}
+                              </button>
+                            } @else if (day.isAvailable) {
+                              <button
+                                type="button"
+                                class="slot-btn"
+                                (click)="openDoctorDrawer(doctor, practice.id, day.key)"
+                              >
+                                {{ 'booking.available' | t }}
+                              </button>
+                            } @else {
+                              <span class="no-slot-text">—</span>
+                            }
+                          </div>
                         </div>
-                      </div>
-                    }
-                  </div>
+                      }
+                    </div>
 
-                  <!-- Next Available Slot Live Chip -->
-                  <div class="nearest-slot-banner">
-                    <span class="slot-banner-label">{{ 'discovery.availableSlot' | t }}:</span>
-                    @if (practice.nextAvailableSlotDate) {
-                      <div class="slot-banner-value is-live">
-                        <span class="live-dot" aria-hidden="true"></span>
+                    <!-- Next Available Slot Live Chip -->
+                    <div class="nearest-slot-banner">
+                      <span class="slot-banner-label">{{ 'discovery.availableSlot' | t }}:</span>
+                      @if (practice.nextAvailableSlotDate) {
+                        <div class="slot-banner-value is-live">
+                          <span class="live-dot" aria-hidden="true"></span>
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="12"
+                            height="12"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          <span>{{
+                            formatSlot(
+                              practice.nextAvailableSlotDate,
+                              practice.nextAvailableSlotTime
+                            )
+                          }}</span>
+                        </div>
+                      } @else {
+                        <div class="slot-banner-value is-none">
+                          <span>{{ 'discovery.noAvailableSlots' | t }}</span>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <!-- Friendly Walk-In / Clinic Info State (instead of broken empty dashes) -->
+                    <div class="clinic-walkin-info-box">
+                      <div class="walkin-info-icon" aria-hidden="true">
                         <svg
                           viewBox="0 0 24 24"
-                          width="12"
-                          height="12"
+                          width="24"
+                          height="24"
                           fill="none"
                           stroke="currentColor"
                           stroke-width="2"
-                          aria-hidden="true"
                         >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                          <polyline points="9 22 9 12 15 12 15 22" />
                         </svg>
-                        <span>{{
-                          formatSlot(practice.nextAvailableSlotDate, practice.nextAvailableSlotTime)
-                        }}</span>
                       </div>
-                    } @else {
-                      <div class="slot-banner-value is-none">
-                        <span>{{ 'discovery.noAvailableSlots' | t }}</span>
+                      <div class="walkin-info-text">
+                        <strong>{{ 'discovery.bookInClinic' | t }}</strong>
+                        <p>{{ 'discovery.bookInClinicNote' | t }}</p>
                       </div>
-                    }
-                  </div>
+                    </div>
+                  }
 
                   <!-- Instant Action CTA Button -->
                   <div class="widget-cta-wrap">
@@ -849,9 +842,28 @@
                         </svg>
                       </button>
                     } @else {
-                      <div class="unbookable-banner">
-                        <span>{{ 'discovery.unbookable' | t }}</span>
-                      </div>
+                      <button
+                        type="button"
+                        class="btn-instant-book btn-view-clinic"
+                        (click)="openDoctorDrawer(doctor, practice.id)"
+                      >
+                        <span>{{ 'discovery.viewClinicDetails' | t }}</span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="15"
+                          height="15"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            [attr.d]="
+                              language.isRtl() ? 'M19 12H5M12 19l-7-7 7-7' : 'M5 12h14M12 5l7 7-7 7'
+                            "
+                          />
+                        </svg>
+                      </button>
                     }
                     <p class="widget-caption-note">
                       {{ 'booking.walkInNote' | t }}
@@ -1060,6 +1072,20 @@
         <p class="receipt-clinic-notice">{{ 'booking.payAtClinic' | t }}</p>
 
         <div class="receipt-cta-buttons">
+          @if (isPatient()) {
+            <a
+              [routerLink]="['/patient/tickets']"
+              class="btn-receipt-ticket"
+              (click)="closeDrawer()"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                <path d="M13 5v2M13 17v2M13 11v2" />
+              </svg>
+              <span>{{ 'sidebar.tickets' | t }}</span>
+            </a>
+          }
+
           <a
             [routerLink]="['/patient/reservations']"
             class="btn-receipt-view"
@@ -1156,7 +1182,6 @@
               type="button"
               class="drawer-practice-card"
               [class.active]="drawerSelectedPractice()?.id === practice.id"
-              [disabled]="!practice.isBookable || practice.onlineBookingEnabled === false"
               (click)="chooseDrawerPractice(practice)"
             >
               <div class="practice-card-top">
@@ -1183,7 +1208,7 @@
                   <span class="practice-card-price">
                     {{
                       practice.publicSearchPrice === null
-                        ? ('discovery.priceUnavailable' | t)
+                        ? ('discovery.feeDeterminedAtClinic' | t)
                         : practice.publicSearchPrice + ' ' + ('discovery.currency' | t)
                     }}
                   </span>
@@ -1261,198 +1286,313 @@
             }
           </div>
 
-          <!-- 1. Available Dates -->
-          <div class="booking-drawer-step">
-            <span class="step-label">{{ 'booking.availableDays' | t }}</span>
-            <div class="dates-chip-grid">
-              @for (item of drawerDates(); track item.date) {
-                <button
-                  type="button"
-                  class="btn-date-chip"
-                  [class.active]="drawerSelectedDate() === item.date"
-                  [disabled]="!item.isAvailable"
-                  dir="ltr"
-                  (click)="chooseDrawerDate(item.date)"
-                >
-                  {{ item.date }}
-                </button>
-              } @empty {
-                @if (!drawerBookingLoading() && !drawerMessages().length) {
-                  <p class="drawer-empty-hint">{{ 'booking.noDays' | t }}</p>
-                }
-              }
-            </div>
-          </div>
-
-          <!-- 2. Available Slots -->
-          @if (drawerSelectedDate()) {
+          @if (activePractice.isBookable && activePractice.onlineBookingEnabled !== false) {
+            <!-- 1. Available Dates -->
             <div class="booking-drawer-step">
-              <span class="step-label">{{ 'booking.availableTimes' | t }}</span>
-              <div class="slots-chip-grid">
-                @for (slot of drawerSlots(); track slot.date + slot.time) {
+              <span class="step-label">{{ 'booking.availableDays' | t }}</span>
+              <div class="dates-chip-grid">
+                @for (item of drawerDates(); track item.date) {
                   <button
                     type="button"
-                    class="btn-slot-chip"
-                    [class.active]="drawerSelectedTime() === slot.time"
+                    class="btn-date-chip"
+                    [class.active]="drawerSelectedDate() === item.date"
+                    [disabled]="!item.isAvailable"
                     dir="ltr"
-                    (click)="chooseDrawerSlot(slot.time)"
+                    (click)="chooseDrawerDate(item.date)"
                   >
-                    {{ slot.time }}
+                    {{ item.date }}
                   </button>
                 } @empty {
                   @if (!drawerBookingLoading() && !drawerMessages().length) {
-                    <p class="drawer-empty-hint">{{ 'booking.noTimes' | t }}</p>
+                    <p class="drawer-empty-hint">{{ 'booking.noDays' | t }}</p>
                   }
                 }
               </div>
             </div>
-          }
 
-          <!-- 3. Visit Types & Booking Actions -->
-          @if (drawerOptions(); as booking) {
-            <div class="booking-drawer-step">
-              <span class="step-label">{{ 'booking.visitAndPrice' | t }}</span>
-
-              <!-- Patient Profile Selector (if authenticated as Patient) -->
-              @if (isPatient()) {
-                <div class="patient-selector-block">
-                  <span class="step-label">{{ 'booking.selectPatientLabel' | t }}</span>
-                  @if (bookablePatients().length > 1) {
-                    <div class="patient-select-wrapper">
-                      <select
-                        class="patient-custom-select"
-                        [value]="selectedPatientId()"
-                        (change)="selectPatient($any($event.target).value)"
-                        id="bookablePatientSelect"
-                      >
-                        @for (p of bookablePatients(); track p.patientId) {
-                          <option [value]="p.patientId">
-                            {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
-                            {{ p.isSelf ? ' (' + ('booking.myself' | t) + ')' : '' }}
-                          </option>
-                        }
-                      </select>
-                    </div>
-                  } @else {
-                    <div class="patient-single-info">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="15"
-                        height="15"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                      <span>
-                        {{
-                          bookablePatients().length === 1
-                            ? language.isRtl()
-                              ? bookablePatients()[0].nameAr
-                              : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr
-                            : authSession.user()?.userName || ''
-                        }}
-                      </span>
-                    </div>
+            <!-- 2. Available Slots -->
+            @if (drawerSelectedDate()) {
+              <div class="booking-drawer-step">
+                <span class="step-label">{{ 'booking.availableTimes' | t }}</span>
+                <div class="slots-chip-grid">
+                  @for (slot of drawerSlots(); track slot.date + slot.time) {
+                    <button
+                      type="button"
+                      class="btn-slot-chip"
+                      [class.active]="drawerSelectedTime() === slot.time"
+                      dir="ltr"
+                      (click)="chooseDrawerSlot(slot.time)"
+                    >
+                      {{ slot.time }}
+                    </button>
+                  } @empty {
+                    @if (!drawerBookingLoading() && !drawerMessages().length) {
+                      <p class="drawer-empty-hint">{{ 'booking.noTimes' | t }}</p>
+                    }
                   }
                 </div>
-              }
+                     <!-- 3. Visit Types & Instant 1-Click Confirmation -->
+            @if (drawerOptions(); as booking) {
+              <div class="booking-drawer-step">
+                <span class="step-label">{{ 'booking.visitAndPrice' | t }}</span>
 
-              <!-- Visit Types & Segments Options -->
-              <div class="visit-types-stack">
-                @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
-                  @if (visitType.type !== 'FollowUp') {
-                    <div class="visit-type-row">
-                      <div class="visit-type-meta">
-                        <strong class="visit-name">
-                          {{
-                            language.isRtl()
-                              ? visitType.nameAr
-                              : visitType.nameEn || visitType.nameAr
-                          }}
-                        </strong>
-                      </div>
+                <!-- Segment / Price Category Selector Pills -->
+                <div class="segment-chips-grid">
+                  @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
+                    @if (visitType.type !== 'FollowUp') {
                       @for (segment of visitType.segments; track segment.segmentId) {
-                        <div class="segment-action-row">
-                          <div class="segment-text-info">
-                            <span class="segment-name">
-                              {{
-                                language.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr
-                              }}
-                              {{ segment.isDefault ? ('booking.defaultSuffix' | t) : '' }}
-                            </span>
-                            <span class="segment-price">
-                              {{ segment.price }} {{ 'discovery.currency' | t }}
-                            </span>
-                          </div>
-
-                          @if (authSession.isAuthenticated()) {
-                            <button
-                              type="button"
-                              class="btn-confirm-booking"
-                              [disabled]="bookingSubmitting()"
-                              (click)="confirmBooking(segment, visitType)"
-                            >
-                              @if (bookingSubmitting()) {
-                                <span class="btn-spinner" aria-hidden="true"></span>
-                                <span>{{ 'booking.bookingInProgress' | t }}</span>
-                              } @else {
-                                <span>{{ 'booking.confirmBookingBtn' | t }}</span>
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  width="14"
-                                  height="14"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  stroke-width="2.2"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    [attr.d]="
-                                      language.isRtl()
-                                        ? 'M19 12H5M12 19l-7-7 7-7'
-                                        : 'M5 12h14M12 5l7 7-7 7'
-                                    "
-                                  />
-                                </svg>
-                              }
-                            </button>
-                          } @else {
-                            <a
-                              class="btn-confirm-booking is-login-prompt"
-                              [routerLink]="['/login']"
-                              [queryParams]="{ returnUrl: currentUrl() }"
-                            >
-                              <span>{{ 'booking.loginToBook' | t }}</span>
-                            </a>
-                          }
-                        </div>
+                        <button
+                          type="button"
+                          class="btn-segment-chip"
+                          [class.active]="selectedSegment()?.segmentId === segment.segmentId"
+                          (click)="selectSegment(segment, visitType)"
+                        >
+                          <span class="chip-segment-name">
+                            {{ language.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr }}
+                          </span>
+                          <strong class="chip-segment-price">
+                            {{ segment.price }} {{ 'discovery.currency' | t }}
+                          </strong>
+                        </button>
                       }
+                    }
+                  }
+                </div>
+
+                <!-- Patient Profile Selector (if authenticated as Patient) -->
+                @if (isPatient()) {
+                  <div class="patient-selector-block">
+                    <span class="step-label">{{ 'booking.selectPatientLabel' | t }}</span>
+                    @if (bookablePatients().length > 1) {
+                      <div class="patient-select-wrapper">
+                        <select
+                          class="patient-custom-select"
+                          [value]="selectedPatientId()"
+                          (change)="selectPatient($any($event.target).value)"
+                          id="bookablePatientSelect"
+                        >
+                          @for (p of bookablePatients(); track p.patientId) {
+                            <option [value]="p.patientId">
+                              {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
+                              {{ p.isSelf ? ' (' + ('booking.myself' | t) + ')' : '' }}
+                            </option>
+                          }
+                        </select>
+                      </div>
+                    } @else {
+                      <div class="patient-single-info">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="15"
+                          height="15"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span>
+                          {{
+                            bookablePatients().length === 1
+                              ? language.isRtl()
+                                ? bookablePatients()[0].nameAr
+                                : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr
+                              : authSession.user()?.userName || ''
+                          }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Optional Notes for Doctor -->
+                <div class="booking-note-field">
+                  <label class="step-label" for="drawerBookingNotes">{{
+                    'booking.bookingNotes' | t
+                  }}</label>
+                  <input
+                    id="drawerBookingNotes"
+                    type="text"
+                    class="booking-notes-input"
+                    [value]="bookingNote()"
+                    (input)="updateBookingNote($event)"
+                    [placeholder]="'booking.bookingNotesPlaceholder' | t"
+                  />
+                </div>
+
+                <!-- Compact Confirmation Summary Card -->
+                <div class="booking-summary-banner">
+                  <div class="summary-line">
+                    <span class="summary-label">{{ 'booking.appointmentTime' | t }}:</span>
+                    <strong class="summary-value" dir="ltr">{{
+                      formatSlot(drawerSelectedDate(), drawerSelectedTime())
+                    }}</strong>
+                  </div>
+                  @if (selectedSegment(); as seg) {
+                    <div class="summary-line">
+                      <span class="summary-label">{{ 'booking.consultationFee' | t }}:</span>
+                      <strong class="summary-price">{{ seg.price }} {{ 'discovery.currency' | t }}</strong>
                     </div>
                   }
-                } @empty {
-                  <p class="drawer-empty-hint">{{ 'booking.optionsUnavailable' | t }}</p>
-                }
+                  <p class="summary-clinic-note">{{ 'booking.payAtClinic' | t }}</p>
+                </div>
+
+                <!-- Primary Action Button (Click 3: Confirm Now) -->
+                <div class="booking-primary-action-wrap">
+                  @if (authSession.isAuthenticated()) {
+                    <button
+                      type="button"
+                      class="btn-primary-confirm-booking"
+                      [disabled]="bookingSubmitting() || !selectedSegment()"
+                      (click)="confirmQuickBooking()"
+                    >
+                      @if (bookingSubmitting()) {
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                        <span>{{ 'booking.bookingInProgress' | t }}</span>
+                      } @else {
+                        <span>{{ 'booking.confirmBookingBtn' | t }}</span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="16"
+                          height="16"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            [attr.d]="
+                              language.isRtl()
+                                ? 'M19 12H5M12 19l-7-7 7-7'
+                                : 'M5 12h14M12 5l7 7-7 7'
+                            "
+                          />
+                        </svg>
+                      }
+                    </button>
+                  } @else {
+                    <a
+                      class="btn-primary-confirm-booking is-login-prompt"
+                      [routerLink]="['/login']"
+                      [queryParams]="{ returnUrl: currentUrl() }"
+                    >
+                      <span>{{ 'booking.loginToBook' | t }}</span>
+                    </a>
+                  }
+                </div>
+              </div>
+            }       </div>
+            }
+          } @else {
+            <!-- Direct Walk-in / In-Clinic Consultation Guidance -->
+            <div class="drawer-walkin-card">
+              <div class="drawer-walkin-header">
+                <div class="drawer-walkin-icon-circle" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="22"
+                    height="22"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                </div>
+                <div class="drawer-walkin-title-group">
+                  <h5 class="drawer-walkin-heading">{{ 'discovery.bookInClinic' | t }}</h5>
+                  <p class="drawer-walkin-subtext">{{ 'discovery.walkInNotice' | t }}</p>
+                </div>
               </div>
 
-              <!-- Optional Notes for Doctor -->
-              <div class="booking-note-field">
-                <label class="step-label" for="drawerBookingNotes">{{
-                  'booking.bookingNotes' | t
-                }}</label>
-                <input
-                  id="drawerBookingNotes"
-                  type="text"
-                  class="booking-notes-input"
-                  [value]="bookingNote()"
-                  (input)="updateBookingNote($event)"
-                  [placeholder]="'booking.bookingNotesPlaceholder' | t"
-                />
-              </div>
+              <div class="drawer-walkin-info-list">
+                <div class="drawer-walkin-item">
+                  <div class="item-icon-wrap" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <div class="item-content">
+                    <span class="item-label">{{ 'discovery.clinicAddress' | t }}</span>
+                    <strong class="item-value">
+                      {{
+                        language.isRtl()
+                          ? activePractice.governorate?.nameAr
+                          : activePractice.governorate?.nameEn || activePractice.governorate?.nameAr
+                      }}
+                      ·
+                      {{
+                        language.isRtl()
+                          ? activePractice.city?.nameAr
+                          : activePractice.city?.nameEn || activePractice.city?.nameAr
+                      }}
+                      @if (activePractice.detailedAddress) {
+                        — {{ activePractice.detailedAddress }}
+                      }
+                    </strong>
+                  </div>
+                </div>
 
-              <p class="review-note">{{ 'booking.payAtClinic' | t }}</p>
+                <div class="drawer-walkin-item">
+                  <div class="item-icon-wrap" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <line x1="2" y1="10" x2="22" y2="10" />
+                    </svg>
+                  </div>
+                  <div class="item-content">
+                    <span class="item-label">{{ 'booking.consultationFee' | t }}</span>
+                    <div class="item-value">
+                      @if (activePractice.publicSearchPrice !== null) {
+                        <strong class="fee-num">{{ activePractice.publicSearchPrice }}</strong>
+                        <span class="fee-curr">{{ 'discovery.currency' | t }}</span>
+                      } @else {
+                        <span class="fee-muted">{{
+                          'discovery.feeDeterminedAtClinic' | t
+                        }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="drawer-walkin-item">
+                  <div class="item-icon-wrap" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  </div>
+                  <div class="item-content">
+                    <span class="item-label">{{ 'discovery.clinicInstructions' | t }}</span>
+                    <p class="item-instruction-text">{{ 'discovery.bookInClinicNote' | t }}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           }
         </section>
@@ -1463,25 +1603,6 @@
         <button type="button" class="btn-drawer-dismiss" (click)="closeDrawer()">
           <span>{{ 'discovery.closeDrawer' | t }}</span>
         </button>
-        <a
-          [routerLink]="['/doctors', doc.doctorId]"
-          class="btn-drawer-full-page"
-          (click)="closeDrawer()"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span>{{ 'discovery.openFullProfile' | t }}</span>
-        </a>
       </footer>
     }
   </app-side-drawer>

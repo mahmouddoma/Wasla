@@ -2,9 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AvailableDate, AvailableSlot, BookingOptions, PublicDiscoveryApi, PublicDoctorDetails, PublicPracticeSummary } from '../../../../domains/public-discovery';
 import { PublicDoctorDetailsPage } from './public-doctor-details';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { AuthSession } from '../../../../core/auth/auth-session';
+import { ReservationsApi } from '../../../../domains/reservations/reservations-api';
+import { ToastService } from '../../../../core/notifications/toast.service';
 
 describe('PublicDoctorDetailsPage', () => {
   const practice: PublicPracticeSummary = {
@@ -26,10 +30,38 @@ describe('PublicDoctorDetailsPage', () => {
     api.doctor.mockReturnValue(of(doctor));
     api.availableDates.mockReturnValue(of([]));
     api.availableSlots.mockReturnValue(of([]));
-    TestBed.configureTestingModule({ imports: [PublicDoctorDetailsPage], providers: [provideRouter([]),
-      { provide: PublicDiscoveryApi, useValue: api },
-      { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ doctorId: 'doctor-1' }) } } },
-    ] });
+    TestBed.configureTestingModule({
+      imports: [PublicDoctorDetailsPage],
+      providers: [
+        provideRouter([]),
+        { provide: PublicDiscoveryApi, useValue: api },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ doctorId: 'doctor-1' }) } },
+        },
+        {
+          provide: AuthSession,
+          useValue: {
+            isAuthenticated: () => false,
+            hasRole: () => false,
+            user: () => null,
+            session: () => null,
+            destinationFor: () => '/workspace',
+          },
+        },
+        {
+          provide: ReservationsApi,
+          useValue: {
+            bookablePatients: () => of([]),
+            createPatient: () => of({}),
+          },
+        },
+        {
+          provide: ToastService,
+          useValue: { success: vi.fn(), error: vi.fn() },
+        },
+      ],
+    });
     TestBed.inject(LanguageService).setLanguage('ar');
   });
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -41,7 +73,7 @@ describe('PublicDoctorDetailsPage', () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('main')?.dir).toBe('ltr');
     expect(element.textContent).toContain('Back to search');
-    expect(element.textContent).toContain('Choose clinic');
+    expect(element.textContent).toContain('Clinic Selected');
     expect(element.querySelector('.practice-list h3')?.textContent).toContain('Clinic');
   });
   it('does not announce empty availability while the clinic dates are loading', async () => {
@@ -73,17 +105,20 @@ describe('PublicDoctorDetailsPage', () => {
     const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('أحمد');
+    api.availableDates.mockClear();
     await fixture.componentInstance['choosePractice']({ ...practice, isBookable: false });
     expect(api.availableDates).not.toHaveBeenCalled();
   });
   it('keeps the latest branch dates when responses arrive out of order', async () => {
     const page = TestBed.createComponent(PublicDoctorDetailsPage).componentInstance;
+    await Promise.resolve();
+    api.availableDates.mockReset();
     const first = new Subject<AvailableDate[]>();
     const second = new Subject<AvailableDate[]>();
     api.availableDates.mockReturnValueOnce(first).mockReturnValueOnce(second);
     page['selectedTime'].set('17:00');
-    const pendingFirst = page['choosePractice'](practice);
-    const pendingSecond = page['choosePractice']({ ...practice, id: 'branch-2' });
+    const pendingFirst = page['choosePractice'](practice, false);
+    const pendingSecond = page['choosePractice']({ ...practice, id: 'branch-2' }, false);
     expect(page['selectedTime']()).toBe('');
     second.next([{ date: '2026-09-20', isAvailable: true }]);
     await pendingSecond;
@@ -126,5 +161,35 @@ describe('PublicDoctorDetailsPage', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance['notFound']()).toBe(true);
     expect(fixture.componentInstance['isLoading']()).toBe(false);
+  });
+  it('auto-selects first available date, slot, and default segment for 3-click booking', async () => {
+    api.availableDates.mockReturnValue(of([{ date: '2026-10-15', isAvailable: true }]));
+    api.availableSlots.mockReturnValue(of([{ date: '2026-10-15', time: '10:00' }]));
+    api.bookingOptions.mockReturnValue(
+      of({
+        practiceId: 'branch-1',
+        date: '2026-10-15',
+        time: '10:00',
+        visitTypes: [
+          {
+            visitTypeId: 'vt-1',
+            type: 'NewConsultation',
+            nameAr: 'كشف',
+            nameEn: 'Consultation',
+            segments: [
+              { segmentId: 'seg-1', nameAr: 'عادي', nameEn: 'Regular', price: 300, isDefault: true },
+            ],
+          },
+        ],
+      }),
+    );
+    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
+    await fixture.whenStable();
+    const page = fixture.componentInstance;
+    expect(page['selectedPractice']()?.id).toBe('branch-1');
+    expect(page['selectedDate']()).toBe('2026-10-15');
+    expect(page['selectedTime']()).toBe('10:00');
+    expect(page['selectedSegment']()?.segmentId).toBe('seg-1');
+    expect(page['selectedVisitType']()?.visitTypeId).toBe('vt-1');
   });
 });

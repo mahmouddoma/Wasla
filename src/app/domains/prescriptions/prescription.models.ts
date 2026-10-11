@@ -70,7 +70,11 @@ export interface PrescriptionState {
 export interface PatientPrescription {
   readonly prescriptionId: string;
   readonly doctor: PrescriptionIdentity;
+  readonly doctorNameAr?: string | null;
+  readonly doctorNameEn?: string | null;
   readonly practice: PrescriptionIdentity;
+  readonly practiceNameAr?: string | null;
+  readonly practiceNameEn?: string | null;
   readonly visitDateUtc: string;
   readonly versionNumber: number;
   readonly status: 'Finalized' | 'Voided';
@@ -80,6 +84,7 @@ export interface PatientPrescription {
     readonly medicationName?: string;
     readonly commercialNameEn?: string;
     readonly commercialNameAr?: string | null;
+    readonly clinical?: any;
   })[];
 }
 export interface PatientPrescriptionPage {
