@@ -4,6 +4,32 @@ import { parseApiErrors } from '../../core/auth/api-errors';
 import { ReceptionPractice } from './reception-practice.models';
 import { ReceptionPracticesApi } from './reception-practices-api';
 
+const PRACTICE_STORAGE_KEY = 'wasla_reception_practice_id';
+
+function getStoredPracticeId(): string {
+  try {
+    return typeof localStorage !== 'undefined'
+      ? localStorage.getItem(PRACTICE_STORAGE_KEY) || ''
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function setStoredPracticeId(id: string): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (id) {
+        localStorage.setItem(PRACTICE_STORAGE_KEY, id);
+      } else {
+        localStorage.removeItem(PRACTICE_STORAGE_KEY);
+      }
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+}
+
 /** Reception-only UI context; selecting a practice never changes authentication. */
 @Injectable({ providedIn: 'root' })
 export class ReceptionPracticeContext {
@@ -48,7 +74,10 @@ export class ReceptionPracticeContext {
   }
 
   select(id: string): void {
-    this.selectedId.set(this.items().some((p) => p.id === id) ? id : '');
+    const valid = this.items().some((p) => p.id === id);
+    const chosen = valid ? id : '';
+    this.selectedId.set(chosen);
+    setStoredPracticeId(chosen);
   }
 
   clear(): void {
@@ -72,14 +101,26 @@ export class ReceptionPracticeContext {
         const active = items.filter((p) => p.isActive);
         this.items.set(active);
         this.loaded = true;
-        if (!active.some((p) => p.id === this.selectedId())) {
-          this.selectedId.set(active.length === 1 ? active[0].id : '');
+        const current = this.selectedId();
+        const stored = getStoredPracticeId();
+        if (current && active.some((p) => p.id === current)) {
+          // Keep current active selection
+          setStoredPracticeId(current);
+        } else if (stored && active.some((p) => p.id === stored)) {
+          this.selectedId.set(stored);
+        } else if (active.length === 1) {
+          this.selectedId.set(active[0].id);
+          setStoredPracticeId(active[0].id);
+        } else {
+          this.selectedId.set('');
+          setStoredPracticeId('');
         }
       })
       .catch((error: unknown) => {
         if (generation !== this.generation) return;
         this.items.set([]);
         this.selectedId.set('');
+        setStoredPracticeId('');
         const parsed = parseApiErrors(error);
         this.messages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
       })

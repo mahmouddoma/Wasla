@@ -9,6 +9,7 @@ export interface CreatePatientRequest {
   gender: Gender;
   phoneNumber: string;
   email: string;
+  doctorPracticeId?: string;
   profileImage?: File;
   primaryContactNameAr: string;
   primaryContactPhoneNumber: string;

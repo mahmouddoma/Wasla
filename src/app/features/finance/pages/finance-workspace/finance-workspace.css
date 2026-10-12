@@ -3,23 +3,90 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  background: var(--wasla-app, #f8fafc);
+  color: var(--wasla-navy-900, #0b2239);
   min-width: 0;
   container-type: inline-size;
+  container-name: wasla-finance-workspace;
+  flex: 1 1 auto;
+}
+
+/* ── Ambient Backdrop Lighting Mesh ───────────────────────────────── */
+.ambient-glow-mesh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+}
+
+.circle-teal {
+  top: -120px;
+  inset-inline-start: 5%;
+  width: 560px;
+  height: 560px;
+  background: rgba(11, 165, 160, 0.12);
+  animation: float-teal 14s ease-in-out infinite alternate;
+}
+
+.circle-navy {
+  top: 60px;
+  inset-inline-end: 2%;
+  width: 520px;
+  height: 520px;
+  background: rgba(18, 52, 81, 0.07);
+  animation: float-navy 18s ease-in-out infinite alternate;
+}
+
+@keyframes float-teal {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(40px, 30px) scale(1.08);
+  }
+}
+
+@keyframes float-navy {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(-30px, -20px) scale(0.95);
+  }
 }
 
 .finance-workspace {
+  position: relative;
+  flex: 1 0 auto;
   max-width: 1540px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px clamp(16px, 3.5vw, 48px) 40px;
+  padding: 24px clamp(16px, 3.5vw, 48px) 40px;
+  background: radial-gradient(ellipse at 60% 0%, #e8f7f7 0%, var(--wasla-app) 65%);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem; /* Clean breathing room between page header and transactions card */
   color: var(--color-text-primary, #0c2742);
   font-family: var(--font-ar, 'Cairo', sans-serif);
+  min-width: 0;
+}
+
+app-page-header {
+  display: block;
+  width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 [dir='ltr'] .finance-workspace {
@@ -984,9 +1051,20 @@
 /* Transaction Code */
 .tx-code-number {
   font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
-  font-weight: 800;
-  color: var(--color-navy-950, #071c30);
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  font-size: 0.74rem;
+  color: var(--wasla-slate, #64748b);
+  letter-spacing: 0.01em;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #f1f5f9;
+  padding: 1px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .tx-orig-badge {
@@ -1004,13 +1082,33 @@
 .tx-context-block {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
+}
+
+.tx-context-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tx-avatar-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(11, 165, 160, 0.12) 0%, rgba(11, 165, 160, 0.04) 100%);
+  color: var(--wasla-teal-700, #047c79);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(11, 165, 160, 0.18);
 }
 
 .tx-context-person {
-  font-size: 0.875rem;
-  font-weight: 750;
-  color: var(--color-navy-900, #0b2239);
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--color-navy-950, #071c30);
+  line-height: 1.3;
 }
 
 .tx-context-subline {
@@ -1019,12 +1117,17 @@
   gap: 6px;
   font-size: 0.775rem;
   color: var(--color-text-secondary, #66788a);
+  flex-wrap: wrap;
 }
 
 .tx-ticket-badge {
   font-family: var(--font-en, 'Plus Jakarta Sans', sans-serif);
-  font-weight: 700;
-  color: var(--color-teal-700, #047c79);
+  font-weight: 750;
+  color: var(--wasla-teal-700, #047c79);
+  background: var(--wasla-teal-50, #f0fbfa);
+  padding: 1px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(11, 165, 160, 0.15);
 }
 
 .tx-separator {
@@ -1089,38 +1192,43 @@
   color: var(--color-text-secondary, #66788a);
 }
 
+.btn-inspect-action,
 .btn-row-action {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border, #e3eaf0);
-  background: var(--color-surface, #ffffff);
-  color: var(--color-teal-600, #078c88);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--radius-control, 10px);
+  font-size: 0.84rem;
+  font-weight: 750;
   cursor: pointer;
-  transition: all 0.15s ease;
+  background: #ffffff;
+  border: 1px solid var(--wasla-border, #cbd5e1);
+  color: var(--wasla-navy-900, #0f172a);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(12, 39, 66, 0.04);
+  white-space: nowrap;
 }
 
+.btn-inspect-action svg,
 .btn-row-action svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  flex-shrink: 0;
 }
 
-[dir='rtl'] .btn-row-action svg {
-  transform: scaleX(-1);
-}
-
+.btn-inspect-action:hover,
 .btn-row-action:hover {
-  background: var(--color-teal-600, #078c88);
-  border-color: var(--wasla-border);
-  color: #ffffff;
+  background: var(--wasla-teal-50, #f0fbfa);
+  border-color: var(--wasla-teal-600, #0ba5a0);
+  color: var(--wasla-teal-700, #047c79);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(11, 165, 160, 0.12);
 }
 
 .text-center {
@@ -1449,93 +1557,417 @@
   gap: 20px;
 }
 
-/* Receipt Voucher Sheet (Thermal Slip Styled) */
-.receipt-voucher-sheet {
-  background: #fafbfc;
-  border: 1px dashed var(--color-border, #e3eaf0);
-  border-radius: var(--radius-card, 16px);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+/* Receipt Voucher Sheet (Authentic Thermal Medical Receipt) */
+.receipt-voucher-sheet.receipt-authentic-slip {
+  position: relative;
+  width: 100%;
+  max-width: 390px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 12px;
+  padding: 30px 22px 24px;
+  box-shadow:
+    0 10px 25px -5px rgba(11, 34, 57, 0.08),
+    0 8px 10px -6px rgba(11, 34, 57, 0.04);
+  color: #0f172a;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.voucher-header {
-  text-align: center;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-border-soft, #edf1f5);
+/* Serrated Sawtooth Cutout Edges */
+.slip-sawtooth-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-repeat: repeat-x;
+  background-size: 12px 6px;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.voucher-stamp-badge {
-  display: inline-block;
-  padding: 3px 12px;
-  border-radius: 99px;
-  background: var(--color-teal-50, #f0fbfa);
-  color: var(--color-teal-700, #047c79);
-  font-size: 0.75rem;
-  font-weight: 800;
-  margin-bottom: 8px;
+.slip-sawtooth-edge.edge-top {
+  top: 0;
+  background-image:
+    linear-gradient(45deg, transparent 75%, #f1f5f9 75%),
+    linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
 }
 
-.voucher-id-number {
-  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--color-navy-950, #071c30);
-  margin: 0;
+.slip-sawtooth-edge.edge-bottom {
+  bottom: 0;
+  background-image:
+    linear-gradient(135deg, transparent 75%, #f1f5f9 75%),
+    linear-gradient(-135deg, transparent 75%, #f1f5f9 75%);
 }
 
-.voucher-orig-sub {
-  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
-  font-size: 0.78rem;
-  color: var(--color-text-muted, #91a0ae);
-  margin: 4px 0 0;
-}
-
-.voucher-metadata-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-}
-
-.voucher-row {
+/* Official Circular Stamp Watermark */
+.slip-official-stamp {
+  position: absolute;
+  top: 20px;
+  inset-inline-end: 18px;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  border: 2px dashed rgba(11, 165, 160, 0.55);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  gap: 12px;
+  justify-content: center;
+  transform: rotate(-14deg);
+  pointer-events: none;
+  opacity: 0.9;
+  z-index: 3;
+  background: rgba(240, 251, 250, 0.5);
+  user-select: none;
 }
 
-.voucher-row dt {
-  color: var(--color-text-secondary, #66788a);
-  font-weight: 600;
+.slip-official-stamp.is-refund {
+  border-color: rgba(225, 29, 72, 0.55);
+  background: rgba(255, 241, 242, 0.5);
 }
 
-.voucher-row dd {
-  margin: 0;
-  color: var(--color-text-primary, #0c2742);
+.stamp-inner-ring {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 1px solid rgba(11, 165, 160, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1px;
+  color: var(--wasla-teal-700, #047c79);
+}
+
+.slip-official-stamp.is-refund .stamp-inner-ring {
+  border-color: rgba(225, 29, 72, 0.35);
+  color: #e11d48;
+}
+
+.stamp-title {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.stamp-date {
+  font-size: 0.56rem;
   font-weight: 700;
+  opacity: 0.85;
+  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
+}
+
+.stamp-icon {
+  margin-top: 1px;
+  color: currentColor;
+}
+
+/* 1. Clinic & Practice Header */
+.slip-clinic-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 2px;
+}
+
+.slip-logo-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--wasla-teal-50, #f0fbfa);
+  border: 1px solid rgba(11, 165, 160, 0.2);
+  color: var(--wasla-teal-600, #0ba5a0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.slip-practice-name {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 850;
+  color: var(--wasla-navy-950, #071c30);
+  line-height: 1.35;
+}
+
+.slip-doctor-name {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.slip-title-banner {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 3px 14px;
+  border-radius: 99px;
+}
+
+[data-type='refund'] .slip-title-banner {
+  background: #991b1b;
+}
+
+/* Dashed Perforation Divider */
+.slip-divider-dashed {
+  border-bottom: 1.5px dashed #cbd5e1;
+  margin: 14px 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* 2. Transaction Meta Grid */
+.slip-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.slip-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slip-label {
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: #64748b;
+}
+
+.slip-val {
+  font-size: 0.86rem;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.slip-val.badge-ticket {
+  color: var(--wasla-teal-700, #047c79);
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.slip-val.slip-mono {
+  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
+  font-size: 0.76rem;
+  word-break: break-all;
+}
+
+/* 3. Customer Box */
+.slip-customer-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.slip-customer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.84rem;
+}
+
+.slip-customer-name {
+  font-size: 0.92rem;
+  font-weight: 850;
+  color: #0f172a;
+}
+
+.slip-service-desc {
+  font-weight: 700;
+  color: #334155;
+}
+
+/* 4. Line Items Table */
+.slip-table-wrap {
+  margin: 12px 0 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.slip-line-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.slip-line-table th {
+  padding: 6px 2px 6px;
+  border-bottom: 1.5px solid #0f172a;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #475569;
+  text-align: start;
+}
+
+.slip-line-table th.th-amount {
   text-align: end;
 }
 
-.voucher-row.total-highlight {
-  padding: 12px 14px;
-  background: var(--color-teal-50, #f0fbfa);
-  border-radius: 10px;
-  margin-top: 6px;
+.slip-line-table td {
+  padding: 8px 2px;
+  border-bottom: 1px dashed #e2e8f0;
+  vertical-align: middle;
 }
 
-.voucher-row.total-highlight dt {
-  color: var(--color-teal-700, #047c79);
-  font-size: 0.95rem;
+.slip-line-table td.td-val {
+  text-align: end;
   font-weight: 800;
+  color: #0f172a;
+  font-size: 0.92rem;
 }
 
-.voucher-amount-val {
-  font-family: var(--font-en, 'Plus Jakarta Sans', sans-serif);
-  font-size: 1.15rem;
-  color: var(--color-teal-700, #047c79);
+.line-item-main {
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.sub-ticket {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* 5. Prominent Total Card */
+.slip-total-card {
+  margin: 10px 0 14px;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+[data-type='refund'] .slip-total-card {
+  background: #991b1b;
+}
+
+.slip-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.slip-total-label {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.slip-total-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
+}
+
+.amount-digits {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.amount-curr {
+  font-size: 0.84rem;
+  font-weight: 750;
+  opacity: 0.9;
+}
+
+/* 6. Footer & Simulated Barcode */
+.slip-footer-stamp {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+}
+
+.slip-tx-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 3px 10px;
+  border-radius: 6px;
+  max-width: 100%;
+  word-break: break-all;
+}
+
+.slip-tx-sub {
+  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.slip-barcode-wrap {
+  margin: 6px 0 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 200px;
+  max-width: 100%;
+}
+
+.slip-barcode {
+  width: 100%;
+  height: 34px;
+}
+
+.slip-barcode-text {
+  font-family: var(--font-en, 'Plus Jakarta Sans', monospace);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  color: #475569;
+  font-weight: 700;
+}
+
+.slip-thankyou-msg {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: #334155;
+}
+
+.slip-brand-watermark {
+  margin: 0;
+  font-size: 0.66rem;
+  color: #94a3b8;
+  font-weight: 600;
 }
 
 /* Detail Inspection Sheet */
@@ -1881,38 +2313,8 @@
   margin: 2px 0 0;
 }
 
-/* ── 9. Print Stylesheet (for Receipt Printing) ───────────────────────── */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .drawer-modal,
-  .drawer-panel,
-  .receipt-voucher-sheet,
-  .receipt-voucher-sheet * {
-    visibility: visible;
-  }
-
-  .receipt-voucher-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    border: none;
-    background: transparent;
-    padding: 0;
-  }
-
-  .drawer-topbar,
-  .drawer-modal::backdrop {
-    display: none;
-  }
-}
-
 /* ── 10. Responsive Breakpoints ───────────────────────────────────────── */
 @container (max-width: 900px) {
-
   .deck-row-primary,
   .deck-row-secondary {
     grid-template-columns: 1fr 1fr;
@@ -1928,7 +2330,6 @@
 }
 
 @container (max-width: 640px) {
-
   .deck-row-primary,
   .deck-row-secondary {
     grid-template-columns: 1fr;
@@ -1975,7 +2376,6 @@
 }
 
 @container (max-width: 640px) {
-
   input:not([type='checkbox']):not([type='radio']),
   select {
     min-width: 0;
@@ -1994,7 +2394,6 @@
 }
 
 @container (max-width: 900px) {
-
   .table-scroll-container .modern-finance-table,
   .table-scroll-container tbody {
     display: block;
@@ -2830,34 +3229,47 @@
 
 .voucher-actions-bar {
   display: flex;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
+.voucher-actions-bar .btn-deck-submit {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  background: var(--wasla-teal-600, #0ba5a0);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-control, 10px);
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(11, 165, 160, 0.25);
+}
 
-  .receipt-voucher-sheet,
-  .receipt-voucher-sheet * {
-    visibility: visible;
-  }
+.voucher-actions-bar .btn-deck-submit:hover {
+  background: var(--wasla-teal-700, #098b87);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 165, 160, 0.35);
+}
 
-  .receipt-voucher-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 24px;
-    border: none;
-    box-shadow: none;
-    background: white;
-    color: black;
-  }
+.voucher-actions-bar .btn-cancel-action {
+  height: 44px;
+  padding: 0 24px;
+  background: #ffffff;
+  color: var(--wasla-navy-900, #0b2239);
+  border: 1px solid var(--wasla-border, #cbd5e1);
+  border-radius: var(--radius-control, 10px);
+  font-size: 0.92rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
 
-  .voucher-actions-bar {
-    display: none;
-  }
+.voucher-actions-bar .btn-cancel-action:hover {
+  background: #f8fafc;
 }

@@ -217,48 +217,49 @@ export class PrescriptionWorkspaceComponent {
       ''
     );
   }
-  fieldVal(item: any, field: string): string | null {
-    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
-      return String(item[field]);
+  fieldVal(item: PatientPrescription['items'][number], field: string): string | null {
+    const raw = item as unknown as Record<string, unknown>;
+    if (raw[field] !== undefined && raw[field] !== null && raw[field] !== '') {
+      return String(raw[field]);
     }
-    const c = item?.clinical;
+    const c = item.clinical;
     if (!c) return null;
     if (field === 'frequency') {
-      return c.frequencyText || c.frequencyCode || null;
+      return (c['frequencyText'] as string) || (c['frequencyCode'] as string) || null;
     }
     if (field === 'duration') {
-      if (c.durationValue && c.durationUnit) {
-        return `${c.durationValue} ${c.durationUnit}`;
+      if (c['durationValue'] && c['durationUnit']) {
+        return `${c['durationValue']} ${c['durationUnit']}`;
       }
-      return c.durationValue ? String(c.durationValue) : null;
+      return c['durationValue'] ? String(c['durationValue']) : null;
     }
     if (field === 'instructions') {
-      return c.instructions || null;
+      return (c['instructions'] as string) || null;
     }
     if (c[field] !== undefined && c[field] !== null && c[field] !== '') {
       return String(c[field]);
     }
     return null;
   }
-  isPrn(item: any): boolean {
-    return !!(item.isPrn || item.clinical?.asNeeded);
+  isPrn(item: PatientPrescription['items'][number]): boolean {
+    return !!(item.isPrn || item.clinical?.['asNeeded']);
   }
-  quantityLabel(item: any): string | null {
+  quantityLabel(item: PatientPrescription['items'][number]): string | null {
     if (item.quantity !== null && item.quantity !== undefined) {
       return String(item.quantity);
     }
-    if (item.clinical?.quantityValue) {
-      return `${item.clinical.quantityValue} ${item.clinical.quantityUnit || ''}`.trim();
+    if (item.clinical?.['quantityValue']) {
+      return `${item.clinical['quantityValue']} ${item.clinical['quantityUnit'] || ''}`.trim();
     }
     return null;
   }
-  doctorNamePatient(patient: any): string {
+  doctorNamePatient(patient: PatientPrescription | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = patient?.doctor?.nameAr || patient?.doctorNameAr;
     const en = patient?.doctor?.nameEn || patient?.doctorNameEn;
     return isAr ? (ar || en || '') : (en || ar || '');
   }
-  practiceNamePatient(patient: any): string {
+  practiceNamePatient(patient: PatientPrescription | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = patient?.practice?.nameAr || patient?.practiceNameAr;
     const en = patient?.practice?.nameEn || patient?.practiceNameEn;

@@ -31,6 +31,12 @@ export class PortalLayout {
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
+  constructor() {
+    if (this.isReception()) {
+      void this.practiceContext.ensureLoaded?.();
+    }
+  }
+
   protected selectPractice(event: Event): void {
     const el = (event.target || event.currentTarget) as HTMLSelectElement | null;
     if (el) {

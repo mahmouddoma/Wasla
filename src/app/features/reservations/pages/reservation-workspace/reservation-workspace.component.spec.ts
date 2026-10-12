@@ -530,6 +530,11 @@ describe('ReservationWorkspaceComponent', () => {
       'reception.appointments.emptyTodayHelp',
       'reception.appointments.empty',
       'reception.appointments.emptyHelp',
+      'reception.appointments.prevDay',
+      'reception.appointments.nextDay',
+      'reception.appointments.todayBadge',
+      'reception.appointments.backToToday',
+      'reception.appointments.dateNav',
     ];
     for (const key of keys) {
       language.setLanguage('ar');
@@ -542,5 +547,32 @@ describe('ReservationWorkspaceComponent', () => {
       expect(enVal).not.toBe(key);
       expect(enVal.length).toBeGreaterThan(0);
     }
+  });
+
+  it('correctly navigates days with stepDay, formattedCurrentDate, and goToToday', () => {
+    const f = TestBed.createComponent(ReservationWorkspaceComponent);
+    const comp = f.componentInstance;
+    comp.store.actor.set('Reception');
+    comp.store.practiceId.set('clinic-1');
+    comp.store.receptionView.set('Today');
+
+    expect(comp.isTodaySelected()).toBe(true);
+    expect(comp.formattedCurrentDate().length).toBeGreaterThan(0);
+
+    vi.spyOn(comp.store, 'loadList').mockReturnValue(Promise.resolve());
+
+    comp.stepDay(1);
+    expect(comp.store.receptionView()).toBe('Custom');
+    expect(comp.isTodaySelected()).toBe(false);
+
+    comp.stepDay(-1);
+    expect(comp.store.receptionView()).toBe('Today');
+    expect(comp.isTodaySelected()).toBe(true);
+
+    comp.stepDay(2);
+    expect(comp.isTodaySelected()).toBe(false);
+    comp.goToToday();
+    expect(comp.store.receptionView()).toBe('Today');
+    expect(comp.isTodaySelected()).toBe(true);
   });
 });

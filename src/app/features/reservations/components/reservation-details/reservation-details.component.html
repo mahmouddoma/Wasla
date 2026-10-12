@@ -179,17 +179,48 @@
 
   @if (reception()) {
     <details class="reception-additional">
-      <summary>{{ 'reception.common.additional' | t }}</summary>
-      <p>
-        {{ 'reservations.reference' | t }}: <bdi>{{ r.reference }}</bdi>
-      </p>
+      <summary class="additional-summary">
+        <div class="summary-label-wrap">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span>{{ 'reception.common.additional' | t }}</span>
+        </div>
+        <svg
+          class="summary-chevron"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </summary>
+      <div class="additional-ref-strip">
+        <span class="ref-strip-label">{{ 'reservations.reference' | t }}</span>
+        <span class="ref-strip-code" dir="ltr">{{ r.reference }}</span>
+      </div>
       <ng-container [ngTemplateOutlet]="additional" />
     </details>
   } @else {
     <ng-container [ngTemplateOutlet]="additional" />
   }
   <ng-template #additional>
-    <!-- 4. Key Metrics Grid -->
+    <!-- 4. Key Metrics Grid / Properties Table -->
     <div class="drawer-section">
       <h4 class="section-title">
         <svg
@@ -201,54 +232,53 @@
           stroke-width="2"
           aria-hidden="true"
         >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
         </svg>
         {{ 'ui.full.643' | t }}
       </h4>
-      <div class="info-metric-grid">
-        <div [class]="reception() ? 'info-line' : 'info-metric-card'">
-          <span class="metric-label">{{ 'reservations.patient' | t }}</span>
-          <span class="metric-val">{{ label(r.patient) }}</span>
+      <div class="details-properties-table">
+        <div class="property-row">
+          <span class="prop-label">{{ 'reservations.patient' | t }}</span>
+          <span class="prop-val">{{ label(r.patient) }}</span>
         </div>
-        <div class="info-metric-card">
-          <span class="metric-label">{{ 'reservations.doctor' | t }}</span>
-          <span class="metric-val">{{ label(r.doctor) }}</span>
+        <div class="property-row">
+          <span class="prop-label">{{ 'reservations.doctor' | t }}</span>
+          <span class="prop-val">{{ label(r.doctor) }}</span>
         </div>
-        <div class="info-metric-card">
-          <span class="metric-label">{{ 'reservations.practice' | t }}</span>
-          <span class="metric-val">{{ label(r.practice) }}</span>
+        <div class="property-row">
+          <span class="prop-label">{{ 'reservations.practice' | t }}</span>
+          <span class="prop-val">{{ label(r.practice) }}</span>
         </div>
         @if (r.segment) {
-          <div class="info-metric-card">
-            <span class="metric-label">{{ 'reservations.segment' | t }}</span>
-            <span class="metric-val">{{ label(r.segment) }}</span>
+          <div class="property-row">
+            <span class="prop-label">{{ 'reservations.segment' | t }}</span>
+            <span class="prop-val">{{ label(r.segment) }}</span>
           </div>
         }
         @if (r.visitType) {
-          <div class="info-metric-card">
-            <span class="metric-label">{{ 'reservations.visitType' | t }}</span>
-            <span class="metric-val">{{ label(r.visitType) }}</span>
+          <div class="property-row">
+            <span class="prop-label">{{ 'reservations.visitType' | t }}</span>
+            <span class="prop-val">{{ label(r.visitType) }}</span>
           </div>
         }
         @if (r.bookingSource) {
-          <div class="info-metric-card">
-            <span class="metric-label">{{ 'reservations.source' | t }}</span>
-            <span class="metric-val">{{ source(r.bookingSource) }}</span>
+          <div class="property-row">
+            <span class="prop-label">{{ 'reservations.source' | t }}</span>
+            <span class="prop-val">{{ source(r.bookingSource) }}</span>
           </div>
         }
         @if (r.createdOnUtc) {
-          <div class="info-metric-card">
-            <span class="metric-label">{{ 'reservations.createdOn' | t }}</span>
-            <span class="metric-val" dir="ltr">{{ r.createdOnUtc }}</span>
+          <div class="property-row">
+            <span class="prop-label">{{ 'reservations.createdOn' | t }}</span>
+            <span class="prop-val" dir="ltr">{{ formatDate(r.createdOnUtc) }}</span>
           </div>
         }
         @if (r.capabilities.remainingPatientReschedules !== undefined) {
-          <div class="info-metric-card">
-            <span class="metric-label">{{ 'reservations.remaining' | t }}</span>
-            <span class="metric-val">{{ r.capabilities.remainingPatientReschedules }}</span>
+          <div class="property-row">
+            <span class="prop-label">{{ 'reservations.remaining' | t }}</span>
+            <span class="prop-val">{{ r.capabilities.remainingPatientReschedules }}</span>
           </div>
         }
       </div>
@@ -341,7 +371,7 @@
                         : (e.eventType || '' | t)
                     }}
                   </span>
-                  <time class="timeline-time" dir="ltr">{{ e.occurredOnUtc }}</time>
+                  <time class="timeline-time" dir="ltr">{{ formatDate(e.occurredOnUtc) }}</time>
                 </div>
                 @if (!administrative() && e.description) {
                   <p class="timeline-desc">{{ e.description }}</p>

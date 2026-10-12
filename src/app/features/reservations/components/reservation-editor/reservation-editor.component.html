@@ -1,170 +1,321 @@
 <form (submit)="submit($event)" class="editor" [attr.aria-busy]="busy() || loading()">
   @if (!reception()) {
-    <header>
+    <header class="editor-header">
       <h2 id="reservation-editor-heading">{{ 'reservations.' + mode() | t }}</h2>
     </header>
   }
   <fieldset [disabled]="busy()">
     @if (loading()) {
-      <p role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="editor-inline-loader" role="status">
+        <span class="spinner-ring-sm" aria-hidden="true"></span>
+        <span>{{ 'reservations.loading' | t }}</span>
+      </div>
     }
+
     @if (mode() === 'create') {
       @if (reception()) {
-        @if (patientId()) {
-          <section class="selected-patient" aria-live="polite">
-            <span>{{ 'reception.patients.selected' | t }}</span
-            ><strong>{{
-              selectedPatient()
-                ? label(selectedPatient()!)
-                : ('reception.appointments.linkedPatient' | t)
-            }}</strong>
-          </section>
-        }
-        @if (canSearch()) {
-          <details [open]="!patientId()">
-            <summary>
-              {{
-                (patientId() ? 'reception.appointments.changePatient' : 'reception.patients.find')
-                  | t
-              }}
-            </summary>
-            <app-reservation-patient-search
-              [results]="patientResults()"
-              [busy]="patientSearchLoading() || busy()"
-              [searched]="patientSearched()"
-              [failed]="patientSearchFailed()"
-              [selectedId]="patientId()"
-              (search)="search.emit($event)"
-              (selected)="patientChange.emit($event)"
-            />
-          </details>
-        } @else if (!patientId()) {
-          <p>
-            {{
-              (canRegister()
-                ? 'reception.appointments.selectFromPatients'
-                : 'reception.appointments.patientSelectionUnavailable'
-              ) | t
-            }}
-          </p>
-        }
-        @if (canRegister()) {
-          <a routerLink="/reception/patients">{{ 'reception.patients.add' | t }}</a>
-        }
+        <!-- ── Step 1: Patient Selection Section ───────────────── -->
+        <div class="booking-section-card patient-section">
+          @if (patientId()) {
+            <!-- Selected Patient Display (Compact, elegant, neutral subtle border) -->
+            <div class="selected-patient" aria-live="polite">
+              <div class="patient-badge-info">
+                <div class="patient-badge-avatar" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <div class="patient-badge-text">
+                  <span class="patient-badge-lbl">{{ 'reception.patients.selected' | t }}</span>
+                  <strong class="patient-badge-name">{{
+                    selectedPatient()
+                      ? label(selectedPatient()!)
+                      : ('reception.appointments.linkedPatient' | t)
+                  }}</strong>
+                </div>
+              </div>
+              @if (canSearch()) {
+                <button
+                  type="button"
+                  class="btn-toggle-change-patient"
+                  (click)="toggleChangePatient()"
+                  [attr.aria-expanded]="changingPatient()"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span>{{
+                    (changingPatient() ? 'common.cancel' : 'reception.appointments.changePatient')
+                      | t
+                  }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Search & Add Section: visible when no patient is selected, or user clicked "تغيير المريض" -->
+          @if (!patientId() || changingPatient()) {
+            <div class="patient-search-container">
+              @if (canSearch()) {
+                <div class="search-box-header">
+                  <span class="search-box-title">{{ 'reception.patients.find' | t }}</span>
+                </div>
+                <app-reservation-patient-search
+                  [results]="patientResults()"
+                  [busy]="patientSearchLoading() || busy()"
+                  [searched]="patientSearched()"
+                  [failed]="patientSearchFailed()"
+                  [selectedId]="patientId()"
+                  (search)="search.emit($event)"
+                  (selected)="onPatientSelected($event)"
+                />
+              } @else if (!patientId()) {
+                <p class="search-notice-hint">
+                  {{
+                    (canRegister()
+                      ? 'reception.appointments.selectFromPatients'
+                      : 'reception.appointments.patientSelectionUnavailable'
+                    ) | t
+                  }}
+                </p>
+              }
+              @if (canRegister()) {
+                <div class="new-patient-prompt">
+                  <span class="new-patient-hint">{{ 'reception.patients.notRegistered' | t }}</span>
+                  <a
+                    class="btn-new-patient-link"
+                    routerLink="/reception/patients"
+                    [queryParams]="{ action: 'new' }"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      aria-hidden="true"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>{{ 'reception.patients.add' | t }}</span>
+                  </a>
+                </div>
+              }
+            </div>
+          }
+        </div>
       } @else {
-        <label
-          >{{ 'reservations.patient' | t
-          }}<select [formField]="fields.patientId" (change)="patientChange.emit(value($event))">
+        <label class="form-field-label">
+          <span class="label-text">{{ 'reservations.patient' | t }}</span>
+          <select [formField]="fields.patientId" (change)="patientChange.emit(value($event))">
             <option value="">
               {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
             </option>
             @for (p of patients(); track p.patientId) {
               <option [value]="p.patientId">{{ label(p) }}</option>
             }
-          </select></label
-        >
-      }
-      @if (eligibilities().length) {
-        <label
-          >{{ 'followUps.bookingType' | t }}
-          <select [value]="eligibilityId()" (change)="eligibilityChange.emit(value($event))">
-            <option value="">{{ 'followUps.newConsultation' | t }}</option>
-            @for (e of eligibilities(); track e.eligibilityId) {
-              <option [value]="e.eligibilityId" [disabled]="!e.canBook">
-                {{ 'followUps.followUp' | t }} · {{ e.validUntil }}
-              </option>
-            }
           </select>
         </label>
       }
+
+      @if (eligibilities().length) {
+        <div class="booking-section-card eligibility-section">
+          <label class="form-field-label">
+            <span class="label-text">{{ 'followUps.bookingType' | t }}</span>
+            <select [value]="eligibilityId()" (change)="eligibilityChange.emit(value($event))">
+              <option value="">{{ 'followUps.newConsultation' | t }}</option>
+              @for (e of eligibilities(); track e.eligibilityId) {
+                <option [value]="e.eligibilityId" [disabled]="!e.canBook">
+                  {{ 'followUps.followUp' | t }} · {{ e.validUntil }}
+                </option>
+              }
+            </select>
+          </label>
+        </div>
+      }
     }
+
+    <!-- ── Step 2: Date & Time Section ───────────────────────────────────── -->
     @if (mode() === 'reschedule' || (mode() === 'create' && (!reception() || patientId()))) {
-      <label
-        >{{ 'reservations.date' | t
-        }}<select
-          dir="ltr"
-          [value]="date()"
-          (change)="dateChange.emit(value($event))"
-          [disabled]="loading() || busy()"
-        >
-          <option value="">
-            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
-          </option>
-          @for (d of dates(); track d.date) {
-            @if (d.isAvailable) {
-              <option [value]="d.date" [selected]="date() === d.date">{{ d.date }}</option>
-            }
-          }
-        </select></label
-      >
-      @if (!reception() || date()) {
-        <label
-          >{{ 'reservations.time' | t
-          }}<select
-            dir="ltr"
-            [value]="time()"
-            (change)="timeChange.emit(value($event))"
-            [disabled]="loading() || busy()"
-          >
-            <option value="">
-              {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
-            </option>
-            @for (s of slots(); track s.time) {
-              <option [value]="s.time" [selected]="time() === s.time">
-                {{ s.time }}
-                @if (s.slotDurationMinutes) {
-                  ({{ s.slotDurationMinutes }} {{ 'reservations.minutes' | t }})
-                }
+      <div class="booking-section-card schedule-section">
+        <div class="schedule-fields-grid">
+          <label class="form-field-label">
+            <span class="label-text">{{ 'reservations.date' | t }}</span>
+            <select
+              dir="ltr"
+              class="field-select"
+              [value]="date()"
+              (change)="dateChange.emit(value($event))"
+              [disabled]="loading() || busy()"
+            >
+              <option value="">
+                {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
               </option>
-            }
-          </select></label
-        >
-      }
-      @if (!loading() && dates().length === 0) {
-        <p>{{ 'reservations.noAvailability' | t }}</p>
-      }
+              @for (d of dates(); track d.date) {
+                @if (d.isAvailable) {
+                  <option [value]="d.date" [selected]="date() === d.date">{{ d.date }}</option>
+                }
+              }
+            </select>
+          </label>
+
+          @if (!reception() || date()) {
+            <label class="form-field-label">
+              <span class="label-text">{{ 'reservations.time' | t }}</span>
+              <select
+                dir="ltr"
+                class="field-select"
+                [value]="time()"
+                (change)="timeChange.emit(value($event))"
+                [disabled]="loading() || busy()"
+              >
+                <option value="">
+                  {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+                </option>
+                @for (s of slots(); track s.time) {
+                  <option [value]="s.time" [selected]="time() === s.time">
+                    {{ formatSlot(s.time, s.slotDurationMinutes) }}
+                  </option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+
+        @if (!loading() && dates().length === 0) {
+          <div class="empty-notice-box" role="status">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ 'reservations.noAvailability' | t }}</span>
+          </div>
+        }
+      </div>
     }
+
+    <!-- ── Step 3: Visit & Pricing Section ──────────────────────────────── -->
     @if (mode() === 'create' && (!reception() || time())) {
-      <label
-        >{{ 'reservations.visitType' | t
-        }}<select [formField]="fields.visitTypeId">
-          <option value="">
-            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
-          </option>
-          @for (v of options()?.visitTypes || []; track v.visitTypeId) {
-            <option [value]="v.visitTypeId">{{ label(v) }}</option>
-          }
-        </select></label
-      >
-      <label
-        >{{ (reception() ? 'reception.appointments.visitPrice' : 'reservations.segment') | t
-        }}<select [formField]="fields.segmentId">
-          <option value="">
-            {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
-          </option>
-          @for (s of segments(); track s.segmentId) {
-            <option [value]="s.segmentId">{{ label(s) }} · {{ s.price }}</option>
-          }
-        </select></label
-      >
-      @if (reception()) {
-        <details>
-          <summary>{{ 'reception.common.additional' | t }}</summary>
-          <ng-container [ngTemplateOutlet]="bookingNote" />
+      <div class="booking-section-card service-section">
+        @if (visitOptions().length > 0) {
+          <!-- RADICAL SIMPLIFICATION: ONE Unified Selector -->
+          <label class="form-field-label">
+            <div class="label-row">
+              <span class="label-text">{{ 'reception.appointments.visitPrice' | t }}</span>
+              <span class="auto-selected-badge">{{
+                'reception.appointments.autoSelected' | t
+              }}</span>
+            </div>
+            <select
+              class="field-select primary-service-select"
+              [value]="selectedVisitOptionKey()"
+              (change)="onVisitOptionChange(value($event))"
+              [disabled]="loading() || busy()"
+            >
+              <option value="">
+                {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+              </option>
+              @for (opt of visitOptions(); track opt.key) {
+                <option [value]="opt.key" [selected]="opt.key === selectedVisitOptionKey()">
+                  {{ opt.displayName }}
+                </option>
+              }
+            </select>
+          </label>
+        } @else {
+          <!-- Fallback when visit options are separate -->
+          <div class="schedule-fields-grid">
+            <label class="form-field-label">
+              <span class="label-text">{{ 'reservations.visitType' | t }}</span>
+              <select [formField]="fields.visitTypeId">
+                <option value="">
+                  {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+                </option>
+                @for (v of options()?.visitTypes || []; track v.visitTypeId) {
+                  <option [value]="v.visitTypeId">{{ label(v) }}</option>
+                }
+              </select>
+            </label>
+            <label class="form-field-label">
+              <span class="label-text">{{
+                (reception() ? 'reception.appointments.visitPrice' : 'reservations.segment') | t
+              }}</span>
+              <select [formField]="fields.segmentId">
+                <option value="">
+                  {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
+                </option>
+                @for (s of segments(); track s.segmentId) {
+                  <option [value]="s.segmentId">{{ label(s) }} · {{ s.price }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        }
+
+        <!-- Optional Notes -->
+        <details class="note-accordion">
+          <summary class="note-summary">
+            <div class="summary-left">
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>{{ 'reservations.bookingNote' | t }}</span>
+            </div>
+            <span class="optional-tag">{{ 'common.optional' | t }}</span>
+          </summary>
+          <div class="note-body">
+            <textarea
+              [formField]="fields.bookingNote"
+              rows="2"
+              [placeholder]="'reception.appointments.editorHelp' | t"
+            ></textarea>
+          </div>
         </details>
-      } @else {
-        <ng-container [ngTemplateOutlet]="bookingNote" />
-      }
-      <ng-template #bookingNote
-        ><label
-          >{{ 'reservations.bookingNote' | t
-          }}<textarea [formField]="fields.bookingNote" rows="3"></textarea></label
-      ></ng-template>
+      </div>
     }
+
+    <!-- ── Other Modes (Cancel, Reschedule, Restore) ────────────────────── -->
     @if (mode() === 'cancel') {
-      <label
-        >{{ 'reservations.reason' | t
-        }}<select [formField]="fields.reasonCode">
+      <label class="form-field-label">
+        <span class="label-text">{{ 'reservations.reason' | t }}</span>
+        <select [formField]="fields.reasonCode">
           <option value="">
             {{ (reception() ? 'reception.common.choose' : 'reservations.choose') | t }}
           </option>
@@ -176,31 +327,39 @@
               }
             </option>
           }
-        </select></label
-      >
-      <label
-        >{{ 'reservations.comment' | t }}<textarea [formField]="fields.comment" rows="3"></textarea>
+        </select>
+      </label>
+      <label class="form-field-label">
+        <span class="label-text">{{ 'reservations.comment' | t }}</span>
+        <textarea [formField]="fields.comment" rows="3"></textarea>
       </label>
     }
     @if (mode() === 'reschedule' && provider()) {
-      <label
-        >{{ 'reservations.reason' | t }}<textarea [formField]="fields.reason" rows="3"></textarea>
+      <label class="form-field-label">
+        <span class="label-text">{{ 'reservations.reason' | t }}</span>
+        <textarea [formField]="fields.reason" rows="3"></textarea>
       </label>
-      <label class="consent"
-        ><input
-          type="checkbox"
-          class="sr-only-chk"
-          [formField]="fields.patientConsentConfirmed"
-        /><span class="check" aria-hidden="true"></span>{{ 'reservations.consent' | t }}</label
-      >
+      <label class="consent">
+        <input type="checkbox" class="sr-only-chk" [formField]="fields.patientConsentConfirmed" />
+        <span class="check" aria-hidden="true"></span>
+        <span>{{ 'reservations.consent' | t }}</span>
+      </label>
     }
     @if (mode() === 'restore') {
-      <p>{{ 'reservations.restoreConfirm' | t }}</p>
+      <p class="restore-prompt">{{ 'reservations.restoreConfirm' | t }}</p>
     }
   </fieldset>
-  <footer>
-    <button type="submit" class="primary" [disabled]="!valid() || busy() || loading()">
-      {{ actionLabel() | t }}
+
+  <footer class="editor-footer">
+    <button
+      type="submit"
+      class="primary btn-editor-submit"
+      [disabled]="!valid() || busy() || loading()"
+    >
+      @if (busy()) {
+        <span class="spinner-ring-sm light" aria-hidden="true"></span>
+      }
+      <span>{{ actionLabel() | t }}</span>
     </button>
   </footer>
 </form>

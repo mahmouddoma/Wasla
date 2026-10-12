@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
+import { RouterLink } from '@angular/router';
 import { PatientSearchItem, PatientSearchQuery } from '../../../../domains/patients';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 export type WalkInPatientSearch = Pick<PatientSearchQuery, 'name' | 'phoneNumber' | 'dateOfBirth'>;
 @Component({
   selector: 'app-walk-in-patient-search',
-  imports: [FormField, TranslatePipe],
+  imports: [FormField, TranslatePipe, RouterLink],
   templateUrl: './walk-in-patient-search.component.html',
   styleUrl: './walk-in-patient-search.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

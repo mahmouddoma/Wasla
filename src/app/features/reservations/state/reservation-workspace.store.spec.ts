@@ -9,6 +9,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PatientsApi, PatientSearchItem, PagedResponse } from '../../../domains/patients';
 import { Reservation, ReservationsApi } from '../../../domains/reservations';
 import { TicketsApi } from '../../../domains/tickets';
+import { FollowUpsApi } from '../../../domains/follow-ups';
 import { ReservationWorkspaceStore, ReservationDraft } from './reservation-workspace.store';
 import { reservationFixture, metadataFixture } from '../reservation-test-fixtures';
 describe('ReservationWorkspaceStore', () => {
@@ -122,6 +123,10 @@ describe('ReservationWorkspaceStore', () => {
     checkIn: vi.fn(),
     forceCheckIn: vi.fn(),
   };
+  const followUpsApi = {
+    reception: vi.fn(() => of([])),
+    mine: vi.fn(() => of({ items: [] })),
+  };
   const currentPracticeId = signal('clinic'),
     grants = signal<string[]>([]);
   const reception = {
@@ -159,6 +164,7 @@ describe('ReservationWorkspaceStore', () => {
         ReservationWorkspaceStore,
         { provide: ReservationsApi, useValue: api },
         { provide: TicketsApi, useValue: ticketsApi },
+        { provide: FollowUpsApi, useValue: followUpsApi },
         { provide: ReceptionPracticeContext, useValue: reception },
         {
           provide: AuthSession,

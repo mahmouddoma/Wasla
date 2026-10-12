@@ -8,6 +8,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PortalNavigation } from '../../../../layout/navigation/portal-navigation';
 import { NavigationItem, NAVIGATION_ICONS } from '../../../../layout/navigation/navigation-item';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
+import { ToastService } from '../../../../core/notifications/toast.service';
 
 interface WorkspaceTask extends NavigationItem {
   readonly descriptionKey: string;
@@ -29,6 +30,12 @@ export class Workspace {
   protected readonly reception = this.navigation.practiceContext;
   protected readonly icons = NAVIGATION_ICONS;
   protected readonly role = computed(() => this.session.user()?.userType ?? 'Patient');
+
+  constructor() {
+    if (this.role() === 'Reception') {
+      void this.reception.ensureLoaded?.();
+    }
+  }
   protected readonly copyRole = computed(() => {
     const role = this.role();
     return role === 'Reception'
@@ -75,13 +82,13 @@ export class Workspace {
       const item = this.navigation.items().find((item) => item.id === id);
       return item
         ? [
-          {
-            ...item,
-            labelKey: 'workspace.task.' + key,
-            descriptionKey: 'workspace.task.' + key + 'Desc',
-            queryParams,
-          },
-        ]
+            {
+              ...item,
+              labelKey: 'workspace.task.' + key,
+              descriptionKey: 'workspace.task.' + key + 'Desc',
+              queryParams,
+            },
+          ]
         : [];
     };
     if (this.role() === 'Reception') {
@@ -104,6 +111,9 @@ export class Workspace {
           : []),
         ...(this.reception.allows(PERMISSIONS.practiceTicketsView)
           ? task('queue', 'openQueue')
+          : []),
+        ...(this.reception.allows(PERMISSIONS.practicePaymentsView)
+          ? task('finance', 'openFinance')
           : []),
       ];
     }
@@ -134,6 +144,39 @@ export class Workspace {
       : '/SVG-AVATAR/Doctors-bro.svg',
   );
 
+  private readonly toast = inject(ToastService);
+
+  protected readonly otherPractice = computed(() => {
+    const list = this.reception.practices();
+    if (list.length !== 2) return null;
+    const currentId = this.reception.currentPracticeId();
+    return list.find((p) => p.id !== currentId) ?? null;
+  });
+
+  protected selectPractice(id: string): void {
+    this.reception.select(id);
+    const practice = this.reception.practices().find((p) => p.id === id);
+    if (practice) {
+      const name = this.langService.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr;
+      this.toast.success(
+        this.langService.isRtl() ? `تم التبديل إلى: ${name}` : `Switched to: ${name}`,
+      );
+    }
+  }
+  protected onSwitchSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    if (select?.value) {
+      this.selectPractice(select.value);
+    }
+  }
+  protected switchPractice(): void {
+    const practices = this.reception.practices();
+    if (practices.length > 1) {
+      const currentId = this.reception.currentPracticeId();
+      const next = practices.find((p) => p.id !== currentId) ?? practices[0];
+      this.selectPractice(next.id);
+    }
+  }
   protected choosePractice(): void {
     this.document.getElementById('reception-current-practice')?.focus();
   }

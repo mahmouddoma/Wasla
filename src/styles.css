@@ -71,7 +71,8 @@
   --shadow-raised: 0 8px 24px rgba(12, 39, 66, 0.08);
 
   --font-ar: 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
-  --font-en: 'Plus Jakarta Sans', 'Inter', 'Cairo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-en:
+    'Plus Jakarta Sans', 'Inter', 'Cairo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   /* Bootstrap font variable overrides */
   --bs-body-font-family: var(--font-ar);
@@ -231,7 +232,6 @@ input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -310,14 +310,14 @@ input:focus-visible {
   margin: 0;
 }
 
-.form-field>span:first-child,
+.form-field > span:first-child,
 .form-field .field-label {
   color: var(--wasla-navy-800);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
-.form-field>span:first-child small,
+.form-field > span:first-child small,
 .form-field .field-label small {
   color: var(--wasla-muted);
   font-weight: 500;
@@ -853,4 +853,158 @@ app-platform-footer {
 :host-context([dir='rtl']) .pagination-bar button svg,
 :host-context([dir='rtl']) .pagination-nav button svg {
   transform: rotate(180deg);
+}
+
+/* ── Universal ──────────────── */
+@media print {
+  @page {
+    size: portrait;
+    margin: 8mm auto;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 1. Hide everything on the page by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* 2. Completely eliminate navigation, layout chrome, drawer headers, and action buttons */
+  app-header,
+  app-page-header,
+  app-platform-footer,
+  app-mobile-navigation,
+  header,
+  footer,
+  aside:not(.side-drawer-panel),
+  nav,
+  .drawer-backdrop,
+  .drawer-header,
+  .drawer-close-btn,
+  .drawer-heading-wrap,
+  .voucher-actions-bar,
+  .btn-deck-submit,
+  .btn-cancel-action {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 3. Neutralize the fixed side-drawer container so it does NOT repeat across pages */
+  app-side-drawer {
+    display: block !important;
+    position: static !important;
+  }
+
+  .side-drawer-panel {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    z-index: auto !important;
+  }
+
+  .drawer-body {
+    position: static !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    scrollbar-width: none !important;
+    background: transparent !important;
+  }
+
+  /* 4. Display ONLY the authentic receipt slip, cleanly centered on 1 sheet */
+  .receipt-voucher-sheet,
+  .receipt-voucher-sheet * {
+    visibility: visible !important;
+  }
+
+  .receipt-voucher-sheet.receipt-authentic-slip {
+    position: relative !important;
+    inset: auto !important;
+    margin: 0 auto !important;
+    width: 360px !important;
+    max-width: 360px !important;
+    padding: 22px 18px 18px !important;
+    border: 1px dashed #94a3b8 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .slip-sawtooth-edge {
+    display: none !important;
+  }
+
+  .slip-official-stamp {
+    opacity: 0.95 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .slip-title-banner {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+
+  [data-type='refund'] .slip-title-banner {
+    background: #991b1b !important;
+    color: #ffffff !important;
+  }
+
+  .slip-total-card {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  [data-type='refund'] .slip-total-card {
+    background: #991b1b !important;
+    color: #ffffff !important;
+  }
+
+  .slip-customer-box {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  .slip-tx-box {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #f1f5f9 !important;
+  }
 }

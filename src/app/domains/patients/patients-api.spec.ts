@@ -47,6 +47,31 @@ describe('PatientsApi', () => {
     await result;
   });
 
+  it('creates patient with doctorPracticeId appended to FormData', async () => {
+    const result = firstValueFrom(
+      api.create({
+        nameAr: 'أحمد',
+        nameEn: '',
+        dateOfBirth: '2015-01-01',
+        gender: 'Male',
+        phoneNumber: '',
+        email: '',
+        doctorPracticeId: 'practice-123',
+        primaryContactNameAr: '',
+        primaryContactPhoneNumber: '',
+        primaryContactRelationshipType: 'Guardian',
+        primaryContactIsPrimary: true,
+        primaryContactLinkedPatientId: '',
+      }),
+    );
+    const request = http.expectOne(url);
+    const body = request.request.body as FormData;
+    expect(body.get('DoctorPracticeId')).toBe('practice-123');
+    request.flush({ patientId: 'patient-456' });
+    const response = await result;
+    expect(response.patientId).toBe('patient-456');
+  });
+
   it('searches with server-side filters and pagination', async () => {
     const result = firstValueFrom(
       api.search({ phoneNumber: '010', name: 'أحمد', pageNumber: 2, pageSize: 20 }),

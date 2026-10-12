@@ -1,4 +1,3 @@
-import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -24,13 +23,7 @@ import { FollowUpEligibility } from '../../../../domains/follow-ups';
 import { ReservationDraft, ReservationEditorMode } from '../../state/reservation-workspace.store';
 @Component({
   selector: 'app-reservation-editor',
-  imports: [
-    FormField,
-    TranslatePipe,
-    RouterLink,
-    ReservationPatientSearchComponent,
-    NgTemplateOutlet,
-  ],
+  imports: [FormField, TranslatePipe, RouterLink, ReservationPatientSearchComponent],
   templateUrl: './reservation-editor.component.html',
   styleUrl: './reservation-editor.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,6 +68,7 @@ export class ReservationEditorComponent {
       : 'reservations.confirm',
   );
   readonly language = inject(LanguageService);
+  readonly changingPatient = signal(false);
   readonly model = signal<ReservationDraft>({
     patientId: '',
     segmentId: '',
@@ -86,21 +80,92 @@ export class ReservationEditorComponent {
     reason: '',
   });
   readonly fields = form(this.model);
+
+  readonly visitOptions = computed(() => {
+    const visitTypes = this.options()?.visitTypes ?? [];
+    const list: {
+      key: string;
+      visitTypeId: string;
+      segmentId: string;
+      displayName: string;
+      price: number;
+      isDefault: boolean;
+    }[] = [];
+    const curr = this.language.currentLang() === 'en' ? 'EGP' : 'ج.م';
+    for (const v of visitTypes) {
+      const vName = this.label(v);
+      for (const s of v.segments) {
+        const sName = this.label(s);
+        const isGeneric =
+          !sName ||
+          sName.trim() === vName.trim() ||
+          sName === 'افتراضي' ||
+          sName === 'عادي' ||
+          sName === 'Default' ||
+          sName === 'Standard';
+        const displayName = isGeneric
+          ? `${vName} · ${s.price} ${curr}`
+          : `${vName} (${sName}) · ${s.price} ${curr}`;
+        list.push({
+          key: `${v.visitTypeId}:::${s.segmentId}`,
+          visitTypeId: v.visitTypeId,
+          segmentId: s.segmentId,
+          displayName,
+          price: s.price,
+          isDefault: s.isDefault,
+        });
+      }
+    }
+    return list;
+  });
+
+  readonly selectedVisitOptionKey = computed(() => {
+    const m = this.model();
+    if (m.visitTypeId && m.segmentId) {
+      return `${m.visitTypeId}:::${m.segmentId}`;
+    }
+    return '';
+  });
+
   constructor() {
     effect(() => {
       const patientId = this.patientId();
-      this.model.update((model) => ({ ...model, patientId, segmentId: '', visitTypeId: '' }));
+      this.model.update((model) => ({ ...model, patientId }));
+      if (patientId) {
+        this.changingPatient.set(false);
+      }
     });
+
     effect(() => {
-      this.options();
-      this.model.update((model) => ({ ...model, segmentId: '', visitTypeId: '' }));
+      const opts = this.options();
+      if (!opts || !opts.visitTypes.length) {
+        this.model.update((model) => ({ ...model, segmentId: '', visitTypeId: '' }));
+        return;
+      }
+      const available = this.visitOptions();
+      if (available.length > 0) {
+        const currentKey = this.selectedVisitOptionKey();
+        const stillValid = available.some((a) => a.key === currentKey);
+        if (!stillValid) {
+          const preferred = available.find((a) => a.isDefault) || available[0];
+          this.model.update((model) => ({
+            ...model,
+            visitTypeId: preferred.visitTypeId,
+            segmentId: preferred.segmentId,
+          }));
+        }
+      } else {
+        this.model.update((model) => ({ ...model, segmentId: '', visitTypeId: '' }));
+      }
     });
   }
+
   readonly segments = computed(
     () =>
       this.options()?.visitTypes.find((v) => v.visitTypeId === this.model().visitTypeId)
         ?.segments ?? [],
   );
+
   readonly valid = computed(() => {
     const d = this.model();
     if (this.mode() === 'restore') return true;
@@ -115,16 +180,63 @@ export class ReservationEditorComponent {
       (this.reception()
         ? !!d.patientId.trim()
         : this.patients().some((p) => p.patientId === d.patientId)) &&
-      this.segments().some((s) => s.segmentId === d.segmentId)
+      (this.segments().some((s) => s.segmentId === d.segmentId) ||
+        this.visitOptions().some((o) => o.segmentId === d.segmentId))
     );
   });
+
+  onVisitOptionChange(key: string): void {
+    const opt = this.visitOptions().find((o) => o.key === key);
+    if (opt) {
+      this.model.update((m) => ({
+        ...m,
+        visitTypeId: opt.visitTypeId,
+        segmentId: opt.segmentId,
+      }));
+    } else {
+      this.model.update((m) => ({
+        ...m,
+        visitTypeId: '',
+        segmentId: '',
+      }));
+    }
+  }
+
+  toggleChangePatient(): void {
+    this.changingPatient.update((v) => !v);
+  }
+
+  onPatientSelected(patientId: string): void {
+    this.patientChange.emit(patientId);
+    this.changingPatient.set(false);
+  }
+
+  formatSlot(time: string, duration?: number): string {
+    if (!time) return '';
+    const parts = time.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] || '00';
+    if (isNaN(h)) return time;
+    const isEn = this.language.currentLang() === 'en';
+    const period = h >= 12 ? (isEn ? 'PM' : 'م') : isEn ? 'AM' : 'ص';
+    const h12 = h % 12 || 12;
+    const timeFormatted = `${h12}:${m} ${period}`;
+    if (duration) {
+      const minText = isEn ? 'min' : duration >= 3 && duration <= 10 ? 'دقائق' : 'دقيقة';
+      return `${timeFormatted} (${duration} ${minText})`;
+    }
+    return timeFormatted;
+  }
+
   label(item: { nameAr: string; nameEn?: string | null }): string {
     return this.language.currentLang() === 'en' ? item.nameEn || item.nameAr : item.nameAr;
   }
+
   submit(event: Event): void {
     event.preventDefault();
     if (this.valid() && !this.busy() && !this.loading()) this.save.emit(this.model());
   }
+
   value(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }

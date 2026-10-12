@@ -3,57 +3,99 @@
   [attr.aria-label]="'reception.patients.find' | t"
   [attr.aria-busy]="busy()"
 >
-  <div class="row g-3">
-    <label class="col-12 col-sm-6"
-      >{{ 'reception.patients.name' | t
-      }}<input
+  <div class="search-form-grid">
+    <div class="form-field-group">
+      <label class="field-label" for="patient-search-name">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>{{ 'reception.patients.name' | t }}</span>
+      </label>
+      <input
+        id="patient-search-name"
         type="search"
+        class="search-input"
         [formField]="fields.name"
         (keydown.enter)="$event.preventDefault(); find()"
-    /></label>
-    <label class="col-12 col-sm-6"
-      >{{ 'workspace.phone' | t
-      }}<input
+      />
+    </div>
+
+    <div class="form-field-group">
+      <label class="field-label" for="patient-search-phone">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+        <span>{{ 'workspace.phone' | t }}</span>
+      </label>
+      <input
+        id="patient-search-phone"
         type="tel"
-        class="ltr-text"
+        class="search-input ltr-text"
         dir="ltr"
         [formField]="fields.phoneNumber"
         (keydown.enter)="$event.preventDefault(); find()"
-    /></label>
-    <div class="col-12">
-      <details>
-        <summary>{{ 'reception.patients.birth' | t }}</summary>
-        <label
-          >{{ 'reception.patients.birth' | t
-          }}<input
+      />
+    </div>
+
+    <div class="form-field-group full-width">
+      <details class="dob-details">
+        <summary class="dob-summary">
+          <div class="dob-summary-text">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>{{ 'reception.patients.birth' | t }}</span>
+          </div>
+          <svg class="dob-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </summary>
+        <div class="dob-input-wrap">
+          <label class="field-label" for="patient-search-dob">
+            {{ 'reception.patients.birth' | t }}
+          </label>
+          <input
+            id="patient-search-dob"
             type="date"
+            class="search-input"
             dir="ltr"
             [formField]="fields.dateOfBirth"
             (keydown.enter)="$event.preventDefault(); find()"
-        /></label>
+          />
+        </div>
       </details>
     </div>
   </div>
+
   <button
     type="button"
-    class="btn btn-outline-secondary"
+    class="btn-patient-search"
     (click)="find()"
     [disabled]="
       busy() || (!model().name.trim() && !model().phoneNumber.trim() && !model().dateOfBirth)
     "
   >
-    {{ (busy() ? 'reservations.loading' : 'reception.patients.search') | t }}
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+    <span>{{ (busy() ? 'reservations.loading' : 'reception.patients.search') | t }}</span>
   </button>
+
   @if (failed()) {
-    <p role="alert">{{ 'reception.patients.searchFailed' | t }}</p>
+    <p role="alert" class="search-alert-danger">{{ 'reception.patients.searchFailed' | t }}</p>
   } @else if (searched() && !busy() && !results().length) {
     <div class="empty-state">
-      <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" /><strong>{{
-        'reception.patients.noMatches' | t
-      }}</strong>
-      <p>{{ 'reception.patients.trySearch' | t }}</p>
+      <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+      <strong class="empty-title">{{ 'reception.patients.noMatches' | t }}</strong>
+      <p class="empty-desc">{{ 'reception.patients.trySearch' | t }}</p>
     </div>
   }
+
   <div class="search-results" aria-live="polite">
     @for (patient of results(); track patient.patientId) {
       <button
@@ -63,19 +105,35 @@
         [disabled]="busy()"
         (click)="selected.emit(patient.patientId)"
       >
-        <strong>{{ name(patient) }}</strong
-        ><span
-          ><bdi>{{ patient.phoneNumber }}</bdi>
-          @if (!patient.phoneNumber) {
-            {{
-              (patient.hasContactPhone
-                ? 'reception.patients.contactPhone'
-                : 'reception.patients.noPhone'
-              ) | t
-            }}
-          }
-          · <bdi>{{ patient.dateOfBirth }}</bdi></span
-        >
+        <div class="patient-option-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="patient-option-body">
+          <strong class="patient-option-name">{{ name(patient) }}</strong>
+          <span class="patient-option-meta">
+            <bdi class="meta-phone">{{ patient.phoneNumber }}</bdi>
+            @if (!patient.phoneNumber) {
+              <span class="meta-note">{{
+                (patient.hasContactPhone
+                  ? 'reception.patients.contactPhone'
+                  : 'reception.patients.noPhone'
+                ) | t
+              }}</span>
+            }
+            @if (patient.dateOfBirth) {
+              <span class="meta-sep">·</span>
+              <bdi class="meta-dob">{{ patient.dateOfBirth }}</bdi>
+            }
+          </span>
+        </div>
+        <div class="patient-option-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
       </button>
     }
   </div>

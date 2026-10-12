@@ -1,6 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { WalkInPatientSearchComponent } from './walk-in-patient-search.component';
 describe('WalkInPatientSearchComponent', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([])],
+    });
+  });
   afterEach(() => localStorage.removeItem('wasla_lang'));
   it('emits structured name, phone and DOB search without submitting its parent form', () => {
     const fixture = TestBed.createComponent(WalkInPatientSearchComponent);

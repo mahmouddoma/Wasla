@@ -54,6 +54,84 @@ export class ReservationWorkspaceComponent implements OnInit {
     return 'reception.appointments.emptyHelp';
   });
 
+  getTodayString(): string {
+    const d = new Date();
+    return [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+    ].join('-');
+  }
+
+  isTodaySelected(): boolean {
+    if (this.store.receptionView() === 'Today') return true;
+    const q = this.store.query();
+    const today = this.getTodayString();
+    return q.fromDate === today && q.toDate === today;
+  }
+
+  currentSelectedDate(): string {
+    const q = this.store.query();
+    if (q.fromDate && q.fromDate === q.toDate) return q.fromDate;
+    return this.getTodayString();
+  }
+
+  formattedCurrentDate(): string {
+    const view = this.store.receptionView();
+    if (view === 'Upcoming') {
+      return this.language.t('reception.appointments.view.Upcoming');
+    }
+    if (view === 'All') {
+      return this.language.t('reception.appointments.view.All');
+    }
+    const dateStr = this.currentSelectedDate();
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    if (!year || !month || !day) return dateStr;
+    const d = new Date(year, month - 1, day);
+    return new Intl.DateTimeFormat(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(d);
+  }
+
+  stepDay(delta: number): void {
+    const base = this.currentSelectedDate();
+    const parts = base.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    const d = new Date(year, month - 1, day);
+    d.setDate(d.getDate() + delta);
+    const target = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+    ].join('-');
+    const today = this.getTodayString();
+    if (target === today) {
+      this.store.setReceptionView('Today');
+    } else {
+      this.store.receptionView.set('Custom');
+      this.store.query.update((q) => ({
+        ...q,
+        pageNumber: 1,
+        fromDate: target,
+        toDate: target,
+      }));
+      void this.store.loadList();
+    }
+  }
+
+  goToToday(): void {
+    this.store.setReceptionView('Today');
+  }
+
   statusClass(code: string): string {
     const lower = (code || '').toLowerCase();
     if (lower.includes('confirm') || lower.includes('active')) return 'status-confirmed';

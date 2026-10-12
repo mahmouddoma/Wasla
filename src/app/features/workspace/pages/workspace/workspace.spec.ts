@@ -1,4 +1,4 @@
-﻿import { signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -42,6 +42,8 @@ describe('Workspace daily tasks', () => {
       practices().some((p) => p.permissionCodes.includes(permission)),
     hasAnyPracticeWithAnyPermission: (permissions: readonly string[]) =>
       practices().some((p) => permissions.some((code) => p.permissionCodes.includes(code))),
+    select: vi.fn((id: string) => selected.set(id)),
+    ensureLoaded: vi.fn(async () => undefined),
     refresh: vi.fn(async () => undefined),
   };
   beforeEach(() => {
@@ -209,5 +211,29 @@ describe('Workspace daily tasks', () => {
         lang === 'ar' ? 'rtl' : 'ltr',
       );
     }
+  });
+  it('allows reception to select a practice directly from available practice cards and shows reception guide', async () => {
+    user.set({ ...baseUser, userType: 'Reception', permissions: [PERMISSIONS.patientsSearchBasic] });
+    practices.set([
+      {
+        id: 'p1',
+        nameAr: 'عيادة أولى',
+        nameEn: 'First Clinic',
+        doctorNameAr: null,
+        doctorNameEn: null,
+        isActive: true,
+        permissionCodes: [PERMISSIONS.practiceReservationsCreate],
+      },
+    ]);
+    selected.set('');
+    const { fixture, element } = await root();
+    const card = element.querySelector<HTMLButtonElement>('.practice-card-btn');
+    expect(card).not.toBeNull();
+    expect(card!.textContent).toContain('First Clinic');
+    card!.click();
+    expect(context.select).toHaveBeenCalledWith('p1');
+    selected.set('p1');
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Reception Guide');
   });
 });

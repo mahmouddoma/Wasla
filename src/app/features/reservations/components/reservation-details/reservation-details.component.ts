@@ -45,4 +45,17 @@ export class ReservationDetailsComponent {
     if (code.includes('pend') || code.includes('wait')) return 'badge-pending';
     return 'badge-neutral';
   }
+
+  formatDate(utcString?: string | null): string {
+    if (!utcString) return '—';
+    const date = new Date(utcString);
+    if (Number.isNaN(date.getTime())) return utcString;
+    return new Intl.DateTimeFormat(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  }
 }

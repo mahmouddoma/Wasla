@@ -158,31 +158,31 @@
       (logout)="logout()"
     >
       @if (isReception()) {
-        <div class="topbar-practice-selector" [dir]="langService.dir()">
-          <label for="reception-current-practice" class="practice-selector-label">
-            <svg
-              viewBox="0 0 24 24"
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-            </svg>
-            <span>{{ 'workspace.currentPractice' | t }}</span>
-          </label>
+        <div header-start-extra class="topbar-practice-selector" [dir]="langService.dir()">
+          <span class="practice-active-dot" aria-hidden="true"></span>
+          <svg
+            class="practice-icon"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+          </svg>
           <div class="practice-select-wrap">
             <select
               id="reception-current-practice"
               [value]="practiceContext.currentPracticeId()"
               [disabled]="practiceContext.isLoading() || !practiceContext.practices().length"
               (change)="selectPractice($event)"
+              [attr.aria-label]="'workspace.currentPractice' | t"
             >
-              <option value="" [selected]="!practiceContext.currentPracticeId()">
-                {{ 'reservations.choose' | t }}
-              </option>
+              @if (!practiceContext.currentPracticeId()) {
+                <option value="">{{ 'reservations.choose' | t }}</option>
+              }
               @for (practice of practiceContext.practices(); track practice.id) {
                 <option
                   [value]="practice.id"
@@ -195,18 +195,20 @@
                 </option>
               }
             </select>
-            <svg
-              class="select-chevron"
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            @if (practiceContext.practices().length > 1) {
+              <svg
+                class="select-chevron"
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            }
           </div>
         </div>
       }

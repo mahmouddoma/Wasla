@@ -31,6 +31,7 @@ describe('AppHeader', () => {
     fixture.detectChanges();
   });
   afterEach(() => {
+    TestBed.inject(LanguageService).setLanguage('ar');
     localStorage.removeItem('wasla_lang');
     vi.unstubAllGlobals();
   });
@@ -86,15 +87,10 @@ describe('AppHeader', () => {
     root().querySelector<HTMLButtonElement>('.btn-popover-logout')!.click();
     expect(logout).toHaveBeenCalledTimes(2);
   });
-  it('copies the account ID and shows feedback after clipboard success', async () => {
-    const writeText = vi.fn(async () => undefined);
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
+  it('does not expose internal technical user ID to the user in profile popover', () => {
     openProfile();
-    root().querySelector<HTMLButtonElement>('.info-row-copyable')!.click();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    expect(writeText).toHaveBeenCalledWith('user-1');
-    expect(root().querySelector('.copied-pill')).not.toBeNull();
+    expect(root().querySelector('.info-row-copyable')).toBeNull();
+    expect(root().querySelector('[role="dialog"]')?.textContent).not.toContain('user-1');
   });
   it('updates labels and direction when language changes', () => {
     TestBed.inject(LanguageService).setLanguage('en');

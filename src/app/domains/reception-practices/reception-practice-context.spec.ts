@@ -17,11 +17,15 @@ describe('ReceptionPracticeContext', () => {
   let context: ReceptionPracticeContext;
   const api = { list: vi.fn() };
   beforeEach(() => {
+    localStorage.removeItem('wasla_reception_practice_id');
     api.list.mockReset();
     TestBed.configureTestingModule({
       providers: [{ provide: ReceptionPracticesApi, useValue: api }],
     });
     context = TestBed.inject(ReceptionPracticeContext);
+  });
+  afterEach(() => {
+    localStorage.removeItem('wasla_reception_practice_id');
   });
   it('caches initialization and looks up active assignment permissions centrally', async () => {
     api.list.mockReturnValue(
@@ -60,6 +64,13 @@ describe('ReceptionPracticeContext', () => {
     expect(context.allows('CheckIn')).toBe(true);
     context.select('foreign');
     expect(context.currentPractice()).toBeNull();
+  });
+  it('restores previously saved selection from storage when multiple practices exist', async () => {
+    localStorage.setItem('wasla_reception_practice_id', 'shebin');
+    api.list.mockReturnValue(of([practice('cairo', ['Search']), practice('shebin', ['CheckIn'])]));
+    await context.refresh();
+    expect(context.currentPracticeId()).toBe('shebin');
+    expect(context.allows('CheckIn')).toBe(true);
   });
   it('shares concurrent loads and ignores responses belonging to a cleared session', async () => {
     const response = new Subject<ReceptionPractice[]>();

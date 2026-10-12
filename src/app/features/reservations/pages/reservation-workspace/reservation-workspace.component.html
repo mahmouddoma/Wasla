@@ -150,16 +150,92 @@
 
         @if (store.canView()) {
           @if (store.actor() === 'Reception') {
-            <div class="quick-views" role="group" [attr.aria-label]="'reservations.view' | t">
-              @for (view of receptionViews; track view) {
+            <div class="reception-view-toolbar">
+              <div class="quick-views" role="group" [attr.aria-label]="'reservations.view' | t">
+                @for (view of receptionViews; track view) {
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="store.receptionView() === view"
+                    (click)="store.setReceptionView(view)"
+                  >
+                    {{ 'reception.appointments.view.' + view | t }}
+                  </button>
+                }
+              </div>
+
+              <div
+                class="reception-day-stepper"
+                [attr.aria-label]="'reception.appointments.dateNav' | t"
+              >
                 <button
                   type="button"
-                  [attr.aria-pressed]="store.receptionView() === view"
-                  (click)="store.setReceptionView(view)"
+                  class="btn-date-step btn-date-prev"
+                  (click)="stepDay(-1)"
+                  [title]="'reception.appointments.prevDay' | t"
                 >
-                  {{ 'reception.appointments.view.' + view | t }}
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    aria-hidden="true"
+                    class="icon-prev"
+                  >
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                  <span class="step-label">{{ 'reception.appointments.prevDay' | t }}</span>
                 </button>
-              }
+
+                <div class="date-stepper-display">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span class="date-stepper-text">{{ formattedCurrentDate() }}</span>
+                  @if (isTodaySelected()) {
+                    <span class="badge-today-pill">{{
+                      'reception.appointments.todayBadge' | t
+                    }}</span>
+                  } @else {
+                    <button type="button" class="btn-back-today" (click)="goToToday()">
+                      {{ 'reception.appointments.backToToday' | t }}
+                    </button>
+                  }
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-date-step btn-date-next"
+                  (click)="stepDay(1)"
+                  [title]="'reception.appointments.nextDay' | t"
+                >
+                  <span class="step-label">{{ 'reception.appointments.nextDay' | t }}</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    aria-hidden="true"
+                    class="icon-next"
+                  >
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
             </div>
           }
           <div class="filters-grid">
@@ -235,7 +311,17 @@
           </div>
           @if (store.actor() === 'Reception') {
             <details class="advanced-filters">
-              <summary>{{ 'reception.appointments.moreFilters' | t }}</summary>
+              <summary class="advanced-filters-summary">
+                <div class="summary-title-box">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                  </svg>
+                  <span>{{ 'reception.appointments.moreFilters' | t }}</span>
+                </div>
+                <svg class="summary-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </summary>
               <ng-container [ngTemplateOutlet]="advancedFilters" />
             </details>
           } @else {
@@ -595,7 +681,20 @@
                       (click)="store.openArrival(r.reservationId)"
                       [disabled]="store.busy()"
                     >
-                      {{ 'reception.arrival.patientArrived' | t }}
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        aria-hidden="true"
+                      >
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                      </svg>
+                      <span>{{ 'reception.arrival.patientArrived' | t }}</span>
                     </button>
                   }
                   <button
@@ -668,21 +767,43 @@
                       <p class="empty-title">{{ emptyTitleKey() | t }}</p>
                       <span class="empty-subtitle">{{ emptySubtitleKey() | t }}</span>
                       @if (store.actor() === 'Reception' && store.canView()) {
-                        @if (store.isReceptionTodayEmpty()) {
+                        <div class="empty-actions">
                           @if (store.canCreate()) {
                             <button
                               type="button"
-                              class="btn-primary"
+                              class="btn btn-primary btn-empty-create"
                               (click)="store.openEditor('create')"
                             >
-                              {{ 'reception.appointments.book' | t }}
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="16"
+                                height="16"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2.2"
+                                aria-hidden="true"
+                              >
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                              </svg>
+                              <span>{{ 'reception.appointments.book' | t }}</span>
                             </button>
                           }
-                        } @else {
-                          <button type="button" class="btn-secondary" (click)="resetFilters()">
-                            {{ 'reception.appointments.resetFilters' | t }}
-                          </button>
-                        }
+                          @if (store.isReceptionFiltered() || !isTodaySelected()) {
+                            <button
+                              type="button"
+                              class="btn btn-secondary btn-empty-reset"
+                              (click)="resetFilters()"
+                            >
+                              {{ 'reception.appointments.resetFilters' | t }}
+                            </button>
+                          }
+                        </div>
+                      }
+                      @if (store.actor() === 'Patient') {
+                        <a class="btn-primary" routerLink="/doctors">
+                          {{ 'reservations.findDoctor' | t }}
+                        </a>
                       }
                     }
                   </div>
@@ -755,6 +876,7 @@
     [busy]="store.busy()"
     [title]="drawerTitle()"
     [description]="drawerDescription()"
+    theme="navy"
     width="640px"
     (closed)="store.close()"
   >

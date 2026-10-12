@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
@@ -32,6 +32,11 @@ export class FollowUpListComponent implements OnInit {
   readonly patients = signal<readonly BookablePatient[]>([]);
   readonly query = signal<FollowUpQuery>({ pageNumber: 1, pageSize: 20 });
   readonly page = signal<FollowUpPage>({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+  readonly totalPages = computed(() => {
+    const p = this.page();
+    if (!p || !p.pageSize) return 1;
+    return Math.max(1, Math.ceil(p.totalCount / p.pageSize));
+  });
   readonly selected = signal<FollowUpEligibility | null>(null);
   readonly loading = signal(false);
   readonly failed = signal(false);

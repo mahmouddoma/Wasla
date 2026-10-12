@@ -22,7 +22,7 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { firstValueFrom } from 'rxjs';
@@ -54,6 +54,7 @@ export class ReceptionPatients {
   private readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly createModel = signal({
     nameAr: '',
@@ -110,6 +111,7 @@ export class ReceptionPatients {
   protected readonly pageNumber = signal(1);
   protected readonly practices = this.practiceContext.practices;
   protected readonly selectedPracticeId = this.practiceContext.currentPracticeId;
+  protected readonly currentPractice = this.practiceContext.currentPractice;
   protected readonly canSearch = computed(() =>
     this.session.hasPermission(PERMISSIONS.patientsSearchBasic),
   );
@@ -138,6 +140,62 @@ export class ReceptionPatients {
       this.messages.set([]);
       this.isSearching.set(false);
     });
+
+    const params = this.route.snapshot.queryParamMap;
+    const action = params.get('action');
+    if (action === 'new' || params.get('register') === 'true') {
+      this.registrationOpen.set(true);
+    }
+    const phone = params.get('phone');
+    if (phone) {
+      this.searchModel.update((m) => ({ ...m, phoneNumber: phone }));
+      this.createModel.update((m) => ({ ...m, phoneNumber: phone }));
+    }
+    const name = params.get('name');
+    if (name) {
+      this.searchModel.update((m) => ({ ...m, name }));
+      this.createModel.update((m) => ({ ...m, nameAr: name }));
+    }
+  }
+
+  protected onPracticeChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    if (select?.value) {
+      this.practiceContext.select(select.value);
+    }
+  }
+
+  protected resetSearch(): void {
+    this.searchModel.set({
+      phoneNumber: '',
+      name: '',
+      dateOfBirth: '',
+      pageSize: 20,
+    });
+    this.results.set(null);
+    this.clearFeedback();
+  }
+
+  protected clearSelection(): void {
+    this.selectedPatient.set(null);
+    this.selectedPatientId.set('');
+    this.createdPatientId.set('');
+  }
+
+  protected selectAndBook(patient: PatientSearchItem): void {
+    this.selectedPatientId.set(patient.patientId);
+    this.selectedPatient.set(patient);
+    this.createdPatientId.set('');
+    this.book();
+  }
+
+  protected calculateAge(dob?: string | null): number | null {
+    if (!dob) return null;
+    const birth = new Date(dob);
+    if (isNaN(birth.getTime())) return null;
+    const diffMs = Date.now() - birth.getTime();
+    const ageDate = new Date(diffMs);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
   }
 
   protected async createPatient(event: Event): Promise<void> {
@@ -153,6 +211,7 @@ export class ReceptionPatients {
         const response = await firstValueFrom(
           this.api.create({
             ...value,
+            doctorPracticeId: this.selectedPracticeId(),
             gender: value.gender as 'Male' | 'Female',
             primaryContactIsPrimary: true,
             profileImage: this.profileImage(),

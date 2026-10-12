@@ -1,4 +1,4 @@
-<main class="health-workspace" [dir]="uiLanguage.dir()">
+<main class="health-workspace patients-workspace" [dir]="uiLanguage.dir()">
   <app-page-header
     [heading]="(canSearch() ? 'reception.patients.find' : 'reception.patients.add') | t"
     [description]="
@@ -9,111 +9,464 @@
     actionIcon="add"
     (actionClicked)="registrationOpen.set(true)"
   />
+
   @if (messages().length && !registrationOpen()) {
     <div class="notice" role="alert">
-      @for (message of messages(); track $index) {
-        <p>{{ message | t }}</p>
-      }
+      <svg
+        class="notice-icon"
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <div class="notice-texts">
+        @for (message of messages(); track $index) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
     </div>
   }
+
   @if (selectedPatient(); as patient) {
-    <section class="selected-context" aria-live="polite">
-      <div>
-        <p>
-          {{
-            (createdPatientId() ? 'reception.patients.added' : 'reception.patients.selected') | t
-          }}
-        </p>
-        <h2>{{ displayName(patient) }}</h2>
-        <span dir="ltr" class="ltr-text">{{ patient.phoneNumber || patient.dateOfBirth }}</span>
+    <section class="selected-patient-hero selected-context" aria-live="polite">
+      <div class="selected-hero-left">
+        <div class="patient-avatar-circle" aria-hidden="true">
+          <span>{{ displayName(patient).charAt(0) }}</span>
+        </div>
+        <div class="selected-patient-info">
+          <div class="selected-badge-row">
+            <span class="selected-status-pill">
+              <span class="indicator-dot pulse"></span>
+              {{
+                (createdPatientId() ? 'reception.patients.added' : 'reception.patients.selected')
+                  | t
+              }}
+            </span>
+            @if (patient.gender) {
+              <span class="patient-gender-pill">
+                {{ (patient.gender === 'Male' ? 'register.male' : 'register.female') | t }}
+              </span>
+            }
+          </div>
+          <h2 class="selected-patient-name">{{ displayName(patient) }}</h2>
+          <div class="selected-patient-meta">
+            @if (patient.phoneNumber) {
+              <a [href]="'tel:' + patient.phoneNumber" class="meta-item meta-item-link" title="اتصال">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                  />
+                </svg>
+                <bdi dir="ltr" class="ltr-text">{{ patient.phoneNumber }}</bdi>
+              </a>
+            }
+            @if (patient.dateOfBirth) {
+              <span class="meta-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <bdi dir="ltr" class="ltr-text">{{ patient.dateOfBirth }}</bdi>
+                @if (calculateAge(patient.dateOfBirth); as age) {
+                  <span class="age-label">({{ age }} سنة)</span>
+                }
+              </span>
+            }
+          </div>
+        </div>
       </div>
-      @if (canBook()) {
-        <button type="button" class="btn btn-primary" (click)="book()">
-          {{ 'reception.appointments.book' | t }}
+      <div class="selected-hero-actions">
+        @if (canBook()) {
+          <button type="button" class="btn btn-primary btn-book-hero" (click)="book()">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+              <line x1="12" y1="14" x2="12" y2="18" />
+              <line x1="10" y1="16" x2="14" y2="16" />
+            </svg>
+            <span>{{ 'reception.appointments.book' | t }}</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-clear-hero"
+          (click)="clearSelection()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>{{ 'common.clearSelection' | t }}</span>
         </button>
-      }
+      </div>
     </section>
   }
+
   @if (canSearch()) {
     <section class="patient-panel" [attr.aria-label]="'reception.patients.find' | t">
       @if (!selectedPracticeId()) {
-        <p role="status">{{ 'reception.patients.chooseClinic' | t }}</p>
+        <div class="clinic-alert" role="status">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p>{{ 'reception.patients.chooseClinic' | t }}</p>
+        </div>
       } @else if (!selectedPracticeAllows('Patients.SearchBasic')) {
-        <p role="status">{{ 'reception.patients.searchUnavailable' | t }}</p>
+        <div class="clinic-alert" role="status">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p>{{ 'reception.patients.searchUnavailable' | t }}</p>
+        </div>
       }
+
+      <div class="search-section-header">
+        <div class="search-title-group">
+          <h2 class="search-heading">{{ 'reception.patients.find' | t }}</h2>
+          <p class="search-subheading">{{ 'reception.patients.searchHelp' | t }}</p>
+        </div>
+      </div>
+
       <form
-        class="row g-3"
+        class="search-filters-grid"
         (submit)="search(1, $event)"
         novalidate
         [attr.aria-busy]="isSearching()"
       >
-        <label class="col-12 col-md-5 form-field"
-          >{{ 'reception.patients.name' | t
-          }}<input
-            type="search"
-            [formField]="searchForm.name"
-            [placeholder]="'reception.patients.name' | t"
-        /></label>
-        <label class="col-12 col-sm-6 col-md-3 form-field"
-          >{{ 'workspace.phone' | t
-          }}<input
-            type="tel"
-            dir="ltr"
-            class="ltr-text"
-            [formField]="searchForm.phoneNumber"
-            [placeholder]="'reception.phoneExample' | t"
-        /></label>
-        <label class="col-12 col-sm-6 col-md-4 form-field"
-          >{{ 'reception.patients.birth' | t
-          }}<input type="date" dir="ltr" class="ltr-text" [formField]="searchForm.dateOfBirth"
-        /></label>
-        <div class="col-12">
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="
-              isSearching() ||
-              !selectedPracticeId() ||
-              !selectedPracticeAllows('Patients.SearchBasic')
-            "
-          >
-            {{ (isSearching() ? 'reservations.loading' : 'reception.patients.search') | t }}
-          </button>
-        </div>
-      </form>
-      @if (isSearching()) {
-        <p role="status">{{ 'reservations.loading' | t }}</p>
-      } @else if (results(); as page) {
-        <div class="result-list" aria-live="polite">
-          @for (patient of page.items; track patient.patientId) {
-            <button
-              class="patient-result"
-              type="button"
-              [attr.aria-pressed]="selectedPatientId() === patient.patientId"
-              (click)="choose(patient.patientId)"
+        <div class="form-field field-name">
+          <label for="searchPatientName">{{ 'reception.patients.name' | t }}</label>
+          <div class="input-with-icon">
+            <svg
+              class="field-icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
             >
-              <span
-                ><strong>{{ displayName(patient) }}</strong
-                ><span class="patient-meta"
-                  ><bdi class="ltr-text">{{ patient.phoneNumber }}</bdi>
-                  @if (!patient.phoneNumber) {
-                    <span>{{
-                      (patient.hasContactPhone
-                        ? 'reception.patients.contactPhone'
-                        : 'reception.patients.noPhone'
-                      ) | t
-                    }}</span>
-                  }
-                  <bdi class="ltr-text">{{ patient.dateOfBirth }}</bdi></span
-                ></span
-              >
-              <span class="selection-label">{{
-                (selectedPatientId() === patient.patientId
-                  ? 'reception.selected'
-                  : 'reception.selectPatient'
-                ) | t
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              id="searchPatientName"
+              type="search"
+              [formField]="searchForm.name"
+              [placeholder]="'reception.patients.name' | t"
+            />
+          </div>
+        </div>
+
+        <div class="form-field field-phone">
+          <label for="searchPatientPhone">{{ 'workspace.phone' | t }}</label>
+          <div class="input-with-icon">
+            <svg
+              class="field-icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+              />
+            </svg>
+            <input
+              id="searchPatientPhone"
+              type="tel"
+              dir="ltr"
+              class="ltr-text"
+              [formField]="searchForm.phoneNumber"
+              [placeholder]="'reception.phoneExample' | t"
+            />
+          </div>
+        </div>
+
+        <div class="form-field field-dob">
+          <label for="searchPatientDob">{{ 'reception.patients.birth' | t }}</label>
+          <div class="input-with-icon">
+            <svg
+              class="field-icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <input
+              id="searchPatientDob"
+              type="date"
+              dir="ltr"
+              class="ltr-text"
+              [formField]="searchForm.dateOfBirth"
+            />
+          </div>
+        </div>
+
+        <div class="search-actions-bar">
+          <div class="search-btns-group">
+            <button
+              type="submit"
+              class="btn btn-primary btn-search-submit"
+              [disabled]="
+                isSearching() ||
+                !selectedPracticeId() ||
+                !selectedPracticeAllows('Patients.SearchBasic')
+              "
+            >
+              @if (isSearching()) {
+                <span class="spinner-inline"></span>
+              } @else {
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              }
+              <span>{{
+                (isSearching() ? 'reservations.loading' : 'reception.patients.search') | t
               }}</span>
             </button>
+
+            @if (
+              searchModel().name ||
+              searchModel().phoneNumber ||
+              searchModel().dateOfBirth ||
+              results()
+            ) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-reset-search"
+                (click)="resetSearch()"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                <span>{{ 'reception.patients.resetSearch' | t }}</span>
+              </button>
+            }
+          </div>
+
+          @if (results(); as res) {
+            <span class="results-badge">
+              <span class="badge-dot"></span>
+              {{ 'reception.patients.resultsCount' | t: { count: res.totalCount } }}
+            </span>
+          }
+        </div>
+      </form>
+
+      @if (isSearching()) {
+        <div class="loading-state" role="status">
+          <span class="spinner-inline"></span>
+          <p>{{ 'reservations.loading' | t }}</p>
+        </div>
+      } @else if (results(); as page) {
+        <div class="patients-directory-list" aria-live="polite">
+          @for (patient of page.items; track patient.patientId) {
+            <div
+              class="patient-row-item"
+              [class.is-selected]="selectedPatientId() === patient.patientId"
+            >
+              <div class="patient-row-main" (click)="choose(patient.patientId)">
+                <div class="patient-avatar-circle" aria-hidden="true">
+                  <span>{{ displayName(patient).charAt(0) }}</span>
+                </div>
+                <div class="patient-details">
+                  <div class="patient-name-line">
+                    <strong class="patient-title">{{ displayName(patient) }}</strong>
+                    @if (patient.gender) {
+                      <span class="patient-gender-badge">
+                        {{ (patient.gender === 'Male' ? 'register.male' : 'register.female') | t }}
+                      </span>
+                    }
+                  </div>
+                  <div class="patient-meta-line">
+                    @if (patient.phoneNumber) {
+                      <span class="meta-pill">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="13"
+                          height="13"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                          />
+                        </svg>
+                        <bdi class="ltr-text">{{ patient.phoneNumber }}</bdi>
+                      </span>
+                    } @else {
+                      <span class="meta-pill meta-warning">
+                        {{
+                          (patient.hasContactPhone
+                            ? 'reception.patients.contactPhone'
+                            : 'reception.patients.noPhone'
+                          ) | t
+                        }}
+                      </span>
+                    }
+                    @if (patient.dateOfBirth) {
+                      <span class="meta-pill">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="13"
+                          height="13"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        <bdi class="ltr-text">{{ patient.dateOfBirth }}</bdi>
+                        @if (calculateAge(patient.dateOfBirth); as age) {
+                          <span class="age-suffix">({{ age }} سنة)</span>
+                        }
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="patient-row-actions">
+                @if (canBook()) {
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-quick-book"
+                    (click)="selectAndBook(patient)"
+                    [title]="'reception.appointments.book' | t"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                      <line x1="12" y1="14" x2="12" y2="18" />
+                      <line x1="10" y1="16" x2="14" y2="16" />
+                    </svg>
+                    <span>{{ 'reception.appointments.book' | t }}</span>
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="btn btn-sm btn-choose-patient"
+                  [class.btn-primary]="selectedPatientId() === patient.patientId"
+                  [class.btn-outline-secondary]="selectedPatientId() !== patient.patientId"
+                  (click)="choose(patient.patientId)"
+                >
+                  {{
+                    (selectedPatientId() === patient.patientId
+                      ? 'reception.selected'
+                      : 'reception.selectPatient'
+                    ) | t
+                  }}
+                </button>
+              </div>
+            </div>
           } @empty {
             <div class="empty-state">
               <img
@@ -127,24 +480,30 @@
               <p>{{ 'reception.patients.trySearch' | t }}</p>
               @if (canRegister()) {
                 <button class="btn btn-primary" type="button" (click)="registrationOpen.set(true)">
-                  {{ 'reception.patients.add' | t }}
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>{{ 'reception.patients.add' | t }}</span>
                 </button>
               }
             </div>
           }
         </div>
+
         @if (page.totalCount > page.pageSize) {
           <nav class="pager-nav" [attr.aria-label]="'ui.full.745' | t">
             <button
-              class="btn btn-outline-secondary"
+              class="btn btn-outline-secondary btn-pager"
               type="button"
               [disabled]="pageNumber() <= 1"
               (click)="search(pageNumber() - 1)"
             >
-              {{ 'discovery.previous' | t }}</button
-            ><span>{{ page.pageNumber }}</span
-            ><button
-              class="btn btn-outline-secondary"
+              {{ 'discovery.previous' | t }}
+            </button>
+            <span class="page-indicator">{{ page.pageNumber }}</span>
+            <button
+              class="btn btn-outline-secondary btn-pager"
               type="button"
               [disabled]="page.pageNumber * page.pageSize >= page.totalCount"
               (click)="search(pageNumber() + 1)"
@@ -154,7 +513,7 @@
           </nav>
         }
       } @else if (!messages().length) {
-        <div class="empty-state">
+        <div class="empty-state empty-search-prompt">
           <img
             class="state-empty-illustration"
             src="/SVG-AVATAR/Doctors-bro.svg"
@@ -164,22 +523,38 @@
           />
           <h2>{{ 'reception.patients.find' | t }}</h2>
           <p>{{ 'reception.patients.searchHelp' | t }}</p>
+          @if (canRegister()) {
+            <button
+              class="btn btn-outline-primary btn-add-empty"
+              type="button"
+              (click)="registrationOpen.set(true)"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>{{ 'reception.patients.add' | t }}</span>
+            </button>
+          }
         </div>
       }
     </section>
   } @else if (canRegister()) {
     <section class="patient-panel"><ng-container [ngTemplateOutlet]="registration" /></section>
   }
+
   @if (registrationOpen() && canRegister()) {
     <app-side-drawer
       [opened]="registrationOpen() && canRegister()"
       [busy]="isCreating()"
       [title]="'reception.patients.add' | t"
       (closed)="registrationOpen.set(false)"
-      ><ng-container [ngTemplateOutlet]="registration"
-    /></app-side-drawer>
+    >
+      <ng-container [ngTemplateOutlet]="registration" />
+    </app-side-drawer>
   }
 </main>
+
 <ng-template #registration>
   <form
     class="registration-form"
@@ -187,36 +562,59 @@
     novalidate
     [attr.aria-busy]="isCreating()"
   >
-    <fieldset [disabled]="isCreating()" class="row g-3">
-      <label class="col-12 form-field"
-        >{{ 'ui.full.748' | t
-        }}<input [formField]="createForm.nameAr" [placeholder]="'reception.arabicNameExample' | t"
-      /></label>
-      <label class="col-12 col-sm-6 form-field"
-        >{{ 'reception.patients.birth' | t
-        }}<input type="date" dir="ltr" class="ltr-text" [formField]="createForm.dateOfBirth"
-      /></label>
-      <label class="col-12 col-sm-6 form-field"
-        >{{ 'ui.full.750' | t
-        }}<select [formField]="createForm.gender">
-          <option value="">{{ 'ui.full.751' | t }}</option>
-          <option value="Male">{{ 'register.male' | t }}</option>
-          <option value="Female">{{ 'register.female' | t }}</option>
-        </select></label
-      >
-      <label class="col-12 form-field"
-        >{{ 'workspace.phone' | t
-        }}<input
+    <fieldset [disabled]="isCreating()" class="registration-fieldset">
+      <div class="section-title-row">
+        <h3>{{ 'register.stepPersonal' | t }}</h3>
+        <p class="section-subtitle">{{ 'reception.patients.registerHelp' | t }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="createNameAr">{{ 'reception.patients.nameAr' | t }}</label>
+        <input
+          id="createNameAr"
+          [formField]="createForm.nameAr"
+          [placeholder]="'reception.arabicNameExample' | t"
+        />
+      </div>
+
+      <div class="form-row-2col">
+        <div class="form-field">
+          <label for="createDob">{{ 'reception.patients.birth' | t }} *</label>
+          <input
+            id="createDob"
+            type="date"
+            dir="ltr"
+            class="ltr-text"
+            [formField]="createForm.dateOfBirth"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="createGender">{{ 'register.gender' | t }} *</label>
+          <select id="createGender" [formField]="createForm.gender">
+            <option value="">{{ 'register.selectGender' | t }}</option>
+            <option value="Male">{{ 'register.male' | t }}</option>
+            <option value="Female">{{ 'register.female' | t }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="createPhone">{{ 'workspace.phone' | t }}</label>
+        <input
+          id="createPhone"
           type="tel"
           dir="ltr"
           class="ltr-text"
           [formField]="createForm.phoneNumber"
           [placeholder]="'reception.phoneExample' | t"
-      /></label>
-      <div class="col-12">
+        />
+      </div>
+
+      <div class="disclosure-container">
         <details class="disclosure" [open]="!createModel().phoneNumber.trim()">
           <summary>{{ 'reception.patients.contact' | t }}</summary>
-          <p>
+          <p class="disclosure-help">
             {{
               (createModel().phoneNumber.trim()
                 ? 'reception.patients.contactOptional'
@@ -224,58 +622,93 @@
               ) | t
             }}
           </p>
-          <div class="row g-3">
-            <label class="col-12 form-field"
-              >{{ 'register.fullNameAr' | t }}<input [formField]="createForm.primaryContactNameAr"
-            /></label>
-            <label class="col-12 form-field"
-              >{{ 'workspace.phone' | t
-              }}<input
+          <div class="disclosure-fields">
+            <div class="form-field">
+              <label for="contactName">{{ 'register.fullNameAr' | t }}</label>
+              <input
+                id="contactName"
+                [formField]="createForm.primaryContactNameAr"
+                [placeholder]="'reception.contactNameExample' | t"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="contactPhone">{{ 'workspace.phone' | t }}</label>
+              <input
+                id="contactPhone"
                 type="tel"
                 dir="ltr"
                 class="ltr-text"
                 [formField]="createForm.primaryContactPhoneNumber"
-            /></label>
-            <label class="col-12 form-field"
-              >{{ 'ui.full.754' | t
-              }}<select [formField]="createForm.primaryContactRelationshipType">
+                [placeholder]="'reception.phoneExample' | t"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="contactRel">{{ 'family.requesterRole' | t }}</label>
+              <select id="contactRel" [formField]="createForm.primaryContactRelationshipType">
                 <option value="Father">{{ 'family.father' | t }}</option>
                 <option value="Mother">{{ 'family.mother' | t }}</option>
                 <option value="Guardian">{{ 'family.guardian' | t }}</option>
                 <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
                 <option value="Other">{{ 'common.other' | t }}</option>
-              </select></label
-            >
+              </select>
+            </div>
           </div>
         </details>
       </div>
-      <div class="col-12">
+
+      <div class="disclosure-container">
         <details class="disclosure">
           <summary>{{ 'reception.common.additional' | t }}</summary>
-          <div class="row g-3">
-            <label class="col-12 form-field"
-              >{{ 'common.nameEn' | t }}<input dir="ltr" [formField]="createForm.nameEn"
-            /></label>
-            <label class="col-12 form-field"
-              >{{ 'workspace.email' | t
-              }}<input type="email" dir="ltr" [formField]="createForm.email"
-            /></label>
-            <label class="col-12 form-field"
-              >{{ 'common.profilePhoto' | t
-              }}<input type="file" accept="image/*" (change)="fileChanged($event)" /><small>{{
-                'reception.patients.imageHint' | t
-              }}</small></label
-            >
-            <label class="col-12 form-field"
-              >{{ 'reception.patients.linkContact' | t
-              }}<input dir="ltr" [formField]="createForm.primaryContactLinkedPatientId" /><small>{{
-                'reception.patients.linkContactHelp' | t
-              }}</small></label
-            >
+          <div class="disclosure-fields">
+            <div class="form-field">
+              <label for="nameEn">{{ 'common.nameEn' | t }}</label>
+              <input
+                id="nameEn"
+                dir="ltr"
+                [formField]="createForm.nameEn"
+                [placeholder]="'reception.englishNameExample' | t"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="patientEmail">{{ 'workspace.email' | t }}</label>
+              <input
+                id="patientEmail"
+                type="email"
+                dir="ltr"
+                [formField]="createForm.email"
+                [placeholder]="'reception.patientEmailExample' | t"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="profilePhoto">{{ 'common.profilePhoto' | t }}</label>
+              <input
+                id="profilePhoto"
+                type="file"
+                accept="image/*"
+                (change)="fileChanged($event)"
+              />
+              <small class="field-hint">{{ 'reception.patients.imageHint' | t }}</small>
+            </div>
+
+            <div class="form-field">
+              <label for="linkedId">{{ 'reception.patients.linkContact' | t }}</label>
+              <input
+                id="linkedId"
+                dir="ltr"
+                [formField]="createForm.primaryContactLinkedPatientId"
+                [placeholder]="'reception.patientIdExample' | t"
+              />
+              <small class="field-hint">{{ 'reception.patients.linkContactHelp' | t }}</small>
+            </div>
           </div>
         </details>
       </div>
     </fieldset>
+
     @if (createForm().touched() && createForm().invalid()) {
       <div role="alert" class="notice">
         @for (error of createForm().errorSummary(); track $index) {
@@ -283,13 +716,18 @@
         }
       </div>
     }
+
     @if (registrationOpen()) {
       @for (message of messages(); track $index) {
-        <p role="alert">{{ message | t }}</p>
+        <p role="alert" class="notice-inline">{{ message | t }}</p>
       }
     }
-    <button type="submit" class="btn btn-primary" [disabled]="isCreating()">
-      {{ (isCreating() ? 'reservations.loading' : 'reception.patients.add') | t }}
+
+    <button type="submit" class="btn btn-primary btn-submit-registration" [disabled]="isCreating()">
+      @if (isCreating()) {
+        <span class="spinner-inline"></span>
+      }
+      <span>{{ (isCreating() ? 'reservations.loading' : 'reception.patients.add') | t }}</span>
     </button>
   </form>
 </ng-template>

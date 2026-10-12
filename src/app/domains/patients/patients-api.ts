@@ -28,6 +28,9 @@ export class PatientsApi {
     appendText(body, 'Gender', request.gender);
     appendText(body, 'PhoneNumber', request.phoneNumber);
     appendText(body, 'Email', request.email);
+    if (request.doctorPracticeId?.trim()) {
+      appendText(body, 'DoctorPracticeId', request.doctorPracticeId.trim());
+    }
     if (request.profileImage) body.append('ProfileImage', request.profileImage);
     if (
       !request.phoneNumber.trim() ||

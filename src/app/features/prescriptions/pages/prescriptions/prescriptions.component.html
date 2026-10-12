@@ -34,46 +34,65 @@
         }
       </div>
     } @else {
+      <div class="directory-header-bar">
+        <div class="directory-title-group">
+          <span class="directory-badge-dot" aria-hidden="true"></span>
+          <h3 class="directory-title">
+            {{ (patient ? 'prescriptions.patientDirectoryTitle' : 'prescriptions.doctorDirectoryTitle') | t }}
+          </h3>
+          <span class="directory-count-pill">
+            {{ page().totalCount }} {{ 'prescriptions.recordsCount' | t }}
+          </span>
+        </div>
+      </div>
       <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="table prescriptions-table align-middle mb-0">
           <caption class="visually-hidden">
-            {{
-              'medications.prescription' | t
-            }}
+            {{ 'medications.prescription' | t }}
           </caption>
           <thead>
             <tr>
-              <th scope="col">{{ 'reservations.doctor' | t }}</th>
-              <th scope="col">{{ 'reservations.practice' | t }}</th>
-              <th scope="col">{{ 'encounters.date' | t }}</th>
-              <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+              <th scope="col" class="th-doctor">{{ 'reservations.doctor' | t }}</th>
+              <th scope="col" class="th-practice">{{ 'reservations.practice' | t }}</th>
+              <th scope="col" class="th-date">{{ 'encounters.date' | t }}</th>
+              <th scope="col" class="th-status">{{ 'reservations.status' | t }}</th>
+              <th scope="col" class="th-actions">{{ 'reservations.inspect' | t }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of page().items; track item.prescriptionId) {
               <tr class="table-data-row">
-                <td>
+                <td class="td-doctor">
                   <div class="table-doctor-cell">
-                    <div class="doctor-avatar-badge">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div class="doctor-avatar-badge" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
                     </div>
                     <span class="cell-primary-text">{{ doctorName(item) }}</span>
                   </div>
                 </td>
-                <td>
-                  <span class="cell-subtle-text">{{ practiceName(item) }}</span>
+                <td class="td-practice">
+                  <div class="table-practice-cell">
+                    <div class="practice-icon-badge" aria-hidden="true">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="22.01"/><line x1="15" y1="22" x2="15" y2="22.01"/><line x1="10" y1="6" x2="14" y2="6"/><line x1="12" y1="4" x2="12" y2="8"/></svg>
+                    </div>
+                    <span class="cell-subtle-text">{{ practiceName(item) }}</span>
+                  </div>
                 </td>
-                <td dir="ltr" class="cell-date-text">{{ item.visitDateUtc | localizedDate: language.currentLang() }}</td>
-                <td>
+                <td class="td-date">
+                  <div class="table-date-cell">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="date-icon" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span dir="ltr" class="cell-date-text">{{ item.visitDateUtc | localizedDate: language.currentLang() }}</span>
+                  </div>
+                </td>
+                <td class="td-status">
                   <span class="status-pill status-{{ item.status.toLowerCase() }}">
-                    <span class="pill-dot"></span>
-                    {{ 'prescriptions.status.' + item.status | t }}
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span>{{ 'prescriptions.status.' + item.status | t }}</span>
                   </span>
                 </td>
-                <td>
+                <td class="td-actions">
                   <button class="btn-inspect-action" (click)="inspect(item.prescriptionId)">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>{{ 'reservations.inspect' | t }}</span>
                   </button>
                 </td>
@@ -82,20 +101,28 @@
           </tbody>
         </table>
       </div>
-      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+      <nav class="pagination-row" [attr.aria-label]="'reservations.pagination' | t">
         <button
-          class="btn btn-outline-secondary"
+          class="btn-pagination"
           [disabled]="page().pageNumber <= 1"
           (click)="load(page().pageNumber - 1)"
         >
-          {{ 'reservations.previous' | t }}</button
-        ><span>{{ page().pageNumber }} · {{ page().totalCount }}</span
-        ><button
-          class="btn btn-outline-secondary"
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          <span>{{ 'reservations.previous' | t }}</span>
+        </button>
+        <div class="pagination-indicator">
+          <span class="page-current">{{ page().pageNumber }}</span>
+          <span class="page-sep">/</span>
+          <span class="page-total">{{ totalPages() }}</span>
+          <span class="page-count-badge">({{ page().totalCount }} {{ 'prescriptions.totalCount' | t }})</span>
+        </div>
+        <button
+          class="btn-pagination"
           [disabled]="page().pageNumber * page().pageSize >= page().totalCount"
           (click)="load(page().pageNumber + 1)"
         >
-          {{ 'reservations.next' | t }}
+          <span>{{ 'reservations.next' | t }}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
       </nav>
     }

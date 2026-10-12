@@ -153,7 +153,12 @@ describe('ReceptionPatients', () => {
 
     await component['createPatient'](new Event('submit', { cancelable: true }));
 
-    expect(patientsApi.create).toHaveBeenCalled();
+    expect(patientsApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nameAr: 'مريض جديد',
+        doctorPracticeId: samplePractice.id,
+      }),
+    );
     expect(toast.success).toHaveBeenCalled();
     expect(component['createdPatientId']()).toBe('new-pat-1');
   });
@@ -302,4 +307,60 @@ describe('ReceptionPatients', () => {
     expect(component['selectedPatient']()).toBeNull();
     expect(component['createdPatientId']()).toBe('');
   });
+
+  it('resets search fields and results when resetSearch is called', () => {
+    component['searchModel'].set({
+      name: 'Test',
+      phoneNumber: '0101111',
+      dateOfBirth: '1990-01-01',
+      pageSize: 20,
+    });
+    component['results'].set(samplePage);
+    component['resetSearch']();
+    expect(component['searchModel']().name).toBe('');
+    expect(component['searchModel']().phoneNumber).toBe('');
+    expect(component['results']()).toBeNull();
+  });
+
+  it('clears selected patient when clearSelection is called', () => {
+    component['results'].set(samplePage);
+    component['choose']('pat-1');
+    expect(component['selectedPatient']()).toBeTruthy();
+    component['clearSelection']();
+    expect(component['selectedPatient']()).toBeNull();
+    expect(component['selectedPatientId']()).toBe('');
+  });
+
+  it('selects and navigates to book in one step via selectAndBook', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    component['selectAndBook'](sampleSearchItem);
+    expect(component['selectedPatientId']()).toBe('pat-1');
+    expect(navigate).toHaveBeenCalledWith(
+      ['/reception/reservations'],
+      expect.objectContaining({
+        queryParams: expect.objectContaining({
+          practiceId: 'practice-1',
+          patientId: 'pat-1',
+        }),
+      }),
+    );
+  });
+
+  it('calculates age correctly from date of birth', () => {
+    expect(component['calculateAge'](null)).toBeNull();
+    expect(component['calculateAge']('')).toBeNull();
+    expect(component['calculateAge']('invalid-date')).toBeNull();
+    const currentYear = new Date().getFullYear();
+    const age = component['calculateAge'](`${currentYear - 25}-01-01`);
+    expect(age).toBeGreaterThanOrEqual(24);
+  });
+
+  it('switches practice when onPracticeChange is triggered', () => {
+    const context = TestBed.inject(ReceptionPracticeContext);
+    const spy = vi.spyOn(context, 'select');
+    const mockEvent = { target: { value: 'practice-2' } } as unknown as Event;
+    component['onPracticeChange'](mockEvent);
+    expect(spy).toHaveBeenCalledWith('practice-2');
+  });
 });
+

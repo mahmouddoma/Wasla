@@ -63,17 +63,109 @@ p,
   flex-wrap: wrap;
 }
 .current-patient {
-  padding-block: 16px;
-  border-bottom: 1px solid var(--wasla-border-subtle);
+  padding: 16px 20px;
+  background: var(--wasla-app, #f8fafc);
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  border-radius: var(--radius-card, 12px);
+  margin-top: 12px;
 }
-.current-patient:last-child {
-  border-bottom: 0;
-}
-.current-patient h3 {
-  margin-block: 8px;
-}
-.current-patient > div {
+.current-patient__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
+}
+.now-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: fit-content;
+  border: 1px solid var(--wasla-border, #e2e8f0);
+}
+.now-status-badge.called {
+  background: #fffbeb;
+  color: #b45309;
+}
+.now-status-badge.in-progress {
+  background: var(--wasla-teal-50, #f0fdfa);
+  color: var(--wasla-teal-700, #0f766e);
+}
+.status-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.now-patient-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.now-patient-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950);
+}
+.now-ticket-num-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--wasla-surface, #fff);
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  border-radius: var(--radius-control, 8px);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wasla-navy-950);
+}
+.now-ticket-num-badge .num {
+  color: var(--wasla-teal-700, #0f766e);
+  font-weight: 800;
+}
+.now-visit-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--wasla-slate, #64748b);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.queue-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wasla-teal, #0ba5a0);
+}
+.quiet-state-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: var(--wasla-app, #f8fafc);
+  border: 1px solid var(--wasla-border-subtle, #f1f5f9);
+  border-radius: var(--radius-control, 8px);
+  margin-top: 12px;
+  color: var(--wasla-slate, #64748b);
+  font-size: 0.875rem;
+}
+.quiet-state-text {
+  margin: 0;
+  font-weight: 600;
 }
 .queue-actions {
   display: flex;
@@ -85,10 +177,33 @@ p,
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.waiting-count {
+.waiting-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.waiting-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: var(--wasla-teal-50, #f0fdfa);
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  border-radius: 999px;
+  font-size: 0.8125rem;
   font-weight: 700;
-  color: var(--wasla-teal-700);
-  margin-inline-start: 8px;
+  color: var(--wasla-teal-700, #0f766e);
+}
+.call-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.ticket-rows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
 }
 .ticket-row {
   display: grid;
@@ -97,43 +212,168 @@ p,
   align-items: center;
   text-align: start;
   width: 100%;
-  padding: 16px 0;
-  min-height: 44px;
-  border: 0;
-  border-bottom: 1px solid var(--wasla-border-subtle);
-  background: transparent;
+  padding: 12px 16px;
+  min-height: 52px;
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  border-radius: var(--radius-control, 10px);
+  background: var(--wasla-surface, #fff);
   color: var(--wasla-navy-950);
   font: inherit;
   cursor: pointer;
-}
-.ticket-row:last-child {
-  border-bottom: 0;
+  transition: all 0.15s ease;
 }
 .ticket-row:hover {
-  background: var(--wasla-app);
+  background: var(--wasla-app, #f8fafc);
+  border-color: var(--wasla-border-hover, #cbd5e1);
 }
-.ticket-meta-block,
-.row-context {
-  display: grid;
+.position-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--wasla-app, #f8fafc);
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950);
+}
+.ticket-meta-block {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
-.ticket-meta-block strong {
-  overflow-wrap: anywhere;
+.ticket-patient-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.ticket-meta-block > span,
+.ticket-patient-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--wasla-navy-950);
+}
+.ticket-num-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--wasla-teal-50, #f0fdfa);
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--wasla-teal-700, #0f766e);
+}
+.ticket-sub-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: var(--wasla-slate, #64748b);
+}
+.visit-type-label {
+  font-weight: 600;
+}
+.ahead-count {
+  font-size: 0.75rem;
+}
 .row-context {
-  font-size: 0.875rem;
-  color: var(--wasla-slate);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.position-circle {
-  font-weight: 800;
-  min-width: 28px;
-  text-align: center;
+.btn-row-inspect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--wasla-slate, #64748b);
+  padding: 4px 10px;
+  border-radius: var(--radius-control, 6px);
+  background: var(--wasla-app, #f8fafc);
+  border: 1px solid var(--wasla-border-subtle, #f1f5f9);
+}
+.ticket-row:hover .btn-row-inspect {
+  color: var(--wasla-teal-700, #0f766e);
+  border-color: var(--wasla-border, #e2e8f0);
 }
 .priority-label {
-  color: var(--wasla-teal-700);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  color: #92400e;
+  font-size: 0.75rem;
   font-weight: 700;
+}
+.empty-waiting-block {
+  padding: 32px 16px;
+  text-align: center;
+}
+.btn-empty-walk-in {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 24px;
+  font-weight: 700;
+  margin-top: 12px;
+}
+.btn-action-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid var(--wasla-border);
+  border-radius: var(--radius-control);
+  background: var(--wasla-surface);
+  color: var(--wasla-navy-950);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-action-refresh:hover:not(:disabled) {
+  background: var(--wasla-surface-hover, #f8fafc);
+  border-color: var(--wasla-border-hover, #cbd5e1);
+}
+.clinic-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--wasla-surface, #fff);
+  border: 1px solid var(--wasla-border);
+  border-radius: var(--radius-control);
+  font-size: 0.875rem;
+}
+.clinic-badge-label {
+  color: var(--wasla-slate);
+  font-weight: 600;
+}
+.clinic-badge-name {
+  color: var(--wasla-teal-700);
+  font-weight: 800;
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 summary {
   min-height: 44px;

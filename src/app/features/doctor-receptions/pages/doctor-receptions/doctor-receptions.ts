@@ -348,6 +348,12 @@ export class DoctorReceptions {
     return permissionLabel(permission.code, language, localized ?? undefined);
   }
 
+  protected getPracticeName(practiceId: string): string {
+    const practice = this.practices().find((item) => item.id === practiceId);
+    if (!practice) return '';
+    return this.langService.currentLang() === 'ar' ? practice.nameAr : (practice.nameEn || practice.nameAr);
+  }
+
   protected logout(): void {
     this.session.clear();
     void this.router.navigate(['/login']);

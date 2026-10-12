@@ -1,126 +1,501 @@
 :host {
   display: block;
 }
+
 .editor {
-  display: grid;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
+
 fieldset {
   border: 0;
   padding: 0;
   margin: 0;
   min-width: 0;
-  display: grid;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-header,
-footer {
+
+.editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
 }
+
 h2 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950, #071c30);
   margin: 0;
 }
-label {
-  display: grid;
+
+/* ── Form Labels & Controls ───────────────────────────────────────── */
+.form-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
+
+.label-text {
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.auto-selected-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--wasla-teal-700, #076d69);
+  background: var(--wasla-teal-50, #f0fbfa);
+  padding: 1px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(11, 165, 160, 0.15);
+}
+
 input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid var(--wasla-border);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
   border-radius: var(--radius-control, 10px);
-  background: var(--wasla-surface);
+  background: #ffffff;
   padding: 10px 14px;
-  color: inherit;
+  color: var(--wasla-navy-950, #071c30);
   font: inherit;
+  font-size: 0.88rem;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--wasla-border, #cbd5e1);
+  background: #fcfdfe;
+}
+
 select {
-  height: 42px;
+  height: 44px;
   appearance: none;
   padding-inline-end: 38px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%2364748b'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
+  cursor: pointer;
 }
+
 :host-context([dir='rtl']) select {
   background-position: left 14px center;
 }
-button {
-  padding: 10px 16px;
-  border: 1px solid var(--wasla-border);
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
+
+textarea {
+  resize: vertical;
+  min-height: 72px;
 }
-.primary {
-  background: var(--wasla-teal-700);
-  color: white;
-  border-color: transparent;
-}
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-button:focus-visible {
+button:focus-visible,
+summary:focus-visible {
   outline: none;
+  border-color: var(--wasla-teal-600, #0ba5a0);
   box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
 }
-.consent {
+
+/* ── Section Dividers & Grouping (No Carditis) ───────────────────── */
+.booking-section-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
+}
+
+.booking-section-card:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.schedule-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 540px) {
+  .schedule-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Selected Patient Display (Rule 32.1: Subtle Neutral Border) ──── */
+.selected-patient {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(7, 28, 48, 0.02);
+}
+
+.patient-badge-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.patient-badge-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--wasla-teal-50, #f0fbfa);
+  color: var(--wasla-teal-600, #0ba5a0);
+  border: 1px solid rgba(11, 165, 160, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.patient-badge-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.patient-badge-lbl {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--wasla-slate, #64748b);
+}
+
+.patient-badge-name {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--wasla-navy-950, #071c30);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-toggle-change-patient {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid var(--wasla-border, #cbd5e1);
+  border-radius: 8px;
+  color: var(--wasla-navy-950, #071c30);
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-change-patient:hover {
+  background: #f1f5f9;
+  border-color: var(--wasla-navy-950, #071c30);
+}
+
+/* ── Patient Search Container ────────────────────────────────────── */
+.patient-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 12px;
+}
+
+.search-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-box-title {
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.new-patient-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--wasla-border, #cbd5e1);
+}
+
+.new-patient-hint {
+  font-size: 0.78rem;
+  color: var(--wasla-slate, #64748b);
+  font-weight: 600;
+}
+
+.btn-new-patient-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--wasla-teal-700, #087f7b);
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btn-new-patient-link:hover {
+  background: #f1f5f9;
+  border-color: var(--wasla-teal-600, #0ba5a0);
+}
+
+.search-notice-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--wasla-slate, #64748b);
+  line-height: 1.5;
+}
+
+/* ── Inline Loader & Availability Notice ─────────────────────────── */
+.editor-inline-loader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--wasla-slate, #64748b);
+}
+
+.spinner-ring-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(11, 165, 160, 0.2);
+  border-top-color: var(--wasla-teal-600, #0ba5a0);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.spinner-ring-sm.light {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-notice-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  color: var(--wasla-slate, #64748b);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ── Primary Service Select ──────────────────────────────────────── */
+.primary-service-select {
+  font-weight: 750;
+  color: var(--wasla-navy-950, #071c30);
+  background-color: #ffffff;
+}
+
+/* ── Optional Note Accordion ─────────────────────────────────────── */
+.note-accordion {
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.note-summary {
+  list-style: none;
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--wasla-slate, #64748b);
+  background: #f8fafc;
+  transition: all 0.15s ease;
+}
+
+.note-summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-left svg {
+  color: var(--wasla-slate, #64748b);
+  flex-shrink: 0;
+}
+
+.optional-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--wasla-slate, #94a3b8);
+}
+
+.note-summary:hover {
+  background: #f1f5f9;
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.note-accordion[open] .note-summary {
+  border-bottom: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  color: var(--wasla-navy-950, #071c30);
+}
+
+.note-body {
+  padding: 12px;
+  background: #ffffff;
+}
+
+.note-body textarea {
+  min-height: 64px;
+}
+
+/* ── Consent Checkbox ────────────────────────────────────────────── */
+.consent {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   position: relative;
   cursor: pointer;
+  user-select: none;
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: var(--wasla-navy-950, #071c30);
 }
+
 .sr-only-chk {
   position: absolute;
   opacity: 0;
   width: 1px;
   height: 1px;
 }
+
 .check {
   width: 20px;
   height: 20px;
-  border: 1px solid var(--wasla-border);
-  border-radius: 4px;
-}
-.sr-only-chk:checked + .check {
-  background: var(--wasla-teal-700);
-}
-.sr-only-chk:focus-visible + .check {
-  outline: 2px solid var(--wasla-teal-700);
-  outline-offset: 2px;
-}
-footer {
-  border-top: 1px solid var(--wasla-border);
-  padding-top: 20px;
+  border: 1.5px solid var(--wasla-border, #cbd5e1);
+  border-radius: 6px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
-.selected-patient {
-  display: grid;
-  gap: 8px;
-  padding-block: 16px;
-  border-bottom: 1px solid var(--wasla-border-subtle);
+.sr-only-chk:checked + .check {
+  background: var(--wasla-teal-600, #0ba5a0);
+  border-color: var(--wasla-teal-600, #0ba5a0);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
 }
-.selected-patient span {
-  color: var(--wasla-slate);
+
+.sr-only-chk:focus-visible + .check {
+  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.18);
 }
-.selected-patient strong {
-  overflow-wrap: anywhere;
+
+.restore-prompt {
+  font-size: 0.9rem;
+  color: var(--wasla-navy-950, #071c30);
+  margin: 0;
+  line-height: 1.5;
 }
-summary {
+
+/* ── Footer & Submit Button ──────────────────────────────────────── */
+.editor-footer {
+  border-top: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  padding-top: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-editor-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  background: var(--wasla-teal-600, #0ba5a0);
+  color: #ffffff;
+  border: 1px solid var(--wasla-teal-700, #098b87);
+  font-size: 0.96rem;
+  font-weight: 800;
   cursor: pointer;
-  font-weight: 700;
-  margin-bottom: 16px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(11, 165, 160, 0.25);
 }
-summary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
+
+.btn-editor-submit:hover:not(:disabled) {
+  background: var(--wasla-teal-700, #098b87);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 165, 160, 0.32);
+}
+
+.btn-editor-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background: var(--wasla-slate, #94a3b8);
+  border-color: var(--wasla-slate, #94a3b8);
 }

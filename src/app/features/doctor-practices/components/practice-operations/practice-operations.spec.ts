@@ -53,7 +53,9 @@ describe('PracticeOperations', () => {
     rowVersion: 'AQID',
   };
 
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   beforeEach(async () => {
+    localStorage.setItem('wasla_lang', 'ar');
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [PracticeOperations],

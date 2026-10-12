@@ -849,7 +849,14 @@ export class ReservationWorkspaceStore {
           );
         }
       } catch (error) {
-        if (sequence === this.eligibilitySequence) await this.failure(error);
+        if (sequence === this.eligibilitySequence) {
+          this.eligibilities.set([]);
+          if (
+            !(error instanceof HttpErrorResponse && (error.status === 404 || error.status === 403))
+          ) {
+            await this.failure(error);
+          }
+        }
       }
     }
     if (sequence === this.eligibilitySequence) await this.openEditor('create');

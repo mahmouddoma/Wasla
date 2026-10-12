@@ -1,5 +1,5 @@
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -39,6 +39,11 @@ export class PrescriptionsComponent implements OnInit {
     totalCount: 0,
     pageNumber: 1,
     pageSize: 20,
+  });
+  readonly totalPages = computed(() => {
+    const p = this.page();
+    if (!p || !p.pageSize) return 1;
+    return Math.max(1, Math.ceil(p.totalCount / p.pageSize));
   });
   readonly detail = signal<PatientPrescription | null>(null);
   readonly doctorPrescriptionId = signal('');
@@ -119,13 +124,13 @@ export class PrescriptionsComponent implements OnInit {
     if (!item) return '';
     return this.language.currentLang() === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
   }
-  doctorName(item: any): string {
+  doctorName(item: PatientPrescription | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = item?.doctor?.nameAr || item?.doctorNameAr;
     const en = item?.doctor?.nameEn || item?.doctorNameEn;
     return isAr ? (ar || en || '') : (en || ar || '');
   }
-  practiceName(item: any): string {
+  practiceName(item: PatientPrescription | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = item?.practice?.nameAr || item?.practiceNameAr;
     const en = item?.practice?.nameEn || item?.practiceNameEn;

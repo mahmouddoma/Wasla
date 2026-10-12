@@ -575,4 +575,13 @@ describe('DoctorReceptions', () => {
     expect(toast).toHaveBeenCalledWith('Refresh failed');
     expect(component['isSubmitting']()).toBe(false);
   });
+
+  it('resolves localized practice name from loaded practices', async () => {
+    await createAndInitializeComponent();
+    component['practices'].set([
+      { id: 'practice-custom', nameAr: 'فرع الدقي', nameEn: 'Dokki Branch' } as DoctorPractice,
+    ]);
+    expect(component['getPracticeName']('practice-custom')).toBe('فرع الدقي');
+    expect(component['getPracticeName']('non-existent')).toBe('');
+  });
 });

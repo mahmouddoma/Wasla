@@ -280,6 +280,11 @@ export const TRANSLATIONS: TranslationDictionary = {
   },
   'tickets.walkIn.changePatient': { ar: 'اختيار مريض آخر', en: 'Choose another patient' },
   'tickets.walkIn.knownRecord': { ar: 'تم اختيار سجل المريض', en: 'Patient record selected' },
+  'tickets.walkIn.registerNewPatient': {
+    ar: 'تسجيل مريض جديد في العيادة',
+    en: 'Register new patient in clinic',
+  },
+  'tickets.waitingCount': { ar: 'في الانتظار', en: 'waiting' },
   'tickets.queue.now': { ar: 'الآن', en: 'Now' },
   'tickets.queue.noneNow': {
     ar: 'لا يوجد مريض عند الطبيب أو تم نداؤه الآن',
@@ -404,29 +409,42 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'تعذر البحث. راجع البيانات واضغط بحث للمحاولة مرة أخرى',
     en: 'Search failed. Check the details and press Search to retry.',
   },
-  'reception.appointments.book': { ar: 'حجز موعد', en: 'Book appointment' },
+  'reception.patients.resetSearch': { ar: 'إعادة ضبط البحث', en: 'Reset search' },
+  'reception.patients.resultsCount': { ar: 'نتائج البحث ({count})', en: 'Search results ({count})' },
+  'reception.patients.selectAndBook': { ar: 'حجز موعد للمريض', en: 'Book for patient' },
+  'reception.patients.nameAr': { ar: 'اسم المريض (بالعربية) *', en: 'Patient name (Arabic) *' },
+  'reception.patients.clearSelection': { ar: 'إلغاء التحديد', en: 'Clear selection' },
+  'reception.appointments.book': { ar: 'تأكيد حجز الموعد', en: 'Confirm appointment' },
+  'reception.appointments.confirmBooking': { ar: 'تأكيد حجز الموعد', en: 'Confirm appointment' },
   'reception.appointments.saveTime': { ar: 'حفظ الموعد الجديد', en: 'Save new time' },
   'reception.appointments.cancel': { ar: 'إلغاء الموعد', en: 'Cancel appointment' },
   'reception.appointments.restore': { ar: 'استعادة الموعد', en: 'Restore appointment' },
   'reception.appointments.linkedPatient': {
-    ar: 'المريض المحدد من رابط الحجز',
-    en: 'Patient selected from the booking link',
+    ar: 'المريض المحدد',
+    en: 'Selected patient',
   },
-  'reception.appointments.changePatient': { ar: 'اختيار مريض آخر', en: 'Choose another patient' },
+  'reception.appointments.changePatient': { ar: 'تغيير المريض', en: 'Change patient' },
   'reception.appointments.selectFromPatients': {
     ar: 'اختر المريض من صفحة المرضى لحجز موعد',
     en: 'Select the patient on the Patients page to book an appointment.',
   },
   'reception.appointments.details': { ar: 'تفاصيل الموعد', en: 'Appointment details' },
   'reception.appointments.editorHelp': {
-    ar: 'اختر المريض ثم تاريخ ووقت الموعد',
-    en: 'Choose the patient, then the appointment date and time.',
+    ar: 'اكتب أي تفاصيل أو ملاحظات خاصة بالطبيب (اختياري)',
+    en: 'Write any specific details or notes for the doctor (optional)',
   },
-  'reception.appointments.visitPrice': { ar: 'نوع الزيارة والسعر', en: 'Visit type and price' },
+  'reception.appointments.visitPrice': { ar: 'نوع الكشف والسعر', en: 'Visit type and price' },
+  'reception.appointments.autoSelected': { ar: 'تلقائي', en: 'Auto' },
+  'reception.patients.notRegistered': { ar: 'المريض غير مسجل في النظام؟', en: 'Patient not registered?' },
   'reception.appointments.moreFilters': { ar: 'فلاتر إضافية', en: 'More filters' },
   'reception.appointments.view.Today': { ar: 'اليوم', en: 'Today' },
   'reception.appointments.view.Upcoming': { ar: 'القادمة', en: 'Upcoming' },
   'reception.appointments.view.All': { ar: 'الكل', en: 'All' },
+  'reception.appointments.prevDay': { ar: 'اليوم السابق', en: 'Previous day' },
+  'reception.appointments.nextDay': { ar: 'اليوم التالي', en: 'Next day' },
+  'reception.appointments.todayBadge': { ar: 'اليوم', en: 'Today' },
+  'reception.appointments.backToToday': { ar: 'العودة لليوم', en: 'Back to today' },
+  'reception.appointments.dateNav': { ar: 'التنقل بين الأيام', en: 'Day navigation' },
   'reception.appointments.open': { ar: 'فتح', en: 'Open' },
   'reception.appointments.empty': { ar: 'لا توجد مواعيد مطابقة', en: 'No matching appointments' },
   'reception.appointments.emptyHelp': {
@@ -464,6 +482,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'portal.group.management': { ar: 'إدارة العيادة', en: 'Clinic management' },
   'portal.group.finance': { ar: 'المدفوعات والإيرادات', en: 'Payments and revenue' },
   'portal.group.account': { ar: 'حسابي وأسرتي', en: 'My account and family' },
+  'workspace.activePractice': { ar: 'العيادة الحالية', en: 'Current clinic' },
   'workspace.home.reception': { ar: 'يومك في العيادة', en: 'Your clinic day' },
   'workspace.home.doctor': { ar: 'يومك مع المرضى', en: 'Your day with patients' },
   'workspace.home.patient': { ar: 'مواعيدك ورعايتك', en: 'Your appointments and care' },
@@ -500,6 +519,13 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'اختر العيادة أعلى الصفحة لفتح حجوزاتها وقائمة الانتظار.',
     en: 'Select a clinic at the top to open its appointments and queue.',
   },
+  'workspace.switchPractice': { ar: 'تبديل العيادة', en: 'Switch clinic' },
+  'workspace.switchTo': { ar: 'التبديل إلى', en: 'Switch to' },
+  'workspace.availablePractices': {
+    ar: 'اختر العيادة للبدء مباشرة:',
+    en: 'Choose a clinic to start:',
+  },
+  'workspace.enterPractice': { ar: 'دخول للعيادة', en: 'Open clinic' },
   'workspace.noPractices': {
     ar: 'لا توجد عيادة مرتبطة بحسابك',
     en: 'No clinic is assigned to you',
@@ -533,6 +559,11 @@ export const TRANSLATIONS: TranslationDictionary = {
   'workspace.task.openQueueDesc': {
     ar: 'راجع المرضى المنتظرين وترتيب دخولهم.',
     en: 'Review waiting patients and their order.',
+  },
+  'workspace.task.openFinance': { ar: 'المدفوعات والخزينة', en: 'Payments & Cash' },
+  'workspace.task.openFinanceDesc': {
+    ar: 'متابعة المدفوعات اليومية وتحصيل الكشوفات.',
+    en: 'Track daily payments and fee collection.',
   },
   'workspace.task.nextPatient': { ar: 'فتح قائمة المرضى', en: 'Open the patient queue' },
   'workspace.task.nextPatientDesc': {
@@ -609,6 +640,40 @@ export const TRANSLATIONS: TranslationDictionary = {
   'workspace.manageClinicsDesc': {
     ar: 'إدارة بيانات العيادة ومواعيد العمل وأسعار الكشف',
     en: 'Clinic info, working hours and consultation fees',
+  },
+  'workspace.quickPatientWorkflowTitle': {
+    ar: 'دليل المريض: كيف تبدأ رحلتك العلاجية في ٣ خطوات بسيطة؟',
+    en: 'Patient Guide: How to manage your healthcare journey in 3 simple steps?',
+  },
+  'workspace.quickReceptionWorkflowTitle': {
+    ar: 'دليل الاستقبال: كيف تدير عملك اليومي في ٣ خطوات؟',
+    en: 'Reception Guide: How to manage your day in 3 simple steps?',
+  },
+  'workspace.quickReceptionWorkflowSubtitle': {
+    ar: 'خطوات واضحة وسريعة لتسجيل الحضور وتنظيم المواعيد والدور.',
+    en: 'Clear and simple steps to check in patients and manage appointments and queue.',
+  },
+  'workspace.quickReceptionStep1Title': {
+    ar: '١. مراجعة مواعيد اليوم',
+    en: '1. Review Today’s Bookings',
+  },
+  'workspace.quickReceptionStep1Desc': {
+    ar: 'افتح الحجوزات لمعرفة المرضى المتوقع حضورهم ومواعيد كشفهم.',
+    en: 'Open bookings to see patients expected today and their times.',
+  },
+  'workspace.quickReceptionStep2Title': { ar: '٢. تسجيل وصول المريض', en: '2. Check-in & Queue' },
+  'workspace.quickReceptionStep2Desc': {
+    ar: 'عند حضور المريض، سجّل وصوله لإصدار رقم الدور وإدخاله صالة الانتظار.',
+    en: 'When a patient arrives, mark check-in to issue a queue ticket and add them to the queue.',
+  },
+  'workspace.quickReceptionStep3Title': { ar: '٣. المناداة وتحصيل الكشف', en: '3. Call & Payment' },
+  'workspace.quickReceptionStep3Desc': {
+    ar: 'تابع شاشة الانتظار ونادِ على المريض لدخول غرفة الطبيب مع تحصيل الرسوم.',
+    en: 'Follow the queue to call the patient to the doctor room and collect fees.',
+  },
+  'workspace.quickPatientWorkflowSubtitle': {
+    ar: 'خطوات واضحة وبسيطة لحجز موعدك ومتابعة كشفك ودورك في العيادة.',
+    en: 'Clear and simple steps to book appointments and track your turn at the clinic.',
   },
   'workspace.quickPatientStep1Title': { ar: '١. البحث عن طبيب', en: '1. Find a Doctor' },
   'workspace.quickPatientStep1Desc': {
@@ -688,6 +753,22 @@ export const TRANSLATIONS: TranslationDictionary = {
   'prescriptions.subtitle': {
     ar: 'روشتات الزيارات المكتملة وتعليمات الأدوية.',
     en: 'Prescriptions from completed visits and medication instructions.',
+  },
+  'prescriptions.patientDirectoryTitle': {
+    ar: 'سجل الروشتات الطبية',
+    en: 'Prescriptions History',
+  },
+  'prescriptions.doctorDirectoryTitle': {
+    ar: 'قائمة الروشتات الطبية',
+    en: 'Medical Prescriptions Directory',
+  },
+  'prescriptions.recordsCount': {
+    ar: 'روشتة',
+    en: 'prescriptions',
+  },
+  'prescriptions.totalCount': {
+    ar: 'إجمالي',
+    en: 'total',
   },
   'prescriptions.empty': { ar: 'لا توجد روشتات للعرض', en: 'No prescriptions to show' },
   'prescriptions.openFromVisit': {
@@ -886,6 +967,19 @@ export const TRANSLATIONS: TranslationDictionary = {
   'medications.prescriptionStatus.Draft': { ar: 'مسودة', en: 'Draft' },
   'medications.prescriptionStatus.Finalized': { ar: 'معتمدة', en: 'Finalized' },
   'medications.prescriptionStatus.Voided': { ar: 'ملغاة', en: 'Voided' },
+  'medications.itemsCountTitle': { ar: 'الأدوية والجرعات المقررة', en: 'Prescribed Medications' },
+  'medications.safetyNoticeTitle': {
+    ar: 'إرشادات السلامة الدوائية',
+    en: 'Medication Safety Guidelines',
+  },
+  'medications.safetyNoticeBody': {
+    ar: 'يُرجى الالتزام بالجرعات المحددة ومواعيد تناول الدواء بدقة. عند حدوث أي أعراض غير معتادة، يُرجى استشارة الطبيب المعالج فوراً.',
+    en: 'Please adhere strictly to specified dosages and schedules. Consult your treating physician immediately if unexpected symptoms occur.',
+  },
+  'medications.printPrescription': {
+    ar: 'طباعة الروشتة أو الحفظ كـ PDF',
+    en: 'Print Prescription or Save as PDF',
+  },
   'navigation.drug-catalog': { ar: 'الأدوية', en: 'Medications' },
   'navigation.drug-catalog-managers': { ar: 'مسؤولو الأدوية', en: 'Catalog managers' },
   'permissions.group.DrugCatalog': { ar: 'دليل الأدوية', en: 'Drug catalog' },
@@ -1665,6 +1759,27 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'اختر العيادة أو غيّر البحث لعرض الزيارات.',
     en: 'Choose a practice or change the search to view visits.',
   },
+  'encounters.patientVisitCompleted': { ar: 'زيارة طبية مكتملة', en: 'Completed Medical Visit' },
+  'encounters.diagnosisAndRecommendations': {
+    ar: 'التشخيص الطبي والتوصيات',
+    en: 'Medical Diagnosis & Recommendations',
+  },
+  'encounters.doctorInstructions': {
+    ar: 'إرشادات وتوجيهات الطبيب:',
+    en: 'Doctor Instructions & Advice:',
+  },
+  'encounters.noExtraDiagnoses': {
+    ar: 'تم استكمال الفحص السريري دون تسجيل تشخيصات إضافية.',
+    en: 'Clinical examination completed without additional diagnoses.',
+  },
+  'encounters.availableStatus': { ar: 'متاحة', en: 'Available' },
+  'encounters.statusLabel': { ar: 'الحالة:', en: 'Status:' },
+  'encounters.validUntilLabel': { ar: '· صالحة حتى:', en: '· Valid until:' },
+  'encounters.prescriptionsSectionHint': {
+    ar: 'يمكنك الاطلاع على الأدوية والروشتات الموصوفة لك خلال هذه الزيارة من قسم',
+    en: 'You can review medications and prescriptions prescribed during this visit under',
+  },
+  'encounters.goToPrescriptions': { ar: 'الانتقال إلى الروشتة', en: 'Go to Prescriptions' },
   'followUps.title': { ar: 'المتابعات', en: 'Follow-ups' },
   'followUps.subtitle': {
     ar: 'راجع المتابعات المتاحة واحجز موعدك قبل انتهاء صلاحيتها.',
@@ -1684,6 +1799,9 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'ستظهر المتابعة هنا عندما يتيحها الطبيب بعد الزيارة.',
     en: 'A follow-up appears here when your doctor allows one after a visit.',
   },
+  'followUps.directoryTitle': { ar: 'سجل المتابعات المتاحة', en: 'Available Follow-ups' },
+  'followUps.recordsCount': { ar: 'متابعة', en: 'follow-ups' },
+  'followUps.totalCount': { ar: 'إجمالي', en: 'total' },
   'followUps.status.Available': { ar: 'متاحة للحجز', en: 'Available' },
   'followUps.status.Reserved': { ar: 'محجوزة', en: 'Reserved' },
   'followUps.status.Consumed': { ar: 'تم استخدامها', en: 'Used' },
@@ -4527,6 +4645,34 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'تم إنشاء حساب المريض بنجاح.',
     en: 'Patient account created successfully.',
   },
+  'auth.welcomePatientTitle': {
+    ar: 'أهلاً بك في منصة وصلة! 🎉',
+    en: 'Welcome to Wasla! 🎉',
+  },
+  'auth.welcomePatientSubtitle': {
+    ar: 'تم إنشاء حسابك بنجاح. يمكنك الآن تسجيل الدخول للوصول إلى مواعيدك ورعايتك الصحية.',
+    en: 'Your account was created successfully. You can now sign in to access your appointments and care.',
+  },
+  'auth.welcomeDoctorTitle': {
+    ar: 'تم استلام طلب التسجيل بنجاح',
+    en: 'Doctor Registration Received',
+  },
+  'encounters.patientDirectoryTitle': {
+    ar: 'سجل الكشوفات والزيارات',
+    en: 'Consultations & Visits History',
+  },
+  'encounters.doctorDirectoryTitle': {
+    ar: 'قائمة الكشوفات الطبية',
+    en: 'Medical Encounters Directory',
+  },
+  'encounters.recordsCount': {
+    ar: 'زيارة',
+    en: 'visits',
+  },
+  'encounters.totalCount': {
+    ar: 'إجمالي',
+    en: 'total',
+  },
   'auth.passwordResetRequested': {
     ar: 'تم إرسال طلب استعادة كلمة المرور.',
     en: 'Password recovery request sent.',
@@ -5682,6 +5828,23 @@ export const TRANSLATIONS: TranslationDictionary = {
   'finance.pagination': { ar: 'صفحات الحركات', en: 'Transaction pages' },
   'finance.paymentDetails': { ar: 'تفاصيل عملية الدفع', en: 'Payment details' },
   'finance.receipt': { ar: 'إيصال', en: 'Receipt' },
+  'finance.officialReceipt': { ar: 'سند استلام نقدية', en: 'Official Cash Receipt' },
+  'finance.officialRefundReceipt': { ar: 'سند استرداد نقدي', en: 'Official Refund Voucher' },
+  'finance.paidStamp': { ar: 'تم السداد', en: 'PAID' },
+  'finance.refundedStamp': { ar: 'تم الاسترداد', en: 'REFUNDED' },
+  'finance.receivedFrom': { ar: 'وصلنا من السيد / السيدة', en: 'Received From' },
+  'finance.forService': { ar: 'نظير خدمة', en: 'For Service' },
+  'finance.medicalExamination': { ar: 'كشف طبي وتذكرة عيادة', en: 'Medical Consultation & Ticket' },
+  'finance.totalReceived': { ar: 'المبلغ الإجمالي المدفوع', en: 'Total Amount Received' },
+  'finance.totalRefunded': { ar: 'المبلغ الإجمالي المسترد', en: 'Total Amount Refunded' },
+  'finance.receiptFooter': {
+    ar: 'نتمنى لكم دوام الصحة والعافية',
+    en: 'Wishing you good health & well-being',
+  },
+  'finance.poweredBy': {
+    ar: 'منصة وصلة للرعاية الصحية',
+    en: 'Wasla Healthcare Platform',
+  },
   'finance.paymentReceipt': { ar: 'إيصال الدفع', en: 'Payment receipt' },
   'finance.refundReceipt': { ar: 'إيصال الاسترداد', en: 'Refund receipt' },
   'finance.print': { ar: 'طباعة الإيصال', en: 'Print receipt' },

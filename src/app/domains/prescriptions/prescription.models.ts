@@ -84,7 +84,7 @@ export interface PatientPrescription {
     readonly medicationName?: string;
     readonly commercialNameEn?: string;
     readonly commercialNameAr?: string | null;
-    readonly clinical?: any;
+    readonly clinical?: Record<string, unknown>;
   })[];
 }
 export interface PatientPrescriptionPage {

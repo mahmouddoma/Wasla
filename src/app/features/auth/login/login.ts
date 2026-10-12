@@ -25,7 +25,10 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
-  protected readonly model = signal({ identifier: '', password: '' });
+  protected readonly model = signal({
+    identifier: this.route.snapshot.queryParamMap.get('identifier') || '',
+    password: '',
+  });
   protected readonly loginForm = form(this.model, (field) => {
     required(field.identifier, { message: 'ui.full.251' });
     maxLength(field.identifier, 200, { message: 'validation.length200' });

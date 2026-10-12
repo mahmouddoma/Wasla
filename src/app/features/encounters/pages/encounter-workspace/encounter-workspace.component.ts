@@ -26,6 +26,20 @@ import { PrescriptionWorkspaceComponent } from '../../../prescriptions';
 import { DiagnosticDraftComponent } from '../../../diagnostics';
 import { RouterLink } from '@angular/router';
 
+interface LocalizedNameEntity {
+  nameAr?: string | null;
+  nameEn?: string | null;
+  practiceNameAr?: string | null;
+  practiceNameEn?: string | null;
+  doctorNameAr?: string | null;
+  doctorNameEn?: string | null;
+  patientNameAr?: string | null;
+  patientNameEn?: string | null;
+  patient?: { nameAr?: string | null; nameEn?: string | null } | null;
+  doctor?: { nameAr?: string | null; nameEn?: string | null } | null;
+  practice?: { nameAr?: string | null; nameEn?: string | null } | null;
+}
+
 @Component({
   selector: 'app-encounter-workspace',
   imports: [
@@ -62,6 +76,11 @@ export class EncounterWorkspaceComponent implements OnInit {
     readonlyField(path.clinicalNotes, () => !this.store.canEditNotes() || this.store.busy());
   });
   readonly removeId = signal('');
+  readonly totalPages = computed(() => {
+    const page = this.store.page();
+    if (!page || !page.pageSize) return 1;
+    return Math.max(1, Math.ceil(page.totalCount / page.pageSize));
+  });
 
   // ── Amendment State (FE API 13.8) ─────────────────────────
   readonly showAmendmentForm = signal(false);
@@ -191,7 +210,7 @@ export class EncounterWorkspaceComponent implements OnInit {
       params.get('ticketId') || '',
     );
   }
-  label(item: any) {
+  label(item: LocalizedNameEntity | null | undefined) {
     if (!item) return '';
     const nameAr = item.nameAr || item.practiceNameAr || item.doctorNameAr || item.patientNameAr;
     const nameEn = item.nameEn || item.practiceNameEn || item.doctorNameEn || item.patientNameEn;
@@ -199,7 +218,7 @@ export class EncounterWorkspaceComponent implements OnInit {
       ? (nameEn || nameAr || '')
       : (nameAr || nameEn || '');
   }
-  doctorOrPatient(item: any): string {
+  doctorOrPatient(item: LocalizedNameEntity): string {
     if (this.store.doctor()) {
       const ar = item.patient?.nameAr || item.patientNameAr;
       const en = item.patient?.nameEn || item.patientNameEn;
@@ -217,18 +236,18 @@ export class EncounterWorkspaceComponent implements OnInit {
     }
     return '';
   }
-  practiceLabel(item: any): string {
+  practiceLabel(item: LocalizedNameEntity): string {
     const ar = item.practice?.nameAr || item.practiceNameAr;
     const en = item.practice?.nameEn || item.practiceNameEn;
     return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
   }
-  doctorNameDetail(detail: any): string {
+  doctorNameDetail(detail: LocalizedNameEntity | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = detail?.doctor?.nameAr || detail?.doctorNameAr;
     const en = detail?.doctor?.nameEn || detail?.doctorNameEn;
     return isAr ? (ar || en || '') : (en || ar || '');
   }
-  practiceNameDetail(detail: any): string {
+  practiceNameDetail(detail: LocalizedNameEntity | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = detail?.practice?.nameAr || detail?.practiceNameAr;
     const en = detail?.practice?.nameEn || detail?.practiceNameEn;

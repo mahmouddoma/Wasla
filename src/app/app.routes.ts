@@ -283,6 +283,16 @@ export const routes: Routes = [
         redirectTo: 'doctors',
         pathMatch: 'full',
       },
+      {
+        path: 'reservations',
+        redirectTo: 'patient/reservations',
+        pathMatch: 'full',
+      },
+      {
+        path: 'tickets',
+        redirectTo: 'patient/tickets',
+        pathMatch: 'full',
+      },
     ],
   },
 
