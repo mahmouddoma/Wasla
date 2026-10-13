@@ -298,6 +298,41 @@ describe('ReservationWorkspaceStore', () => {
     expect(api.receptionOptions).toHaveBeenCalledWith('clinic', '2026-09-20', '17:00', {});
     expect(store.options()?.visitTypes.map((v) => v.type)).toEqual(['NewConsultation']);
   });
+  it('keeps server-authorized Reception options when the booking DTO omits the optional type', async () => {
+    store.actor.set('Reception');
+    store.editor.set('create');
+    store.practiceId.set('clinic');
+    store.date.set('2026-09-20');
+    store.slots.set([{ date: '2026-09-20', time: '17:00' }]);
+    api.receptionOptions.mockReturnValue(
+      of({
+        practiceId: 'clinic',
+        date: '2026-09-20',
+        time: '17:00',
+        visitTypes: [
+          {
+            visitTypeId: 'visit',
+            nameAr: 'كشف',
+            nameEn: 'Consultation',
+            segments: [
+              {
+                segmentId: 'segment',
+                nameAr: 'عادي',
+                nameEn: 'Standard',
+                price: 300,
+                isDefault: true,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    await store.chooseTime('17:00');
+
+    expect(store.options()?.visitTypes).toHaveLength(1);
+    expect(store.options()?.visitTypes[0].visitTypeId).toBe('visit');
+  });
   it('clears operational state and refreshes delegated grants after a fresh 403', async () => {
     store.actor.set('Reception');
     store.practiceId.set('clinic');
@@ -357,6 +392,22 @@ describe('ReservationWorkspaceStore', () => {
     );
     expect(store.detail()).toBeNull();
     expect(store.checkedInTicket()?.ticketId).toBe('ticket-1');
+  });
+  it('opens arrival confirmation when the details response omits the list price', async () => {
+    store.actor.set('Reception');
+    store.practiceId.set('clinic');
+    const listed = { ...reservationFixture, status: 'Active', price: 300 };
+    api.details.mockReturnValue(of({ ...listed, price: undefined }));
+    grants.set([
+      'PracticeReservations.View',
+      'PracticeTickets.CheckIn',
+      'PracticeTickets.RecordPayment',
+    ]);
+
+    await store.openArrival(listed);
+
+    expect(store.arrival()).toBe(true);
+    expect(store.detail()?.price).toBe(300);
   });
   it('requires the scoped force permission and sends the reason', async () => {
     store.actor.set('Reception');

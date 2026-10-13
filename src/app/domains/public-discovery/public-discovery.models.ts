@@ -95,6 +95,111 @@ export interface BookingOptions {
   time: string;
   visitTypes: BookingVisitTypeOption[];
 }
+
+/** Backend booking collections are nullable when no combination is currently bookable. */
+export interface BookingOptionsResponse {
+  practiceId: string;
+  date: string;
+  time: string;
+  /** Legacy shape used by public and follow-up booking endpoints. */
+  visitTypes?: Array<{
+    visitTypeId: string;
+    type?: 'NewConsultation' | 'FollowUp';
+    nameAr: string | null;
+    nameEn: string | null;
+    segments: Array<{
+      segmentId: string;
+      nameAr: string | null;
+      nameEn: string | null;
+      price: number;
+      isDefault: boolean;
+    }> | null;
+  }> | null;
+  /** Reception booking shape: each segment owns its available visit types and price. */
+  segments?: Array<{
+    segmentId: string;
+    nameAr: string | null;
+    nameEn: string | null;
+    priority?: number | null;
+    visitTypes: Array<{
+      visitTypeId: string;
+      visitTypeCode?: 'NewConsultation' | 'FollowUp' | string | null;
+      visitTypeNameAr: string | null;
+      visitTypeNameEn: string | null;
+      price: number;
+    }> | null;
+  }> | null;
+}
+
+export function normalizeBookingOptions(response: BookingOptionsResponse): BookingOptions {
+  if (response.segments) return normalizeSegmentBookingOptions(response);
+
+  return {
+    practiceId: response.practiceId,
+    date: response.date,
+    time: response.time,
+    visitTypes: (response.visitTypes ?? []).map((visitType) => ({
+      visitTypeId: visitType.visitTypeId,
+      ...(visitType.type ? { type: visitType.type } : {}),
+      nameAr: visitType.nameAr ?? '',
+      nameEn: visitType.nameEn,
+      segments: (visitType.segments ?? []).map((segment) => ({
+        segmentId: segment.segmentId,
+        nameAr: segment.nameAr ?? '',
+        nameEn: segment.nameEn,
+        price: segment.price,
+        isDefault: segment.isDefault,
+      })),
+    })),
+  };
+}
+
+function normalizeSegmentBookingOptions(response: BookingOptionsResponse): BookingOptions {
+  const visitTypes = new Map<string, BookingVisitTypeOption>();
+  const orderedSegments = [...(response.segments ?? [])].sort(
+    (left, right) =>
+      (left.priority ?? Number.MAX_SAFE_INTEGER) - (right.priority ?? Number.MAX_SAFE_INTEGER),
+  );
+
+  for (const segment of orderedSegments) {
+    for (const visitType of segment.visitTypes ?? []) {
+      const existing = visitTypes.get(visitType.visitTypeId);
+      const normalizedSegment: BookingSegmentOption = {
+        segmentId: segment.segmentId,
+        nameAr: segment.nameAr ?? '',
+        nameEn: segment.nameEn,
+        price: visitType.price,
+        isDefault: segment.priority === 0,
+      };
+
+      if (existing) {
+        existing.segments.push(normalizedSegment);
+        continue;
+      }
+
+      visitTypes.set(visitType.visitTypeId, {
+        visitTypeId: visitType.visitTypeId,
+        ...(isBookingVisitType(visitType.visitTypeCode) ? { type: visitType.visitTypeCode } : {}),
+        nameAr: visitType.visitTypeNameAr ?? '',
+        nameEn: visitType.visitTypeNameEn,
+        segments: [normalizedSegment],
+      });
+    }
+  }
+
+  return {
+    practiceId: response.practiceId,
+    date: response.date,
+    time: response.time,
+    visitTypes: [...visitTypes.values()],
+  };
+}
+
+function isBookingVisitType(
+  value: string | null | undefined,
+): value is 'NewConsultation' | 'FollowUp' {
+  return value === 'NewConsultation' || value === 'FollowUp';
+}
 export interface PublicDoctorSearchQuery {
   searchText?: string;
   specializationId?: string;

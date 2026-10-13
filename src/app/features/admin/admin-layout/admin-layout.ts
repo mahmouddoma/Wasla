@@ -106,6 +106,20 @@ export class AdminLayout {
         icon: 'users',
         permission: PERMISSIONS.familyRelationshipRequestsViewAll,
       },
+      {
+        id: 'family-medical-access',
+        labelKey: 'routes.familyMedicalAccess',
+        route: '/admin/family-medical-access-requests',
+        icon: 'shield',
+        permission: PERMISSIONS.familyMedicalAccessRequestsViewAll,
+      },
+      {
+        id: 'family-medical-eligibilities',
+        labelKey: 'routes.medicalEligibilities',
+        route: '/admin/family-medical-eligibilities',
+        icon: 'lock',
+        permission: PERMISSIONS.familyMedicalAccessEligibilityReview,
+      },
     ];
     return definitions.filter((item) => this.session.hasPermission(item.permission));
   });

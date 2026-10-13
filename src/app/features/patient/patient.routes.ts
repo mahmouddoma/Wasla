@@ -36,4 +36,30 @@ export const FEATURE_ROUTES: Routes = [
     loadComponent: () => import('./patient-family/patient-family').then((m) => m.PatientFamily),
     title: 'routes.patientFamily',
   },
+  {
+    path: 'medical-access',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [PERMISSIONS.familiesViewOwn],
+    },
+    loadComponent: () =>
+      import('./patient-medical-access/patient-medical-access.component').then(
+        (m) => m.PatientMedicalAccessComponent,
+      ),
+    title: 'routes.patientMedicalAccess',
+  },
+  {
+    path: 'dependent-records',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [PERMISSIONS.familiesViewOwn],
+    },
+    loadComponent: () =>
+      import('./dependent-medical-record/dependent-medical-record.component').then(
+        (m) => m.DependentMedicalRecordComponent,
+      ),
+    title: 'routes.patientDependentRecords',
+  },
 ];
+
+

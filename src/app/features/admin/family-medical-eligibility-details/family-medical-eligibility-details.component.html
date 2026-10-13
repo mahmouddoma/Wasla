@@ -1,0 +1,213 @@
+<div class="review-details-wrapper" [class.drawer-mode]="isDrawer()">
+  @if (loading()) {
+    <div class="state-container loading-state" role="status">
+      <div class="spinner-ring" aria-hidden="true"></div>
+      <p>{{ 'common.loading' | t }}</p>
+    </div>
+  } @else if (details(); as item) {
+    <div class="review-details-body">
+      <!-- Status & Actions Header -->
+      <header class="review-header">
+        <div class="header-main-info">
+          <div class="type-badge-row">
+            <span class="status-pill status-{{ item.status.toLowerCase() }}">
+              {{ item.status }}
+            </span>
+            @if (item.eligibilityStatus) {
+              <span class="eligibility-tag">{{ item.eligibilityStatus }}</span>
+            }
+          </div>
+          <h2 class="request-id-title">{{ item.reviewId }}</h2>
+        </div>
+
+        <div class="review-actions-deck">
+          @if (isPending() && canDecide) {
+            <button
+              type="button"
+              class="btn-action btn-approve"
+              (click)="openActionModal('approve')"
+            >
+              {{ 'review.approveRequest' | t }}
+            </button>
+            <button type="button" class="btn-action btn-reject" (click)="openActionModal('reject')">
+              {{ 'review.rejectRequest' | t }}
+            </button>
+          }
+          @if (isApproved() && canRevoke) {
+            <button type="button" class="btn-action btn-revoke" (click)="openActionModal('revoke')">
+              {{ 'review.revokeAction' | t }}
+            </button>
+          }
+        </div>
+      </header>
+
+      @if (messages().length > 0) {
+        <div class="error-banner" role="alert">
+          @for (msg of messages(); track msg) {
+            <p>{{ msg }}</p>
+          }
+        </div>
+      }
+
+      <!-- Details Surface -->
+      <div class="details-surface">
+        <section class="details-section">
+          <h3 class="section-title">{{ 'family.relationshipVerification' | t }}</h3>
+          <div class="key-value-grid">
+            @if (item.childPatientId) {
+              <div class="kv-item">
+                <span class="kv-label">{{ 'review.childPatientId' | t }}</span>
+                <span class="kv-value code-font">{{ item.childPatientId }}</span>
+              </div>
+            }
+            @if (item.affectedAdultPatientId) {
+              <div class="kv-item">
+                <span class="kv-label">{{ 'review.affectedAdultPatientId' | t }}</span>
+                <span class="kv-value code-font">{{ item.affectedAdultPatientId }}</span>
+              </div>
+            }
+            @if (item.familyId) {
+              <div class="kv-item">
+                <span class="kv-label">{{ 'review.familyId' | t }}</span>
+                <span class="kv-value code-font">{{ item.familyId }}</span>
+              </div>
+            }
+            @if (item.eligibilityId) {
+              <div class="kv-item">
+                <span class="kv-label">{{ 'review.eligibilityStatus' | t }}</span>
+                <span class="kv-value code-font">{{ item.eligibilityId }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        @if (item.reason) {
+          <section class="details-section">
+            <h3 class="section-title">{{ 'review.reason' | t }}</h3>
+            <div class="text-content-box">
+              <p>{{ item.reason }}</p>
+            </div>
+          </section>
+        }
+
+        @if (item.reviewMessage) {
+          <section class="details-section">
+            <h3 class="section-title">{{ 'review.reviewMessage' | t }}</h3>
+            <div class="text-content-box alert-note">
+              <p>{{ item.reviewMessage }}</p>
+            </div>
+          </section>
+        }
+
+        @if (item.reviewedByUserId || item.reviewedAtUtc) {
+          <section class="details-section">
+            <h3 class="section-title">{{ 'review.auditHistory' | t }}</h3>
+            <div class="key-value-grid">
+              @if (item.reviewedByUserId) {
+                <div class="kv-item">
+                  <span class="kv-label">{{ 'review.reviewedBy' | t }}</span>
+                  <span class="kv-value code-font">{{ item.reviewedByUserId }}</span>
+                </div>
+              }
+              @if (item.reviewedAtUtc) {
+                <div class="kv-item">
+                  <span class="kv-label">{{ 'review.reviewedAt' | t }}</span>
+                  <span class="kv-value">{{ item.reviewedAtUtc }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="state-container empty-state">
+      <p>{{ 'common.nothingFound' | t }}</p>
+    </div>
+  }
+
+  <!-- Action Modal Dialog -->
+  <dialog #actionDialog class="review-action-modal">
+    <div class="modal-surface">
+      <header class="modal-header">
+        <h3>
+          @switch (action()) {
+            @case ('approve') {
+              {{ 'review.approveRequest' | t }}
+            }
+            @case ('reject') {
+              {{ 'review.rejectRequest' | t }}
+            }
+            @case ('revoke') {
+              {{ 'review.revokeAction' | t }}
+            }
+          }
+        </h3>
+        <button
+          type="button"
+          class="btn-close-modal"
+          (click)="closeActionModal()"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <label class="form-field-label" for="eligibility-action-note">
+          @switch (action()) {
+            @case ('approve') {
+              {{ 'review.decisionNote' | t }}
+            }
+            @case ('reject') {
+              {{ 'review.rejectionReason' | t }} *
+            }
+            @case ('revoke') {
+              {{ 'review.reason' | t }} *
+            }
+          }
+        </label>
+        <textarea
+          id="eligibility-action-note"
+          class="reason-textarea"
+          rows="4"
+          [formField]="noteForm.text"
+          [placeholder]="'common.enterNotes' | t"
+        ></textarea>
+
+        @if (messages().length > 0) {
+          <div class="modal-error-box" role="alert">
+            @for (msg of messages(); track msg) {
+              <p>{{ msg }}</p>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="btn-modal-cancel"
+          [disabled]="submitting()"
+          (click)="closeActionModal()"
+        >
+          {{ 'common.cancel' | t }}
+        </button>
+        <button
+          type="button"
+          class="btn-modal-confirm"
+          [class.btn-confirm-approve]="action() === 'approve'"
+          [class.btn-confirm-reject]="action() === 'reject' || action() === 'revoke'"
+          [disabled]="submitting()"
+          (click)="submitAction()"
+        >
+          @if (submitting()) {
+            <span>{{ 'common.saving' | t }}...</span>
+          } @else {
+            <span>{{ 'common.confirm' | t }}</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </dialog>
+</div>

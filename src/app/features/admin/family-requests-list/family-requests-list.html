@@ -1,11 +1,26 @@
-<section class="management-page">
+<section class="management-page" [dir]="uiLanguage.dir()">
   <app-page-header
     [heading]="'review.familyRequests' | t"
     [description]="'review.familyPrivacyHelp' | t"
     icon="family-requests"
-  >
-    <div pageHeaderDeck class="header-control-grid">
-      <!-- Search Input -->
+  />
+
+  <!-- Error Alerts -->
+  @if (messages().length > 0) {
+    <div class="error-banner" role="alert">
+      @for (msg of messages(); track msg) {
+        <p>{{ msg }}</p>
+      }
+      <button class="btn-retry" type="button" (click)="load()">
+        {{ 'discovery.retry' | t }}
+      </button>
+    </div>
+  }
+
+  <!-- Main Directory Table Surface -->
+  <div class="management-table-surface">
+    <!-- Integrated Toolbar (Search + Filters) -->
+    <div class="table-toolbar-deck">
       <div class="search-box-wrap">
         <div class="search-input-box-integrated">
           <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
@@ -38,129 +53,224 @@
         </div>
       </div>
 
-      <!-- Filters Deck -->
-      <div class="header-filters-deck">
+      <div class="filters-deck-integrated">
         <label class="filter-select-integrated">
           <span class="filter-select-label">{{ 'common.statusLabel' | t }}</span>
-          <select [value]="status()" (change)="setFilter('status', $event)">
-            <option value="">{{ 'common.all' | t }}</option>
-            <option [value]="'family.pendingFilter' | t">{{ 'common.pendingReview' | t }}</option>
-            <option value="ModificationRequested">{{ 'common.modificationRequested' | t }}</option>
-            <option [value]="'family.approvedFilter' | t">{{ 'common.approved' | t }}</option>
-            <option [value]="'family.rejectedFilter' | t">{{ 'common.rejected' | t }}</option>
-          </select>
+          <div class="select-wrapper">
+            <select [value]="status()" (change)="setFilter('status', $event)">
+              <option value="">{{ 'common.all' | t }}</option>
+              <option value="Pending">{{ 'common.pendingReview' | t }}</option>
+              <option value="ModificationRequested">{{ 'common.modificationRequested' | t }}</option>
+              <option value="Approved">{{ 'common.approved' | t }}</option>
+              <option value="Rejected">{{ 'common.rejected' | t }}</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </div>
         </label>
 
         <label class="filter-select-integrated">
-          <span class="filter-select-label">{{ 'common.typeLabel' | t }}</span>
-          <select [value]="requestType()" (change)="setFilter('requestType', $event)">
-            <option value="">{{ 'common.all' | t }}</option>
-            <option value="CreateFamily">{{ 'family.create' | t }}</option>
-            <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
-          </select>
-        </label>
-
-        @if (result(); as page) {
-          <div class="kpi-chip kpi-chip--total" [title]="'review.totalRequests' | t">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <span class="filter-select-label">{{ 'review.relationshipType' | t }}</span>
+          <div class="select-wrapper">
+            <select [value]="requestType()" (change)="setFilter('requestType', $event)">
+              <option value="">{{ 'common.all' | t }}</option>
+              <option value="CreateFamily">{{ 'family.create' | t }}</option>
+              <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
-            <span class="chip-label">{{ 'review.requests' | t }}</span>
-            <span class="chip-count">{{ page.totalCount }}</span>
           </div>
-        }
+        </label>
       </div>
     </div>
-  </app-page-header>
 
-  @if (messages().length) {
-    <div class="state error" role="alert">
-      <h2>{{ 'review.requestsLoadFailed' | t }}</h2>
-      @for (message of messages(); track message) {
-        <p>{{ message | t }}</p>
-      }
-      <button class="btn btn-outline-secondary" type="button" (click)="load()">
-        {{ 'discovery.retry' | t }}
-      </button>
-    </div>
-  } @else if (loading() && !result()) {
-    <div class="state" role="status">
-      <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>{{ 'review.loadingFamilyRequests' | t }}</h2>
-    </div>
-  } @else if (result(); as page) {
-    @if (page.items.length) {
-      <div class="data-list">
-        <div class="data-header">
-          <span>{{ 'review.parties' | t }}</span><span>{{ 'register.gender' | t }}</span><span>{{ 'common.status' | t }}</span><span>{{ 'common.review' | t }}</span
-          ><span>{{ 'requests.submittedAt' | t }}</span><span></span>
-        </div>
-        @for (item of page.items; track item.requestId) {
-          <article class="data-row">
-            <div class="identity">
-              <button
-                type="button"
-                class="row-title-btn"
-                (click)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
-              >
-                {{ item.requesterNameAr }} ← {{ item.targetNameAr }}
-              </button>
-              <small>{{ item.requesterClaimedRole }} ← {{ item.targetClaimedRole }}</small>
-            </div>
-            <div>
-              <span class="mobile-label">{{ 'register.gender' | t }}</span>
-              {{ item.requestType === 'CreateFamily' ? uiLanguage.t('family.create') : uiLanguage.t('family.addMember') }}
-            </div>
-            <span [class]="'badge-state ' + item.status.toLowerCase()">
-              {{ item.status === 'Pending' ? uiLanguage.t('common.pendingReview') : item.status === 'ModificationRequested' ? uiLanguage.t('common.modificationRequested') : item.status === 'Approved' ? uiLanguage.t('common.approved') : uiLanguage.t('common.rejected') }}
-            </span>
-            <div><span class="mobile-label">{{ 'common.review' | t }}</span>#{{ item.currentRevisionNumber }}</div>
-            <time [attr.datetime]="item.submittedOnUtc">{{ formatDate(item.submittedOnUtc) }}</time>
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              (click)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
-            >
-              {{ 'review.inspect' | t }}
-            </button>
-          </article>
-        }
-      </div>
-      <nav class="pagination-bar" [attr.aria-label]="'review.familyPages' | t">
+    <!-- Summary Metrics Quick Filter Bar -->
+    @if (result(); as page) {
+      <div class="summary-chips-row">
         <button
-          class="btn btn-outline-secondary"
           type="button"
-          [disabled]="pageNumber() <= 1 || loading()"
-          (click)="goToPage(pageNumber() - 1)"
+          class="summary-chip"
+          [class.active]="status() === '' && requestType() === ''"
+          (click)="setQuickFilter('all')"
         >
-          {{ 'discovery.previous' | t }}
+          <span class="chip-label">{{ 'review.totalRequests' | t }}</span>
+          <span class="chip-value">{{ page.totalCount }}</span>
         </button>
-        <span>{{ 'discovery.page' | t }} {{ pageNumber() }} {{ 'discovery.of' | t }} {{ totalPages() }}</span>
+
         <button
-          class="btn btn-outline-secondary"
           type="button"
-          [disabled]="pageNumber() >= totalPages() || loading()"
-          (click)="goToPage(pageNumber() + 1)"
+          class="summary-chip"
+          [class.active]="status() === 'Pending'"
+          (click)="setQuickFilter('pending')"
         >
-          {{ 'discovery.next' | t }}
+          <span class="chip-label">{{ 'common.pendingReview' | t }}</span>
         </button>
-      </nav>
-    } @else {
-      <div class="state">
-        <h2>{{ 'requests.noMatches' | t }}</h2>
-        <p>{{ 'review.changeFilters' | t }}</p>
+
+        <button
+          type="button"
+          class="summary-chip"
+          [class.active]="requestType() === 'CreateFamily'"
+          (click)="setQuickFilter('create')"
+        >
+          <span class="chip-label">{{ 'family.create' | t }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="summary-chip"
+          [class.active]="requestType() === 'AddFamilyMember'"
+          (click)="setQuickFilter('addMember')"
+        >
+          <span class="chip-label">{{ 'family.addMember' | t }}</span>
+        </button>
       </div>
     }
-  }
 
-  <!-- Family Relationship Request Review Slide-over Side Drawer -->
+    <!-- Table or State Container -->
+    @if (loading() && !result()) {
+      <div class="state-container loading-state" role="status">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
+    } @else if (!result()?.items?.length) {
+      <div class="state-container empty-state">
+        <img
+          src="/SVG-AVATAR/Doctors-cuate.svg"
+          alt=""
+          class="state-empty-illustration"
+          aria-hidden="true"
+        />
+        <p class="empty-help-text">{{ 'common.nothingFound' | t }}</p>
+        @if (model().search || status() || requestType()) {
+          <button
+            type="button"
+            class="btn-reset-filters"
+            (click)="clearSearch(); setQuickFilter('all')"
+          >
+            {{ 'medications.resetSearch' | t }}
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'review.parties' | t }}</th>
+              <th scope="col">{{ 'review.relationshipType' | t }}</th>
+              <th scope="col">{{ 'common.statusLabel' | t }}</th>
+              <th scope="col">{{ 'review.revision' | t }}</th>
+              <th scope="col">{{ 'review.submittedAt' | t }}</th>
+              <th scope="col" class="action-column"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of result()?.items ?? []; track item.requestId) {
+              <tr
+                class="clickable-row"
+                tabindex="0"
+                (click)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
+                (keydown.enter)="openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)"
+              >
+                <td>
+                  <div class="parties-cell">
+                    <span class="parties-names">
+                      {{ item.requesterNameAr }}
+                      <span class="relation-arrow">←</span>
+                      {{ item.targetNameAr }}
+                    </span>
+                    <span class="parties-roles">
+                      {{ item.requesterClaimedRole }}
+                      <span class="relation-arrow">←</span>
+                      {{ item.targetClaimedRole }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <span
+                    class="request-type-pill"
+                    [class.create-family]="item.requestType === 'CreateFamily'"
+                  >
+                    {{
+                      (item.requestType === 'CreateFamily'
+                        ? 'family.create'
+                        : 'family.addMember'
+                      ) | t
+                    }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    {{
+                      item.status === 'Pending'
+                        ? ('common.pendingReview' | t)
+                        : item.status === 'ModificationRequested'
+                          ? ('common.modificationRequested' | t)
+                          : item.status === 'Approved'
+                            ? ('common.approved' | t)
+                            : ('common.rejected' | t)
+                    }}
+                  </span>
+                </td>
+                <td>
+                  <span class="revision-badge">#{{ item.currentRevisionNumber }}</span>
+                </td>
+                <td class="date-cell" dir="ltr">
+                  {{ formatDate(item.submittedOnUtc) }}
+                </td>
+                <td class="action-cell">
+                  <button
+                    type="button"
+                    class="btn-inspect-row"
+                    (click)="
+                      $event.stopPropagation();
+                      openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)
+                    "
+                  >
+                    {{ 'common.viewDetails' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Deck -->
+      <footer class="pagination-footer">
+        <div class="pagination-meta">
+          <span>{{ 'common.page' | t }} {{ pageNumber() }} / {{ totalPages() }}</span>
+          <span>({{ result()?.totalCount ?? 0 }} {{ 'common.total' | t }})</span>
+        </div>
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="pageNumber() <= 1 || loading()"
+            (click)="goToPage(pageNumber() - 1)"
+          >
+            {{ 'reservations.previous' | t }}
+          </button>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="pageNumber() >= totalPages() || loading()"
+            (click)="goToPage(pageNumber() + 1)"
+          >
+            {{ 'reservations.next' | t }}
+          </button>
+        </div>
+      </footer>
+    }
+  </div>
+
+  <!-- Slide-Over Drawer for Review (Rule 32.3) -->
   <app-side-drawer
     [opened]="selectedRequestId() !== null"
-    [title]="uiLanguage.t('ui.expressions.24') + ' ' + (selectedRequestTitle() || uiLanguage.t('family.relationshipRequest'))"
-    [description]="'review.familyDecisionHelp' | t"
+    [title]="selectedRequestTitle() || ('family.relationshipRequest' | t)"
+    [description]="'review.familyPrivacyHelp' | t"
     width="820px"
     (closed)="closeReviewDrawer()"
   >

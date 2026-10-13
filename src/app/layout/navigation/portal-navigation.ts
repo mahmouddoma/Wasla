@@ -357,6 +357,18 @@ export class PortalNavigation {
         route: '/patient/family',
         icon: 'users',
       },
+      {
+        id: 'medical-access',
+        labelKey: 'sidebar.medicalAccess',
+        route: '/patient/medical-access',
+        icon: 'shield',
+      },
+      {
+        id: 'dependent-records',
+        labelKey: 'sidebar.dependentRecords',
+        route: '/patient/dependent-records',
+        icon: 'clipboard-list',
+      },
       { id: 'finance', labelKey: 'sidebar.finance', route: '/patient/finance', icon: 'receipt' },
     ];
     return items.filter((item) => this.canAccessPatientItem(item.id));
@@ -421,6 +433,8 @@ export class PortalNavigation {
         PERMISSIONS.familyRelationshipRequestsViewOwn,
         PERMISSIONS.familyRelationshipRequestsResubmitOwn,
       ],
+      'medical-access': [PERMISSIONS.familiesViewOwn],
+      'dependent-records': [PERMISSIONS.familiesViewOwn],
       finance: [PERMISSIONS.paymentsViewOwn],
     };
     return (
@@ -460,7 +474,14 @@ export class PortalNavigation {
           ],
       health:
         this.user()?.userType === 'Patient'
-          ? ['encounters', 'prescriptions', 'follow-ups', 'lab-requests', 'radiology-requests']
+          ? [
+              'encounters',
+              'prescriptions',
+              'follow-ups',
+              'lab-requests',
+              'radiology-requests',
+              'dependent-records',
+            ]
           : this.user()?.userType === 'Doctor'
             ? ['prescriptions', 'lab-requests', 'radiology-requests']
             : [],
@@ -480,7 +501,10 @@ export class PortalNavigation {
         ...(this.user()?.userType === 'Doctor' ? ['profile'] : []),
       ],
       finance: this.user()?.userType === 'Patient' ? [] : ['finance', 'revenue'],
-      account: this.user()?.userType === 'Patient' ? ['profile', 'family', 'finance'] : [],
+      account:
+        this.user()?.userType === 'Patient'
+          ? ['profile', 'family', 'medical-access', 'finance']
+          : [],
     };
     return (Object.keys(groupIds) as NavigationGroup[])
       .map((id) => ({

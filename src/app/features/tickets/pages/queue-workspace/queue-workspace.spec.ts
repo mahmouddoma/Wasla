@@ -776,4 +776,41 @@ describe('P2 Queue request scope', () => {
     expect(fixture.componentInstance['canWalkIn']()).toBe(true);
     expect(fixture.componentInstance['canViewQueue']()).toBe(false);
   });
+  it('instantly opens drawer with PracticeTicket object or cached queue ticket with zero latency', async () => {
+    const c = fixture.componentInstance;
+    const testTicket = ticket('UUID-ABC-123');
+    c['queue'].set({ ...empty, called: testTicket });
+    const pendingDetail = new Subject<PracticeTicket>();
+    api.details.mockReturnValue(pendingDetail);
+
+    // 1. Direct object inspection (0ms synchronous, no loading spinner)
+    const inspectingObj = c['inspect'](testTicket);
+    expect(c['ticketDetailOpen']()).toBe(true);
+    expect(c['selected']()?.ticketId).toBe('UUID-ABC-123');
+    expect(c['detailLoading']()).toBe(false);
+
+    // After network settles, it updates cleanly
+    pendingDetail.next({ ...testTicket, ticketNumber: '99' });
+    pendingDetail.complete();
+    await inspectingObj;
+    expect(c['selected']()?.ticketNumber).toBe('99');
+
+    // 2. String ID inspection with case-insensitivity
+    const pendingDetail2 = new Subject<PracticeTicket>();
+    api.details.mockReturnValue(pendingDetail2);
+    const inspectingStr = c['inspect']('uuid-abc-123');
+    expect(c['ticketDetailOpen']()).toBe(true);
+    expect(c['selected']()?.ticketId).toBe('UUID-ABC-123');
+    expect(c['detailLoading']()).toBe(false);
+
+    pendingDetail2.next({ ...testTicket, ticketNumber: '100' });
+    pendingDetail2.complete();
+    await inspectingStr;
+    expect(c['selected']()?.ticketNumber).toBe('100');
+
+    // Closing resets drawer state
+    c['close']();
+    expect(c['ticketDetailOpen']()).toBe(false);
+    expect(c['selected']()).toBeNull();
+  });
 });

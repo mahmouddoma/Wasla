@@ -275,4 +275,156 @@ describe('FamiliesApi', () => {
     reject.flush(null, { status: 204, statusText: 'No Content' });
     await rejectResult;
   });
+
+  it('wires family medical access requests with multipart evidence and idempotency protection', async () => {
+    const result = firstValueFrom(
+      api.createMedicalAccessRequest({
+        requestType: 'Restriction',
+        childPatientId: 'child',
+        affectedAdultPatientId: 'adult',
+        reason: 'Consent was withdrawn.',
+        evidenceFiles: [new File(['proof'], 'proof.pdf')],
+        documentTypes: ['ConsentWithdrawal'],
+        idempotencyKey: 'create-key',
+      }),
+    );
+    const request = http.expectOne(`${familiesUrl}/mine/medical-access-requests`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('Idempotency-Key')).toBe('create-key');
+    expect((request.request.body as FormData).get('ChildPatientId')).toBe('child');
+    request.flush({ requestId: 'case-1' });
+    await result;
+  });
+
+  it('wires own medical access list, details, history, document and mutation routes', async () => {
+    const baseUrl = `${familiesUrl}/mine/medical-access-requests`;
+    const listResult = firstValueFrom(
+      api.myMedicalAccessRequests({ requestType: 'Restriction', status: 'Pending', pageNumber: 1, pageSize: 20 }),
+    );
+    const list = http.expectOne((candidate) => candidate.url === `${baseUrl}/mine`);
+    expect(list.request.params.get('requestType')).toBe('Restriction');
+    list.flush({ items: [], pageNumber: 1, pageSize: 20, totalCount: 0 });
+    await listResult;
+
+    const detailsResult = firstValueFrom(api.myMedicalAccessRequest('case'));
+    http.expectOne(`${baseUrl}/case`).flush({ requestId: 'case' });
+    await detailsResult;
+
+    const historyResult = firstValueFrom(api.myMedicalAccessHistory('case'));
+    http.expectOne(`${baseUrl}/case/history?pageNumber=1&pageSize=20`).flush({ items: [] });
+    await historyResult;
+
+    const documentResult = firstValueFrom(api.myMedicalAccessDocument('case', 'document'));
+    http.expectOne(`${baseUrl}/case/documents/document/content`).flush(new Blob());
+    await documentResult;
+
+    const withdrawal = firstValueFrom(api.withdrawMedicalAccessRequest('case', 'version', 'withdraw-key'));
+    const withdrawalRequest = http.expectOne(`${baseUrl}/case/withdraw`);
+    expect(withdrawalRequest.request.headers.get('Idempotency-Key')).toBe('withdraw-key');
+    expect(withdrawalRequest.request.body).toEqual({ rowVersion: 'version' });
+    withdrawalRequest.flush({ requestId: 'case' });
+    await withdrawal;
+
+    const resubmission = firstValueFrom(api.resubmitMedicalAccessRequest('case', {
+      rowVersion: 'version', reason: 'Updated proof', evidenceFiles: [], documentTypes: [], idempotencyKey: 'resubmit-key',
+    }));
+    const resubmitRequest = http.expectOne(`${baseUrl}/case/resubmit`);
+    expect(resubmitRequest.request.headers.get('Idempotency-Key')).toBe('resubmit-key');
+    expect((resubmitRequest.request.body as FormData).get('RowVersion')).toBe('version');
+    resubmitRequest.flush({ requestId: 'case' });
+    await resubmission;
+  });
+
+  it('wires patient-safe dependent medical record routes without public media URLs', async () => {
+    const dependentUrl = `${familiesUrl}/mine/dependents/child`;
+    const statusResult = firstValueFrom(api.childMedicalAccess('child'));
+    http.expectOne(`${dependentUrl}/medical-access`).flush({ status: 'Allowed', canView: true });
+    await statusResult;
+
+    const dependentsResult = firstValueFrom(api.medicalRecordDependents());
+    http.expectOne(`${familiesUrl}/mine/medical-record-dependents`).flush({ items: [], nextCursor: null, hasMore: false });
+    await dependentsResult;
+
+    const overviewResult = firstValueFrom(api.dependentMedicalRecordOverview('child', { pageSize: 20, types: ['prescription'] }));
+    const overview = http.expectOne((candidate) => candidate.url === `${dependentUrl}/medical-record/overview`);
+    expect(overview.request.params.getAll('types')).toEqual(['prescription']);
+    overview.flush({});
+    await overviewResult;
+
+    const timelineResult = firstValueFrom(api.dependentMedicalRecordTimeline('child', { cursor: 'safe-cursor' }));
+    const timeline = http.expectOne((candidate) => candidate.url === `${dependentUrl}/medical-record/timeline`);
+    expect(timeline.request.params.get('cursor')).toBe('safe-cursor');
+    timeline.flush({ items: [], nextCursor: null, hasMore: false });
+    await timelineResult;
+
+    const encounterResult = firstValueFrom(api.dependentMedicalRecordEncounter('child', 'encounter'));
+    http.expectOne(`${dependentUrl}/medical-record/encounters/encounter`).flush({});
+    await encounterResult;
+
+    const itemResult = firstValueFrom(api.dependentMedicalRecordItem('child', 'prescription', 'item'));
+    http.expectOne(`${dependentUrl}/medical-record/items/prescription/item`).flush({});
+    await itemResult;
+
+    const attachmentResult = firstValueFrom(api.dependentMedicalRecordAttachment('child', 'prescription', 'item', 'attachment'));
+    const attachment = http.expectOne(`${dependentUrl}/medical-record/items/prescription/item/attachments/attachment/content`);
+    expect(attachment.request.responseType).toBe('blob');
+    attachment.flush(new Blob());
+    await attachmentResult;
+  });
+
+  it('wires SuperAdmin review, decisions, and eligibility review routes', async () => {
+    const medicalAccessAdminUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-access-requests`;
+    const eligibilityUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-eligibilities/reviews`;
+    const summaryResult = firstValueFrom(api.adminMedicalAccessSummary());
+    http.expectOne(`${medicalAccessAdminUrl}/summary`).flush({});
+    await summaryResult;
+
+    const queueResult = firstValueFrom(api.adminMedicalAccessRequests({ pageNumber: 1, pageSize: 20 }));
+    http.expectOne(`${medicalAccessAdminUrl}?pageNumber=1&pageSize=20`).flush({ items: [] });
+    await queueResult;
+
+    const detailsResult = firstValueFrom(api.adminMedicalAccessRequest('case'));
+    http.expectOne(`${medicalAccessAdminUrl}/case`).flush({ requestId: 'case' });
+    await detailsResult;
+
+    const documentResult = firstValueFrom(api.adminMedicalAccessDocument('case', 'document'));
+    http.expectOne(`${medicalAccessAdminUrl}/case/documents/document/content`).flush(new Blob());
+    await documentResult;
+
+    const historyResult = firstValueFrom(api.adminMedicalAccessHistory('case'));
+    http.expectOne(`${medicalAccessAdminUrl}/case/history?pageNumber=1&pageSize=20`).flush({ items: [] });
+    await historyResult;
+
+    for (const action of ['approve', 'reject', 'request-modification'] as const) {
+      const decision = action === 'approve'
+        ? api.approveMedicalAccessRequest('case', { rowVersion: 'version' })
+        : action === 'reject'
+          ? api.rejectMedicalAccessRequest('case', { rowVersion: 'version', reason: 'Reason' })
+          : api.requestMedicalAccessModification('case', { rowVersion: 'version', message: 'Message' });
+      const result = firstValueFrom(decision);
+      const request = http.expectOne(`${medicalAccessAdminUrl}/case/${action}`);
+      expect(request.request.body).toHaveProperty('rowVersion', 'version');
+      request.flush({ requestId: 'case' });
+      await result;
+    }
+
+    const eligibilityList = firstValueFrom(api.medicalEligibilityReviews({ pageNumber: 1, pageSize: 20 }));
+    http.expectOne(`${eligibilityUrl}?pageNumber=1&pageSize=20`).flush({ items: [] });
+    await eligibilityList;
+
+    const eligibilityDetails = firstValueFrom(api.medicalEligibilityReview('review'));
+    http.expectOne(`${eligibilityUrl}/review`).flush({ reviewId: 'review' });
+    await eligibilityDetails;
+
+    for (const action of ['approve', 'reject', 'revoke'] as const) {
+      const decision = action === 'approve'
+        ? api.approveMedicalEligibility('review', { rowVersion: 'version' })
+        : action === 'reject'
+          ? api.rejectMedicalEligibility('review', { rowVersion: 'version', reason: 'Reason' })
+          : api.revokeMedicalEligibility('review', { rowVersion: 'version' });
+      const result = firstValueFrom(decision);
+      http.expectOne(`${eligibilityUrl}/review/${action}`).flush({ reviewId: 'review' });
+      await result;
+    }
+  });
 });

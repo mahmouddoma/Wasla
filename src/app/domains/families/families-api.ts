@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -16,6 +16,24 @@ import {
   FamilyReviewDecisionRequest,
   FamilyReviewMessageRequest,
   FamilyReviewReasonRequest,
+  CreateFamilyMedicalAccessRequest,
+  FamilyMedicalAccessRequestQuery,
+  FamilyMedicalAccessStatus,
+  FamilyMedicalAccessSummary,
+  FamilyMedicalCase,
+  FamilyMedicalDecisionRequest,
+  FamilyMedicalDependent,
+  FamilyMedicalEligibilityReview,
+  FamilyMedicalEligibilityReviewQuery,
+  FamilyMedicalHistoryItem,
+  FamilyMedicalPage,
+  FamilyMedicalRecordEncounter,
+  FamilyMedicalRecordItem,
+  FamilyMedicalRecordOverview,
+  MedicalRecordFilter,
+  MedicalRecordCursorPage,
+  MedicalRecordTimelineEntry,
+  ResubmitFamilyMedicalAccessRequest,
   ResubmitFamilyRequest,
   SubmitAssistedFamilyRequest,
   SubmitFamilyRequest,
@@ -28,6 +46,11 @@ export class FamiliesApi {
   private readonly requestsUrl = `${environment.apiBaseUrl}/api/v1/family-relationship-requests`;
   private readonly assistedUrl = `${this.requestsUrl}/assisted`;
   private readonly adminUrl = `${environment.apiBaseUrl}/api/v1/admin/family-relationship-requests`;
+  private readonly medicalAccessUrl = `${this.familiesUrl}/mine/medical-access-requests`;
+  private readonly adminMedicalAccessUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-access-requests`;
+  private readonly eligibilityUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-eligibilities`;
+  private readonly eligibilityReviewsUrl = `${this.eligibilityUrl}/reviews`;
+  private readonly dependentMedicalRecordUrl = `${this.familiesUrl}/mine/dependents`;
 
   mine(): Observable<Family> {
     return this.http.get<Family>(`${this.familiesUrl}/mine`);
@@ -112,25 +135,253 @@ export class FamiliesApi {
     return this.privateDocument(`${this.adminUrl}/${requestId}/documents/${documentId}`);
   }
 
-  requestModification(
-    requestId: string,
-    request: FamilyReviewMessageRequest,
-  ): Observable<void> {
-    return this.http.post<void>(
-      `${this.adminUrl}/${requestId}/request-modification`,
-      request,
-    );
+  requestModification(requestId: string, request: FamilyReviewMessageRequest): Observable<void> {
+    return this.http.post<void>(`${this.adminUrl}/${requestId}/request-modification`, request);
   }
 
-  approve(
-    requestId: string,
-    request: FamilyReviewDecisionRequest,
-  ): Observable<void> {
+  approve(requestId: string, request: FamilyReviewDecisionRequest): Observable<void> {
     return this.http.post<void>(`${this.adminUrl}/${requestId}/approve`, request);
   }
 
   reject(requestId: string, request: FamilyReviewReasonRequest): Observable<void> {
     return this.http.post<void>(`${this.adminUrl}/${requestId}/reject`, request);
+  }
+
+  createMedicalAccessRequest(
+    request: CreateFamilyMedicalAccessRequest,
+  ): Observable<FamilyMedicalCase> {
+    return this.http.post<FamilyMedicalCase>(
+      this.medicalAccessUrl,
+      medicalAccessFormData(request),
+      {
+        headers: idempotencyHeaders(request.idempotencyKey),
+      },
+    );
+  }
+
+  myMedicalAccessRequests(
+    query: FamilyMedicalAccessRequestQuery,
+  ): Observable<FamilyMedicalPage<FamilyMedicalCase>> {
+    return this.http.get<FamilyMedicalPage<FamilyMedicalCase>>(`${this.medicalAccessUrl}/mine`, {
+      params: medicalAccessQueryParams(query),
+    });
+  }
+
+  myMedicalAccessRequest(requestId: string): Observable<FamilyMedicalCase> {
+    return this.http.get<FamilyMedicalCase>(`${this.medicalAccessUrl}/${requestId}`);
+  }
+
+  myMedicalAccessHistory(
+    requestId: string,
+    pageNumber = 1,
+    pageSize = 20,
+  ): Observable<FamilyMedicalPage<FamilyMedicalHistoryItem>> {
+    return this.http.get<FamilyMedicalPage<FamilyMedicalHistoryItem>>(
+      `${this.medicalAccessUrl}/${requestId}/history`,
+      {
+        params: new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize),
+      },
+    );
+  }
+
+  myMedicalAccessDocument(requestId: string, documentId: string): Observable<HttpResponse<Blob>> {
+    return this.privateDocument(
+      `${this.medicalAccessUrl}/${requestId}/documents/${documentId}/content`,
+    );
+  }
+
+  withdrawMedicalAccessRequest(
+    requestId: string,
+    rowVersion: string,
+    idempotencyKey?: string,
+  ): Observable<FamilyMedicalCase> {
+    return this.http.post<FamilyMedicalCase>(
+      `${this.medicalAccessUrl}/${requestId}/withdraw`,
+      { rowVersion },
+      {
+        headers: idempotencyHeaders(idempotencyKey),
+      },
+    );
+  }
+
+  resubmitMedicalAccessRequest(
+    requestId: string,
+    request: ResubmitFamilyMedicalAccessRequest,
+  ): Observable<FamilyMedicalCase> {
+    return this.http.post<FamilyMedicalCase>(
+      `${this.medicalAccessUrl}/${requestId}/resubmit`,
+      medicalAccessFormData(request),
+      {
+        headers: idempotencyHeaders(request.idempotencyKey),
+      },
+    );
+  }
+
+  childMedicalAccess(childPatientId: string): Observable<FamilyMedicalAccessStatus> {
+    return this.http.get<FamilyMedicalAccessStatus>(
+      `${this.familiesUrl}/mine/dependents/${childPatientId}/medical-access`,
+    );
+  }
+
+  adminMedicalAccessSummary(): Observable<FamilyMedicalAccessSummary> {
+    return this.http.get<FamilyMedicalAccessSummary>(`${this.adminMedicalAccessUrl}/summary`);
+  }
+
+  adminMedicalAccessRequests(
+    query: FamilyMedicalAccessRequestQuery,
+  ): Observable<FamilyMedicalPage<FamilyMedicalCase>> {
+    return this.http.get<FamilyMedicalPage<FamilyMedicalCase>>(this.adminMedicalAccessUrl, {
+      params: medicalAccessQueryParams(query),
+    });
+  }
+
+  adminMedicalAccessRequest(requestId: string): Observable<FamilyMedicalCase> {
+    return this.http.get<FamilyMedicalCase>(`${this.adminMedicalAccessUrl}/${requestId}`);
+  }
+
+  adminMedicalAccessDocument(
+    requestId: string,
+    documentId: string,
+  ): Observable<HttpResponse<Blob>> {
+    return this.privateDocument(
+      `${this.adminMedicalAccessUrl}/${requestId}/documents/${documentId}/content`,
+    );
+  }
+
+  adminMedicalAccessHistory(
+    requestId: string,
+    pageNumber = 1,
+    pageSize = 20,
+  ): Observable<FamilyMedicalPage<FamilyMedicalHistoryItem>> {
+    return this.http.get<FamilyMedicalPage<FamilyMedicalHistoryItem>>(
+      `${this.adminMedicalAccessUrl}/${requestId}/history`,
+      {
+        params: new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize),
+      },
+    );
+  }
+
+  approveMedicalAccessRequest(
+    requestId: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalCase> {
+    return this.medicalAccessDecision(
+      `${this.adminMedicalAccessUrl}/${requestId}/approve`,
+      request,
+    );
+  }
+
+  rejectMedicalAccessRequest(
+    requestId: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalCase> {
+    return this.medicalAccessDecision(`${this.adminMedicalAccessUrl}/${requestId}/reject`, request);
+  }
+
+  requestMedicalAccessModification(
+    requestId: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalCase> {
+    return this.medicalAccessDecision(
+      `${this.adminMedicalAccessUrl}/${requestId}/request-modification`,
+      request,
+    );
+  }
+
+  medicalEligibilityReviews(
+    query: FamilyMedicalEligibilityReviewQuery,
+  ): Observable<FamilyMedicalPage<FamilyMedicalEligibilityReview>> {
+    return this.http.get<FamilyMedicalPage<FamilyMedicalEligibilityReview>>(
+      this.eligibilityReviewsUrl,
+      {
+        params: eligibilityReviewQueryParams(query),
+      },
+    );
+  }
+
+  medicalEligibilityReview(reviewId: string): Observable<FamilyMedicalEligibilityReview> {
+    return this.http.get<FamilyMedicalEligibilityReview>(`${this.eligibilityUrl}/${reviewId}`);
+  }
+
+  approveMedicalEligibility(
+    reviewId: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalEligibilityReview> {
+    return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/approve`, request);
+  }
+
+  rejectMedicalEligibility(
+    reviewId: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalEligibilityReview> {
+    return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/reject`, request);
+  }
+
+  revokeMedicalEligibility(
+    reviewId: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalEligibilityReview> {
+    return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/revoke`, request);
+  }
+
+  medicalRecordDependents(): Observable<MedicalRecordCursorPage<FamilyMedicalDependent>> {
+    return this.http.get<MedicalRecordCursorPage<FamilyMedicalDependent>>(
+      `${this.familiesUrl}/mine/medical-record-dependents`,
+    );
+  }
+
+  dependentMedicalRecordOverview(
+    dependentPatientId: string,
+    filter: MedicalRecordFilter = {},
+  ): Observable<FamilyMedicalRecordOverview> {
+    return this.http.get<FamilyMedicalRecordOverview>(
+      `${this.dependentMedicalRecordUrl}/${dependentPatientId}/medical-record/overview`,
+      {
+        params: medicalRecordFilterParams(filter),
+      },
+    );
+  }
+
+  dependentMedicalRecordTimeline(
+    dependentPatientId: string,
+    filter: MedicalRecordFilter = {},
+  ): Observable<MedicalRecordCursorPage<MedicalRecordTimelineEntry>> {
+    return this.http.get<MedicalRecordCursorPage<MedicalRecordTimelineEntry>>(
+      `${this.dependentMedicalRecordUrl}/${dependentPatientId}/medical-record/timeline`,
+      {
+        params: medicalRecordFilterParams(filter),
+      },
+    );
+  }
+
+  dependentMedicalRecordEncounter(
+    dependentPatientId: string,
+    encounterId: string,
+  ): Observable<FamilyMedicalRecordEncounter> {
+    return this.http.get<FamilyMedicalRecordEncounter>(
+      `${this.dependentMedicalRecordUrl}/${dependentPatientId}/medical-record/encounters/${encounterId}`,
+    );
+  }
+
+  dependentMedicalRecordItem(
+    dependentPatientId: string,
+    resourceType: string,
+    sourceId: string,
+  ): Observable<FamilyMedicalRecordItem> {
+    return this.http.get<FamilyMedicalRecordItem>(
+      `${this.dependentMedicalRecordUrl}/${dependentPatientId}/medical-record/items/${resourceType}/${sourceId}`,
+    );
+  }
+
+  dependentMedicalRecordAttachment(
+    dependentPatientId: string,
+    resourceType: string,
+    sourceId: string,
+    attachmentId: string,
+  ): Observable<HttpResponse<Blob>> {
+    return this.privateDocument(
+      `${this.dependentMedicalRecordUrl}/${dependentPatientId}/medical-record/items/${resourceType}/${sourceId}/attachments/${attachmentId}/content`,
+    );
   }
 
   private privateDocument(url: string): Observable<HttpResponse<Blob>> {
@@ -141,6 +392,26 @@ export class FamiliesApi {
     request: Observable<FamilyRequestDetailsResponse>,
   ): Observable<FamilyRequestDetails> {
     return request.pipe(map(normalizeFamilyRequestDetails));
+  }
+
+  private medicalAccessDecision(
+    url: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalCase> {
+    const { idempotencyKey, ...body } = request;
+    return this.http.post<FamilyMedicalCase>(url, body, {
+      headers: idempotencyHeaders(idempotencyKey),
+    });
+  }
+
+  private medicalEligibilityDecision(
+    url: string,
+    request: FamilyMedicalDecisionRequest,
+  ): Observable<FamilyMedicalEligibilityReview> {
+    const { idempotencyKey, ...body } = request;
+    return this.http.post<FamilyMedicalEligibilityReview>(url, body, {
+      headers: idempotencyHeaders(idempotencyKey),
+    });
   }
 }
 
@@ -252,4 +523,51 @@ function revisionBody(
   request.documentTypes.forEach((type) => body.append('DocumentTypes', type));
   if (request.rowVersion) body.append('RowVersion', request.rowVersion);
   return body;
+}
+
+function medicalAccessFormData(
+  request: CreateFamilyMedicalAccessRequest | ResubmitFamilyMedicalAccessRequest,
+): FormData {
+  const body = new FormData();
+  if ('requestType' in request) {
+    body.append('RequestType', request.requestType);
+    body.append('ChildPatientId', request.childPatientId.trim());
+    body.append('AffectedAdultPatientId', request.affectedAdultPatientId.trim());
+  }
+  body.append('Reason', request.reason.trim());
+  if ('rowVersion' in request) body.append('RowVersion', request.rowVersion);
+  request.evidenceFiles.forEach((file) => body.append('EvidenceFiles', file));
+  request.documentTypes.forEach((type) => body.append('DocumentTypes', type));
+  return body;
+}
+
+function idempotencyHeaders(key?: string): HttpHeaders {
+  return key?.trim() ? new HttpHeaders({ 'Idempotency-Key': key.trim() }) : new HttpHeaders();
+}
+
+function medicalAccessQueryParams(query: FamilyMedicalAccessRequestQuery): HttpParams {
+  let params = new HttpParams().set('pageNumber', query.pageNumber).set('pageSize', query.pageSize);
+  if (query.requestType) params = params.set('requestType', query.requestType);
+  if (query.status) params = params.set('status', query.status);
+  if (query.search?.trim()) params = params.set('search', query.search.trim());
+  if (query.familyId?.trim()) params = params.set('familyId', query.familyId.trim());
+  return params;
+}
+
+function eligibilityReviewQueryParams(query: FamilyMedicalEligibilityReviewQuery): HttpParams {
+  let params = new HttpParams().set('pageNumber', query.pageNumber).set('pageSize', query.pageSize);
+  if (query.status) params = params.set('status', query.status);
+  if (query.search?.trim()) params = params.set('search', query.search.trim());
+  return params;
+}
+
+function medicalRecordFilterParams(filter: MedicalRecordFilter): HttpParams {
+  let params = new HttpParams();
+  filter.types?.forEach((type) => (params = params.append('types', type)));
+  if (filter.fromDate) params = params.set('fromDate', filter.fromDate);
+  if (filter.toDate) params = params.set('toDate', filter.toDate);
+  if (filter.encounterId) params = params.set('encounterId', filter.encounterId);
+  if (filter.pageSize) params = params.set('pageSize', filter.pageSize);
+  if (filter.cursor) params = params.set('cursor', filter.cursor);
+  return params;
 }

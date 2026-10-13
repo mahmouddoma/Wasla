@@ -1,7 +1,14 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { AvailableDate, AvailableSlot, BookingOptions } from '../public-discovery';
+import {
+  AvailableDate,
+  AvailableSlot,
+  BookingOptions,
+  BookingOptionsResponse,
+  normalizeBookingOptions,
+} from '../public-discovery';
+import { map } from 'rxjs';
 import { FollowUpEligibility, FollowUpPage, FollowUpQuery } from './follow-up.models';
 
 @Injectable({ providedIn: 'root' })
@@ -33,9 +40,11 @@ export class FollowUpsApi {
     });
   }
   options(id: string, date: string, time: string) {
-    return this.http.get<BookingOptions>(`${this.bookingUrl(id)}/booking-options`, {
-      params: { date, time },
-    });
+    return this.http
+      .get<BookingOptionsResponse>(`${this.bookingUrl(id)}/booking-options`, {
+        params: { date, time },
+      })
+      .pipe(map(normalizeBookingOptions));
   }
   private bookingUrl(id: string) {
     return `${this.root}/reservations/follow-up-eligibilities/${this.id(id)}`;

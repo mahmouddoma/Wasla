@@ -1,0 +1,441 @@
+<section class="patient-medical-access-page">
+  <app-page-header
+    [heading]="'review.medicalAccessRequests' | t"
+    [description]="'review.medicalAccessHelp' | t"
+    icon="family-requests"
+  >
+    <div pageHeaderDeck class="header-action-row">
+      <button
+        type="button"
+        class="btn-new-request"
+        (click)="openNewRequestModal()"
+      >
+        + {{ 'common.createRequest' | t }}
+      </button>
+
+      <!-- Filters -->
+      <div class="filters-deck">
+        <label class="filter-select-integrated">
+          <span class="filter-select-label">{{ 'common.statusLabel' | t }}</span>
+          <select [value]="status()" (change)="setFilter('status', $event)">
+            <option value="">{{ 'common.all' | t }}</option>
+            <option value="Pending">{{ 'common.pendingReview' | t }}</option>
+            <option value="ModificationRequested">{{ 'common.modificationRequested' | t }}</option>
+            <option value="Approved">{{ 'common.approved' | t }}</option>
+            <option value="Rejected">{{ 'common.rejected' | t }}</option>
+            <option value="Withdrawn">{{ 'common.withdrawn' | t }}</option>
+          </select>
+        </label>
+
+        <label class="filter-select-integrated">
+          <span class="filter-select-label">{{ 'review.requestType' | t }}</span>
+          <select [value]="requestType()" (change)="setFilter('requestType', $event)">
+            <option value="">{{ 'common.all' | t }}</option>
+            <option value="Restriction">{{ 'review.restriction' | t }}</option>
+            <option value="Restoration">{{ 'review.restoration' | t }}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </app-page-header>
+
+  <!-- Check Child Dependent Medical Access Status Bar -->
+  <div class="child-check-surface">
+    <div class="child-check-input-row">
+      <label for="check-child-input" class="check-label">{{ 'review.childPatientId' | t }}</label>
+      <input
+        id="check-child-input"
+        type="text"
+        class="check-input code-font"
+        [value]="checkChildId()"
+        (input)="checkChildId.set($any($event.target).value)"
+        placeholder="UUID"
+      />
+      <button
+        type="button"
+        class="btn-check-child"
+        [disabled]="checkingChild() || !checkChildId()"
+        (click)="checkDependentAccess(checkChildId())"
+      >
+        @if (checkingChild()) {
+          <span>...</span>
+        } @else {
+          <span>{{ 'common.check' | t }}</span>
+        }
+      </button>
+    </div>
+
+    @if (childStatus(); as cs) {
+      <div class="child-status-banner">
+        <span class="status-indicator">{{ 'review.eligibilityStatus' | t }}: <strong>{{ cs.status }}</strong></span>
+        <span class="can-view-tag" [class.allowed]="cs.canView">
+          {{ cs.canView ? ('common.allowed' | t) : ('common.restricted' | t) }}
+        </span>
+        @if (cs.canRequestRestriction) {
+          <span class="hint-tag">{{ 'review.restriction' | t }} {{ 'common.available' | t }}</span>
+        }
+        @if (cs.canRequestRestoration) {
+          <span class="hint-tag">{{ 'review.restoration' | t }} {{ 'common.available' | t }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (messages().length > 0) {
+    <div class="error-banner" role="alert">
+      @for (msg of messages(); track msg) {
+        <p>{{ msg }}</p>
+      }
+    </div>
+  }
+
+  <!-- Directory Table -->
+  <div class="management-table-surface">
+    @if (loading()) {
+      <div class="state-container loading-state" role="status">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
+    } @else if (listResult()?.items?.length === 0) {
+      <div class="state-container empty-state">
+        <p>{{ 'common.nothingFound' | t }}</p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'review.requestType' | t }}</th>
+              <th scope="col">{{ 'common.statusLabel' | t }}</th>
+              <th scope="col">{{ 'review.childPatientId' | t }}</th>
+              <th scope="col">{{ 'review.affectedAdultPatientId' | t }}</th>
+              <th scope="col">{{ 'review.reason' | t }}</th>
+              <th scope="col">{{ 'review.submittedAt' | t }}</th>
+              <th scope="col" class="action-column"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of listResult()?.items ?? []; track item.requestId) {
+              <tr
+                class="clickable-row"
+                tabindex="0"
+                (click)="openDetailsDrawer(item)"
+                (keydown.enter)="openDetailsDrawer(item)"
+              >
+                <td>
+                  <span class="request-type-pill" [class.restriction]="item.requestType === 'Restriction'">
+                    {{ (item.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="code-font">{{ item.childPatientId }}</td>
+                <td class="code-font">{{ item.affectedAdultPatientId }}</td>
+                <td class="reason-preview-cell">{{ item.reason }}</td>
+                <td class="date-cell">{{ item.submittedAtUtc }}</td>
+                <td class="action-cell">
+                  <button
+                    type="button"
+                    class="btn-open-review"
+                    (click)="$event.stopPropagation(); openDetailsDrawer(item)"
+                  >
+                    {{ 'common.viewDetails' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPages() > 1) {
+        <footer class="pagination-footer">
+          <div class="pagination-meta">
+            <span>{{ 'common.page' | t }} {{ pageNumber() }} / {{ totalPages() }}</span>
+            <span>({{ listResult()?.totalCount ?? 0 }} {{ 'common.total' | t }})</span>
+          </div>
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="pageNumber() <= 1"
+              (click)="goToPage(pageNumber() - 1)"
+            >
+              {{ 'common.previous' | t }}
+            </button>
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="pageNumber() >= totalPages()"
+              (click)="goToPage(pageNumber() + 1)"
+            >
+              {{ 'common.next' | t }}
+            </button>
+          </div>
+        </footer>
+      }
+    }
+  </div>
+
+  <!-- Slide-Over Drawer for Request Inspection & Parent Actions (Withdraw / Resubmit) -->
+  <app-side-drawer
+    [opened]="drawerOpen()"
+    [title]="'review.medicalAccessRequests' | t"
+    (closed)="closeDrawer()"
+  >
+    @if (selectedCase(); as cur) {
+      <div class="drawer-inner-surface">
+        <header class="drawer-header-row">
+          <div class="badge-deck">
+            <span class="request-type-pill" [class.restriction]="cur.requestType === 'Restriction'">
+              {{ (cur.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}
+            </span>
+            <span class="status-pill status-{{ cur.status.toLowerCase() }}">{{ cur.status }}</span>
+            <span class="revision-tag">#{{ cur.revision }}</span>
+          </div>
+          <div class="parent-actions-deck">
+            @if (cur.capabilities.canWithdraw) {
+              <button
+                type="button"
+                class="btn-drawer-action btn-withdraw"
+                [disabled]="submitting()"
+                (click)="withdrawRequest(cur)"
+              >
+                {{ 'common.withdraw' | t }}
+              </button>
+            }
+            @if (cur.capabilities.canResubmit) {
+              <button
+                type="button"
+                class="btn-drawer-action btn-resubmit"
+                [disabled]="submitting()"
+                (click)="openResubmitModal(cur)"
+              >
+                {{ 'common.resubmit' | t }}
+              </button>
+            }
+          </div>
+        </header>
+
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'family.relationshipVerification' | t }}</h4>
+          <div class="key-value-grid">
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.childPatientId' | t }}</span>
+              <span class="kv-value code-font">{{ cur.childPatientId }}</span>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.affectedAdultPatientId' | t }}</span>
+              <span class="kv-value code-font">{{ cur.affectedAdultPatientId }}</span>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.familyId' | t }}</span>
+              <span class="kv-value code-font">{{ cur.familyId }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'review.reason' | t }}</h4>
+          <div class="text-content-box"><p>{{ cur.reason }}</p></div>
+        </section>
+
+        @if (cur.reviewMessage) {
+          <section class="drawer-section">
+            <h4 class="section-title">{{ 'review.reviewMessage' | t }}</h4>
+            <div class="text-content-box alert-note"><p>{{ cur.reviewMessage }}</p></div>
+          </section>
+        }
+
+        <!-- Documents -->
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'review.documents' | t }}</h4>
+          @if (cur.documents.length === 0) {
+            <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
+          } @else {
+            <div class="documents-list">
+              @for (doc of cur.documents; track doc.documentId) {
+                <div class="document-row">
+                  <div class="doc-info">
+                    <span class="doc-icon" aria-hidden="true">📄</span>
+                    <div class="doc-texts">
+                      <span class="doc-name">{{ doc.fileName }}</span>
+                      <span class="doc-type">{{ doc.documentType }}</span>
+                    </div>
+                  </div>
+                  @if (doc.canDownload) {
+                    <button
+                      type="button"
+                      class="btn-download"
+                      [disabled]="documentLoadingId() === doc.documentId"
+                      (click)="downloadDoc(doc)"
+                    >
+                      <span>{{ 'review.downloadDocument' | t }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- History -->
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'review.auditHistory' | t }}</h4>
+          @if (selectedHistory().length === 0) {
+            <p class="empty-hint">{{ 'review.noHistory' | t }}</p>
+          } @else {
+            <div class="timeline-list">
+              @for (h of selectedHistory(); track h.historyId) {
+                <div class="timeline-entry">
+                  <div class="timeline-marker" aria-hidden="true"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-meta">
+                      <span class="timeline-action">{{ h.action }}</span>
+                      <span class="timeline-time">{{ h.occurredAtUtc }}</span>
+                    </div>
+                    @if (h.message) {
+                      <p class="timeline-message">{{ h.message }}</p>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      </div>
+    }
+  </app-side-drawer>
+
+  <!-- New Request Modal Dialog -->
+  <dialog #newRequestDialog class="request-dialog">
+    <div class="dialog-surface">
+      <header class="dialog-header">
+        <h3>{{ 'common.createRequest' | t }}</h3>
+        <button type="button" class="btn-close-modal" (click)="closeNewRequestModal()">✕</button>
+      </header>
+
+      <div class="dialog-body">
+        <label class="form-label" for="req-type-select">{{ 'review.requestType' | t }}</label>
+        <select
+          id="req-type-select"
+          class="form-select"
+          [value]="newRequestModel().requestType"
+          (change)="newRequestModel.set({ ...newRequestModel(), requestType: $any($event.target).value })"
+        >
+          <option value="Restriction">{{ 'review.restriction' | t }}</option>
+          <option value="Restoration">{{ 'review.restoration' | t }}</option>
+        </select>
+
+        <label class="form-label" for="child-id-input">{{ 'review.childPatientId' | t }} *</label>
+        <input
+          id="child-id-input"
+          type="text"
+          class="form-input code-font"
+          [formField]="newRequestForm.childPatientId"
+        />
+
+        <label class="form-label" for="adult-id-input">{{ 'review.affectedAdultPatientId' | t }} *</label>
+        <input
+          id="adult-id-input"
+          type="text"
+          class="form-input code-font"
+          [formField]="newRequestForm.affectedAdultPatientId"
+        />
+
+        <label class="form-label" for="reason-input">{{ 'review.reason' | t }} *</label>
+        <textarea
+          id="reason-input"
+          class="form-textarea"
+          rows="3"
+          [formField]="newRequestForm.reason"
+        ></textarea>
+
+        <label class="form-label" for="file-upload">{{ 'review.documents' | t }}</label>
+        <input
+          id="file-upload"
+          type="file"
+          class="form-file-input"
+          multiple
+          [accept]="evidenceFileAccept"
+          (change)="onNewFilesSelected($event)"
+        />
+
+        <label class="form-label" for="doc-types-input">{{ 'family.documentTypesHelp' | t }}</label>
+        <input
+          id="doc-types-input"
+          type="text"
+          class="form-input"
+          placeholder="BirthCertificate, LegalDocument"
+          [formField]="newRequestForm.documentTypes"
+        />
+      </div>
+
+      <footer class="dialog-footer">
+        <button type="button" class="btn-cancel" (click)="closeNewRequestModal()">{{ 'common.cancel' | t }}</button>
+        <button
+          type="button"
+          class="btn-confirm"
+          [disabled]="submitting()"
+          (click)="submitNewRequest()"
+        >
+          {{ 'common.submit' | t }}
+        </button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Resubmit Modal Dialog -->
+  <dialog #resubmitDialog class="request-dialog">
+    <div class="dialog-surface">
+      <header class="dialog-header">
+        <h3>{{ 'common.resubmit' | t }}</h3>
+        <button type="button" class="btn-close-modal" (click)="closeResubmitModal()">✕</button>
+      </header>
+
+      <div class="dialog-body">
+        <label class="form-label" for="resubmit-reason">{{ 'review.reason' | t }} *</label>
+        <textarea
+          id="resubmit-reason"
+          class="form-textarea"
+          rows="3"
+          [formField]="resubmitForm.reason"
+        ></textarea>
+
+        <label class="form-label" for="resubmit-files">{{ 'review.documents' | t }}</label>
+        <input
+          id="resubmit-files"
+          type="file"
+          class="form-file-input"
+          multiple
+          [accept]="evidenceFileAccept"
+          (change)="onResubmitFilesSelected($event)"
+        />
+
+        <label class="form-label" for="resubmit-types">{{ 'family.documentTypesHelp' | t }}</label>
+        <input
+          id="resubmit-types"
+          type="text"
+          class="form-input"
+          placeholder="UpdatedDocument"
+          [formField]="resubmitForm.documentTypes"
+        />
+      </div>
+
+      <footer class="dialog-footer">
+        <button type="button" class="btn-cancel" (click)="closeResubmitModal()">{{ 'common.cancel' | t }}</button>
+        <button
+          type="button"
+          class="btn-confirm"
+          [disabled]="submitting()"
+          (click)="submitResubmit()"
+        >
+          {{ 'common.resubmit' | t }}
+        </button>
+      </footer>
+    </div>
+  </dialog>
+</section>

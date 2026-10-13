@@ -1,0 +1,186 @@
+<section class="management-page" [dir]="uiLanguage.dir()">
+  <app-page-header
+    [heading]="'review.eligibilityTitle' | t"
+    [description]="'review.eligibilityHelp' | t"
+    icon="family-requests"
+  />
+
+  <!-- Error Banner -->
+  @if (messages().length > 0) {
+    <div class="error-banner" role="alert">
+      @for (msg of messages(); track msg) {
+        <p>{{ msg }}</p>
+      }
+    </div>
+  }
+
+  <!-- Unified Management Surface -->
+  <div class="management-table-surface">
+    <!-- Integrated Toolbar (Search + Status Filter) -->
+    <div class="table-toolbar-deck">
+      <div class="search-box-wrap">
+        <div class="search-input-box-integrated">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            id="eligibility-search-input"
+            type="text"
+            role="searchbox"
+            enterkeyhint="search"
+            autocomplete="off"
+            [placeholder]="'review.patientSearch' | t"
+            [formField]="searchForm.search"
+            (input)="scheduleSearch()"
+          />
+          @if (model().search) {
+            <button
+              type="button"
+              class="btn-clear-search-integrated"
+              [attr.aria-label]="'common.clearSearch' | t"
+              (click)="clearSearch()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="filters-deck-integrated">
+        <label class="filter-select-integrated">
+          <span class="filter-select-label">{{ 'common.statusLabel' | t }}</span>
+          <div class="select-wrapper">
+            <select [value]="status()" (change)="setStatusFilter($event)">
+              <option value="">{{ 'common.all' | t }}</option>
+              <option value="Approved">{{ 'common.approved' | t }}</option>
+              <option value="Rejected">{{ 'common.rejected' | t }}</option>
+              <option value="Revoked">{{ 'review.revokeAction' | t }}</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Table or State Container -->
+    @if (loading()) {
+      <div class="state-container loading-state" role="status">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
+    } @else if (!result()?.items?.length) {
+      <div class="state-container empty-state">
+        <img
+          src="/SVG-AVATAR/Doctors-cuate.svg"
+          alt=""
+          class="state-empty-illustration"
+          aria-hidden="true"
+        />
+        <p class="empty-help-text">{{ 'common.nothingFound' | t }}</p>
+        @if (model().search || status()) {
+          <button type="button" class="btn-reset-filters" (click)="clearSearch(); status.set(''); load()">
+            {{ 'medications.resetSearch' | t }}
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'common.statusLabel' | t }}</th>
+              <th scope="col">{{ 'review.eligibilityStatus' | t }}</th>
+              <th scope="col">{{ 'review.childPatientId' | t }}</th>
+              <th scope="col">{{ 'review.affectedAdultPatientId' | t }}</th>
+              <th scope="col">{{ 'review.familyId' | t }}</th>
+              <th scope="col">{{ 'review.reason' | t }}</th>
+              <th scope="col" class="action-column"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of result()?.items ?? []; track item.reviewId) {
+              <tr
+                class="clickable-row"
+                tabindex="0"
+                (click)="openReviewDrawer(item.reviewId, item.reviewId)"
+                (keydown.enter)="openReviewDrawer(item.reviewId, item.reviewId)"
+              >
+                <td>
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td>
+                  <span class="eligibility-tag">{{ item.eligibilityStatus ?? '—' }}</span>
+                </td>
+                <td class="code-font" dir="ltr">{{ item.childPatientId ?? '—' }}</td>
+                <td class="code-font" dir="ltr">{{ item.affectedAdultPatientId ?? '—' }}</td>
+                <td class="code-font" dir="ltr">{{ item.familyId ?? '—' }}</td>
+                <td class="reason-preview-cell">{{ item.reason ?? '—' }}</td>
+                <td class="action-cell">
+                  <button
+                    type="button"
+                    class="btn-inspect-row"
+                    (click)="
+                      $event.stopPropagation(); openReviewDrawer(item.reviewId, item.reviewId)
+                    "
+                  >
+                    {{ 'common.viewDetails' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Deck -->
+      <footer class="pagination-footer">
+        <div class="pagination-meta">
+          <span>{{ 'common.page' | t }} {{ pageNumber() }} / {{ totalPages() }}</span>
+          <span>({{ result()?.totalCount ?? 0 }} {{ 'common.total' | t }})</span>
+        </div>
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="pageNumber() <= 1 || loading()"
+            (click)="goToPage(pageNumber() - 1)"
+          >
+            {{ 'reservations.previous' | t }}
+          </button>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="pageNumber() >= totalPages() || loading()"
+            (click)="goToPage(pageNumber() + 1)"
+          >
+            {{ 'reservations.next' | t }}
+          </button>
+        </div>
+      </footer>
+    }
+  </div>
+
+  <!-- Slide-Over Drawer for Review (Rule 32.3) -->
+  <app-side-drawer
+    [opened]="selectedReviewId() !== null"
+    [title]="selectedReviewTitle()"
+    (closed)="closeReviewDrawer()"
+  >
+    @if (selectedReviewId()) {
+      <app-family-medical-eligibility-details
+        [reviewIdInput]="selectedReviewId()"
+        [isDrawer]="true"
+        (closed)="closeReviewDrawer()"
+        (reviewed)="handleReviewSaved()"
+      />
+    }
+  </app-side-drawer>
+</section>

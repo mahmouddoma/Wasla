@@ -1,0 +1,357 @@
+<section class="dependent-medical-record-page">
+  <app-page-header
+    [heading]="'family.dependentMedicalRecords' | t"
+    [description]="'family.dependentMedicalRecordsHelp' | t"
+    icon="family-requests"
+  >
+    <!-- Dependent Selector in Header Deck -->
+    <div pageHeaderDeck class="dependent-selector-deck">
+      @if (dependents().length > 0) {
+        <label class="dependent-select-integrated">
+          <span class="dependent-select-label">{{ 'family.selectDependent' | t }}</span>
+          <select
+            [value]="selectedDependentId()"
+            (change)="selectDependent($any($event.target).value)"
+          >
+            @for (dep of dependents(); track dep.patientId) {
+              <option [value]="dep.patientId">
+                {{ dep.nameAr }} ({{ dep.medicalAccess.status }})
+              </option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+  </app-page-header>
+
+  @if (messages().length > 0) {
+    <div class="error-banner" role="alert">
+      @for (msg of messages(); track msg) {
+        <p>{{ msg }}</p>
+      }
+    </div>
+  }
+
+  <!-- Loading State for Dependents -->
+  @if (loadingDependents()) {
+    <div class="state-container loading-state" role="status">
+      <div class="spinner-ring" aria-hidden="true"></div>
+      <p>{{ 'common.loading' | t }}</p>
+    </div>
+  } @else if (dependents().length === 0) {
+    <div class="state-container empty-state">
+      <p>{{ 'family.noDependentsFound' | t }}</p>
+    </div>
+  } @else {
+    <!-- Main Record Surface -->
+    @if (selectedDependent(); as dep) {
+      <div class="record-layout-surface">
+        <!-- Overview Summary Bar -->
+        @if (overview(); as ov) {
+          <div class="dependent-overview-bar">
+            <div class="patient-identity-box">
+              <h3 class="dependent-name">{{ ov.patient.nameAr }}</h3>
+              <div class="identity-tags">
+                <span class="badge-tag code-font">ID: {{ ov.patient.patientId }}</span>
+                <span class="badge-tag">{{ ov.patient.gender === 'Male' ? ('common.male' | t) : ('common.female' | t) }}</span>
+                <span class="badge-tag">{{ ov.patient.dateOfBirth }}</span>
+              </div>
+            </div>
+
+            <!-- Summary Statistics Matrix (Integrated, No Nested Cards) -->
+            <div class="summary-stats-matrix">
+              <div class="stat-unit">
+                <span class="stat-num">{{ ov.summary.completedVisitCount }}</span>
+                <span class="stat-desc">{{ 'family.completedVisits' | t }}</span>
+              </div>
+              <div class="stat-unit">
+                <span class="stat-num">{{ ov.summary.currentPrescriptionCount }}</span>
+                <span class="stat-desc">{{ 'medications.prescription' | t }}</span>
+              </div>
+              <div class="stat-unit">
+                <span class="stat-num">{{ ov.summary.officialLabResultCount }}</span>
+                <span class="stat-desc">{{ 'diagnostics.lab' | t }}</span>
+              </div>
+              <div class="stat-unit">
+                <span class="stat-num">{{ ov.summary.officialRadiologyResultCount }}</span>
+                <span class="stat-desc">{{ 'diagnostics.radiology' | t }}</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Timeline Section -->
+        <div class="timeline-section-surface">
+          <!-- Filter Controls Bar -->
+          <div class="timeline-filters-bar">
+            <div class="filter-type-group">
+              <button
+                type="button"
+                class="filter-pill-btn"
+                [class.active]="filterType() === ''"
+                (click)="onFilterChange('')"
+              >
+                {{ 'common.all' | t }}
+              </button>
+              <button
+                type="button"
+                class="filter-pill-btn"
+                [class.active]="filterType() === 'prescription'"
+                (click)="onFilterChange('prescription')"
+              >
+                {{ 'medications.prescription' | t }}
+              </button>
+              <button
+                type="button"
+                class="filter-pill-btn"
+                [class.active]="filterType() === 'lab-result'"
+                (click)="onFilterChange('lab-result')"
+              >
+                {{ 'diagnostics.lab' | t }}
+              </button>
+              <button
+                type="button"
+                class="filter-pill-btn"
+                [class.active]="filterType() === 'radiology-result'"
+                (click)="onFilterChange('radiology-result')"
+              >
+                {{ 'diagnostics.radiology' | t }}
+              </button>
+            </div>
+
+            <div class="date-filter-group">
+              <label class="date-label">
+                <span>{{ 'common.from' | t }}</span>
+                <input
+                  type="date"
+                  class="date-input"
+                  [value]="fromDate()"
+                  (change)="onDateFilterChange($any($event.target).value, toDate())"
+                />
+              </label>
+              <label class="date-label">
+                <span>{{ 'common.to' | t }}</span>
+                <input
+                  type="date"
+                  class="date-input"
+                  [value]="toDate()"
+                  (change)="onDateFilterChange(fromDate(), $any($event.target).value)"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Timeline Content -->
+          @if (loadingRecord()) {
+            <div class="state-container loading-state" role="status">
+              <div class="spinner-ring" aria-hidden="true"></div>
+              <p>{{ 'common.loading' | t }}</p>
+            </div>
+          } @else if (timelineEntries().length === 0) {
+            <div class="state-container empty-state">
+              <p>{{ 'common.nothingFound' | t }}</p>
+            </div>
+          } @else {
+            <div class="timeline-directory">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'common.date' | t }}</th>
+                    <th scope="col">{{ 'common.type' | t }}</th>
+                    <th scope="col">{{ 'common.title' | t }}</th>
+                    <th scope="col">{{ 'common.statusLabel' | t }}</th>
+                    <th scope="col" class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entry of timelineEntries(); track entry.entryId) {
+                    <tr class="timeline-row">
+                      <td class="date-cell">{{ entry.occurredAtUtc }}</td>
+                      <td>
+                        <span class="type-pill type-{{ entry.type.toLowerCase() }}">
+                          {{ entry.type }}
+                        </span>
+                      </td>
+                      <td class="title-cell font-medium">{{ entry.title }}</td>
+                      <td>
+                        <span class="status-pill status-{{ entry.status.toLowerCase() }}">
+                          {{ entry.status }}
+                        </span>
+                      </td>
+                      <td class="action-cell">
+                        @if (entry.encounterId) {
+                          <button
+                            type="button"
+                            class="btn-row-action"
+                            (click)="openEncounterDrawer(entry.encounterId)"
+                          >
+                            {{ 'encounters.title' | t }}
+                          </button>
+                        }
+                        @if (entry.capabilities.canViewDetails && entry.resourceType) {
+                          <button
+                            type="button"
+                            class="btn-row-action primary-action"
+                            (click)="openItemDrawer(entry)"
+                          >
+                            {{ 'common.viewDetails' | t }}
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              @if (hasMore()) {
+                <div class="load-more-row">
+                  <button
+                    type="button"
+                    class="btn-load-more"
+                    [disabled]="loadingMore()"
+                    (click)="loadMoreTimeline()"
+                  >
+                    @if (loadingMore()) {
+                      <span>...</span>
+                    } @else {
+                      <span>{{ 'common.loadMore' | t }}</span>
+                    }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Encounter Details Drawer (WAS-400) -->
+  <app-side-drawer
+    [opened]="encounterDrawerOpen()"
+    [title]="'encounters.title' | t"
+    (closed)="closeEncounterDrawer()"
+  >
+    @if (loadingEncounter()) {
+      <div class="state-container loading-state">
+        <div class="spinner-ring" aria-hidden="true"></div>
+      </div>
+    } @else if (selectedEncounter(); as enc) {
+      <div class="drawer-inner-surface">
+        <header class="drawer-header-row">
+          <div class="badge-deck">
+            <span class="status-pill status-completed">{{ 'common.completed' | t }}</span>
+            <span class="date-tag">{{ enc.visitDate }}</span>
+          </div>
+        </header>
+
+        <!-- Diagnoses -->
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'encounters.diagnoses' | t }}</h4>
+          @if (enc.diagnoses.length === 0) {
+            <p class="empty-hint">{{ 'common.nothingFound' | t }}</p>
+          } @else {
+            <div class="diagnoses-list">
+              @for (diag of enc.diagnoses; track diag.diagnosisId) {
+                <div class="diag-item">
+                  <span class="diag-bullet" aria-hidden="true">•</span>
+                  <div class="diag-texts">
+                    <span class="diag-text">{{ diag.displayText }}</span>
+                    <span class="diag-type">{{ diag.type }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Encounter Outputs / Timeline items -->
+        @if (enc.outputs.items.length > 0) {
+          <section class="drawer-section">
+            <h4 class="section-title">{{ 'encounters.outputs' | t }}</h4>
+            <div class="outputs-list">
+              @for (out of enc.outputs.items; track out.entryId) {
+                <div class="output-item-row">
+                  <span class="output-title">{{ out.title }}</span>
+                  <span class="output-type">{{ out.type }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    }
+  </app-side-drawer>
+
+  <!-- Medical Item Details Drawer (WAS-401 & WAS-402) -->
+  <app-side-drawer
+    [opened]="itemDrawerOpen()"
+    [title]="'common.viewDetails' | t"
+    (closed)="closeItemDrawer()"
+  >
+    @if (loadingItem()) {
+      <div class="state-container loading-state">
+        <div class="spinner-ring" aria-hidden="true"></div>
+      </div>
+    } @else if (selectedItem(); as itm) {
+      <div class="drawer-inner-surface">
+        <header class="drawer-header-row">
+          <div class="badge-deck">
+            <span class="type-pill">{{ itm.resourceType }}</span>
+            <span class="status-pill status-{{ itm.status.toLowerCase() }}">{{ itm.status }}</span>
+            <span class="revision-tag">v{{ itm.currentVersion }}</span>
+          </div>
+        </header>
+
+        <!-- Item Safe Content / Details -->
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'common.details' | t }}</h4>
+          <div class="key-value-grid">
+            <div class="kv-item">
+              <span class="kv-label">{{ 'common.id' | t }}</span>
+              <span class="kv-value code-font">{{ itm.sourceId }}</span>
+            </div>
+            @if (itm.encounterId) {
+              <div class="kv-item">
+                <span class="kv-label">{{ 'encounters.title' | t }}</span>
+                <span class="kv-value code-font">{{ itm.encounterId }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Attachments & Reports Download (WAS-402) -->
+        <section class="drawer-section">
+          <h4 class="section-title">{{ 'review.documents' | t }}</h4>
+          @if (itm.attachments.length === 0) {
+            <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
+          } @else {
+            <div class="documents-list">
+              @for (att of itm.attachments; track att.attachmentId) {
+                <div class="document-row">
+                  <div class="doc-info">
+                    <span class="doc-icon" aria-hidden="true">📎</span>
+                    <div class="doc-texts">
+                      <span class="doc-name">{{ att.fileName }}</span>
+                      <span class="doc-type">{{ att.contentType }} ({{ att.sizeBytes }} B)</span>
+                    </div>
+                  </div>
+                  @if (att.canDownload) {
+                    <button
+                      type="button"
+                      class="btn-download"
+                      [disabled]="downloadingAttachmentId() === att.attachmentId"
+                      (click)="downloadAttachment(att.attachmentId)"
+                    >
+                      <span>{{ 'review.downloadDocument' | t }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+      </div>
+    }
+  </app-side-drawer>
+</section>

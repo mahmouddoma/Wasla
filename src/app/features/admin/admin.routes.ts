@@ -67,6 +67,26 @@ export const ADMIN_ROUTES: Routes = [
     title: 'routes.familyRequests',
   },
   {
+    path: 'family-medical-access-requests',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.familyMedicalAccessRequestsViewAll },
+    loadComponent: () =>
+      import('./family-medical-access-requests/family-medical-access-requests.component').then(
+        (m) => m.FamilyMedicalAccessRequestsComponent,
+      ),
+    title: 'routes.familyMedicalAccess',
+  },
+  {
+    path: 'family-medical-eligibilities',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.familyMedicalAccessEligibilityReview },
+    loadComponent: () =>
+      import('./family-medical-eligibility-reviews/family-medical-eligibility-reviews.component').then(
+        (m) => m.FamilyMedicalEligibilityReviewsComponent,
+      ),
+    title: 'routes.medicalEligibilities',
+  },
+  {
     path: 'doctor-specialization-requests/:requestId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.doctorSpecializationRequestsViewDetails },

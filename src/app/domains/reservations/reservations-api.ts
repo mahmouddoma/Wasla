@@ -3,7 +3,13 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { FollowUpBookingContext } from '../follow-ups';
-import { AvailableDate, AvailableSlot, BookingOptions } from '../public-discovery';
+import {
+  AvailableDate,
+  AvailableSlot,
+  BookingOptions,
+  BookingOptionsResponse,
+  normalizeBookingOptions,
+} from '../public-discovery';
 import {
   BookablePatient,
   CancelReservationRequest,
@@ -67,22 +73,36 @@ export class ReservationsApi {
       )
       .pipe(map(normalizeReservation));
   }
-  receptionDates(practiceId: string, context: FollowUpBookingContext = {}): Observable<AvailableDate[]> {
+  receptionDates(
+    practiceId: string,
+    context: FollowUpBookingContext = {},
+  ): Observable<AvailableDate[]> {
     return this.http.get<AvailableDate[]>(
       `${this.receptionBookingUrl(practiceId)}/available-dates`,
       { params: { ...context } },
     );
   }
-  receptionSlots(practiceId: string, date: string, context: FollowUpBookingContext = {}): Observable<AvailableSlot[]> {
+  receptionSlots(
+    practiceId: string,
+    date: string,
+    context: FollowUpBookingContext = {},
+  ): Observable<AvailableSlot[]> {
     return this.http.get<AvailableSlot[]>(
       `${this.receptionBookingUrl(practiceId)}/available-slots`,
       { params: { date, ...context } },
     );
   }
-  receptionOptions(practiceId: string, date: string, time: string, context: FollowUpBookingContext = {}): Observable<BookingOptions> {
-    return this.http.get<BookingOptions>(`${this.receptionBookingUrl(practiceId)}/options`, {
-      params: { date, time, ...context },
-    });
+  receptionOptions(
+    practiceId: string,
+    date: string,
+    time: string,
+    context: FollowUpBookingContext = {},
+  ): Observable<BookingOptions> {
+    return this.http
+      .get<BookingOptionsResponse>(`${this.receptionBookingUrl(practiceId)}/options`, {
+        params: { date, time, ...context },
+      })
+      .pipe(map(normalizeBookingOptions));
   }
   cancel(
     scope: ReservationScope,
@@ -92,11 +112,7 @@ export class ReservationsApi {
   ): Observable<Reservation> {
     this.assertMutable(scope);
     return this.http
-      .post<Reservation>(
-        `${this.detailUrl(scope, id)}/cancel`,
-        body,
-        this.intentHeaders(intentKey),
-      )
+      .post<Reservation>(`${this.detailUrl(scope, id)}/cancel`, body, this.intentHeaders(intentKey))
       .pipe(map(normalizeReservation));
   }
   rescheduleDates(scope: ReservationScope, id: string): Observable<AvailableDate[]> {

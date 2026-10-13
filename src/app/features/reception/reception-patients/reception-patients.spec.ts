@@ -41,7 +41,7 @@ describe('ReceptionPatients', () => {
   const samplePage: PagedResponse<PatientSearchItem> = {
     items: [sampleSearchItem],
     pageNumber: 1,
-    pageSize: 20,
+    pageSize: 10,
     totalCount: 1,
     totalPages: 1,
   };
@@ -114,12 +114,26 @@ describe('ReceptionPatients', () => {
     expect(component['selectedPracticeId']()).toBe(samplePractice.id);
   });
 
+  it('loads the first page of patients automatically for the selected clinic', async () => {
+    await fixture.whenStable();
+
+    expect(patientsApi.search).toHaveBeenCalledWith({
+      name: '',
+      phoneNumber: '',
+      dateOfBirth: '',
+      pageSize: 10,
+      doctorPracticeId: samplePractice.id,
+      pageNumber: 1,
+    });
+    expect(component['results']()).toEqual(samplePage);
+  });
+
   it('searches for patients in selected practice and populates results', async () => {
     component['searchModel'].set({
       name: 'أحمد',
       phoneNumber: '',
       dateOfBirth: '',
-      pageSize: 20,
+      pageSize: 10,
     });
     fixture.detectChanges();
 
@@ -129,7 +143,7 @@ describe('ReceptionPatients', () => {
       name: 'أحمد',
       phoneNumber: '',
       dateOfBirth: '',
-      pageSize: 20,
+      pageSize: 10,
       doctorPracticeId: samplePractice.id,
       pageNumber: 1,
     });
@@ -278,6 +292,7 @@ describe('ReceptionPatients', () => {
     await context.refresh();
     context.select('');
     fixture.detectChanges();
+    patientsApi.search.mockClear();
     await component['search']();
     expect(patientsApi.search).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.patient-panel select')).toBeNull();
@@ -362,5 +377,70 @@ describe('ReceptionPatients', () => {
     component['onPracticeChange'](mockEvent);
     expect(spy).toHaveBeenCalledWith('practice-2');
   });
-});
 
+  it('updates pageSize and triggers search on page 1 when setPageSize is called', async () => {
+    patientsApi.search.mockClear();
+    component['setPageSize'](15);
+    expect(component['searchModel']().pageSize).toBe(15);
+    expect(component['pageNumber']()).toBe(1);
+    expect(patientsApi.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageSize: 15,
+        pageNumber: 1,
+      }),
+    );
+
+    component['setPageSize'](20);
+    expect(component['searchModel']().pageSize).toBe(20);
+    expect(patientsApi.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageSize: 20,
+        pageNumber: 1,
+      }),
+    );
+  });
+
+  it('navigates through pages via goToPage within valid bounds', async () => {
+    component['results'].set({
+      items: [sampleSearchItem],
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 25,
+      totalPages: 3,
+    });
+    fixture.detectChanges();
+
+    expect(component['totalPages']()).toBe(3);
+    patientsApi.search.mockClear();
+
+    // Go to next page (2)
+    component['goToPage'](2);
+    expect(component['pageNumber']()).toBe(2);
+    expect(patientsApi.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageNumber: 2,
+      }),
+    );
+
+    // Ignore invalid bounds
+    patientsApi.search.mockClear();
+    component['goToPage'](0);
+    component['goToPage'](4);
+    component['goToPage'](2); // same page
+    expect(patientsApi.search).not.toHaveBeenCalled();
+  });
+
+  it('calculates startIndex and endIndex accurately', () => {
+    component['results'].set({
+      items: [sampleSearchItem, sampleSearchItem],
+      pageNumber: 2,
+      pageSize: 10,
+      totalCount: 15,
+      totalPages: 2,
+    });
+    component['pageNumber'].set(2);
+
+    expect(component['startIndex']()).toBe(11);
+    expect(component['endIndex']()).toBe(12);
+  });
+});

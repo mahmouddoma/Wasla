@@ -371,7 +371,7 @@ export class ReservationWorkspaceStore {
       if (sequence === this.listSequence) this.loading.set(false);
     }
   }
-  async inspect(id: string): Promise<void> {
+  async inspect(id: string, arrivalContext?: Reservation): Promise<void> {
     this.arrival.set(false);
     this.checkedInTicket.set(null);
     this.acceptedArrival.set(null);
@@ -383,7 +383,17 @@ export class ReservationWorkspaceStore {
     this.editor.set(null);
     try {
       const item = await firstValueFrom(this.api.details(this.scope(), id));
-      if (sequence === this.detailSequence) this.detail.set(item);
+      if (sequence === this.detailSequence)
+        this.detail.set(
+          arrivalContext
+            ? {
+                ...item,
+                status: item.status || arrivalContext.status,
+                price: item.price ?? arrivalContext.price,
+                currency: item.currency ?? arrivalContext.currency,
+              }
+            : item,
+        );
     } catch (error) {
       if (sequence === this.detailSequence) await this.failure(error);
     } finally {
@@ -478,7 +488,7 @@ export class ReservationWorkspaceStore {
         this.options.set({
           ...options,
           visitTypes: options.visitTypes.filter(
-            (v) => v.type === (this.eligibility() ? 'FollowUp' : 'NewConsultation'),
+            (v) => !v.type || v.type === (this.eligibility() ? 'FollowUp' : 'NewConsultation'),
           ),
         });
     } catch (error) {
@@ -668,10 +678,23 @@ export class ReservationWorkspaceStore {
         this.reception.allows(PERMISSIONS.practiceTicketsForceCheckIn))
     );
   }
-  async openArrival(id: string): Promise<void> {
+  async openArrival(reservation: Reservation | string): Promise<void> {
     if (this.busy()) return;
-    await this.inspect(id);
-    if (this.detail() && this.detail()!.reservationId === id && this.canArrive(this.detail()!))
+    const res =
+      typeof reservation === 'string'
+        ? this.page().items.find((item) => item.reservationId === reservation) || this.detail()
+        : reservation;
+    const id = typeof reservation === 'string' ? reservation : reservation.reservationId;
+    if (res) {
+      await this.inspect(id, res);
+    } else {
+      await this.inspect(id);
+    }
+    if (
+      this.detail() &&
+      this.detail()!.reservationId === id &&
+      this.canArrive(this.detail()!)
+    )
       this.arrival.set(true);
   }
   readonly canOpenQueue = computed(
@@ -851,9 +874,10 @@ export class ReservationWorkspaceStore {
       } catch (error) {
         if (sequence === this.eligibilitySequence) {
           this.eligibilities.set([]);
-          if (
-            !(error instanceof HttpErrorResponse && (error.status === 404 || error.status === 403))
-          ) {
+          if (!(
+            error instanceof HttpErrorResponse &&
+            (error.status === 404 || error.status === 403)
+          )) {
             await this.failure(error);
           }
         }

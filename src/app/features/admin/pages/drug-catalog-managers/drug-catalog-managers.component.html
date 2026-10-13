@@ -1,42 +1,71 @@
-<main class="directory-workspace" [dir]="language.dir()">
+<main class="management-page" [dir]="language.dir()">
   <app-page-header
     [heading]="managerTitle | t"
     [description]="managerHelp | t"
     icon="admins"
-    [actionLabel]="'common.refresh' | t"
-    actionIcon="refresh"
-    [actionLoading]="loading()"
-    (actionClicked)="load(page().pageNumber)"
+    [actionLabel]="'medications.addManager' | t"
+    [actionPermission]="allowed('Create')"
+    [actionLoading]="busy()"
+    (actionClicked)="create()"
   >
-    <div pageHeaderActions>
-      @if (allowed('Create')) {
-        <button class="btn btn-primary" (click)="create()" [disabled]="busy()">
-          {{ 'medications.addManager' | t }}
-        </button>
-      }
-    </div>
-    <div pageHeaderDeck class="toolbar">
-      <label
-        >{{ 'reservations.search' | t
-        }}<input
-          class="field-input"
+    <!-- Sleek Integrated Search Deck -->
+    <div pageHeaderDeck class="search-box-wrap">
+      <div class="search-input-box-integrated">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          id="catalog-managers-search-input"
           type="search"
+          role="searchbox"
+          enterkeyhint="search"
+          autocomplete="off"
+          [placeholder]="'medications.searchPlaceholder' | t"
           [value]="search()"
+          (input)="setSearch($event)"
           (change)="setSearch($event)"
           [disabled]="busy()"
-      /></label>
+        />
+        @if (search()) {
+          <button
+            type="button"
+            class="btn-clear-search-integrated"
+            [attr.aria-label]="'common.clearSearch' | t"
+            (click)="clearSearch()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        }
+      </div>
     </div>
   </app-page-header>
-  <section class="directory" [attr.aria-busy]="loading()">
+
+  @if (!opened()) {
+    @for (message of messages(); track $index) {
+      <div class="error-banner" role="alert">
+        <p>{{ message | t }}</p>
+      </div>
+    }
+  }
+
+  <!-- Directory Section -->
+  <section class="management-table-surface" [attr.aria-busy]="loading()">
     @if (loading()) {
-      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="state-container loading-state" role="status">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
     } @else if (failed()) {
-      <div class="empty-state">
+      <div class="state-container empty-state">
         <h2>{{ 'medications.failed' | t }}</h2>
-        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+        <button type="button" class="btn-retry" (click)="load()">{{ 'common.retry' | t }}</button>
       </div>
     } @else if (!page().items.length) {
-      <div class="empty-state">
+      <div class="state-container empty-state">
         <img
           class="state-empty-illustration"
           src="/SVG-AVATAR/Doctors-cuate.svg"
@@ -45,47 +74,62 @@
           decoding="async"
         />
         <h2>{{ 'medications.noManagers' | t }}</h2>
-        <p>{{ managerHelp | t }}</p>
-        <button class="btn btn-primary" (click)="search.set(''); load()">
+        <p class="empty-help-text">{{ managerHelp | t }}</p>
+        <button type="button" class="btn-reset-search" (click)="search.set(''); load()">
           {{ 'medications.resetSearch' | t }}
         </button>
       </div>
     } @else {
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
+      <div class="table-container">
+        <table class="directory-table">
           <caption class="visually-hidden">
-            {{
-              managerTitle | t
-            }}
+            {{ managerTitle | t }}
           </caption>
           <thead>
             <tr>
               <th scope="col">{{ 'medications.userName' | t }}</th>
               <th scope="col">{{ 'medications.email' | t }}</th>
+              <th scope="col">{{ 'medications.phone' | t }}</th>
               <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+              <th scope="col" class="action-column"></th>
             </tr>
           </thead>
           <tbody>
             @for (item of page().items; track item.id) {
-              <tr>
-                <td>{{ item.userName }}</td>
-                <td dir="ltr">{{ item.email }}</td>
-                <td>
-                  <span class="status-badge">{{
-                    (item.isActive ? 'medications.active' : 'medications.inactive') | t
-                  }}</span>
-                  @if (item.isFirstLogin) {
-                    <small class="first-login">{{ 'medications.firstLogin' | t }}</small>
-                  }
+              <tr
+                class="clickable-row"
+                tabindex="0"
+                (click)="inspect(item.id)"
+                (keydown.enter)="inspect(item.id)"
+              >
+                <td class="user-cell">
+                  <div class="user-identity-deck">
+                    <div class="user-avatar-dot" aria-hidden="true">
+                      {{ item.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-text-meta">
+                      <span class="user-name">{{ item.userName }}</span>
+                      @if (item.isFirstLogin) {
+                        <span class="first-login-pill">{{ 'medications.firstLogin' | t }}</span>
+                      }
+                    </div>
+                  </div>
                 </td>
+                <td dir="ltr" class="ltr-text">{{ item.email }}</td>
+                <td dir="ltr" class="ltr-text">{{ item.phoneNumber || '—' }}</td>
                 <td>
+                  <span class="status-pill" [class.status-active]="item.isActive" [class.status-inactive]="!item.isActive">
+                    {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
+                  </span>
+                </td>
+                <td class="action-cell">
                   <button
-                    class="btn btn-outline-secondary"
+                    type="button"
+                    class="btn-inspect-row"
                     [disabled]="!allowed('ViewDetails') || busy()"
-                    (click)="inspect(item.id)"
+                    (click)="$event.stopPropagation(); inspect(item.id)"
                   >
-                    {{ 'reservations.inspect' | t }}
+                    {{ 'common.viewDetails' | t }}
                   </button>
                 </td>
               </tr>
@@ -93,157 +137,259 @@
           </tbody>
         </table>
       </div>
-      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
-        <button
-          class="btn btn-outline-secondary"
-          [disabled]="page().pageNumber <= 1 || busy()"
-          (click)="load(page().pageNumber - 1)"
-        >
-          {{ 'reservations.previous' | t }}
-        </button>
-        <span>{{ page().pageNumber }} · {{ page().totalCount }}</span>
-        <button
-          class="btn btn-outline-secondary"
-          [disabled]="page().pageNumber * page().pageSize >= page().totalCount || busy()"
-          (click)="load(page().pageNumber + 1)"
-        >
-          {{ 'reservations.next' | t }}
-        </button>
-      </nav>
+
+      <footer class="pagination-footer" [attr.aria-label]="'reservations.pagination' | t">
+        <div class="pagination-meta">
+          <span>{{ 'common.page' | t }} {{ page().pageNumber }} / {{ totalPages() }}</span>
+          <span>({{ page().totalCount }} {{ 'common.total' | t }})</span>
+        </div>
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="page().pageNumber <= 1 || busy()"
+            (click)="load(page().pageNumber - 1)"
+          >
+            {{ 'reservations.previous' | t }}
+          </button>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="page().pageNumber >= totalPages() || busy()"
+            (click)="load(page().pageNumber + 1)"
+          >
+            {{ 'reservations.next' | t }}
+          </button>
+        </div>
+      </footer>
     }
   </section>
-  @if (!opened()) {
-    @for (message of messages(); track $index) {
-      <p role="alert" class="error-text">{{ message | t }}</p>
-    }
-  }
+
+  <!-- Slide-Over Side Drawer for Account Inspection & Management -->
   <app-side-drawer
     [opened]="opened()"
     [busy]="busy()"
-    [title]="managerTitle | t"
+    [title]="drawerTitle() | t"
     (closed)="close()"
   >
     @if (detailLoading()) {
-      <p role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="state-container loading-state">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
     }
+
     @for (message of messages(); track $index) {
-      <p role="alert" class="error-text">{{ message | t }}</p>
+      <div class="error-banner" role="alert">
+        <p>{{ message | t }}</p>
+      </div>
     }
+
     @if (editing()) {
-      <form class="detail-form" [formGroup]="form" (ngSubmit)="save()">
-        <fieldset class="full detail-form" [disabled]="busy()">
+      <form class="drawer-form-surface" [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-body-deck">
           @if (creating()) {
-            <label class="full"
-              >{{ 'medications.userName' | t
-              }}<input class="field-input" formControlName="userName" autocomplete="off" required
-            /></label>
+            <div class="form-group">
+              <label class="form-label" for="manager-username">{{ 'medications.userName' | t }} *</label>
+              <input
+                id="manager-username"
+                class="form-input"
+                formControlName="userName"
+                autocomplete="off"
+                required
+              />
+            </div>
           }
-          <label class="full"
-            >{{ 'medications.email' | t
-            }}<input
-              class="field-input"
+
+          <div class="form-group">
+            <label class="form-label" for="manager-email">{{ 'medications.email' | t }} *</label>
+            <input
+              id="manager-email"
+              class="form-input ltr-text"
               formControlName="email"
               type="email"
               dir="ltr"
               autocomplete="email"
               required
-          /></label>
-          <label class="full"
-            >{{ 'medications.phone' | t
-            }}<input
-              class="field-input ltr-text"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="manager-phone">{{ 'medications.phone' | t }}</label>
+            <input
+              id="manager-phone"
+              class="form-input ltr-text"
               formControlName="phoneNumber"
               type="tel"
               dir="ltr"
               autocomplete="tel"
-          /></label>
+            />
+          </div>
+
           @if (creating()) {
-            <label class="full"
-              >{{ 'medications.initialPassword' | t
-              }}<input
-                class="field-input"
+            <div class="form-group">
+              <label class="form-label" for="manager-init-pass">{{ 'medications.initialPassword' | t }} *</label>
+              <input
+                id="manager-init-pass"
+                class="form-input"
                 formControlName="initialPassword"
                 type="password"
                 autocomplete="new-password"
                 required
-            /></label>
-            <label class="full"
-              >{{ 'medications.confirmPassword' | t
-              }}<input
-                class="field-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="manager-conf-pass">{{ 'medications.confirmPassword' | t }} *</label>
+              <input
+                id="manager-conf-pass"
+                class="form-input"
                 formControlName="confirmPassword"
                 type="password"
                 autocomplete="new-password"
                 required
-            /></label>
-            <p class="full">{{ 'medications.firstLoginHelp' | t }}</p>
+              />
+            </div>
+
+            <div class="drawer-notice-box">
+              <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              <p>{{ 'medications.firstLoginHelp' | t }}</p>
+            </div>
           }
-        </fieldset>
-        <div class="actions full">
-          <button class="btn btn-primary" [disabled]="busy()">{{ 'common.save' | t }}</button>
+        </div>
+
+        <div class="drawer-footer-actions">
           @if (!creating()) {
             <button
               type="button"
-              class="btn btn-outline-secondary"
+              class="btn-drawer-secondary"
               [disabled]="busy()"
               (click)="cancelEdit()"
             >
               {{ 'common.cancel' | t }}
             </button>
           }
+          <button type="submit" class="btn-drawer-primary" [disabled]="busy()">
+            {{ 'common.save' | t }}
+          </button>
         </div>
       </form>
     } @else if (detail(); as item) {
-      <h2>{{ item.userName }}</h2>
-      <dl>
-        <dt>{{ 'medications.email' | t }}</dt>
-        <dd dir="ltr">{{ item.email }}</dd>
-        <dt>{{ 'medications.phone' | t }}</dt>
-        <dd dir="ltr" class="ltr-text">{{ item.phoneNumber || '—' }}</dd>
-        <dt>{{ 'reservations.status' | t }}</dt>
-        <dd>{{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}</dd>
-      </dl>
-      @if (item.isFirstLogin) {
-        <p>{{ 'medications.firstLoginHelp' | t }}</p>
-      }
-      <div class="actions">
-        @if (allowed('Update')) {
-          <button class="btn btn-primary" [disabled]="busy()" (click)="edit()">
-            {{ 'medications.edit' | t }}
-          </button>
-        }
-        @if (!item.isActive && allowed('Activate')) {
-          <button
-            class="btn btn-outline-secondary"
-            [disabled]="busy()"
-            (click)="confirmAction('activate')"
-          >
-            {{ 'medications.activate' | t }}
-          </button>
-        }
-        @if (item.isActive && allowed('Deactivate')) {
-          <button class="btn btn-danger" [disabled]="busy()" (click)="confirmAction('deactivate')">
-            {{ 'medications.deactivate' | t }}
-          </button>
-        }
-      </div>
-      @if (pendingAction()) {
-        <section class="section">
-          <p>{{ 'medications.confirmAccount' | t }}</p>
-          <div class="actions">
-            <button class="btn btn-primary" [disabled]="busy()" (click)="changeActive()">
-              {{ 'medications.confirm' | t }}
-            </button>
-            <button
-              class="btn btn-outline-secondary"
-              [disabled]="busy()"
-              (click)="pendingAction.set(null)"
-            >
-              {{ 'common.cancel' | t }}
-            </button>
+      <div class="drawer-inner-surface">
+        <!-- Integrated Identity Header (Zero Carditis) -->
+        <section class="account-identity-section">
+          <div class="account-avatar-large" aria-hidden="true">
+            {{ item.userName.charAt(0).toUpperCase() }}
+          </div>
+          <div class="account-meta">
+            <div class="account-name-row">
+              <h3 class="account-name">{{ item.userName }}</h3>
+              <span class="status-pill" [class.status-active]="item.isActive" [class.status-inactive]="!item.isActive">
+                {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
+              </span>
+            </div>
+            <p class="account-role-subtitle">
+              {{ (medical ? 'diagnostics.managers' : 'medications.managerRole') | t }}
+            </p>
           </div>
         </section>
-      }
+
+        <!-- Divider line -->
+        <div class="drawer-divider"></div>
+
+        <!-- Seamless Account Specification List -->
+        <section class="account-details-section">
+          <div class="detail-row">
+            <span class="detail-label">{{ 'medications.email' | t }}</span>
+            <span class="detail-value ltr-text" dir="ltr">{{ item.email }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">{{ 'medications.phone' | t }}</span>
+            <span class="detail-value ltr-text" dir="ltr">{{ item.phoneNumber || '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">{{ 'reservations.status' | t }}</span>
+            <span class="detail-value">
+              {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
+            </span>
+          </div>
+          @if (item.isFirstLogin) {
+            <div class="detail-row">
+              <span class="detail-label">{{ 'medications.firstLogin' | t }}</span>
+              <span class="first-login-pill">{{ 'medications.firstLogin' | t }}</span>
+            </div>
+          }
+        </section>
+
+        @if (item.isFirstLogin) {
+          <div class="drawer-notice-box">
+            <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <p>{{ 'medications.firstLoginHelp' | t }}</p>
+          </div>
+        }
+
+        @if (pendingAction()) {
+          <div class="confirm-prompt-panel">
+            <p class="confirm-prompt-title">{{ 'medications.confirmAccount' | t }}</p>
+            <div class="confirm-prompt-buttons">
+              <button
+                type="button"
+                class="btn-drawer-confirm"
+                [disabled]="busy()"
+                (click)="changeActive()"
+              >
+                {{ 'medications.confirm' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn-drawer-secondary"
+                [disabled]="busy()"
+                (click)="pendingAction.set(null)"
+              >
+                {{ 'common.cancel' | t }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Anchored Footer Actions -->
+        <footer class="drawer-footer-actions">
+          @if (!item.isActive && allowed('Activate')) {
+            <button
+              type="button"
+              class="btn-drawer-success"
+              [disabled]="busy()"
+              (click)="confirmAction('activate')"
+            >
+              {{ 'medications.activate' | t }}
+            </button>
+          }
+          @if (item.isActive && allowed('Deactivate')) {
+            <button
+              type="button"
+              class="btn-drawer-danger"
+              [disabled]="busy()"
+              (click)="confirmAction('deactivate')"
+            >
+              {{ 'medications.deactivate' | t }}
+            </button>
+          }
+          @if (allowed('Update')) {
+            <button
+              type="button"
+              class="btn-drawer-primary"
+              [disabled]="busy()"
+              (click)="edit()"
+            >
+              {{ 'medications.edit' | t }}
+            </button>
+          }
+        </footer>
+      </div>
     }
   </app-side-drawer>
 </main>

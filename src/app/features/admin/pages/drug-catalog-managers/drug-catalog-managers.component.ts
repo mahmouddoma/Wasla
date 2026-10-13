@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
@@ -32,10 +32,7 @@ import {
     },
   ],
   templateUrl: './drug-catalog-managers.component.html',
-  styleUrls: [
-    '../../../../shared/styles/directory-workspace.css',
-    './drug-catalog-managers.component.css',
-  ],
+  styleUrls: ['./drug-catalog-managers.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DrugCatalogManagersComponent implements OnInit {
@@ -59,6 +56,17 @@ export class DrugCatalogManagersComponent implements OnInit {
   readonly detail = signal<DrugCatalogManager | null>(null);
   readonly messages = signal<string[]>([]);
   readonly pendingAction = signal<'activate' | 'deactivate' | null>(null);
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil((this.page().totalCount || 0) / (this.page().pageSize || 20))),
+  );
+
+  readonly drawerTitle = computed(() => {
+    if (this.creating()) return 'medications.addManager';
+    if (this.editing()) return 'medications.editManager';
+    return 'common.accountDetails';
+  });
+
   readonly form = this.fb.group({
     userName: ['', [Validators.required, Validators.maxLength(200)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(200)]],
@@ -98,8 +106,14 @@ export class DrugCatalogManagersComponent implements OnInit {
     }
   }
   setSearch(event: Event) {
-    this.search.set((event.target as HTMLInputElement).value);
-    void this.load();
+    const val = (event.target as HTMLInputElement).value;
+    this.search.set(val);
+    void this.load(1);
+  }
+  clearSearch(): void {
+    if (!this.search()) return;
+    this.search.set('');
+    void this.load(1);
   }
   async inspect(id: string) {
     if (!this.allowed('ViewDetails') || this.busy()) return;

@@ -91,6 +91,7 @@ export class QueueWorkspace implements OnInit {
   protected readonly practiceId = signal('');
   protected readonly queue = signal<PracticeQueue>(this.emptyQueue());
   protected readonly selected = signal<PracticeTicket | null>(null);
+  protected readonly ticketDetailOpen = signal(false);
   protected readonly loading = signal(false);
   protected readonly loadFailed = signal(false);
   protected readonly detailLoading = signal(false);
@@ -193,11 +194,17 @@ export class QueueWorkspace implements OnInit {
   );
 
   private permitted(permission: string): boolean {
-    return (
-      this.isDoctor() ||
-      (this.reception.currentPracticeId() === this.practiceId() &&
-        this.reception.allows(permission))
-    );
+    if (this.isDoctor()) return true;
+    const currentId = this.reception.currentPracticeId() || this.practiceId();
+    const matchesPractice =
+      !this.reception.currentPracticeId() ||
+      this.reception.currentPracticeId().trim().toLowerCase() ===
+        this.practiceId().trim().toLowerCase();
+    const hasPermission =
+      typeof this.reception.allowsInPractice === 'function'
+        ? this.reception.allowsInPractice(this.practiceId(), permission)
+        : this.reception.allows(permission);
+    return matchesPractice && hasPermission;
   }
   protected readonly queueOccupied = computed(
     () => !!this.queue().called || !!this.queue().inProgress,
@@ -237,13 +244,16 @@ export class QueueWorkspace implements OnInit {
       if (
         this.initialized &&
         this.actor() === 'Reception' &&
+        id &&
         (id !== this.practiceId() || stamp !== this.accessStamp)
       ) {
         untracked(() => {
           this.accessStamp = stamp;
           void this.selectPractice(id);
         });
-      } else this.accessStamp = stamp;
+      } else if (stamp !== this.accessStamp) {
+        this.accessStamp = stamp;
+      }
     });
   }
 
@@ -280,6 +290,14 @@ export class QueueWorkspace implements OnInit {
     return this.language.currentLang() === 'en' ? item.nameEn || item.nameAr : item.nameAr;
   }
 
+  protected patientLabel(ticket: PracticeTicket): string {
+    if (ticket.patient) {
+      const text = this.label(ticket.patient);
+      if (text && text.trim()) return text;
+    }
+    return this.language.t('tickets.queue.unregisteredPatient');
+  }
+
   protected async selectPractice(idOrEvent: string | Event): Promise<void> {
     const id =
       typeof idOrEvent === 'string' ? idOrEvent : (idOrEvent.target as HTMLSelectElement).value;
@@ -290,6 +308,7 @@ export class QueueWorkspace implements OnInit {
     this.eligibilitySequence++;
     this.practiceId.set(id);
     if (this.actor() === 'Reception') this.reception.select(id);
+    this.ticketDetailOpen.set(false);
     this.selected.set(null);
     this.pendingAction.set(null);
     this.detailLoading.set(false);
@@ -325,28 +344,69 @@ export class QueueWorkspace implements OnInit {
     }
   }
 
-  protected async inspect(ticketId: string): Promise<void> {
+  protected findTicketInQueue(ticketId: string): PracticeTicket | null {
+    if (!ticketId) return null;
+    const normalized = ticketId.trim().toLowerCase();
+    const matches = (t: PracticeTicket | null | undefined): boolean => {
+      if (!t) return false;
+      const tid = t.ticketId || (t as unknown as { id?: string }).id;
+      return typeof tid === 'string' && tid.trim().toLowerCase() === normalized;
+    };
+    const q = this.queue();
+    if (matches(q.inProgress)) return q.inProgress;
+    if (matches(q.called)) return q.called;
+    return q.waiting.find(matches) ?? q.noShow.find(matches) ?? null;
+  }
+
+  protected async inspect(ticketOrId: PracticeTicket | string): Promise<void> {
+    const initialTicket: PracticeTicket | null =
+      typeof ticketOrId === 'object' && ticketOrId !== null
+        ? ticketOrId
+        : this.findTicketInQueue(ticketOrId);
+
+    const ticketId =
+      typeof ticketOrId === 'string'
+        ? ticketOrId
+        : initialTicket?.ticketId || (initialTicket as unknown as { id?: string })?.id || '';
+
     if (!this.practiceId() || !this.canViewQueue() || this.busy()) return;
+    if (!ticketId && !initialTicket) return;
+
     this.walkInOpen.set(false);
     this.walkInDone.set(null);
     this.pendingAction.set(null);
+    this.messages.set([]);
+    this.reasonModel.set({ reason: '' });
+
+    // 1. Instant 0ms synchronous assignment directly from memory!
+    this.ticketDetailOpen.set(true);
+    if (initialTicket) {
+      this.selected.set(initialTicket);
+    }
+
+    // 2. Background fresh sync
     const generation = this.generation,
       id = this.practiceId(),
       sequence = ++this.detailSequence;
-    this.detailLoading.set(true);
-    this.messages.set([]);
-    this.selected.set(null);
-    this.reasonModel.set({ reason: '' });
+
+    // Only show detailLoading indicator if we didn't have the ticket in memory
+    this.detailLoading.set(!initialTicket);
+
+    if (!ticketId) return;
+
     try {
       const ticket = await firstValueFrom(this.api.details(id, ticketId));
-      if (this.current(id, generation) && sequence === this.detailSequence && this.canViewQueue())
+      if (this.current(id, generation) && sequence === this.detailSequence && this.canViewQueue()) {
         this.selected.set(ticket);
+      }
     } catch (error) {
-      if (this.current(id, generation) && sequence === this.detailSequence)
+      if (this.current(id, generation) && sequence === this.detailSequence && !initialTicket) {
         await this.failure(error, id, generation);
+      }
     } finally {
-      if (this.current(id, generation) && sequence === this.detailSequence)
+      if (this.current(id, generation) && sequence === this.detailSequence) {
         this.detailLoading.set(false);
+      }
     }
   }
 
@@ -408,8 +468,9 @@ export class QueueWorkspace implements OnInit {
     });
   }
 
-  protected canRecall(ticket: PracticeTicket): boolean {
-    return ticket.callAttempts.at(-1)?.outcome === 'NoResponse';
+  protected canRecall(ticket: PracticeTicket | null = this.selected()): boolean {
+    if (!ticket) return false;
+    return (ticket.callAttempts ?? []).at(-1)?.outcome === 'NoResponse';
   }
 
   protected async act(action: QueueAction, ticket = this.selected()): Promise<void> {
@@ -470,6 +531,7 @@ export class QueueWorkspace implements OnInit {
   protected async openWalkIn(): Promise<void> {
     if (!this.canWalkIn() || this.busy()) return;
     this.detailSequence++;
+    this.ticketDetailOpen.set(false);
     this.selected.set(null);
     this.detailLoading.set(false);
     this.resetWalkIn();
@@ -579,17 +641,68 @@ export class QueueWorkspace implements OnInit {
     );
   }
   protected outcomeLabel(value?: string | null): string {
-    if (!value) return this.language.t('tickets.pendingOutcome');
-    return this.language.t(
-      ['NoResponse', 'Responded', 'Started'].includes(value)
-        ? 'tickets.outcome.' + value
-        : 'tickets.outcome.unknown',
-    );
+    if (!value || value === 'Called') return this.language.t('tickets.outcome.calledWaiting');
+    if (value === 'NoResponse') return this.language.t('tickets.outcome.NoResponse');
+    if (value === 'Responded') return this.language.t('tickets.outcome.Responded');
+    if (value === 'Started') return this.language.t('tickets.outcome.Started');
+    return this.language.t('tickets.outcome.calledWaiting');
+  }
+
+  protected formatDate(value?: string | null): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    try {
+      return new Intl.DateTimeFormat(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+    } catch {
+      return value;
+    }
+  }
+
+  protected formatTime(value?: string | null): string {
+    if (!value) return '—';
+    const trimmed = value.trim();
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+      const [hStr, mStr] = trimmed.split(':');
+      const h = parseInt(hStr, 10);
+      const isPm = h >= 12;
+      const h12 = h % 12 || 12;
+      const suffix = this.language.currentLang() === 'ar' ? (isPm ? 'م' : 'ص') : isPm ? 'PM' : 'AM';
+      return `${h12}:${mStr} ${suffix}`;
+    }
+    const date = new Date(trimmed);
+    if (Number.isNaN(date.getTime())) return trimmed;
+    try {
+      return new Intl.DateTimeFormat(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }).format(date);
+    } catch {
+      return trimmed;
+    }
+  }
+
+  protected formatTransactionRef(tx?: string | null): string {
+    if (!tx) return '—';
+    if (tx.length > 16) {
+      const parts = tx.split('-');
+      if (parts.length >= 3) {
+        return `#${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
+      }
+      return '...' + tx.slice(-10);
+    }
+    return tx;
   }
 
   protected close(): void {
     if (this.busy()) return;
     this.detailSequence++;
+    this.ticketDetailOpen.set(false);
     this.selected.set(null);
     this.detailLoading.set(false);
     this.reasonModel.set({ reason: '' });
@@ -606,6 +719,25 @@ export class QueueWorkspace implements OnInit {
 
   protected statusKey(status: string): string {
     return `tickets.status.${status}`;
+  }
+
+  protected statusClass(status: string): string {
+    switch (status) {
+      case 'Waiting':
+        return 'badge-waiting';
+      case 'Called':
+        return 'badge-called';
+      case 'InProgress':
+        return 'badge-in-progress';
+      case 'NoShow':
+        return 'badge-no-show';
+      case 'Completed':
+        return 'badge-completed';
+      case 'Cancelled':
+        return 'badge-cancelled';
+      default:
+        return 'badge-neutral';
+    }
   }
 
   private async runMutation(
@@ -825,10 +957,14 @@ export class QueueWorkspace implements OnInit {
   }
 
   private current(id: string, generation: number): boolean {
+    const receptionMatch =
+      this.isDoctor() ||
+      !this.reception.currentPracticeId() ||
+      id.trim().toLowerCase() === this.reception.currentPracticeId().trim().toLowerCase();
     return (
       generation === this.generation &&
-      id === this.practiceId() &&
-      (this.isDoctor() || id === this.reception.currentPracticeId())
+      id.trim().toLowerCase() === this.practiceId().trim().toLowerCase() &&
+      receptionMatch
     );
   }
 
@@ -848,6 +984,7 @@ export class QueueWorkspace implements OnInit {
       this.practices.set(this.reception.practices());
       this.generation++;
       this.queue.set(this.emptyQueue());
+      this.ticketDetailOpen.set(false);
       this.selected.set(null);
       this.pendingAction.set(null);
       this.detailLoading.set(false);

@@ -6,6 +6,7 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import {
+  Reservation,
   ReservationActor,
   ReservationLabel,
   ReservationQuery,
@@ -306,5 +307,42 @@ export class ReservationWorkspaceComponent implements OnInit {
     return this.store.actor() === 'Patient'
       ? this.store.metadata()?.patientCancellationReasons || []
       : this.store.metadata()?.providerCancellationReasons || [];
+  }
+
+  openArrival(reservation: Reservation | string): void {
+    void this.store.openArrival(reservation);
+  }
+
+  dismissMessage(index: number): void {
+    const list = [...this.store.messages()];
+    list.splice(index, 1);
+    this.store.messages.set(list);
+  }
+
+  messageTone(message: string): 'warning' | 'danger' | 'info' {
+    const text = (this.language.t(message) || message).toLowerCase();
+    if (
+      text.includes('استشارة') ||
+      text.includes('نشطة') ||
+      text.includes('تنبيه') ||
+      text.includes('warning') ||
+      text.includes('مستقبلية') ||
+      text.includes('already') ||
+      text.includes('active')
+    ) {
+      return 'warning';
+    }
+    if (
+      text.includes('فشل') ||
+      text.includes('خطأ') ||
+      text.includes('تعذر') ||
+      text.includes('error') ||
+      text.includes('blocked') ||
+      text.includes('failed') ||
+      text.includes('invalid')
+    ) {
+      return 'danger';
+    }
+    return 'info';
   }
 }

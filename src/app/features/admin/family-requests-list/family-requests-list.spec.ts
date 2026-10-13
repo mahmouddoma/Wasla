@@ -114,4 +114,18 @@ describe('FamilyRequestsList', () => {
     const messages = (component as unknown as { messages: () => string[] }).messages();
     expect(messages.length).toBeGreaterThan(0);
   });
+
+  it('should apply quick filters', async () => {
+    (component as unknown as { setQuickFilter: (t: 'all' | 'pending' | 'create' | 'addMember') => void }).setQuickFilter('pending');
+    expect((component as unknown as { status: () => string }).status()).toBe('Pending');
+    expect(mockApi.adminRequests).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'Pending' }),
+    );
+
+    (component as unknown as { setQuickFilter: (t: 'all' | 'pending' | 'create' | 'addMember') => void }).setQuickFilter('create');
+    expect((component as unknown as { requestType: () => string }).requestType()).toBe('CreateFamily');
+    expect(mockApi.adminRequests).toHaveBeenCalledWith(
+      expect.objectContaining({ requestType: 'CreateFamily' }),
+    );
+  });
 });

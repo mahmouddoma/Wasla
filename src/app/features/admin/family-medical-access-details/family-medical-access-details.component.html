@@ -1,0 +1,246 @@
+<div class="review-details-wrapper" [class.drawer-mode]="isDrawer()">
+  @if (loading()) {
+    <div class="state-container loading-state" role="status">
+      <div class="spinner-ring" aria-hidden="true"></div>
+      <p>{{ 'common.loading' | t }}</p>
+    </div>
+  } @else if (details(); as item) {
+    <div class="review-details-body">
+      <!-- Status & Type Header -->
+      <header class="review-header">
+        <div class="header-main-info">
+          <div class="type-badge-row">
+            <span class="request-type-pill" [class.restriction]="item.requestType === 'Restriction'">
+              {{ (item.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}
+            </span>
+            <span class="status-pill status-{{ item.status.toLowerCase() }}">
+              {{ item.status }}
+            </span>
+            <span class="revision-tag">{{ 'review.revision' | t }} #{{ item.revision }}</span>
+          </div>
+          <h2 class="request-id-title">{{ item.requestId }}</h2>
+        </div>
+
+        @if (isPending() && canDecide) {
+          <div class="review-actions-deck">
+            <button
+              type="button"
+              class="btn-action btn-approve"
+              (click)="openActionDialog('approve')"
+            >
+              {{ 'review.approveRequest' | t }}
+            </button>
+            @if (canRequestModification) {
+              <button
+                type="button"
+                class="btn-action btn-modification"
+                (click)="openActionDialog('modification')"
+              >
+                {{ 'review.requestModificationAction' | t }}
+              </button>
+            }
+            <button
+              type="button"
+              class="btn-action btn-reject"
+              (click)="openActionDialog('reject')"
+            >
+              {{ 'review.rejectRequest' | t }}
+            </button>
+          </div>
+        }
+      </header>
+
+      @if (messages().length > 0) {
+        <div class="error-banner" role="alert">
+          @for (msg of messages(); track msg) {
+            <p>{{ msg }}</p>
+          }
+        </div>
+      }
+
+      <!-- Main Surface Sections -->
+      <div class="details-surface">
+        <!-- Relationship & Identity Section -->
+        <section class="details-section">
+          <h3 class="section-title">{{ 'family.relationshipVerification' | t }}</h3>
+          <div class="key-value-grid">
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.childPatientId' | t }}</span>
+              <span class="kv-value code-font">{{ item.childPatientId }}</span>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.affectedAdultPatientId' | t }}</span>
+              <span class="kv-value code-font">{{ item.affectedAdultPatientId }}</span>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.familyId' | t }}</span>
+              <span class="kv-value code-font">{{ item.familyId }}</span>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">{{ 'review.submittedAt' | t }}</span>
+              <span class="kv-value">{{ item.submittedAtUtc }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Request Reason Section -->
+        <section class="details-section">
+          <h3 class="section-title">{{ 'review.reason' | t }}</h3>
+          <div class="text-content-box">
+            <p>{{ item.reason }}</p>
+          </div>
+        </section>
+
+        @if (item.reviewMessage) {
+          <section class="details-section">
+            <h3 class="section-title">{{ 'review.reviewMessage' | t }}</h3>
+            <div class="text-content-box alert-note">
+              <p>{{ item.reviewMessage }}</p>
+            </div>
+          </section>
+        }
+
+        <!-- Documents Section -->
+        <section class="details-section">
+          <h3 class="section-title">{{ 'review.documents' | t }}</h3>
+          @if (item.documents.length === 0) {
+            <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
+          } @else {
+            <div class="documents-list">
+              @for (doc of item.documents; track doc.documentId) {
+                <div class="document-row">
+                  <div class="doc-info">
+                    <span class="doc-icon" aria-hidden="true">📄</span>
+                    <div class="doc-texts">
+                      <span class="doc-name">{{ doc.fileName }}</span>
+                      <span class="doc-type">{{ doc.documentType }}</span>
+                    </div>
+                  </div>
+                  @if (canViewDocuments && doc.canDownload) {
+                    <button
+                      type="button"
+                      class="btn-download"
+                      [disabled]="documentLoadingId() === doc.documentId"
+                      (click)="downloadDocument(doc)"
+                    >
+                      @if (documentLoadingId() === doc.documentId) {
+                        <span>...</span>
+                      } @else {
+                        <span>{{ 'review.downloadDocument' | t }}</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- History Timeline Section -->
+        <section class="details-section">
+          <h3 class="section-title">{{ 'review.auditHistory' | t }}</h3>
+          @if (historyLoading()) {
+            <div class="spinner-small" aria-hidden="true"></div>
+          } @else if (history().length === 0) {
+            <p class="empty-hint">{{ 'review.noHistory' | t }}</p>
+          } @else {
+            <div class="timeline-list">
+              @for (entry of history(); track entry.historyId) {
+                <div class="timeline-entry">
+                  <div class="timeline-marker" aria-hidden="true"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-meta">
+                      <span class="timeline-action">{{ entry.action }}</span>
+                      <span class="timeline-time">{{ entry.occurredAtUtc }}</span>
+                    </div>
+                    @if (entry.message) {
+                      <p class="timeline-message">{{ entry.message }}</p>
+                    }
+                    @if (entry.oldStatus || entry.newStatus) {
+                      <div class="timeline-status-change">
+                        <span>{{ entry.oldStatus ?? '-' }}</span>
+                        <span aria-hidden="true">→</span>
+                        <span>{{ entry.newStatus ?? '-' }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      </div>
+    </div>
+  } @else {
+    <div class="state-container empty-state">
+      <p>{{ 'common.nothingFound' | t }}</p>
+    </div>
+  }
+
+  <!-- Review Action Confirmation Dialog -->
+  <dialog #reviewDialog class="review-action-modal">
+    <div class="modal-surface">
+      <header class="modal-header">
+        <h3>
+          @switch (action()) {
+            @case ('approve') { {{ 'review.approveRequest' | t }} }
+            @case ('reject') { {{ 'review.rejectRequest' | t }} }
+            @case ('modification') { {{ 'review.requestModificationAction' | t }} }
+          }
+        </h3>
+        <button type="button" class="btn-close-modal" (click)="closeActionDialog()" aria-label="Close">✕</button>
+      </header>
+
+      <div class="modal-body">
+        <label class="form-field-label" for="action-reason-input">
+          @switch (action()) {
+            @case ('approve') { {{ 'review.decisionNote' | t }} }
+            @case ('reject') { {{ 'review.rejectionReason' | t }} * }
+            @case ('modification') { {{ 'review.modificationMessage' | t }} * }
+          }
+        </label>
+        <textarea
+          id="action-reason-input"
+          class="reason-textarea"
+          rows="4"
+          [formField]="reviewForm.text"
+          [placeholder]="'common.enterNotes' | t"
+        ></textarea>
+
+        @if (messages().length > 0) {
+          <div class="modal-error-box" role="alert">
+            @for (msg of messages(); track msg) {
+              <p>{{ msg }}</p>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="btn-modal-cancel"
+          [disabled]="submitting()"
+          (click)="closeActionDialog()"
+        >
+          {{ 'common.cancel' | t }}
+        </button>
+        <button
+          type="button"
+          class="btn-modal-confirm"
+          [class.btn-confirm-approve]="action() === 'approve'"
+          [class.btn-confirm-reject]="action() === 'reject'"
+          [class.btn-confirm-modify]="action() === 'modification'"
+          [disabled]="submitting()"
+          (click)="submitDecision()"
+        >
+          @if (submitting()) {
+            <span>{{ 'common.saving' | t }}...</span>
+          } @else {
+            <span>{{ 'common.confirm' | t }}</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </dialog>
+</div>

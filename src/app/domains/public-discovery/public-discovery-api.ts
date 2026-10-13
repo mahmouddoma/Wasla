@@ -6,6 +6,7 @@ import {
   AvailableDate,
   AvailableSlot,
   BookingOptions,
+  BookingOptionsResponse,
   PublicDoctorDetails,
   PublicDoctorDetailsResponse,
   PublicDoctorSearchQuery,
@@ -14,6 +15,7 @@ import {
   PublicPracticeResponse,
   PublicPracticeSummary,
   PublicSpecialization,
+  normalizeBookingOptions,
 } from './public-discovery.models';
 
 @Injectable({ providedIn: 'root' })
@@ -41,12 +43,14 @@ export class PublicDiscoveryApi {
     );
   }
   doctor(doctorId: string): Observable<PublicDoctorDetails> {
-    return this.http.get<PublicDoctorDetailsResponse>(
-      `${this.url}/doctors/${encodeURIComponent(doctorId)}`,
-    ).pipe(map((doctor) => ({
-      ...doctor,
-      practices: doctor.practices.map((practice) => this.practice(practice)),
-    })));
+    return this.http
+      .get<PublicDoctorDetailsResponse>(`${this.url}/doctors/${encodeURIComponent(doctorId)}`)
+      .pipe(
+        map((doctor) => ({
+          ...doctor,
+          practices: doctor.practices.map((practice) => this.practice(practice)),
+        })),
+      );
   }
   availableDates(practiceId: string): Observable<AvailableDate[]> {
     return this.http.get<AvailableDate[]>(`${this.practiceUrl(practiceId)}/available-dates`);
@@ -57,22 +61,29 @@ export class PublicDiscoveryApi {
     });
   }
   bookingOptions(practiceId: string, date: string, time: string): Observable<BookingOptions> {
-    return this.http.get<BookingOptions>(`${this.practiceUrl(practiceId)}/booking-options`, {
-      params: { date, time },
-    });
+    return this.http
+      .get<BookingOptionsResponse>(`${this.practiceUrl(practiceId)}/booking-options`, {
+        params: { date, time },
+      })
+      .pipe(map(normalizeBookingOptions));
   }
   private practiceUrl(practiceId: string): string {
     return `${this.url}/practices/${encodeURIComponent(this.practiceId(practiceId))}`;
   }
   private practice(response: PublicPracticeResponse): PublicPracticeSummary {
     const { id, practiceId, doctorPracticeId, ...practice } = response;
-    const identifier = [id, practiceId, doctorPracticeId].find((value) =>
-      typeof value === 'string' && value.trim() && !['undefined', 'null'].includes(value.trim()),
+    const identifier = [id, practiceId, doctorPracticeId].find(
+      (value) =>
+        typeof value === 'string' && value.trim() && !['undefined', 'null'].includes(value.trim()),
     );
     return { ...practice, id: this.practiceId(identifier) };
   }
   private practiceId(value: string | null | undefined): string {
-    if (typeof value !== 'string' || !value.trim() || ['undefined', 'null'].includes(value.trim())) {
+    if (
+      typeof value !== 'string' ||
+      !value.trim() ||
+      ['undefined', 'null'].includes(value.trim())
+    ) {
       throw new Error('discovery.invalidPractice');
     }
     return value.trim();

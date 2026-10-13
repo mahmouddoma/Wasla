@@ -241,6 +241,84 @@ describe('ReservationsApi', () => {
       expect(request.request.body.rowVersion).toBe('v1');
     request.flush({});
   });
+  it('normalizes nullable booking option collections returned by the Reception endpoint', async () => {
+    const options = api.receptionOptions('c1', date, time);
+    const result = new Promise<unknown>((resolve) => options.subscribe(resolve));
+    const request = http.expectOne((candidate) =>
+      candidate.url.endsWith('/reception/practices/c1/booking/options'),
+    );
+    request.flush({ practiceId: 'c1', date, time, visitTypes: null });
+    await expect(result).resolves.toEqual({ practiceId: 'c1', date, time, visitTypes: [] });
+  });
+  it('normalizes segment-owned Reception visit types into selectable visit type and price options', async () => {
+    const options = api.receptionOptions('c1', date, time);
+    const result = new Promise<unknown>((resolve) => options.subscribe(resolve));
+    const request = http.expectOne((candidate) =>
+      candidate.url.endsWith('/reception/practices/c1/booking/options'),
+    );
+
+    request.flush({
+      practiceId: 'c1',
+      date,
+      time,
+      segments: [
+        {
+          segmentId: 'critical',
+          nameAr: 'حالات حرجه',
+          nameEn: 'Critical situations',
+          priority: 2,
+          visitTypes: [
+            {
+              visitTypeId: 'new',
+              visitTypeCode: 'NewConsultation',
+              visitTypeNameAr: 'كشف جديد',
+              visitTypeNameEn: 'New consultation',
+              price: 700,
+            },
+          ],
+        },
+        {
+          segmentId: 'normal',
+          nameAr: 'عادي',
+          nameEn: 'Normal',
+          priority: 0,
+          visitTypes: [
+            {
+              visitTypeId: 'new',
+              visitTypeCode: 'NewConsultation',
+              visitTypeNameAr: 'كشف جديد',
+              visitTypeNameEn: 'New consultation',
+              price: 300,
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(result).resolves.toEqual({
+      practiceId: 'c1',
+      date,
+      time,
+      visitTypes: [
+        {
+          visitTypeId: 'new',
+          type: 'NewConsultation',
+          nameAr: 'كشف جديد',
+          nameEn: 'New consultation',
+          segments: [
+            { segmentId: 'normal', nameAr: 'عادي', nameEn: 'Normal', price: 300, isDefault: true },
+            {
+              segmentId: 'critical',
+              nameAr: 'حالات حرجه',
+              nameEn: 'Critical situations',
+              price: 700,
+              isDefault: false,
+            },
+          ],
+        },
+      ],
+    });
+  });
   it.each([
     { actor: 'Patient', suffix: '/reservations/mine' },
     { actor: 'Reception', practiceId: 'c1', suffix: '/reception/practices/c1/reservations' },
@@ -324,8 +402,8 @@ describe('ReservationsApi', () => {
       resultPage = res;
     });
 
-    const req = http.expectOne((r) =>
-      r.url.endsWith('/reservations/mine') && r.params.get('pageNumber') === '1',
+    const req = http.expectOne(
+      (r) => r.url.endsWith('/reservations/mine') && r.params.get('pageNumber') === '1',
     );
     req.flush({ items: [flatItem], totalCount: 1, pageNumber: 1, pageSize: 20 });
 

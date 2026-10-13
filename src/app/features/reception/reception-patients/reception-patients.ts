@@ -94,12 +94,13 @@ export class ReceptionPatients {
     phoneNumber: '',
     name: '',
     dateOfBirth: '',
-    pageSize: 20,
+    pageSize: 10,
   });
   protected readonly searchForm = form(this.searchModel, (field) => {
     min(field.pageSize, 1);
     max(field.pageSize, 100);
   });
+  protected readonly pageSizeOptions = [10, 15, 20] as const;
   protected readonly profileImage = signal<File | undefined>(undefined);
   protected readonly results = signal<PagedResponse<PatientSearchItem> | null>(null);
   protected readonly selectedPatientId = signal('');
@@ -112,6 +113,28 @@ export class ReceptionPatients {
   protected readonly practices = this.practiceContext.practices;
   protected readonly selectedPracticeId = this.practiceContext.currentPracticeId;
   protected readonly currentPractice = this.practiceContext.currentPractice;
+
+  protected readonly totalPages = computed(() => {
+    const res = this.results();
+    if (!res || !res.totalCount) return 1;
+    if (res.totalPages && res.totalPages > 0) return res.totalPages;
+    const size = res.pageSize || this.searchModel().pageSize || 10;
+    return Math.ceil(res.totalCount / size) || 1;
+  });
+
+  protected readonly startIndex = computed(() => {
+    const res = this.results();
+    if (!res || res.items.length === 0) return 0;
+    const size = res.pageSize || this.searchModel().pageSize || 10;
+    return (this.pageNumber() - 1) * size + 1;
+  });
+
+  protected readonly endIndex = computed(() => {
+    const res = this.results();
+    if (!res || res.items.length === 0) return 0;
+    return Math.min(this.startIndex() + res.items.length - 1, res.totalCount);
+  });
+
   protected readonly canSearch = computed(() =>
     this.session.hasPermission(PERMISSIONS.patientsSearchBasic),
   );
@@ -130,7 +153,7 @@ export class ReceptionPatients {
   constructor() {
     if (!this.practices().length) void this.loadPractices();
     effect(() => {
-      this.selectedPracticeId();
+      const practiceId = this.selectedPracticeId();
       this.contextGeneration++;
       this.searchSequence++;
       this.results.set(null);
@@ -139,6 +162,12 @@ export class ReceptionPatients {
       this.createdPatientId.set('');
       this.messages.set([]);
       this.isSearching.set(false);
+      if (
+        practiceId &&
+        this.canSearch() &&
+        this.selectedPracticeAllows(PERMISSIONS.patientsSearchBasic)
+      )
+        void this.search();
     });
 
     const params = this.route.snapshot.queryParamMap;
@@ -170,10 +199,33 @@ export class ReceptionPatients {
       phoneNumber: '',
       name: '',
       dateOfBirth: '',
-      pageSize: 20,
+      pageSize: 10,
     });
+    this.pageNumber.set(1);
     this.results.set(null);
     this.clearFeedback();
+  }
+
+  protected setPageSize(size: number): void {
+    if (this.searchModel().pageSize === size && this.pageNumber() === 1) return;
+    this.searchModel.update((m) => ({ ...m, pageSize: size }));
+    this.pageNumber.set(1);
+    void this.search(1);
+  }
+
+  protected onPageSizeChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const size = Number(select?.value);
+    if (size && size !== this.searchModel().pageSize) {
+      this.setPageSize(size);
+    }
+  }
+
+  protected goToPage(page: number): void {
+    const total = this.totalPages();
+    if (page < 1 || page > total || page === this.pageNumber() || this.isSearching()) return;
+    this.pageNumber.set(page);
+    void this.search(page);
   }
 
   protected clearSelection(): void {

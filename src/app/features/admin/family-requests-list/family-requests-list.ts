@@ -25,7 +25,7 @@ import { FamilyRequestDetailsPage } from '../family-request-details/family-reque
   selector: 'app-family-requests-list',
   imports: [FormField, PageHeader, SideDrawer, FamilyRequestDetailsPage, TranslatePipe],
   templateUrl: './family-requests-list.html',
-  styleUrls: ['../management-list.css', './family-requests-list.css'],
+  styleUrls: ['./family-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FamilyRequestsList {
@@ -38,7 +38,7 @@ export class FamilyRequestsList {
   protected readonly searchForm = form(this.model, (field) => {
     maxLength(field.search, 200, { message: 'validation.searchLength' });
   });
-  protected readonly status = signal<FamilyRequestStatus | ''>('Pending');
+  protected readonly status = signal<FamilyRequestStatus | ''>('');
   protected readonly requestType = signal<FamilyRequestType | ''>('');
   protected readonly pageNumber = signal(1);
   protected readonly pageSize = 20;
@@ -92,6 +92,22 @@ export class FamilyRequestsList {
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (filter === 'status') this.status.set(value as FamilyRequestStatus | '');
     else this.requestType.set(value as FamilyRequestType | '');
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected setQuickFilter(type: 'all' | 'pending' | 'create' | 'addMember'): void {
+    if (type === 'all') {
+      this.status.set('');
+      this.requestType.set('');
+    } else if (type === 'pending') {
+      this.status.set('Pending');
+      this.requestType.set('');
+    } else if (type === 'create') {
+      this.requestType.set('CreateFamily');
+    } else if (type === 'addMember') {
+      this.requestType.set('AddFamilyMember');
+    }
     this.pageNumber.set(1);
     void this.load();
   }
