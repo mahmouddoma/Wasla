@@ -12,5 +12,4 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 })
 export class PlatformFooter {
   readonly langService = inject(LanguageService);
-  protected readonly version = 'v2.4.0';
 }

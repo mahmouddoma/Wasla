@@ -300,28 +300,28 @@ export class FamiliesApi {
   }
 
   medicalEligibilityReview(reviewId: string): Observable<FamilyMedicalEligibilityReview> {
-    return this.http.get<FamilyMedicalEligibilityReview>(`${this.eligibilityUrl}/${reviewId}`);
+    return this.http.get<FamilyMedicalEligibilityReview>(`${this.eligibilityReviewsUrl}/${reviewId}`);
   }
 
   approveMedicalEligibility(
     reviewId: string,
     request: FamilyMedicalDecisionRequest,
   ): Observable<FamilyMedicalEligibilityReview> {
-    return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/approve`, request);
+    return this.medicalEligibilityDecision(`${this.eligibilityReviewsUrl}/${reviewId}/approve`, request);
   }
 
   rejectMedicalEligibility(
     reviewId: string,
     request: FamilyMedicalDecisionRequest,
   ): Observable<FamilyMedicalEligibilityReview> {
-    return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/reject`, request);
+    return this.medicalEligibilityDecision(`${this.eligibilityReviewsUrl}/${reviewId}/reject`, request);
   }
 
   revokeMedicalEligibility(
     reviewId: string,
     request: FamilyMedicalDecisionRequest,
   ): Observable<FamilyMedicalEligibilityReview> {
-    return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/revoke`, request);
+    return this.medicalEligibilityDecision(`${this.eligibilityReviewsUrl}/${reviewId}/revoke`, request);
   }
 
   medicalRecordDependents(): Observable<MedicalRecordCursorPage<FamilyMedicalDependent>> {

@@ -1,0 +1,136 @@
+<main class="worklist-container" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'worklist.title' | t"
+    [description]="'worklist.subtitle' | t"
+    icon="reception"
+    [actionLabel]="'finance.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    [actionDisabled]="loading()"
+    (actionClicked)="loadData()"
+  >
+    <div pageHeaderActions class="worklist-header-actions">
+      @if (attentionCount() > 0) {
+        <div class="attention-badge-pill">
+          <span class="pulse-dot"></span>
+          <span>{{ attentionCount() }} {{ 'worklist.attention' | t }}</span>
+        </div>
+      }
+    </div>
+  </app-page-header>
+
+  <!-- Filter tabs bar -->
+  <div class="filter-toolbar">
+    <div class="filter-tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="filter-tab"
+        [class.active]="selectedFilter() === 'all'"
+        (click)="setFilter('all')"
+      >
+        {{ 'common.all' | t }}
+        <span class="count-pill">{{ worklistItems().length }}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="filter-tab"
+        [class.active]="selectedFilter() === 'waiting'"
+        (click)="setFilter('waiting')"
+      >
+        {{ 'tickets.status.waiting' | t }}
+        <span class="count-pill">{{ worklistItems().length - (worklistItems().length > 1 ? 1 : 0) }}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="filter-tab"
+        [class.active]="selectedFilter() === 'checkedIn'"
+        (click)="setFilter('checkedIn')"
+      >
+        {{ 'tickets.status.inProgress' | t }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Unified Worklist Table (Seamless surface, NO card-overuse) -->
+  <div class="table-surface">
+    @if (loading() && worklistItems().length === 0) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
+    } @else if (filteredItems().length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 12h8" />
+        </svg>
+        <p>{{ 'common.nothingFound' | t }}</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="worklist-table">
+          <thead>
+            <tr>
+              <th>{{ 'tickets.table.ticketNumber' | t }}</th>
+              <th>{{ 'reservations.patient' | t }}</th>
+              <th>{{ 'worklist.visitType' | t }}</th>
+              <th>{{ 'worklist.segment' | t }}</th>
+              <th>{{ 'reservations.time' | t }}</th>
+              <th>{{ 'reservations.status' | t }}</th>
+              <th class="text-end">{{ 'reservations.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredItems(); track item.id) {
+              <tr [class.row-checked-in]="item.checkedIn">
+                <td class="cell-mono">{{ item.ticketNumber }}</td>
+                <td class="cell-primary font-medium">{{ item.patientName }}</td>
+                <td>{{ item.visitType }}</td>
+                <td>
+                  <span class="segment-tag">{{ item.segment }}</span>
+                </td>
+                <td class="cell-muted">{{ item.time }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.pill-success]="item.checkedIn"
+                    [class.pill-waiting]="!item.checkedIn"
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  @if (!item.checkedIn) {
+                    <button
+                      type="button"
+                      class="btn-action-primary"
+                      (click)="checkInPatient(item)"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>{{ 'worklist.checkIn' | t }}</span>
+                    </button>
+                  } @else {
+                    <span class="checked-in-label">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                      {{ 'tickets.status.inProgress' | t }}
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</main>

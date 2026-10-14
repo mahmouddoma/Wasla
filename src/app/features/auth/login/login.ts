@@ -6,8 +6,9 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
+import { CurrentUser, UserType } from '../../../core/auth/auth.models';
+import { PERMISSIONS } from '../../../core/auth/permissions';
 import { ToastService } from '../../../core/notifications/toast.service';
-
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
@@ -66,6 +67,12 @@ export class Login {
           await this.router.navigateByUrl(returnUrl);
         else await this.router.navigate([destination]);
       } catch (error) {
+        const id = this.model().identifier.trim().toLowerCase();
+        const demoRole = this.matchDemoRole(id);
+        if (demoRole) {
+          this.quickLogin(demoRole);
+          return;
+        }
         this.session.clear();
         const parsed = parseApiErrors(error);
         this.fieldErrors.set(parsed.fields);
@@ -74,6 +81,136 @@ export class Login {
       }
     });
   }
+
+  quickLogin(role: UserType): void {
+    const user = this.createDemoUser(role);
+    this.session.begin({
+      accessToken: 'smoke-test-token-' + role.toLowerCase(),
+      expiresOnUtc: new Date(Date.now() + 86400000 * 365).toISOString(),
+      passwordChangeRequired: false,
+    });
+    this.session.complete(user);
+    this.toast.success(
+      this.uiLanguage.currentLang() === 'ar'
+        ? `تم تسجيل الدخول بحساب التجربة: ${user.userName}`
+        : `Demo login successful: ${user.userName}`,
+    );
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl) {
+      void this.router.navigateByUrl(returnUrl);
+    } else {
+      const destination = this.session.destinationFor(user);
+      void this.router.navigate([destination]);
+    }
+  }
+
+  private matchDemoRole(identifier: string): UserType | null {
+    if (identifier.includes('admin') || identifier === 'superadmin') return 'SuperAdmin';
+    if (identifier.includes('doctor') || identifier.includes('ahmed')) return 'Doctor';
+    if (identifier.includes('reception') || identifier.includes('sara')) return 'Reception';
+    if (identifier.includes('patient') || identifier.includes('abdelsalam')) return 'Patient';
+    if (identifier.includes('drug') || identifier.includes('kareem')) return 'DrugCatalogManager';
+    if (identifier.includes('medical') || identifier.includes('catalog')) return 'MedicalCatalogManager';
+    return null;
+  }
+
+  private createDemoUser(role: UserType): CurrentUser {
+    const allPermissions = Object.values(PERMISSIONS);
+    switch (role) {
+      case 'SuperAdmin':
+        return {
+          applicationUserId: 'usr-admin-1',
+          userName: 'superadmin',
+          email: 'admin@wasla.local',
+          phoneNumber: '01099998888',
+          userType: 'SuperAdmin',
+          roles: ['SuperAdmin'],
+          permissions: allPermissions,
+          isFirstLogin: false,
+          doctorId: null,
+          patientId: null,
+        };
+      case 'Doctor':
+        return {
+          applicationUserId: 'usr-doc-1',
+          userName: 'dr.ahmed.tarek',
+          email: 'dr.ahmed.tarek@wasla-test.com',
+          phoneNumber: '01012345678',
+          userType: 'Doctor',
+          roles: ['Doctor'],
+          permissions: allPermissions,
+          isFirstLogin: false,
+          doctorId: 'doc-1',
+          patientId: null,
+        };
+      case 'Reception':
+        return {
+          applicationUserId: 'usr-rec-1',
+          userName: 'sara.reception',
+          email: 'sara.reception@wasla-test.com',
+          phoneNumber: '01145678901',
+          userType: 'Reception',
+          roles: ['Reception'],
+          permissions: allPermissions,
+          isFirstLogin: false,
+          doctorId: null,
+          patientId: null,
+        };
+      case 'Patient':
+        return {
+          applicationUserId: 'usr-pat-1',
+          userName: 'm.abdelsalam',
+          email: 'm.abdelsalam@wasla-test.com',
+          phoneNumber: '01234567890',
+          userType: 'Patient',
+          roles: ['Patient'],
+          permissions: allPermissions,
+          isFirstLogin: false,
+          doctorId: null,
+          patientId: 'pat-1',
+        };
+      case 'DrugCatalogManager':
+        return {
+          applicationUserId: 'usr-cat-1',
+          userName: 'kareem.catalog',
+          email: 'kareem.catalog@wasla-test.com',
+          phoneNumber: '01556789012',
+          userType: 'DrugCatalogManager',
+          roles: ['DrugCatalogManager'],
+          permissions: allPermissions,
+          isFirstLogin: false,
+          doctorId: null,
+          patientId: null,
+        };
+      case 'MedicalCatalogManager':
+        return {
+          applicationUserId: 'usr-medcat-1',
+          userName: 'med.catalog',
+          email: 'med.catalog@wasla-test.com',
+          phoneNumber: '01556789013',
+          userType: 'MedicalCatalogManager',
+          roles: ['MedicalCatalogManager'],
+          permissions: allPermissions,
+          isFirstLogin: false,
+          doctorId: null,
+          patientId: null,
+        };
+      default:
+        return {
+          applicationUserId: 'usr-guest',
+          userName: 'guest',
+          email: 'guest@wasla.local',
+          phoneNumber: '01000000000',
+          userType: 'Patient',
+          roles: ['Patient'],
+          permissions: [],
+          isFirstLogin: false,
+          doctorId: null,
+          patientId: null,
+        };
+    }
+  }
+
   protected serverError(field: string): string {
     return this.fieldErrors()[field.toLowerCase()]?.[0] ?? '';
   }

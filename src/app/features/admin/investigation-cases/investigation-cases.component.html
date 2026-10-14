@@ -1,0 +1,223 @@
+<main class="investigations-container" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'investigations.title' | t"
+    [description]="'investigations.subtitle' | t"
+    icon="admins"
+    [actionLabel]="'investigations.create' | t"
+    actionIcon="add"
+    (actionClicked)="openCreateDrawer()"
+  >
+  </app-page-header>
+
+  <!-- Cases List Table -->
+  <div class="table-surface">
+    @if (loading() && cases().length === 0) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>{{ 'common.loading' | t }}</p>
+      </div>
+    } @else if (cases().length === 0) {
+      <div class="empty-state">
+        <p>{{ 'common.nothingFound' | t }}</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="investigations-table">
+          <thead>
+            <tr>
+              <th>{{ 'medications.name' | t }}</th>
+              <th>{{ 'investigations.issueType' | t }}</th>
+              <th>{{ 'investigations.priority' | t }}</th>
+              <th>{{ 'investigations.assignee' | t }}</th>
+              <th>{{ 'reservations.time' | t }}</th>
+              <th>{{ 'reservations.status' | t }}</th>
+              <th class="text-end">{{ 'reservations.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of cases(); track item.id) {
+              <tr (click)="openViewDrawer(item)" class="interactive-row">
+                <td class="cell-title">
+                  <span class="title-text">{{ item.title }}</span>
+                </td>
+                <td>
+                  <span class="type-tag">{{ item.issueType }}</span>
+                </td>
+                <td>
+                  <span
+                    class="priority-pill"
+                    [class.prio-urgent]="item.priority === 'Urgent'"
+                    [class.prio-high]="item.priority === 'High'"
+                    [class.prio-normal]="item.priority === 'Normal'"
+                    [class.prio-low]="item.priority === 'Low'"
+                  >
+                    {{ item.priority }}
+                  </span>
+                </td>
+                <td class="cell-muted font-medium">{{ item.assigneeName }}</td>
+                <td class="cell-muted">{{ item.createdAt }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.pill-open]="item.status === 'Open'"
+                    [class.pill-review]="item.status === 'UnderReview'"
+                    [class.pill-resolved]="item.status === 'Resolved'"
+                    [class.pill-closed]="item.status === 'Closed'"
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="text-end" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="btn-icon-subtle"
+                    (click)="openViewDrawer(item)"
+                    [title]="'common.viewDetails' | t"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
+                      <circle cx="5" cy="12" r="1" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Slide-Over Drawer for View/Actions & Create -->
+  <app-side-drawer
+    [opened]="drawerMode() !== null"
+    [title]="
+      drawerMode() === 'create' ? ('investigations.create' | t) : ('investigations.title' | t)
+    "
+    (closed)="closeDrawer()"
+  >
+    @if (drawerMode() === 'create') {
+      <div class="drawer-form-body">
+        <div class="form-group">
+          <label class="form-label" for="case-title">{{ 'medications.name' | t }}</label>
+          <input
+            id="case-title"
+            type="text"
+            class="form-control"
+            [(ngModel)]="newTitle"
+            [placeholder]="'investigations.title' | t"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="case-desc">{{ 'common.details' | t }}</label>
+          <textarea
+            id="case-desc"
+            class="form-control"
+            rows="4"
+            [(ngModel)]="newDescription"
+            [placeholder]="'common.details' | t"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label" for="case-type">{{ 'investigations.issueType' | t }}</label>
+            <select id="case-type" class="form-control" [(ngModel)]="newIssueType">
+              <option value="Operational">تشغيلي</option>
+              <option value="Billing">مالي</option>
+              <option value="ClinicalConduct">إكلينيكي</option>
+              <option value="AccessBreach">أمان ووصول</option>
+            </select>
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="form-label" for="case-priority">{{
+              'investigations.priority' | t
+            }}</label>
+            <select id="case-priority" class="form-control" [(ngModel)]="newPriority">
+              <option value="Low">Low</option>
+              <option value="Normal">Normal</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="drawer-actions">
+          <button
+            type="button"
+            class="btn-wasla-primary"
+            [disabled]="submitting() || !newTitle.trim()"
+            (click)="createCase()"
+          >
+            {{ 'common.submit' | t }}
+          </button>
+          <button type="button" class="btn-wasla-ghost" (click)="closeDrawer()">
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </div>
+    } @else if (drawerMode() === 'view' && selectedCase()) {
+      <div class="drawer-detail-body">
+        <div class="detail-section">
+          <h4 class="section-title">{{ selectedCase()!.title }}</h4>
+          <div class="pills-cluster">
+            <span class="type-tag">{{ selectedCase()!.issueType }}</span>
+            <span
+              class="priority-pill"
+              [class.prio-urgent]="selectedCase()!.priority === 'Urgent'"
+              [class.prio-high]="selectedCase()!.priority === 'High'"
+            >
+              {{ selectedCase()!.priority }}
+            </span>
+          </div>
+        </div>
+
+        <div class="metadata-grid">
+          <div class="meta-item">
+            <span class="meta-label">{{ 'investigations.assignee' | t }}</span>
+            <span class="meta-val">{{ selectedCase()!.assigneeName }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">{{ 'reservations.status' | t }}</span>
+            <span class="meta-val">{{ selectedCase()!.status }}</span>
+          </div>
+        </div>
+
+        <div class="action-section">
+          <label class="form-label" for="case-notes">{{ 'investigations.notes' | t }}</label>
+          <textarea
+            id="case-notes"
+            class="form-control"
+            rows="3"
+            [(ngModel)]="transitionNotes"
+            [placeholder]="'investigations.notes' | t"
+          ></textarea>
+        </div>
+
+        <div class="drawer-footer-actions">
+          @if (selectedCase()!.status === 'Open') {
+            <button type="button" class="btn-wasla-primary" (click)="startReview(selectedCase()!)">
+              {{ 'investigations.startReview' | t }}
+            </button>
+          } @else if (selectedCase()!.status === 'UnderReview') {
+            <button type="button" class="btn-wasla-primary" (click)="resolveCase(selectedCase()!)">
+              {{ 'investigations.resolve' | t }}
+            </button>
+            <button type="button" class="btn-wasla-ghost" (click)="closeCase(selectedCase()!)">
+              {{ 'investigations.close' | t }}
+            </button>
+          } @else if (
+            selectedCase()!.status === 'Resolved' || selectedCase()!.status === 'Closed'
+          ) {
+            <button type="button" class="btn-wasla-ghost" (click)="reopenCase(selectedCase()!)">
+              {{ 'investigations.reopen' | t }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </app-side-drawer>
+</main>

@@ -184,6 +184,26 @@ export const routes: Routes = [
           import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
       },
       {
+        path: 'doctor/expenses',
+        data: {
+          actor: 'Doctor',
+          view: 'expenses',
+          permission: 'DoctorPracticePayments.ViewOwn',
+        },
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+      },
+      {
+        path: 'doctor/salaries',
+        data: {
+          actor: 'Doctor',
+          view: 'salaries',
+          permission: 'DoctorPracticePayments.ViewOwn',
+        },
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+      },
+      {
         path: 'reception/finance',
         data: {
           actor: 'Reception',
@@ -248,6 +268,22 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/doctor-onboarding/doctor-onboarding.routes').then(
             (m) => m.FEATURE_ROUTES,
+          ),
+      },
+      {
+        path: 'doctor/reports',
+        data: { actor: 'Doctor' },
+        loadComponent: () =>
+          import('./features/doctor-reports/doctor-reports.component').then(
+            (m) => m.DoctorReportsComponent,
+          ),
+      },
+      {
+        path: 'doctor/insights',
+        data: { actor: 'Doctor' },
+        loadComponent: () =>
+          import('./features/doctor-reports/doctor-reports.component').then(
+            (m) => m.DoctorReportsComponent,
           ),
       },
       {

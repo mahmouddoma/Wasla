@@ -38,6 +38,19 @@ export const ADMIN_ROUTES: Routes = [
     title: 'finance.revenue.title',
   },
   {
+    path: 'investigations',
+    canActivate: [permissionGuard],
+    data: {
+      actor: 'SuperAdmin',
+      permission: 'Investigations.View',
+    },
+    loadComponent: () =>
+      import('./investigation-cases/investigation-cases.component').then(
+        (m) => m.InvestigationCasesComponent,
+      ),
+    title: 'investigations.title',
+  },
+  {
     path: 'reservations',
     canActivate: [permissionGuard],
     data: {

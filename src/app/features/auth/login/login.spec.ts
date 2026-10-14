@@ -180,4 +180,13 @@ describe('Login', () => {
     ]);
     expect(navigate).not.toHaveBeenCalled();
   });
+
+  it('performs quickLogin for demo roles and navigates to destination', () => {
+    fixture.componentInstance.quickLogin('Doctor');
+    expect(session.begin).toHaveBeenCalled();
+    expect(session.complete).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/workspace']);
+  });
 });
+

@@ -1,4 +1,4 @@
-<main class="directory-workspace" [dir]="language.dir()">
+<main class="directory-workspace requests-workspace" [dir]="language.dir()">
   <app-page-header
     [heading]="'requests.title' | t"
     [description]="'requests.subtitle' | t"
@@ -10,47 +10,112 @@
   >
     <div pageHeaderActions>
       @if (!manager && allowed('CreateOwn')) {
-        <button class="btn btn-primary" [disabled]="busy()" (click)="create()">
-          {{ 'requests.add' | t }}
+        <button
+          type="button"
+          class="btn btn-primary add-request-btn"
+          [disabled]="busy()"
+          (click)="create()"
+        >
+          <svg
+            class="btn-icon"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span>{{ 'requests.add' | t }}</span>
         </button>
       }
     </div>
-    <div pageHeaderDeck class="toolbar">
-      <label
-        >{{ 'reservations.status' | t
-        }}<span class="select-control"
-          ><select class="field-input" (change)="filter('status', $event)" [disabled]="busy()">
-            <option value="">{{ 'reservations.all' | t }}</option>
-            @for (status of statuses; track status) {
-              <option [value]="status">{{ 'requests.status.' + status | t }}</option>
-            }</select
-          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
-      ></label>
+
+    <div pageHeaderDeck class="requests-filter-deck">
+      <div class="filter-field-group">
+        <label class="filter-label" for="request-status-filter">
+          <span class="label-text">{{ 'reservations.status' | t }}</span>
+          <div class="custom-select-wrap">
+            <select
+              id="request-status-filter"
+              class="filter-select"
+              (change)="filter('status', $event)"
+              [disabled]="busy()"
+            >
+              <option value="">{{ 'reservations.all' | t }}</option>
+              @for (status of statuses; track status) {
+                <option [value]="status">{{ 'requests.status.' + status | t }}</option>
+              }
+            </select>
+            <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </label>
+      </div>
+
       @if (manager) {
-        <label
-          >{{ 'reservations.search' | t
-          }}<input
-            class="field-input"
-            type="search"
-            (change)="filter('search', $event)"
-            [disabled]="busy()" /></label
-        ><label
-          >{{ 'requests.doctorId' | t
-          }}<input
-            class="field-input ltr-text"
-            dir="ltr"
-            (change)="filter('doctorId', $event)"
-            [disabled]="busy()"
-        /></label>
-      }</div
-  ></app-page-header>
-  <section class="directory" [attr.aria-busy]="loading()">
+        <div class="filter-field-group search-group">
+          <label class="filter-label" for="request-search-filter">
+            <span class="label-text">{{ 'reservations.search' | t }}</span>
+            <div class="input-icon-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                id="request-search-filter"
+                class="filter-input search-input"
+                type="search"
+                (change)="filter('search', $event)"
+                [disabled]="busy()"
+                [placeholder]="'medications.searchPlaceholder' | t"
+              />
+            </div>
+          </label>
+        </div>
+
+        <div class="filter-field-group doctor-group">
+          <label class="filter-label" for="request-doctor-filter">
+            <span class="label-text">{{ 'requests.doctorId' | t }}</span>
+            <input
+              id="request-doctor-filter"
+              class="filter-input ltr-text"
+              dir="ltr"
+              (change)="filter('doctorId', $event)"
+              [disabled]="busy()"
+            />
+          </label>
+        </div>
+      }
+    </div>
+  </app-page-header>
+
+  <section class="directory requests-card-surface" [attr.aria-busy]="loading()">
     @if (loading()) {
-      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="table-loading-state" role="status">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p class="loading-label">{{ 'reservations.loading' | t }}</p>
+      </div>
     } @else if (failed()) {
       <div class="empty-state">
+        <div class="empty-icon-wrap is-error" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
         <h2>{{ 'medications.failed' | t }}</h2>
-        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+        <p class="empty-desc">{{ messages()[0] || ('medications.failed' | t) }}</p>
+        <button type="button" class="btn btn-primary" (click)="load()">
+          {{ 'common.retry' | t }}
+        </button>
       </div>
     } @else if (!page().items.length) {
       <div class="empty-state">
@@ -62,43 +127,87 @@
           decoding="async"
         />
         <h2>{{ 'requests.empty' | t }}</h2>
-        <p>{{ 'requests.subtitle' | t }}</p>
-        <button
-          class="btn btn-primary"
-          (click)="query.set({ pageNumber: 1, pageSize: 20 }); load()"
-        >
-          {{ 'medications.resetSearch' | t }}
-        </button>
+        <p class="empty-desc">{{ 'requests.subtitle' | t }}</p>
+        <div class="empty-actions">
+          @if (!manager && allowed('CreateOwn')) {
+            <button type="button" class="btn btn-primary" (click)="create()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>{{ 'requests.add' | t }}</span>
+            </button>
+          }
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="query.set({ pageNumber: 1, pageSize: 20 }); load()"
+          >
+            {{ 'medications.resetSearch' | t }}
+          </button>
+        </div>
       </div>
     } @else {
       <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="requests-table align-middle mb-0">
           <caption class="visually-hidden">
-            {{
-              'requests.title' | t
-            }}
+            {{ 'requests.title' | t }}
           </caption>
           <thead>
             <tr>
-              <th scope="col">{{ 'requests.medicationName' | t }}</th>
-              <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col">{{ 'reservations.inspect' | t }}</th>
+              <th scope="col" class="th-name">
+                <div class="th-content">
+                  <svg class="th-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
+                    <path d="m8.5 8.5 7 7" />
+                  </svg>
+                  <span>{{ 'requests.medicationName' | t }}</span>
+                </div>
+              </th>
+              <th scope="col" class="th-status">{{ 'reservations.status' | t }}</th>
+              <th scope="col" class="th-actions text-end">{{ 'reservations.inspect' | t }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of page().items; track item.requestId) {
-              <tr>
-                <td>{{ item.medicationName }}</td>
-                <td>
-                  <span class="status-badge">{{ 'requests.status.' + item.status | t }}</span>
+              <tr class="request-row">
+                <td class="td-name">
+                  <div class="med-identity-cluster">
+                    <div class="med-icon-badge" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
+                        <path d="m8.5 8.5 7 7" />
+                      </svg>
+                    </div>
+                    <div class="med-names">
+                      <strong class="med-primary-name">
+                        {{ item.medicationName || ('requests.unnamedMedication' | t) }}
+                      </strong>
+                      @if (item.scientificName) {
+                        <span class="med-sub-name">{{ item.scientificName }}</span>
+                      }
+                    </div>
+                  </div>
                 </td>
-                <td>
+                <td class="td-status">
+                  <span class="status-pill status-pill-{{ item.status.toLowerCase() }}">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span class="status-text">{{ 'requests.status.' + item.status | t }}</span>
+                  </span>
+                </td>
+                <td class="td-actions text-end">
                   <button
-                    class="btn btn-outline-secondary"
+                    type="button"
+                    class="btn-inspect"
                     [disabled]="busy()"
                     (click)="inspect(item.requestId)"
+                    [attr.aria-label]="('reservations.inspect' | t) + ': ' + (item.medicationName || '')"
                   >
-                    {{ 'reservations.inspect' | t }}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span>{{ 'reservations.inspect' | t }}</span>
                   </button>
                 </td>
               </tr>
@@ -106,57 +215,201 @@
           </tbody>
         </table>
       </div>
-      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+
+      <nav class="pager requests-pager" [attr.aria-label]="'reservations.pagination' | t">
         <button
-          class="btn btn-outline-secondary"
+          type="button"
+          class="btn btn-pager"
           [disabled]="busy() || page().pageNumber <= 1"
           (click)="load(page().pageNumber - 1)"
         >
-          {{ 'reservations.previous' | t }}</button
-        ><span>{{ page().pageNumber }} · {{ page().totalCount }}</span
-        ><button
-          class="btn btn-outline-secondary"
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          <span>{{ 'reservations.previous' | t }}</span>
+        </button>
+
+        <span class="pager-info">
+          <span class="pager-current">{{ page().pageNumber }}</span>
+          <span class="pager-sep">/</span>
+          <span class="pager-total">{{ totalPages() }}</span>
+          <span class="pager-count">({{ page().totalCount }} {{ 'requests.recordsCount' | t }})</span>
+        </span>
+
+        <button
+          type="button"
+          class="btn btn-pager"
           [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
           (click)="load(page().pageNumber + 1)"
         >
-          {{ 'reservations.next' | t }}
+          <span>{{ 'reservations.next' | t }}</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
       </nav>
     }
   </section>
+
   @if (!opened()) {
     @for (message of messages(); track $index) {
-      <p class="error-text" role="alert">{{ message | t }}</p>
+      <div class="error-banner" role="alert">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>{{ message | t }}</span>
+      </div>
     }
   }
+
+  <!-- Slide-Over Drawer for Details & Form -->
   <app-side-drawer
     [opened]="opened()"
     [busy]="busy()"
-    [title]="'requests.title' | t"
+    [title]="drawerTitle()"
+    [width]="'600px'"
     (closed)="close()"
   >
     @if (detailLoading()) {
-      <p role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="drawer-loading-skeleton" role="status">
+        <div class="skeleton-pulse-ring" aria-hidden="true"></div>
+        <p class="skeleton-text">{{ 'reservations.loading' | t }}</p>
+      </div>
     }
+
     @for (message of messages(); track $index) {
-      <p class="error-text" role="alert">{{ message | t }}</p>
+      <div class="drawer-error-alert" role="alert">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>{{ message | t }}</span>
+      </div>
     }
+
+    <!-- MODE 1: CREATE / EDIT FORM -->
     @if (editing()) {
-      <form class="detail-form" [formGroup]="form" (ngSubmit)="save()">
-        <fieldset class="full detail-form" [disabled]="busy()">
-          @for (field of fields; track field) {
-            <label
-              >{{ 'requests.' + field | t
-              }}<input
-                class="field-input"
-                [formControlName]="field"
-                [required]="field === 'medicationName'"
-            /></label>
-          }
+      <form class="drawer-structured-form" [formGroup]="form" (ngSubmit)="save()">
+        <fieldset class="form-fieldset" [disabled]="busy()">
+          <!-- Section 1: Basic Information -->
+          <div class="form-section">
+            <div class="section-header">
+              <span class="section-dot" aria-hidden="true"></span>
+              <h3 class="section-title">{{ 'requests.basicInfo' | t }}</h3>
+            </div>
+
+            <div class="form-grid single-col">
+              <label class="form-control-row">
+                <span class="control-label">
+                  {{ 'requests.medicationName' | t }}
+                  <span class="required-star" aria-hidden="true">*</span>
+                </span>
+                <input
+                  class="control-input highlight-field"
+                  formControlName="medicationName"
+                  required
+                  [placeholder]="'requests.medicationName' | t"
+                />
+              </label>
+
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.scientificName' | t }}</span>
+                <input
+                  class="control-input"
+                  formControlName="scientificName"
+                  [placeholder]="'requests.scientificName' | t"
+                />
+              </label>
+
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.manufacturer' | t }}</span>
+                <input
+                  class="control-input"
+                  formControlName="manufacturer"
+                  [placeholder]="'requests.manufacturer' | t"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 2: Pharmaceutical Specifications -->
+          <div class="form-section">
+            <div class="section-header">
+              <span class="section-dot" aria-hidden="true"></span>
+              <h3 class="section-title">{{ 'requests.specsInfo' | t }}</h3>
+            </div>
+
+            <div class="form-grid two-cols">
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.strength' | t }}</span>
+                <input
+                  class="control-input"
+                  formControlName="strength"
+                  [placeholder]="'requests.strength' | t"
+                />
+              </label>
+
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.dosageForm' | t }}</span>
+                <input
+                  class="control-input"
+                  formControlName="dosageForm"
+                  [placeholder]="'requests.dosageForm' | t"
+                />
+              </label>
+
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.route' | t }}</span>
+                <input
+                  class="control-input"
+                  formControlName="route"
+                  [placeholder]="'requests.route' | t"
+                />
+              </label>
+
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.drugClass' | t }}</span>
+                <input
+                  class="control-input"
+                  formControlName="drugClass"
+                  [placeholder]="'requests.drugClass' | t"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 3: Clinical Notes -->
+          <div class="form-section">
+            <div class="section-header">
+              <span class="section-dot" aria-hidden="true"></span>
+              <h3 class="section-title">{{ 'requests.notesInfo' | t }}</h3>
+            </div>
+
+            <div class="form-grid single-col">
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.doctorNote' | t }}</span>
+                <textarea
+                  class="control-textarea"
+                  rows="3"
+                  formControlName="doctorNote"
+                  [placeholder]="'requests.doctorNote' | t"
+                ></textarea>
+              </label>
+            </div>
+          </div>
         </fieldset>
-        <div class="actions full">
-          <button class="btn btn-primary" [disabled]="busy()">{{ 'common.save' | t }}</button
-          ><button
+
+        <div class="drawer-sticky-actions">
+          <button type="submit" class="btn btn-primary btn-save-action" [disabled]="busy()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>{{ 'common.save' | t }}</span>
+          </button>
+          <button
             type="button"
             class="btn btn-outline-secondary"
             [disabled]="busy()"
@@ -166,159 +419,334 @@
           </button>
         </div>
       </form>
-    } @else if (detail(); as item) {
-      <h2>{{ item.medicationName }}</h2>
-      <p>{{ 'requests.status.' + item.status | t }}</p>
-      <dl>
-        @for (field of fields; track field) {
-          <dt>{{ 'requests.' + field | t }}</dt>
-          <dd>{{ item[field] || '—' }}</dd>
+    }
+
+    <!-- MODE 2: DETAIL INSPECTION -->
+    @else if (detail(); as item) {
+      <div class="drawer-detail-surface">
+        <!-- Hero Surface -->
+        <div class="detail-hero-card">
+          <div class="hero-icon-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
+              <path d="m8.5 8.5 7 7" />
+            </svg>
+          </div>
+          <div class="hero-body">
+            <div class="hero-top-row">
+              <span class="status-pill status-pill-{{ item.status.toLowerCase() }}">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span class="status-text">{{ 'requests.status.' + item.status | t }}</span>
+              </span>
+              <span class="request-id-badge" dir="ltr">#{{ item.requestId.slice(0, 8) }}</span>
+            </div>
+            <h2 class="hero-medication-title">
+              {{ item.medicationName || ('requests.unnamedMedication' | t) }}
+            </h2>
+            @if (item.scientificName) {
+              <p class="hero-scientific-name">{{ item.scientificName }}</p>
+            }
+          </div>
+        </div>
+
+        <!-- Canonical Matched Drug Notice -->
+        @if (item.approvedDrug || item.duplicateDrug; as drug) {
+          <div class="canonical-match-card">
+            <div class="canonical-icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <div class="canonical-content">
+              <strong class="canonical-title">{{ 'requests.canonical' | t }}</strong>
+              <p class="canonical-name">
+                {{
+                  language.currentLang() === 'ar'
+                    ? drug.commercialNameAr || drug.commercialNameEn
+                    : drug.commercialNameEn
+                }}
+              </p>
+            </div>
+          </div>
         }
-      </dl>
-      @if (item.approvedDrug || item.duplicateDrug; as drug) {
-        <p>
-          {{ 'requests.canonical' | t }}:
-          {{
-            language.currentLang() === 'ar'
-              ? drug.commercialNameAr || drug.commercialNameEn
-              : drug.commercialNameEn
-          }}
-        </p>
-      }
-      <div class="actions">
-        @if (canEdit()) {
-          <button class="btn btn-primary" [disabled]="busy()" (click)="edit()">
-            {{ 'medications.edit' | t }}
-          </button>
-        }
-        @if (canReview()) {
-          <button class="btn btn-primary" [disabled]="busy()" (click)="prepareReview('approve')">
-            {{ 'requests.approve' | t }}</button
-          ><button
-            class="btn btn-outline-secondary"
-            [disabled]="busy()"
-            (click)="prepareReview('request-more-info')"
-          >
-            {{ 'requests.moreInfo' | t }}</button
-          ><button class="btn btn-danger" [disabled]="busy()" (click)="prepareReview('reject')">
-            {{ 'requests.reject' | t }}
-          </button>
-        }
-      </div>
-      @if (review(); as action) {
-        <section class="section">
-          @if (action === 'approve') {
-            <div class="detail-form" [formGroup]="approved">
-              @for (field of approvalFields; track field) {
-                <label
-                  >{{ 'medications.' + field | t
-                  }}<input class="field-input" [formControlName]="field" [readonly]="busy()"
-                /></label>
-              }
-              <label
-                >{{ 'medications.priceEgp' | t
-                }}<input
-                  class="field-input ltr-text"
-                  type="number"
-                  min="0"
-                  dir="ltr"
-                  formControlName="priceEgp"
-                  [readonly]="busy()"
-              /></label>
+
+        <!-- Structured Facts Directory -->
+        <div class="facts-panel">
+          <div class="facts-panel-header">
+            <h3 class="facts-panel-title">{{ 'requests.specsInfo' | t }}</h3>
+          </div>
+
+          <div class="facts-rows-list">
+            <div class="fact-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                </svg>
+                <span>{{ 'requests.scientificName' | t }}</span>
+              </span>
+              <strong class="fact-val">{{ item.scientificName || '—' }}</strong>
+            </div>
+
+            <div class="fact-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M10 11h4M10 15h4"/>
+                </svg>
+                <span>{{ 'requests.manufacturer' | t }}</span>
+              </span>
+              <strong class="fact-val">{{ item.manufacturer || '—' }}</strong>
+            </div>
+
+            <div class="fact-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <span>{{ 'requests.strength' | t }}</span>
+              </span>
+              <strong class="fact-val">{{ item.strength || '—' }}</strong>
+            </div>
+
+            <div class="fact-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18M9 21V9"/>
+                </svg>
+                <span>{{ 'requests.dosageForm' | t }}</span>
+              </span>
+              <strong class="fact-val">{{ item.dosageForm || '—' }}</strong>
+            </div>
+
+            <div class="fact-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 14 14"/>
+                </svg>
+                <span>{{ 'requests.route' | t }}</span>
+              </span>
+              <strong class="fact-val">{{ item.route || '—' }}</strong>
+            </div>
+
+            <div class="fact-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+                <span>{{ 'requests.drugClass' | t }}</span>
+              </span>
+              <strong class="fact-val">{{ item.drugClass || '—' }}</strong>
+            </div>
+
+            <div class="fact-row fact-note-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>{{ 'requests.doctorNote' | t }}</span>
+              </span>
+              <span class="fact-val note-val">{{ item.doctorNote || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail Actions Deck -->
+        <div class="detail-actions-deck">
+          @if (canEdit()) {
+            <button
+              type="button"
+              class="btn btn-primary btn-edit-action"
+              [disabled]="busy()"
+              (click)="edit()"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span>{{ 'medications.edit' | t }}</span>
+            </button>
+          }
+
+          @if (canReview()) {
+            <div class="manager-review-actions">
+              <button
+                type="button"
+                class="btn btn-primary btn-approve-action"
+                [disabled]="busy()"
+                (click)="prepareReview('approve')"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>{{ 'requests.approve' | t }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                [disabled]="busy()"
+                (click)="prepareReview('request-more-info')"
+              >
+                {{ 'requests.moreInfo' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger"
+                [disabled]="busy()"
+                (click)="prepareReview('reject')"
+              >
+                {{ 'requests.reject' | t }}
+              </button>
             </div>
           }
-          <label
-            >{{ 'medications.reason' | t
-            }}<input
-              class="field-input"
-              [value]="reason()"
-              (input)="reason.set(value($event))"
-              [disabled]="busy()"
-              required
-          /></label>
-          @if (action === 'reject') {
-            <label
-              >{{ 'requests.duplicateSearch' | t
-              }}<input
-                class="field-input"
-                type="search"
-                [value]="matchSearch()"
-                (change)="matchSearch.set(value($event)); searchMatches()"
+        </div>
+
+        <!-- Review Decision Sub-Form for Managers -->
+        @if (review(); as action) {
+          <section class="review-subform-card">
+            <h4 class="subform-title">
+              @if (action === 'approve') { {{ 'requests.approve' | t }} }
+              @else if (action === 'reject') { {{ 'requests.reject' | t }} }
+              @else { {{ 'requests.moreInfo' | t }} }
+            </h4>
+
+            @if (action === 'approve') {
+              <div class="approval-form-grid" [formGroup]="approved">
+                @for (field of approvalFields; track field) {
+                  <label class="form-control-row">
+                    <span class="control-label">{{ 'medications.' + field | t }}</span>
+                    <input class="control-input" [formControlName]="field" [readonly]="busy()" />
+                  </label>
+                }
+                <label class="form-control-row">
+                  <span class="control-label">{{ 'medications.priceEgp' | t }}</span>
+                  <input
+                    class="control-input ltr-text"
+                    type="number"
+                    min="0"
+                    dir="ltr"
+                    formControlName="priceEgp"
+                    [readonly]="busy()"
+                  />
+                </label>
+              </div>
+            }
+
+            <label class="form-control-row">
+              <span class="control-label">
+                {{ 'medications.reason' | t }}
+                <span class="required-star" aria-hidden="true">*</span>
+              </span>
+              <input
+                class="control-input"
+                [value]="reason()"
+                (input)="reason.set(value($event))"
                 [disabled]="busy()"
-            /></label>
-            <ul class="history">
-              @for (drug of matches(); track drug.drugCatalogId) {
-                <li>
-                  <button
-                    class="btn btn-outline-secondary"
-                    [attr.aria-pressed]="duplicate()?.drugCatalogId === drug.drugCatalogId"
-                    [disabled]="busy()"
-                    (click)="chooseDuplicate(drug)"
-                  >
-                    {{ drug.commercialNameEn }}
-                  </button>
-                </li>
+                required
+              />
+            </label>
+
+            @if (action === 'reject') {
+              <label class="form-control-row">
+                <span class="control-label">{{ 'requests.duplicateSearch' | t }}</span>
+                <input
+                  class="control-input"
+                  type="search"
+                  [value]="matchSearch()"
+                  (change)="matchSearch.set(value($event)); searchMatches()"
+                  [disabled]="busy()"
+                />
+              </label>
+
+              @if (matches().length) {
+                <ul class="duplicate-matches-list">
+                  @for (drug of matches(); track drug.drugCatalogId) {
+                    <li>
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary match-pick-btn"
+                        [attr.aria-pressed]="duplicate()?.drugCatalogId === drug.drugCatalogId"
+                        [disabled]="busy()"
+                        (click)="chooseDuplicate(drug)"
+                      >
+                        {{ drug.commercialNameEn }}
+                      </button>
+                    </li>
+                  }
+                </ul>
               }
-            </ul>
-            <nav class="actions" [attr.aria-label]="'reservations.pagination' | t">
+
+              @if (duplicate()) {
+                <div class="picked-duplicate-card">
+                  <span>{{ 'requests.canonical' | t }}: <strong>{{ duplicate()?.commercialNameEn }}</strong></span>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="busy()"
+                    (click)="duplicate.set(null)"
+                  >
+                    {{ 'common.cancel' | t }}
+                  </button>
+                </div>
+              }
+            }
+
+            <p class="confirm-prompt">{{ 'medications.confirmChange' | t }}</p>
+
+            <div class="review-actions-row">
               <button
-                class="btn btn-outline-secondary"
-                [disabled]="busy() || matchPage() <= 1"
-                (click)="searchMatches(matchPage() - 1)"
+                type="button"
+                class="btn btn-primary"
+                [disabled]="busy() || !reason().trim()"
+                (click)="decide()"
               >
-                {{ 'reservations.previous' | t }}</button
-              ><button
-                class="btn btn-outline-secondary"
-                [disabled]="busy() || matchPage() * 20 >= matchTotal()"
-                (click)="searchMatches(matchPage() + 1)"
-              >
-                {{ 'reservations.next' | t }}
+                {{ 'medications.confirm' | t }}
               </button>
-            </nav>
-            @if (duplicate()) {
-              <p>{{ 'requests.canonical' | t }}: {{ duplicate()?.commercialNameEn }}</p>
               <button
+                type="button"
                 class="btn btn-outline-secondary"
                 [disabled]="busy()"
-                (click)="duplicate.set(null)"
+                (click)="review.set(null)"
               >
                 {{ 'common.cancel' | t }}
               </button>
-            }
-          }
-          <p>{{ 'medications.confirmChange' | t }}</p>
-          <div class="actions">
-            <button
-              class="btn btn-primary"
-              [disabled]="busy() || !reason().trim()"
-              (click)="decide()"
-            >
-              {{ 'medications.confirm' | t }}</button
-            ><button
-              class="btn btn-outline-secondary"
-              [disabled]="busy()"
-              (click)="review.set(null)"
-            >
-              {{ 'common.cancel' | t }}
-            </button>
+            </div>
+          </section>
+        }
+
+        <!-- Audit Timeline Section -->
+        <section class="timeline-section">
+          <div class="timeline-header">
+            <span class="timeline-header-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 14 14" />
+              </svg>
+            </span>
+            <h3 class="timeline-title">{{ 'requests.historyTitle' | t }}</h3>
           </div>
+
+          <ul class="audit-timeline">
+            @for (entry of item.history || []; track $index) {
+              <li class="timeline-entry">
+                <span class="timeline-dot" aria-hidden="true"></span>
+                <div class="timeline-entry-content">
+                  <p class="timeline-entry-reason">{{ entry.reason }}</p>
+                  <time class="timeline-entry-date" dir="ltr">
+                    {{ entry.createdOnUtc | localizedDate: language.currentLang() }}
+                  </time>
+                </div>
+              </li>
+            } @empty {
+              <li class="timeline-empty-entry">
+                <p class="timeline-empty-text">{{ 'requests.noHistory' | t }}</p>
+              </li>
+            }
+          </ul>
         </section>
-      }
-      <section class="section">
-        <h3>{{ 'medications.history' | t }}</h3>
-        <ul class="history">
-          @for (entry of item.history || []; track $index) {
-            <li>
-              <p>{{ entry.reason }}</p>
-              <time dir="ltr">{{
-                entry.createdOnUtc | localizedDate: language.currentLang()
-              }}</time>
-            </li>
-          } @empty {
-            <li>{{ 'medications.noHistory' | t }}</li>
-          }
-        </ul>
-      </section>
+      </div>
     }
   </app-side-drawer>
 </main>

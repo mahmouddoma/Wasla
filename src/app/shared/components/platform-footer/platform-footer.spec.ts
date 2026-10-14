@@ -21,22 +21,22 @@ describe('PlatformFooter', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render brand title and copyright notice', () => {
+  it('should render brand logo, title, and tagline', () => {
     const el: HTMLElement = fixture.nativeElement;
+    const logoBadge = el.querySelector('.footer-logo-badge');
+    expect(logoBadge).toBeTruthy();
+
     const brandName = el.querySelector('.brand-name');
     expect(brandName).toBeTruthy();
 
-    const copyright = el.querySelector('.copyright-text');
-    expect(copyright).toBeTruthy();
-  });
-
-  it('should render brand tagline and version badge', () => {
-    const el: HTMLElement = fixture.nativeElement;
     const tagline = el.querySelector('.brand-tagline');
     expect(tagline).toBeTruthy();
+  });
 
-    const versionBadge = el.querySelector('.version-badge');
-    expect(versionBadge).toBeTruthy();
+  it('should render copyright notice as clean text', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    const copyright = el.querySelector('.copyright-text');
+    expect(copyright).toBeTruthy();
   });
 
   it('should render quick navigation links pointing to privacy, terms, and help', () => {
@@ -50,15 +50,6 @@ describe('PlatformFooter', () => {
     expect(hrefs.some((h) => h?.includes('privacy'))).toBe(true);
     expect(hrefs.some((h) => h?.includes('terms'))).toBe(true);
     expect(hrefs.some((h) => h?.includes('help'))).toBe(true);
-  });
-
-  it('should render brand logo badge and trust security badge', () => {
-    const el: HTMLElement = fixture.nativeElement;
-    const logoBadge = el.querySelector('.footer-logo-badge');
-    expect(logoBadge).toBeTruthy();
-
-    const trustTag = el.querySelector('.footer-trust-tag');
-    expect(trustTag).toBeTruthy();
   });
 
   it('keeps language switching in the page header', () => {

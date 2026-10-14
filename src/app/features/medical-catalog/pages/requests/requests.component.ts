@@ -1,5 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -10,6 +17,7 @@ import { createIdempotencyKey } from '../../../../core/http/create-idempotency-k
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import {
@@ -22,7 +30,7 @@ import {
 
 @Component({
   selector: 'app-medical-catalog-requests',
-  imports: [FormsModule, TranslatePipe, PageHeader, SideDrawer],
+  imports: [FormsModule, TranslatePipe, LocalizedDatePipe, PageHeader, SideDrawer],
   templateUrl: './requests.component.html',
   styleUrls: ['../../../../shared/styles/directory-workspace.css', './requests.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +52,9 @@ export class CatalogRequestsComponent implements OnInit {
     pageNumber: 1,
     pageSize: 20,
   });
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.page().totalCount / (this.page().pageSize || 20))),
+  );
   readonly detail = signal<MedicalCatalogRequestResponse | null>(null);
   readonly loading = signal(false);
   readonly detailLoading = signal(false);
@@ -52,6 +63,16 @@ export class CatalogRequestsComponent implements OnInit {
   readonly opened = signal(false);
   readonly creating = signal(false);
   readonly editing = signal(false);
+  readonly drawerTitle = computed(() => {
+    const isLab = this.kind === 'lab';
+    if (this.creating())
+      return this.language.t(isLab ? 'diagnostics.createTitleLab' : 'diagnostics.createTitleRadiology');
+    if (this.editing())
+      return this.language.t(isLab ? 'diagnostics.editTitleLab' : 'diagnostics.editTitleRadiology');
+    if (this.detail())
+      return this.language.t(isLab ? 'diagnostics.detailsTitleLab' : 'diagnostics.detailsTitleRadiology');
+    return this.language.t(this.title);
+  });
   readonly status = signal('');
   readonly name = signal('');
   readonly specimen = signal('');
@@ -164,7 +185,7 @@ export class CatalogRequestsComponent implements OnInit {
           }
         : {
             procedureName: this.name().trim(),
-            specimen: this.specimen().trim() || null,
+            specimen: null,
             catalogClarificationNote: this.note().trim() || null,
           };
     const detail = this.detail();

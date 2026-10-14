@@ -1,4 +1,4 @@
-<main class="directory-workspace" [dir]="language.dir()">
+<main class="directory-workspace requests-workspace" [dir]="language.dir()">
   <app-page-header
     [heading]="title | t"
     [description]="'diagnostics.catalogRequestHelp' | t"
@@ -10,41 +10,88 @@
   >
     <div pageHeaderActions>
       @if (doctor && allowed('CreateOwn')) {
-        <button class="btn btn-primary" (click)="create()" [disabled]="busy()">
-          {{ 'diagnostics.requestMissing' | t }}
+        <button
+          type="button"
+          class="btn btn-primary add-request-btn"
+          (click)="create()"
+          [disabled]="busy()"
+        >
+          <svg
+            class="btn-icon"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span>{{ 'diagnostics.requestMissing' | t }}</span>
         </button>
       }
     </div>
-    <div pageHeaderDeck class="toolbar">
-      <label
-        >{{ 'reservations.status' | t
-        }}<span class="select-control"
-          ><select
-            class="field-input"
-            [ngModel]="status()"
-            (ngModelChange)="status.set($event); load()"
-            [disabled]="busy()"
-          >
-            <option value="">{{ 'common.all' | t }}</option>
-            @for (value of ['Pending', 'NeedsMoreInfo', 'Approved', 'Rejected']; track value) {
-              <option [value]="value">{{ 'diagnostics.status.' + value | t }}</option>
-            }</select
-          ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></span
-      ></label>
+
+    <div pageHeaderDeck class="requests-filter-deck">
+      <div class="filter-field-group">
+        <label class="filter-label" for="diag-status-filter">
+          <span class="label-text">{{ 'reservations.status' | t }}</span>
+          <div class="custom-select-wrap">
+            <select
+              id="diag-status-filter"
+              class="filter-select"
+              [ngModel]="status()"
+              (ngModelChange)="status.set($event); load()"
+              [disabled]="busy()"
+            >
+              <option value="">{{ 'common.all' | t }}</option>
+              @for (value of ['Pending', 'NeedsMoreInfo', 'Approved', 'Rejected']; track value) {
+                <option [value]="value">{{ 'diagnostics.status.' + value | t }}</option>
+              }
+            </select>
+            <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </label>
+      </div>
     </div>
   </app-page-header>
+
   @if (!opened()) {
     @for (message of messages(); track $index) {
-      <p class="error-text" role="alert">{{ message | t }}</p>
+      <div class="error-banner" role="alert">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>{{ message | t }}</span>
+      </div>
     }
   }
-  <section class="directory" [attr.aria-busy]="loading()">
+
+  <section class="directory requests-card-surface" [attr.aria-busy]="loading()">
     @if (loading()) {
-      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="table-loading-state" role="status">
+        <div class="spinner-ring" aria-hidden="true"></div>
+        <p class="loading-label">{{ 'reservations.loading' | t }}</p>
+      </div>
     } @else if (failed()) {
       <div class="empty-state">
+        <div class="empty-icon-wrap is-error" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
         <h2>{{ 'diagnostics.failed' | t }}</h2>
-        <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+        <button type="button" class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
       </div>
     } @else if (!page().items?.length) {
       <div class="empty-state">
@@ -56,40 +103,105 @@
           decoding="async"
         />
         <h2>{{ 'diagnostics.empty' | t }}</h2>
-        <p>{{ 'diagnostics.catalogRequestHelp' | t }}</p>
-        <button class="btn btn-primary" (click)="status.set(''); load()">
-          {{ 'medications.resetSearch' | t }}
-        </button>
+        <p class="empty-desc">{{ 'diagnostics.catalogRequestHelp' | t }}</p>
+        <div class="empty-actions">
+          @if (doctor && allowed('CreateOwn')) {
+            <button type="button" class="btn btn-primary" (click)="create()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>{{ 'diagnostics.requestMissing' | t }}</span>
+            </button>
+          }
+          <button type="button" class="btn btn-outline-secondary" (click)="status.set(''); load()">
+            {{ 'medications.resetSearch' | t }}
+          </button>
+        </div>
       </div>
     } @else {
       <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="requests-table align-middle mb-0">
           <caption class="visually-hidden">
-            {{
-              title | t
-            }}
+            {{ title | t }}
           </caption>
           <thead>
             <tr>
-              <th scope="col">{{ 'diagnostics.name' | t }}</th>
-              <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col">{{ 'common.actions' | t }}</th>
+              <th scope="col" class="th-name">
+                <div class="th-content">
+                  @if (kind === 'lab') {
+                    <svg class="th-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M10 2v7.31L4.1 18.2a2 2 0 0 0 1.66 3h12.48a2 2 0 0 0 1.66-3L14 9.31V2" />
+                      <path d="M8.5 2h7" />
+                    </svg>
+                  } @else {
+                    <svg class="th-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <circle cx="12" cy="12" r="3" />
+                      <line x1="12" y1="2" x2="12" y2="6" />
+                      <line x1="12" y1="18" x2="12" y2="22" />
+                      <line x1="2" y1="12" x2="6" y2="12" />
+                      <line x1="18" y1="12" x2="22" y2="12" />
+                    </svg>
+                  }
+                  <span>{{ kind === 'lab' ? ('diagnostics.nameLab' | t) : ('diagnostics.nameRadiology' | t) }}</span>
+                </div>
+              </th>
+              <th scope="col" class="th-status">{{ 'reservations.status' | t }}</th>
+              <th scope="col" class="th-actions text-end">{{ 'common.actions' | t }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of page().items; track item.requestId) {
-              <tr>
-                <td>{{ item.name }}</td>
-                <td>
-                  <span class="status-badge">{{ 'diagnostics.status.' + item.status | t }}</span>
+              <tr class="request-row">
+                <td class="td-name">
+                  <div class="diag-identity-cluster">
+                    <div class="diag-icon-badge" aria-hidden="true">
+                      @if (kind === 'lab') {
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M10 2v7.31L4.1 18.2a2 2 0 0 0 1.66 3h12.48a2 2 0 0 0 1.66-3L14 9.31V2" />
+                          <path d="M8.5 2h7" />
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <circle cx="12" cy="12" r="3" />
+                          <line x1="12" y1="2" x2="12" y2="6" />
+                          <line x1="12" y1="18" x2="12" y2="22" />
+                          <line x1="2" y1="12" x2="6" y2="12" />
+                          <line x1="18" y1="12" x2="22" y2="12" />
+                        </svg>
+                      }
+                    </div>
+                    <div class="diag-names">
+                      <strong class="diag-primary-name">
+                        {{ item.name || ('diagnostics.unnamedTest' | t) }}
+                      </strong>
+                      @if (item.specimen) {
+                        <span class="diag-sub-name">{{ item.specimen }}</span>
+                      }
+                    </div>
+                  </div>
                 </td>
-                <td>
+                <td class="td-status">
+                  <span class="status-pill status-pill-{{ item.status.toLowerCase() }}">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span class="status-text">{{ 'diagnostics.status.' + item.status | t }}</span>
+                  </span>
+                </td>
+                <td class="td-actions text-end">
                   <button
-                    class="btn btn-outline-secondary"
+                    type="button"
+                    class="btn-inspect"
                     (click)="inspect(item.requestId)"
                     [disabled]="busy()"
+                    [attr.aria-label]="('common.details' | t) + ': ' + (item.name || '')"
                   >
-                    {{ 'common.details' | t }}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span>{{ 'common.details' | t }}</span>
                   </button>
                 </td>
               </tr>
@@ -97,71 +209,155 @@
           </tbody>
         </table>
       </div>
-      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+
+      <nav class="pager requests-pager" [attr.aria-label]="'reservations.pagination' | t">
         <button
-          class="btn btn-outline-secondary"
+          type="button"
+          class="btn btn-pager"
           (click)="load(page().pageNumber - 1)"
           [disabled]="busy() || page().pageNumber <= 1"
         >
-          {{ 'common.previous' | t }}</button
-        ><span>{{ page().pageNumber }}</span
-        ><button
-          class="btn btn-outline-secondary"
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          <span>{{ 'common.previous' | t }}</span>
+        </button>
+
+        <span class="pager-info">
+          <span class="pager-current">{{ page().pageNumber }}</span>
+          <span class="pager-sep">/</span>
+          <span class="pager-total">{{ totalPages() }}</span>
+          <span class="pager-count">({{ page().totalCount }} {{ 'diagnostics.recordsCount' | t }})</span>
+        </span>
+
+        <button
+          type="button"
+          class="btn btn-pager"
           (click)="load(page().pageNumber + 1)"
           [disabled]="busy() || page().pageNumber * page().pageSize >= page().totalCount"
         >
-          {{ 'common.next' | t }}
+          <span>{{ 'common.next' | t }}</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
       </nav>
     }
   </section>
-  <app-side-drawer [opened]="opened()" [busy]="busy()" [title]="title | t" (closed)="close()">
+
+  <!-- Slide-Over Drawer for Details & Form -->
+  <app-side-drawer
+    [opened]="opened()"
+    [busy]="busy()"
+    [title]="drawerTitle()"
+    [width]="'580px'"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <div class="drawer-loading-skeleton" role="status">
+        <div class="skeleton-pulse-ring" aria-hidden="true"></div>
+        <p class="skeleton-text">{{ 'reservations.loading' | t }}</p>
+      </div>
+    }
+
     @for (message of messages(); track $index) {
-      <p class="error-text" role="alert">{{ message | t }}</p>
+      <div class="drawer-error-alert" role="alert">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>{{ message | t }}</span>
+      </div>
     }
 
     @if (!detailLoading() && messages().length && !editing() && !detail()) {
-      <button class="btn btn-outline-secondary" (click)="retryDetail()" [disabled]="busy()">
-        {{ 'common.retry' | t }}
-      </button>
+      <div class="empty-state pt-2 pb-2">
+        <button type="button" class="btn btn-outline-secondary" (click)="retryDetail()" [disabled]="busy()">
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
     }
-    @if (detailLoading()) {
-      <p role="status">{{ 'reservations.loading' | t }}</p>
-    }
+
+    <!-- MODE 1: CREATE / EDIT FORM -->
     @if (editing()) {
-      <form class="detail-form" (ngSubmit)="save()">
-        <fieldset class="full" [disabled]="busy()">
-          <label class="mb-3"
-            >{{ 'diagnostics.name' | t
-            }}<input
-              class="field-input"
-              name="name"
-              [ngModel]="name()"
-              (ngModelChange)="name.set($event)"
-              required /></label
-          ><label class="mb-3"
-            >{{ 'diagnostics.specimen' | t
-            }}<input
-              class="field-input"
-              name="specimen"
-              [ngModel]="specimen()"
-              (ngModelChange)="specimen.set($event)" /></label
-          ><label
-            >{{ 'diagnostics.catalogNote' | t
-            }}<textarea
-              class="field-input note-input"
-              name="note"
-              [ngModel]="note()"
-              (ngModelChange)="note.set($event)"
-            ></textarea>
-          </label>
+      <form class="drawer-structured-form" (ngSubmit)="save()">
+        <fieldset class="form-fieldset" [disabled]="busy()">
+          <!-- Section 1: Basic Information -->
+          <div class="form-section">
+            <div class="section-header">
+              <span class="section-dot" aria-hidden="true"></span>
+              <h3 class="section-title">{{ 'diagnostics.basicInfo' | t }}</h3>
+            </div>
+
+            <div class="form-grid single-col">
+              <label class="form-control-row">
+                <span class="control-label">
+                  {{ kind === 'lab' ? ('diagnostics.nameLab' | t) : ('diagnostics.nameRadiology' | t) }}
+                  <span class="required-star" aria-hidden="true">*</span>
+                </span>
+                <input
+                  class="control-input highlight-field"
+                  name="name"
+                  [ngModel]="name()"
+                  (ngModelChange)="name.set($event)"
+                  required
+                  [placeholder]="kind === 'lab' ? ('diagnostics.nameLab' | t) : ('diagnostics.nameRadiology' | t)"
+                />
+              </label>
+
+              @if (kind === 'lab') {
+                <label class="form-control-row">
+                  <span class="control-label">{{ 'diagnostics.specimen' | t }}</span>
+                  <input
+                    class="control-input"
+                    name="specimen"
+                    [ngModel]="specimen()"
+                    (ngModelChange)="specimen.set($event)"
+                    [placeholder]="'diagnostics.specimen' | t"
+                  />
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Section 2: Clarification Notes -->
+          <div class="form-section">
+            <div class="section-header">
+              <span class="section-dot" aria-hidden="true"></span>
+              <h3 class="section-title">{{ 'diagnostics.notesInfo' | t }}</h3>
+            </div>
+
+            <div class="form-grid single-col">
+              <label class="form-control-row">
+                <span class="control-label">{{ 'diagnostics.catalogNote' | t }}</span>
+                <textarea
+                  class="control-textarea"
+                  rows="4"
+                  name="note"
+                  [ngModel]="note()"
+                  (ngModelChange)="note.set($event)"
+                  [placeholder]="'diagnostics.catalogNote' | t"
+                ></textarea>
+              </label>
+            </div>
+          </div>
         </fieldset>
-        <div class="actions full">
-          <button class="btn btn-primary" type="submit" [disabled]="busy() || !name().trim()">
-            {{ 'common.save' | t }}</button
-          ><button
-            class="btn btn-outline-secondary"
+
+        <div class="drawer-sticky-actions">
+          <button
+            type="submit"
+            class="btn btn-primary btn-save-action"
+            [disabled]="busy() || !name().trim()"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>{{ 'common.save' | t }}</span>
+          </button>
+          <button
             type="button"
+            class="btn btn-outline-secondary"
             (click)="editing.set(false)"
             [disabled]="busy()"
           >
@@ -169,133 +365,281 @@
           </button>
         </div>
       </form>
-    } @else if (detail(); as d) {
-      <h2>{{ d.name }}</h2>
-      <p>{{ 'diagnostics.status.' + d.status | t }}</p>
-      <dl>
-        <dt>{{ 'diagnostics.specimen' | t }}</dt>
-        <dd>{{ d.specimen }}</dd>
-        <dt>{{ 'diagnostics.catalogNote' | t }}</dt>
-        <dd>{{ d.catalogClarificationNote }}</dd>
-        <dt>{{ 'diagnostics.reviewReason' | t }}</dt>
-        <dd>{{ d.reviewReason }}</dd>
-      </dl>
-      <div class="actions">
-        @if (doctor && allowed('UpdateOwn') && d.capabilities.canEdit) {
-          <button class="btn btn-primary" (click)="edit()" [disabled]="busy()">
-            {{ 'common.edit' | t }}
-          </button>
-        }
-        @if (!doctor) {
-          @for (action of reviewActions; track action) {
-            @if (canReview(action)) {
-              <button
-                class="btn btn-outline-secondary"
-                (click)="prepare(action)"
-                [disabled]="busy()"
-              >
-                {{ 'diagnostics.review.' + action | t }}
-              </button>
+    }
+
+    <!-- MODE 2: DETAIL INSPECTION -->
+    @else if (detail(); as d) {
+      <div class="drawer-detail-surface">
+        <!-- Hero Surface -->
+        <div class="detail-hero-card">
+          <div class="hero-icon-avatar" aria-hidden="true">
+            @if (kind === 'lab') {
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 2v7.31L4.1 18.2a2 2 0 0 0 1.66 3h12.48a2 2 0 0 0 1.66-3L14 9.31V2" />
+                <path d="M8.5 2h7" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" />
+                <line x1="12" y1="2" x2="12" y2="6" />
+                <line x1="12" y1="18" x2="12" y2="22" />
+                <line x1="2" y1="12" x2="6" y2="12" />
+                <line x1="18" y1="12" x2="22" y2="12" />
+              </svg>
             }
-          }
-        }
-      </div>
-      @if (reviewAction()) {
-        <section class="section">
-          <h3>{{ 'diagnostics.review.' + reviewAction() | t }}</h3>
-          <label
-            >{{ 'diagnostics.reviewReason' | t
-            }}<input
-              class="field-input"
-              [ngModel]="reason()"
-              (ngModelChange)="reason.set($event)"
+          </div>
+          <div class="hero-body">
+            <div class="hero-top-row">
+              <span class="status-pill status-pill-{{ d.status.toLowerCase() }}">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span class="status-text">{{ 'diagnostics.status.' + d.status | t }}</span>
+              </span>
+              <span class="request-id-badge" dir="ltr">#{{ d.requestId.slice(0, 8) }}</span>
+            </div>
+            <h2 class="hero-medication-title">
+              {{ d.name || ('diagnostics.unnamedTest' | t) }}
+            </h2>
+            @if (kind === 'lab' && d.specimen) {
+              <p class="hero-scientific-name">{{ d.specimen }}</p>
+            }
+          </div>
+        </div>
+
+        <!-- Structured Facts Directory -->
+        <div class="facts-panel">
+          <div class="facts-panel-header">
+            <h3 class="facts-panel-title">{{ 'diagnostics.basicInfo' | t }}</h3>
+          </div>
+
+          <div class="facts-rows-list">
+            @if (kind === 'lab' && d.specimen) {
+              <div class="fact-row">
+                <span class="fact-label">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                  </svg>
+                  <span>{{ 'diagnostics.specimen' | t }}</span>
+                </span>
+                <strong class="fact-val">{{ d.specimen }}</strong>
+              </div>
+            }
+
+            <div class="fact-row fact-note-row">
+              <span class="fact-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>{{ 'diagnostics.catalogNote' | t }}</span>
+              </span>
+              <span class="fact-val note-val">{{ d.catalogClarificationNote || '—' }}</span>
+            </div>
+
+            @if (d.reviewReason) {
+              <div class="fact-row fact-note-row">
+                <span class="fact-label">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{{ 'diagnostics.reviewReason' | t }}</span>
+                </span>
+                <span class="fact-val note-val">{{ d.reviewReason }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Detail Actions Deck -->
+        <div class="detail-actions-deck">
+          @if (doctor && allowed('UpdateOwn') && d.capabilities.canEdit) {
+            <button
+              type="button"
+              class="btn btn-primary btn-edit-action"
+              (click)="edit()"
               [disabled]="busy()"
-          /></label>
-          @if (reviewAction() === 'approve') {
-            <label class="mt-3"
-              >{{ 'diagnostics.linkCatalog' | t
-              }}<input
-                class="field-input"
-                type="search"
-                [ngModel]="targetSearch()"
-                (ngModelChange)="targetSearch.set($event)"
-                (change)="loadTargets()"
-                [disabled]="busy()"
-            /></label>
-            <ul class="history">
-              @for (target of targets(); track target.catalogId) {
-                <li>
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span>{{ 'common.edit' | t }}</span>
+            </button>
+          }
+
+          @if (!doctor) {
+            <div class="manager-review-actions">
+              @for (action of reviewActions; track action) {
+                @if (canReview(action)) {
                   <button
+                    type="button"
                     class="btn"
-                    [class.btn-primary]="targetId() === target.catalogId"
-                    [class.btn-outline-secondary]="!(targetId() === target.catalogId)"
-                    (click)="targetId.set(target.catalogId)"
-                    [attr.aria-pressed]="targetId() === target.catalogId"
+                    [class.btn-primary]="action === 'approve'"
+                    [class.btn-outline-secondary]="action === 'request-more-info'"
+                    [class.btn-danger]="action === 'reject'"
+                    (click)="prepare(action)"
                     [disabled]="busy()"
                   >
-                    {{
-                      language.currentLang() === 'ar'
-                        ? target.nameAr || target.nameEn
-                        : target.nameEn || target.nameAr
-                    }}
+                    {{ 'diagnostics.review.' + action | t }}
                   </button>
-                </li>
+                }
               }
-            </ul>
-            <button
-              class="btn btn-outline-secondary"
-              (click)="targetId.set('')"
-              [disabled]="busy()"
-            >
-              {{ 'diagnostics.createApproved' | t }}
-            </button>
-            @if (!targetId()) {
-              <label class="mt-3"
-                >{{ 'diagnostics.field.displayNameAr' | t
-                }}<input
-                  class="field-input"
-                  [ngModel]="approvedNameAr()"
-                  (ngModelChange)="approvedNameAr.set($event)"
-                  [disabled]="busy()" /></label
-              ><label class="mt-3"
-                >{{ 'diagnostics.field.displayNameEn' | t
-                }}<input
-                  class="field-input"
-                  [ngModel]="approvedNameEn()"
-                  (ngModelChange)="approvedNameEn.set($event)"
+            </div>
+          }
+        </div>
+
+        <!-- Manager Review Sub-Form -->
+        @if (reviewAction(); as action) {
+          <section class="review-subform-card">
+            <h4 class="subform-title">{{ 'diagnostics.review.' + action | t }}</h4>
+
+            <label class="form-control-row">
+              <span class="control-label">
+                {{ 'diagnostics.reviewReason' | t }}
+                @if (action !== 'approve') {
+                  <span class="required-star" aria-hidden="true">*</span>
+                }
+              </span>
+              <input
+                class="control-input"
+                [ngModel]="reason()"
+                (ngModelChange)="reason.set($event)"
+                [disabled]="busy()"
+              />
+            </label>
+
+            @if (action === 'approve') {
+              <label class="form-control-row">
+                <span class="control-label">{{ 'diagnostics.linkCatalog' | t }}</span>
+                <input
+                  class="control-input"
+                  type="search"
+                  [ngModel]="targetSearch()"
+                  (ngModelChange)="targetSearch.set($event)"
+                  (change)="loadTargets()"
                   [disabled]="busy()"
-              /></label>
+                />
+              </label>
+
+              @if (targets().length) {
+                <ul class="duplicate-matches-list">
+                  @for (target of targets(); track target.catalogId) {
+                    <li>
+                      <button
+                        type="button"
+                        class="btn match-pick-btn"
+                        [class.btn-primary]="targetId() === target.catalogId"
+                        [class.btn-outline-secondary]="targetId() !== target.catalogId"
+                        (click)="targetId.set(target.catalogId)"
+                        [attr.aria-pressed]="targetId() === target.catalogId"
+                        [disabled]="busy()"
+                      >
+                        {{
+                          language.currentLang() === 'ar'
+                            ? target.nameAr || target.nameEn
+                            : target.nameEn || target.nameAr
+                        }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if (targetId()) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary mt-1"
+                  (click)="targetId.set('')"
+                  [disabled]="busy()"
+                >
+                  {{ 'diagnostics.createApproved' | t }}
+                </button>
+              }
+
+              @if (!targetId()) {
+                <div class="approval-form-grid mt-2">
+                  <label class="form-control-row">
+                    <span class="control-label">{{ 'diagnostics.field.displayNameAr' | t }}</span>
+                    <input
+                      class="control-input"
+                      [ngModel]="approvedNameAr()"
+                      (ngModelChange)="approvedNameAr.set($event)"
+                      [disabled]="busy()"
+                    />
+                  </label>
+                  <label class="form-control-row">
+                    <span class="control-label">{{ 'diagnostics.field.displayNameEn' | t }}</span>
+                    <input
+                      class="control-input"
+                      [ngModel]="approvedNameEn()"
+                      (ngModelChange)="approvedNameEn.set($event)"
+                      [disabled]="busy()"
+                    />
+                  </label>
+                </div>
+              }
             }
-          }
-          <div class="actions mt-3">
-            <button
-              class="btn btn-primary"
-              (click)="review()"
-              [disabled]="busy() || (reviewAction() !== 'approve' && !reason().trim())"
-            >
-              {{ 'common.confirm' | t }}</button
-            ><button
-              class="btn btn-outline-secondary"
-              (click)="reviewAction.set(null)"
-              [disabled]="busy()"
-            >
-              {{ 'common.cancel' | t }}
-            </button>
+
+            <div class="review-actions-row mt-2">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="review()"
+                [disabled]="busy() || (action !== 'approve' && !reason().trim())"
+              >
+                {{ 'common.confirm' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="reviewAction.set(null)"
+                [disabled]="busy()"
+              >
+                {{ 'common.cancel' | t }}
+              </button>
+            </div>
+          </section>
+        }
+
+        <!-- Audit Timeline Section -->
+        <section class="timeline-section">
+          <div class="timeline-header">
+            <span class="timeline-header-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 14 14" />
+              </svg>
+            </span>
+            <h3 class="timeline-title">{{ 'diagnostics.history' | t }}</h3>
           </div>
+
+          <ul class="audit-timeline">
+            @for (entry of d.history; track entry.id) {
+              <li class="timeline-entry">
+                <span class="timeline-dot" aria-hidden="true"></span>
+                <div class="timeline-entry-content">
+                  <div class="timeline-entry-header">
+                    <strong class="timeline-action-badge">
+                      {{ 'diagnostics.historyAction.' + entry.action | t }}
+                    </strong>
+                    <time class="timeline-entry-date" dir="ltr">
+                      {{ entry.occurredAtUtc | localizedDate: language.currentLang() }}
+                    </time>
+                  </div>
+                  @if (entry.reason) {
+                    <p class="timeline-entry-reason">{{ entry.reason }}</p>
+                  }
+                </div>
+              </li>
+            } @empty {
+              <li class="timeline-empty-entry">
+                <p class="timeline-empty-text">{{ 'diagnostics.noHistory' | t }}</p>
+              </li>
+            }
+          </ul>
         </section>
-      }
-      <section class="section">
-        <h3>{{ 'diagnostics.history' | t }}</h3>
-        <ul class="history">
-          @for (entry of d.history; track entry.id) {
-            <li>
-              {{ 'diagnostics.historyAction.' + entry.action | t }}
-              <p>{{ entry.reason }}</p>
-              <time class="ltr-text" dir="ltr">{{ entry.occurredAtUtc }}</time>
-            </li>
-          }
-        </ul>
-      </section>
+      </div>
     }
   </app-side-drawer>
 </main>

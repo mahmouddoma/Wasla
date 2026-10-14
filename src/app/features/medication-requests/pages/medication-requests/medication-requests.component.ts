@@ -1,5 +1,5 @@
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -93,9 +93,20 @@ export class MedicationRequestsComponent implements OnInit {
     pageNumber: 1,
     pageSize: 20,
   });
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.page().totalCount / (this.page().pageSize || 20))),
+  );
   readonly detail = signal<MedicationRequest | null>(null);
   readonly opened = signal(false);
   readonly editing = signal(false);
+  readonly drawerTitle = computed(() => {
+    if (this.editing()) {
+      return this.detail()
+        ? this.language.t('requests.editTitle')
+        : this.language.t('requests.createTitle');
+    }
+    return this.language.t('requests.detailsTitle');
+  });
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly failed = signal(false);

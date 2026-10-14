@@ -1,0 +1,291 @@
+<main class="reports-container" [dir]="language.dir()">
+  <app-page-header
+    [heading]="activeTab() === 'insights' ? ('doctor.insights' | t) : ('doctor.reports' | t)"
+    [description]="activeTab() === 'insights' ? ('doctor.insightsSubtitle' | t) : ('doctor.reportsSubtitle' | t)"
+    icon="workspace"
+    [actionLabel]="'finance.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    [actionDisabled]="loading()"
+    (actionClicked)="activeTab() === 'insights' ? loadInsights() : loadCatalog()"
+  >
+    <div pageHeaderActions class="reports-header-actions">
+      <div class="view-switcher-pill" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="switcher-btn"
+          [class.active]="activeTab() === 'insights'"
+          (click)="setTab('insights')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span>{{ 'doctor.insights' | t }}</span>
+          <span class="count-pill">{{ insights().length }}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          class="switcher-btn"
+          [class.active]="activeTab() === 'reports'"
+          (click)="setTab('reports')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          <span>{{ 'doctor.reports' | t }}</span>
+          <span class="count-pill">{{ reports().length }}</span>
+        </button>
+      </div>
+    </div>
+  </app-page-header>
+
+  <!-- Insights Tab Content -->
+  @if (activeTab() === 'insights') {
+    <div class="table-surface">
+      @if (loading() && insights().length === 0) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>{{ 'common.loading' | t }}</p>
+        </div>
+      } @else if (insights().length === 0) {
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p>{{ 'common.nothingFound' | t }}</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ 'doctor.metric' | t }}</th>
+                <th>{{ 'doctor.practice' | t }}</th>
+                <th>{{ 'doctor.rates' | t }}</th>
+                <th>{{ 'doctor.explanation' | t }}</th>
+                <th>{{ 'reservations.status' | t }}</th>
+                <th class="text-end">{{ 'reservations.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of insights(); track item.id) {
+                <tr>
+                  <td>
+                    <div class="metric-info">
+                      <span class="font-medium text-navy">{{ item.metricName }}</span>
+                      <span class="action-hint">{{ item.suggestedAction }}</span>
+                    </div>
+                  </td>
+                  <td class="cell-practice">
+                    <span class="practice-pill">{{ item.practiceName }}</span>
+                  </td>
+                  <td>
+                    <div class="rate-comparison">
+                      <span class="rate-observed">{{ item.observedRate }}</span>
+                      <span class="rate-sep">/</span>
+                      <span class="rate-baseline">{{ item.baselineRate }}</span>
+                    </div>
+                  </td>
+                  <td class="cell-explanation">
+                    <p class="explanation-text">{{ item.explanation }}</p>
+                  </td>
+                  <td>
+                    <span
+                      class="status-pill"
+                      [class.pill-new]="item.status === 'New'"
+                      [class.pill-ack]="item.status === 'Acknowledged'"
+                      [class.pill-resolved]="item.status === 'Resolved'"
+                      [class.pill-dismissed]="item.status === 'Dismissed'"
+                    >
+                      @switch (item.status) {
+                        @case ('New') { {{ 'tickets.status.waiting' | t }} }
+                        @case ('Acknowledged') { {{ 'doctor.acknowledged' | t }} }
+                        @case ('Resolved') { {{ 'doctor.resolved' | t }} }
+                        @case ('Dismissed') { {{ 'doctor.dismissed' | t }} }
+                      }
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <div class="actions-group">
+                      @if (item.status === 'New') {
+                        <button
+                          type="button"
+                          class="btn-sm btn-subtle"
+                          (click)="acknowledgeInsight(item)"
+                          [title]="'doctor.acknowledge' | t"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span>{{ 'doctor.acknowledge' | t }}</span>
+                        </button>
+                      }
+
+                      @if (item.status !== 'Resolved' && item.status !== 'Dismissed') {
+                        <button
+                          type="button"
+                          class="btn-sm btn-resolve"
+                          (click)="resolveInsight(item)"
+                          [title]="'doctor.resolve' | t"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                          </svg>
+                          <span>{{ 'doctor.resolve' | t }}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="btn-sm btn-dismiss"
+                          (click)="openDismissDrawer(item)"
+                          [title]="'doctor.dismiss' | t"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                          <span>{{ 'doctor.dismiss' | t }}</span>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Reports Tab Content -->
+  @if (activeTab() === 'reports') {
+    <div class="table-surface">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ 'doctor.reportTitle' | t }}</th>
+              <th>{{ 'doctor.reportCategory' | t }}</th>
+              <th>{{ 'doctor.reportDescription' | t }}</th>
+              <th class="text-end">{{ 'reservations.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (report of reports(); track report.code) {
+              <tr>
+                <td>
+                  <div class="report-name-cell">
+                    <span class="report-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    </span>
+                    <span class="font-medium text-navy">{{ report.name }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="category-pill">{{ report.category }}</span>
+                </td>
+                <td class="cell-desc">
+                  <p class="desc-text">{{ report.description }}</p>
+                </td>
+                <td class="text-end">
+                  <div class="export-actions">
+                    <button
+                      type="button"
+                      class="btn-export btn-pdf"
+                      [disabled]="exporting()"
+                      (click)="exportReport(report, 'pdf')"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>PDF</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn-export btn-excel"
+                      [disabled]="exporting()"
+                      (click)="exportReport(report, 'xlsx')"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>Excel</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Dismiss Insight Slide-Over Drawer -->
+  <app-side-drawer
+    [opened]="selectedInsight() !== null"
+    [title]="'doctor.dismissInsight' | t"
+    (closed)="closeDrawer()"
+  >
+    @if (selectedInsight(); as ins) {
+      <div class="drawer-content">
+        <div class="drawer-summary-band">
+          <span class="summary-label">{{ 'doctor.metric' | t }}</span>
+          <p class="summary-val">{{ ins.metricName }}</p>
+          <span class="summary-label">{{ 'doctor.practice' | t }}</span>
+          <p class="summary-val">{{ ins.practiceName }}</p>
+        </div>
+
+        <div class="form-group">
+          <label for="dismiss-reason" class="form-label">
+            {{ 'doctor.dismissReason' | t }} <span class="required">*</span>
+          </label>
+          <textarea
+            id="dismiss-reason"
+            class="form-control"
+            rows="4"
+            [(ngModel)]="dismissReason"
+            [placeholder]="'doctor.dismissReasonPlaceholder' | t"
+          ></textarea>
+        </div>
+
+        <div class="drawer-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeDrawer()"
+            [disabled]="submitting()"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="submitDismiss()"
+            [disabled]="!dismissReason.trim() || submitting()"
+          >
+            {{ 'doctor.confirmDismiss' | t }}
+          </button>
+        </div>
+      </div>
+    }
+  </app-side-drawer>
+</main>

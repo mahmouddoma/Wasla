@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: { maxWorkers: 4 },
+  test: { maxWorkers: 1, isolate: true },
 });

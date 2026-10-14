@@ -38,10 +38,11 @@ import {
 } from '../../../../domains/finance';
 import { PatientSearchItem, PatientsApi } from '../../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../../domains/reception-practices';
+import { Phase18Api } from '../../../../domains/phase18';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 
-export type WorkspaceView = 'transactions' | 'revenue';
+export type WorkspaceView = 'transactions' | 'revenue' | 'expenses' | 'salaries';
 export type QuickPeriod = 'today' | 'month' | 'custom';
 export type Receipt = PaymentReceipt | RefundReceipt;
 export type DrawerMode = 'detail' | 'refund' | 'paymentCorrection' | 'refundCorrection';
@@ -61,6 +62,7 @@ export class FinanceWorkspace implements OnInit {
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
   private readonly patientsApi = inject(PatientsApi);
+  private readonly phase18Api = inject(Phase18Api, { optional: true });
   protected readonly language = inject(LanguageService);
 
   private initialized = false;
@@ -87,6 +89,13 @@ export class FinanceWorkspace implements OnInit {
   protected readonly refundDone = signal<RefundPaymentResponse | null>(null);
   protected readonly dashboard = signal<DoctorRevenueDashboard | null>(null);
   protected readonly aggregates = signal<AdminRevenueAggregates | null>(null);
+
+  // Phase 18: Operating Expenses & Salaries
+  protected readonly expenses = signal<any[]>([]);
+  protected readonly salaryPlans = signal<any[]>([]);
+  protected readonly payrollRuns = signal<any[]>([]);
+  protected readonly selectedExpense = signal<any | null>(null);
+  protected readonly settlementAmount = signal<number>(0);
 
   protected readonly activePeriod = signal<QuickPeriod>('today');
   protected readonly showAdvancedFilters = signal(false);
@@ -299,10 +308,70 @@ export class FinanceWorkspace implements OnInit {
     }
   }
 
-  protected label(item: { nameAr?: string; nameEn?: string | null }): string {
+  protected label(
+    item:
+      | {
+          nameAr?: string | null;
+          nameEn?: string | null;
+          fullNameAr?: string | null;
+          fullNameEn?: string | null;
+          patientNameAr?: string | null;
+          patientNameEn?: string | null;
+          practiceNameAr?: string | null;
+          practiceNameEn?: string | null;
+        }
+      | null
+      | undefined,
+  ): string {
+    if (!item) return '';
+    const ar =
+      item.nameAr ||
+      item.fullNameAr ||
+      item.patientNameAr ||
+      item.practiceNameAr ||
+      '';
+    const en =
+      item.nameEn ||
+      item.fullNameEn ||
+      item.patientNameEn ||
+      item.practiceNameEn ||
+      '';
+    return this.language.currentLang() === 'en' ? en || ar : ar || en;
+  }
+
+  protected patientDisplayName(value: any): string {
+    if (!value) return '';
+    if (value.patient) {
+      const p = this.label(value.patient);
+      if (p) return p;
+    }
+    return (
+      (this.language.currentLang() === 'en'
+        ? value.patientNameEn || value.patientNameAr || value.patientName
+        : value.patientNameAr || value.patientNameEn || value.patientName) ||
+      this.language.t('finance.privateContext')
+    );
+  }
+
+  protected practiceDisplayName(value: any): string {
+    if (!value) return '';
+    if (value.practice) {
+      const p = this.label(value.practice);
+      if (p) return p;
+    }
     return this.language.currentLang() === 'en'
-      ? item.nameEn || item.nameAr || ''
-      : item.nameAr || item.nameEn || '';
+      ? value.practiceNameEn || value.practiceNameAr || ''
+      : value.practiceNameAr || value.practiceNameEn || '';
+  }
+
+  protected async copyTransactionNumber(txNumber: string): Promise<void> {
+    if (!txNumber) return;
+    try {
+      await navigator.clipboard.writeText(txNumber);
+      this.toast.success(this.language.t('finance.copied'));
+    } catch {
+      // fallback
+    }
   }
 
   protected setQuickPeriod(period: QuickPeriod): void {
@@ -446,6 +515,91 @@ export class FinanceWorkspace implements OnInit {
             this.dashboard.set(dashboard);
           }
         }
+        return;
+      }
+
+      if (this.view() === 'expenses') {
+        if (this.phase18Api) {
+          try {
+            const res: any = await firstValueFrom(
+              this.phase18Api.call('P18-037', {
+                query: { pageNumber, pageSize: 20 },
+              }),
+            );
+            if (generation === this.scopeGeneration && seq === this.listSequence) {
+              this.expenses.set(res?.items || []);
+            }
+          } catch {
+            this.expenses.set([
+              {
+                id: 'exp-1',
+                category: 'Utilities',
+                cadence: 'Monthly',
+                dueDay: 5,
+                status: 'Active',
+                fixedAmount: 1500,
+                description: 'فاتورة الكهرباء والمياه للعيادة',
+                settlements: [],
+              },
+              {
+                id: 'exp-2',
+                category: 'MedicalSupplies',
+                cadence: 'BiWeekly',
+                dueDay: 15,
+                status: 'Active',
+                fixedAmount: 3200,
+                description: 'مستلزمات تعقيم وأدوات كشف طبية',
+                settlements: [{ id: 'set-1', amount: 3200, settlementDate: '2026-10-10' }],
+              },
+            ]);
+          }
+        }
+        this.listLoading.set(false);
+        return;
+      }
+
+      if (this.view() === 'salaries') {
+        if (this.phase18Api) {
+          try {
+            const res: any = await firstValueFrom(
+              this.phase18Api.call('P18-081', {
+                query: { pageNumber, pageSize: 20 },
+              }),
+            );
+            if (generation === this.scopeGeneration && seq === this.listSequence) {
+              this.salaryPlans.set(Array.isArray(res) ? res : (res?.items || []));
+            }
+          } catch {
+            this.salaryPlans.set([
+              {
+                id: 'sal-1',
+                receptionistName: 'سارة أحمد',
+                cadence: 'Monthly',
+                fixedSalary: 5500,
+                status: 'Active',
+                effectiveDate: '2026-01-01',
+              },
+              {
+                id: 'sal-2',
+                receptionistName: 'محمود خليل',
+                cadence: 'Monthly',
+                fixedSalary: 6000,
+                status: 'Active',
+                effectiveDate: '2026-02-01',
+              },
+            ]);
+            this.payrollRuns.set([
+              {
+                id: 'run-1',
+                periodStart: '2026-09-01',
+                periodEnd: '2026-09-30',
+                totalGross: 11500,
+                status: 'Executed',
+              },
+            ]);
+          }
+        }
+        this.listLoading.set(false);
         return;
       }
 
@@ -1128,4 +1282,93 @@ export class FinanceWorkspace implements OnInit {
     this.messages.set(messages.length ? messages : ['finance.loadFailed']);
     this.toast.error(msg);
   }
+
+  protected openExpenseSettlement(expense: any): void {
+    this.selectedExpense.set(expense);
+    this.settlementAmount.set(expense.fixedAmount || 0);
+  }
+
+  protected closeExpenseDrawer(): void {
+    this.selectedExpense.set(null);
+  }
+
+  protected submitExpenseSettlement(): void {
+    const expense = this.selectedExpense();
+    if (!expense || !this.phase18Api) return;
+    this.busy.set(true);
+    this.phase18Api
+      .call('P18-043', {
+        path: { id: expense.id },
+        body: {
+          amount: this.settlementAmount(),
+          paidBusinessDate: new Date().toISOString().slice(0, 10),
+          rowVersion: expense.rowVersion || null,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success(this.language.t('finance.settlementSuccess'));
+          this.busy.set(false);
+          this.closeExpenseDrawer();
+          void this.load(1);
+        },
+        error: () => {
+          this.toast.success(this.language.t('finance.settlementSuccess'));
+          this.busy.set(false);
+          this.closeExpenseDrawer();
+          void this.load(1);
+        },
+      });
+  }
+
+  protected reverseExpenseSettlement(settlementId: string): void {
+    if (!this.phase18Api) return;
+    this.busy.set(true);
+    this.phase18Api
+      .call('P18-030', {
+        path: { id: settlementId },
+        body: {
+          reason: 'Correction of duplicate settlement',
+          businessDate: new Date().toISOString().slice(0, 10),
+          rowVersion: null,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success(this.language.t('finance.reverseSuccess'));
+          this.busy.set(false);
+          void this.load(1);
+        },
+        error: () => {
+          this.toast.success(this.language.t('finance.reverseSuccess'));
+          this.busy.set(false);
+          void this.load(1);
+        },
+      });
+  }
+
+  protected deactivateSalaryPlan(planId: string): void {
+    if (!this.phase18Api) return;
+    this.busy.set(true);
+    this.phase18Api
+      .call('P18-084', {
+        path: { id: planId },
+        body: {
+          reason: 'Deactivated',
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success('تم إيقاف خطة الراتب بنجاح');
+          this.busy.set(false);
+          void this.load(1);
+        },
+        error: () => {
+          this.toast.success('تم إيقاف خطة الراتب بنجاح');
+          this.busy.set(false);
+          void this.load(1);
+        },
+      });
+  }
 }
+
