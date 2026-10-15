@@ -189,4 +189,3 @@ describe('Login', () => {
     expect(navigate).toHaveBeenCalledWith(['/workspace']);
   });
 });
-

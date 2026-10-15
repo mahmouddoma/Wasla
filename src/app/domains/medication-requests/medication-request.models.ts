@@ -5,12 +5,16 @@ export interface MedicationRequest extends MedicationSubmission {
   readonly requestId: string;
   readonly status: MedicationRequestStatus;
   readonly rowVersion: string;
+  readonly createdAtUtc?: string;
+  readonly modifiedAtUtc?: string;
+  readonly medication?: MedicationSubmission | null;
   readonly approvedDrug?: DrugCatalogItem | null;
   readonly duplicateDrug?: DrugCatalogItem | null;
   readonly history?: readonly {
     readonly action: string;
     readonly reason: string | null;
-    readonly createdOnUtc: string;
+    readonly createdOnUtc?: string;
+    readonly createdAtUtc?: string;
   }[];
 }
 export interface MedicationRequestQuery {

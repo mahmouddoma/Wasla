@@ -65,6 +65,13 @@ export class AdminLayout {
         permission: 'Reservations.ViewAdministrative',
       },
       {
+        id: 'archive-operations',
+        labelKey: 'admin.navArchiveOperations',
+        route: '/admin/archive-operations',
+        icon: 'clipboard-list',
+        permission: PERMISSIONS.archiveOperationsView,
+      },
+      {
         id: 'doctors',
         labelKey: 'admin.navDoctors',
         route: '/admin/doctors',

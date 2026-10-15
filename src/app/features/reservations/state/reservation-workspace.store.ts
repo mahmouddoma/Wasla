@@ -33,6 +33,8 @@ import {
 } from '../../../domains/reservations';
 import { CheckInSubmission, PracticeTicket, TicketsApi } from '../../../domains/tickets';
 import { FollowUpEligibility, FollowUpsApi } from '../../../domains/follow-ups';
+import { Phase18Part2Api } from '../../../domains/phase18';
+import type { components } from '../../../domains/phase18/phase18-part2-openapi.types';
 
 export interface ReservationDraft {
   patientId: string;
@@ -50,6 +52,7 @@ export type ReservationEditorMode = 'create' | 'cancel' | 'reschedule' | 'restor
 export class ReservationWorkspaceStore {
   private readonly api = inject(ReservationsApi);
   private readonly followUps = inject(FollowUpsApi);
+  private readonly phase18Api = inject(Phase18Part2Api);
   readonly bookingPatientId = signal('');
   readonly bookingPatient = signal<Pick<
     PatientSearchItem,
@@ -66,15 +69,15 @@ export class ReservationWorkspaceStore {
       this.session.hasPermission(PERMISSIONS.patientsSearchBasic) &&
       this.reception.allows(PERMISSIONS.patientsSearchBasic),
   );
-  readonly receptionView = signal<'Today' | 'Upcoming' | 'All' | 'Custom'>('Today');
-  setReceptionView(view: 'Today' | 'Upcoming' | 'All'): void {
+  readonly receptionView = signal<'Today' | 'Upcoming' | 'All' | 'Archive' | 'Custom'>('Today');
+  setReceptionView(view: 'Today' | 'Upcoming' | 'All' | 'Archive'): void {
     if (this.actor() !== 'Reception') return;
     this.receptionView.set(view);
     const date = this.today();
     this.query.update((q) => ({
       ...q,
       pageNumber: 1,
-      fromDate: view === 'All' ? undefined : date,
+      fromDate: view === 'All' || view === 'Archive' ? undefined : date,
       toDate: view === 'Today' ? date : undefined,
     }));
     void this.loadList();
@@ -107,7 +110,7 @@ export class ReservationWorkspaceStore {
     if (view === 'Upcoming') {
       return (q.fromDate !== undefined && q.fromDate !== today) || q.toDate !== undefined;
     }
-    if (view === 'All') {
+    if (view === 'All' || view === 'Archive') {
       return q.fromDate !== undefined || q.toDate !== undefined;
     }
     return false;
@@ -359,7 +362,49 @@ export class ReservationWorkspaceStore {
     this.listFailed.set(false);
     this.messages.set([]);
     try {
-      const page = await firstValueFrom(this.api.list(this.scope(), this.listQuery()));
+      let page: ReservationPage;
+      const isArchivedView =
+        (this.actor() === 'Reception' && this.receptionView() === 'Archive') ||
+        (this.actor() === 'Patient' && this.query().view === 'Archived') ||
+        (this.actor() === 'Doctor' && this.query().view === 'Archived');
+
+      if (isArchivedView) {
+        if (this.actor() === 'Doctor') {
+          const res = (await firstValueFrom(
+            this.phase18Api.call('P18.2-08', {
+              pathParams: { practiceId: this.practiceId() },
+              query: {
+                Search: this.query().search?.trim() || undefined,
+                PageSize: this.query().pageSize ?? 20,
+              },
+            }),
+          )) as components['schemas']['ArchivedReservationItemArchivePage'];
+          page = this.mapArchivedReservations(res?.items || [], !!res?.hasMore);
+        } else if (this.actor() === 'Reception') {
+          const res = (await firstValueFrom(
+            this.phase18Api.call('P18.2-10', {
+              pathParams: { practiceId: this.practiceId() },
+              query: {
+                Search: this.query().search?.trim() || undefined,
+                PageSize: this.query().pageSize ?? 20,
+              },
+            }),
+          )) as components['schemas']['ArchivedReservationItemArchivePage'];
+          page = this.mapArchivedReservations(res?.items || [], !!res?.hasMore);
+        } else {
+          const res = (await firstValueFrom(
+            this.phase18Api.call('P18.2-12', {
+              query: {
+                Search: this.query().search?.trim() || undefined,
+                PageSize: this.query().pageSize ?? 20,
+              },
+            }),
+          )) as components['schemas']['ArchivedReservationItemArchivePage'];
+          page = this.mapArchivedReservations(res?.items || [], !!res?.hasMore);
+        }
+      } else {
+        page = await firstValueFrom(this.api.list(this.scope(), this.listQuery()));
+      }
       if (sequence === this.listSequence) this.page.set(page);
     } catch (error) {
       if (sequence === this.listSequence) {
@@ -370,6 +415,43 @@ export class ReservationWorkspaceStore {
     } finally {
       if (sequence === this.listSequence) this.loading.set(false);
     }
+  }
+
+  private mapArchivedReservations(
+    items: readonly components['schemas']['ArchivedReservationItem'][],
+    hasMore: boolean,
+  ): ReservationPage {
+    return {
+      items: items.map((item) => ({
+        reservationId: item.reservationId,
+        reference: item.reservationReference ?? item.reservationId.slice(0, 8),
+        status: item.status ?? 'Completed',
+        isLate: false,
+        doctorPracticeId: item.doctorPracticeId,
+        appointment: {
+          businessDate: item.businessDate,
+          slotStartTime: '09:00',
+          period: 'Morning',
+        },
+        patient: { id: '', nameAr: '—', nameEn: '—' },
+        doctor: { id: '', nameAr: '—', nameEn: '—' },
+        practice: { id: item.doctorPracticeId, nameAr: '—', nameEn: '—' },
+        capabilities: {
+          canCancel: false,
+          canReschedule: false,
+          canRestoreFromNoShow: false,
+        },
+        timeline: [],
+        rowVersion: '',
+        isArchived: true,
+        archivedAtUtc: item.archivedAtUtc,
+        linkedTicketId: item.linkedTicketId ?? null,
+        canViewLinkedTicket: !!item.linkedTicketId,
+      })),
+      totalCount: items.length + (hasMore ? 1 : 0),
+      pageNumber: 1,
+      pageSize: this.query().pageSize ?? 20,
+    };
   }
   async inspect(id: string, arrivalContext?: Reservation): Promise<void> {
     this.arrival.set(false);
@@ -690,11 +772,7 @@ export class ReservationWorkspaceStore {
     } else {
       await this.inspect(id);
     }
-    if (
-      this.detail() &&
-      this.detail()!.reservationId === id &&
-      this.canArrive(this.detail()!)
-    )
+    if (this.detail() && this.detail()!.reservationId === id && this.canArrive(this.detail()!))
       this.arrival.set(true);
   }
   readonly canOpenQueue = computed(

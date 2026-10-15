@@ -33,7 +33,7 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationWorkspaceComponent implements OnInit {
-  readonly receptionViews = ['Today', 'Upcoming', 'All'] as const;
+  readonly receptionViews = ['Today', 'Upcoming', 'All', 'Archive'] as const;
   readonly store = inject(ReservationWorkspaceStore);
   readonly language = inject(LanguageService);
   private readonly route = inject(ActivatedRoute);
@@ -287,9 +287,34 @@ export class ReservationWorkspaceComponent implements OnInit {
     )
       await this.store.chooseDate(date);
   }
+  readonly hasActiveFilters = computed(() => {
+    const q = this.store.query();
+    return !!(
+      (q.search && q.search.trim().length > 0) ||
+      q.status ||
+      q.fromDate ||
+      q.toDate ||
+      q.bookingSource ||
+      q.segmentId ||
+      q.isLate !== undefined ||
+      q.patientId ||
+      q.doctorId ||
+      (this.store.actor() === 'Patient' && q.view && q.view !== 'Upcoming')
+    );
+  });
+
+  clearSearch(): void {
+    this.store.query.update((q) => ({ ...q, search: undefined, pageNumber: 1 }));
+    void this.store.loadList();
+  }
+
   resetFilters(): void {
     this.store.query.set({ pageNumber: 1, pageSize: 20 });
-    this.store.setReceptionView('Today');
+    if (this.store.actor() === 'Reception') {
+      this.store.setReceptionView('Today');
+    } else {
+      void this.store.loadList();
+    }
   }
   practice(event: Event): void {
     void this.store.selectPractice((event.target as HTMLSelectElement).value);

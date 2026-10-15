@@ -12,10 +12,30 @@
     icon="queue"
   >
     <div pageHeaderDeck class="tickets-stats-deck">
+      <div class="entity-toggle" role="group">
+        <button
+          type="button"
+          class="entity-toggle-btn"
+          [class.active]="viewMode() === 'active'"
+          (click)="setViewMode('active')"
+        >
+          {{ 'archive.activeRecords' | t }}
+        </button>
+        <button
+          type="button"
+          class="entity-toggle-btn"
+          [class.active]="viewMode() === 'archived'"
+          (click)="setViewMode('archived')"
+        >
+          {{ 'archive.title' | t }}
+        </button>
+      </div>
       @if (!loading()) {
         <div class="stat-pill">
           <span class="stat-num">{{ tickets().length }}</span>
-          <span class="stat-lbl">{{ 'tickets.mine.title' | t }}</span>
+          <span class="stat-lbl">{{
+            (viewMode() === 'active' ? 'tickets.mine.title' : 'archive.title') | t
+          }}</span>
         </div>
       }
     </div>
@@ -308,6 +328,23 @@
 
       @if (selected(); as ticket) {
         <div class="drawer-body">
+          @if (ticket.isArchived) {
+            <div class="archive-banner-notice">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>{{ 'archive.readOnlyNotice' | t }}</span>
+            </div>
+          }
           <!-- Queue Highlight Banner -->
           <div class="drawer-status-card">
             <div class="ahead-highlight">

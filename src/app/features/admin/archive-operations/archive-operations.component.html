@@ -1,0 +1,800 @@
+<div class="archive-operations-workspace">
+  <!-- Page Header -->
+  <app-page-header
+    [heading]="'archive.operations.title' | t"
+    [description]="'archive.operations.subtitle' | t"
+    icon="workspace"
+  >
+    <div class="header-actions">
+      @if (health()) {
+        <div
+          class="worker-status-badge"
+          [class.active]="isWorkerActive()"
+          [class.paused]="!isWorkerActive()"
+        >
+          <span class="status-dot"></span>
+          <span class="status-label">
+            {{ (isWorkerActive() ? 'archive.workerActive' : 'archive.workerPaused') | t }}
+          </span>
+        </div>
+
+        @if (canPauseWorker()) {
+          <button
+            type="button"
+            class="btn-action btn-pause"
+            (click)="openPauseDialog()"
+            [attr.aria-label]="'archive.pauseWorker' | t"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+              <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+            </svg>
+            <span>{{ 'archive.pauseWorker' | t }}</span>
+          </button>
+        }
+
+        @if (canResumeWorker()) {
+          <button
+            type="button"
+            class="btn-action btn-resume"
+            (click)="openResumeDialog()"
+            [attr.aria-label]="'archive.resumeWorker' | t"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>{{ 'archive.resumeWorker' | t }}</span>
+          </button>
+        }
+      }
+    </div>
+  </app-page-header>
+
+  <!-- Workspace Navigation Tabs -->
+  <div class="workspace-tabs-bar" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.active]="activeTab() === 'operations'"
+      [attr.aria-selected]="activeTab() === 'operations'"
+      (click)="setTab('operations')"
+    >
+      {{ 'archive.tabs.operations' | t }}
+      @if (exceptions().length > 0) {
+        <span class="tab-badge-warning">{{ exceptions().length }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.active]="activeTab() === 'archives'"
+      [attr.aria-selected]="activeTab() === 'archives'"
+      (click)="setTab('archives')"
+    >
+      {{ 'archive.tabs.archives' | t }}
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.active]="activeTab() === 'audit'"
+      [attr.aria-selected]="activeTab() === 'audit'"
+      (click)="setTab('audit')"
+    >
+      {{ 'archive.tabs.audit' | t }}
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="workspace-loading-surface">
+      <div class="spinner-ring" aria-hidden="true"></div>
+      <p class="loading-text">{{ 'common.loading' | t }}</p>
+    </div>
+  }
+
+  <!-- TAB 1: OPERATIONS (WORKER, RUNS & INTEGRITY EXCEPTIONS) -->
+  @if (!loading() && activeTab() === 'operations') {
+    <div class="tab-content-surface">
+      <!-- Health Stats Surface -->
+      @if (health(); as h) {
+        <div class="health-summary-panel">
+          <div class="health-metric">
+            <span class="metric-label">{{ 'archive.workerState' | t }}</span>
+            <span class="metric-value state-pill" [class.state-active]="isWorkerActive()">
+              {{ (isWorkerActive() ? 'archive.workerActive' : 'archive.workerPaused') | t }}
+            </span>
+          </div>
+
+          @if (h.lastSuccessUtc) {
+            <div class="health-metric">
+              <span class="metric-label">{{ 'archive.lastRun' | t }}</span>
+              <span class="metric-value">{{ formatDate(h.lastSuccessUtc) }}</span>
+            </div>
+          }
+          <div class="health-metric">
+            <span class="metric-label">{{ 'archive.currentRun' | t }}</span>
+            <span class="metric-value font-mono">{{ h.runningBatchCount }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- Runs Section -->
+      <div class="surface-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ 'archive.operationsRuns' | t }}</h2>
+          <span class="section-count">{{ runs().length }}</span>
+        </div>
+
+        @if (runs().length === 0) {
+          <div class="empty-state-panel">
+            <p>{{ 'archive.noArchivedRecords' | t }}</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'archive.runId' | t }}</th>
+                  <th>{{ 'audit.occurredAt' | t }}</th>
+                  <th>{{ 'archive.duration' | t }}</th>
+                  <th>{{ 'archive.recordsMoved' | t }}</th>
+                  <th>{{ 'audit.outcome' | t }}</th>
+                  <th>{{ 'reservations.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (run of runs(); track run.runId) {
+                  <tr>
+                    <td class="font-mono text-subtle">{{ run.runId.substring(0, 8) }}...</td>
+                    <td>{{ formatDate(run.startedAtUtc) }}</td>
+                    <td>{{ run.endedAtUtc ? formatDate(run.endedAtUtc) : '—' }}</td>
+                    <td class="font-mono font-medium">
+                      {{ run.archivedTickets + run.archivedReservations }}
+                    </td>
+                    <td>
+                      <span
+                        class="status-pill"
+                        [class.status-success]="run.outcome === 'Completed'"
+                        [class.status-failed]="run.outcome === 'Failed'"
+                      >
+                        {{ run.outcome }}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" class="btn-row-inspect" (click)="inspectRun(run)">
+                        {{ 'common.viewDetails' | t }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <!-- Integrity Exceptions Section -->
+      <div class="surface-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ 'archive.integrityExceptions' | t }}</h2>
+          <span class="section-count warning" [class.has-exceptions]="exceptions().length > 0">
+            {{ exceptions().length }}
+          </span>
+        </div>
+
+        @if (exceptions().length === 0) {
+          <div class="empty-state-panel">
+            <p>{{ 'audit.noEvents' | t }}</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'archive.exceptionId' | t }}</th>
+                  <th>{{ 'audit.occurredAt' | t }}</th>
+                  <th>{{ 'archive.filterByEntity' | t }}</th>
+                  <th>{{ 'review.reason' | t }}</th>
+                  <th>{{ 'audit.outcome' | t }}</th>
+                  <th>{{ 'reservations.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (exc of exceptions(); track exc.exceptionId) {
+                  <tr>
+                    <td class="font-mono text-subtle">{{ exc.exceptionId.substring(0, 8) }}...</td>
+                    <td>{{ formatDate(exc.occurredAtUtc) }}</td>
+                    <td>
+                      <span class="entity-chip">{{ exc.entityType }}</span>
+                    </td>
+                    <td class="cell-truncate">{{ exc.failureCode }}</td>
+                    <td>
+                      <span class="status-pill status-failed">
+                        {{ exc.failureCode || 'Exception' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" class="btn-row-inspect" (click)="inspectException(exc)">
+                        {{ 'common.viewDetails' | t }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: ARCHIVED RECORDS (TICKETS & RESERVATIONS) -->
+  @if (!loading() && activeTab() === 'archives') {
+    <div class="tab-content-surface">
+      <!-- Entity Switcher & Filter Toolbar -->
+      <div class="archive-filters-toolbar">
+        <div class="entity-toggle" role="group">
+          <button
+            type="button"
+            class="entity-toggle-btn"
+            [class.active]="archiveEntity() === 'tickets'"
+            (click)="setArchiveEntity('tickets')"
+          >
+            {{ 'archive.tickets' | t }}
+          </button>
+          <button
+            type="button"
+            class="entity-toggle-btn"
+            [class.active]="archiveEntity() === 'reservations'"
+            (click)="setArchiveEntity('reservations')"
+          >
+            {{ 'archive.reservations' | t }}
+          </button>
+        </div>
+
+        <div class="filter-controls-group">
+          @if (practiceOptions().length > 0) {
+            <select
+              class="filter-select"
+              [ngModel]="archivePracticeFilter()"
+              (ngModelChange)="archivePracticeFilter.set($event); loadArchivesData()"
+            >
+              <option value="">{{ 'archive.filterByPractice' | t }}</option>
+              @for (p of practiceOptions(); track p.practiceId) {
+                <option [value]="p.practiceId">{{ label(p) }}</option>
+              }
+            </select>
+          }
+
+          <input
+            type="search"
+            class="filter-search-input"
+            [placeholder]="
+              (archiveEntity() === 'tickets' ? 'tickets.table.ticketNumber' : 'reservations.search')
+                | t
+            "
+            [ngModel]="archiveSearchQuery()"
+            (ngModelChange)="archiveSearchQuery.set($event)"
+            (keydown.enter)="loadArchivesData()"
+          />
+
+          <button type="button" class="btn-search-trigger" (click)="loadArchivesData()">
+            {{ 'common.search' | t }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Tickets Table -->
+      @if (archiveEntity() === 'tickets') {
+        @if (archivedTickets().length === 0) {
+          <div class="empty-state-panel">
+            <p>{{ 'archive.noArchivedRecords' | t }}</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'tickets.table.ticketNumber' | t }}</th>
+                  <th>{{ 'archive.originalDate' | t }}</th>
+                  <th>{{ 'archive.archivedAt' | t }}</th>
+                  <th>{{ 'archive.filterByStatus' | t }}</th>
+                  <th>{{ 'reservations.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ticket of archivedTickets(); track ticket.ticketId) {
+                  <tr>
+                    <td class="font-bold text-accent">#{{ ticket.ticketNumber }}</td>
+                    <td>{{ ticket.businessDate }}</td>
+                    <td>{{ formatDate(ticket.archivedAtUtc) }}</td>
+                    <td>
+                      <span class="status-pill status-neutral">
+                        {{ ticket.status || ('archive.isArchivedBadge' | t) }}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="btn-row-inspect"
+                        (click)="inspectPlatformTicket(ticket)"
+                      >
+                        {{ 'common.viewDetails' | t }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      <!-- Reservations Table -->
+      @if (archiveEntity() === 'reservations') {
+        @if (archivedReservations().length === 0) {
+          <div class="empty-state-panel">
+            <p>{{ 'archive.noArchivedRecords' | t }}</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'reservations.reference' | t }}</th>
+                  <th>{{ 'archive.originalDate' | t }}</th>
+                  <th>{{ 'archive.archivedAt' | t }}</th>
+                  <th>{{ 'archive.filterByStatus' | t }}</th>
+                  <th>{{ 'reservations.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of archivedReservations(); track r.reservationId) {
+                  <tr>
+                    <td class="font-mono font-medium">
+                      {{ r.reservationReference || r.reservationId.substring(0, 8) }}
+                    </td>
+                    <td>{{ r.businessDate }}</td>
+                    <td>{{ formatDate(r.archivedAtUtc) }}</td>
+                    <td>
+                      <span class="status-pill status-neutral">
+                        {{ r.status || ('archive.isArchivedBadge' | t) }}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="btn-row-inspect"
+                        (click)="inspectPlatformReservation(r)"
+                      >
+                        {{ 'common.viewDetails' | t }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  <!-- TAB 3: AUDIT TRAIL -->
+  @if (!loading() && activeTab() === 'audit') {
+    <div class="tab-content-surface">
+      <div class="audit-toolbar">
+        <div class="toolbar-title-wrap">
+          <h2 class="section-title">{{ 'audit.events' | t }}</h2>
+          <span class="section-count">{{ auditEvents().length }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="btn-secondary-action"
+          (click)="sensitiveSearchOpen.set(!sensitiveSearchOpen())"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>{{ 'audit.searchSensitive' | t }}</span>
+        </button>
+      </div>
+
+      <!-- Sensitive Search Drawer / Panel -->
+      @if (sensitiveSearchOpen()) {
+        <div class="sensitive-search-panel">
+          <div class="panel-header">
+            <h3>{{ 'audit.searchSensitive' | t }}</h3>
+            <p class="panel-hint">{{ 'audit.searchReason' | t }}</p>
+          </div>
+          <div class="panel-form-row">
+            <input
+              type="text"
+              class="field-input"
+              [placeholder]="'audit.searchReason' | t"
+              [ngModel]="sensitiveSearchReason()"
+              (ngModelChange)="sensitiveSearchReason.set($event)"
+            />
+            <button
+              type="button"
+              class="btn-primary-action"
+              [disabled]="!sensitiveSearchReason().trim() || sensitiveSearching()"
+              (click)="executeSensitiveSearch()"
+            >
+              {{ 'common.submit' | t }}
+            </button>
+          </div>
+
+          @if (sensitiveSearchResults().length > 0) {
+            <div class="sensitive-results-table">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>{{ 'audit.occurredAt' | t }}</th>
+                    <th>{{ 'audit.action' | t }}</th>
+                    <th>{{ 'archive.filterByEntity' | t }}</th>
+                    <th>{{ 'audit.outcome' | t }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (ev of sensitiveSearchResults(); track ev.eventKey) {
+                    <tr (click)="inspectAuditEvent(ev)" class="clickable-row">
+                      <td>{{ formatDate(ev.occurredAtUtc) }}</td>
+                      <td>{{ ev.action }}</td>
+                      <td>{{ ev.entityType }}</td>
+                      <td>{{ ev.outcome }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Main Audit Events Table -->
+      @if (auditEvents().length === 0) {
+        <div class="empty-state-panel">
+          <p>{{ 'audit.noEvents' | t }}</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ 'audit.occurredAt' | t }}</th>
+                <th>{{ 'audit.action' | t }}</th>
+                <th>{{ 'archive.filterByEntity' | t }}</th>
+                <th>{{ 'audit.actor' | t }}</th>
+                <th>{{ 'audit.outcome' | t }}</th>
+                <th>{{ 'reservations.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (event of auditEvents(); track event.eventKey) {
+                <tr>
+                  <td>{{ formatDate(event.occurredAtUtc) }}</td>
+                  <td class="font-medium">{{ event.action }}</td>
+                  <td>
+                    <span class="entity-chip">{{ event.entityType }}</span>
+                  </td>
+                  <td>{{ event.actorType || '—' }}</td>
+                  <td>
+                    <span
+                      class="status-pill"
+                      [class.status-success]="event.outcome === 'Success'"
+                      [class.status-failed]="event.outcome === 'Failed'"
+                    >
+                      {{ event.outcome }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn-row-inspect"
+                      (click)="inspectAuditEvent(event)"
+                    >
+                      {{ 'common.viewDetails' | t }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- SIDE DRAWER: RUN DETAILS -->
+  @if (selectedRun(); as r) {
+    <app-side-drawer
+      [opened]="true"
+      [title]="'archive.runDetails' | t"
+      [description]="r.runId"
+      (closed)="selectedRun.set(null)"
+    >
+      <div class="drawer-detail-body">
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.runId' | t }}</span>
+          <span class="detail-value font-mono">{{ r.runId }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.outcome' | t }}</span>
+          <span class="detail-value font-medium">{{ r.outcome }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.occurredAt' | t }}</span>
+          <span class="detail-value">{{ formatDate(r.startedAtUtc) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.recordsMoved' | t }}</span>
+          <span class="detail-value font-mono">{{
+            r.archivedTickets + r.archivedReservations
+          }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Scanned</span>
+          <span class="detail-value font-mono">{{ r.scanned }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Excluded</span>
+          <span class="detail-value font-mono">{{ r.excluded }}</span>
+        </div>
+      </div>
+    </app-side-drawer>
+  }
+
+  <!-- SIDE DRAWER: EXCEPTION DETAILS -->
+  @if (selectedException(); as exc) {
+    <app-side-drawer
+      [opened]="true"
+      [title]="'archive.exceptionDetails' | t"
+      [description]="exc.exceptionId"
+      (closed)="selectedException.set(null)"
+    >
+      <div class="drawer-detail-body">
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.exceptionId' | t }}</span>
+          <span class="detail-value font-mono">{{ exc.exceptionId }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.filterByEntity' | t }}</span>
+          <span class="detail-value">{{ exc.entityType }} ({{ exc.entityId }})</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.occurredAt' | t }}</span>
+          <span class="detail-value">{{ formatDate(exc.occurredAtUtc) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.outcome' | t }}</span>
+          <span class="detail-value">{{ exc.failureCode || 'Exception' }}</span>
+        </div>
+        <div class="detail-alert-box">
+          <span class="alert-title">{{ 'archive.exceptionDetails' | t }}</span>
+          <p class="alert-message">{{ exc.failureCode || ('common.error' | t) }}</p>
+        </div>
+      </div>
+    </app-side-drawer>
+  }
+
+  <!-- SIDE DRAWER: PLATFORM TICKET DETAILS -->
+  @if (selectedArchivedTicket(); as pt) {
+    <app-side-drawer
+      [opened]="true"
+      [title]="('archive.tickets' | t) + ' #' + pt.ticketNumber"
+      [description]="pt.ticketId"
+      (closed)="selectedArchivedTicket.set(null)"
+    >
+      <div class="drawer-detail-body">
+        <div class="archive-banner-notice">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>{{ 'archive.readOnlyNotice' | t }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">{{ 'tickets.table.ticketNumber' | t }}</span>
+          <span class="detail-value font-bold">#{{ pt.ticketNumber }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.originalDate' | t }}</span>
+          <span class="detail-value">{{ pt.businessDate }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.archivedAt' | t }}</span>
+          <span class="detail-value">{{ formatDate(pt.archivedAtUtc) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.filterByStatus' | t }}</span>
+          <span class="detail-value">{{ pt.status }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Practice ID</span>
+          <span class="detail-value font-mono">{{ pt.doctorPracticeId }}</span>
+        </div>
+      </div>
+    </app-side-drawer>
+  }
+
+  <!-- SIDE DRAWER: PLATFORM RESERVATION DETAILS -->
+  @if (selectedArchivedReservation(); as pr) {
+    <app-side-drawer
+      [opened]="true"
+      [title]="('archive.reservations' | t) + ' ' + (pr.reservationReference || '')"
+      [description]="pr.reservationId"
+      (closed)="selectedArchivedReservation.set(null)"
+    >
+      <div class="drawer-detail-body">
+        <div class="archive-banner-notice">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>{{ 'archive.readOnlyNotice' | t }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">{{ 'reservations.reference' | t }}</span>
+          <span class="detail-value font-mono">{{ pr.reservationReference || '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.originalDate' | t }}</span>
+          <span class="detail-value">{{ pr.businessDate }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.archivedAt' | t }}</span>
+          <span class="detail-value">{{ formatDate(pr.archivedAtUtc) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.filterByStatus' | t }}</span>
+          <span class="detail-value">{{ pr.status }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Practice ID</span>
+          <span class="detail-value font-mono">{{ pr.doctorPracticeId }}</span>
+        </div>
+      </div>
+    </app-side-drawer>
+  }
+
+  <!-- SIDE DRAWER: AUDIT EVENT DETAILS -->
+  @if (selectedAuditEvent(); as ev) {
+    <app-side-drawer
+      [opened]="true"
+      [title]="'audit.details' | t"
+      [description]="ev.action || ''"
+      (closed)="selectedAuditEvent.set(null)"
+    >
+      <div class="drawer-detail-body">
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.action' | t }}</span>
+          <span class="detail-value font-bold">{{ ev.action }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'archive.filterByEntity' | t }}</span>
+          <span class="detail-value">{{ ev.entityType }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.occurredAt' | t }}</span>
+          <span class="detail-value">{{ formatDate(ev.occurredAtUtc) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.outcome' | t }}</span>
+          <span class="detail-value font-medium">{{ ev.outcome }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'audit.actor' | t }}</span>
+          <span class="detail-value">{{ ev.actorType || '—' }}</span>
+        </div>
+        @if (ev.failureCode) {
+          <div class="detail-alert-box">
+            <span class="alert-title">{{ 'review.reason' | t }}</span>
+            <p class="alert-message">{{ ev.failureCode }}</p>
+          </div>
+        }
+      </div>
+    </app-side-drawer>
+  }
+
+  <!-- MODAL: PAUSE WORKER -->
+  @if (pauseModalOpen()) {
+    <div class="modal-backdrop" (click)="pauseModalOpen.set(false)">
+      <div class="modal-surface" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ 'archive.confirmPause' | t }}</h3>
+        <p class="modal-help">{{ 'archive.pauseReasonPlaceholder' | t }}</p>
+
+        <div class="modal-form-group">
+          <label class="modal-label">{{ 'archive.pauseReason' | t }}</label>
+          <textarea
+            class="modal-textarea"
+            rows="3"
+            maxlength="1000"
+            [placeholder]="'archive.pauseReasonPlaceholder' | t"
+            [ngModel]="controlReason()"
+            (ngModelChange)="controlReason.set($event)"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="pauseModalOpen.set(false)">
+            {{ 'common.cancel' | t }}
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm"
+            [disabled]="!controlReason().trim() || isMutating()"
+            (click)="executePause()"
+          >
+            {{ 'archive.pauseWorker' | t }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: RESUME WORKER -->
+  @if (resumeModalOpen()) {
+    <div class="modal-backdrop" (click)="resumeModalOpen.set(false)">
+      <div class="modal-surface" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ 'archive.confirmResume' | t }}</h3>
+        <p class="modal-help">{{ 'archive.resumeReasonPlaceholder' | t }}</p>
+
+        <div class="modal-form-group">
+          <label class="modal-label">{{ 'archive.resumeReason' | t }}</label>
+          <textarea
+            class="modal-textarea"
+            rows="3"
+            maxlength="1000"
+            [placeholder]="'archive.resumeReasonPlaceholder' | t"
+            [ngModel]="controlReason()"
+            (ngModelChange)="controlReason.set($event)"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="resumeModalOpen.set(false)">
+            {{ 'common.cancel' | t }}
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm btn-resume-confirm"
+            [disabled]="!controlReason().trim() || isMutating()"
+            (click)="executeResume()"
+          >
+            {{ 'archive.resumeWorker' | t }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

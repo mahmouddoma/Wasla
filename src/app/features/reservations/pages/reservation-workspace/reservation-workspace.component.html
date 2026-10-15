@@ -69,86 +69,184 @@
     </div>
   </app-page-header>
 
-  <!-- ── Filters Panel ────────────────────────────────────────── -->
-  @if (
-    store.canView() ||
-    store.actor() === 'Doctor' ||
-    (store.actor() === 'Patient' && !store.practiceId())
-  ) {
-    <section class="reservations-filters-panel" [attr.aria-label]="'reservations.title' | t">
-      <div class="page-header-filters">
-        @if (store.actor() === 'Doctor') {
-          <div class="practice-selector-row">
-            <div class="practice-selector-label">
-              <div class="practice-icon-circle" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
-                </svg>
-              </div>
-              <span class="field-title">{{ 'reservations.practice' | t }}</span>
-            </div>
-            <div class="practice-selector-input-wrap">
-              <select
-                class="field-select practice-select"
-                [value]="store.practiceId()"
-                (change)="practice($event)"
-                [disabled]="store.busy()"
-              >
-                <option value="">{{ 'reservations.choose' | t }}</option>
-                @for (p of store.practices(); track p.id) {
-                  <option [value]="p.id">{{ label(p) }}</option>
-                }
-              </select>
-            </div>
-          </div>
-        }
-
-        @if (store.actor() === 'Patient' && !store.practiceId()) {
-          <div class="patient-doctor-discovery-row">
-            <div class="discovery-text">
-              <div class="discovery-icon-circle" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </div>
-              <div class="discovery-copy">
-                <span class="discovery-title">{{ 'reservations.bookNewAppointment' | t }}</span>
-                <span class="discovery-subtitle">{{ 'reservations.findDoctorHelp' | t }}</span>
-              </div>
-            </div>
-            <a class="btn-find-doctor" routerLink="/doctors">
-              <span>{{ 'reservations.findDoctor' | t }}</span>
+  @if (!store.detail() && !store.editor() && !store.detailLoading() && store.messages().length) {
+    <div class="drawer-messages-stack workspace-messages-stack">
+      @for (message of store.messages(); track $index) {
+        <div
+          role="alert"
+          class="drawer-alert-card"
+          [class.tone-warning]="messageTone(message) === 'warning'"
+          [class.tone-danger]="messageTone(message) === 'danger'"
+          [class.tone-info]="messageTone(message) === 'info'"
+        >
+          <div class="alert-icon-box" aria-hidden="true">
+            @if (messageTone(message) === 'warning') {
               <svg
                 viewBox="0 0 24 24"
-                width="14"
-                height="14"
+                width="18"
+                height="18"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2.2"
-                aria-hidden="true"
+                stroke-width="2"
               >
-                <path d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
-            </a>
+            } @else if (messageTone(message) === 'danger') {
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+            } @else {
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            }
           </div>
-        }
+          <div class="alert-body">
+            <span class="alert-tone-badge">
+              {{
+                (messageTone(message) === 'warning'
+                  ? 'common.warning'
+                  : messageTone(message) === 'danger'
+                    ? 'common.error'
+                    : 'common.note'
+                ) | t
+              }}
+            </span>
+            <p class="alert-message-text">{{ message | t }}</p>
+          </div>
+          <button
+            type="button"
+            class="alert-dismiss-btn"
+            (click)="dismissMessage($index)"
+            [title]="'common.dismiss' | t"
+            [attr.aria-label]="'common.dismiss' | t"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+  }
 
-        @if (store.canView()) {
+  <!-- Main Content Body -->
+  <div class="reservations-content">
+    <!-- Table Surface Panel with Unified Controls -->
+    <section class="table-surface-panel" [attr.aria-label]="'reservations.title' | t">
+      <div class="table-surface-header">
+        <div class="table-title-wrap">
+          <div class="table-icon-circle" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div class="table-title-headings">
+            <h2 class="table-title">
+              {{
+                (store.actor() === 'Reception'
+                  ? 'reception.appointments.title'
+                  : 'reservations.records'
+                ) | t
+              }}
+            </h2>
+          </div>
+          <div class="table-header-meta">
+            @if (!store.loading() && !store.listFailed()) {
+              <span class="count-badge">
+                @if (store.actor() !== 'Reception') {
+                  <span class="pulse-dot"></span>
+                }
+                <span>{{ store.page().totalCount }} {{ 'reservations.count' | t }}</span>
+              </span>
+            }
+            @if (store.loading()) {
+              <span class="loading-inline-indicator">
+                <span class="spinner-ring-sm" aria-hidden="true"></span>
+                <span>{{ 'reservations.loading' | t }}</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Header Controls: Clinic Selector (Doctor) or Views/Date (Reception) -->
+        <div class="workspace-header-controls">
+          @if (store.actor() === 'Doctor') {
+            <div class="practice-selector-row">
+              <div class="practice-selector-label">
+                <div class="practice-icon-circle" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                    />
+                  </svg>
+                </div>
+                <span class="field-title">{{ 'reservations.practice' | t }}</span>
+              </div>
+              <div class="practice-selector-input-wrap">
+                <select
+                  class="practice-select"
+                  [value]="store.practiceId()"
+                  (change)="practice($event)"
+                  [disabled]="store.busy()"
+                  [attr.aria-label]="'reservations.practice' | t"
+                >
+                  <option value="">{{ 'reservations.choose' | t }}</option>
+                  @for (p of store.practices(); track p.id) {
+                    <option [value]="p.id">{{ label(p) }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+
           @if (store.actor() === 'Reception') {
             <div class="reception-view-toolbar">
               <div class="quick-views" role="group" [attr.aria-label]="'reservations.view' | t">
@@ -238,85 +336,169 @@
               </div>
             </div>
           }
-          <div class="filters-grid">
-            @if (store.actor() === 'Patient') {
-              <div class="field-group">
-                <label class="field-label"
-                  >{{ 'reservations.view' | t
-                  }}<select
-                    class="field-select"
-                    [value]="store.query().view ?? ''"
-                    (change)="setFilter('view', $event)"
-                  >
-                    @for (v of ['Upcoming', 'History', 'All']; track v) {
-                      <option [value]="v">{{ 'reservations.' + v | t }}</option>
-                    }
-                  </select></label
-                >
-              </div>
+        </div>
+      </div>
 
-              <div class="field-group">
-                <label class="field-label"
-                  >{{ 'reservations.patient' | t
-                  }}<select
-                    class="field-select"
-                    [value]="store.query().patientId ?? ''"
-                    (change)="setFilter('patientId', $event)"
+      <!-- Patient Doctor Discovery Banner (when applicable) -->
+      @if (store.actor() === 'Patient' && !store.practiceId()) {
+        <div class="patient-doctor-discovery-row">
+          <div class="discovery-text">
+            <div class="discovery-icon-circle" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <div class="discovery-copy">
+              <span class="discovery-title">{{ 'reservations.bookNewAppointment' | t }}</span>
+              <span class="discovery-subtitle">{{ 'reservations.findDoctorHelp' | t }}</span>
+            </div>
+          </div>
+          <a class="btn-find-doctor" routerLink="/doctors">
+            <span>{{ 'reservations.findDoctor' | t }}</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      }
+
+      <!-- ── Integrated Surface Filters & Search ───────────────────────── -->
+      @if (store.canView()) {
+        <div class="surface-filters-section">
+          <div class="search-and-tools-row">
+            @if (store.actor() === 'Patient') {
+              <div class="patient-filters-row">
+                <div class="field-group">
+                  <label class="field-label"
+                    >{{ 'reservations.view' | t
+                    }}<select
+                      class="field-select"
+                      [value]="store.query().view ?? ''"
+                      (change)="setFilter('view', $event)"
+                    >
+                      @for (v of ['Upcoming', 'History', 'Archived', 'All']; track v) {
+                        <option [value]="v">{{ 'reservations.' + v | t }}</option>
+                      }
+                    </select></label
                   >
-                    <option value="">{{ 'reservations.All' | t }}</option>
-                    @for (p of viewPatients(); track p[0]) {
-                      <option [value]="p[0]">{{ label(p[1]) }}</option>
-                    }
-                  </select></label
-                >
+                </div>
+                <div class="field-group">
+                  <label class="field-label"
+                    >{{ 'reservations.patient' | t
+                    }}<select
+                      class="field-select"
+                      [value]="store.query().patientId ?? ''"
+                      (change)="setFilter('patientId', $event)"
+                    >
+                      <option value="">{{ 'reservations.All' | t }}</option>
+                      @for (p of viewPatients(); track p[0]) {
+                        <option [value]="p[0]">{{ label(p[1]) }}</option>
+                      }
+                    </select></label
+                  >
+                </div>
               </div>
             } @else {
-              <div class="field-group field-group-search">
-                <label class="field-label"
-                  >{{
-                    (store.actor() === 'Reception'
-                      ? 'reception.appointments.search'
-                      : 'reservations.search'
-                    ) | t
-                  }}
-                  <div class="search-input-wrap">
-                    <svg
-                      class="search-icon"
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
+              <div class="field-group-search">
+                <div class="search-input-wrap">
+                  <svg
+                    class="search-icon"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input
+                    type="search"
+                    class="field-input search-input"
+                    [placeholder]="
+                      (store.actor() === 'Reception'
+                        ? 'reception.appointments.search'
+                        : 'reservations.search'
+                      ) | t
+                    "
+                    [value]="store.query().search ?? ''"
+                    (change)="setFilter('search', $event)"
+                  />
+                  @if (store.query().search) {
+                    <button
+                      type="button"
+                      class="btn-clear-search"
+                      (click)="clearSearch()"
+                      [title]="'common.resetFilters' | t"
+                      [attr.aria-label]="'common.resetFilters' | t"
                     >
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input
-                      type="search"
-                      class="field-input search-input"
-                      [placeholder]="
-                        (store.actor() === 'Reception'
-                          ? 'reception.appointments.search'
-                          : 'reservations.search'
-                        ) | t
-                      "
-                      [value]="store.query().search ?? ''"
-                      (change)="setFilter('search', $event)"
-                    /></div
-                ></label>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  }
+                </div>
               </div>
             }
+
+            @if (hasActiveFilters()) {
+              <button
+                type="button"
+                class="btn-reset-filters"
+                (click)="resetFilters()"
+                [title]="'common.resetFilters' | t"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  aria-hidden="true"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                <span>{{ 'common.resetFilters' | t }}</span>
+              </button>
+            }
           </div>
+
           @if (store.actor() === 'Reception') {
             <details class="advanced-filters">
               <summary class="advanced-filters-summary">
                 <div class="summary-title-box">
                   <svg
                     viewBox="0 0 24 24"
-                    width="15"
-                    height="15"
+                    width="14"
+                    height="14"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
@@ -329,8 +511,8 @@
                 <svg
                   class="summary-chevron"
                   viewBox="0 0 24 24"
-                  width="15"
-                  height="15"
+                  width="14"
+                  height="14"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
@@ -344,8 +526,9 @@
           } @else {
             <ng-container [ngTemplateOutlet]="advancedFilters" />
           }
-          <ng-template #advancedFilters
-            ><div class="filters-grid">
+
+          <ng-template #advancedFilters>
+            <div class="filters-grid">
               <div class="field-group">
                 <label class="field-label"
                   >{{ 'reservations.status' | t
@@ -471,153 +654,11 @@
                       (change)="setFilter('practiceId', $event)"
                   /></label>
                 </div>
-              }</div
-          ></ng-template>
-        }
-      </div>
-    </section>
-  }
-
-  @if (!store.detail() && !store.editor() && !store.detailLoading() && store.messages().length) {
-    <div class="drawer-messages-stack workspace-messages-stack">
-      @for (message of store.messages(); track $index) {
-        <div
-          role="alert"
-          class="drawer-alert-card"
-          [class.tone-warning]="messageTone(message) === 'warning'"
-          [class.tone-danger]="messageTone(message) === 'danger'"
-          [class.tone-info]="messageTone(message) === 'info'"
-        >
-          <div class="alert-icon-box" aria-hidden="true">
-            @if (messageTone(message) === 'warning') {
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-                />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            } @else if (messageTone(message) === 'danger') {
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-            } @else {
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-            }
-          </div>
-          <div class="alert-body">
-            <span class="alert-tone-badge">
-              {{
-                (messageTone(message) === 'warning'
-                  ? 'common.warning'
-                  : messageTone(message) === 'danger'
-                    ? 'common.error'
-                    : 'common.note'
-                ) | t
-              }}
-            </span>
-            <p class="alert-message-text">{{ message | t }}</p>
-          </div>
-          <button
-            type="button"
-            class="alert-dismiss-btn"
-            (click)="dismissMessage($index)"
-            [title]="'common.dismiss' | t"
-            [attr.aria-label]="'common.dismiss' | t"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+              }
+            </div>
+          </ng-template>
         </div>
       }
-    </div>
-  }
-  <!-- Main Content Body -->
-  <div class="reservations-content">
-    <!-- Table Surface Panel -->
-    <section class="table-surface-panel">
-      <div class="table-surface-header">
-        <div class="table-title-wrap">
-          <div class="table-icon-circle" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-          </div>
-          <div>
-            <h2 class="table-title">
-              {{
-                (store.actor() === 'Reception'
-                  ? 'reception.appointments.title'
-                  : 'reservations.title'
-                ) | t
-              }}
-            </h2>
-          </div>
-        </div>
-
-        <div class="table-header-meta">
-          @if (!store.loading() && !store.listFailed()) {
-            <span class="count-badge">
-              @if (store.actor() !== 'Reception') {
-                <span class="pulse-dot"></span>
-              }
-              <span>{{ store.page().totalCount }} {{ 'reservations.count' | t }}</span>
-            </span>
-          }
-          @if (store.loading()) {
-            <span class="loading-inline-indicator">
-              <span class="spinner-ring-sm" aria-hidden="true"></span>
-              <span>{{ 'reservations.loading' | t }}</span>
-            </span>
-          }
-        </div>
-      </div>
 
       <div class="table-scroll">
         <table class="wasla-table">
@@ -987,7 +1028,14 @@
         <!-- ══ 1. Success Announcement ══ -->
         <div class="arrival-success-header">
           <div class="arrival-success-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6">
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -1001,8 +1049,18 @@
         <div class="ticket-hero-token">
           <div class="ticket-token-top">
             <div class="token-title-tag">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 0 0-2 2v3a2 2 0 1 1 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 1 1 0-4V7a2 2 0 0 0-2-2H5z" />
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 0 0-2 2v3a2 2 0 1 1 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 1 1 0-4V7a2 2 0 0 0-2-2H5z"
+                />
               </svg>
               <span>{{ 'reception.arrival.ticketNumber' | t }}</span>
             </div>
@@ -1020,18 +1078,36 @@
 
             <div class="ticket-ahead-pill" [class.is-immediate]="ticket.patientsAheadNow === 0">
               @if (ticket.patientsAheadNow === 0) {
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  aria-hidden="true"
+                >
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 <span>{{ 'reception.arrival.nextInLine' | t }}</span>
               } @else {
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                <span>{{ 'reception.arrival.aheadCount' | t: { count: ticket.patientsAheadNow } }}</span>
+                <span>{{
+                  'reception.arrival.aheadCount' | t: { count: ticket.patientsAheadNow }
+                }}</span>
               }
             </div>
           </div>
@@ -1042,7 +1118,15 @@
           <!-- Patient -->
           <div class="summary-item">
             <span class="summary-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
@@ -1057,7 +1141,15 @@
           @if (ticket.doctor || label(store.detail()?.doctor)) {
             <div class="summary-item">
               <span class="summary-label">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
                   <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                 </svg>
                 <span>{{ 'reservations.doctor' | t }}</span>
@@ -1072,7 +1164,15 @@
           @if (ticket.visitType || label(store.detail()?.visitType)) {
             <div class="summary-item">
               <span class="summary-label">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
                   <line x1="8" y1="2" x2="8" y2="6" />
@@ -1090,7 +1190,15 @@
           @if (store.acceptedArrival(); as accepted) {
             <div class="summary-item">
               <span class="summary-label">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
                   <rect x="2" y="4" width="20" height="16" rx="2" />
                   <line x1="2" y1="10" x2="22" y2="10" />
                 </svg>
@@ -1101,7 +1209,14 @@
                   <span class="payment-badge-zero">{{ 'reception.arrival.noPayment' | t }}</span>
                 } @else {
                   <span class="payment-badge-paid">
-                    <bdi>{{ accepted.paidAmount }} {{ (ticket.currencyCode || ticket.currency || 'EGP') === 'EGP' ? ('tickets.currency' | t) : ticket.currencyCode || ticket.currency }}</bdi>
+                    <bdi
+                      >{{ accepted.paidAmount }}
+                      {{
+                        (ticket.currencyCode || ticket.currency || 'EGP') === 'EGP'
+                          ? ('tickets.currency' | t)
+                          : ticket.currencyCode || ticket.currency
+                      }}</bdi
+                    >
                     <span class="payment-dot" aria-hidden="true">·</span>
                     <span>{{ 'finance.method.' + accepted.paymentMethod | t }}</span>
                   </span>
@@ -1119,7 +1234,15 @@
               routerLink="/reception/queue"
               [queryParams]="{ practiceId: store.practiceId() }"
             >
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="17"
+                height="17"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                aria-hidden="true"
+              >
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <polyline points="16 11 18 13 22 9" />
@@ -1127,8 +1250,20 @@
               <span>{{ 'reception.arrival.openQueue' | t }}</span>
             </a>
           }
-          <button type="button" class="btn btn-outline-secondary arrival-close-btn" (click)="store.close()">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <button
+            type="button"
+            class="btn btn-outline-secondary arrival-close-btn"
+            (click)="store.close()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="17"
+              height="17"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              aria-hidden="true"
+            >
               <path d="M5 13l4 4L19 7" />
             </svg>
             <span>{{ 'reception.arrival.closeDone' | t }}</span>

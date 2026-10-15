@@ -16,6 +16,7 @@ import { AuthSession } from '../../../../core/auth/auth-session';
 import { provideHttpClient } from '@angular/common/http';
 import { PatientsApi, PatientSearchItem } from '../../../../domains/patients';
 import { FollowUpsApi, FollowUpEligibility } from '../../../../domains/follow-ups';
+import { Phase18Part2Api } from '../../../../domains/phase18';
 
 describe('QueueWorkspace', () => {
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -56,6 +57,12 @@ describe('QueueWorkspace', () => {
           provide: AuthSession,
           useValue: {
             hasPermission: vi.fn(() => true),
+          },
+        },
+        {
+          provide: Phase18Part2Api,
+          useValue: {
+            call: vi.fn(() => of({ items: [], hasMore: false })),
           },
         },
       ],

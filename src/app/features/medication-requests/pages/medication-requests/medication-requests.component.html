@@ -8,7 +8,7 @@
     [actionLoading]="loading()"
     (actionClicked)="load(page().pageNumber)"
   >
-    <div pageHeaderActions>
+    <div pageHeaderActions class="requests-header-actions">
       @if (!manager && allowed('CreateOwn')) {
         <button
           type="button"
@@ -35,8 +35,11 @@
         </button>
       }
     </div>
+  </app-page-header>
 
-    <div pageHeaderDeck class="requests-filter-deck">
+  <section class="directory requests-card-surface" [attr.aria-busy]="loading()">
+    <!-- ── Integrated Filter Toolbar ──────────────────────────────── -->
+    <div class="requests-filters-toolbar">
       <div class="filter-field-group">
         <label class="filter-label" for="request-status-filter">
           <span class="label-text">{{ 'reservations.status' | t }}</span>
@@ -93,10 +96,22 @@
           </label>
         </div>
       }
-    </div>
-  </app-page-header>
 
-  <section class="directory requests-card-surface" [attr.aria-busy]="loading()">
+      @if (query().status || query().search || query().doctorId) {
+        <button
+          type="button"
+          class="btn-reset-filters"
+          (click)="query.set({ pageNumber: 1, pageSize: 20 }); load()"
+          [disabled]="busy()"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>{{ 'medications.resetSearch' | t }}</span>
+        </button>
+      }
+    </div>
     @if (loading()) {
       <div class="table-loading-state" role="status">
         <div class="spinner-ring" aria-hidden="true"></div>
@@ -224,15 +239,17 @@
           (click)="load(page().pageNumber - 1)"
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6" />
+            <polyline points="15 18 9 12 15 6" />
           </svg>
           <span>{{ 'reservations.previous' | t }}</span>
         </button>
 
         <span class="pager-info">
-          <span class="pager-current">{{ page().pageNumber }}</span>
-          <span class="pager-sep">/</span>
-          <span class="pager-total">{{ totalPages() }}</span>
+          <span class="pager-numbers" dir="ltr">
+            <span class="pager-current">{{ page().pageNumber }}</span>
+            <span class="pager-sep">/</span>
+            <span class="pager-total">{{ totalPages() }}</span>
+          </span>
           <span class="pager-count">({{ page().totalCount }} {{ 'requests.recordsCount' | t }})</span>
         </span>
 
@@ -244,7 +261,7 @@
         >
           <span>{{ 'reservations.next' | t }}</span>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <polyline points="15 18 9 12 15 6" />
+            <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
       </nav>
@@ -733,15 +750,29 @@
               <li class="timeline-entry">
                 <span class="timeline-dot" aria-hidden="true"></span>
                 <div class="timeline-entry-content">
-                  <p class="timeline-entry-reason">{{ entry.reason }}</p>
-                  <time class="timeline-entry-date" dir="ltr">
-                    {{ entry.createdOnUtc | localizedDate: language.currentLang() }}
-                  </time>
+                  <div class="timeline-entry-top">
+                    <strong class="timeline-entry-action">
+                      {{ actionLabel(entry.action) }}
+                    </strong>
+                    @if (entryDate(entry, item); as d) {
+                      <time class="timeline-entry-date" dir="ltr">
+                        {{ d | localizedDate: language.currentLang() }}
+                      </time>
+                    }
+                  </div>
+                  @if (entry.reason) {
+                    <p class="timeline-entry-reason">{{ entry.reason }}</p>
+                  }
                 </div>
               </li>
             } @empty {
               <li class="timeline-empty-entry">
-                <p class="timeline-empty-text">{{ 'requests.noHistory' | t }}</p>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span class="timeline-empty-text">{{ 'requests.noHistory' | t }}</span>
               </li>
             }
           </ul>

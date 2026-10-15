@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { TicketsApi } from '../../../../domains/tickets';
+import { Phase18Part2Api } from '../../../../domains/phase18';
 import { PatientTickets } from './patient-tickets';
 import { LanguageService } from '../../../../core/i18n/language.service';
 
@@ -25,10 +26,26 @@ describe('PatientTickets', () => {
     myDetails: vi.fn(),
   };
 
+  const phase18Api = {
+    call: vi.fn(() =>
+      of({
+        items: [],
+        nextCursor: null,
+        pageSize: 50,
+        asOfUtc: '2026-10-15T00:00:00Z',
+        hasMore: false,
+      }),
+    ),
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PatientTickets],
-      providers: [provideRouter([]), { provide: TicketsApi, useValue: api }],
+      providers: [
+        provideRouter([]),
+        { provide: TicketsApi, useValue: api },
+        { provide: Phase18Part2Api, useValue: phase18Api },
+      ],
     }).compileComponents();
     TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(PatientTickets);

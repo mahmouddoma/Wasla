@@ -54,6 +54,10 @@ export interface PracticeTicket {
   readonly fastTrack: boolean;
   readonly callAttempts: readonly TicketCallAttempt[];
   readonly rowVersion: string;
+  readonly isArchived?: boolean;
+  readonly archivedAtUtc?: string | null;
+  readonly patientsAheadNowIsCurrent?: boolean;
+  readonly timelineHasMore?: boolean;
 }
 
 export interface PracticeQueue {

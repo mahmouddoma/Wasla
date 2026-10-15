@@ -88,6 +88,10 @@ export interface Reservation {
   capabilities: ReservationCapabilities;
   timeline: ReservationTimelineEvent[];
   rowVersion: string;
+  isArchived?: boolean;
+  archivedAtUtc?: string | null;
+  linkedTicketId?: string | null;
+  canViewLinkedTicket?: boolean;
   followUpEligibilityId?: string | null;
   followUpEligibilityStatus?: string | null;
   followUpValidUntil?: string | null;
@@ -101,7 +105,7 @@ export interface ReservationPage {
 }
 export interface ReservationQuery {
   patientId?: string;
-  view?: 'Upcoming' | 'History' | 'All';
+  view?: 'Upcoming' | 'History' | 'Archived' | 'All';
   fromDate?: string;
   toDate?: string;
   status?: string;
@@ -158,8 +162,7 @@ export function normalizeReservation(raw: unknown): Reservation {
   if (!raw || typeof raw !== 'object') return raw as Reservation;
   const r = raw as Record<string, unknown>;
 
-  const reference =
-    (r['reference'] as string) || (r['reservationReference'] as string) || '';
+  const reference = (r['reference'] as string) || (r['reservationReference'] as string) || '';
 
   const patientRaw = r['patient'] as Record<string, unknown> | undefined;
   const patient: ReservationIdentity = patientRaw
@@ -173,8 +176,7 @@ export function normalizeReservation(raw: unknown): Reservation {
         id: (r['patientId'] as string) || undefined,
         nameAr: (r['patientNameAr'] as string) || '',
         nameEn: (r['patientNameEn'] as string) || null,
-        phoneNumber:
-          (r['patientPhoneNumber'] as string) || (r['phoneNumber'] as string) || null,
+        phoneNumber: (r['patientPhoneNumber'] as string) || (r['phoneNumber'] as string) || null,
       };
 
   const doctorRaw = r['doctor'] as Record<string, unknown> | undefined;
@@ -198,26 +200,20 @@ export function normalizeReservation(raw: unknown): Reservation {
         nameEn: (practiceRaw['nameEn'] as string) || null,
       }
     : {
-        id:
-          (r['doctorPracticeId'] as string) ||
-          (r['practiceId'] as string) ||
-          undefined,
+        id: (r['doctorPracticeId'] as string) || (r['practiceId'] as string) || undefined,
         nameAr: (r['practiceNameAr'] as string) || '',
         nameEn: (r['practiceNameEn'] as string) || null,
       };
 
   const apptRaw = r['appointment'] as Record<string, unknown> | undefined;
-  const businessDate =
-    (apptRaw?.['businessDate'] as string) || (r['businessDate'] as string) || '';
+  const businessDate = (apptRaw?.['businessDate'] as string) || (r['businessDate'] as string) || '';
   const slotStartTime =
     (apptRaw?.['slotStartTime'] as string) ||
     (r['localTime'] as string) ||
     (r['slotStartTime'] as string) ||
     '';
   const scheduledTime =
-    (apptRaw?.['scheduledTime'] as string) ||
-    (r['scheduledTime'] as string) ||
-    slotStartTime;
+    (apptRaw?.['scheduledTime'] as string) || (r['scheduledTime'] as string) || slotStartTime;
 
   const appointment: ReservationAppointment = {
     businessDate,
@@ -228,17 +224,10 @@ export function normalizeReservation(raw: unknown): Reservation {
       (r['appointmentStartUtc'] as string) ||
       undefined,
     appointmentEndUtc:
-      (apptRaw?.['appointmentEndUtc'] as string) ||
-      (r['appointmentEndUtc'] as string) ||
-      undefined,
+      (apptRaw?.['appointmentEndUtc'] as string) || (r['appointmentEndUtc'] as string) || undefined,
     durationMinutes:
-      (apptRaw?.['durationMinutes'] as number) ||
-      (r['durationMinutes'] as number) ||
-      undefined,
-    timeZoneId:
-      (apptRaw?.['timeZoneId'] as string) ||
-      (r['timeZoneId'] as string) ||
-      undefined,
+      (apptRaw?.['durationMinutes'] as number) || (r['durationMinutes'] as number) || undefined,
+    timeZoneId: (apptRaw?.['timeZoneId'] as string) || (r['timeZoneId'] as string) || undefined,
   };
 
   const segRaw = r['segment'] as Record<string, unknown> | undefined;
@@ -278,13 +267,13 @@ export function normalizeReservation(raw: unknown): Reservation {
         canReschedule: Boolean(capRaw['canReschedule']),
         canRestoreFromNoShow: Boolean(capRaw['canRestoreFromNoShow']),
         cancelBlockedReason: (capRaw['cancelBlockedReason'] as string) || null,
-        rescheduleBlockedReason:
-          (capRaw['rescheduleBlockedReason'] as string) || null,
+        rescheduleBlockedReason: (capRaw['rescheduleBlockedReason'] as string) || null,
         restoreBlockedReason: (capRaw['restoreBlockedReason'] as string) || null,
-        patientCancellationCutoffUtc:
-          (capRaw['patientCancellationCutoffUtc'] as string) || null,
+        patientCancellationCutoffUtc: (capRaw['patientCancellationCutoffUtc'] as string) || null,
         remainingPatientReschedules:
-          typeof capRaw['remainingPatientReschedules'] === 'number' ? capRaw['remainingPatientReschedules'] : undefined,
+          typeof capRaw['remainingPatientReschedules'] === 'number'
+            ? capRaw['remainingPatientReschedules']
+            : undefined,
       }
     : {
         canCancel: Boolean(r['canCancel']),
@@ -300,8 +289,7 @@ export function normalizeReservation(raw: unknown): Reservation {
     patient,
     doctor,
     practice,
-    doctorPracticeId:
-      (r['doctorPracticeId'] as string) || (practice.id as string) || '',
+    doctorPracticeId: (r['doctorPracticeId'] as string) || (practice.id as string) || '',
     appointment,
     segment,
     visitType,
@@ -313,12 +301,17 @@ export function normalizeReservation(raw: unknown): Reservation {
     cancelledOnUtc: (r['cancelledOnUtc'] as string) || null,
     cancellationReason: (r['cancellationReason'] as string) || null,
     capabilities,
-    timeline: Array.isArray(r['timeline'])
-      ? (r['timeline'] as ReservationTimelineEvent[])
-      : [],
+    timeline: Array.isArray(r['timeline']) ? (r['timeline'] as ReservationTimelineEvent[]) : [],
     rowVersion: (r['rowVersion'] as string) || '',
     followUpEligibilityId: (r['followUpEligibilityId'] as string) || null,
     followUpEligibilityStatus: (r['followUpEligibilityStatus'] as string) || null,
     followUpValidUntil: (r['followUpValidUntil'] as string) || null,
+    isArchived: Boolean(r['isArchived']),
+    archivedAtUtc: (r['archivedAtUtc'] as string) || undefined,
+    linkedTicketId: (r['linkedTicketId'] as string) || undefined,
+    canViewLinkedTicket:
+      typeof r['canViewLinkedTicket'] === 'boolean'
+        ? r['canViewLinkedTicket']
+        : !!r['linkedTicketId'],
   };
 }

@@ -7,26 +7,44 @@
     actionIcon="add"
     (actionClicked)="openWalkIn()"
   >
-    @if (isDoctor()) {
-      <div pageHeaderDeck class="clinic-control">
-        <label for="queue-practice-select">{{ 'reservations.practice' | t }}</label>
-        <select
-          id="queue-practice-select"
-          class="field-select"
-          [value]="practiceId()"
-          (change)="selectPractice($event)"
-          [disabled]="busy()"
-        >
-          <option value="">{{ 'reservations.choose' | t }}</option>
-          @for (practice of practices(); track practice.id) {
-            <option [value]="practice.id" [selected]="practiceId() === practice.id">
-              {{ label(practice) }}
-            </option>
-          }
-        </select>
-      </div>
-    }
     <div pageHeaderActions class="queue-actions">
+      @if (isDoctor()) {
+        <div class="practice-selector-row">
+          <div class="practice-selector-label">
+            <div class="practice-icon-circle" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+              </svg>
+            </div>
+            <label for="queue-practice-select" class="field-title">{{
+              'reservations.practice' | t
+            }}</label>
+          </div>
+          <div class="practice-selector-input-wrap">
+            <select
+              id="queue-practice-select"
+              class="practice-select"
+              [value]="practiceId()"
+              (change)="selectPractice($event)"
+              [disabled]="busy()"
+            >
+              <option value="">{{ 'reservations.choose' | t }}</option>
+              @for (practice of practices(); track practice.id) {
+                <option [value]="practice.id" [selected]="practiceId() === practice.id">
+                  {{ label(practice) }}
+                </option>
+              }
+            </select>
+          </div>
+        </div>
+      }
       <button
         type="button"
         class="btn-action-refresh"
@@ -49,6 +67,28 @@
           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
         </svg>
         <span>{{ 'reservations.refresh' | t }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-action-archive"
+        (click)="openArchive()"
+        [disabled]="loading() || busy() || !practiceId()"
+        [title]="'archive.title' | t"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="21 8 21 21 3 21 3 8"></polyline>
+          <rect x="1" y="3" width="22" height="5"></rect>
+          <line x1="10" y1="12" x2="14" y2="12"></line>
+        </svg>
+        <span>{{ 'archive.title' | t }}</span>
       </button>
     </div>
   </app-page-header>
@@ -224,50 +264,55 @@
           />
         }
         @if (!queueOccupied()) {
-          <div class="room-ready-card">
-            <div class="room-ready-info">
-              <div class="ready-badge">
-                <span class="ready-pulse-dot" aria-hidden="true"></span>
-                <span>{{ 'tickets.queue.roomEmpty' | t }}</span>
-              </div>
-              <h3 class="room-ready-title">{{ 'tickets.queue.roomReady' | t }}</h3>
-              <p class="room-ready-sub">
-                @if (queue().waiting.length > 0) {
+          @if (queue().waiting.length > 0) {
+            <div class="room-ready-card">
+              <div class="room-ready-info">
+                <div class="ready-badge">
+                  <span class="ready-pulse-dot" aria-hidden="true"></span>
+                  <span>{{ 'tickets.queue.roomEmpty' | t }}</span>
+                </div>
+                <h3 class="room-ready-title">{{ 'tickets.queue.roomReady' | t }}</h3>
+                <p class="room-ready-sub">
                   {{ 'reception.arrival.nextInLine' | t }}:
                   <strong
                     >{{ patientLabel(queue().waiting[0]) }} (#{{
                       queue().waiting[0].ticketNumber
                     }})</strong
                   >
-                } @else {
-                  {{ 'tickets.queue.empty' | t }}
-                }
-              </p>
-            </div>
-            @if (canCallNext() && queue().waiting.length > 0) {
-              <button
-                type="button"
-                class="btn btn-primary btn-call-hero"
-                (click)="callNext()"
-                [disabled]="busy()"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                  aria-hidden="true"
+                </p>
+              </div>
+              @if (canCallNext()) {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-call-hero"
+                  (click)="callNext()"
+                  [disabled]="busy()"
                 >
-                  <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                </svg>
-                <span>{{ 'tickets.callNext' | t }} (#{{ queue().waiting[0].ticketNumber }})</span>
-              </button>
-            }
-          </div>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    aria-hidden="true"
+                  >
+                    <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                  </svg>
+                  <span>{{ 'tickets.callNext' | t }} (#{{ queue().waiting[0].ticketNumber }})</span>
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="room-idle-inline">
+              <span class="room-idle-dot" aria-hidden="true"></span>
+              <span class="room-idle-text"
+                >{{ 'tickets.queue.roomEmpty' | t }} — {{ 'tickets.queue.roomReady' | t }}</span
+              >
+            </div>
+          }
         }
       </section>
 
@@ -1130,6 +1175,25 @@
             </span>
           </div>
         </div>
+
+        @if (ticket.isArchived) {
+          <div class="archive-banner-notice">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>{{ 'archive.readOnlyNotice' | t }}</span>
+            <span class="badge-archived-pill">{{ 'archive.isArchivedBadge' | t }}</span>
+          </div>
+        }
 
         <!-- ══ 2. Queue Turn & Position Banner ══ -->
         <div class="ticket-turn-banner">

@@ -39,12 +39,13 @@ import {
   TicketActor,
   TicketsApi,
 } from '../../../../domains/tickets';
+import { Phase18Part2Api } from '../../../../domains/phase18';
+import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
 
+type ArchivedTicketItem = components['schemas']['ArchivedTicketItem'];
 type QueueAction = 'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
 
-/**
- * Practice-scoped Queue, calling actions, and walk-in arrival workflow.
- */
+ 
 @Component({
   selector: 'app-queue-workspace',
   imports: [
@@ -69,6 +70,7 @@ export class QueueWorkspace implements OnInit {
   protected readonly optionsLoading = signal(false);
   protected readonly optionsFailed = signal(false);
   private optionsSequence = 0;
+  private readonly phase18Api = inject(Phase18Part2Api);
   private readonly doctorPractices = inject(DoctorPracticesApi);
   protected readonly reception = inject(ReceptionPracticeContext);
   private readonly route = inject(ActivatedRoute);
@@ -97,6 +99,9 @@ export class QueueWorkspace implements OnInit {
   protected readonly detailLoading = signal(false);
   protected readonly busy = signal(false);
   protected readonly messages = signal<readonly string[]>([]);
+  protected readonly archiveOpen = signal(false);
+  protected readonly archivedTickets = signal<readonly ArchivedTicketItem[]>([]);
+  protected readonly archiveLoading = signal(false);
   protected readonly walkInOpen = signal(false);
   protected readonly walkInDone = signal<PracticeTicket | null>(null);
   protected readonly acceptedWalkIn = signal<{
@@ -408,6 +413,32 @@ export class QueueWorkspace implements OnInit {
         this.detailLoading.set(false);
       }
     }
+  }
+
+  protected async openArchive(): Promise<void> {
+    if (!this.practiceId() || this.busy()) return;
+    this.archiveOpen.set(true);
+    this.archiveLoading.set(true);
+    try {
+      const isDoctor = this.actor() === 'Doctor';
+      const op = isDoctor ? 'P18.2-07' : 'P18.2-09';
+      const page = await firstValueFrom(
+        this.phase18Api.call(op, {
+          pathParams: { practiceId: this.practiceId() },
+          query: { pageSize: 50 },
+        }),
+      );
+      this.archivedTickets.set(page.items ?? []);
+    } catch {
+      this.toast.error(this.language.t('tickets.operationFailed'));
+    } finally {
+      this.archiveLoading.set(false);
+    }
+  }
+
+  protected async inspectArchivedTicket(item: ArchivedTicketItem): Promise<void> {
+    this.archiveOpen.set(false);
+    await this.inspect(item.ticketId);
   }
 
   protected async callNext(): Promise<void> {

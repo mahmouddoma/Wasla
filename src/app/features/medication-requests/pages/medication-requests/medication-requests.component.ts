@@ -366,6 +366,37 @@ export class MedicationRequestsComponent implements OnInit {
     }
     if (saved) await this.load(this.page().pageNumber);
   }
+  actionLabel(action: string | undefined): string {
+    if (!action) return this.language.currentLang() === 'ar' ? 'إجراء مراجعة' : 'Audit Action';
+    const key = action.toLowerCase();
+    const isAr = this.language.currentLang() === 'ar';
+    switch (key) {
+      case 'created':
+      case 'submitted':
+      case 'pending':
+        return isAr ? 'تم تقديم الطلب' : 'Request Submitted';
+      case 'approved':
+        return isAr ? 'تمت الموافقة على الطلب' : 'Request Approved';
+      case 'rejected':
+        return isAr ? 'تم رفض الطلب' : 'Request Rejected';
+      case 'needsmoreinfo':
+      case 'moreinforequested':
+      case 'requestmoreinfo':
+        return isAr ? 'طُلب استكمال بيانات' : 'More Info Requested';
+      default:
+        return action;
+    }
+  }
+  entryDate(entry: any, detail: MedicationRequest | null): string | null {
+    return (
+      entry?.createdOnUtc ||
+      entry?.createdAtUtc ||
+      entry?.timestamp ||
+      entry?.occurredOnUtc ||
+      detail?.createdAtUtc ||
+      null
+    );
+  }
   private failure(error: unknown, mutation = false) {
     const parsed = parseApiErrors(error),
       messages =

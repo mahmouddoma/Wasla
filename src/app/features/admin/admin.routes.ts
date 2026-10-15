@@ -62,6 +62,32 @@ export const ADMIN_ROUTES: Routes = [
     title: 'reservations.title',
   },
   {
+    path: 'archive-operations',
+    canActivate: [permissionGuard],
+    data: {
+      actor: 'SuperAdmin',
+      permission: [PERMISSIONS.superAdminsViewAll, PERMISSIONS.archiveOperationsView],
+    },
+    loadComponent: () =>
+      import('./archive-operations/archive-operations.component').then(
+        (m) => m.ArchiveOperationsComponent,
+      ),
+    title: 'archive.operations.title',
+  },
+  {
+    path: 'archives',
+    canActivate: [permissionGuard],
+    data: {
+      actor: 'SuperAdmin',
+      permission: [PERMISSIONS.superAdminsViewAll, PERMISSIONS.archivePlatformView],
+    },
+    loadComponent: () =>
+      import('./archive-operations/archive-operations.component').then(
+        (m) => m.ArchiveOperationsComponent,
+      ),
+    title: 'archive.title',
+  },
+  {
     path: 'family-relationship-requests/:requestId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.familyRelationshipRequestsViewDetails },

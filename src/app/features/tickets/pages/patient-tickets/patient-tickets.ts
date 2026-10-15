@@ -15,6 +15,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PracticeTicket, TicketsApi } from '../../../../domains/tickets';
+import { Phase18Part2Api } from '../../../../domains/phase18';
 
 @Component({
   selector: 'app-patient-tickets',
@@ -25,8 +26,10 @@ import { PracticeTicket, TicketsApi } from '../../../../domains/tickets';
 })
 export class PatientTickets implements OnInit {
   private readonly api = inject(TicketsApi);
+  private readonly phase18Api = inject(Phase18Part2Api);
   protected readonly language = inject(LanguageService);
   private readonly drawer = viewChild<ElementRef<HTMLDialogElement>>('drawer');
+  protected readonly viewMode = signal<'active' | 'archived'>('active');
   protected readonly tickets = signal<readonly PracticeTicket[]>([]);
   protected readonly selected = signal<PracticeTicket | null>(null);
   protected readonly loading = signal(false);
@@ -44,11 +47,63 @@ export class PatientTickets implements OnInit {
     await this.load();
   }
 
+  protected async setViewMode(mode: 'active' | 'archived'): Promise<void> {
+    this.viewMode.set(mode);
+    await this.load();
+  }
+
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.messages.set([]);
     try {
-      this.tickets.set(await firstValueFrom(this.api.myActive()));
+      if (this.viewMode() === 'archived') {
+        const page = await firstValueFrom(this.phase18Api.call('P18.2-11', { query: { pageSize: 50 } }));
+        const mapped: PracticeTicket[] = (page.items ?? []).map((item) => ({
+          ticketId: item.ticketId,
+          ticketNumber: String(item.ticketNumber),
+          businessDate: item.businessDate,
+          status: (item.status as any) || 'Completed',
+          source: 'WalkIn',
+          isArchived: true,
+          archivedAtUtc: item.archivedAtUtc,
+          lastUpdatedOnUtc: item.archivedAtUtc,
+          patientsAheadNow: 0,
+          fastTrack: false,
+          callAttempts: [],
+          practice: {
+            id: item.doctorPracticeId,
+            nameAr: 'العيادة',
+            nameEn: 'Practice',
+          },
+          doctor: {
+            id: '',
+            nameAr: '',
+            nameEn: null,
+          },
+          patient: {
+            id: '',
+            nameAr: '',
+            nameEn: null,
+          },
+          rowVersion: '',
+          timeline: [],
+          actions: {
+            canCallNext: false,
+            canManualCall: false,
+            canRecall: false,
+            canConfirmNoResponse: false,
+            canRestoreNoShow: false,
+            canStart: false,
+            canComplete: false,
+            canCancel: false,
+            canCheckIn: false,
+            canRefund: false,
+          },
+        }));
+        this.tickets.set(mapped);
+      } else {
+        this.tickets.set(await firstValueFrom(this.api.myActive()));
+      }
     } catch (error) {
       this.failure(error);
     } finally {

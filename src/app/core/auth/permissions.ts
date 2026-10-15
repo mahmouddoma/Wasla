@@ -116,4 +116,9 @@ export const PERMISSIONS = {
   doctorRevenueViewOwn: 'DoctorRevenue.ViewOwn',
   paymentsViewOwn: 'Payments.ViewOwn',
   platformRevenueViewAggregates: 'PlatformRevenue.ViewAggregates',
+  archiveOperationsView: 'Archive.ViewOperations',
+  archiveOperationsPause: 'Archive.Operations.Pause',
+  archiveOperationsResume: 'Archive.Operations.Resume',
+  archivePlatformView: 'Archive.ViewPlatform',
+  auditEventsView: 'Audit.Events.View',
 } as const;
