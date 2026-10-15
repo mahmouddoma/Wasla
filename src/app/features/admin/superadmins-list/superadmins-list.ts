@@ -37,7 +37,9 @@ interface PendingListAction {
     ConfirmationDialog,
     SideDrawer,
     SuperAdminForm,
-    SuperAdminDetails, TranslatePipe],
+    SuperAdminDetails,
+    TranslatePipe,
+  ],
   templateUrl: './superadmins-list.html',
   styleUrls: ['../management-list.css', './superadmins-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -247,7 +249,6 @@ export class SuperAdminsList {
       );
       this.toast.success(this.successMessage());
     } catch (error) {
-
       const parsed = parseApiErrors(error);
       this.actionMessages.set([...parsed.messages, ...Object.values(parsed.fields).flat()]);
     } finally {
