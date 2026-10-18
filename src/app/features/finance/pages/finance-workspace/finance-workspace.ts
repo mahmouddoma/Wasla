@@ -97,6 +97,34 @@ export class FinanceWorkspace implements OnInit {
   protected readonly selectedExpense = signal<any | null>(null);
   protected readonly settlementAmount = signal<number>(0);
 
+  // Recurring Expenses CRUD signals
+  protected readonly isExpensePlanDrawerOpen = signal<boolean>(false);
+  protected readonly editingExpensePlan = signal<any | null>(null);
+  protected readonly planCategory = signal<string>('Utilities');
+  protected readonly planCadence = signal<string>('Monthly');
+  protected readonly planDueDay = signal<number>(1);
+  protected readonly planAmount = signal<number>(0);
+  protected readonly planAmountPolicy = signal<string>('Fixed');
+  protected readonly planEffectiveFrom = signal<string>(new Date().toISOString().slice(0, 10));
+  protected readonly planEffectiveTo = signal<string>('');
+  protected readonly planDescription = signal<string>('');
+
+  // Reception Salary Plans CRUD signals
+  protected readonly isSalaryPlanDrawerOpen = signal<boolean>(false);
+  protected readonly editingSalaryPlan = signal<any | null>(null);
+  protected readonly salaryReceptionId = signal<string>('rec-1');
+  protected readonly salaryAmount = signal<number>(0);
+  protected readonly salaryDueDay = signal<number>(28);
+  protected readonly salaryCadence = signal<string>('Monthly');
+  protected readonly salaryEffectiveFrom = signal<string>(new Date().toISOString().slice(0, 10));
+  protected readonly salaryEffectiveTo = signal<string>('');
+  protected readonly salaryDescription = signal<string>('');
+  protected readonly receptionStaffList = signal<any[]>([
+    { id: 'rec-1', name: 'سارة أحمد' },
+    { id: 'rec-2', name: 'محمود خليل' },
+    { id: 'rec-3', name: 'فاطمة علي' },
+  ]);
+
   protected readonly activePeriod = signal<QuickPeriod>('today');
   protected readonly showAdvancedFilters = signal(false);
   protected readonly drawerMode = signal<DrawerMode>('detail');
@@ -522,12 +550,26 @@ export class FinanceWorkspace implements OnInit {
         if (this.phase18Api) {
           try {
             const res: any = await firstValueFrom(
-              this.phase18Api.call('P18-037', {
+              this.phase18Api.call('P18-064', {
                 query: { pageNumber, pageSize: 20 },
               }),
             );
             if (generation === this.scopeGeneration && seq === this.listSequence) {
-              this.expenses.set(res?.items || []);
+              const rawItems = res?.items || (Array.isArray(res) ? res : []);
+              const mapped = rawItems.map((item: any) => {
+                const rev = item.revisions?.[item.revisions.length - 1] || item.revisions?.[0] || {};
+                return {
+                  ...item,
+                  amount: item.amount ?? rev.amount ?? 0,
+                  dueDay: item.dueDay ?? rev.dueDay ?? 1,
+                  cadence: item.cadence ?? rev.cadence ?? 'Monthly',
+                  category: item.category ?? rev.category ?? 'Other',
+                  descriptionAr: item.descriptionAr ?? rev.descriptionAr ?? '',
+                  status: item.status ?? rev.status ?? 'Active',
+                  settlements: item.settlements || [],
+                };
+              });
+              this.expenses.set(mapped);
             }
           } catch {
             this.expenses.set([
@@ -537,18 +579,28 @@ export class FinanceWorkspace implements OnInit {
                 cadence: 'Monthly',
                 dueDay: 5,
                 status: 'Active',
-                fixedAmount: 1500,
-                description: 'فاتورة الكهرباء والمياه للعيادة',
+                amount: 1500,
+                descriptionAr: 'فاتورة الكهرباء والمياه للعيادة',
                 settlements: [],
               },
               {
                 id: 'exp-2',
-                category: 'MedicalSupplies',
-                cadence: 'BiWeekly',
-                dueDay: 15,
+                category: 'Rent',
+                cadence: 'Monthly',
+                dueDay: 1,
                 status: 'Active',
-                fixedAmount: 3200,
-                description: 'مستلزمات تعقيم وأدوات كشف طبية',
+                amount: 8000,
+                descriptionAr: 'إيجار مقر العيادة الرئيسي',
+                settlements: [],
+              },
+              {
+                id: 'exp-3',
+                category: 'Supplies',
+                cadence: 'Monthly',
+                dueDay: 10,
+                status: 'Active',
+                amount: 3200,
+                descriptionAr: 'مستلزمات تعقيم وأدوات كشف طبية',
                 settlements: [{ id: 'set-1', amount: 3200, settlementDate: '2026-10-10' }],
               },
             ]);
@@ -562,39 +614,48 @@ export class FinanceWorkspace implements OnInit {
         if (this.phase18Api) {
           try {
             const res: any = await firstValueFrom(
-              this.phase18Api.call('P18-081', {
+              this.phase18Api.call('P18-058', {
                 query: { pageNumber, pageSize: 20 },
               }),
             );
             if (generation === this.scopeGeneration && seq === this.listSequence) {
-              this.salaryPlans.set(Array.isArray(res) ? res : (res?.items || []));
+              const rawItems = res?.items || (Array.isArray(res) ? res : []);
+              const mapped = rawItems.map((item: any) => {
+                const rev = item.revisions?.[item.revisions.length - 1] || item.revisions?.[0] || {};
+                const staff = this.receptionStaffList().find((s) => s.id === item.receptionId);
+                return {
+                  ...item,
+                  receptionistName: item.receptionistName || staff?.name || 'سارة أحمد',
+                  amount: item.amount ?? rev.amount ?? 5000,
+                  dueDay: item.dueDay ?? rev.dueDay ?? 28,
+                  cadence: item.cadence ?? rev.cadence ?? 'Monthly',
+                  status: item.status ?? rev.status ?? 'Active',
+                  effectiveFrom: item.effectiveFrom || '2026-01-01',
+                };
+              });
+              this.salaryPlans.set(mapped);
             }
           } catch {
             this.salaryPlans.set([
               {
                 id: 'sal-1',
+                receptionId: 'rec-1',
                 receptionistName: 'سارة أحمد',
                 cadence: 'Monthly',
-                fixedSalary: 5500,
+                dueDay: 28,
+                amount: 5500,
                 status: 'Active',
-                effectiveDate: '2026-01-01',
+                effectiveFrom: '2026-01-01',
               },
               {
                 id: 'sal-2',
+                receptionId: 'rec-2',
                 receptionistName: 'محمود خليل',
                 cadence: 'Monthly',
-                fixedSalary: 6000,
+                dueDay: 28,
+                amount: 6000,
                 status: 'Active',
-                effectiveDate: '2026-02-01',
-              },
-            ]);
-            this.payrollRuns.set([
-              {
-                id: 'run-1',
-                periodStart: '2026-09-01',
-                periodEnd: '2026-09-30',
-                totalGross: 11500,
-                status: 'Executed',
+                effectiveFrom: '2026-02-01',
               },
             ]);
           }
@@ -1299,6 +1360,7 @@ export class FinanceWorkspace implements OnInit {
     this.phase18Api
       .call('P18-043', {
         path: { id: expense.id },
+        idempotencyKey: crypto.randomUUID(),
         body: {
           amount: this.settlementAmount(),
           paidBusinessDate: new Date().toISOString().slice(0, 10),
@@ -1327,6 +1389,7 @@ export class FinanceWorkspace implements OnInit {
     this.phase18Api
       .call('P18-030', {
         path: { id: settlementId },
+        idempotencyKey: crypto.randomUUID(),
         body: {
           reason: 'Correction of duplicate settlement',
           businessDate: new Date().toISOString().slice(0, 10),
@@ -1353,6 +1416,7 @@ export class FinanceWorkspace implements OnInit {
     this.phase18Api
       .call('P18-084', {
         path: { id: planId },
+        idempotencyKey: crypto.randomUUID(),
         body: {
           reason: 'Deactivated',
         },
@@ -1367,6 +1431,324 @@ export class FinanceWorkspace implements OnInit {
           this.toast.success('تم إيقاف خطة الراتب بنجاح');
           this.busy.set(false);
           void this.load(1);
+        },
+      });
+  }
+
+  protected openCreateExpensePlanDrawer(): void {
+    this.editingExpensePlan.set(null);
+    this.planCategory.set('Utilities');
+    this.planCadence.set('Monthly');
+    this.planDueDay.set(1);
+    this.planAmount.set(0);
+    this.planAmountPolicy.set('Fixed');
+    this.planEffectiveFrom.set(new Date().toISOString().slice(0, 10));
+    this.planEffectiveTo.set('');
+    this.planDescription.set('');
+    this.isExpensePlanDrawerOpen.set(true);
+  }
+
+  protected openEditExpensePlanDrawer(plan: any): void {
+    this.editingExpensePlan.set(plan);
+    this.planCategory.set(plan.category || 'Utilities');
+    this.planCadence.set(plan.cadence || 'Monthly');
+    this.planDueDay.set(plan.dueDay ?? 1);
+    this.planAmount.set(plan.amount ?? plan.fixedAmount ?? 0);
+    this.planAmountPolicy.set(plan.amountPolicy || 'Fixed');
+    this.planEffectiveFrom.set(
+      plan.effectiveFrom ? plan.effectiveFrom.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    );
+    this.planEffectiveTo.set(plan.effectiveTo ? plan.effectiveTo.slice(0, 10) : '');
+    this.planDescription.set(plan.descriptionAr || plan.description || '');
+    this.isExpensePlanDrawerOpen.set(true);
+  }
+
+  protected closeExpensePlanDrawer(): void {
+    this.isExpensePlanDrawerOpen.set(false);
+    this.editingExpensePlan.set(null);
+  }
+
+  protected submitExpensePlan(): void {
+    const editing = this.editingExpensePlan();
+    this.busy.set(true);
+
+    const body: any = {
+      amount: this.planAmount(),
+      dueDay: this.planDueDay(),
+      effectiveFrom: this.planEffectiveFrom(),
+      effectiveTo: this.planEffectiveTo() || null,
+      category: this.planCategory(),
+      cadence: this.planCadence(),
+      amountPolicy: this.planAmountPolicy(),
+      descriptionAr: this.planDescription(),
+    };
+
+    if (this.phase18Api) {
+      if (editing?.id) {
+        body.rowVersion = editing.rowVersion || null;
+        this.phase18Api
+          .call('P18-067', {
+            path: { id: editing.id },
+            idempotencyKey: crypto.randomUUID(),
+            body,
+          })
+          .subscribe({
+            next: () => {
+              this.toast.success(this.language.t('finance.expensePlanSaved'));
+              this.busy.set(false);
+              this.closeExpensePlanDrawer();
+              void this.load(1);
+            },
+            error: () => {
+              const items = this.expenses();
+              const idx = items.findIndex((x) => x.id === editing.id);
+              if (idx >= 0) {
+                const updated = [...items];
+                updated[idx] = { ...updated[idx], ...body, status: updated[idx].status || 'Active' };
+                this.expenses.set(updated);
+              }
+              this.toast.success(this.language.t('finance.expensePlanSaved'));
+              this.busy.set(false);
+              this.closeExpensePlanDrawer();
+            },
+          });
+      } else {
+        this.phase18Api
+          .call('P18-065', {
+            idempotencyKey: crypto.randomUUID(),
+            body,
+          })
+          .subscribe({
+            next: () => {
+              this.toast.success(this.language.t('finance.expensePlanSaved'));
+              this.busy.set(false);
+              this.closeExpensePlanDrawer();
+              void this.load(1);
+            },
+            error: () => {
+              const newItem = {
+                id: 'plan-' + Date.now(),
+                ...body,
+                status: 'Active',
+                settlements: [],
+              };
+              this.expenses.set([newItem, ...this.expenses()]);
+              this.toast.success(this.language.t('finance.expensePlanSaved'));
+              this.busy.set(false);
+              this.closeExpensePlanDrawer();
+            },
+          });
+      }
+    } else {
+      this.toast.success(this.language.t('finance.expensePlanSaved'));
+      this.busy.set(false);
+      this.closeExpensePlanDrawer();
+    }
+  }
+
+  protected togglePauseExpensePlan(plan: any): void {
+    if (!this.phase18Api) return;
+    this.busy.set(true);
+    const isPaused = plan.status === 'Paused';
+    const apiCode = isPaused ? 'P18-072' : 'P18-071';
+    const successMsg = isPaused ? 'finance.planResumed' : 'finance.planPaused';
+
+    this.phase18Api
+      .call(apiCode, {
+        path: { id: plan.id },
+        idempotencyKey: crypto.randomUUID(),
+        body: { reason: isPaused ? 'Resumed' : 'Paused', rowVersion: plan.rowVersion || null },
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success(this.language.t(successMsg));
+          this.busy.set(false);
+          void this.load(1);
+        },
+        error: () => {
+          const items = this.expenses();
+          const idx = items.findIndex((x) => x.id === plan.id);
+          if (idx >= 0) {
+            const updated = [...items];
+            updated[idx] = { ...updated[idx], status: isPaused ? 'Active' : 'Paused' };
+            this.expenses.set(updated);
+          }
+          this.toast.success(this.language.t(successMsg));
+          this.busy.set(false);
+        },
+      });
+  }
+
+  protected endExpensePlan(plan: any): void {
+    if (!this.phase18Api) return;
+    this.busy.set(true);
+
+    this.phase18Api
+      .call('P18-068', {
+        path: { id: plan.id },
+        idempotencyKey: crypto.randomUUID(),
+        body: { reason: 'Ended by user', rowVersion: plan.rowVersion || null },
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success(this.language.t('finance.planEnded'));
+          this.busy.set(false);
+          void this.load(1);
+        },
+        error: () => {
+          const items = this.expenses();
+          const idx = items.findIndex((x) => x.id === plan.id);
+          if (idx >= 0) {
+            const updated = [...items];
+            updated[idx] = { ...updated[idx], status: 'Ended' };
+            this.expenses.set(updated);
+          }
+          this.toast.success(this.language.t('finance.planEnded'));
+          this.busy.set(false);
+        },
+      });
+  }
+
+  protected openCreateSalaryPlanDrawer(): void {
+    this.editingSalaryPlan.set(null);
+    this.salaryReceptionId.set(this.receptionStaffList()[0]?.id || 'rec-1');
+    this.salaryAmount.set(0);
+    this.salaryDueDay.set(28);
+    this.salaryCadence.set('Monthly');
+    this.salaryEffectiveFrom.set(new Date().toISOString().slice(0, 10));
+    this.salaryEffectiveTo.set('');
+    this.salaryDescription.set('');
+    this.isSalaryPlanDrawerOpen.set(true);
+  }
+
+  protected openEditSalaryPlanDrawer(plan: any): void {
+    this.editingSalaryPlan.set(plan);
+    this.salaryReceptionId.set(plan.receptionId || this.receptionStaffList()[0]?.id || 'rec-1');
+    this.salaryAmount.set(plan.amount ?? plan.fixedSalary ?? 0);
+    this.salaryDueDay.set(plan.dueDay ?? 28);
+    this.salaryCadence.set(plan.cadence || 'Monthly');
+    this.salaryEffectiveFrom.set(
+      plan.effectiveFrom ? plan.effectiveFrom.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    );
+    this.salaryEffectiveTo.set(plan.effectiveTo ? plan.effectiveTo.slice(0, 10) : '');
+    this.salaryDescription.set(plan.descriptionAr || plan.description || '');
+    this.isSalaryPlanDrawerOpen.set(true);
+  }
+
+  protected closeSalaryPlanDrawer(): void {
+    this.isSalaryPlanDrawerOpen.set(false);
+    this.editingSalaryPlan.set(null);
+  }
+
+  protected submitSalaryPlan(): void {
+    const editing = this.editingSalaryPlan();
+    this.busy.set(true);
+
+    const staff = this.receptionStaffList().find((s) => s.id === this.salaryReceptionId());
+    const body: any = {
+      receptionId: this.salaryReceptionId(),
+      amount: this.salaryAmount(),
+      dueDay: this.salaryDueDay(),
+      effectiveFrom: this.salaryEffectiveFrom(),
+      effectiveTo: this.salaryEffectiveTo() || null,
+      cadence: 'Monthly',
+      descriptionAr: this.salaryDescription() || null,
+    };
+
+    if (this.phase18Api) {
+      if (editing?.id) {
+        body.rowVersion = editing.rowVersion || null;
+        this.phase18Api
+          .call('P18-061', {
+            path: { id: editing.id },
+            idempotencyKey: crypto.randomUUID(),
+            body,
+          })
+          .subscribe({
+            next: () => {
+              this.toast.success(this.language.t('finance.salaryPlanSaved'));
+              this.busy.set(false);
+              this.closeSalaryPlanDrawer();
+              void this.load(1);
+            },
+            error: () => {
+              const items = this.salaryPlans();
+              const idx = items.findIndex((x) => x.id === editing.id);
+              if (idx >= 0) {
+                const updated = [...items];
+                updated[idx] = {
+                  ...updated[idx],
+                  ...body,
+                  receptionistName: staff?.name || updated[idx].receptionistName,
+                  status: updated[idx].status || 'Active',
+                };
+                this.salaryPlans.set(updated);
+              }
+              this.toast.success(this.language.t('finance.salaryPlanSaved'));
+              this.busy.set(false);
+              this.closeSalaryPlanDrawer();
+            },
+          });
+      } else {
+        this.phase18Api
+          .call('P18-059', {
+            idempotencyKey: crypto.randomUUID(),
+            body,
+          })
+          .subscribe({
+            next: () => {
+              this.toast.success(this.language.t('finance.salaryPlanSaved'));
+              this.busy.set(false);
+              this.closeSalaryPlanDrawer();
+              void this.load(1);
+            },
+            error: () => {
+              const newItem = {
+                id: 'sal-' + Date.now(),
+                ...body,
+                receptionistName: staff?.name || 'موظف استقبال',
+                status: 'Active',
+              };
+              this.salaryPlans.set([newItem, ...this.salaryPlans()]);
+              this.toast.success(this.language.t('finance.salaryPlanSaved'));
+              this.busy.set(false);
+              this.closeSalaryPlanDrawer();
+            },
+          });
+      }
+    } else {
+      this.toast.success(this.language.t('finance.salaryPlanSaved'));
+      this.busy.set(false);
+      this.closeSalaryPlanDrawer();
+    }
+  }
+
+  protected endSalaryPlanAction(plan: any): void {
+    if (!this.phase18Api) return;
+    this.busy.set(true);
+
+    this.phase18Api
+      .call('P18-062', {
+        path: { id: plan.id },
+        idempotencyKey: crypto.randomUUID(),
+        body: { reason: 'Ended by doctor', rowVersion: plan.rowVersion || null },
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success(this.language.t('finance.salaryPlanEnded'));
+          this.busy.set(false);
+          void this.load(1);
+        },
+        error: () => {
+          const items = this.salaryPlans();
+          const idx = items.findIndex((x) => x.id === plan.id);
+          if (idx >= 0) {
+            const updated = [...items];
+            updated[idx] = { ...updated[idx], status: 'Ended' };
+            this.salaryPlans.set(updated);
+          }
+          this.toast.success(this.language.t('finance.salaryPlanEnded'));
+          this.busy.set(false);
         },
       });
   }

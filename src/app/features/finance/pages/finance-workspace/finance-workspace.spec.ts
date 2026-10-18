@@ -990,4 +990,79 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
     expect(fixture.componentInstance['view']()).toBe('revenue');
     expect(doctorRevenue).toHaveBeenCalled();
   });
+
+  describe('Recurring Expense Plan CRUD', () => {
+    it('should open and close recurring expense plan drawer with default values', async () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: { data: { actor: 'Doctor', view: 'expenses' }, queryParamMap: { get: () => null } },
+            },
+          },
+          { provide: FinanceApi, useValue: createMockFinanceApi() },
+          { provide: ReceptionPracticeContext, useValue: { refresh: async () => undefined, practices: () => [], currentPracticeId: () => '', select: () => undefined } },
+          { provide: DoctorPracticesApi, useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) } },
+          { provide: AuthSession, useValue: { hasPermission: () => true } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(FinanceWorkspace);
+      const comp = fixture.componentInstance;
+      await fixture.whenStable();
+
+      expect(comp['isExpensePlanDrawerOpen']()).toBe(false);
+
+      comp['openCreateExpensePlanDrawer']();
+      expect(comp['isExpensePlanDrawerOpen']()).toBe(true);
+      expect(comp['editingExpensePlan']()).toBeNull();
+      expect(comp['planCategory']()).toBe('Utilities');
+      expect(comp['planCadence']()).toBe('Monthly');
+
+      comp['closeExpensePlanDrawer']();
+      expect(comp['isExpensePlanDrawerOpen']()).toBe(false);
+    });
+
+    it('should populate drawer when editing an existing plan', async () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: { data: { actor: 'Doctor', view: 'expenses' }, queryParamMap: { get: () => null } },
+            },
+          },
+          { provide: FinanceApi, useValue: createMockFinanceApi() },
+          { provide: ReceptionPracticeContext, useValue: { refresh: async () => undefined, practices: () => [], currentPracticeId: () => '', select: () => undefined } },
+          { provide: DoctorPracticesApi, useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) } },
+          { provide: AuthSession, useValue: { hasPermission: () => true } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(FinanceWorkspace);
+      const comp = fixture.componentInstance;
+      await fixture.whenStable();
+
+      const samplePlan = {
+        id: 'plan-99',
+        category: 'Rent',
+        cadence: 'Monthly',
+        dueDay: 5,
+        amount: 5000,
+        amountPolicy: 'Fixed',
+        effectiveFrom: '2026-10-01',
+        descriptionAr: 'إيجار الشهر',
+      };
+
+      comp['openEditExpensePlanDrawer'](samplePlan);
+      expect(comp['isExpensePlanDrawerOpen']()).toBe(true);
+      expect(comp['editingExpensePlan']()).toEqual(samplePlan);
+      expect(comp['planCategory']()).toBe('Rent');
+      expect(comp['planAmount']()).toBe(5000);
+      expect(comp['planDueDay']()).toBe(5);
+    });
+  });
 });
