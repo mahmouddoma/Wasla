@@ -6743,4 +6743,64 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'هذا الحجز مؤرشف وهو للقراءة فقط.',
     en: 'This reservation is archived and is read-only.',
   },
+  'reception.patients.searchRuleHelp': {
+    ar: 'يرجى إدخال رقم هاتف (7 أرقام على الأقل) أو اسم المريض (3 أحرف على الأقل) مع تاريخ الميلاد للبحث.',
+    en: 'Please enter a phone number (at least 7 digits) or patient name (at least 3 characters) with date of birth.',
+  },
+  'reception.patients.dobRequiredWithName': {
+    ar: 'يلزم تحديد تاريخ الميلاد عند البحث باسم المريض.',
+    en: 'Date of birth is required when searching by patient name.',
+  },
+  'reception.patients.phoneMinDigits': {
+    ar: 'رقم الهاتف يجب أن يحتوي على 7 أرقام على الأقل.',
+    en: 'Phone number must have at least 7 digits.',
+  },
+  'reception.patients.initialPrompt': {
+    ar: 'استخدم حقول البحث أعلاه للبحث عن مريض برقم الهاتف أو الاسم مع تاريخ الميلاد، أو اضغط إضافة مريض جديد.',
+    en: 'Use the search fields above to find a patient by phone or name with date of birth, or register a new patient.',
+  },
+  'reservations.attestation.title': {
+    ar: 'التحقق من هوية المريض مطلوب',
+    en: 'Patient Identity Verification Required',
+  },
+  'reservations.attestation.subtitle': {
+    ar: 'هذا المريض مسجل في المنصة؛ يتطلب النظام إثبات التحقق من الهوية لحجز موعد جديد في هذه العيادة.',
+    en: 'This patient is registered on the platform; the system requires proof of identity verification to book in this clinic.',
+  },
+  'reservations.attestation.basis': {
+    ar: 'وسيلة التحقق من الهوية',
+    en: 'Identity Verification Method',
+  },
+  'reservations.attestation.governmentId': {
+    ar: 'تم الاطلاع على بطاقة الرقم القومي / إثبات شخصية رسمي',
+    en: 'Government ID verified in person',
+  },
+  'reservations.attestation.alternate': {
+    ar: 'مستند إثبات هوية معتمد آخر',
+    en: 'Approved alternative ID documentation',
+  },
+  'reservations.attestation.reason': {
+    ar: 'ملاحظة التحقق (اختياري)',
+    en: 'Verification note (optional)',
+  },
+  'reservations.attestation.reasonPlaceholder': {
+    ar: 'اكتب أي ملاحظة بشأن التحقق من الهوية...',
+    en: 'Enter any note regarding identity verification...',
+  },
+  'reservations.attestation.confirm': {
+    ar: 'تأكيد الهوية ومتابعة الحجز',
+    en: 'Confirm Identity & Book',
+  },
+  'reservations.attestation.success': {
+    ar: 'تم تأكيد هوية المريض وحجز الموعد بنجاح.',
+    en: 'Patient identity verified and appointment booked successfully.',
+  },
+  'reservations.attestation.failed': {
+    ar: 'فشل تأكيد هوية المريض. يرجى مراجعة البيانات والمحاولة مجدداً.',
+    en: 'Patient identity verification failed. Please check details and try again.',
+  },
+  'reservations.attestationRequired': {
+    ar: 'التحقق من هوية المريض مطلوب قبل إتمام الحجز لأول مرة في هذه العيادة.',
+    en: 'Patient identity verification is required before booking for the first time in this clinic.',
+  },
 };

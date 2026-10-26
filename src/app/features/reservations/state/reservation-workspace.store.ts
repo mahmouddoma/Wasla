@@ -46,6 +46,13 @@ export interface ReservationDraft {
   patientConsentConfirmed: boolean;
   reason: string;
 }
+export interface PendingAttestation {
+  readonly draft: ReservationDraft;
+  readonly patientId: string;
+  readonly patientName?: string;
+  readonly doctorPracticeId: string;
+}
+
 export type ReservationEditorMode = 'create' | 'cancel' | 'reschedule' | 'restore';
 /** A route-scoped workflow. Server projections own availability, late flags and capabilities. */
 @Injectable()
@@ -53,6 +60,8 @@ export class ReservationWorkspaceStore {
   private readonly api = inject(ReservationsApi);
   private readonly followUps = inject(FollowUpsApi);
   private readonly phase18Api = inject(Phase18Part2Api);
+  readonly pendingAttestation = signal<PendingAttestation | null>(null);
+  readonly isAttesting = signal(false);
   readonly bookingPatientId = signal('');
   readonly bookingPatient = signal<Pick<
     PatientSearchItem,
@@ -727,6 +736,19 @@ export class ReservationWorkspaceStore {
         this.toast.error(this.language.t('common.requestFailed'));
         return;
       }
+      if (mode === 'create' && this.isAttestationRequired(error)) {
+        const patientName =
+          this.bookingPatient()?.nameAr ||
+          draft.patientId;
+        this.pendingAttestation.set({
+          draft,
+          patientId: draft.patientId,
+          patientName,
+          doctorPracticeId: this.practiceId(),
+        });
+        this.toast.error(this.language.t('reservations.attestationRequired'));
+        return;
+      }
       await this.failure(error);
       if (error instanceof HttpErrorResponse && error.status === 409) {
         const date = this.date(),
@@ -749,6 +771,86 @@ export class ReservationWorkspaceStore {
       this.busy.set(false);
     }
   }
+
+  private isAttestationRequired(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 409) return false;
+    const parsed = parseApiErrors(error);
+    if (parsed.codes.some((c) => c.toLowerCase().includes('identityattestation'))) return true;
+    if (parsed.messages.some((m) => m.toLowerCase().includes('identityattestation'))) return true;
+    if (
+      typeof error.error === 'object' &&
+      error.error !== null &&
+      JSON.stringify(error.error).toLowerCase().includes('identityattestation')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  async confirmAttestationAndBook(
+    basis: 'GovernmentIdSeen' | 'ApprovedAlternateEvidence' = 'GovernmentIdSeen',
+    reason?: string,
+  ): Promise<void> {
+    const pending = this.pendingAttestation();
+    if (!pending || this.isAttesting() || this.busy()) return;
+    this.isAttesting.set(true);
+    this.busy.set(true);
+    this.messages.set([]);
+    try {
+      const matchRes = await firstValueFrom(
+        this.patientsApi.registrationMatches({
+          mode: 'ConfirmReuse',
+          doctorPracticeId: pending.doctorPracticeId,
+          patientId: pending.patientId,
+          verifiedInPerson: true,
+          verificationBasis: basis,
+          reason: reason?.trim() || undefined,
+        }),
+      );
+      const attestationId = matchRes.attestationId;
+      if (!attestationId) {
+        throw new Error('No attestationId returned from verification');
+      }
+      const scope = this.scope();
+      const body: CreateReservationRequest = {
+        patientId: pending.draft.patientId,
+        businessDate: this.date(),
+        slotStartTime: this.time(),
+        segmentId: pending.draft.segmentId,
+        visitTypeId: pending.draft.visitTypeId,
+        bookingNote: pending.draft.bookingNote.trim() || null,
+        patientIdentityAttestationId: attestationId,
+      };
+      const request =
+        this.actor() === 'Patient'
+          ? this.api.createPatient(
+              { ...body, doctorPracticeId: this.practiceId() },
+              this.intentKey('create', body),
+            )
+          : this.api.createReception(this.practiceId(), body, this.intentKey('create', body));
+      const response = await firstValueFrom(request);
+      this.detail.set(response);
+      this.pendingAttestation.set(null);
+      this.editor.set(null);
+      this.eligibility.set(null);
+      this.eligibilities.set([]);
+      this.bookingPatientId.set('');
+      this.resetAvailability();
+      this.intent = null;
+      this.toast.success(this.language.t('reservations.saved'));
+      await this.loadList();
+    } catch (error) {
+      await this.failure(error);
+    } finally {
+      this.isAttesting.set(false);
+      this.busy.set(false);
+    }
+  }
+
+  cancelAttestation(): void {
+    this.pendingAttestation.set(null);
+  }
+
   canArrive(reservation: Reservation): boolean {
     return (
       this.actor() === 'Reception' &&

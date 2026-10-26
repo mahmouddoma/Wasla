@@ -831,4 +831,84 @@ describe('ReservationWorkspaceStore', () => {
       expect.any(String),
     );
   });
+  it('handles 409 IdentityAttestationRequired and completes confirmAttestationAndBook flow', async () => {
+    store.actor.set('Reception');
+    store.editor.set('create');
+    store.practiceId.set('clinic');
+    grants.set(['PracticeReservations.Create']);
+    store.date.set('2026-09-20');
+    store.time.set('17:00');
+    store.options.set({
+      practiceId: 'clinic',
+      date: '2026-09-20',
+      time: '17:00',
+      visitTypes: [
+        {
+          visitTypeId: 'v1',
+          type: 'NewConsultation',
+          nameAr: 'Test',
+          nameEn: 'Test',
+          segments: [
+            {
+              segmentId: 's1',
+              nameAr: 'Standard',
+              nameEn: 'Standard',
+              price: 300,
+              isDefault: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    const attestationError = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'IdentityAttestationRequired', message: 'Attestation needed' },
+    });
+    api.createReception.mockReturnValueOnce(throwError(() => attestationError));
+
+    await store.save({ ...draft, patientId: 'patient-409', segmentId: 's1', visitTypeId: 'v1' });
+
+    expect(store.pendingAttestation()).toEqual(
+      expect.objectContaining({
+        doctorPracticeId: 'clinic',
+        patientId: 'patient-409',
+        draft: expect.objectContaining({ patientId: 'patient-409' }),
+      }),
+    );
+
+    const patientsApi = TestBed.inject(PatientsApi);
+    const registrationMatchesSpy = vi.spyOn(patientsApi, 'registrationMatches').mockReturnValue(
+      of({
+        attestationId: 'attestation-uuid-777',
+        patientId: 'patient-409',
+        status: 'Confirmed',
+      }),
+    );
+
+    api.createReception.mockReturnValueOnce(of(reservationFixture));
+
+    await store.confirmAttestationAndBook('GovernmentIdSeen', 'Verified ID in person');
+
+    expect(registrationMatchesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'ConfirmReuse',
+        doctorPracticeId: 'clinic',
+        patientId: 'patient-409',
+        verificationBasis: 'GovernmentIdSeen',
+        reason: 'Verified ID in person',
+      }),
+    );
+    expect(api.createReception).toHaveBeenCalledWith(
+      'clinic',
+      expect.objectContaining({
+        patientId: 'patient-409',
+        patientIdentityAttestationId: 'attestation-uuid-777',
+      }),
+      expect.any(String),
+    );
+    expect(store.pendingAttestation()).toBeNull();
+  });
 });
+
+

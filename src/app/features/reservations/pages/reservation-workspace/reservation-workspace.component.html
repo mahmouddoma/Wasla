@@ -1014,9 +1014,13 @@
   <!-- ═══ Side Drawer: Reservation Details & Editor ═══ -->
   <app-side-drawer
     [opened]="
-      !!store.detail() || store.detailLoading() || !!store.editor() || !!store.checkedInTicket()
+      !!store.detail() ||
+      store.detailLoading() ||
+      !!store.editor() ||
+      !!store.checkedInTicket() ||
+      !!store.pendingAttestation()
     "
-    [busy]="store.busy()"
+    [busy]="store.busy() || store.isAttesting()"
     [title]="drawerTitle()"
     [description]="drawerDescription()"
     theme="navy"
@@ -1283,6 +1287,105 @@
         [busy]="store.busy()"
         (checkIn)="store.checkIn($event)"
       />
+    } @else if (store.pendingAttestation(); as attestation) {
+      <div class="attestation-flow-panel" role="region" [attr.aria-label]="'reservations.attestation.title' | t">
+        <div class="attestation-header">
+          <div class="attestation-icon-circle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+          </div>
+          <div class="attestation-title-wrap">
+            <h2 class="attestation-title">{{ 'reservations.attestation.title' | t }}</h2>
+            <p class="attestation-subtitle">{{ 'reservations.attestation.subtitle' | t }}</p>
+          </div>
+        </div>
+
+        <div class="attestation-patient-box">
+          <div class="patient-id-badge">
+            <span class="patient-dot"></span>
+            <span>{{ 'reception.patients.selected' | t }}</span>
+          </div>
+          <strong class="patient-name-display">{{ attestation.patientName }}</strong>
+        </div>
+
+        <div class="attestation-form-section">
+          <label class="form-section-label" for="attestation-basis-select">
+            {{ 'reservations.attestation.basis' | t }}
+          </label>
+          <div class="select-wrapper">
+            <select
+              id="attestation-basis-select"
+              class="attestation-select"
+              [value]="attestationBasis()"
+              (change)="onAttestationBasisChange($event)"
+              [disabled]="store.isAttesting()"
+            >
+              <option value="GovernmentIdSeen">
+                {{ 'reservations.attestation.governmentId' | t }}
+              </option>
+              <option value="ApprovedAlternateEvidence">
+                {{ 'reservations.attestation.alternate' | t }}
+              </option>
+            </select>
+          </div>
+
+          <div class="attestation-chk-row">
+            <input
+              type="checkbox"
+              id="verified-in-person-chk"
+              checked
+              disabled
+              class="sr-only-chk"
+            />
+            <label for="verified-in-person-chk" class="chk-label">
+              <span class="chk-box-custom checked" aria-hidden="true">✓</span>
+              <span>تم التحقق الشخصي في مقر العيادة (In Person)</span>
+            </label>
+          </div>
+
+          <label class="form-section-label" for="attestation-note-input">
+            {{ 'reservations.attestation.reason' | t }}
+          </label>
+          <textarea
+            id="attestation-note-input"
+            class="attestation-textarea"
+            rows="2"
+            [placeholder]="'reservations.attestation.reasonPlaceholder' | t"
+            [value]="attestationReason()"
+            (input)="onAttestationReasonInput($event)"
+            [disabled]="store.isAttesting()"
+          ></textarea>
+        </div>
+
+        <div class="attestation-actions">
+          <button
+            type="button"
+            class="btn btn-primary btn-confirm-attestation"
+            (click)="confirmAttestation()"
+            [disabled]="store.isAttesting()"
+          >
+            @if (store.isAttesting()) {
+              <span class="spinner-inline"></span>
+            } @else {
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            }
+            <span>{{ 'reservations.attestation.confirm' | t }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-cancel-attestation"
+            (click)="cancelAttestation()"
+            [disabled]="store.isAttesting()"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </div>
     } @else if (store.editor(); as mode) {
       <app-reservation-editor
         [mode]="mode"

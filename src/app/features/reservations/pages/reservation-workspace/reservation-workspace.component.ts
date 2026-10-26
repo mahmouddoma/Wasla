@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
@@ -142,7 +142,36 @@ export class ReservationWorkspaceComponent implements OnInit {
     return 'status-neutral';
   }
 
+  readonly attestationBasis = signal<'GovernmentIdSeen' | 'ApprovedAlternateEvidence'>('GovernmentIdSeen');
+  readonly attestationReason = signal('');
+
+  onAttestationBasisChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as
+      | 'GovernmentIdSeen'
+      | 'ApprovedAlternateEvidence';
+    this.attestationBasis.set(val);
+  }
+
+  onAttestationReasonInput(event: Event): void {
+    const val = (event.target as HTMLTextAreaElement).value;
+    this.attestationReason.set(val);
+  }
+
+  confirmAttestation(): void {
+    void this.store.confirmAttestationAndBook(
+      this.attestationBasis(),
+      this.attestationReason(),
+    );
+  }
+
+  cancelAttestation(): void {
+    this.store.cancelAttestation();
+    this.attestationReason.set('');
+    this.attestationBasis.set('GovernmentIdSeen');
+  }
+
   drawerTitle(): string {
+    if (this.store.pendingAttestation()) return this.language.t('reservations.attestation.title');
     if (this.store.checkedInTicket()) return this.language.t('reception.arrival.done');
     if (this.store.arrival()) return this.language.t('reception.arrival.title');
     if (this.store.editor()) {
@@ -168,6 +197,7 @@ export class ReservationWorkspaceComponent implements OnInit {
   }
 
   drawerDescription(): string {
+    if (this.store.pendingAttestation()) return this.language.t('reservations.attestation.subtitle');
     if (this.store.detail()) {
       return this.store.actor() === 'Reception'
         ? this.label(this.store.detail()?.patient)

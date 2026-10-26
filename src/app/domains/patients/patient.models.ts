@@ -31,6 +31,22 @@ export interface PatientSearchQuery {
   pageSize: number;
 }
 
+export function isValidPatientSearchCriteria(criteria: {
+  phoneNumber?: string | null;
+  name?: string | null;
+  dateOfBirth?: string | null;
+  email?: string | null;
+}): boolean {
+  const phoneDigits = (criteria.phoneNumber || '').replace(/\D/g, '');
+  if (phoneDigits.length >= 7) return true;
+  const trimmedName = (criteria.name || '').trim();
+  if (trimmedName.length >= 2) return true;
+  if (criteria.dateOfBirth?.trim()) return true;
+  const email = (criteria.email || '').trim();
+  if (email && email.includes('@')) return true;
+  return false;
+}
+
 export interface PagedResponse<T> {
   items: T[];
   pageNumber: number;

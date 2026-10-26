@@ -58,9 +58,18 @@ export class PatientsApi {
     if (query.doctorPracticeId?.trim()) {
       params = params.set('doctorPracticeId', query.doctorPracticeId.trim());
     }
-    if (query.phoneNumber?.trim()) params = params.set('phoneNumber', query.phoneNumber.trim());
-    if (query.name?.trim()) params = params.set('name', query.name.trim());
-    if (query.dateOfBirth) params = params.set('dateOfBirth', query.dateOfBirth);
+    const phone = query.phoneNumber?.trim();
+    if (phone) {
+      params = params.set('phoneNumber', phone);
+    }
+    const name = query.name?.trim();
+    if (name) {
+      params = params.set('name', name);
+    }
+    const dob = query.dateOfBirth?.trim();
+    if (dob) {
+      params = params.set('dateOfBirth', dob);
+    }
     return this.http.get<PagedResponse<PatientSearchItem>>(`${this.patientsUrl}/search`, {
       params,
     });

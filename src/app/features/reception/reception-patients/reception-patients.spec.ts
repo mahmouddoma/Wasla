@@ -129,6 +129,7 @@ describe('ReceptionPatients', () => {
   });
 
   it('searches for patients in selected practice and populates results', async () => {
+    patientsApi.search.mockClear();
     component['searchModel'].set({
       name: 'أحمد',
       phoneNumber: '',
@@ -213,6 +214,7 @@ describe('ReceptionPatients', () => {
   });
   it('renders registration only for register-only accounts', async () => {
     session.hasPermission.mockImplementation((code) => code === 'Patients.Register');
+    patientsApi.search.mockClear();
     fixture.destroy();
     fixture = TestBed.createComponent(ReceptionPatients);
     component = fixture.componentInstance;

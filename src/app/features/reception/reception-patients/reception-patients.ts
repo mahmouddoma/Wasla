@@ -34,6 +34,7 @@ import {
   PagedResponse,
   PatientRelationshipType,
   PatientSearchItem,
+  isValidPatientSearchCriteria,
 } from '../../../domains/patients';
 import { PatientsApi } from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
@@ -206,10 +207,15 @@ export class ReceptionPatients {
     this.clearFeedback();
   }
 
+  protected hasValidSearchCriteria(): boolean {
+    return isValidPatientSearchCriteria(this.searchModel());
+  }
+
   protected setPageSize(size: number): void {
     if (this.searchModel().pageSize === size && this.pageNumber() === 1) return;
     this.searchModel.update((m) => ({ ...m, pageSize: size }));
     this.pageNumber.set(1);
+    this.isSearching.set(false);
     void this.search(1);
   }
 
@@ -317,36 +323,42 @@ export class ReceptionPatients {
       this.messages.set([this.uiLanguage.t('ui.full.761')]);
       return;
     }
-    await submit(this.searchForm, async () => {
-      if (this.isSearching()) return;
-      this.isSearching.set(true);
-      this.clearFeedback();
-      this.results.set(null);
-      this.selectedPatient.set(null);
-      this.selectedPatientId.set('');
-      const sequence = ++this.searchSequence;
-      const practiceId = this.selectedPracticeId();
-      try {
-        this.pageNumber.set(pageNumber);
-        const result = await firstValueFrom(
-          this.api.search({
-            ...this.searchModel(),
-            doctorPracticeId: practiceId,
-            pageNumber,
-          }),
-        );
-        if (sequence === this.searchSequence && this.selectedPracticeId() === practiceId)
-          this.results.set(result);
-      } catch (error) {
-        if (sequence !== this.searchSequence) return;
-        this.messages.set(flattenErrors(error));
-        if (error instanceof HttpErrorResponse && error.status === 403) {
-          await this.refreshAccessContext();
-        }
-      } finally {
-        if (sequence === this.searchSequence) this.isSearching.set(false);
+    if (event && !this.hasValidSearchCriteria()) {
+      const msg = this.uiLanguage.t('reception.patients.searchRuleHelp');
+      this.toast.error(msg);
+      this.messages.set([msg]);
+      return;
+    }
+    this.clearFeedback();
+    this.results.set(null);
+    this.selectedPatient.set(null);
+    this.selectedPatientId.set('');
+    const sequence = ++this.searchSequence;
+    const practiceId = this.selectedPracticeId();
+    this.isSearching.set(true);
+    try {
+      this.pageNumber.set(pageNumber);
+      const result = await firstValueFrom(
+        this.api.search({
+          ...this.searchModel(),
+          doctorPracticeId: practiceId,
+          pageNumber,
+        }),
+      );
+      if (sequence === this.searchSequence && this.selectedPracticeId() === practiceId)
+        this.results.set(result);
+    } catch (error) {
+      if (sequence !== this.searchSequence) return;
+      this.messages.set(flattenErrors(error));
+      if (error instanceof HttpErrorResponse && error.status === 403) {
+        await this.refreshAccessContext();
       }
-    });
+      this.toast.error(this.messages().join(' ') || this.uiLanguage.t('common.requestFailed'));
+    } finally {
+      if (sequence === this.searchSequence && this.selectedPracticeId() === practiceId) {
+        this.isSearching.set(false);
+      }
+    }
   }
 
   protected choose(patientId: string): void {

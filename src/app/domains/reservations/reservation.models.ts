@@ -127,6 +127,7 @@ export interface CreateReservationRequest {
   segmentId: string;
   visitTypeId: string;
   bookingNote: string | null;
+  patientIdentityAttestationId?: string;
 }
 export interface CreatePatientReservationRequest extends CreateReservationRequest {
   doctorPracticeId: string;
