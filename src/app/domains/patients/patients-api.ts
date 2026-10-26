@@ -10,6 +10,10 @@ import {
   PatientProfile,
   PatientSearchItem,
   PatientSearchQuery,
+  RegisterFullPatientRequest,
+  RegisterFullPatientResponse,
+  RegistrationMatchesRequest,
+  RegistrationMatchesResponse,
   UpdatePatientProfileRequest,
   UpsertPatientContactRequest,
 } from './patient.models';
@@ -101,6 +105,36 @@ export class PatientsApi {
 
   deactivateContact(contactId: string): Observable<void> {
     return this.http.delete<void>(`${this.meUrl}/contacts/${contactId}`);
+  }
+
+  registerFull(request: RegisterFullPatientRequest): Observable<RegisterFullPatientResponse> {
+    const body = new FormData();
+    appendText(body, 'DoctorPracticeId', request.doctorPracticeId);
+    appendText(body, 'NameAr', request.nameAr);
+    if (request.nameEn) appendText(body, 'NameEn', request.nameEn);
+    appendText(body, 'DateOfBirth', request.dateOfBirth);
+    appendText(body, 'Gender', request.gender);
+    appendText(body, 'PhoneNumber', request.phoneNumber);
+    appendText(body, 'Email', request.email);
+    body.append('VerifiedInPerson', String(request.verifiedInPerson));
+    appendText(body, 'IdentityVerificationBasis', request.identityVerificationBasis);
+    if (request.verificationNote) appendText(body, 'VerificationNote', request.verificationNote);
+    if (request.matchReviewOutcome) appendText(body, 'MatchReviewOutcome', request.matchReviewOutcome);
+    if (request.matchReviewReason) appendText(body, 'MatchReviewReason', request.matchReviewReason);
+    if (request.profileImage) body.append('ProfileImage', request.profileImage);
+    if (request.personalIdFrontImage) body.append('PersonalIdFrontImage', request.personalIdFrontImage);
+    if (request.personalIdBackImage) body.append('PersonalIdBackImage', request.personalIdBackImage);
+
+    return this.http.post<RegisterFullPatientResponse>(`${this.patientsUrl}/full`, body);
+  }
+
+  registrationMatches(
+    request: RegistrationMatchesRequest,
+  ): Observable<RegistrationMatchesResponse> {
+    return this.http.post<RegistrationMatchesResponse>(
+      `${this.patientsUrl}/registration-matches`,
+      request,
+    );
   }
 }
 

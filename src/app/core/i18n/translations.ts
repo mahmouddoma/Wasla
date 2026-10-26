@@ -1308,6 +1308,22 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'طلبات ربط أفراد الأسرة',
     en: 'Family linking requests',
   },
+  'permissions.group.FamilyMedicalAccessRequests': {
+    ar: 'طلبات الوصول الطبي العائلي',
+    en: 'Family medical access requests',
+  },
+  'permissions.group.FamilyMedicalAccessEligibility': {
+    ar: 'أهلية الوصول الطبي العائلي',
+    en: 'Family medical access eligibility',
+  },
+  'permissions.group.Archive': {
+    ar: 'الأرشفة',
+    en: 'Archive',
+  },
+  'permissions.group.Audit': {
+    ar: 'سجلات التدقيق',
+    en: 'Audit logs',
+  },
   'permissions.group.Reception': { ar: 'الاستقبال', en: 'Reception' },
   'permissions.group.ReceptionUsers': { ar: 'موظفو الاستقبال', en: 'Reception staff' },
   'permissions.group.ReceptionAssignments': {
@@ -1618,6 +1634,58 @@ export const TRANSLATIONS: TranslationDictionary = {
   'permissions.label.FamilyRelationshipRequests.Reject': {
     ar: 'رفض طلبات ربط أفراد الأسرة',
     en: 'Reject family linking requests',
+  },
+  'permissions.label.FamilyMedicalAccessRequests.ViewAll': {
+    ar: 'عرض جميع طلبات الوصول الطبي العائلي',
+    en: 'View all family medical access requests',
+  },
+  'permissions.label.FamilyMedicalAccessRequests.ViewAdminDetails': {
+    ar: 'عرض تفاصيل طلب الوصول الطبي العائلي',
+    en: 'View family medical access request details',
+  },
+  'permissions.label.FamilyMedicalAccessRequests.ViewAdminDocuments': {
+    ar: 'عرض مستندات وأدلة الوصول الطبي العائلي',
+    en: 'View family medical access documents and evidence',
+  },
+  'permissions.label.FamilyMedicalAccessRequests.Decide': {
+    ar: 'اتخاذ قرار بشأن طلب الوصول الطبي العائلي',
+    en: 'Decide on family medical access request',
+  },
+  'permissions.label.FamilyMedicalAccessRequests.RequestModification': {
+    ar: 'طلب تعديل على طلب الوصول الطبي العائلي',
+    en: 'Request modification on family medical access request',
+  },
+  'permissions.label.FamilyMedicalAccessEligibility.Review': {
+    ar: 'مراجعة أهلية الوصول الطبي العائلي',
+    en: 'Review family medical access eligibility',
+  },
+  'permissions.label.FamilyMedicalAccessEligibility.Decide': {
+    ar: 'اعتماد أهلية الوصول الطبي العائلي',
+    en: 'Decide family medical access eligibility',
+  },
+  'permissions.label.FamilyMedicalAccessEligibility.Revoke': {
+    ar: 'إلغاء أهلية الوصول الطبي العائلي',
+    en: 'Revoke family medical access eligibility',
+  },
+  'permissions.label.Archive.ViewOperations': {
+    ar: 'عرض عمليات الأرشفة',
+    en: 'View archive operations',
+  },
+  'permissions.label.Archive.Operations.Pause': {
+    ar: 'إيقاف عمليات الأرشفة مؤقتًا',
+    en: 'Pause archive operations',
+  },
+  'permissions.label.Archive.Operations.Resume': {
+    ar: 'استئناف عمليات الأرشفة',
+    en: 'Resume archive operations',
+  },
+  'permissions.label.Archive.ViewPlatform': {
+    ar: 'عرض سجلات الأرشفة للمنصة',
+    en: 'View platform archive records',
+  },
+  'permissions.label.Audit.Events.View': {
+    ar: 'عرض سجلات التدقيق والمتابعة',
+    en: 'View audit events log',
   },
   'permissions.label.PracticeTickets.View': { ar: 'عرض دور المرضى', en: 'View the patient queue' },
   'permissions.label.PracticeReservations.View': {

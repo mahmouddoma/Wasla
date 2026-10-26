@@ -162,4 +162,49 @@ describe('PatientsApi', () => {
     remove.flush(null);
     await deleteResult;
   });
+
+  it('WAS-611: registerFull posts full verified patient registration', async () => {
+    const result = firstValueFrom(
+      api.registerFull({
+        doctorPracticeId: 'pr1',
+        nameAr: 'مريض تجريبي',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        phoneNumber: '01000000000',
+        email: 'test@example.com',
+        verifiedInPerson: true,
+        identityVerificationBasis: 'GovernmentIdSeen',
+      }),
+    );
+    const req = http.expectOne(`${url}/full`);
+    expect(req.request.method).toBe('POST');
+    expect((req.request.body as FormData).get('DoctorPracticeId')).toBe('pr1');
+    expect((req.request.body as FormData).get('VerifiedInPerson')).toBe('true');
+    req.flush(
+      {
+        patientId: 'pt1',
+        applicationUserId: 'u1',
+        profileType: 'Full',
+        accountStatus: 'PendingActivation',
+        activationEmailMasked: 't***@example.com',
+        invitationExpiresOnUtc: '2026-10-27',
+      },
+      { status: 201, statusText: 'Created' },
+    );
+    await result;
+  });
+
+  it('WAS-612: registrationMatches posts matching check', async () => {
+    const payload = {
+      mode: 'Search' as const,
+      doctorPracticeId: 'pr1',
+      email: 'test@example.com',
+    };
+    const result = firstValueFrom(api.registrationMatches(payload));
+    const req = http.expectOne(`${url}/registration-matches`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({ matches: [], status: 'NoMatch' });
+    await result;
+  });
 });
