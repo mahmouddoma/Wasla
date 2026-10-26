@@ -303,14 +303,21 @@ export interface FamilyMedicalEligibilityReview {
   eligibilityId?: string;
   familyId?: string;
   childPatientId?: string;
+  adultPatientId?: string;
   affectedAdultPatientId?: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Revoked' | string;
+  status: 'Pending' | 'PendingReview' | 'Approved' | 'Rejected' | 'Revoked' | string;
   eligibilityStatus?: string;
   reason?: string;
+  reviewReason?: string;
   reviewMessage?: string | null;
   reviewedByUserId?: string | null;
   reviewedAtUtc?: string | null;
   createdAtUtc?: string;
+  policyVersion?: string | null;
+  basisReference?: string | null;
+  canApprove?: boolean;
+  canReject?: boolean;
+  canRevoke?: boolean;
   rowVersion: string;
   capabilities?: {
     canApprove?: boolean;

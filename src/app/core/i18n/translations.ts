@@ -8,6 +8,14 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
+  'common.failedToLoad': {
+    ar: 'فشل تحميل البيانات',
+    en: 'Failed to load data',
+  },
+  'policy.version': {
+    ar: 'إصدار السياسة',
+    en: 'Policy Version',
+  },
   'routes.familyMedicalAccess': {
     ar: 'طلبات الوصول الطبي',
     en: 'Medical Access Requests',

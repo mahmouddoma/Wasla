@@ -21,7 +21,7 @@
         </div>
 
         <div class="review-actions-deck">
-          @if (isPending() && canDecide) {
+          @if (canPerformApprove()) {
             <button
               type="button"
               class="btn-action btn-approve"
@@ -29,11 +29,13 @@
             >
               {{ 'review.approveRequest' | t }}
             </button>
+          }
+          @if (canPerformReject()) {
             <button type="button" class="btn-action btn-reject" (click)="openActionModal('reject')">
               {{ 'review.rejectRequest' | t }}
             </button>
           }
-          @if (isApproved() && canRevoke) {
+          @if (canPerformRevoke()) {
             <button type="button" class="btn-action btn-revoke" (click)="openActionModal('revoke')">
               {{ 'review.revokeAction' | t }}
             </button>
@@ -60,16 +62,22 @@
                 <span class="kv-value code-font">{{ item.childPatientId }}</span>
               </div>
             }
-            @if (item.affectedAdultPatientId) {
+            @if (item.adultPatientId || item.affectedAdultPatientId) {
               <div class="kv-item">
                 <span class="kv-label">{{ 'review.affectedAdultPatientId' | t }}</span>
-                <span class="kv-value code-font">{{ item.affectedAdultPatientId }}</span>
+                <span class="kv-value code-font">{{ item.adultPatientId || item.affectedAdultPatientId }}</span>
               </div>
             }
             @if (item.familyId) {
               <div class="kv-item">
                 <span class="kv-label">{{ 'review.familyId' | t }}</span>
                 <span class="kv-value code-font">{{ item.familyId }}</span>
+              </div>
+            }
+            @if (item.policyVersion) {
+              <div class="kv-item">
+                <span class="kv-label">{{ 'policy.version' | t }}</span>
+                <span class="kv-value code-font">{{ item.policyVersion }}</span>
               </div>
             }
             @if (item.eligibilityId) {
@@ -81,11 +89,11 @@
           </div>
         </section>
 
-        @if (item.reason) {
+        @if (item.reviewReason || item.reason) {
           <section class="details-section">
             <h3 class="section-title">{{ 'review.reason' | t }}</h3>
             <div class="text-content-box">
-              <p>{{ item.reason }}</p>
+              <p>{{ item.reviewReason || item.reason }}</p>
             </div>
           </section>
         }

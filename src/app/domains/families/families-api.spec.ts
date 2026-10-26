@@ -374,7 +374,8 @@ describe('FamiliesApi', () => {
 
   it('wires SuperAdmin review, decisions, and eligibility review routes', async () => {
     const medicalAccessAdminUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-access-requests`;
-    const eligibilityUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-eligibilities/reviews`;
+    const eligibilityReviewsUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-eligibilities/reviews`;
+    const eligibilityUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-eligibilities`;
     const summaryResult = firstValueFrom(api.adminMedicalAccessSummary());
     http.expectOne(`${medicalAccessAdminUrl}/summary`).flush({});
     await summaryResult;
@@ -409,7 +410,7 @@ describe('FamiliesApi', () => {
     }
 
     const eligibilityList = firstValueFrom(api.medicalEligibilityReviews({ pageNumber: 1, pageSize: 20 }));
-    http.expectOne(`${eligibilityUrl}?pageNumber=1&pageSize=20`).flush({ items: [] });
+    http.expectOne(`${eligibilityReviewsUrl}?pageNumber=1&pageSize=20`).flush({ items: [] });
     await eligibilityList;
 
     const eligibilityDetails = firstValueFrom(api.medicalEligibilityReview('review'));

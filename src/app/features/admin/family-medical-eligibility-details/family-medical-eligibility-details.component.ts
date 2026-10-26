@@ -62,8 +62,29 @@ export class FamilyMedicalEligibilityDetailsComponent {
     PERMISSIONS.familyMedicalAccessEligibilityRevoke,
   );
 
-  protected readonly isPending = computed(() => this.details()?.status === 'Pending');
+  protected readonly isPending = computed(() => {
+    const s = this.details()?.status;
+    return s === 'Pending' || s === 'PendingReview';
+  });
   protected readonly isApproved = computed(() => this.details()?.status === 'Approved');
+
+  protected readonly canPerformApprove = computed(() => {
+    const item = this.details();
+    if (!item) return false;
+    return (item.canApprove ?? this.isPending()) && this.canDecide;
+  });
+
+  protected readonly canPerformReject = computed(() => {
+    const item = this.details();
+    if (!item) return false;
+    return (item.canReject ?? this.isPending()) && this.canDecide;
+  });
+
+  protected readonly canPerformRevoke = computed(() => {
+    const item = this.details();
+    if (!item) return false;
+    return (item.canRevoke ?? this.isApproved()) && this.canRevoke;
+  });
 
   constructor() {
     effect(() => {
