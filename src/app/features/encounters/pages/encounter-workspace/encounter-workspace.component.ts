@@ -82,6 +82,11 @@ export class EncounterWorkspaceComponent implements OnInit {
     return Math.max(1, Math.ceil(page.totalCount / page.pageSize));
   });
 
+  // ── Drawer Navigation Tabs (Diagnoses, Prescription, Diagnostics, History) ──
+  readonly activeTab = signal<'diagnoses' | 'prescription' | 'diagnostics' | 'history'>(
+    'diagnoses',
+  );
+
   // ── Amendment State (FE API 13.8) ─────────────────────────
   readonly showAmendmentForm = signal(false);
   readonly amendmentReason = signal('');
@@ -199,6 +204,7 @@ export class EncounterWorkspaceComponent implements OnInit {
       });
       this.removeId.set('');
       this.cancelAmendment();
+      this.activeTab.set('diagnoses');
     });
   }
   async ngOnInit() {
@@ -214,20 +220,18 @@ export class EncounterWorkspaceComponent implements OnInit {
     if (!item) return '';
     const nameAr = item.nameAr || item.practiceNameAr || item.doctorNameAr || item.patientNameAr;
     const nameEn = item.nameEn || item.practiceNameEn || item.doctorNameEn || item.patientNameEn;
-    return this.language.currentLang() === 'en'
-      ? (nameEn || nameAr || '')
-      : (nameAr || nameEn || '');
+    return this.language.currentLang() === 'en' ? nameEn || nameAr || '' : nameAr || nameEn || '';
   }
   doctorOrPatient(item: LocalizedNameEntity): string {
     if (this.store.doctor()) {
       const ar = item.patient?.nameAr || item.patientNameAr;
       const en = item.patient?.nameEn || item.patientNameEn;
-      return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
+      return this.language.currentLang() === 'en' ? en || ar || '' : ar || en || '';
     }
     const ar = item.doctor?.nameAr || item.doctorNameAr;
     const en = item.doctor?.nameEn || item.doctorNameEn;
     if (ar || en) {
-      return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
+      return this.language.currentLang() === 'en' ? en || ar || '' : ar || en || '';
     }
     if (item.practiceNameAr) {
       const match = item.practiceNameAr.match(/(د\.\s*[^ل]+)/);
@@ -239,19 +243,19 @@ export class EncounterWorkspaceComponent implements OnInit {
   practiceLabel(item: LocalizedNameEntity): string {
     const ar = item.practice?.nameAr || item.practiceNameAr;
     const en = item.practice?.nameEn || item.practiceNameEn;
-    return this.language.currentLang() === 'en' ? (en || ar || '') : (ar || en || '');
+    return this.language.currentLang() === 'en' ? en || ar || '' : ar || en || '';
   }
   doctorNameDetail(detail: LocalizedNameEntity | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = detail?.doctor?.nameAr || detail?.doctorNameAr;
     const en = detail?.doctor?.nameEn || detail?.doctorNameEn;
-    return isAr ? (ar || en || '') : (en || ar || '');
+    return isAr ? ar || en || '' : en || ar || '';
   }
   practiceNameDetail(detail: LocalizedNameEntity | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = detail?.practice?.nameAr || detail?.practiceNameAr;
     const en = detail?.practice?.nameEn || detail?.practiceNameEn;
-    return isAr ? (ar || en || '') : (en || ar || '');
+    return isAr ? ar || en || '' : en || ar || '';
   }
   value(event: Event) {
     return (event.target as HTMLInputElement).value;
@@ -277,15 +281,42 @@ export class EncounterWorkspaceComponent implements OnInit {
       notes: diagnosis.notes || '',
     }));
   }
-  saveDiagnosis(event: Event) {
+  cancelEditDiagnosis() {
+    this.model.update((m) => ({
+      ...m,
+      diagnosisId: '',
+      type: 'Primary',
+      displayText: '',
+      notes: '',
+    }));
+  }
+  async saveDiagnosis(event: Event) {
     event.preventDefault();
     const model = this.model();
-    void this.store.saveDiagnosis(
+    await this.store.saveDiagnosis(
       { type: model.type, displayText: model.displayText, notes: model.notes.trim() || null },
       model.diagnosisId,
     );
+    this.cancelEditDiagnosis();
+  }
+  async completeVisit() {
+    const model = this.model();
+    const draftDiagnosis = model.displayText.trim()
+      ? {
+          type: model.type,
+          displayText: model.displayText.trim(),
+          notes: model.notes.trim() || null,
+        }
+      : undefined;
+    await this.store.complete(model.clinicalNotes, draftDiagnosis);
+    if (draftDiagnosis) this.cancelEditDiagnosis();
   }
   snapshot(value: unknown) {
     return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  }
+  diagnoses(
+    detail: { diagnoses?: readonly Diagnosis[] | null } | null | undefined,
+  ): readonly Diagnosis[] {
+    return detail?.diagnoses ?? [];
   }
 }

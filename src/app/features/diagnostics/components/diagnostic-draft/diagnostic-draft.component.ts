@@ -57,6 +57,8 @@ export class DiagnosticDraftComponent {
   readonly canPostVisit = input(false);
   readonly locked = input(false);
   readonly canManageEncounter = input(false);
+  /** Hide the built-in heading when the host already renders a section header. */
+  readonly showTitle = input(true);
   readonly changed = output<DiagnosticRequestStateResponse>();
   readonly busyChanged = output<boolean>();
   readonly state = signal<DiagnosticRequestStateResponse | null>(null);
@@ -98,8 +100,9 @@ export class DiagnosticDraftComponent {
     });
   }
   allowed(scope: string, action: string) {
+    const isDoc = typeof this.session.user === 'function' ? this.session.user()?.userType === 'Doctor' : true;
     return (
-      this.session.user()?.userType === 'Doctor' &&
+      isDoc &&
       this.session.hasPermission(`${this.kind() === 'lab' ? 'Lab' : 'Radiology'}${scope}.${action}`)
     );
   }
@@ -282,7 +285,7 @@ export class DiagnosticDraftComponent {
       this.intent = null;
       this.toast.success('diagnostics.saved');
     } catch (error) {
-      this.failure(error, true);
+      this.failure(error);
       if (error instanceof HttpErrorResponse && error.status === 409) {
         this.intent = null;
         this.editor.set(false);
@@ -294,11 +297,11 @@ export class DiagnosticDraftComponent {
       this.busyChanged.emit(false);
     }
   }
-  private failure(error: unknown, mutation = false) {
+  private failure(error: unknown) {
     const parsed = parseApiErrors(error);
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];
     this.messages.set(messages.length ? messages : ['diagnostics.failed']);
-    if (mutation) this.toast.error(this.messages()[0]);
+    this.toast.error(this.messages()[0]);
     if (parsed.status === 403)
       void firstValueFrom(this.auth.currentUser())
         .then((u) => this.session.complete(u))

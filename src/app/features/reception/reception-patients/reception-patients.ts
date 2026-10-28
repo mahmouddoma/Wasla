@@ -142,7 +142,30 @@ export class ReceptionPatients {
   protected readonly canRegister = computed(() =>
     this.session.hasPermission(PERMISSIONS.patientsRegister),
   );
+  protected readonly canVerifyClaimIdentity = computed(() =>
+    this.session.hasPermission(PERMISSIONS.patientsRegistrationMatch),
+  );
   protected readonly registrationOpen = signal(false);
+  protected readonly registrationAccountMode = signal<'basic' | 'full'>('basic');
+  protected readonly fullRegistrationBasis = signal('GovernmentIdSeen');
+  protected readonly fullRegistrationVerifiedInPerson = signal(true);
+  protected readonly fullRegistrationNote = signal('');
+  protected readonly personalIdFrontImage = signal<File | undefined>(undefined);
+  protected readonly personalIdBackImage = signal<File | undefined>(undefined);
+  protected readonly fullAccountActivationInfo = signal<{
+    activationEmailMasked: string;
+    invitationExpiresOnUtc: string;
+  } | null>(null);
+
+  protected readonly attestationDrawerOpen = signal(false);
+  protected readonly isSubmittingAttestation = signal(false);
+  protected readonly generatedAttestationId = signal('');
+  protected readonly attestationModel = signal({
+    claimantEmail: '',
+    verificationBasis: 'GovernmentIdSeen',
+    verifiedInPerson: true,
+    reason: '',
+  });
   protected readonly canBook = computed(
     () =>
       this.session.hasPermission(PERMISSIONS.practiceReservationsCreate) &&
@@ -266,21 +289,53 @@ export class ReceptionPatients {
       const generation = this.contextGeneration;
       try {
         const value = this.createModel();
-        const response = await firstValueFrom(
-          this.api.create({
-            ...value,
-            doctorPracticeId: this.selectedPracticeId(),
-            gender: value.gender as 'Male' | 'Female',
-            primaryContactIsPrimary: true,
-            profileImage: this.profileImage(),
-          }),
-        );
+        let responsePatientId = '';
+        if (this.registrationAccountMode() === 'full') {
+          if (!value.email.trim()) {
+            this.messages.set(['validation.emailRequired']);
+            this.toast.error(this.uiLanguage.t('validation.emailRequired'));
+            return;
+          }
+          const fullRes = await firstValueFrom(
+            this.api.registerFull({
+              doctorPracticeId: this.selectedPracticeId(),
+              nameAr: value.nameAr,
+              nameEn: value.nameEn || undefined,
+              dateOfBirth: value.dateOfBirth,
+              gender: value.gender as 'Male' | 'Female',
+              phoneNumber: value.phoneNumber,
+              email: value.email.trim(),
+              verifiedInPerson: this.fullRegistrationVerifiedInPerson(),
+              identityVerificationBasis: this.fullRegistrationBasis(),
+              verificationNote: this.fullRegistrationNote().trim() || undefined,
+              profileImage: this.profileImage(),
+              personalIdFrontImage: this.personalIdFrontImage(),
+              personalIdBackImage: this.personalIdBackImage(),
+            }),
+          );
+          responsePatientId = fullRes.patientId;
+          this.fullAccountActivationInfo.set({
+            activationEmailMasked: fullRes.activationEmailMasked,
+            invitationExpiresOnUtc: fullRes.invitationExpiresOnUtc,
+          });
+        } else {
+          const response = await firstValueFrom(
+            this.api.create({
+              ...value,
+              doctorPracticeId: this.selectedPracticeId(),
+              gender: value.gender as 'Male' | 'Female',
+              primaryContactIsPrimary: true,
+              profileImage: this.profileImage(),
+            }),
+          );
+          responsePatientId = response.patientId;
+        }
         this.toast.success(this.uiLanguage.t('patient.registered'));
         if (generation === this.contextGeneration) {
-          this.createdPatientId.set(response.patientId);
-          this.selectedPatientId.set(response.patientId);
+          this.createdPatientId.set(responsePatientId);
+          this.selectedPatientId.set(responsePatientId);
           this.selectedPatient.set({
-            patientId: response.patientId,
+            patientId: responsePatientId,
             nameAr: value.nameAr,
             nameEn: value.nameEn || null,
             dateOfBirth: value.dateOfBirth,
@@ -303,6 +358,8 @@ export class ReceptionPatients {
           primaryContactLinkedPatientId: '',
         });
         this.profileImage.set(undefined);
+        this.personalIdFrontImage.set(undefined);
+        this.personalIdBackImage.set(undefined);
         this.createForm().reset();
       } catch (error) {
         this.messages.set(flattenErrors(error));
@@ -383,6 +440,92 @@ export class ReceptionPatients {
 
   protected fileChanged(event: Event): void {
     this.profileImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
+  }
+
+  protected idFrontFileChanged(event: Event): void {
+    this.personalIdFrontImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
+  }
+
+  protected idBackFileChanged(event: Event): void {
+    this.personalIdBackImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
+  }
+
+  protected openAttestationDrawer(): void {
+    if (!this.selectedPatient() || !this.canVerifyClaimIdentity()) return;
+    this.generatedAttestationId.set('');
+    this.attestationModel.set({
+      claimantEmail: '',
+      verificationBasis: 'GovernmentIdSeen',
+      verifiedInPerson: true,
+      reason: '',
+    });
+    this.attestationDrawerOpen.set(true);
+  }
+
+  protected updateAttestationField(
+    field: 'claimantEmail' | 'verificationBasis' | 'reason',
+    event: Event,
+  ): void {
+    const val = (event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
+    this.attestationModel.update((m) => ({ ...m, [field]: val }));
+  }
+
+  protected toggleAttestationInPerson(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.attestationModel.update((m) => ({ ...m, verifiedInPerson: checked }));
+  }
+
+  protected async submitClaimIdentityAttestation(event: Event): Promise<void> {
+    event.preventDefault();
+    const patient = this.selectedPatient();
+    const practiceId = this.selectedPracticeId();
+    if (!patient || !practiceId || !this.canVerifyClaimIdentity() || this.isSubmittingAttestation())
+      return;
+
+    const am = this.attestationModel();
+    if (!am.claimantEmail.trim() || !am.claimantEmail.includes('@')) {
+      this.toast.error(this.uiLanguage.t('validation.emailValid'));
+      return;
+    }
+    if (!am.verifiedInPerson || !am.reason.trim()) {
+      this.toast.error(this.uiLanguage.t('reception.patients.attestationFieldsRequired'));
+      return;
+    }
+
+    this.isSubmittingAttestation.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.api.registrationMatches({
+          mode: 'ConfirmClaimIdentity',
+          doctorPracticeId: practiceId,
+          patientId: patient.patientId,
+          claimantEmail: am.claimantEmail.trim(),
+          verifiedInPerson: am.verifiedInPerson,
+          verificationBasis: am.verificationBasis,
+          reason: am.reason.trim(),
+        }),
+      );
+      this.generatedAttestationId.set(response.attestationId || '');
+      this.toast.success(this.uiLanguage.t('reception.patients.attestationCreatedToast'));
+    } catch (error) {
+      const errs = flattenErrors(error);
+      this.toast.error(errs.join(' ') || this.uiLanguage.t('common.requestFailed'));
+    } finally {
+      this.isSubmittingAttestation.set(false);
+    }
+  }
+
+  protected async copyAttestationId(): Promise<void> {
+    const id = this.generatedAttestationId();
+    if (!id) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(id);
+      }
+      this.toast.success(this.uiLanguage.t('reception.patients.attestationCopied'));
+    } catch {
+      this.toast.success(id);
+    }
   }
 
   protected selectedPracticeAllows(permission: string): boolean {

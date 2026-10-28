@@ -13,6 +13,8 @@ import {
   TicketReasonRequest,
   TicketVersionRequest,
   CompleteTicketRequest,
+  normalizeQueue,
+  normalizeTicket,
 } from './ticket.models';
 
 @Injectable({ providedIn: 'root' })
@@ -26,11 +28,13 @@ export class TicketsApi {
     body: CheckInTicketRequest,
     intentKey: string,
   ): Observable<PracticeTicket> {
-    return this.http.post<PracticeTicket>(
-      `${this.practiceUrl(practiceId)}/reservations/${this.id(reservationId)}/check-in`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<PracticeTicket>(
+        `${this.practiceUrl(practiceId)}/reservations/${this.id(reservationId)}/check-in`,
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeTicket));
   }
 
   forceCheckIn(
@@ -39,11 +43,13 @@ export class TicketsApi {
     body: ForceCheckInTicketRequest,
     intentKey: string,
   ): Observable<PracticeTicket> {
-    return this.http.post<PracticeTicket>(
-      `${this.practiceUrl(practiceId)}/reservations/${this.id(reservationId)}/force-check-in`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<PracticeTicket>(
+        `${this.practiceUrl(practiceId)}/reservations/${this.id(reservationId)}/force-check-in`,
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeTicket));
   }
 
   createWalkIn(
@@ -51,11 +57,13 @@ export class TicketsApi {
     body: CreateWalkInTicketRequest,
     intentKey: string,
   ): Observable<PracticeTicket> {
-    return this.http.post<PracticeTicket>(
-      `${this.practiceUrl(practiceId)}/tickets/walk-in`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<PracticeTicket>(
+        `${this.practiceUrl(practiceId)}/tickets/walk-in`,
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeTicket));
   }
 
   walkInOptions(practiceId: string, context: FollowUpBookingContext = {}): Observable<WalkInOptions> {
@@ -66,19 +74,25 @@ export class TicketsApi {
   }
 
   queue(practiceId: string): Observable<PracticeQueue> {
-    return this.http.get<PracticeQueue>(`${this.practiceUrl(practiceId)}/queue`);
+    return this.http
+      .get<PracticeQueue>(`${this.practiceUrl(practiceId)}/queue`)
+      .pipe(map(normalizeQueue));
   }
 
   details(practiceId: string, ticketId: string): Observable<PracticeTicket> {
-    return this.http.get<PracticeTicket>(`${this.ticketUrl(practiceId, ticketId)}`);
+    return this.http
+      .get<PracticeTicket>(`${this.ticketUrl(practiceId, ticketId)}`)
+      .pipe(map(normalizeTicket));
   }
 
   callNext(practiceId: string, intentKey: string): Observable<PracticeTicket> {
-    return this.http.post<PracticeTicket>(
-      `${this.practiceUrl(practiceId)}/queue/call-next`,
-      {},
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<PracticeTicket>(
+        `${this.practiceUrl(practiceId)}/queue/call-next`,
+        {},
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeTicket));
   }
 
   manualCall(
@@ -149,11 +163,18 @@ export class TicketsApi {
       .get<readonly PracticeTicket[] | { readonly items: readonly PracticeTicket[] }>(
         `${this.root}/tickets/mine/active`,
       )
-      .pipe(map((response) => ('items' in response ? response.items : response)));
+      .pipe(
+        map((response) => {
+          const list = 'items' in response ? response.items : response;
+          return Array.isArray(list) ? list.map(normalizeTicket) : list;
+        }),
+      );
   }
 
   myDetails(ticketId: string): Observable<PracticeTicket> {
-    return this.http.get<PracticeTicket>(`${this.root}/tickets/mine/${this.id(ticketId)}`);
+    return this.http
+      .get<PracticeTicket>(`${this.root}/tickets/mine/${this.id(ticketId)}`)
+      .pipe(map(normalizeTicket));
   }
 
   private mutate(
@@ -163,11 +184,13 @@ export class TicketsApi {
     body: TicketVersionRequest | TicketReasonRequest | CompleteTicketRequest,
     intentKey: string,
   ): Observable<PracticeTicket> {
-    return this.http.post<PracticeTicket>(
-      `${this.ticketUrl(practiceId, ticketId)}/${action}`,
-      body,
-      this.intentHeaders(intentKey),
-    );
+    return this.http
+      .post<PracticeTicket>(
+        `${this.ticketUrl(practiceId, ticketId)}/${action}`,
+        body,
+        this.intentHeaders(intentKey),
+      )
+      .pipe(map(normalizeTicket));
   }
 
   private practiceUrl(practiceId: string): string {

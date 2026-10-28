@@ -1,216 +1,285 @@
-<section class="section" [attr.aria-busy]="loading() || busy()">
-  <h3>{{ title() | t }}</h3>
-  @for (message of messages(); track $index) {
-    <p class="error-text" role="alert">{{ message | t }}</p>
+<section class="dx-draft" [dir]="language.dir()" [attr.aria-busy]="loading() || busy()">
+  @if (showTitle()) {
+    <h3 class="dx-title">{{ title() | t }}</h3>
   }
+
   @if (loading()) {
-    <p role="status">{{ 'reservations.loading' | t }}</p>
+    <p class="dx-muted" role="status">
+      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+      {{ 'reservations.loading' | t }}
+    </p>
   } @else if (failed()) {
-    <p>{{ 'diagnostics.failed' | t }}</p>
-    <button class="btn btn-outline-secondary" (click)="load()" [disabled]="locked()">
-      {{ 'common.retry' | t }}
-    </button>
-  } @else if (!state()?.items?.length && !completed()) {
-    <div class="empty-state">
-      <img
-        class="state-empty-illustration"
-        src="/SVG-AVATAR/Medical prescription-bro.svg"
-        alt=""
-        loading="lazy"
-        decoding="async"
-      />
-      <h2>{{ 'diagnostics.emptyDraft' | t }}</h2>
-      <p>{{ 'diagnostics.draftHelp' | t }}</p>
+    <div class="dx-empty">
+      <p>{{ 'diagnostics.failed' | t }}</p>
+      <button type="button" class="dx-btn dx-btn-ghost" (click)="load()" [disabled]="locked()">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (!state()?.items?.length && !completed() && !editor()) {
+    <div class="dx-empty">
+      <i class="fa-regular fa-clipboard dx-empty-icon" aria-hidden="true"></i>
+      <p class="dx-empty-title">{{ 'diagnostics.emptyDraft' | t }}</p>
       @if (canManage()) {
-        <button class="btn btn-primary" (click)="openEditor()" [disabled]="locked()">
+        <button type="button" class="dx-btn dx-btn-primary" (click)="openEditor()" [disabled]="locked()">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
           {{ 'diagnostics.addItem' | t }}
         </button>
       }
     </div>
   }
+
+  <!-- Current items -->
   @if (state()?.items?.length) {
-    <ul class="history">
+    <ul class="dx-items">
       @for (item of state()?.items; track item.itemId) {
-        <li>
-          <strong>{{
-            language.currentLang() === 'ar'
-              ? item.nameArSnapshot || item.nameEnSnapshot
-              : item.nameEnSnapshot || item.nameArSnapshot
-          }}</strong>
-          <p>{{ item.doctorInstructions }}</p>
-          <div class="actions">
-            @if (canManage() && item.capabilities.canEdit) {
-              <button
-                class="btn btn-outline-secondary"
-                (click)="edit(item.itemId)"
-                [disabled]="locked()"
-              >
-                {{ 'common.edit' | t }}
-              </button>
-            }
-            @if (canManage() && item.capabilities.canRemove) {
-              <button
-                class="btn btn-outline-secondary"
-                (click)="removingId.set(item.itemId)"
-                [disabled]="locked()"
-              >
-                {{ 'common.delete' | t }}
-              </button>
-            }
+        <li class="dx-item">
+          <div class="dx-item-row">
+            <i class="fa-solid fa-circle-check dx-item-icon" aria-hidden="true"></i>
+            <div class="dx-item-text">
+              <strong>{{
+                language.currentLang() === 'ar'
+                  ? item.nameArSnapshot || item.nameEnSnapshot
+                  : item.nameEnSnapshot || item.nameArSnapshot
+              }}</strong>
+              @if (item.doctorInstructions) {
+                <p>{{ item.doctorInstructions }}</p>
+              }
+            </div>
+            <div class="dx-item-actions">
+              @if (canManage() && item.capabilities.canEdit) {
+                <button
+                  type="button"
+                  class="dx-icon-btn"
+                  (click)="edit(item.itemId)"
+                  [disabled]="locked()"
+                  [attr.aria-label]="'common.edit' | t"
+                  [title]="'common.edit' | t"
+                >
+                  <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                </button>
+              }
+              @if (canManage() && item.capabilities.canRemove) {
+                <button
+                  type="button"
+                  class="dx-icon-btn dx-danger"
+                  (click)="removingId.set(item.itemId)"
+                  [disabled]="locked()"
+                  [attr.aria-label]="'common.delete' | t"
+                  [title]="'common.delete' | t"
+                >
+                  <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
           </div>
           @if (removingId() === item.itemId) {
-            <p>{{ 'diagnostics.confirmRemove' | t }}</p>
-            <div class="actions">
-              <button class="btn btn-danger" (click)="remove()" [disabled]="locked()">
-                {{ 'common.confirm' | t }}</button
-              ><button
-                class="btn btn-outline-secondary"
-                (click)="removingId.set('')"
-                [disabled]="locked()"
-              >
-                {{ 'common.cancel' | t }}
-              </button>
+            <div class="dx-confirm" role="alert">
+              <span>{{ 'diagnostics.confirmRemove' | t }}</span>
+              <div class="dx-confirm-actions">
+                <button type="button" class="dx-btn dx-btn-danger" (click)="remove()" [disabled]="locked()">
+                  {{ 'common.confirm' | t }}
+                </button>
+                <button
+                  type="button"
+                  class="dx-btn dx-btn-ghost"
+                  (click)="removingId.set('')"
+                  [disabled]="locked()"
+                >
+                  {{ 'common.cancel' | t }}
+                </button>
+              </div>
             </div>
           }
         </li>
       }
     </ul>
-    @if (canManage()) {
-      <button class="btn btn-primary" (click)="openEditor()" [disabled]="locked()">
+    @if (canManage() && !editor()) {
+      <button type="button" class="dx-btn dx-btn-add" (click)="openEditor()" [disabled]="locked()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
         {{ 'diagnostics.addItem' | t }}
       </button>
     }
   }
-  @if (completed() && canPostVisit() && allowed('Requests', 'CreatePostVisitOwn')) {
-    <button class="btn btn-primary" (click)="openEditor()" [disabled]="locked()">
+
+  @if (completed() && canPostVisit() && allowed('Requests', 'CreatePostVisitOwn') && !editor()) {
+    <button type="button" class="dx-btn dx-btn-add" (click)="openEditor()" [disabled]="locked()">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i>
       {{ 'diagnostics.postVisit' | t }}
     </button>
   }
+
+  <!-- Editor -->
   @if (editor()) {
-    <form class="detail-form section" (ngSubmit)="save()">
-      <fieldset class="full" [disabled]="busy() || locked()">
+    <form class="dx-editor" (ngSubmit)="save()">
+      <div class="dx-editor-head">
+        <strong>{{ (editingId() ? 'diagnostics.editItem' : 'diagnostics.newItem') | t }}</strong>
+        <button
+          type="button"
+          class="dx-icon-btn"
+          (click)="editor.set(false)"
+          [disabled]="busy() || locked()"
+          [attr.aria-label]="'common.cancel' | t"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <fieldset class="dx-fieldset" [disabled]="busy() || locked()">
         @if (!editingId()) {
-          <label
-            >{{ 'diagnostics.searchCatalog' | t
-            }}<input
-              class="field-input"
-              name="search"
-              type="search"
-              [ngModel]="search()"
-              (ngModelChange)="search.set($event)"
-              (change)="searchCatalog()"
-          /></label>
-          @if (searchLoading()) {
-            <p role="status">{{ 'reservations.loading' | t }}</p>
-          }
-          <ul class="history">
-            @for (item of results().items; track item.catalogId) {
-              <li>
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  [attr.aria-pressed]="catalogId() === item.catalogId && !missing()"
-                  (click)="select(item.catalogId)"
-                >
-                  {{
-                    language.currentLang() === 'ar'
-                      ? item.nameAr || item.nameEn
-                      : item.nameEn || item.nameAr
-                  }}
-                </button>
-              </li>
+          <p class="dx-step">{{ 'diagnostics.stepChoose' | t }}</p>
+
+          @if (!missing()) {
+            <label class="dx-search">
+              <span class="visually-hidden">{{ 'diagnostics.searchCatalog' | t }}</span>
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              <input
+                class="dx-input"
+                name="search"
+                type="search"
+                [placeholder]="'diagnostics.searchPlaceholder' | t"
+                [ngModel]="search()"
+                (ngModelChange)="search.set($event)"
+                (keydown.enter)="$event.preventDefault(); searchCatalog()"
+                (change)="searchCatalog()"
+              />
+            </label>
+
+            @if (searchLoading()) {
+              <p class="dx-muted" role="status">
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                {{ 'reservations.loading' | t }}
+              </p>
+            } @else {
+              <ul class="dx-results" role="listbox" [attr.aria-label]="'diagnostics.searchCatalog' | t">
+                @for (item of results().items; track item.catalogId) {
+                  <li>
+                    <button
+                      type="button"
+                      role="option"
+                      class="dx-result"
+                      [class.selected]="catalogId() === item.catalogId"
+                      [attr.aria-selected]="catalogId() === item.catalogId"
+                      (click)="select(item.catalogId)"
+                    >
+                      <span>{{
+                        language.currentLang() === 'ar'
+                          ? item.nameAr || item.nameEn
+                          : item.nameEn || item.nameAr
+                      }}</span>
+                      @if (catalogId() === item.catalogId) {
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                      }
+                    </button>
+                  </li>
+                } @empty {
+                  <li class="dx-muted dx-no-results">{{ 'diagnostics.noResults' | t }}</li>
+                }
+              </ul>
+
+              @if (results().totalCount > results().pageSize) {
+                <nav class="dx-pager">
+                  <button
+                    type="button"
+                    class="dx-icon-btn"
+                    (click)="searchCatalog(results().pageNumber - 1)"
+                    [disabled]="results().pageNumber <= 1"
+                    [attr.aria-label]="'common.previous' | t"
+                  >
+                    <i class="fa-solid fa-chevron-right dx-flip" aria-hidden="true"></i>
+                  </button>
+                  <span dir="ltr">{{ results().pageNumber }}</span>
+                  <button
+                    type="button"
+                    class="dx-icon-btn"
+                    (click)="searchCatalog(results().pageNumber + 1)"
+                    [disabled]="results().pageNumber * results().pageSize >= results().totalCount"
+                    [attr.aria-label]="'common.next' | t"
+                  >
+                    <i class="fa-solid fa-chevron-left dx-flip" aria-hidden="true"></i>
+                  </button>
+                </nav>
+              }
             }
-          </ul>
-          <nav class="actions">
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              (click)="searchCatalog(results().pageNumber - 1)"
-              [disabled]="results().pageNumber <= 1"
-            >
-              {{ 'common.previous' | t }}</button
-            ><button
-              class="btn btn-outline-secondary"
-              type="button"
-              (click)="searchCatalog(results().pageNumber + 1)"
-              [disabled]="results().pageNumber * results().pageSize >= results().totalCount"
-            >
-              {{ 'common.next' | t }}
-            </button>
-          </nav>
+          }
+
           @if (allowed('CatalogRequests', 'CreateOwn')) {
             <button
-              class="btn btn-outline-secondary my-3"
               type="button"
+              class="dx-link"
               (click)="missing.set(!missing()); catalogId.set('')"
               [attr.aria-pressed]="missing()"
             >
+              <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
               {{ 'diagnostics.requestMissing' | t }}
             </button>
           }
+
           @if (missing()) {
-            <label class="mb-3"
-              >{{ 'diagnostics.name' | t
-              }}<input
-                class="field-input"
-                name="name"
-                [ngModel]="name()"
-                (ngModelChange)="name.set($event)"
-                required /></label
-            ><label class="mb-3"
-              >{{ 'diagnostics.specimen' | t
-              }}<input
-                class="field-input"
-                name="specimen"
-                [ngModel]="specimen()"
-                (ngModelChange)="specimen.set($event)" /></label
-            ><label class="mb-3"
-              >{{ 'diagnostics.catalogNote' | t
-              }}<input
-                class="field-input"
-                name="note"
-                [ngModel]="note()"
-                (ngModelChange)="note.set($event)"
-            /></label>
+            <div class="dx-grid">
+              <label class="dx-field">
+                <span>{{ 'diagnostics.name' | t }} <b class="dx-req">*</b></span>
+                <input class="dx-input" name="name" [ngModel]="name()" (ngModelChange)="name.set($event)" required />
+              </label>
+              <label class="dx-field">
+                <span>{{ 'diagnostics.specimen' | t }}</span>
+                <input class="dx-input" name="specimen" [ngModel]="specimen()" (ngModelChange)="specimen.set($event)" />
+              </label>
+              <label class="dx-field dx-full">
+                <span>{{ 'diagnostics.catalogNote' | t }}</span>
+                <input class="dx-input" name="note" [ngModel]="note()" (ngModelChange)="note.set($event)" />
+              </label>
+            </div>
           }
+
+          <p class="dx-step">{{ 'diagnostics.stepInstructions' | t }}</p>
         }
-        <label class="mb-3"
-          >{{ 'diagnostics.doctorInstructions' | t
-          }}<textarea
-            class="field-input note-input"
-            name="instructions"
-            [ngModel]="instructions()"
-            (ngModelChange)="instructions.set($event)"
-          ></textarea>
-        </label>
-        @if (!editingId()) {
-          <label class="mb-3"
-            >{{ 'diagnostics.patientInstructions' | t
-            }}<textarea
-              class="field-input note-input"
-              name="patientInstructions"
-              [ngModel]="patientInstructions()"
-              (ngModelChange)="patientInstructions.set($event)"
+
+        <div class="dx-grid">
+          <label class="dx-field" [class.dx-full]="!!editingId()">
+            <span>{{ 'diagnostics.doctorInstructions' | t }}</span>
+            <textarea
+              class="dx-input dx-textarea"
+              name="instructions"
+              rows="2"
+              [ngModel]="instructions()"
+              (ngModelChange)="instructions.set($event)"
             ></textarea>
           </label>
-        }
-        @if (completed()) {
-          <label
-            >{{ 'diagnostics.postVisitReason' | t
-            }}<input
-              class="field-input"
-              name="reason"
-              [ngModel]="postVisitReason()"
-              (ngModelChange)="postVisitReason.set($event)"
-              required
-          /></label>
-        }
+          @if (!editingId()) {
+            <label class="dx-field">
+              <span>{{ 'diagnostics.patientInstructions' | t }}</span>
+              <textarea
+                class="dx-input dx-textarea"
+                name="patientInstructions"
+                rows="2"
+                [ngModel]="patientInstructions()"
+                (ngModelChange)="patientInstructions.set($event)"
+              ></textarea>
+            </label>
+          }
+          @if (completed()) {
+            <label class="dx-field dx-full">
+              <span>{{ 'diagnostics.postVisitReason' | t }} <b class="dx-req">*</b></span>
+              <input
+                class="dx-input"
+                name="reason"
+                [ngModel]="postVisitReason()"
+                (ngModelChange)="postVisitReason.set($event)"
+                required
+              />
+            </label>
+          }
+        </div>
       </fieldset>
-      <div class="actions full">
-        <button class="btn btn-primary" type="submit" [disabled]="busy() || locked()">
-          {{ 'common.save' | t }}</button
-        ><button
-          class="btn btn-outline-secondary"
+
+      <div class="dx-editor-foot">
+        <button class="dx-btn dx-btn-primary" type="submit" [disabled]="busy() || locked()">
+          <i class="fa-solid fa-check" aria-hidden="true"></i>
+          {{ 'common.save' | t }}
+        </button>
+        <button
+          class="dx-btn dx-btn-ghost"
           type="button"
           (click)="editor.set(false)"
           [disabled]="busy() || locked()"

@@ -1,7 +1,6 @@
-<section [attr.aria-busy]="busy()">
-  <h3>{{ 'medications.prescription' | t }}</h3>
-  @for (message of messages(); track $index) {
-    <p class="error-text" role="alert">{{ message | t }}</p>
+<section class="rx-workspace" [dir]="language.dir()" [attr.aria-busy]="busy()">
+  @if (showTitle()) {
+    <h3>{{ 'medications.prescription' | t }}</h3>
   }
   @if (busy()) {
     <p role="status">{{ 'reservations.loading' | t }}</p>
@@ -130,311 +129,449 @@
       </footer>
     </div>
   } @else {
-    @if (historical(); as version) {
-      <p>
-        {{ 'prescriptions.historyReadOnly' | t }} · {{ 'prescriptions.version' | t }}
-        {{ version.versionNumber }} · {{ 'prescriptions.status.' + version.status | t }}
-      </p>
-      <button class="btn btn-outline-secondary" (click)="historical.set(null)" [disabled]="busy() || disabled()">
-        {{ 'prescriptions.backCurrent' | t }}
-      </button>
-    } @else if (state(); as state) {
-      @if (state.current) {
-        <p>
-          {{ 'prescriptions.status.' + state.current.status | t }} ·
-          {{ 'prescriptions.version' | t }} {{ state.current.versionNumber }}
-        </p>
-      }
-      @if (state.draft) {
-        <p>
-          {{
-            (correctionMode() ? 'prescriptions.correctionMode' : 'prescriptions.status.Draft') | t
-          }}
-          · {{ state.draft.versionNumber }}
-        </p>
-      }
-      @for (blocker of state.completionBlockers; track $index) {
-        <p class="error-text" role="alert">{{ blocker.message }}</p>
-      }
-    } @else {
-      <p>{{ 'medications.noPrescription' | t }}</p>
-    }
-    @for (
-      item of (
-        historical() ||
-        (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current)
-      )?.items || [];
-      track item.itemId
-    ) {
-      <div class="medication-row">
-        <strong>{{ itemName(item) }}</strong>
-        @for (field of clinicalFields; track field) {
-          @if (item[field]) {
-            <p>{{ 'prescriptions.' + field | t }}: {{ item[field] }}</p>
+    <div class="doctor-rx-flow">
+      @if (historical(); as version) {
+        <div class="rx-status-strip">
+          <div class="rx-status-info">
+            <i class="fa-solid fa-clock-rotate-left text-teal" aria-hidden="true"></i>
+            <span>
+              {{ 'prescriptions.historyReadOnly' | t }} · {{ 'prescriptions.version' | t }}
+              {{ version.versionNumber }} · {{ 'prescriptions.status.' + version.status | t }}
+            </span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="historical.set(null)" [disabled]="busy() || disabled()">
+            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+            <span>{{ 'prescriptions.backCurrent' | t }}</span>
+          </button>
+        </div>
+      } @else if (state(); as state) {
+        <div class="rx-status-strip">
+          @if (state.current) {
+            <span class="rx-state-pill finalized">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              <span>{{ 'prescriptions.status.' + state.current.status | t }} · {{ 'prescriptions.version' | t }} {{ state.current.versionNumber }}</span>
+            </span>
           }
+          @if (state.draft) {
+            <span class="rx-state-pill draft">
+              <i class="fa-solid fa-file-pen" aria-hidden="true"></i>
+              <span>
+                {{ (correctionMode() ? 'prescriptions.correctionMode' : 'prescriptions.status.Draft') | t }}
+                · {{ state.draft.versionNumber }}
+              </span>
+            </span>
+          }
+        </div>
+        @for (blocker of state.completionBlockers; track $index) {
+          <p class="error-text" role="alert">{{ blocker.message }}</p>
         }
-        @if (item.isPrn) {
-          <p>{{ 'prescriptions.isPrn' | t }}</p>
-        }
-        @if (item.quantity !== null) {
-          <p>{{ 'prescriptions.quantity' | t }}: {{ item.quantity }}</p>
-        }
-        @if (editable()) {
-          <div class="actions">
-            <button class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="editItem(item)">
-              {{ 'medications.edit' | t }}
+      }
+
+      @if (
+        (
+          (
+            historical() ||
+            (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current)
+          )?.items || []
+        ).length === 0 && !editing()
+      ) {
+        <div class="rx-empty-inline-state">
+          <div class="rx-empty-inline-info">
+            <span class="rx-empty-inline-icon">💊</span>
+            <div class="rx-empty-inline-text">
+              <strong>{{ 'medications.noPrescription' | t }}</strong>
+              <p>{{ 'tickets.workstation.step2Sub' | t }}</p>
+            </div>
+          </div>
+          @if (editable()) {
+            <button
+              type="button"
+              class="btn btn-primary btn-sm ws-rx-add-btn"
+              [disabled]="busy() || disabled()"
+              (click)="beginAdd()"
+            >
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              <span>{{ 'prescriptions.add' | t }}</span>
             </button>
-            <button class="btn btn-danger" [disabled]="busy() || disabled()" (click)="ask('remove', item.itemId)">
-              {{ 'prescriptions.remove' | t }}
-            </button>
+          }
+        </div>
+      }
+
+      <div class="rx-doctor-items">
+        @for (
+          item of (
+            historical() ||
+            (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current)
+          )?.items || [];
+          track item.itemId
+        ) {
+          <div class="medication-row">
+            <div class="medication-row-header">
+              <div class="medication-title-wrap">
+                <i class="fa-solid fa-pills text-teal" aria-hidden="true"></i>
+                <strong class="medication-title">{{ itemName(item) }}</strong>
+                @if (item.isPrn) {
+                  <span class="rx-prn-pill">{{ 'prescriptions.isPrn' | t }}</span>
+                }
+              </div>
+              @if (editable()) {
+                <div class="actions">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy() || disabled()" (click)="editItem(item)">
+                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                    <span>{{ 'medications.edit' | t }}</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" [disabled]="busy() || disabled()" (click)="ask('remove', item.itemId)">
+                    <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                    <span>{{ 'prescriptions.remove' | t }}</span>
+                  </button>
+                </div>
+              }
+            </div>
+            <div class="medication-specs-row">
+              @for (field of clinicalFields; track field) {
+                @if (itemValue(item, field)) {
+                  <span class="spec-chip">
+                    <span class="spec-label">{{ 'prescriptions.' + field | t }}:</span>
+                    <strong>{{ itemValue(item, field) }}</strong>
+                  </span>
+                }
+              }
+              @if (itemQuantity(item) !== null) {
+                <span class="spec-chip">
+                  <span class="spec-label">{{ 'prescriptions.quantity' | t }}:</span>
+                  <strong>{{ itemQuantity(item) }}</strong>
+                </span>
+              }
+            </div>
+            @if (pending() === 'remove' && removeId() === item.itemId) {
+              <div class="rx-remove-confirm" role="alert">
+                <p>{{ 'medications.confirmChange' | t }}</p>
+                <div class="actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger"
+                    [disabled]="busy() || disabled()"
+                    (click)="confirm()"
+                  >
+                    {{ 'medications.confirm' | t }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="busy() || disabled()"
+                    (click)="pending.set(null)"
+                  >
+                    {{ 'common.cancel' | t }}
+                  </button>
+                </div>
+              </div>
+            }
           </div>
         }
       </div>
-    }
-    @if (!historical()) {
-      <div class="actions">
-        @if (editable()) {
-          <button class="btn btn-primary" [disabled]="busy() || disabled()" (click)="beginAdd()">
-            {{ 'prescriptions.add' | t }}
-          </button>
-        }
-        @if (state(); as state) {
-          @if (
-            state.current?.status === 'Finalized' &&
-            state.capabilities.canCorrect &&
-            allowed('Prescriptions.CorrectOwn') &&
-            !state.draft
-          ) {
-            <button
-              class="btn btn-outline-secondary"
-              [disabled]="busy() || disabled()"
-              (click)="ask('startCorrection')"
-            >
-              {{ 'prescriptions.correct' | t }}
+
+      @if (!historical()) {
+        <div class="actions rx-toolbar-actions">
+          @if (editable() && !editing()) {
+            <button type="button" class="btn btn-primary" [disabled]="busy() || disabled()" (click)="beginAdd()">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              <span>{{ 'prescriptions.add' | t }}</span>
             </button>
           }
-          @if (state.current && state.draft && allowed('Prescriptions.CorrectOwn')) {
-            <button
-              class="btn btn-outline-secondary"
-              [disabled]="busy() || disabled()"
-              (click)="resumeCorrection()"
-            >
-              {{ 'prescriptions.resume' | t }}
-            </button>
-          }
-          @if (
-            correctionMode() &&
-            state.capabilities.canFinalizeCorrection &&
-            allowed('Prescriptions.CorrectOwn')
-          ) {
-            <button class="btn btn-primary" [disabled]="busy() || disabled()" (click)="ask('finalize')">
-              {{ 'prescriptions.finalize' | t }}
-            </button>
-          }
-          @if (
-            correctionMode() &&
-            state.capabilities.canDiscardCorrection &&
-            allowed('Prescriptions.CorrectOwn')
-          ) {
-            <button class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="ask('discard')">
-              {{ 'prescriptions.discard' | t }}
-            </button>
-          }
-          @if (
-            state.current?.status === 'Finalized' &&
-            !state.draft &&
-            state.capabilities.canVoid &&
-            allowed('Prescriptions.VoidOwn')
-          ) {
-            <button class="btn btn-danger" [disabled]="busy() || disabled()" (click)="ask('void')">
-              {{ 'prescriptions.void' | t }}
-            </button>
-          }
-          @if (allowed('Prescriptions.ViewOwn')) {
-            <button class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="loadVersions()">
-              {{ 'prescriptions.versions' | t }}
-            </button>
-          }
-        }
-      </div>
-    }
-    @if (editing() && editable()) {
-      <section class="section">
-        @if (!editingId()) {
-          @if (allowed('DrugCatalog.SearchActive')) {
-            <label
-              >{{ 'medications.doctorSearch' | t
-              }}<input
-                class="field-input"
-                type="search"
-                [value]="searchText()"
-                (input)="search(value($event))"
+          @if (state(); as state) {
+            @if (
+              state.current?.status === 'Finalized' &&
+              state.capabilities.canCorrect &&
+              allowed('Prescriptions.CorrectOwn') &&
+              !state.draft
+            ) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
                 [disabled]="busy() || disabled()"
-            /></label>
-            @if (searching()) {
-              <p role="status">{{ 'reservations.loading' | t }}</p>
+                (click)="ask('startCorrection')"
+              >
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                <span>{{ 'prescriptions.correct' | t }}</span>
+              </button>
             }
-            @if (drugs(); as drugs) {
-              @for (drug of drugs.items; track drug.drugCatalogId) {
-                <div class="medication-row">
-                  <button
-                    class="btn btn-outline-secondary"
-                    [attr.aria-pressed]="selectedDrug()?.drugCatalogId === drug.drugCatalogId"
-                    (click)="choose(drug)"
-                    [disabled]="busy() || disabled()"
-                  >
-                    {{ itemName(drug) }}
+            @if (state.current && state.draft && allowed('Prescriptions.CorrectOwn')) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                [disabled]="busy() || disabled()"
+                (click)="resumeCorrection()"
+              >
+                {{ 'prescriptions.resume' | t }}
+              </button>
+            }
+            @if (
+              correctionMode() &&
+              state.capabilities.canFinalizeCorrection &&
+              allowed('Prescriptions.CorrectOwn')
+            ) {
+              <button type="button" class="btn btn-primary" [disabled]="busy() || disabled()" (click)="ask('finalize')">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span>{{ 'prescriptions.finalize' | t }}</span>
+              </button>
+            }
+            @if (
+              correctionMode() &&
+              state.capabilities.canDiscardCorrection &&
+              allowed('Prescriptions.CorrectOwn')
+            ) {
+              <button type="button" class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="ask('discard')">
+                {{ 'prescriptions.discard' | t }}
+              </button>
+            }
+            @if (
+              state.current?.status === 'Finalized' &&
+              !state.draft &&
+              state.capabilities.canVoid &&
+              allowed('Prescriptions.VoidOwn')
+            ) {
+              <button type="button" class="btn btn-danger" [disabled]="busy() || disabled()" (click)="ask('void')">
+                {{ 'prescriptions.void' | t }}
+              </button>
+            }
+            @if (allowed('Prescriptions.ViewOwn')) {
+              <button type="button" class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="loadVersions()">
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                <span>{{ 'prescriptions.versions' | t }}</span>
+              </button>
+            }
+          }
+        </div>
+      }
+
+      @if (editing() && editable()) {
+        <section class="rx-editor-card">
+          @if (!editingId()) {
+            <div class="rx-step-block">
+              <div class="rx-step-header">
+                <span class="rx-step-title">{{ 'prescriptions.stepChoose' | t }}</span>
+                @if (canRequest() && allowed('DrugCatalogRequests.CreateOwn')) {
+                  <button type="button" class="rx-link-btn" [disabled]="busy() || disabled()" (click)="useMissing()">
+                    <i class="fa-solid fa-circle-plus" aria-hidden="true"></i>
+                    <span>{{ 'prescriptions.missing' | t }}</span>
                   </button>
-                  <p>
-                    {{ drug.scientificName }} · {{ drug.manufacturer }} · {{ drug.strengthText }} ·
-                    {{ drug.dosageForm }} · {{ drug.route }}
-                  </p>
-                  <small>{{ 'medications.priceEgp' | t }}: {{ drug.priceEgp ?? '—' }}</small>
-                </div>
-              }
-              @if (!drugs.items.length) {
-                <div class="empty-state">
-                  <img
-                    class="state-empty-illustration"
-                    src="/SVG-AVATAR/Medicine-bro.svg"
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
+                }
+              </div>
+
+              @if (allowed('DrugCatalog.SearchActive') && !missing()) {
+                <label class="rx-search-box">
+                  <span class="visually-hidden">{{ 'medications.doctorSearch' | t }}</span>
+                  <i class="fa-solid fa-magnifying-glass rx-search-icon" aria-hidden="true"></i>
+                  <input
+                    class="field-input rx-search-input"
+                    type="search"
+                    [value]="searchText()"
+                    [placeholder]="'medications.doctorSearch' | t"
+                    (input)="search(value($event))"
+                    [disabled]="busy() || disabled()"
                   />
-                  <h3>{{ 'medications.noActive' | t }}</h3>
-                  <p>{{ 'prescriptions.missingHelp' | t }}</p>
+                </label>
+                @if (searching()) {
+                  <p role="status" class="rx-hint">{{ 'reservations.loading' | t }}</p>
+                }
+                @if (drugs(); as drugs) {
+                  @if (drugs.items.length) {
+                    <div class="rx-catalog-list" role="listbox" [attr.aria-label]="'medications.doctorSearch' | t">
+                      @for (drug of drugs.items; track drug.drugCatalogId) {
+                        <button
+                          type="button"
+                          class="rx-catalog-option"
+                          [class.is-selected]="selectedDrug()?.drugCatalogId === drug.drugCatalogId"
+                          [attr.aria-pressed]="selectedDrug()?.drugCatalogId === drug.drugCatalogId"
+                          (click)="choose(drug)"
+                          [disabled]="busy() || disabled()"
+                        >
+                          <div class="rx-option-main">
+                            <i
+                              class="fa-solid"
+                              [class.fa-circle-check]="selectedDrug()?.drugCatalogId === drug.drugCatalogId"
+                              [class.fa-capsules]="selectedDrug()?.drugCatalogId !== drug.drugCatalogId"
+                              aria-hidden="true"
+                            ></i>
+                            <div class="rx-option-text">
+                              <strong>{{ itemName(drug) }}</strong>
+                              <small>
+                                {{ drug.scientificName }} · {{ drug.manufacturer }} · {{ drug.strengthText }} ·
+                                {{ drug.dosageForm }} · {{ drug.route }}
+                              </small>
+                            </div>
+                          </div>
+                          <span class="rx-price-tag">{{ 'medications.priceEgp' | t }}: {{ drug.priceEgp ?? '—' }}</span>
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    <div class="empty-state">
+                      <img
+                        class="state-empty-illustration"
+                        src="/SVG-AVATAR/Medicine-bro.svg"
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <h3>{{ 'medications.noActive' | t }}</h3>
+                      <p>{{ 'prescriptions.missingHelp' | t }}</p>
+                    </div>
+                  }
+                  <nav class="rx-pager" [attr.aria-label]="'reservations.pagination' | t">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      [disabled]="busy() || searching() || drugs.pageNumber <= 1"
+                      (click)="search(searchText(), drugs.pageNumber - 1)"
+                    >
+                      {{ 'reservations.previous' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      [disabled]="
+                        busy() || searching() || drugs.pageNumber * drugs.pageSize >= drugs.totalCount
+                      "
+                      (click)="search(searchText(), drugs.pageNumber + 1)"
+                    >
+                      {{ 'reservations.next' | t }}
+                    </button>
+                  </nav>
+                }
+              }
+
+              @if (missing()) {
+                <div class="rx-form-grid" [formGroup]="medication">
+                  <label class="rx-field full">
+                    <span>{{ 'requests.medicationName' | t }}</span>
+                    <input
+                      class="field-input"
+                      formControlName="medicationName"
+                      required
+                      [readonly]="busy() || disabled()"
+                    />
+                  </label>
+                  @for (field of metadataFields; track field) {
+                    <label class="rx-field">
+                      <span>{{ 'requests.' + field | t }}</span>
+                      <input class="field-input" [formControlName]="field" [readonly]="busy() || disabled()" />
+                    </label>
+                  }
                 </div>
               }
-              <nav class="actions" [attr.aria-label]="'reservations.pagination' | t">
-                <button
-                  class="btn btn-outline-secondary"
-                  [disabled]="busy() || searching() || drugs.pageNumber <= 1"
-                  (click)="search(searchText(), drugs.pageNumber - 1)"
-                >
-                  {{ 'reservations.previous' | t }}</button
-                ><button
-                  class="btn btn-outline-secondary"
-                  [disabled]="
-                    busy() || searching() || drugs.pageNumber * drugs.pageSize >= drugs.totalCount
-                  "
-                  (click)="search(searchText(), drugs.pageNumber + 1)"
-                >
-                  {{ 'reservations.next' | t }}
-                </button>
-              </nav>
-            }
-          }
-          @if (canRequest() && allowed('DrugCatalogRequests.CreateOwn')) {
-            <button class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="useMissing()">
-              {{ 'prescriptions.missing' | t }}
-            </button>
-          }
-          @if (missing()) {
-            <div class="detail-form section" [formGroup]="medication">
-              <label class="full"
-                >{{ 'requests.medicationName' | t
-                }}<input
-                  class="field-input"
-                  formControlName="medicationName"
-                  required
-                  [readonly]="busy() || disabled()"
-              /></label>
-              @for (field of metadataFields; track field) {
-                <label
-                  >{{ 'requests.' + field | t
-                  }}<input class="field-input" [formControlName]="field" [readonly]="busy() || disabled()"
-                /></label>
+
+              @if (selectedDrug(); as selected) {
+                <div class="rx-selected-banner">
+                  <i class="fa-solid fa-check-double" aria-hidden="true"></i>
+                  <span>{{ 'prescriptions.selected' | t }}: <strong>{{ itemName(selected) }}</strong></span>
+                </div>
               }
             </div>
           }
-          @if (selectedDrug(); as selected) {
-            <p>{{ 'prescriptions.selected' | t }}: {{ itemName(selected) }}</p>
+
+          <form class="rx-step-block" [formGroup]="clinical" (ngSubmit)="saveItem()">
+            <div class="rx-step-header">
+              <span class="rx-step-title">{{ 'prescriptions.stepPosology' | t }}</span>
+            </div>
+            <div class="rx-form-grid">
+              @for (field of clinicalFields; track field) {
+                <label class="rx-field" [class.full]="field === 'instructions'">
+                  <span>{{ 'prescriptions.' + field | t }}</span>
+                  <input class="field-input" [formControlName]="field" [readonly]="busy() || disabled()" />
+                </label>
+              }
+              <label class="rx-field">
+                <span>{{ 'prescriptions.quantity' | t }}</span>
+                <input
+                  class="field-input ltr-text"
+                  type="number"
+                  min="0"
+                  formControlName="quantity"
+                  dir="ltr"
+                  [readonly]="busy() || disabled()"
+                />
+              </label>
+              <label class="prn-toggle">
+                <input
+                  class="sr-only-chk"
+                  type="checkbox"
+                  formControlName="isPrn"
+                  [attr.disabled]="busy() || disabled() ? true : null"
+                />
+                <span class="toggle-track" aria-hidden="true"></span>
+                <span>{{ 'prescriptions.isPrn' | t }}</span>
+              </label>
+            </div>
+            <p class="rx-draft-note">{{ 'prescriptions.draftHelp' | t }}</p>
+            <div class="actions rx-editor-footer">
+              <button class="btn btn-primary" [disabled]="busy() || disabled()">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span>{{ 'common.save' | t }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                [disabled]="busy() || disabled()"
+                (click)="editing.set(false)"
+              >
+                {{ 'common.cancel' | t }}
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (pending() && pending() !== 'remove') {
+        <section class="rx-confirm-banner" role="alert">
+          <p class="rx-confirm-title">{{ 'medications.confirmChange' | t }}</p>
+          @if (pending() === 'startCorrection' || pending() === 'void') {
+            <label class="rx-field full">
+              <span>{{ 'medications.reason' | t }}</span>
+              <input
+                class="field-input"
+                [value]="reason()"
+                (input)="setReason($event)"
+                [disabled]="busy() || disabled()"
+                required
+              />
+            </label>
           }
-        }
-        <form class="detail-form section" [formGroup]="clinical" (ngSubmit)="saveItem()">
-          @for (field of clinicalFields; track field) {
-            <label
-              >{{ 'prescriptions.' + field | t
-              }}<input class="field-input" [formControlName]="field" [readonly]="busy() || disabled()"
-            /></label>
-          }
-          <label
-            >{{ 'prescriptions.quantity' | t
-            }}<input
-              class="field-input ltr-text"
-              type="number"
-              min="0"
-              formControlName="quantity"
-              dir="ltr"
-              [readonly]="busy() || disabled()"
-          /></label>
-          <label class="prn-toggle"
-            ><input
-              class="sr-only-chk"
-              type="checkbox"
-              formControlName="isPrn"
-              [attr.disabled]="busy() || disabled() ? true : null"
-            /><span class="toggle-track" aria-hidden="true"></span
-            >{{ 'prescriptions.isPrn' | t }}</label
-          >
-          <p class="full">{{ 'prescriptions.draftHelp' | t }}</p>
-          <div class="actions full">
-            <button class="btn btn-primary" [disabled]="busy() || disabled()">{{ 'common.save' | t }}</button
-            ><button
+          <div class="actions">
+            <button type="button" class="btn btn-sm btn-primary" [disabled]="busy() || disabled()" (click)="confirm()">
+              {{ 'medications.confirm' | t }}
+            </button>
+            <button
               type="button"
-              class="btn btn-outline-secondary"
+              class="btn btn-sm btn-outline-secondary"
               [disabled]="busy() || disabled()"
-              (click)="editing.set(false)"
+              (click)="pending.set(null)"
             >
               {{ 'common.cancel' | t }}
             </button>
           </div>
-        </form>
-      </section>
-    }
-    @if (pending()) {
-      <section class="section">
-        <p>{{ 'medications.confirmChange' | t }}</p>
-        @if (pending() === 'startCorrection' || pending() === 'void') {
-          <label
-            >{{ 'medications.reason' | t
-            }}<input
-              class="field-input"
-              [value]="reason()"
-              (input)="setReason($event)"
-              [disabled]="busy() || disabled()"
-              required
-          /></label>
-        }
-        <div class="actions">
-          <button class="btn btn-primary" [disabled]="busy() || disabled()" (click)="confirm()">
-            {{ 'medications.confirm' | t }}</button
-          ><button
-            class="btn btn-outline-secondary"
-            [disabled]="busy() || disabled()"
-            (click)="pending.set(null)"
-          >
-            {{ 'common.cancel' | t }}
-          </button>
-        </div>
-      </section>
-    }
-    @if (versions().length) {
-      <section class="section">
-        <h3>{{ 'prescriptions.versions' | t }}</h3>
-        @for (version of versions(); track version.versionNumber) {
-          <div class="medication-row">
-            <button
-              class="btn btn-outline-secondary"
-              [disabled]="busy() || disabled()"
-              (click)="inspectVersion(version.versionNumber)"
-            >
-              {{ 'prescriptions.version' | t }} {{ version.versionNumber }} ·
-              {{ 'prescriptions.status.' + version.status | t }}
-            </button>
+        </section>
+      }
+
+      @if (versions().length) {
+        <section class="rx-versions-card">
+          <h4 class="rx-versions-title">{{ 'prescriptions.versions' | t }}</h4>
+          <div class="rx-versions-list">
+            @for (version of versions(); track version.versionNumber) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                [disabled]="busy() || disabled()"
+                (click)="inspectVersion(version.versionNumber)"
+              >
+                {{ 'prescriptions.version' | t }} {{ version.versionNumber }} ·
+                {{ 'prescriptions.status.' + version.status | t }}
+              </button>
+            }
           </div>
-        }
-      </section>
-    }
+        </section>
+      }
+    </div>
   }
 </section>
+

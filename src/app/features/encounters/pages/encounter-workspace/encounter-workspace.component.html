@@ -27,10 +27,6 @@
           >{{ 'reservations.search' | t }}<input type="search" (change)="filter('search', $event)"
         /></label>
         <label
-          >{{ 'reservations.patientId' | t
-          }}<input dir="ltr" (change)="filter('patientId', $event)"
-        /></label>
-        <label
           >{{ 'reservations.status' | t
           }}<select (change)="filter('status', $event)">
             <option value="">{{ 'reservations.all' | t }}</option>
@@ -191,384 +187,852 @@
         <p role="status">{{ 'reservations.loading' | t }}</p>
       }
       @if (store.detail(); as detail) {
-        <p>{{ label(detail.patient) }} · {{ label(detail.practice) }}</p>
-        <p>{{ 'encounters.status.' + detail.status | t }}</p>
-        <form (submit)="$event.preventDefault(); store.saveNotes(model().clinicalNotes)">
-          <label
-            >{{ 'encounters.clinicalNotes' | t
-            }}<textarea rows="7" [formField]="fields.clinicalNotes"></textarea>
-          </label>
-          @if (store.canEditNotes()) {
-            <button class="btn btn-primary" [disabled]="store.busy()">
-              {{ 'common.save' | t }}
-            </button>
-          }
-        </form>
-        <section class="detail-section">
-          <h3>{{ 'encounters.diagnoses' | t }}</h3>
-          @for (diagnosis of detail.diagnoses; track diagnosis.diagnosisId) {
-            @if (!diagnosis.isVoided) {
-              <div class="diagnosis-row">
-                <div>
-                  <b>{{ diagnosis.displayText }}</b>
-                  <p>{{ 'encounters.diagnosis.' + diagnosis.type | t }}</p>
-                  <p>{{ diagnosis.notes }}</p>
+        <div class="doctor-encounter-sheet">
+          <!-- 1. Pinned Patient & Encounter Hero Header -->
+          <header class="encounter-hero-header">
+            <div class="hero-top-row">
+              <div class="patient-main-info">
+                <div class="patient-avatar-badge">
+                  <i class="fa-solid fa-user-injured" aria-hidden="true"></i>
                 </div>
-                @if (store.canManageDiagnoses()) {
-                  <div class="actions">
-                    <button
-                      class="btn btn-outline-secondary"
-                      (click)="editDiagnosis(diagnosis)"
-                      [disabled]="store.busy()"
-                    >
-                      {{ 'common.edit' | t }}</button
-                    ><button
-                      class="btn btn-outline-danger"
-                      (click)="removeId.set(diagnosis.diagnosisId)"
-                      [disabled]="store.busy()"
-                    >
-                      {{ 'common.delete' | t }}
-                    </button>
-                  </div>
-                }
-              </div>
-            }
-          } @empty {
-            <p>{{ 'encounters.noDiagnosis' | t }}</p>
-          }
-          @if (removeId()) {
-            <div class="actions" role="alert">
-              <p>{{ 'encounters.removeConfirm' | t }}</p>
-              <button
-                class="btn btn-danger"
-                [disabled]="store.busy()"
-                (click)="store.removeDiagnosis(removeId())"
-              >
-                {{ 'common.delete' | t }}</button
-              ><button class="btn btn-outline-secondary" (click)="removeId.set('')">
-                {{ 'common.cancel' | t }}
-              </button>
-            </div>
-          }
-          @if (store.canManageDiagnoses()) {
-            <form (submit)="saveDiagnosis($event)">
-              <fieldset [disabled]="store.busy()">
-                <label
-                  >{{ 'encounters.diagnosisType' | t
-                  }}<select [formField]="fields.type">
-                    <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
-                    <option value="Secondary">{{ 'encounters.diagnosis.Secondary' | t }}</option>
-                  </select></label
-                >
-                <label
-                  >{{ 'encounters.diagnosisText' | t }}<input [formField]="fields.displayText"
-                /></label>
-                <label
-                  >{{ 'encounters.diagnosisNotes' | t
-                  }}<textarea rows="3" [formField]="fields.notes"></textarea>
-                </label>
-                <button class="btn btn-primary" [disabled]="!model().displayText.trim()">
-                  {{ 'common.save' | t }}
-                </button>
-              </fieldset>
-            </form>
-          }
-        </section>
-        <section class="section">
-          <app-prescription-workspace
-            [initial]="detail.prescription || null"
-            [practiceId]="store.practiceId()"
-            [encounterId]="detail.encounterId"
-            [canManage]="
-              detail.status === 'InProgress' && !!detail.capabilities.canManagePrescription
-            "
-            [canRequest]="!!detail.capabilities.canRequestNewMedication"
-            [disabled]="store.busy() || store.diagnosticBusy() || store.detailLoading()"
-            (changed)="store.prescriptionChanged($event)"
-            (busyChanged)="store.prescriptionBusy.set($event)"
-          />
-        </section>
-        @for (kind of ['lab', 'radiology']; track kind) {
-          @if (
-            detail.capabilities[
-              kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
-            ] ||
-            detail.capabilities[
-              kind === 'lab' ? 'canCreatePostVisitLabRequest' : 'canCreatePostVisitRadiologyRequest'
-            ] ||
-            detail[kind === 'lab' ? 'labRequestDraft' : 'radiologyRequestDraft']
-          ) {
-            <app-diagnostic-draft
-              [kind]="kind === 'lab' ? 'lab' : 'radiology'"
-              [practiceId]="store.practiceId()"
-              [encounterId]="detail.encounterId"
-              [canManageEncounter]="
-                !!detail.capabilities[
-                  kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
-                ]
-              "
-              [completed]="detail.status === 'Completed'"
-              [canPostVisit]="
-                !!detail.capabilities[
-                  kind === 'lab'
-                    ? 'canCreatePostVisitLabRequest'
-                    : 'canCreatePostVisitRadiologyRequest'
-                ]
-              "
-              [locked]="store.busy() || store.clinicalBusy()"
-              (changed)="store.diagnosticChanged(kind === 'lab' ? 'lab' : 'radiology', $event)"
-              (busyChanged)="store.diagnosticBusy.set($event)"
-            />
-          }
-          <a
-            class="btn btn-outline-secondary my-3"
-            [routerLink]="'/diagnostics/doctor/' + kind"
-            [queryParams]="{ encounterId: detail.encounterId, practiceId: store.practiceId() }"
-            >{{
-              (kind === 'lab' ? 'diagnostics.labRequests' : 'diagnostics.radiologyRequests') | t
-            }}</a
-          >
-        }
-        @if (store.canComplete()) {
-          <button
-            class="btn btn-primary"
-            [disabled]="
-              store.busy() ||
-              !detail.clinicalNotes.trim() ||
-              model().clinicalNotes !== detail.clinicalNotes
-            "
-            (click)="store.complete()"
-          >
-            {{ 'encounters.complete' | t }}
-          </button>
-        }
-        @if (store.canCreateFollowUp()) {
-          <form
-            class="detail-section"
-            (submit)="$event.preventDefault(); store.createFollowUp(model().validUntil)"
-          >
-            <label
-              >{{ 'followUps.validUntil' | t
-              }}<input type="date" dir="ltr" [formField]="fields.validUntil" /></label
-            ><button class="btn btn-primary" [disabled]="store.busy() || !model().validUntil">
-              {{ 'encounters.createFollowUp' | t }}
-            </button>
-          </form>
-        }
-        @if (detail.followUpEligibility; as eligibility) {
-          <p>
-            {{ 'followUps.followUp' | t }} · {{ 'followUps.status.' + eligibility.status | t }} ·
-            <time dir="ltr">{{ eligibility.validUntil }}</time>
-          </p>
-        }
-        @if (detail.status === 'Completed') {
-          @if (store.canAmend()) {
-            <section class="detail-section amendment-card">
-              <div class="section-header-row">
-                <h3>{{ 'encounters.amendment' | t }}</h3>
-                @if (!showAmendmentForm()) {
-                  <button type="button" class="btn btn-outline-primary" (click)="startAmendment()">
-                    {{ 'encounters.createAmendment' | t }}
-                  </button>
-                }
-              </div>
-
-              @if (showAmendmentForm()) {
-                <form class="amendment-form" (submit)="$event.preventDefault(); submitAmendment()">
-                  <p class="amendment-help-text">
-                    {{ 'encounters.amendmentImmutableHelp' | t }}
-                  </p>
-
-                  <!-- 1. Mandatory Reason -->
-                  <label class="form-group">
-                    <span class="label-text">
-                      {{ 'encounters.amendmentReason' | t }}
-                      <span class="required-asterisk">*</span>
+                <div class="patient-meta-text">
+                  <h3 class="patient-title-name">{{ label(detail.patient) }}</h3>
+                  <div class="patient-sub-details">
+                    <span class="sub-detail-item">
+                      <i class="fa-solid fa-hospital-user text-teal" aria-hidden="true"></i>
+                      <span>{{ label(detail.practice) }}</span>
                     </span>
-                    <input
-                      type="text"
-                      class="form-control"
-                      [value]="amendmentReason()"
-                      (input)="amendmentReason.set(value($event))"
-                      [placeholder]="'encounters.amendmentReasonPlaceholder' | t"
-                      required
-                    />
-                  </label>
+                    @if (detail.completedAtUtc || detail.startedAtUtc) {
+                      <span class="dot-sep">·</span>
+                      <span class="sub-detail-item">
+                        <i class="fa-regular fa-calendar-check text-slate" aria-hidden="true"></i>
+                        <time dir="ltr">{{ (detail.completedAtUtc || detail.startedAtUtc) | localizedDate: language.currentLang() }}</time>
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
 
-                  <!-- 2. Amend Clinical Notes -->
-                  <div class="amend-notes-toggle">
-                    <label class="checkbox-label">
-                      <input
-                        type="checkbox"
-                        [checked]="amendNotes()"
-                        (change)="amendNotes.set(!amendNotes())"
-                      />
-                      <span>{{ 'encounters.amendClinicalNotes' | t }}</span>
-                    </label>
+              <!-- Status Badge -->
+              <div class="hero-status-wrap">
+                <span
+                  class="badge-status-pill"
+                  [class.pill-completed]="detail.status === 'Completed'"
+                  [class.pill-inprogress]="detail.status === 'InProgress'"
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-circle-check]="detail.status === 'Completed'"
+                    [class.fa-spinner]="detail.status === 'InProgress'"
+                    [class.fa-spin]="detail.status === 'InProgress'"
+                    aria-hidden="true"
+                  ></i>
+                  <span>{{ 'encounters.status.' + detail.status | t }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 2. Segmented Navigation Tabs Bar -->
+            <nav class="encounter-tabs-bar" role="tablist" [attr.aria-label]="'encounters.details' | t">
+              <button
+                type="button"
+                role="tab"
+                class="tab-btn"
+                [class.active]="activeTab() === 'diagnoses'"
+                [attr.aria-selected]="activeTab() === 'diagnoses'"
+                (click)="activeTab.set('diagnoses')"
+              >
+                <i class="fa-solid fa-notes-medical tab-icon" aria-hidden="true"></i>
+                <span class="tab-label">{{ 'encounters.tab.diagnoses' | t }}</span>
+                @if (diagnoses(detail).length) {
+                  <span class="tab-badge-counter">{{ diagnoses(detail).length }}</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                class="tab-btn"
+                [class.active]="activeTab() === 'prescription'"
+                [attr.aria-selected]="activeTab() === 'prescription'"
+                (click)="activeTab.set('prescription')"
+              >
+                <i class="fa-solid fa-pills tab-icon" aria-hidden="true"></i>
+                <span class="tab-label">{{ 'encounters.tab.prescription' | t }}</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                class="tab-btn"
+                [class.active]="activeTab() === 'diagnostics'"
+                [attr.aria-selected]="activeTab() === 'diagnostics'"
+                (click)="activeTab.set('diagnostics')"
+              >
+                <i class="fa-solid fa-flask-vial tab-icon" aria-hidden="true"></i>
+                <span class="tab-label">{{ 'encounters.tab.diagnostics' | t }}</span>
+              </button>
+
+              @if (detail.status === 'Completed' && (store.canAmend() || store.history().length)) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="tab-btn"
+                  [class.active]="activeTab() === 'history'"
+                  [attr.aria-selected]="activeTab() === 'history'"
+                  (click)="activeTab.set('history'); !store.history().length && store.loadHistory()"
+                >
+                  <i class="fa-solid fa-clock-rotate-left tab-icon" aria-hidden="true"></i>
+                  <span class="tab-label">{{ 'encounters.tab.history' | t }}</span>
+                </button>
+              }
+            </nav>
+          </header>
+
+          <!-- 3. Tab Contents Surface -->
+          <div class="tab-content-surface">
+            <!-- TAB 1: DIAGNOSES & CLINICAL NOTES -->
+            @if (activeTab() === 'diagnoses') {
+              <div class="tab-pane-flow">
+                <!-- Clinical Notes Block -->
+                <div class="content-block notes-block">
+                  <div class="block-header">
+                    <div class="block-title-wrap">
+                      <i class="fa-solid fa-feather-pointed block-icon text-teal" aria-hidden="true"></i>
+                      <h4 class="block-title">{{ 'encounters.clinicalNotes' | t }}</h4>
+                    </div>
                   </div>
 
-                  @if (amendNotes()) {
-                    <label class="form-group">
+                  <form class="notes-form" (submit)="$event.preventDefault(); store.saveNotes(model().clinicalNotes)">
+                    <div class="form-group">
                       <textarea
                         rows="4"
-                        class="form-control"
-                        [value]="amendedNotes()"
-                        (input)="amendedNotes.set(value($event))"
+                        class="form-control notes-textarea"
+                        [formField]="fields.clinicalNotes"
+                        [placeholder]="'encounters.clinicalNotesPlaceholder' | t"
                       ></textarea>
-                    </label>
-                  }
+                    </div>
+                    @if (store.canEditNotes()) {
+                      <div class="notes-form-footer">
+                        <button class="btn btn-primary" [disabled]="store.busy()">
+                          <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                          <span>{{ 'common.save' | t }}</span>
+                        </button>
+                      </div>
+                    }
+                  </form>
+                </div>
 
-                  <!-- 3. Existing Diagnoses: Logical Void option -->
-                  @if (detail.diagnoses.length) {
-                    <div class="amend-diagnoses-void-list">
-                      <span class="sub-label">{{ 'encounters.diagnoses' | t }}</span>
-                      @for (diag of detail.diagnoses; track diag.diagnosisId) {
-                        <div
-                          class="void-diag-item"
-                          [class.voided]="stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)"
-                        >
-                          <span>
-                            <b>{{ diag.displayText }}</b>
-                            ({{ 'encounters.diagnosis.' + diag.type | t }})
-                          </span>
-                          <button
-                            type="button"
-                            class="btn btn-sm"
-                            [class.btn-outline-danger]="
-                              !stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
-                            "
-                            [class.btn-danger]="
-                              stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
-                            "
-                            (click)="toggleVoidDiagnosis(diag.diagnosisId)"
-                          >
-                            {{
-                              stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
-                                ? ('common.cancel' | t)
-                                : ('encounters.amendVoidDiagnosis' | t)
-                            }}
-                          </button>
+                <!-- Diagnoses Block -->
+                <div class="content-block diagnoses-block">
+                  <div class="block-header">
+                    <div class="block-title-wrap">
+                      <i class="fa-solid fa-stethoscope block-icon text-blue" aria-hidden="true"></i>
+                      <h4 class="block-title">{{ 'encounters.diagnoses' | t }}</h4>
+                    </div>
+                  </div>
+
+                  <div class="diagnoses-unified-list">
+                    @for (diagnosis of diagnoses(detail); track diagnosis.diagnosisId) {
+                      @if (!diagnosis.isVoided) {
+                        <div class="diagnosis-row-card" [class.is-editing]="model().diagnosisId === diagnosis.diagnosisId">
+                          <div class="diagnosis-row-top">
+                            <div class="diagnosis-name-wrap">
+                              <span class="diagnosis-tag-pill" [class.tag-primary]="diagnosis.type === 'Primary'" [class.tag-secondary]="diagnosis.type === 'Secondary'">
+                                {{ 'encounters.diagnosis.' + diagnosis.type | t }}
+                              </span>
+                              <strong class="diagnosis-name-text">{{ diagnosis.displayText }}</strong>
+                            </div>
+                            @if (store.canManageDiagnoses()) {
+                              <div class="diagnosis-inline-actions">
+                                <button
+                                  type="button"
+                                  class="action-btn-icon edit"
+                                  (click)="editDiagnosis(diagnosis)"
+                                  [disabled]="store.busy()"
+                                  [attr.aria-label]="'common.edit' | t"
+                                  [title]="'common.edit' | t"
+                                >
+                                  <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  class="action-btn-icon delete"
+                                  (click)="removeId.set(diagnosis.diagnosisId)"
+                                  [disabled]="store.busy()"
+                                  [attr.aria-label]="'common.delete' | t"
+                                  [title]="'common.delete' | t"
+                                >
+                                  <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                </button>
+                              </div>
+                            }
+                          </div>
+
+                          @if (diagnosis.notes) {
+                            <div class="diagnosis-notes-quote">
+                              <i class="fa-solid fa-quote-right quote-mark" aria-hidden="true"></i>
+                              <p class="diagnosis-notes-text">{{ diagnosis.notes }}</p>
+                            </div>
+                          }
                         </div>
                       }
-                    </div>
-                  }
-
-                  <!-- 4. Add Corrected Diagnosis -->
-                  <div class="amend-add-diagnosis-box">
-                    <span class="sub-label">{{ 'encounters.amendAddDiagnosis' | t }}</span>
-                    <div class="add-diag-inputs">
-                      <select
-                        class="form-control"
-                        [value]="newDiagnosisType()"
-                        (change)="onNewDiagnosisTypeChange($event)"
-                      >
-                        <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
-                        <option value="Secondary">
-                          {{ 'encounters.diagnosis.Secondary' | t }}
-                        </option>
-                      </select>
-                      <input
-                        type="text"
-                        class="form-control"
-                        [value]="newDiagnosisText()"
-                        (input)="newDiagnosisText.set(value($event))"
-                        [placeholder]="'encounters.diagnosisText' | t"
-                      />
-                      <input
-                        type="text"
-                        class="form-control"
-                        [value]="newDiagnosisNotes()"
-                        (input)="newDiagnosisNotes.set(value($event))"
-                        [placeholder]="'encounters.diagnosisNotes' | t"
-                      />
-                      <button
-                        type="button"
-                        class="btn btn-outline-secondary"
-                        [disabled]="!newDiagnosisText().trim()"
-                        (click)="stageAddDiagnosis()"
-                      >
-                        {{ 'common.add' | t }}
-                      </button>
-                    </div>
-
-                    @if (stagedDiagnosesToAdd().length) {
-                      <div class="staged-list">
-                        @for (diag of stagedDiagnosesToAdd(); track $index) {
-                          <div class="staged-item">
-                            <span
-                              >+ {{ diag.displayText }} ({{
-                                'encounters.diagnosis.' + diag.type | t
-                              }})</span
-                            >
-                            <button
-                              type="button"
-                              class="btn-remove-tiny"
-                              (click)="removeStagedAddDiagnosis($index)"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        }
+                    } @empty {
+                      <div class="empty-state-notice">
+                        <i class="fa-solid fa-notes-medical empty-icon" aria-hidden="true"></i>
+                        <p class="empty-text">{{ 'encounters.noDiagnosis' | t }}</p>
                       </div>
                     }
                   </div>
 
-                  <!-- Staged Changes Summary -->
-                  <div class="staged-summary">
-                    <span class="summary-count">
-                      {{ 'encounters.amendmentChanges' | t }}: {{ stagedChanges().length }}
-                    </span>
-                    @if (stagedChanges().length === 0) {
-                      <span class="summary-warning">{{ 'encounters.noChangesSelected' | t }}</span>
+                  @if (removeId()) {
+                    <div class="delete-confirm-banner" role="alert">
+                      <div class="confirm-text-wrap">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        <span>{{ 'encounters.removeConfirm' | t }}</span>
+                      </div>
+                      <div class="confirm-btn-group">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-danger"
+                          [disabled]="store.busy()"
+                          (click)="store.removeDiagnosis(removeId())"
+                        >
+                          <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                          <span>{{ 'common.delete' | t }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          (click)="removeId.set('')"
+                        >
+                          {{ 'common.cancel' | t }}
+                        </button>
+                      </div>
+                    </div>
+                  }
+
+                  @if (store.canManageDiagnoses()) {
+                    <div class="add-diagnosis-subpanel">
+                      <div class="subpanel-header">
+                        <i class="fa-solid" [class.fa-plus]="!model().diagnosisId" [class.fa-pen-to-square]="!!model().diagnosisId" aria-hidden="true"></i>
+                        <span class="subpanel-title">
+                          {{ model().diagnosisId ? ('encounters.diagnosisText' | t) : ('encounters.addDiagnosis' | t) }}
+                        </span>
+                        @if (model().diagnosisId) {
+                          <button type="button" class="btn-cancel-edit-link" (click)="cancelEditDiagnosis()">
+                            {{ 'encounters.cancelEdit' | t }}
+                          </button>
+                        }
+                      </div>
+                      <form (submit)="saveDiagnosis($event)">
+                        <fieldset [disabled]="store.busy()" class="subpanel-fieldset">
+                          <div class="subpanel-input-row">
+                            <label class="form-group flex-1">
+                              <span class="label-text">{{ 'encounters.diagnosisType' | t }}</span>
+                              <select class="form-control" [formField]="fields.type">
+                                <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                                <option value="Secondary">{{ 'encounters.diagnosis.Secondary' | t }}</option>
+                              </select>
+                            </label>
+                            <label class="form-group flex-2">
+                              <span class="label-text">{{ 'encounters.diagnosisText' | t }}</span>
+                              <input class="form-control" [formField]="fields.displayText" [placeholder]="'encounters.diagnosisText' | t" />
+                            </label>
+                          </div>
+                          <label class="form-group">
+                            <span class="label-text">{{ 'encounters.diagnosisNotes' | t }}</span>
+                            <textarea rows="2" class="form-control" [formField]="fields.notes" [placeholder]="'encounters.diagnosisNotes' | t"></textarea>
+                          </label>
+                          <div class="subpanel-footer">
+                            <button class="btn btn-primary btn-sm" [disabled]="!model().displayText.trim()">
+                              <i class="fa-solid fa-check" aria-hidden="true"></i>
+                              <span>{{ 'common.save' | t }}</span>
+                            </button>
+                          </div>
+                        </fieldset>
+                      </form>
+                    </div>
+                  }
+                </div>
+
+                <!-- Follow-up Block -->
+                @if (store.canCreateFollowUp()) {
+                  <div class="content-block followup-block">
+                    <div class="block-header">
+                      <div class="block-title-wrap">
+                        <i class="fa-regular fa-calendar-plus block-icon text-teal" aria-hidden="true"></i>
+                        <h4 class="block-title">{{ 'encounters.createFollowUp' | t }}</h4>
+                      </div>
+                    </div>
+                    <form
+                      class="followup-form-row"
+                      (submit)="$event.preventDefault(); store.createFollowUp(model().validUntil)"
+                    >
+                      <label class="form-group flex-1">
+                        <span class="label-text">{{ 'followUps.validUntil' | t }}</span>
+                        <input type="date" class="form-control" dir="ltr" [formField]="fields.validUntil" />
+                      </label>
+                      <button class="btn btn-primary" [disabled]="store.busy() || !model().validUntil">
+                        <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                        <span>{{ 'encounters.createFollowUp' | t }}</span>
+                      </button>
+                    </form>
+                  </div>
+                }
+                @if (detail.followUpEligibility; as eligibility) {
+                  <div class="followup-active-notice">
+                    <div class="notice-icon-box">
+                      <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                    </div>
+                    <div class="notice-body">
+                      <strong class="notice-title">{{ 'followUps.followUp' | t }} ({{ 'encounters.availableStatus' | t }})</strong>
+                      <p class="notice-desc">
+                        {{ 'encounters.statusLabel' | t }} {{ 'followUps.status.' + eligibility.status | t }} ·
+                        {{ 'followUps.validUntil' | t }}: <time dir="ltr">{{ eligibility.validUntil }}</time>
+                      </p>
+                    </div>
+                  </div>
+                }
+
+                <!-- Clinical Amendment (For Completed Encounters) -->
+                @if (detail.status === 'Completed' && store.canAmend()) {
+                  <section class="detail-section amendment-card">
+                    <div class="section-header-row">
+                      <div class="section-title-wrap">
+                        <i class="fa-solid fa-file-pen text-teal" aria-hidden="true"></i>
+                        <h4 class="block-title">{{ 'encounters.amendment' | t }}</h4>
+                      </div>
+                      @if (!showAmendmentForm()) {
+                        <button type="button" class="btn btn-outline-primary" (click)="startAmendment()">
+                          <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                          <span>{{ 'encounters.createAmendment' | t }}</span>
+                        </button>
+                      }
+                    </div>
+
+                    @if (showAmendmentForm()) {
+                      <form class="amendment-form" (submit)="$event.preventDefault(); submitAmendment()">
+                        <p class="amendment-help-text">
+                          {{ 'encounters.amendmentImmutableHelp' | t }}
+                        </p>
+
+                        <!-- 1. Mandatory Reason -->
+                        <label class="form-group">
+                          <span class="label-text">
+                            {{ 'encounters.amendmentReason' | t }}
+                            <span class="required-asterisk">*</span>
+                          </span>
+                          <input
+                            type="text"
+                            class="form-control"
+                            [value]="amendmentReason()"
+                            (input)="amendmentReason.set(value($event))"
+                            [placeholder]="'encounters.amendmentReasonPlaceholder' | t"
+                            required
+                          />
+                        </label>
+
+                        <!-- 2. Amend Clinical Notes -->
+                        <div class="amend-notes-toggle">
+                          <label class="checkbox-label">
+                            <input
+                              type="checkbox"
+                              [checked]="amendNotes()"
+                              (change)="amendNotes.set(!amendNotes())"
+                            />
+                            <span>{{ 'encounters.amendClinicalNotes' | t }}</span>
+                          </label>
+                        </div>
+
+                        @if (amendNotes()) {
+                          <label class="form-group">
+                            <textarea
+                              rows="4"
+                              class="form-control"
+                              [value]="amendedNotes()"
+                              (input)="amendedNotes.set(value($event))"
+                            ></textarea>
+                          </label>
+                        }
+
+                        <!-- 3. Existing Diagnoses: Logical Void option -->
+                        @if (diagnoses(detail).length) {
+                          <div class="amend-diagnoses-void-list">
+                            <span class="sub-label">{{ 'encounters.diagnoses' | t }}</span>
+                            @for (diag of diagnoses(detail); track diag.diagnosisId) {
+                              <div
+                                class="void-diag-item"
+                                [class.voided]="stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)"
+                              >
+                                <span>
+                                  <b>{{ diag.displayText }}</b>
+                                  ({{ 'encounters.diagnosis.' + diag.type | t }})
+                                </span>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm"
+                                  [class.btn-outline-danger]="
+                                    !stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                  "
+                                  [class.btn-danger]="
+                                    stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                  "
+                                  (click)="toggleVoidDiagnosis(diag.diagnosisId)"
+                                >
+                                  {{
+                                    stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                      ? ('common.cancel' | t)
+                                      : ('encounters.amendVoidDiagnosis' | t)
+                                  }}
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        <!-- 4. Add Corrected Diagnosis -->
+                        <div class="amend-add-diagnosis-box">
+                          <span class="sub-label">{{ 'encounters.amendAddDiagnosis' | t }}</span>
+                          <div class="add-diag-inputs">
+                            <select
+                              class="form-control"
+                              [value]="newDiagnosisType()"
+                              (change)="onNewDiagnosisTypeChange($event)"
+                            >
+                              <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                              <option value="Secondary">
+                                {{ 'encounters.diagnosis.Secondary' | t }}
+                              </option>
+                            </select>
+                            <input
+                              type="text"
+                              class="form-control"
+                              [value]="newDiagnosisText()"
+                              (input)="newDiagnosisText.set(value($event))"
+                              [placeholder]="'encounters.diagnosisText' | t"
+                            />
+                            <input
+                              type="text"
+                              class="form-control"
+                              [value]="newDiagnosisNotes()"
+                              (input)="newDiagnosisNotes.set(value($event))"
+                              [placeholder]="'encounters.diagnosisNotes' | t"
+                            />
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary"
+                              [disabled]="!newDiagnosisText().trim()"
+                              (click)="stageAddDiagnosis()"
+                            >
+                              {{ 'common.add' | t }}
+                            </button>
+                          </div>
+
+                          @if (stagedDiagnosesToAdd().length) {
+                            <div class="staged-list">
+                              @for (diag of stagedDiagnosesToAdd(); track $index) {
+                                <div class="staged-item">
+                                  <span
+                                    >+ {{ diag.displayText }} ({{
+                                      'encounters.diagnosis.' + diag.type | t
+                                    }})</span
+                                  >
+                                  <button
+                                    type="button"
+                                    class="btn-remove-tiny"
+                                    (click)="removeStagedAddDiagnosis($index)"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Staged Changes Summary -->
+                        <div class="staged-summary">
+                          <span class="summary-count">
+                            {{ 'encounters.amendmentChanges' | t }}: {{ stagedChanges().length }}
+                          </span>
+                          @if (stagedChanges().length === 0) {
+                            <span class="summary-warning">{{ 'encounters.noChangesSelected' | t }}</span>
+                          }
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="amendment-actions">
+                          <button
+                            type="submit"
+                            class="btn btn-primary"
+                            [disabled]="!canSubmitAmendment() || store.busy()"
+                          >
+                            {{ 'encounters.amendSubmit' | t }}
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            [disabled]="store.busy()"
+                            (click)="cancelAmendment()"
+                          >
+                            {{ 'common.cancel' | t }}
+                          </button>
+                        </div>
+                      </form>
+                    }
+                  </section>
+                }
+              </div>
+            }
+
+            <!-- TAB 2: PRESCRIPTION & RX -->
+            @if (activeTab() === 'prescription') {
+              <div class="tab-pane-flow prescription-pane">
+                <app-prescription-workspace
+                  [showTitle]="false"
+                  [initial]="detail.prescription || null"
+                  [practiceId]="store.practiceId()"
+                  [encounterId]="detail.encounterId"
+                  [canManage]="
+                    detail.status === 'InProgress' && !!detail.capabilities.canManagePrescription
+                  "
+                  [canRequest]="!!detail.capabilities.canRequestNewMedication"
+                  [disabled]="store.busy() || store.diagnosticBusy() || store.detailLoading()"
+                  (changed)="store.prescriptionChanged($event)"
+                  (busyChanged)="store.prescriptionBusy.set($event)"
+                />
+              </div>
+            }
+
+            <!-- TAB 3: DIAGNOSTICS & LAB/RADIOLOGY -->
+            @if (activeTab() === 'diagnostics') {
+              <div class="tab-pane-flow diagnostics-pane">
+                @for (kind of ['lab', 'radiology']; track kind) {
+                  <div class="diagnostic-category-panel">
+                    <div class="category-panel-header">
+                      <div class="category-icon-box" [class.lab]="kind === 'lab'" [class.radiology]="kind === 'radiology'">
+                        <i
+                          class="fa-solid"
+                          [class.fa-flask-vial]="kind === 'lab'"
+                          [class.fa-x-ray]="kind === 'radiology'"
+                          aria-hidden="true"
+                        ></i>
+                      </div>
+                      <div class="category-meta-text">
+                        <h4 class="category-title">
+                          {{ (kind === 'lab' ? 'diagnostics.labRequests' : 'diagnostics.radiologyRequests') | t }}
+                        </h4>
+                      </div>
+                      <a
+                        class="btn-open-diagnostics"
+                        [routerLink]="'/diagnostics/doctor/' + kind"
+                        [queryParams]="{ encounterId: detail.encounterId, practiceId: store.practiceId() }"
+                        (click)="store.close()"
+                      >
+                        <span>{{ 'encounters.viewAll' | t }}</span>
+                        <i class="fa-solid fa-arrow-left dx-dir-arrow" aria-hidden="true"></i>
+                      </a>
+                    </div>
+
+                    @if (
+                      detail.capabilities[
+                        kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
+                      ] ||
+                      detail.capabilities[
+                        kind === 'lab' ? 'canCreatePostVisitLabRequest' : 'canCreatePostVisitRadiologyRequest'
+                      ] ||
+                      detail[kind === 'lab' ? 'labRequestDraft' : 'radiologyRequestDraft']
+                    ) {
+                      <div class="diagnostic-draft-wrap">
+                        <app-diagnostic-draft
+                          [showTitle]="false"
+                          [kind]="kind === 'lab' ? 'lab' : 'radiology'"
+                          [practiceId]="store.practiceId()"
+                          [encounterId]="detail.encounterId"
+                          [canManageEncounter]="
+                            !!detail.capabilities[
+                              kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
+                            ]
+                          "
+                          [completed]="detail.status === 'Completed'"
+                          [canPostVisit]="
+                            !!detail.capabilities[
+                              kind === 'lab'
+                                ? 'canCreatePostVisitLabRequest'
+                                : 'canCreatePostVisitRadiologyRequest'
+                            ]
+                          "
+                          [locked]="store.busy() || store.clinicalBusy()"
+                          (changed)="store.diagnosticChanged(kind === 'lab' ? 'lab' : 'radiology', $event)"
+                          (busyChanged)="store.diagnosticBusy.set($event)"
+                        />
+                      </div>
                     }
                   </div>
+                }
+              </div>
+            }
 
-                  <!-- Actions -->
-                  <div class="amendment-actions">
-                    <button
-                      type="submit"
-                      class="btn btn-primary"
-                      [disabled]="!canSubmitAmendment() || store.busy()"
-                    >
-                      {{ 'encounters.amendSubmit' | t }}
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary"
-                      [disabled]="store.busy()"
-                      (click)="cancelAmendment()"
-                    >
-                      {{ 'common.cancel' | t }}
+            <!-- TAB 4: AMENDMENTS & HISTORY (When Completed) -->
+            @if (activeTab() === 'history' && detail.status === 'Completed') {
+              <div class="tab-pane-flow history-pane">
+                @if (store.canAmend()) {
+                  <section class="amendment-card">
+                    <div class="section-header-row">
+                      <h3>{{ 'encounters.amendment' | t }}</h3>
+                      @if (!showAmendmentForm()) {
+                        <button type="button" class="btn btn-outline-primary" (click)="startAmendment()">
+                          {{ 'encounters.createAmendment' | t }}
+                        </button>
+                      }
+                    </div>
+
+                    @if (showAmendmentForm()) {
+                      <form class="amendment-form" (submit)="$event.preventDefault(); submitAmendment()">
+                        <p class="amendment-help-text">
+                          {{ 'encounters.amendmentImmutableHelp' | t }}
+                        </p>
+
+                        <!-- 1. Mandatory Reason -->
+                        <label class="form-group">
+                          <span class="label-text">
+                            {{ 'encounters.amendmentReason' | t }}
+                            <span class="required-asterisk">*</span>
+                          </span>
+                          <input
+                            type="text"
+                            class="form-control"
+                            [value]="amendmentReason()"
+                            (input)="amendmentReason.set(value($event))"
+                            [placeholder]="'encounters.amendmentReasonPlaceholder' | t"
+                            required
+                          />
+                        </label>
+
+                        <!-- 2. Amend Clinical Notes -->
+                        <div class="amend-notes-toggle">
+                          <label class="checkbox-label">
+                            <input
+                              type="checkbox"
+                              [checked]="amendNotes()"
+                              (change)="amendNotes.set(!amendNotes())"
+                            />
+                            <span>{{ 'encounters.amendClinicalNotes' | t }}</span>
+                          </label>
+                        </div>
+
+                        @if (amendNotes()) {
+                          <label class="form-group">
+                            <textarea
+                              rows="4"
+                              class="form-control"
+                              [value]="amendedNotes()"
+                              (input)="amendedNotes.set(value($event))"
+                            ></textarea>
+                          </label>
+                        }
+
+                        <!-- 3. Existing Diagnoses: Logical Void option -->
+                        @if (diagnoses(detail).length) {
+                          <div class="amend-diagnoses-void-list">
+                            <span class="sub-label">{{ 'encounters.diagnoses' | t }}</span>
+                            @for (diag of diagnoses(detail); track diag.diagnosisId) {
+                              <div
+                                class="void-diag-item"
+                                [class.voided]="stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)"
+                              >
+                                <span>
+                                  <b>{{ diag.displayText }}</b>
+                                  ({{ 'encounters.diagnosis.' + diag.type | t }})
+                                </span>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm"
+                                  [class.btn-outline-danger]="
+                                    !stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                  "
+                                  [class.btn-danger]="
+                                    stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                  "
+                                  (click)="toggleVoidDiagnosis(diag.diagnosisId)"
+                                >
+                                  {{
+                                    stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                      ? ('common.cancel' | t)
+                                      : ('encounters.amendVoidDiagnosis' | t)
+                                  }}
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        <!-- 4. Add Corrected Diagnosis -->
+                        <div class="amend-add-diagnosis-box">
+                          <span class="sub-label">{{ 'encounters.amendAddDiagnosis' | t }}</span>
+                          <div class="add-diag-inputs">
+                            <select
+                              class="form-control"
+                              [value]="newDiagnosisType()"
+                              (change)="onNewDiagnosisTypeChange($event)"
+                            >
+                              <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                              <option value="Secondary">
+                                {{ 'encounters.diagnosis.Secondary' | t }}
+                              </option>
+                            </select>
+                            <input
+                              type="text"
+                              class="form-control"
+                              [value]="newDiagnosisText()"
+                              (input)="newDiagnosisText.set(value($event))"
+                              [placeholder]="'encounters.diagnosisText' | t"
+                            />
+                            <input
+                              type="text"
+                              class="form-control"
+                              [value]="newDiagnosisNotes()"
+                              (input)="newDiagnosisNotes.set(value($event))"
+                              [placeholder]="'encounters.diagnosisNotes' | t"
+                            />
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary"
+                              [disabled]="!newDiagnosisText().trim()"
+                              (click)="stageAddDiagnosis()"
+                            >
+                              {{ 'common.add' | t }}
+                            </button>
+                          </div>
+
+                          @if (stagedDiagnosesToAdd().length) {
+                            <div class="staged-list">
+                              @for (diag of stagedDiagnosesToAdd(); track $index) {
+                                <div class="staged-item">
+                                  <span
+                                    >+ {{ diag.displayText }} ({{
+                                      'encounters.diagnosis.' + diag.type | t
+                                    }})</span
+                                  >
+                                  <button
+                                    type="button"
+                                    class="btn-remove-tiny"
+                                    (click)="removeStagedAddDiagnosis($index)"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Staged Changes Summary -->
+                        <div class="staged-summary">
+                          <span class="summary-count">
+                            {{ 'encounters.amendmentChanges' | t }}: {{ stagedChanges().length }}
+                          </span>
+                          @if (stagedChanges().length === 0) {
+                            <span class="summary-warning">{{ 'encounters.noChangesSelected' | t }}</span>
+                          }
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="amendment-actions">
+                          <button
+                            type="submit"
+                            class="btn btn-primary"
+                            [disabled]="!canSubmitAmendment() || store.busy()"
+                          >
+                            {{ 'encounters.amendSubmit' | t }}
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            [disabled]="store.busy()"
+                            (click)="cancelAmendment()"
+                          >
+                            {{ 'common.cancel' | t }}
+                          </button>
+                        </div>
+                      </form>
+                    }
+                  </section>
+                }
+
+                <section class="content-block history-section">
+                  <div class="block-header">
+                    <div class="block-title-wrap">
+                      <i class="fa-solid fa-clock-rotate-left block-icon text-teal" aria-hidden="true"></i>
+                      <h4 class="block-title">{{ 'encounters.history' | t }}</h4>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="store.loadHistory()">
+                      <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                      <span>{{ 'common.refresh' | t }}</span>
                     </button>
                   </div>
-                </form>
-              }
-            </section>
-          }
-
-          <section class="detail-section">
-            <h3>{{ 'encounters.history' | t }}</h3>
-            <button class="btn btn-outline-secondary" (click)="store.loadHistory()">
-              {{ 'encounters.history' | t }}
-            </button>
-            @for (amendment of store.history(); track amendment.sequence) {
-              <article class="detail-section">
-                <b>{{ amendment.sequence }} · {{ amendment.reason }}</b>
-                <p>
-                  {{ amendment.author }} · <time dir="ltr">{{ amendment.createdOnUtc }}</time>
-                </p>
-                @for (change of amendment.changes; track $index) {
-                  <dl>
-                    <dt>{{ 'encounters.before' | t }}</dt>
-                    <dd>{{ snapshot(change.before) }}</dd>
-                    <dt>{{ 'encounters.after' | t }}</dt>
-                    <dd>{{ snapshot(change.after) }}</dd>
-                  </dl>
-                }
-              </article>
+                  @for (amendment of store.history(); track amendment.sequence) {
+                    <article class="history-amendment-card">
+                      <div class="history-amendment-header">
+                        <span class="history-seq-badge">#{{ amendment.sequence }}</span>
+                        <strong class="history-reason">{{ amendment.reason }}</strong>
+                      </div>
+                      <p class="history-meta">
+                        <i class="fa-solid fa-user-doctor text-teal" aria-hidden="true"></i>
+                        <span>{{ amendment.author }}</span>
+                        <span>·</span>
+                        <time dir="ltr">{{ amendment.createdOnUtc | localizedDate: language.currentLang() }}</time>
+                      </p>
+                      @for (change of amendment.changes; track $index) {
+                        <dl class="history-diff-grid">
+                          <div class="history-diff-cell before">
+                            <dt>{{ 'encounters.before' | t }}</dt>
+                            <dd>{{ snapshot(change.before) }}</dd>
+                          </div>
+                          <div class="history-diff-cell after">
+                            <dt>{{ 'encounters.after' | t }}</dt>
+                            <dd>{{ snapshot(change.after) }}</dd>
+                          </div>
+                        </dl>
+                      }
+                    </article>
+                  } @empty {
+                    <div class="empty-state-notice">
+                      <i class="fa-solid fa-clock-rotate-left empty-icon" aria-hidden="true"></i>
+                      <p class="empty-text">{{ 'requests.noHistory' | t }}</p>
+                    </div>
+                  }
+                </section>
+              </div>
             }
-          </section>
-        }
+          </div>
+
+          <!-- Persistent Complete Encounter Action Bar (Visible across all tabs when InProgress) -->
+          @if (store.canComplete()) {
+            <div class="complete-action-wrapper">
+              @if (!(model().clinicalNotes.trim() || (detail.clinicalNotes ?? '').trim())) {
+                <p class="complete-hint-text">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  <span>{{ 'encounters.completeHint' | t }}</span>
+                </p>
+              }
+              <button
+                type="button"
+                class="btn btn-complete-primary"
+                [disabled]="
+                  store.busy() ||
+                  store.clinicalBusy() ||
+                  !(model().clinicalNotes.trim() || (detail.clinicalNotes ?? '').trim())
+                "
+                (click)="completeVisit()"
+              >
+                <i class="fa-solid fa-flag-checkered" aria-hidden="true"></i>
+                <span>{{ 'encounters.complete' | t }}</span>
+              </button>
+            </div>
+          }
+        </div>
       }
       @if (store.patientDetail(); as detail) {
         <div class="patient-visit-sheet">

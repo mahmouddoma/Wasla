@@ -88,6 +88,13 @@ export interface ResubmitPatientClaimRequest {
   readonly identityBack?: File;
   readonly birthCertificate?: File;
   readonly guardianRelationshipDocument?: File;
+  readonly inPersonIdentityAttestationId?: string;
+  readonly identityProfileCorrections?: {
+    readonly nameAr?: string;
+    readonly dateOfBirth?: string;
+    readonly gender?: 'Male' | 'Female';
+    readonly phoneNumber?: string;
+  };
 }
 
 export interface ResubmitPatientClaimResponse {

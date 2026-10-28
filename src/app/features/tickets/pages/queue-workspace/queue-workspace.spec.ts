@@ -17,6 +17,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { PatientsApi, PatientSearchItem } from '../../../../domains/patients';
 import { FollowUpsApi, FollowUpEligibility } from '../../../../domains/follow-ups';
 import { Phase18Part2Api } from '../../../../domains/phase18';
+import { EncountersApi, EncounterDetails } from '../../../../domains/encounters';
 
 describe('QueueWorkspace', () => {
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -28,6 +29,45 @@ describe('QueueWorkspace', () => {
     details: vi.fn(),
     createWalkIn: vi.fn(),
     start: vi.fn(),
+    complete: vi.fn(),
+  };
+  const mockEncounter: EncounterDetails = {
+    encounterId: 'enc-1',
+    ticketId: 'doctor-ticket',
+    patient: { id: 'pt-1', nameAr: 'مريض', nameEn: 'Patient' },
+    doctor: { id: 'doc-1', nameAr: 'طبيب', nameEn: 'Doctor' },
+    practice: { id: 'p1', nameAr: 'عيادة', nameEn: 'Clinic' },
+    status: 'InProgress',
+    startedAtUtc: '2026-10-07T10:00:00Z',
+    completedAtUtc: null,
+    hasDiagnosis: false,
+    hasFollowUpEligibility: false,
+    clinicalNotes: '',
+    diagnoses: [],
+    capabilities: {
+      canEditClinicalNotes: true,
+      canManageDiagnoses: true,
+      canComplete: true,
+      canCreateFollowUpEligibility: true,
+      canAmend: false,
+      canManagePrescription: true,
+      canManageLabRequest: true,
+      canManageRadiologyRequest: true,
+    },
+    rowVersion: 'enc-rv-1',
+  };
+  const encountersApi = {
+    byTicket: vi.fn(() => of(mockEncounter)),
+    updateNotes: vi.fn(() => of({ ...mockEncounter, clinicalNotes: 'Patient complaint' })),
+    addDiagnosis: vi.fn(() =>
+      of({
+        ...mockEncounter,
+        diagnoses: [{ diagnosisId: 'd1', type: 'Primary' as const, displayText: 'Flu', notes: null }],
+      }),
+    ),
+    updateDiagnosis: vi.fn(() => of(mockEncounter)),
+    removeDiagnosis: vi.fn(() => of(mockEncounter)),
+    createFollowUp: vi.fn(() => of({})),
   };
   const practices = {
     list: vi.fn(() => of([{ id: 'p1', nameAr: 'عيادة', nameEn: 'Clinic', isActive: true }])),
@@ -51,6 +91,7 @@ describe('QueueWorkspace', () => {
           useValue: { snapshot: { data: { actor: 'Doctor' }, queryParamMap: { get: () => null } } },
         },
         { provide: TicketsApi, useValue: api },
+        { provide: EncountersApi, useValue: encountersApi },
         { provide: DoctorPracticesApi, useValue: practices },
         { provide: ReceptionPracticeContext, useValue: reception },
         {
@@ -138,6 +179,71 @@ describe('QueueWorkspace', () => {
     });
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.current-patient a')).toBeNull();
+  });
+  it('renders the inline clinical workstation and completes the visit with auto-saved notes and diagnosis on one page', async () => {
+    encountersApi.byTicket.mockClear();
+    encountersApi.updateNotes.mockClear();
+    encountersApi.addDiagnosis.mockClear();
+    encountersApi.createFollowUp.mockClear();
+    const inProgTicket: PracticeTicket = {
+      ...doctorTicket,
+      status: 'InProgress',
+      rowVersion: 'ticket-rv-1',
+    };
+    api.details.mockReturnValue(of(inProgTicket));
+    api.complete.mockReturnValue(of({ ...inProgTicket, status: 'Completed' }));
+
+    fixture.componentInstance['queue'].set({
+      ...queue,
+      inProgress: inProgTicket,
+      waiting: [{ ...doctorTicket, ticketId: 'next-ticket', status: 'Waiting' }],
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(encountersApi.byTicket).toHaveBeenCalledWith('p1', 'doctor-ticket');
+    expect(fixture.nativeElement.querySelector('.doctor-clinical-workstation')).toBeTruthy();
+
+    // Type clinical notes and pending diagnosis without clicking small sub-save buttons
+    fixture.componentInstance['clinicalModel'].update((m) => ({
+      ...m,
+      clinicalNotes: 'Patient complaint',
+      displayText: 'Flu',
+      type: 'Primary',
+    }));
+    fixture.componentInstance['setFollowUpDays'](7);
+    expect(fixture.componentInstance['clinicalModel']().validUntil).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    // Complete visit & call next in 1 click
+    await fixture.componentInstance['completeClinicalVisit'](true);
+
+    expect(encountersApi.updateNotes).toHaveBeenCalledWith(
+      'p1',
+      'enc-1',
+      'Patient complaint',
+      expect.any(String),
+    );
+    expect(encountersApi.addDiagnosis).toHaveBeenCalledWith(
+      'p1',
+      'enc-1',
+      { type: 'Primary', displayText: 'Flu', notes: null },
+      expect.any(String),
+    );
+    expect(api.complete).toHaveBeenCalledWith(
+      'p1',
+      'doctor-ticket',
+      expect.objectContaining({
+        ticketRowVersion: 'ticket-rv-1',
+        encounterRowVersion: 'enc-rv-1',
+      }),
+      expect.any(String),
+    );
+    expect(encountersApi.createFollowUp).toHaveBeenCalledWith(
+      'p1',
+      'enc-1',
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    );
   });
 });
 

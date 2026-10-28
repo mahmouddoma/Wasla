@@ -12,10 +12,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const token = session.token();
   if (!token && session.session()) session.clear();
   const isWaslaApi = request.url.startsWith(environment.apiBaseUrl);
+  const isAnonymousOnboarding = request.url.includes('/api/v1/patient-onboarding');
   const headers: Record<string, string> = {};
   if (isWaslaApi && !request.headers.has('Accept-Language'))
     headers['Accept-Language'] = document.documentElement.lang === 'en' ? 'en' : 'ar';
-  if (isWaslaApi && token && !request.headers.has('Authorization'))
+  if (isWaslaApi && !isAnonymousOnboarding && token && !request.headers.has('Authorization'))
     headers['Authorization'] = `Bearer ${token}`;
   const authorizedRequest = Object.keys(headers).length
     ? request.clone({ setHeaders: headers })
@@ -26,6 +27,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         error instanceof HttpErrorResponse &&
         error.status === 401 &&
         isWaslaApi &&
+        !isAnonymousOnboarding &&
         (token !== null || hadSession) &&
         !request.url.endsWith('/login')
       ) {

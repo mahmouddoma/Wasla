@@ -88,6 +88,14 @@ export const ADMIN_ROUTES: Routes = [
     title: 'archive.title',
   },
   {
+    path: 'patient-claims',
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.patientClaimsViewAll },
+    loadComponent: () =>
+      import('./patient-claims/patient-claims.component').then((m) => m.PatientClaimsComponent),
+    title: 'adminClaims.title',
+  },
+  {
     path: 'family-relationship-requests/:requestId',
     canActivate: [permissionGuard],
     data: { permission: PERMISSIONS.familyRelationshipRequestsViewDetails },

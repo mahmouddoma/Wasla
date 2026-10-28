@@ -107,6 +107,13 @@ export class AdminLayout {
         permission: PERMISSIONS.doctorSpecializationRequestsViewAll,
       },
       {
+        id: 'patient-claims',
+        labelKey: 'adminClaims.navTitle',
+        route: '/admin/patient-claims',
+        icon: 'clipboard-list',
+        permission: PERMISSIONS.patientClaimsViewAll,
+      },
+      {
         id: 'family-requests',
         labelKey: 'family.requests',
         route: '/admin/family-relationship-requests',

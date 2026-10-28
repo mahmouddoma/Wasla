@@ -1,0 +1,393 @@
+<main class="health-workspace admin-claims-workspace" [dir]="uiLanguage.dir()">
+  <app-page-header
+    [heading]="'adminClaims.title' | t"
+    [description]="'adminClaims.subtitle' | t"
+    icon="requests"
+  />
+
+  <section class="claims-panel">
+    <!-- Filter & Search Bar -->
+    <form class="claims-filters-bar" (submit)="onSearchSubmit($event)" novalidate>
+      <div class="form-field">
+        <label for="claimStatusFilter">{{ 'common.status' | t }}</label>
+        <select
+          id="claimStatusFilter"
+          [value]="statusFilter()"
+          (change)="onStatusFilterChange($event)"
+          data-testid="claims-status-select"
+        >
+          <option value="">{{ 'common.all' | t }}</option>
+          <option value="PendingReview">{{ 'onboarding.status.PendingReview' | t }}</option>
+          <option value="ModificationRequested">
+            {{ 'onboarding.status.ModificationRequested' | t }}
+          </option>
+          <option value="ApprovedPendingActivation">
+            {{ 'onboarding.status.ApprovedPendingActivation' | t }}
+          </option>
+          <option value="Linked">{{ 'onboarding.status.Linked' | t }}</option>
+          <option value="Rejected">{{ 'onboarding.status.Rejected' | t }}</option>
+          <option value="Expired">{{ 'onboarding.status.Expired' | t }}</option>
+        </select>
+      </div>
+
+      <div class="form-field claims-email-search">
+        <label for="claimEmailSearch">{{ 'workspace.email' | t }}</label>
+        <input
+          id="claimEmailSearch"
+          type="search"
+          dir="ltr"
+          [value]="emailSearch()"
+          (input)="onEmailSearchInput($event)"
+          [placeholder]="'adminClaims.emailSearchPlaceholder' | t"
+          data-testid="claims-email-search-input"
+        />
+      </div>
+
+      <div class="claims-filter-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="isLoadingList()"
+          data-testid="claims-search-btn"
+        >
+          <span>{{ (isLoadingList() ? 'reservations.loading' : 'reception.patients.search') | t }}</span>
+        </button>
+      </div>
+    </form>
+
+    @if (listError()) {
+      <div class="notice" role="alert">
+        <p>{{ listError() | t }}</p>
+      </div>
+    }
+
+    @if (isLoadingList()) {
+      <div class="loading-state" role="status">
+        <span class="spinner-inline"></span>
+        <p>{{ 'reservations.loading' | t }}</p>
+      </div>
+    } @else if (items().length) {
+      <div class="claims-directory-list" role="list" data-testid="claims-list">
+        @for (item of items(); track item.id) {
+          <div class="claim-row-item" role="listitem" data-testid="claim-row">
+            <div class="claim-row-main">
+              <div class="claim-title-line">
+                <strong dir="ltr">{{ item.claimantEmailMasked }}</strong>
+                <span class="claim-status-pill" [attr.data-status]="item.status">
+                  {{ ('onboarding.status.' + item.status) | t }}
+                </span>
+              </div>
+              <div class="claim-meta-line">
+                <span>{{ 'adminClaims.evidenceCount' | t }}: {{ item.evidenceCount }}</span>
+                <span>•</span>
+                <span dir="ltr">{{ item.submittedOnUtc }}</span>
+              </div>
+            </div>
+            <div class="claim-row-actions">
+              @if (canViewDetails()) {
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="openClaimDrawer(item.id)"
+                  data-testid="open-claim-details-btn"
+                >
+                  {{ 'adminClaims.reviewClaimAction' | t }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <footer class="claims-pagination-bar">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          [disabled]="pageNumber() <= 1 || isLoadingList()"
+          (click)="loadClaims(pageNumber() - 1)"
+        >
+          {{ 'discovery.previous' | t }}
+        </button>
+        <span>
+          {{ 'discovery.page' | t }} <strong>{{ pageNumber() }}</strong> {{ 'discovery.of' | t }}
+          <strong>{{ totalPages() }}</strong>
+        </span>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          [disabled]="pageNumber() >= totalPages() || isLoadingList()"
+          (click)="loadClaims(pageNumber() + 1)"
+        >
+          {{ 'discovery.next' | t }}
+        </button>
+      </footer>
+    } @else {
+      <div class="empty-state" data-testid="claims-empty-state">
+        <h2>{{ 'adminClaims.noClaimsTitle' | t }}</h2>
+        <p>{{ 'adminClaims.noClaimsDesc' | t }}</p>
+      </div>
+    }
+  </section>
+
+  <!-- Slide-Over Review Drawer -->
+  @if (drawerOpen()) {
+    <app-side-drawer
+      [opened]="drawerOpen()"
+      [busy]="isLoadingDetails() || isSubmittingDecision()"
+      [title]="'adminClaims.drawerTitle' | t"
+      (closed)="closeDrawer()"
+    >
+      @if (isLoadingDetails()) {
+        <div class="loading-state" role="status">
+          <span class="spinner-inline"></span>
+          <p>{{ 'reservations.loading' | t }}</p>
+        </div>
+      } @else if (claimDetails(); as details) {
+        <div class="claim-drawer-body" data-testid="claim-details-drawer">
+          @if (drawerError()) {
+            <div class="notice" role="alert" data-testid="claim-drawer-error">
+              <p>{{ drawerError() }}</p>
+            </div>
+          }
+
+          <!-- Claimant Summary -->
+          <section class="drawer-section">
+            <div class="drawer-section-header">
+              <h3>{{ 'adminClaims.claimantInfoTitle' | t }}</h3>
+              <span class="claim-status-pill" [attr.data-status]="details.status">
+                {{ ('onboarding.status.' + details.status) | t }}
+              </span>
+            </div>
+            <dl class="claimant-data-grid">
+              <div>
+                <dt>{{ 'register.fullNameAr' | t }}</dt>
+                <dd>{{ details.claimant.nameAr }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'register.dob' | t }}</dt>
+                <dd dir="ltr">{{ details.claimant.dateOfBirth }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'register.gender' | t }}</dt>
+                <dd>
+                  {{
+                    (details.claimant.gender === 'Male' ? 'register.male' : 'register.female') | t
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>{{ 'workspace.email' | t }}</dt>
+                <dd dir="ltr">{{ details.claimant.email }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'workspace.phone' | t }}</dt>
+                <dd dir="ltr">{{ details.claimant.phoneMasked || '—' }}</dd>
+              </div>
+              @if (details.patientReference) {
+                <div>
+                  <dt>{{ 'onboarding.patientReferenceLabel' | t }}</dt>
+                  <dd dir="ltr">{{ details.patientReference }}</dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <!-- Candidate Patients Selection -->
+          <section class="drawer-section">
+            <h3>{{ 'adminClaims.candidatePatientsTitle' | t }}</h3>
+            <p class="section-help">{{ 'adminClaims.candidatePatientsHelp' | t }}</p>
+
+            @if (details.candidatePatients.length) {
+              <div class="candidates-list" role="radiogroup">
+                @for (cand of details.candidatePatients; track cand.patientId) {
+                  <label class="candidate-row">
+                    <input
+                      type="radio"
+                      name="targetPatientId"
+                      [value]="cand.patientId"
+                      [checked]="selectedTargetPatientId() === cand.patientId"
+                      (change)="selectCandidatePatient(cand.patientId)"
+                      data-testid="candidate-patient-radio"
+                    />
+                    <div class="candidate-info">
+                      <strong>{{ cand.nameAr }}</strong>
+                      <span class="candidate-meta" dir="ltr">
+                        {{ cand.dateOfBirth }} • {{ cand.gender }} • {{ cand.emailMasked || '—' }}
+                      </span>
+                    </div>
+                  </label>
+                }
+              </div>
+            } @else {
+              <div class="form-field">
+                <label for="manualTargetPatientId">
+                  {{ 'adminClaims.targetPatientIdLabel' | t }}
+                </label>
+                <input
+                  id="manualTargetPatientId"
+                  type="text"
+                  dir="ltr"
+                  [value]="selectedTargetPatientId()"
+                  (input)="onTargetPatientInput($event)"
+                  data-testid="manual-target-patient-input"
+                />
+              </div>
+            }
+          </section>
+
+          <!-- Evidence Review Section -->
+          <section class="drawer-section">
+            <h3>{{ 'adminClaims.evidenceTitle' | t }}</h3>
+            <p class="section-help">{{ 'adminClaims.evidenceHelp' | t }}</p>
+
+            <div class="evidence-list">
+              @for (ev of details.evidence; track ev.evidenceId) {
+                <div class="evidence-row" data-testid="evidence-row">
+                  <label class="evidence-check-label">
+                    <input
+                      type="checkbox"
+                      [checked]="isEvidenceReviewed(ev.evidenceId)"
+                      (change)="toggleReviewedEvidence(ev.evidenceId, $event)"
+                      data-testid="evidence-reviewed-checkbox"
+                    />
+                    <span>
+                      <strong>{{ ev.type }}</strong>
+                      <small>
+                        ({{ 'adminClaims.revision' | t }} #{{ ev.revisionNumber }})
+                      </small>
+                    </span>
+                  </label>
+
+                  @if (canViewEvidence()) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      [disabled]="isLoadingEvidence()"
+                      (click)="previewEvidence(ev.evidenceId)"
+                      data-testid="preview-evidence-btn"
+                    >
+                      {{ 'adminClaims.viewEvidenceAction' | t }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (previewBlobUrl()) {
+              <div class="evidence-preview-box" data-testid="evidence-preview-box">
+                <div class="evidence-preview-header">
+                  <strong>{{ 'adminClaims.evidencePreviewTitle' | t }}</strong>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="revokeEvidencePreview()"
+                  >
+                    {{ 'common.close' | t }}
+                  </button>
+                </div>
+                <img
+                  [src]="previewBlobUrl()"
+                  [alt]="'adminClaims.evidencePreviewTitle' | t"
+                  class="evidence-preview-img"
+                />
+              </div>
+            }
+          </section>
+
+          <!-- Decision Actions (Gated by reviewCapabilities & Permissions) -->
+          @if (
+            details.reviewCapabilities.canApprove ||
+            details.reviewCapabilities.canRequestModification ||
+            details.reviewCapabilities.canReject
+          ) {
+            <section class="drawer-section decision-section">
+              <h3>{{ 'adminClaims.decisionTitle' | t }}</h3>
+
+              <div class="form-field">
+                <label for="adminReviewNote">{{ 'adminClaims.reviewNoteLabel' | t }}</label>
+                <input
+                  id="adminReviewNote"
+                  type="text"
+                  [value]="reviewNote()"
+                  (input)="reviewNote.set($any($event.target).value)"
+                  [placeholder]="'adminClaims.reviewNotePlaceholder' | t"
+                />
+              </div>
+
+              <div class="form-field">
+                <label for="adminDecisionReason">
+                  {{ 'adminClaims.modOrRejectReasonLabel' | t }}
+                </label>
+                <textarea
+                  id="adminDecisionReason"
+                  rows="2"
+                  [value]="decisionReason()"
+                  (input)="decisionReason.set($any($event.target).value)"
+                  [placeholder]="'adminClaims.modOrRejectReasonPlaceholder' | t"
+                  data-testid="decision-reason-textarea"
+                ></textarea>
+              </div>
+
+              <div class="decision-buttons-row">
+                @if (details.reviewCapabilities.canApprove && canApprovePerm()) {
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    [disabled]="!canSubmitApprove()"
+                    (click)="approveClaim()"
+                    data-testid="approve-claim-btn"
+                  >
+                    {{ 'adminClaims.approveAction' | t }}
+                  </button>
+                }
+
+                @if (details.reviewCapabilities.canRequestModification && canRequestModPerm()) {
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    [disabled]="!canSubmitModOrReject()"
+                    (click)="requestModification()"
+                    data-testid="request-mod-claim-btn"
+                  >
+                    {{ 'adminClaims.requestModAction' | t }}
+                  </button>
+                }
+
+                @if (details.reviewCapabilities.canReject && canRejectPerm()) {
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [disabled]="!canSubmitModOrReject()"
+                    (click)="rejectClaim()"
+                    data-testid="reject-claim-btn"
+                  >
+                    {{ 'adminClaims.rejectAction' | t }}
+                  </button>
+                }
+              </div>
+            </section>
+          }
+
+          <!-- Audit History -->
+          @if (claimHistory().length) {
+            <section class="drawer-section">
+              <h3>{{ 'adminClaims.historyTitle' | t }}</h3>
+              <ul class="claim-history-list">
+                @for (entry of claimHistory(); track entry.id) {
+                  <li>
+                    <strong>{{ entry.action }}</strong> — {{ entry.actorName }}
+                    <small dir="ltr">({{ entry.timestampUtc }})</small>
+                    @if (entry.note) {
+                      <p>{{ entry.note }}</p>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        </div>
+      }
+    </app-side-drawer>
+  }
+</main>
+

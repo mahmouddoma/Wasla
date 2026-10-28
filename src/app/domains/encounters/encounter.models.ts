@@ -54,7 +54,7 @@ export interface EncounterDetails extends EncounterSummary {
     readonly field?: string;
   }[];
   readonly prescription?: EncounterPrescription | null;
-  readonly clinicalNotes: string;
+  readonly clinicalNotes: string | null;
   readonly diagnoses: readonly Diagnosis[];
   readonly followUpEligibility?: {
     readonly eligibilityId: string;

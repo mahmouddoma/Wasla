@@ -101,6 +101,28 @@
         </div>
       </div>
       <div class="selected-hero-actions">
+        @if (canVerifyClaimIdentity()) {
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-verify-claim-hero"
+            (click)="openAttestationDrawer()"
+            data-testid="open-attestation-drawer-btn"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+            <span>{{ 'reception.patients.verifyIdentityInPerson' | t }}</span>
+          </button>
+        }
         @if (canBook()) {
           <button type="button" class="btn btn-primary btn-book-hero" (click)="book()">
             <svg
@@ -615,6 +637,118 @@
       <ng-container [ngTemplateOutlet]="registration" />
     </app-side-drawer>
   }
+
+  @if (attestationDrawerOpen() && selectedPatient(); as patient) {
+    <app-side-drawer
+      [opened]="attestationDrawerOpen()"
+      [busy]="isSubmittingAttestation()"
+      [title]="'reception.patients.verifyIdentityInPerson' | t"
+      (closed)="attestationDrawerOpen.set(false)"
+    >
+      <form
+        class="registration-form"
+        (submit)="submitClaimIdentityAttestation($event)"
+        novalidate
+      >
+        <div class="section-title-row">
+          <h3>{{ displayName(patient) }}</h3>
+          <p class="section-subtitle">{{ 'reception.patients.attestationHelp' | t }}</p>
+        </div>
+
+        <div class="form-field">
+          <label for="claimantEmailInput">
+            {{ 'reception.patients.claimantEmailLabel' | t }} *
+          </label>
+          <input
+            id="claimantEmailInput"
+            type="email"
+            dir="ltr"
+            [value]="attestationModel().claimantEmail"
+            (input)="updateAttestationField('claimantEmail', $event)"
+            [placeholder]="'reception.patientEmailExample' | t"
+            data-testid="attestation-email-input"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="attestationBasisSelect">
+            {{ 'reception.patients.verificationBasisLabel' | t }} *
+          </label>
+          <select
+            id="attestationBasisSelect"
+            [value]="attestationModel().verificationBasis"
+            (change)="updateAttestationField('verificationBasis', $event)"
+          >
+            <option value="GovernmentIdSeen">
+              {{ 'reception.patients.basisGovernmentId' | t }}
+            </option>
+            <option value="BirthCertificateSeen">
+              {{ 'reception.patients.basisBirthCertificate' | t }}
+            </option>
+            <option value="GuardianIdSeen">
+              {{ 'reception.patients.basisGuardianId' | t }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="attestationReasonInput">
+            {{ 'reception.patients.verificationReasonLabel' | t }} *
+          </label>
+          <textarea
+            id="attestationReasonInput"
+            rows="3"
+            [value]="attestationModel().reason"
+            (input)="updateAttestationField('reason', $event)"
+            [placeholder]="'reception.patients.verificationReasonPlaceholder' | t"
+            data-testid="attestation-reason-input"
+          ></textarea>
+        </div>
+
+        <label class="primary-toggle-row">
+          <input
+            type="checkbox"
+            [checked]="attestationModel().verifiedInPerson"
+            (change)="toggleAttestationInPerson($event)"
+          />
+          <span>{{ 'reception.patients.verifiedInPersonConfirm' | t }}</span>
+        </label>
+
+        @if (generatedAttestationId()) {
+          <div class="notice" role="status" data-testid="generated-attestation-box">
+            <div class="notice-texts">
+              <strong>{{ 'reception.patients.attestationIdResultLabel' | t }}:</strong>
+              <p dir="ltr" class="ltr-text">{{ generatedAttestationId() }}</p>
+              <small>{{ 'reception.patients.attestationValidityNote' | t }}</small>
+              <div>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="copyAttestationId()"
+                >
+                  {{ 'reception.patients.copyAttestationId' | t }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <button
+          type="submit"
+          class="btn btn-primary btn-submit-registration"
+          [disabled]="isSubmittingAttestation()"
+          data-testid="submit-attestation-btn"
+        >
+          <span>{{
+            (isSubmittingAttestation()
+              ? 'reservations.loading'
+              : 'reception.patients.confirmAttestationAction'
+            ) | t
+          }}</span>
+        </button>
+      </form>
+    </app-side-drawer>
+  }
 </main>
 
 <ng-template #registration>
@@ -628,6 +762,19 @@
       <div class="section-title-row">
         <h3>{{ 'register.stepPersonal' | t }}</h3>
         <p class="section-subtitle">{{ 'reception.patients.registerHelp' | t }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="registrationModeSelect">{{ 'reception.patients.accountTypeLabel' | t }}</label>
+        <select
+          id="registrationModeSelect"
+          [value]="registrationAccountMode()"
+          (change)="registrationAccountMode.set($any($event.target).value)"
+          data-testid="reception-registration-mode-select"
+        >
+          <option value="basic">{{ 'reception.patients.accountTypeBasic' | t }}</option>
+          <option value="full">{{ 'reception.patients.accountTypeFull' | t }}</option>
+        </select>
       </div>
 
       <div class="form-field">
@@ -735,7 +882,12 @@
             </div>
 
             <div class="form-field">
-              <label for="patientEmail">{{ 'workspace.email' | t }}</label>
+              <label for="patientEmail">
+                {{ 'workspace.email' | t }}
+                @if (registrationAccountMode() === 'full') {
+                  *
+                }
+              </label>
               <input
                 id="patientEmail"
                 type="email"
@@ -744,6 +896,27 @@
                 [placeholder]="'reception.patientEmailExample' | t"
               />
             </div>
+
+            @if (registrationAccountMode() === 'full') {
+              <div class="form-field">
+                <label for="fullIdFront">{{ 'account.idFront' | t }}</label>
+                <input
+                  id="fullIdFront"
+                  type="file"
+                  accept="image/*"
+                  (change)="idFrontFileChanged($event)"
+                />
+              </div>
+              <div class="form-field">
+                <label for="fullIdBack">{{ 'account.idBack' | t }}</label>
+                <input
+                  id="fullIdBack"
+                  type="file"
+                  accept="image/*"
+                  (change)="idBackFileChanged($event)"
+                />
+              </div>
+            }
 
             <div class="form-field">
               <label for="profilePhoto">{{ 'common.profilePhoto' | t }}</label>

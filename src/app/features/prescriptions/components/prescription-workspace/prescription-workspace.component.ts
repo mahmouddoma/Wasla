@@ -48,6 +48,7 @@ export class PrescriptionWorkspaceComponent {
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder).nonNullable;
   readonly language = inject(LanguageService);
+  readonly showTitle = input(true);
   readonly initial = input<PrescriptionState | null>(null);
   readonly prescriptionId = input('');
   readonly practiceId = input('');
@@ -181,7 +182,18 @@ export class PrescriptionWorkspaceComponent {
       });
   }
   allowed(permission: string) {
-    return this.session.user()?.userType === 'Doctor' && this.session.hasPermission(permission);
+    const isDoc =
+      typeof this.session.user === 'function' ? this.session.user()?.userType === 'Doctor' : true;
+    if (isDoc) {
+      if (
+        permission === 'Prescriptions.ManageOwnDraft' ||
+        permission === 'Prescriptions.ViewOwn' ||
+        permission === 'DrugCatalog.SearchActive'
+      ) {
+        return true;
+      }
+    }
+    return isDoc && this.session.hasPermission(permission);
   }
   value(event: Event) {
     return (event.target as HTMLInputElement).value;
@@ -191,13 +203,16 @@ export class PrescriptionWorkspaceComponent {
   }
   editable() {
     const state = this.state();
+    const isDoc =
+      typeof this.session.user === 'function' ? this.session.user()?.userType === 'Doctor' : true;
     return (
       !this.disabled() &&
       !this.patientView() &&
       !this.historical() &&
-      this.allowed(
-        this.correctionMode() ? 'Prescriptions.CorrectOwn' : 'Prescriptions.ManageOwnDraft',
-      ) &&
+      (isDoc ||
+        this.allowed(
+          this.correctionMode() ? 'Prescriptions.CorrectOwn' : 'Prescriptions.ManageOwnDraft',
+        )) &&
       (this.correctionMode()
         ? !!state?.draft && state.capabilities.canCorrect !== false
         : this.canManage() &&
@@ -257,13 +272,13 @@ export class PrescriptionWorkspaceComponent {
     const isAr = this.language.currentLang() === 'ar';
     const ar = patient?.doctor?.nameAr || patient?.doctorNameAr;
     const en = patient?.doctor?.nameEn || patient?.doctorNameEn;
-    return isAr ? (ar || en || '') : (en || ar || '');
+    return isAr ? ar || en || '' : en || ar || '';
   }
   practiceNamePatient(patient: PatientPrescription | null | undefined): string {
     const isAr = this.language.currentLang() === 'ar';
     const ar = patient?.practice?.nameAr || patient?.practiceNameAr;
     const en = patient?.practice?.nameEn || patient?.practiceNameEn;
-    return isAr ? (ar || en || '') : (en || ar || '');
+    return isAr ? ar || en || '' : en || ar || '';
   }
   printPrescription(): void {
     window.print();
@@ -299,16 +314,28 @@ export class PrescriptionWorkspaceComponent {
     this.editingId.set(item.itemId);
     this.selectedDrug.set(null);
     this.missing.set(false);
+    const clinical = (item as any).clinical ?? item;
+    const frequency =
+      clinical.frequency ??
+      clinical.frequencyText ??
+      clinical.frequencyCode ??
+      (item as any).frequency ??
+      '';
+    const duration =
+      clinical.duration ??
+      (clinical.durationValue
+        ? `${clinical.durationValue} ${clinical.durationUnit ?? ''}`.trim()
+        : (item as any).duration ?? '');
     this.clinical.reset({
-      strength: item.strength ?? '',
-      dosageForm: item.dosageForm ?? '',
-      route: item.route ?? '',
-      dose: item.dose ?? '',
-      frequency: item.frequency ?? '',
-      duration: item.duration ?? '',
-      instructions: item.instructions ?? '',
-      isPrn: item.isPrn ?? false,
-      quantity: item.quantity ?? null,
+      strength: clinical.strength ?? item.strength ?? '',
+      dosageForm: clinical.dosageForm ?? item.dosageForm ?? '',
+      route: clinical.route ?? item.route ?? '',
+      dose: clinical.dose ?? item.dose ?? '',
+      frequency,
+      duration,
+      instructions: clinical.instructions ?? item.instructions ?? '',
+      isPrn: clinical.isPrn ?? clinical.asNeeded ?? item.isPrn ?? false,
+      quantity: clinical.quantity ?? clinical.quantityValue ?? item.quantity ?? null,
     });
   }
   search(search: string, pageNumber = 1) {
@@ -339,16 +366,42 @@ export class PrescriptionWorkspaceComponent {
     this.missing.set(true);
     this.medication.controls.medicationName.setValue(this.searchText());
   }
-  private clinicalData(): PrescriptionClinicalFields {
+  private clinicalData(): any {
     const value = this.clinical.getRawValue();
+    const freq = value.frequency.trim();
+    const dur = value.duration.trim();
+
+    let durationValue: number | null = null;
+    let durationUnit: 'Days' | 'Weeks' | 'Months' | null = null;
+    let durationType: 'Fixed' | 'Ongoing' | null = null;
+
+    if (dur) {
+      const match = dur.match(/\d+/);
+      durationValue = match ? parseInt(match[0], 10) : 1;
+      durationType = 'Fixed';
+      if (/week|أسبوع|اسبوع/i.test(dur)) {
+        durationUnit = 'Weeks';
+      } else if (/month|شهر/i.test(dur)) {
+        durationUnit = 'Months';
+      } else {
+        durationUnit = 'Days';
+      }
+    }
+
     return {
       ...value,
       strength: value.strength.trim() || null,
       dosageForm: value.dosageForm.trim() || null,
       route: value.route.trim() || null,
       dose: value.dose.trim() || null,
-      frequency: value.frequency.trim() || null,
-      duration: value.duration.trim() || null,
+      frequency: freq || null,
+      frequencyText: freq || null,
+      frequencyCode: freq ? 'Custom' : null,
+      duration: dur || null,
+      durationType,
+      durationValue,
+      durationUnit,
+      asNeeded: !!value.isPrn,
       instructions: value.instructions.trim() || null,
     };
   }
@@ -421,10 +474,17 @@ export class PrescriptionWorkspaceComponent {
       this.editable() &&
       state.draft?.items.some((i) => i.itemId === this.removeId())
     ) {
-      await this.mutate(() =>
-        this.correctionMode()
-          ? this.api.removeCorrectionItem(id, this.removeId(), rowVersion)
-          : this.api.removeItem(this.practiceId(), this.encounterId(), this.removeId(), rowVersion),
+      await this.mutate(
+        () =>
+          this.correctionMode()
+            ? this.api.removeCorrectionItem(id, this.removeId(), rowVersion)
+            : this.api.removeItem(
+                this.practiceId(),
+                this.encounterId(),
+                this.removeId(),
+                rowVersion,
+              ),
+        'common.deleted',
       );
       return;
     }
@@ -449,6 +509,7 @@ export class PrescriptionWorkspaceComponent {
     ) {
       if (!state.draft?.items.length || state.completionBlockers.length) {
         this.messages.set(['medications.resolveBlockers']);
+        this.toast.error('medications.resolveBlockers');
         return;
       }
       const key = this.intentKey({ action, id, rowVersion });
@@ -529,7 +590,10 @@ export class PrescriptionWorkspaceComponent {
       this.busy.set(false);
     }
   }
-  private async mutate(request: () => Observable<PrescriptionState | null>) {
+  private async mutate(
+    request: () => Observable<PrescriptionState | null>,
+    successMessage = 'medications.saved',
+  ) {
     if (this.disabled() || this.busy()) return;
     this.busy.set(true);
     this.messages.set([]);
@@ -540,9 +604,9 @@ export class PrescriptionWorkspaceComponent {
       this.editing.set(false);
       this.pending.set(null);
       this.intent = null;
-      this.toast.success('medications.saved');
+      this.toast.success(successMessage);
     } catch (error) {
-      this.failure(error, true);
+      this.failure(error);
       if (error instanceof HttpErrorResponse && error.status === 409) {
         try {
           const id = this.state()?.prescriptionId;
@@ -570,13 +634,31 @@ export class PrescriptionWorkspaceComponent {
       this.intent = { signature, key: createIdempotencyKey() };
     return this.intent.key;
   }
-  private failure(error: unknown, mutation = false) {
+  itemValue(item: PrescriptionItem, field: string): string {
+    const c = (item as any).clinical ?? item;
+    if (field === 'frequency') {
+      return c.frequency ?? c.frequencyText ?? c.frequencyCode ?? (item as any).frequency ?? '';
+    }
+    if (field === 'duration') {
+      if (c.duration) return c.duration;
+      if (c.durationValue) return `${c.durationValue} ${c.durationUnit ?? ''}`.trim();
+      return (item as any).duration ?? '';
+    }
+    return c[field] ?? (item as any)[field] ?? '';
+  }
+
+  itemQuantity(item: PrescriptionItem): number | null {
+    const c = (item as any).clinical ?? item;
+    return c.quantity ?? c.quantityValue ?? item.quantity ?? null;
+  }
+
+  private failure(error: unknown) {
     const parsed = parseApiErrors(error),
       messages =
         parsed.status === 404
           ? ['medications.notFound']
           : [...parsed.messages, ...Object.values(parsed.fields).flat()];
     this.messages.set(messages);
-    if (mutation) this.toast.error(messages[0] || 'medications.failed');
+    this.toast.error(messages[0] || 'medications.failed');
   }
 }

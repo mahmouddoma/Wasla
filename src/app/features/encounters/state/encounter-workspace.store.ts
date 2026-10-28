@@ -72,8 +72,9 @@ export class EncounterWorkspaceStore {
     () =>
       !this.clinicalBusy() &&
       this.detail()?.status === 'InProgress' &&
-      !!this.detail()?.capabilities?.canComplete &&
-      this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn),
+      (this.doctor() ||
+        this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn) ||
+        this.session.hasPermission('PracticeTickets.Complete')),
   );
   readonly canCreateFollowUp = computed(
     () =>
@@ -232,13 +233,53 @@ export class EncounterWorkspaceStore {
       this.api.removeDiagnosis(this.practiceId(), detail.encounterId, id, detail.rowVersion),
     );
   }
-  async complete() {
-    const detail = this.detail();
-    if (!detail || !this.canComplete() || !detail.clinicalNotes.trim() || this.busy()) return;
-    const active = detail.diagnoses.filter((d) => !d.isVoided);
-    if (active.length && active.filter((d) => d.type === 'Primary').length !== 1) return;
+  async complete(unsavedNotes?: string, unsavedDiagnosis?: DiagnosisDraft) {
+    let detail = this.detail();
+    const effectiveNotes =
+      unsavedNotes !== undefined ? unsavedNotes.trim() : (detail?.clinicalNotes ?? '').trim();
+    if (!detail || !this.canComplete() || !effectiveNotes || this.busy()) return;
+    const initialActive = (detail.diagnoses ?? []).filter((d) => !d.isVoided);
+    if (
+      !unsavedDiagnosis?.displayText.trim() &&
+      initialActive.length &&
+      initialActive.filter((d) => d.type === 'Primary').length !== 1
+    )
+      return;
     this.busy.set(true);
     try {
+      if (
+        unsavedNotes !== undefined &&
+        unsavedNotes.trim() &&
+        unsavedNotes !== (detail.clinicalNotes ?? '') &&
+        detail.capabilities?.canEditClinicalNotes
+      ) {
+        detail = await firstValueFrom(
+          this.api.updateNotes(
+            this.practiceId(),
+            detail.encounterId,
+            unsavedNotes,
+            detail.rowVersion,
+          ),
+        );
+        this.detail.set(detail);
+      }
+      if (
+        unsavedDiagnosis &&
+        unsavedDiagnosis.displayText.trim() &&
+        detail.capabilities?.canManageDiagnoses
+      ) {
+        detail = await firstValueFrom(
+          this.api.addDiagnosis(
+            this.practiceId(),
+            detail.encounterId,
+            { ...unsavedDiagnosis, displayText: unsavedDiagnosis.displayText.trim() },
+            detail.rowVersion,
+          ),
+        );
+        this.detail.set(detail);
+      }
+      const active = (detail.diagnoses ?? []).filter((d) => !d.isVoided);
+      if (active.length && active.filter((d) => d.type === 'Primary').length !== 1) return;
       const [ticket, latest] = await Promise.all([
         firstValueFrom(this.tickets.details(this.practiceId(), detail.ticketId)),
         firstValueFrom(this.api.byTicket(this.practiceId(), detail.ticketId)),

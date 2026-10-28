@@ -69,34 +69,31 @@
         <span>{{ 'reservations.refresh' | t }}</span>
       </button>
 
-      <button
-        type="button"
-        class="btn-action-archive"
-        (click)="openArchive()"
-        [disabled]="loading() || busy() || !practiceId()"
-        [title]="'archive.title' | t"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
+      @if (!isDoctor()) {
+        <button
+          type="button"
+          class="btn-action-archive"
+          (click)="openArchive()"
+          [disabled]="loading() || busy() || !practiceId()"
+          [title]="'archive.title' | t"
         >
-          <polyline points="21 8 21 21 3 21 3 8"></polyline>
-          <rect x="1" y="3" width="22" height="5"></rect>
-          <line x1="10" y1="12" x2="14" y2="12"></line>
-        </svg>
-        <span>{{ 'archive.title' | t }}</span>
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span>{{ 'archive.title' | t }}</span>
+        </button>
+      }
     </div>
   </app-page-header>
-  @if (!walkInOpen() && !walkInDone() && !selected() && !detailLoading()) {
-    @for (message of messages(); track $index) {
-      <p role="alert" class="queue-alert">{{ message | t }}</p>
-    }
-  }
   <section class="queue-board" [attr.aria-busy]="loading()">
     @if (!practiceId()) {
       <div class="state-block">
@@ -390,13 +387,13 @@
               >
                 <div class="patient-line">
                   <strong class="ticket-patient-name">{{ patientLabel(ticket) }}</strong>
-                  @if (ticket.fastTrack) {
+                  @if (isFastTrack(ticket)) {
                     <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
                   }
                 </div>
                 <div class="meta-line">
-                  @if (ticket.visitType) {
-                    <span class="meta-pill meta-visit">{{ label(ticket.visitType) }}</span>
+                  @if (visitTypeLabel(ticket); as vLabel) {
+                    <span class="meta-pill meta-visit">{{ vLabel }}</span>
                   }
                   @if (ticket.patientsAheadNow === 0) {
                     <span class="meta-pill meta-immediate">
@@ -417,7 +414,8 @@
                     <span class="meta-pill meta-ahead">{{ 'tickets.queue.oneAhead' | t }}</span>
                   } @else {
                     <span class="meta-pill meta-ahead">{{
-                      'tickets.queue.multipleAhead' | t: { count: ticket.patientsAheadNow }
+                      'tickets.queue.multipleAhead'
+                        | t: { count: ticket.patientsAheadNow }
                     }}</span>
                   }
                 </div>
@@ -554,46 +552,71 @@
       class="current-patient current-patient-card"
       [class.is-called]="called"
       [class.is-in-progress]="!called"
+      [class.is-clinical-workstation]="!called && isDoctor() && canOpenClinical()"
     >
-      <div
-        class="now-patient-left"
-        role="button"
-        tabindex="0"
-        (click)="inspect(ticket)"
-        (keydown.enter)="inspect(ticket)"
-        (keydown.space)="inspect(ticket)"
-        [title]="'tickets.details' | t"
-      >
-        <div class="now-ticket-num-badge">
-          <span class="lbl">{{ 'reception.arrival.ticketNumber' | t }}</span>
-          <bdi class="num">#{{ ticket.ticketNumber }}</bdi>
-        </div>
-        <div class="now-patient-details">
-          <div class="now-status-row">
-            <span class="now-status-badge" [class.called]="called" [class.in-progress]="!called">
-              <span class="status-indicator-dot" aria-hidden="true"></span>
-              <span>{{
-                (called ? 'tickets.queue.calledHelp' : 'tickets.queue.inProgressHelp') | t
-              }}</span>
-            </span>
-            <span class="now-meta-pill">{{ sourceLabel(ticket.source) }}</span>
-            @if (ticket.visitType) {
-              <span class="now-meta-pill">{{ label(ticket.visitType) }}</span>
-            }
-            @if (ticket.fastTrack) {
-              <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
-            }
+      <div class="now-patient-top-bar">
+        <div
+          class="now-patient-left"
+          [attr.role]="!isDoctor() || called ? 'button' : null"
+          [attr.tabindex]="!isDoctor() || called ? 0 : null"
+          (click)="!isDoctor() || called ? inspect(ticket) : null"
+          (keydown.enter)="!isDoctor() || called ? inspect(ticket) : null"
+          (keydown.space)="!isDoctor() || called ? inspect(ticket) : null"
+          [class.is-static]="isDoctor() && !called"
+        >
+          <div class="now-ticket-num-badge">
+            <span class="lbl">{{ 'reception.arrival.ticketNumber' | t }}</span>
+            <bdi class="num">#{{ ticket.ticketNumber }}</bdi>
           </div>
-          <h3 class="now-patient-name">{{ patientLabel(ticket) }}</h3>
+          <div class="now-patient-details">
+            <div class="now-status-row">
+              <span class="now-status-badge" [class.called]="called" [class.in-progress]="!called">
+                <span class="status-indicator-dot" aria-hidden="true"></span>
+                <span>{{
+                  (called ? 'tickets.queue.calledHelp' : 'tickets.queue.inProgressHelp') | t
+                }}</span>
+              </span>
+              @if (hasKnownSource(ticket)) {
+                <span class="now-meta-pill">{{ sourceLabel(ticket.source, ticket) }}</span>
+              }
+              @if (visitTypeLabel(ticket); as vLabel) {
+                <span class="now-meta-pill">{{ vLabel }}</span>
+              }
+              @if (isFastTrack(ticket)) {
+                <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
+              }
+            </div>
+            <h3 class="now-patient-name">{{ patientLabel(ticket) }}</h3>
+          </div>
         </div>
-      </div>
-      <div class="now-patient-actions">
-        @if (called && canCallNext()) {
-          @if (canRecall(ticket)) {
+        <div class="now-patient-actions">
+          @if (called && canCallNext()) {
+            @if (canRecall(ticket)) {
+              <button
+                type="button"
+                class="btn btn-action-recall"
+                (click)="act('recall', ticket)"
+                [disabled]="busy()"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span>{{ 'tickets.recall' | t }}</span>
+              </button>
+            }
             <button
               type="button"
-              class="btn btn-action-recall"
-              (click)="act('recall', ticket)"
+              class="btn btn-action-no-response"
+              (click)="act('no-response', ticket)"
               [disabled]="busy()"
             >
               <svg
@@ -605,74 +628,592 @@
                 stroke-width="2"
                 aria-hidden="true"
               >
-                <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
-              <span>{{ 'tickets.recall' | t }}</span>
+              <span>{{ 'tickets.queue.noResponse' | t }}</span>
             </button>
           }
-          <button
-            type="button"
-            class="btn btn-action-no-response"
-            (click)="act('no-response', ticket)"
-            [disabled]="busy()"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
+          @if (called && canStart()) {
+            <button
+              type="button"
+              class="btn btn-primary btn-action-start"
+              (click)="act('start', ticket)"
+              [disabled]="busy()"
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
-            <span>{{ 'tickets.queue.noResponse' | t }}</span>
-          </button>
-        }
-        @if (called && canStart()) {
-          <button
-            type="button"
-            class="btn btn-primary btn-action-start"
-            (click)="act('start', ticket)"
-            [disabled]="busy()"
-          >
-            <span>{{ 'tickets.start' | t }}</span>
-          </button>
-        }
-        @if (!called && canOpenClinical()) {
-          <a
-            class="btn btn-primary btn-action-start"
-            routerLink="/doctor/encounters"
-            [queryParams]="{ practiceId: practiceId(), ticketId: ticket.ticketId }"
-          >
-            <span>{{ 'encounters.open' | t }}</span>
-          </a>
-        }
-        <button
-          type="button"
-          class="btn btn-action-inspect"
-          (click)="inspect(ticket)"
-          [disabled]="busy()"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-          <span>{{ 'tickets.details' | t }}</span>
-        </button>
+              <span>{{ 'tickets.start' | t }}</span>
+            </button>
+          }
+          @if (!called && canOpenClinical()) {
+            <a
+              class="btn btn-action-inspect record-history-link"
+              routerLink="/doctor/encounters"
+              [queryParams]="{ practiceId: practiceId(), ticketId: ticket.ticketId }"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>{{ 'tickets.workstation.pastVisitsLink' | t }}</span>
+            </a>
+            @if (canCompleteVisit()) {
+              <button
+                type="button"
+                class="btn ws-top-complete-btn"
+                [class.btn-primary]="!(queue().waiting.length > 0 && canCallNext())"
+                [class.btn-outline-secondary]="queue().waiting.length > 0 && canCallNext()"
+                [disabled]="busy() || clinicalBusy()"
+                (click)="completeClinicalVisit(false)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  aria-hidden="true"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                <span>{{ 'tickets.workstation.completeBtn' | t }}</span>
+              </button>
+              @if (queue().waiting.length > 0 && canCallNext()) {
+                <button
+                  type="button"
+                  class="btn btn-primary ws-top-complete-next-btn"
+                  [disabled]="busy() || clinicalBusy()"
+                  (click)="completeClinicalVisit(true)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>
+                    {{ 'tickets.workstation.completeAndNextBtn' | t }} (#{{
+                      queue().waiting[0].ticketNumber
+                    }})
+                  </span>
+                </button>
+              }
+            }
+          }
+          @if (!isDoctor() || called) {
+            <button
+              type="button"
+              class="btn btn-action-inspect"
+              (click)="inspect(ticket)"
+              [disabled]="busy()"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>{{ 'tickets.details' | t }}</span>
+            </button>
+          }
+        </div>
       </div>
+
+      <!-- ═══ Unified Single-Page Doctor Clinical Workstation (No Popups / No Sidebars) ═══ -->
+      @if (!called && isDoctor() && canOpenClinical()) {
+        <div class="doctor-clinical-workstation" [attr.aria-busy]="clinicalBusy() || encounterLoading()">
+          <!-- ── Visual Workflow Steps Bar ── -->
+          <div class="ws-steps-bar" role="region" [attr.aria-label]="'encounters.details' | t">
+            <div class="ws-step-pill" [class.is-done]="hasClinicalNotes() || activeDiagnoses().length > 0">
+              <span class="ws-step-icon" aria-hidden="true">
+                @if (hasClinicalNotes() || activeDiagnoses().length > 0) {
+                  ✓
+                } @else {
+                  1
+                }
+              </span>
+              <span class="ws-step-text">{{ 'tickets.workstation.step1' | t }}</span>
+            </div>
+            <span class="ws-step-arrow" aria-hidden="true">←</span>
+            <div class="ws-step-pill" [class.is-done]="!!(activeEncounter()?.prescription?.draft?.items?.length || activeEncounter()?.prescription?.current?.items?.length)">
+              <span class="ws-step-icon" aria-hidden="true">2</span>
+              <span class="ws-step-text">{{ 'tickets.workstation.step2' | t }}</span>
+              <span class="ws-step-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
+            </div>
+            <span class="ws-step-arrow" aria-hidden="true">←</span>
+            <div class="ws-step-pill" [class.is-done]="!!(activeEncounter()?.labRequestDraft?.items?.length || activeEncounter()?.radiologyRequestDraft?.items?.length)">
+              <span class="ws-step-icon" aria-hidden="true">3</span>
+              <span class="ws-step-text">{{ 'tickets.workstation.step3' | t }}</span>
+              <span class="ws-step-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
+            </div>
+            <span class="ws-step-arrow" aria-hidden="true">←</span>
+            <button
+              type="button"
+              class="ws-step-pill ws-step-finish"
+              [class.is-ready]="hasClinicalNotes()"
+              [disabled]="busy() || clinicalBusy()"
+              (click)="completeClinicalVisit(false)"
+            >
+              <span class="ws-step-icon" aria-hidden="true">
+                @if (hasClinicalNotes()) {
+                  ✓
+                } @else {
+                  4
+                }
+              </span>
+              <span class="ws-step-text">{{ 'tickets.workstation.completeBtn' | t }}</span>
+            </button>
+          </div>
+
+          <!-- ── 2-Column Responsive Clinical Cockpit ── -->
+          <div class="ws-cockpit-grid">
+            <!-- ══ COLUMN A: CLINICAL ASSESSMENT & FOLLOW-UP (RIGHT in RTL) ══ -->
+            <div class="ws-cockpit-col ws-col-assessment">
+              <!-- 1. Clinical Notes -->
+              <div class="ws-card-block">
+                <div class="ws-block-head">
+                  <div class="ws-block-title-group">
+                    <span class="ws-step-badge">1</span>
+                    <h4 class="ws-block-title">{{ 'tickets.workstation.notesLabel' | t }}</h4>
+                    <span class="ws-req-star">*</span>
+                  </div>
+                  <span class="ws-status-tag" [class.is-complete]="hasClinicalNotes()">
+                    {{ (hasClinicalNotes() ? 'tickets.workstation.doneBadge' : 'tickets.workstation.notesRequiredBadge') | t }}
+                  </span>
+                </div>
+                <textarea
+                  id="ws-clinical-notes"
+                  rows="3"
+                  class="ws-textarea"
+                  [value]="clinicalModel().clinicalNotes"
+                  (input)="updateClinicalText('clinicalNotes', $event)"
+                  [readonly]="!canEditClinicalNotes() || busy() || clinicalBusy()"
+                  [placeholder]="'encounters.clinicalNotesPlaceholder' | t"
+                ></textarea>
+                <div class="ws-notes-foot">
+                  <span class="ws-auto-hint">{{ 'tickets.workstation.notesAutoSaveHint' | t }}</span>
+                  @if (canEditClinicalNotes() && clinicalModel().clinicalNotes.trim() && clinicalModel().clinicalNotes !== (activeEncounter()?.clinicalNotes ?? '')) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      (click)="saveClinicalNotes()"
+                      [disabled]="busy() || clinicalBusy()"
+                    >
+                      {{ 'tickets.workstation.saveNotesNow' | t }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- 2. Diagnoses -->
+              <div class="ws-card-block">
+                <div class="ws-block-head">
+                  <div class="ws-block-title-group">
+                    <span class="ws-step-badge">2</span>
+                    <h4 class="ws-block-title">{{ 'encounters.diagnoses' | t }}</h4>
+                  </div>
+                  @if (activeDiagnoses().length > 0) {
+                    <span class="ws-count-badge">{{ activeDiagnoses().length }}</span>
+                  }
+                </div>
+
+                <!-- Existing Diagnoses List -->
+                @if (activeDiagnoses().length > 0) {
+                  <div class="ws-diagnoses-list">
+                    @for (diag of activeDiagnoses(); track diag.diagnosisId) {
+                      <div class="ws-diag-item" [class.is-editing]="clinicalModel().diagnosisId === diag.diagnosisId">
+                        <div class="ws-diag-main">
+                          <span
+                            class="ws-diag-type-badge"
+                            [class.is-primary]="diag.type === 'Primary'"
+                            [class.is-secondary]="diag.type === 'Secondary'"
+                          >
+                            {{ 'encounters.diagnosis.' + diag.type | t }}
+                          </span>
+                          <strong class="ws-diag-text">{{ diag.displayText }}</strong>
+                          @if (diag.notes) {
+                            <span class="ws-diag-note">— {{ diag.notes }}</span>
+                          }
+                        </div>
+                        @if (canManageDiagnoses()) {
+                          <div class="ws-diag-actions">
+                            <button
+                              type="button"
+                              class="ws-icon-btn"
+                              (click)="editClinicalDiagnosis(diag)"
+                              [disabled]="busy() || clinicalBusy()"
+                              [title]="'common.edit' | t"
+                              [attr.aria-label]="'common.edit' | t"
+                            >
+                              ✎
+                            </button>
+                            <button
+                              type="button"
+                              class="ws-icon-btn ws-danger"
+                              (click)="removeDiagnosisId.set(diag.diagnosisId)"
+                              [disabled]="busy() || clinicalBusy()"
+                              [title]="'common.delete' | t"
+                              [attr.aria-label]="'common.delete' | t"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        }
+                      </div>
+                      @if (removeDiagnosisId() === diag.diagnosisId) {
+                        <div class="ws-delete-confirm" role="alert">
+                          <span>{{ 'encounters.removeConfirm' | t }}</span>
+                          <div class="ws-delete-confirm-btns">
+                            <button
+                              type="button"
+                              class="btn btn-danger btn-sm"
+                              (click)="confirmRemoveClinicalDiagnosis(diag.diagnosisId)"
+                              [disabled]="busy() || clinicalBusy()"
+                            >
+                              {{ 'common.delete' | t }}
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="removeDiagnosisId.set('')"
+                              [disabled]="busy() || clinicalBusy()"
+                            >
+                              {{ 'common.cancel' | t }}
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+
+                <!-- Inline Add / Edit Diagnosis Form -->
+                @if (canManageDiagnoses()) {
+                  <form class="ws-diag-form" (submit)="saveClinicalDiagnosis($event)">
+                    <div class="ws-diag-inputs-row">
+                      <select
+                        class="ws-select ws-diag-type-select"
+                        [value]="clinicalModel().type"
+                        (change)="updateClinicalDiagnosisType($event)"
+                        [disabled]="busy() || clinicalBusy()"
+                        [attr.aria-label]="'encounters.diagnosisType' | t"
+                      >
+                        <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                        <option value="Secondary">{{ 'encounters.diagnosis.Secondary' | t }}</option>
+                      </select>
+                      <input
+                        type="text"
+                        class="ws-input ws-diag-text-input"
+                        [value]="clinicalModel().displayText"
+                        (input)="updateClinicalText('displayText', $event)"
+                        [placeholder]="'tickets.workstation.diagnosisPlaceholder' | t"
+                        [disabled]="busy() || clinicalBusy()"
+                      />
+                    </div>
+                    <div class="ws-diag-bottom-row">
+                      <input
+                        type="text"
+                        class="ws-input ws-diag-notes-input"
+                        [value]="clinicalModel().notes"
+                        (input)="updateClinicalText('notes', $event)"
+                        [placeholder]="'tickets.workstation.diagnosisNotesPlaceholder' | t"
+                        [disabled]="busy() || clinicalBusy()"
+                      />
+                      <button
+                        type="submit"
+                        class="btn btn-outline-secondary btn-sm ws-btn-add-diag"
+                        [disabled]="busy() || clinicalBusy() || !clinicalModel().displayText.trim()"
+                      >
+                        {{
+                          (clinicalModel().diagnosisId
+                            ? 'tickets.workstation.updateDiagnosisBtn'
+                            : 'tickets.workstation.addDiagnosisBtn'
+                          ) | t
+                        }}
+                      </button>
+                      @if (clinicalModel().diagnosisId) {
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary btn-sm"
+                          (click)="cancelEditClinicalDiagnosis()"
+                          [disabled]="busy() || clinicalBusy()"
+                        >
+                          {{ 'common.cancel' | t }}
+                        </button>
+                      }
+                    </div>
+                  </form>
+                }
+              </div>
+
+              <!-- 3. Follow-Up Grace Period -->
+              @if (canCreateFollowUp()) {
+                <div class="ws-card-block ws-followup-block">
+                  <div class="ws-block-head">
+                    <div class="ws-block-title-group">
+                      <span class="ws-step-badge">3</span>
+                      <h4 class="ws-block-title">{{ 'tickets.workstation.followUpTitle' | t }}</h4>
+                    </div>
+                    <span class="ws-status-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
+                  </div>
+                  <div class="ws-followup-compact-body">
+                    <div class="ws-followup-quick-chips">
+                      <button
+                        type="button"
+                        class="ws-quick-chip"
+                        [class.is-selected]="isFollowUpSelected(7)"
+                        (click)="setFollowUpDays(7)"
+                        [disabled]="busy() || clinicalBusy()"
+                      >
+                        {{ 'tickets.workstation.days7' | t }}
+                      </button>
+                      <button
+                        type="button"
+                        class="ws-quick-chip"
+                        [class.is-selected]="isFollowUpSelected(10)"
+                        (click)="setFollowUpDays(10)"
+                        [disabled]="busy() || clinicalBusy()"
+                      >
+                        {{ 'tickets.workstation.days10' | t }}
+                      </button>
+                      <button
+                        type="button"
+                        class="ws-quick-chip"
+                        [class.is-selected]="isFollowUpSelected(14)"
+                        (click)="setFollowUpDays(14)"
+                        [disabled]="busy() || clinicalBusy()"
+                      >
+                        {{ 'tickets.workstation.days14' | t }}
+                      </button>
+                      @if (clinicalModel().validUntil) {
+                        <button
+                          type="button"
+                          class="ws-quick-chip ws-chip-clear"
+                          (click)="clearFollowUpDate()"
+                          [disabled]="busy() || clinicalBusy()"
+                        >
+                          {{ 'tickets.workstation.noFollowUp' | t }}
+                        </button>
+                      }
+                    </div>
+                    <div class="ws-followup-date-row">
+                      <span class="ws-date-label">{{ 'followUps.validUntil' | t }}:</span>
+                      <input
+                        type="date"
+                        class="ws-date-input"
+                        dir="ltr"
+                        [value]="clinicalModel().validUntil"
+                        (input)="updateClinicalText('validUntil', $event)"
+                        [disabled]="busy() || clinicalBusy()"
+                        [attr.aria-label]="'followUps.validUntil' | t"
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- ══ COLUMN B: MEDICAL ORDERS (PRESCRIPTION & DIAGNOSTICS) (LEFT in RTL) ══ -->
+            <div class="ws-cockpit-col ws-col-orders">
+              <!-- 4. Prescription & Medications -->
+              <div class="ws-card-block">
+                <div class="ws-block-head">
+                  <div class="ws-block-title-group">
+                    <span class="ws-step-badge">💊</span>
+                    <div>
+                      <h4 class="ws-block-title">{{ 'tickets.workstation.step2' | t }}</h4>
+                      <p class="ws-block-sub">{{ 'tickets.workstation.step2Sub' | t }}</p>
+                    </div>
+                  </div>
+                  <span class="ws-status-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
+                </div>
+
+                @if (activeEncounterId(); as encId) {
+                  <div class="ws-embedded-module">
+                    <app-prescription-workspace
+                      [showTitle]="false"
+                      [initial]="activeEncounter()?.prescription || null"
+                      [practiceId]="practiceId()"
+                      [encounterId]="encId"
+                      [canManage]="
+                        (activeEncounter()?.status ?? 'InProgress') === 'InProgress' &&
+                        (activeEncounter()?.capabilities?.canManagePrescription ?? true)
+                      "
+                      [canRequest]="activeEncounter()?.capabilities?.canRequestNewMedication ?? true"
+                      [disabled]="busy() || clinicalSaving() || diagnosticBusy()"
+                      (changed)="onPrescriptionChanged($event)"
+                      (busyChanged)="prescriptionBusy.set($event)"
+                    />
+                  </div>
+                } @else if (encounterLoading()) {
+                  <p class="ws-sync-notice" role="status">{{ 'tickets.workstation.syncingEncounter' | t }}</p>
+                }
+              </div>
+
+              <!-- 5. Diagnostics (Lab & Radiology) -->
+              <div class="ws-card-block">
+                <div class="ws-block-head">
+                  <div class="ws-block-title-group">
+                    <span class="ws-step-badge">🔬</span>
+                    <div>
+                      <h4 class="ws-block-title">{{ 'tickets.workstation.step3' | t }}</h4>
+                      <p class="ws-block-sub">{{ 'tickets.workstation.step3Sub' | t }}</p>
+                    </div>
+                  </div>
+                  <span class="ws-status-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
+                </div>
+
+                @if (activeEncounterId(); as encId) {
+                  <div class="ws-diagnostics-grid">
+                    <div class="ws-diagnostic-col">
+                      <div class="ws-diagnostic-col-head">
+                        <strong>{{ 'diagnostics.labRequests' | t }}</strong>
+                      </div>
+                      <app-diagnostic-draft
+                        [showTitle]="false"
+                        kind="lab"
+                        [practiceId]="practiceId()"
+                        [encounterId]="encId"
+                        [canManageEncounter]="activeEncounter()?.capabilities?.canManageLabRequest ?? true"
+                        [completed]="activeEncounter()?.status === 'Completed'"
+                        [canPostVisit]="activeEncounter()?.capabilities?.canCreatePostVisitLabRequest ?? false"
+                        [locked]="busy() || clinicalBusy()"
+                        (changed)="onDiagnosticChanged('lab', $event)"
+                        (busyChanged)="diagnosticBusy.set($event)"
+                      />
+                    </div>
+
+                    <div class="ws-diagnostic-col">
+                      <div class="ws-diagnostic-col-head">
+                        <strong>{{ 'diagnostics.radiologyRequests' | t }}</strong>
+                      </div>
+                      <app-diagnostic-draft
+                        [showTitle]="false"
+                        kind="radiology"
+                        [practiceId]="practiceId()"
+                        [encounterId]="encId"
+                        [canManageEncounter]="activeEncounter()?.capabilities?.canManageRadiologyRequest ?? true"
+                        [completed]="activeEncounter()?.status === 'Completed'"
+                        [canPostVisit]="activeEncounter()?.capabilities?.canCreatePostVisitRadiologyRequest ?? false"
+                        [locked]="busy() || clinicalBusy()"
+                        (changed)="onDiagnosticChanged('radiology', $event)"
+                        (busyChanged)="diagnosticBusy.set($event)"
+                      />
+                    </div>
+                  </div>
+                } @else if (encounterLoading()) {
+                  <p class="ws-sync-notice" role="status">{{ 'tickets.workstation.syncingEncounter' | t }}</p>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- ══ DOCKED BOTTOM COMPLETE BAR (حفظ وإنهاء الكشف) ══ -->
+          @if (clinicalBlockers().length) {
+            <div class="ws-clinical-blocker-alert" role="alert">
+              <div class="ws-blocker-header">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <strong>{{ 'medications.resolveBlockers' | t }}</strong>
+              </div>
+              <ul class="ws-blocker-list">
+                @for (msg of clinicalBlockers(); track $index) {
+                  <li>{{ msg }}</li>
+                }
+              </ul>
+              <p class="ws-blocker-hint">
+                {{ 'tickets.workstation.blockerFixHint' | t }}
+              </p>
+            </div>
+          }
+
+          @if (canCompleteVisit()) {
+            <footer class="ws-complete-docked-bar">
+              <div class="ws-docked-summary">
+                <span class="ws-docked-status" [class.is-ready]="hasClinicalNotes()">
+                  <span class="ws-dot" aria-hidden="true"></span>
+                  <span>
+                    {{ (hasClinicalNotes() ? 'tickets.workstation.readyToComplete' : 'encounters.completeHint') | t }}
+                  </span>
+                </span>
+              </div>
+
+              <div class="ws-docked-actions">
+                <button
+                  type="button"
+                  class="btn ws-btn-complete"
+                  [class.btn-primary]="!(queue().waiting.length > 0 && canCallNext())"
+                  [class.btn-outline-secondary]="queue().waiting.length > 0 && canCallNext()"
+                  [disabled]="busy() || clinicalBusy()"
+                  (click)="completeClinicalVisit(false)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="17"
+                    height="17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  <span>{{ 'tickets.workstation.completeBtn' | t }}</span>
+                </button>
+
+                @if (queue().waiting.length > 0 && canCallNext()) {
+                  <button
+                    type="button"
+                    class="btn btn-primary ws-btn-complete-next"
+                    [disabled]="busy() || clinicalBusy()"
+                    (click)="completeClinicalVisit(true)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>
+                      {{ 'tickets.workstation.completeAndNextBtn' | t }} (#{{
+                        queue().waiting[0].ticketNumber
+                      }})
+                    </span>
+                  </button>
+                }
+              </div>
+            </footer>
+          }
+        </div>
+      }
     </article>
   </ng-template>
   <app-side-drawer
@@ -1146,8 +1687,8 @@
             <div class="ticket-hero-eyebrow">
               <span class="ticket-ref-tag" dir="ltr">#{{ ticket.ticketNumber }}</span>
               <span class="sep-dot">·</span>
-              <span class="source-tag">{{ sourceLabel(ticket.source) }}</span>
-              @if (ticket.fastTrack) {
+              <span class="source-tag">{{ sourceLabel(ticket.source, ticket) }}</span>
+              @if (isFastTrack(ticket)) {
                 <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
               }
             </div>
@@ -1155,14 +1696,14 @@
               {{ patientLabel(ticket) }}
             </h3>
             <p class="ticket-meta-line">
-              @if (ticket.doctor) {
-                <span class="doctor-name">{{ label(ticket.doctor) }}</span>
+              @if (doctorLabel(ticket); as dLabel) {
+                <span class="doctor-name">{{ dLabel }}</span>
               }
-              @if (ticket.doctor && ticket.practice) {
+              @if (doctorLabel(ticket) && practiceLabel(ticket)) {
                 <span class="sep-dot">·</span>
               }
-              @if (ticket.practice) {
-                <span class="practice-name">{{ label(ticket.practice) }}</span>
+              @if (practiceLabel(ticket); as pLabel) {
+                <span class="practice-name">{{ pLabel }}</span>
               }
             </p>
           </div>
@@ -1250,7 +1791,7 @@
                 </svg>
                 <bdi>{{ formatDate(ticket.businessDate) }}</bdi>
               </span>
-              @if (ticket.queueOrderTime) {
+              @if (queuedTime(ticket); as qTime) {
                 <span class="time-sep">|</span>
                 <span class="turn-meta-item">
                   <svg
@@ -1265,15 +1806,15 @@
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
-                  <bdi>{{ formatTime(ticket.queueOrderTime) }}</bdi>
+                  <bdi>{{ formatTime(qTime) }}</bdi>
                 </span>
               }
             </div>
           </div>
-          @if (ticket.visitType) {
+          @if (visitTypeLabel(ticket); as vLabel) {
             <div class="turn-fee-badge">
               <span class="fee-label">{{ 'tickets.walkIn.visitAndPrice' | t }}</span>
-              <strong class="fee-visit-name">{{ label(ticket.visitType) }}</strong>
+              <strong class="fee-visit-name">{{ vLabel }}</strong>
               @if (ticket.priceSnapshot !== undefined) {
                 <bdi class="fee-amount"
                   >{{ ticket.priceSnapshot }} {{ ticket.currencyCode || ticket.currency }}</bdi
@@ -1529,7 +2070,7 @@
         }
 
         <!-- ══ 4. Structured Additional Details Accordion ══ -->
-        <details class="reception-additional ticket-details-accordion">
+        <details class="reception-additional ticket-details-accordion" open>
           <summary class="additional-summary">
             <div class="summary-label-wrap">
               <svg
@@ -1568,16 +2109,16 @@
           </div>
 
           <div class="details-properties-table">
-            @if (ticket.practice.nameAr) {
+            @if (practiceLabel(ticket); as pLabel) {
               <div class="property-row">
                 <span class="prop-label">{{ 'reservations.practice' | t }}</span>
-                <span class="prop-val">{{ label(ticket.practice) }}</span>
+                <span class="prop-val">{{ pLabel }}</span>
               </div>
             }
-            @if (ticket.doctor.nameAr) {
+            @if (doctorLabel(ticket); as dLabel) {
               <div class="property-row">
                 <span class="prop-label">{{ 'reservations.doctor' | t }}</span>
-                <span class="prop-val">{{ label(ticket.doctor) }}</span>
+                <span class="prop-val">{{ dLabel }}</span>
               </div>
             }
             <div class="property-row">
@@ -1586,12 +2127,20 @@
             </div>
             <div class="property-row">
               <span class="prop-label">{{ 'reservations.source' | t }}</span>
-              <span class="prop-val">{{ sourceLabel(ticket.source) }}</span>
+              <span class="prop-val">{{ sourceLabel(ticket.source, ticket) }}</span>
             </div>
-            @if (ticket.segment) {
+            @if (visitTypeLabel(ticket); as vLabel) {
+              @if (vLabel !== segmentLabel(ticket)) {
+                <div class="property-row">
+                  <span class="prop-label">{{ 'reservations.visitType' | t }}</span>
+                  <span class="prop-val">{{ vLabel }}</span>
+                </div>
+              }
+            }
+            @if (segmentLabel(ticket); as sLabel) {
               <div class="property-row">
                 <span class="prop-label">{{ 'tickets.walkIn.visitAndPrice' | t }}</span>
-                <span class="prop-val">{{ label(ticket.segment) }}</span>
+                <span class="prop-val">{{ sLabel }}</span>
               </div>
             }
             <div class="property-row">
@@ -1626,16 +2175,16 @@
                 </bdi>
               </div>
             }
-            @if (ticket.checkedInOnUtc) {
+            @if (checkedInTime(ticket); as cTime) {
               <div class="property-row">
                 <span class="prop-label">{{ 'tickets.checkedInOn' | t }}</span>
-                <bdi class="prop-val">{{ formatTime(ticket.checkedInOnUtc) }}</bdi>
+                <bdi class="prop-val">{{ formatTime(cTime) }}</bdi>
               </div>
             }
-            @if (ticket.queueOrderTime) {
+            @if (queuedTime(ticket); as qTime) {
               <div class="property-row">
                 <span class="prop-label">{{ 'tickets.queuedOn' | t }}</span>
-                <bdi class="prop-val">{{ formatTime(ticket.queueOrderTime) }}</bdi>
+                <bdi class="prop-val">{{ formatTime(qTime) }}</bdi>
               </div>
             }
             @if (ticket.calledOnUtc) {
@@ -1665,7 +2214,7 @@
           </div>
 
           <!-- Call attempts stepper -->
-          @if (ticket.callAttempts.length > 0) {
+          @if (callAttempts(ticket).length > 0) {
             <div class="drawer-attempts-section">
               <h4 class="section-title">
                 <svg
@@ -1681,10 +2230,10 @@
                     d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
                   ></path>
                 </svg>
-                <span>{{ 'tickets.callAttempts' | t }} ({{ ticket.callAttempts.length }})</span>
+                <span>{{ 'tickets.callAttempts' | t }} ({{ callAttempts(ticket).length }})</span>
               </h4>
               <div class="timeline-stepper">
-                @for (attempt of ticket.callAttempts; track attempt.attemptNumber) {
+                @for (attempt of callAttempts(ticket); track attempt.attemptNumber) {
                   <div class="timeline-step">
                     <div class="timeline-step-indicator">
                       <div class="timeline-step-dot"></div>
@@ -1717,9 +2266,6 @@
         <div class="drawer-spinner" aria-hidden="true"></div>
         <p>{{ 'tickets.loading' | t }}</p>
       </div>
-    }
-    @for (message of messages(); track $index) {
-      <p role="alert" class="queue-alert">{{ message | t }}</p>
     }
   </app-side-drawer>
 </main>

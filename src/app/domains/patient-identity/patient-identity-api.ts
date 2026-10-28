@@ -55,6 +55,7 @@ export class PatientIdentityApi {
 
   registerVerifiedAccount(
     request: RegisterVerifiedPatientAccountRequest,
+    idempotencyKey?: string,
   ): Observable<RegisterVerifiedPatientAccountResponse> {
     const formData = new FormData();
     formData.append('emailVerificationToken', request.emailVerificationToken);
@@ -75,13 +76,20 @@ export class PatientIdentityApi {
       formData.append('personalIdBackImage', request.personalIdBackImage);
     }
 
+    let headers = new HttpHeaders();
+    if (idempotencyKey) headers = headers.set('Idempotency-Key', idempotencyKey);
+
     return this.http.post<RegisterVerifiedPatientAccountResponse>(
       `${this.onboardingUrl}/register`,
       formData,
+      idempotencyKey ? { headers } : undefined,
     );
   }
 
-  submitClaim(request: SubmitPatientClaimRequest): Observable<SubmitPatientClaimResponse> {
+  submitClaim(
+    request: SubmitPatientClaimRequest,
+    idempotencyKey?: string,
+  ): Observable<SubmitPatientClaimResponse> {
     const formData = new FormData();
     formData.append('emailVerificationToken', request.emailVerificationToken);
     formData.append('nameAr', request.nameAr);
@@ -103,7 +111,14 @@ export class PatientIdentityApi {
     }
     if (request.verificationNote) formData.append('verificationNote', request.verificationNote);
 
-    return this.http.post<SubmitPatientClaimResponse>(`${this.onboardingUrl}/claims`, formData);
+    let headers = new HttpHeaders();
+    if (idempotencyKey) headers = headers.set('Idempotency-Key', idempotencyKey);
+
+    return this.http.post<SubmitPatientClaimResponse>(
+      `${this.onboardingUrl}/claims`,
+      formData,
+      idempotencyKey ? { headers } : undefined,
+    );
   }
 
   trackClaim(claimId: string, onboardingToken?: string): Observable<TrackPatientClaimResponse> {
@@ -119,9 +134,11 @@ export class PatientIdentityApi {
     claimId: string,
     request: ResubmitPatientClaimRequest,
     onboardingToken?: string,
+    idempotencyKey?: string,
   ): Observable<ResubmitPatientClaimResponse> {
     let headers = new HttpHeaders();
     if (onboardingToken) headers = headers.set('X-Onboarding-Token', onboardingToken);
+    if (idempotencyKey) headers = headers.set('Idempotency-Key', idempotencyKey);
 
     const formData = new FormData();
     formData.append('rowVersion', request.rowVersion);
@@ -134,6 +151,16 @@ export class PatientIdentityApi {
     if (request.birthCertificate) formData.append('birthCertificate', request.birthCertificate);
     if (request.guardianRelationshipDocument) {
       formData.append('guardianRelationshipDocument', request.guardianRelationshipDocument);
+    }
+    if (request.inPersonIdentityAttestationId) {
+      formData.append('inPersonIdentityAttestationId', request.inPersonIdentityAttestationId);
+    }
+    if (request.identityProfileCorrections) {
+      const c = request.identityProfileCorrections;
+      if (c.nameAr) formData.append('identityProfileCorrections.nameAr', c.nameAr);
+      if (c.dateOfBirth) formData.append('identityProfileCorrections.dateOfBirth', c.dateOfBirth);
+      if (c.gender) formData.append('identityProfileCorrections.gender', c.gender);
+      if (c.phoneNumber) formData.append('identityProfileCorrections.phoneNumber', c.phoneNumber);
     }
 
     return this.http.post<ResubmitPatientClaimResponse>(
@@ -188,30 +215,45 @@ export class PatientIdentityApi {
   approveClaim(
     claimId: string,
     request: ApprovePatientClaimRequest,
+    idempotencyKey?: string,
   ): Observable<ApprovePatientClaimResponse> {
+    let headers = new HttpHeaders();
+    if (idempotencyKey) headers = headers.set('Idempotency-Key', idempotencyKey);
+
     return this.http.post<ApprovePatientClaimResponse>(
       `${this.adminClaimsUrl}/${claimId}/approve`,
       request,
+      idempotencyKey ? { headers } : undefined,
     );
   }
 
   rejectClaim(
     claimId: string,
     request: RejectPatientClaimRequest,
+    idempotencyKey?: string,
   ): Observable<RejectPatientClaimResponse> {
+    let headers = new HttpHeaders();
+    if (idempotencyKey) headers = headers.set('Idempotency-Key', idempotencyKey);
+
     return this.http.post<RejectPatientClaimResponse>(
       `${this.adminClaimsUrl}/${claimId}/reject`,
       request,
+      idempotencyKey ? { headers } : undefined,
     );
   }
 
   requestClaimModification(
     claimId: string,
     request: RequestClaimModificationRequest,
+    idempotencyKey?: string,
   ): Observable<RequestClaimModificationResponse> {
+    let headers = new HttpHeaders();
+    if (idempotencyKey) headers = headers.set('Idempotency-Key', idempotencyKey);
+
     return this.http.post<RequestClaimModificationResponse>(
       `${this.adminClaimsUrl}/${claimId}/request-modification`,
       request,
+      idempotencyKey ? { headers } : undefined,
     );
   }
 

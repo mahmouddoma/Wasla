@@ -970,6 +970,15 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Medication missing from catalog',
   },
   'prescriptions.selected': { ar: 'الدواء المختار', en: 'Selected medication' },
+  'prescriptions.stepChoose': { ar: '١. اختر الدواء من الدليل', en: '1. Select medication' },
+  'prescriptions.stepPosology': {
+    ar: '٢. حدد الجرعة وتعليمات الاستخدام',
+    en: '2. Dosage & instructions',
+  },
+  'encounters.completeHint': {
+    ar: 'اكتب ملاحظات الطبيب أولاً لتفعيل زر إنهاء الزيارة وإخراج المريض من غرفة الكشف.',
+    en: 'Enter clinical notes first to enable completing the visit and discharging the patient.',
+  },
   'prescriptions.strength': { ar: 'التركيز', en: 'Strength' },
   'prescriptions.dosageForm': { ar: 'الشكل الدوائي', en: 'Dosage form' },
   'prescriptions.route': { ar: 'طريقة الاستخدام', en: 'Route' },
@@ -1113,8 +1122,8 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'This visit has no prescription.',
   },
   'medications.resolveBlockers': {
-    ar: 'راجع بيانات الروشتة المطلوبة قبل إنهاء الزيارة.',
-    en: 'Complete the required prescription details before finishing the visit.',
+    ar: 'يرجى استكمال بيانات الأدوية المطلوبة في الروشتة (مثل الجرعة والتكرار) أو حذف الأدوية غير المكتملة قبل إنهاء الكشف.',
+    en: 'Please complete required medication details (such as dose and frequency) or remove incomplete items before completing the visit.',
   },
   'medications.blockers': {
     ar: 'بيانات الروشتة المطلوب استكمالها',
@@ -1944,10 +1953,50 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Review visits, diagnoses and follow-ups in one place.',
   },
   'encounters.details': { ar: 'تفاصيل الزيارة', en: 'Visit details' },
+  'encounters.tab.diagnoses': { ar: 'التشخيص', en: 'Diagnosis' },
+  'encounters.tab.prescription': { ar: 'الروشتة', en: 'Prescription' },
+  'encounters.tab.diagnostics': { ar: 'التحاليل والأشعة', en: 'Tests & imaging' },
+  'encounters.tab.history': { ar: 'السجل', en: 'History' },
+  'encounters.viewAll': { ar: 'عرض الكل', en: 'View all' },
+  'diagnostics.searchPlaceholder': {
+    ar: 'اكتب اسم الفحص ثم اضغط Enter',
+    en: 'Type a test name, then press Enter',
+  },
+  'diagnostics.noResults': { ar: 'لا توجد نتائج مطابقة', en: 'No matching tests' },
+  'diagnostics.stepChoose': { ar: '١. اختر الفحص', en: '1. Choose the test' },
+  'diagnostics.stepInstructions': {
+    ar: '٢. أضف التعليمات (اختياري)',
+    en: '2. Add instructions (optional)',
+  },
+  'diagnostics.selected': { ar: 'تم الاختيار', en: 'Selected' },
+  'diagnostics.editItem': { ar: 'تعديل الفحص', en: 'Edit test' },
+  'diagnostics.newItem': { ar: 'فحص جديد', en: 'New test' },
+  'encounters.labRequestsSubtitle': {
+    ar: 'إدارة وتتبع طلبات التحاليل المخبرية للمريض',
+    en: 'Manage & track patient laboratory requests',
+  },
+  'encounters.radiologyRequestsSubtitle': {
+    ar: 'إدارة وتتبع الفحوصات التصويرية والأشعة',
+    en: 'Manage & track radiology and imaging requests',
+  },
   'encounters.date': { ar: 'تاريخ الزيارة', en: 'Visit date' },
   'encounters.status.InProgress': { ar: 'الزيارة جارية', en: 'In progress' },
   'encounters.status.Completed': { ar: 'مكتملة', en: 'Completed' },
   'encounters.clinicalNotes': { ar: 'ملاحظات الطبيب', en: 'Clinical notes' },
+  'encounters.noNotes': {
+    ar: 'لا توجد ملاحظات سريرية مدونة لهذه الزيارة.',
+    en: 'No clinical notes recorded for this visit.',
+  },
+  'encounters.clinicalNotesPlaceholder': {
+    ar: 'اكتب الملاحظات الطبية والسريرية هنا...',
+    en: 'Enter clinical notes here...',
+  },
+  'encounters.diagnosticsAndTests': {
+    ar: 'الفحوصات والتحاليل الطبية',
+    en: 'Medical Diagnostics & Tests',
+  },
+  'encounters.addDiagnosis': { ar: 'إضافة تشخيص جديد', en: 'Add diagnosis' },
+  'encounters.cancelEdit': { ar: 'إلغاء التعديل', en: 'Cancel editing' },
   'encounters.diagnoses': { ar: 'التشخيصات', en: 'Diagnoses' },
   'encounters.diagnosis.Primary': { ar: 'التشخيص الأساسي', en: 'Primary diagnosis' },
   'encounters.diagnosis.Secondary': { ar: 'تشخيص إضافي', en: 'Secondary diagnosis' },
@@ -6802,5 +6851,567 @@ export const TRANSLATIONS: TranslationDictionary = {
   'reservations.attestationRequired': {
     ar: 'التحقق من هوية المريض مطلوب قبل إتمام الحجز لأول مرة في هذه العيادة.',
     en: 'Patient identity verification is required before booking for the first time in this clinic.',
+  },
+  'onboarding.welcomeTitle': { ar: 'مرحبًا بك في وصلة', en: 'Welcome to Wasla' },
+  'onboarding.welcomeSubtitle': {
+    ar: 'اختر طريقة البدء المناسبة لك للوصول الآمن إلى خدماتك وملفك الطبي.',
+    en: 'Choose how you would like to start to securely access your medical profile and services.',
+  },
+  'onboarding.backToWelcome': { ar: 'العودة إلى شاشة البداية', en: 'Back to Welcome Screen' },
+  'onboarding.newAccountTitle': { ar: 'إنشاء حساب جديد', en: 'Create a New Account' },
+  'onboarding.newAccountDesc': {
+    ar: 'للمستخدم الذي لم يسبق له التسجيل في وصلة ويرغب في فتح ملف طبي جديد.',
+    en: 'For new patients who have never registered on Wasla before.',
+  },
+  'onboarding.claimExistingTitle': {
+    ar: 'عندي ملف طبي بالفعل',
+    en: 'I Already Have a Medical Profile',
+  },
+  'onboarding.claimExistingDesc': {
+    ar: 'للمريض الذي سبق تسجيله عند دكتور أو عن طريق الريسبشن ويريد ربط ملفه بحساب دخول.',
+    en: 'For patients previously registered by a doctor or clinic reception who want to claim their profile.',
+  },
+  'onboarding.alreadyHaveAccountLogin': {
+    ar: 'لدي حساب بالفعل — تسجيل الدخول',
+    en: 'I already have an account — Sign In',
+  },
+  'onboarding.trackClaimAction': {
+    ar: 'متابعة حالة طلب إثبات ملكية',
+    en: 'Track Ownership Claim Status',
+  },
+  'onboarding.activateAccountAction': { ar: 'تفعيل حساب وصلة', en: 'Activate Wasla Account' },
+  'onboarding.claimEmailTitle': {
+    ar: 'إثبات ملكية ملف موجود',
+    en: 'Claim Existing Medical Profile',
+  },
+  'onboarding.registerEmailTitle': {
+    ar: 'إنشاء حساب جديد — تأكيد البريد',
+    en: 'New Account — Verify Email',
+  },
+  'onboarding.emailStepSubtitle': {
+    ar: 'أدخل بريدك الإلكتروني لإرسال رمز تحقق مكوّن من 6 أرقام.',
+    en: 'Enter your email address to receive a 6-digit verification code.',
+  },
+  'onboarding.patientReferenceLabel': {
+    ar: 'الرقم المرجعي للمريض (Patient Reference)',
+    en: 'Patient Reference ID',
+  },
+  'onboarding.patientReferencePlaceholder': {
+    ar: 'مثال: 00000000-0000-0000-0000-000000000000',
+    en: 'Example: 00000000-0000-0000-0000-000000000000',
+  },
+  'onboarding.patientReferenceHint': {
+    ar: 'اختياري — أدخل الرقم المرجعي فقط إذا كان متاحًا لديك من قناة موثوقة بالعيادة.',
+    en: 'Optional — enter only if provided to you by a trusted clinic channel.',
+  },
+  'onboarding.sendVerificationCode': { ar: 'إرسال رمز التحقق', en: 'Send Verification Code' },
+  'onboarding.neutralOtpSentNotice': {
+    ar: 'لو البريد صالح، هيوصلك رمز تحقق.',
+    en: 'If the email address is valid, a verification code will be sent to you.',
+  },
+  'onboarding.verifyOtpTitle': { ar: 'تأكيد البريد الإلكتروني', en: 'Verify Email Address' },
+  'onboarding.verifyOtpSubtitle': {
+    ar: 'أدخل رمز التحقق المكون من 6 أرقام المرسل إلى بريدك الإلكتروني.',
+    en: 'Enter the 6-digit verification code sent to your email.',
+  },
+  'onboarding.otpLabel': { ar: 'رمز التحقق (OTP)', en: 'Verification Code (OTP)' },
+  'onboarding.otpValidityHint': {
+    ar: 'الرمز صالح لمدة 10 دقائق وبحد أقصى 5 محاولات.',
+    en: 'Valid for 10 minutes with a maximum of 5 attempts.',
+  },
+  'onboarding.otpSixDigitsRequired': {
+    ar: 'يرجى إدخال رمز التحقق المكون من 6 أرقام.',
+    en: 'Please enter the 6-digit verification code.',
+  },
+  'onboarding.resendOtpIn': { ar: 'إعادة إرسال الرمز خلال', en: 'Resend code in' },
+  'onboarding.resendOtpAction': { ar: 'إعادة إرسال الرمز', en: 'Resend Code' },
+  'onboarding.verifyOtpAction': { ar: 'تأكيد الرمز والمتابعة', en: 'Verify & Continue' },
+  'onboarding.claimFormTitle': {
+    ar: 'بيانات إثبات ملكية الملف الطبي',
+    en: 'Medical Profile Ownership Claim',
+  },
+  'onboarding.claimFormSubtitle': {
+    ar: 'أدخل بياناتك الأساسية وأرفق وسيلة إثبات الهوية لربط ملفك الطبي السابق بحسابك بأمان.',
+    en: 'Enter your personal details and provide identity proof to securely link your existing medical profile.',
+  },
+  'onboarding.evidenceMethodTitle': {
+    ar: 'وسيلة إثبات الهوية',
+    en: 'Identity Verification Method',
+  },
+  'onboarding.evidenceModeDocuments': {
+    ar: 'رفع مستند إثبات هوية رسمي',
+    en: 'Upload Official Identity Document',
+  },
+  'onboarding.evidenceModeInPerson': {
+    ar: 'توثيق حضوري من خلال الاستقبال',
+    en: 'Reception In-Person Attestation',
+  },
+  'onboarding.evidenceDocumentsHint': {
+    ar: 'ارفع مستندًا واحدًا على الأقل (وجه البطاقة، ظهر البطاقة، شهادة الميلاد، أو مستند الولاية).',
+    en: 'Upload at least one document (ID front, ID back, birth certificate, or guardian document).',
+  },
+  'onboarding.birthCertificateLabel': { ar: 'شهادة الميلاد', en: 'Birth Certificate' },
+  'onboarding.guardianDocLabel': {
+    ar: 'مستند إثبات الولاية / القرابة',
+    en: 'Guardian Relationship Document',
+  },
+  'onboarding.attestationIdLabel': {
+    ar: 'رقم التوثيق الحضوري من الاستقبال (Attestation ID)',
+    en: 'Reception In-Person Attestation ID',
+  },
+  'onboarding.attestationIdPlaceholder': {
+    ar: 'أدخل رقم التوثيق المستلم من موظف الاستقبال بالعيادة',
+    en: 'Enter the Attestation ID provided by clinic reception',
+  },
+  'onboarding.attestationIdHelp': {
+    ar: 'صالح لمدة 48 ساعة لنفس المريض ونفس البريد الإلكتروني.',
+    en: 'Valid for 48 hours for the same patient and email address.',
+  },
+  'onboarding.verificationNoteLabel': {
+    ar: 'ملاحظات إضافية للمراجعة',
+    en: 'Additional Verification Notes',
+  },
+  'onboarding.verificationNotePlaceholder': {
+    ar: 'أي توضيح إضافي يساعد في مطابقة ملفك الطبي...',
+    en: 'Any additional details to help match your medical record...',
+  },
+  'onboarding.submitClaimAction': { ar: 'إرسال طلب إثبات الملكية', en: 'Submit Ownership Claim' },
+  'onboarding.claimSubmittedToast': {
+    ar: 'تم إرسال طلب إثبات ملكية الملف بنجاح، وجارٍ مراجعته. سيتم إخطارك بعد اتخاذ القرار.',
+    en: 'Your profile ownership claim has been submitted and is under review. You will be notified once a decision is made.',
+  },
+  'onboarding.evidenceFileRequired': {
+    ar: 'يرجى إرفاق مستند إثبات هوية واحد على الأقل.',
+    en: 'Please attach at least one identity evidence document.',
+  },
+  'onboarding.attestationIdRequired': {
+    ar: 'يرجى إدخال رقم التوثيق الحضوري المستلم من الاستقبال.',
+    en: 'Please enter the in-person attestation ID from reception.',
+  },
+  'onboarding.trackClaimTitle': {
+    ar: 'متابعة حالة طلب إثبات الملكية',
+    en: 'Track Ownership Claim Status',
+  },
+  'onboarding.trackClaimSubtitle': {
+    ar: 'تابع حالة مراجعة طلبك واستكمل أي تعديلات مطلوبة أو فعّل حسابك بعد الموافقة.',
+    en: 'Check the status of your claim, respond to modification requests, or activate your account once approved.',
+  },
+  'onboarding.claimIdLabel': { ar: 'رقم طلب إثبات الملكية (Claim ID)', en: 'Claim Request ID' },
+  'onboarding.claimIdPlaceholder': {
+    ar: 'أدخل رقم الطلب لمتابعة حالته',
+    en: 'Enter your Claim Request ID',
+  },
+  'onboarding.claimIdRequired': {
+    ar: 'يرجى إدخال رقم طلب إثبات الملكية.',
+    en: 'Please enter the claim request ID.',
+  },
+  'onboarding.refreshStatusAction': { ar: 'تحديث الحالة', en: 'Refresh Status' },
+  'onboarding.reverifyToContinueClaim': {
+    ar: 'لعرض تفاصيل حالة الطلب أو تعديله، يرجى تأكيد بريدك الإلكتروني برمز تحقق جديد.',
+    en: 'To view or update your claim status, please verify your email address with a fresh code.',
+  },
+  'onboarding.verifyEmailNowAction': { ar: 'تأكيد البريد الإلكتروني الآن', en: 'Verify Email Now' },
+  'onboarding.claimCurrentStatus': { ar: 'حالة الطلب الحالية', en: 'Current Claim Status' },
+  'onboarding.status.PendingReview': { ar: 'قيد المراجعة', en: 'Pending Review' },
+  'onboarding.status.ModificationRequested': {
+    ar: 'مطلوب تعديل أو استكمال مستندات',
+    en: 'Modification Requested',
+  },
+  'onboarding.status.Rejected': { ar: 'مرفوض', en: 'Rejected' },
+  'onboarding.status.ApprovedPendingActivation': {
+    ar: 'تمت الموافقة — بانتظار تفعيل الحساب',
+    en: 'Approved — Pending Activation',
+  },
+  'onboarding.status.Linked': { ar: 'تم ربط الملف بالحساب', en: 'Profile Linked' },
+  'onboarding.status.Expired': { ar: 'منتهي الصلاحية', en: 'Expired' },
+  'onboarding.modificationReasonLabel': {
+    ar: 'سبب طلب التعديل من الإدارة',
+    en: 'Modification Request Reason',
+  },
+  'onboarding.defaultModReason': {
+    ar: 'يرجى إرفاق مستندات هوية أوضح ومراجعة البيانات المدخلة.',
+    en: 'Please attach clearer identity documents and review your submitted details.',
+  },
+  'onboarding.rejectionReasonLabel': { ar: 'سبب رفض الطلب', en: 'Rejection Reason' },
+  'onboarding.defaultRejectReason': {
+    ar: 'تعذر التحقق من مطابقة الهوية للملف الطبي المطلوب.',
+    en: 'Unable to verify identity match for the requested medical profile.',
+  },
+  'onboarding.resubmitClaimAction': {
+    ar: 'تعديل وإعادة إرسال الطلب',
+    en: 'Update & Resubmit Claim',
+  },
+  'onboarding.approvedPendingActivationDesc': {
+    ar: 'تمت الموافقة على طلب إثبات ملكية ملفك الطبي! يرجى تفعيل حسابك وتعيين كلمة المرور للدخول.',
+    en: 'Your profile ownership claim is approved! Please activate your account and set your password to sign in.',
+  },
+  'onboarding.proceedToActivateAction': {
+    ar: 'الانتقال لتفعيل الحساب',
+    en: 'Proceed to Account Activation',
+  },
+  'onboarding.linkedDesc': {
+    ar: 'تم ربط ملفك الطبي بحسابك وتفعيله بنجاح. يمكنك الآن تسجيل الدخول.',
+    en: 'Your medical profile is linked and active. You can now sign in.',
+  },
+  'onboarding.expiredDesc': {
+    ar: 'انتهت صلاحية هذا الطلب. يمكنك بدء طلب جديد لإثبات ملكية الملف.',
+    en: 'This claim request has expired. You may start a new ownership claim.',
+  },
+  'onboarding.startNewClaimAction': { ar: 'بدء طلب جديد', en: 'Start New Claim' },
+  'onboarding.resubmitTitle': {
+    ar: 'استكمال وتعديل طلب إثبات الملكية',
+    en: 'Resubmit Ownership Claim',
+  },
+  'onboarding.resubmitSubtitle': {
+    ar: 'راجع ملاحظات الإدارة وأرفق المستندات المحدثة لإعادة إرسال طلبك للمراجعة.',
+    en: 'Review the requested changes and attach updated evidence to resubmit your claim.',
+  },
+  'onboarding.reasonResponseLabel': {
+    ar: 'توضيح التعديلات المرفقة',
+    en: 'Response to Modification Request',
+  },
+  'onboarding.reasonResponsePlaceholder': {
+    ar: 'اكتب توضيحًا مختصرًا للمستندات أو التعديلات التي قمت بإرفاقها...',
+    en: 'Briefly describe the updated documents or corrections you provided...',
+  },
+  'onboarding.reasonResponseRequired': {
+    ar: 'يرجى كتابة توضيح للتعديلات المرفقة.',
+    en: 'Please provide a response explaining your updates.',
+  },
+  'onboarding.claimResubmittedToast': {
+    ar: 'تمت إعادة إرسال الطلب بنجاح وجارٍ مراجعته.',
+    en: 'Your updated claim has been resubmitted for review.',
+  },
+  'onboarding.activateTitle': { ar: 'تفعيل حساب وصلة', en: 'Activate Wasla Account' },
+  'onboarding.activateSubtitle': {
+    ar: 'عيّن كلمة المرور الخاصة بك لتفعيل حسابك والوصول إلى ملفك الطبي.',
+    en: 'Set your password to activate your account and access your medical record.',
+  },
+  'onboarding.invitationTokenLabel': {
+    ar: 'رمز دعوة التفعيل (Invitation Token)',
+    en: 'Activation Invitation Token',
+  },
+  'onboarding.invitationTokenPlaceholder': {
+    ar: 'أدخل رمز التفعيل المرسل إلى بريدك الإلكتروني',
+    en: 'Enter the invitation token sent to your email',
+  },
+  'onboarding.invitationTokenRequired': {
+    ar: 'رمز دعوة التفعيل مطلوب.',
+    en: 'Activation invitation token is required.',
+  },
+  'onboarding.activateSubmitAction': {
+    ar: 'تفعيل الحساب وتعيين كلمة المرور',
+    en: 'Activate Account & Set Password',
+  },
+  'onboarding.activatedSuccess': {
+    ar: 'تم تفعيل حسابك بنجاح',
+    en: 'Your account has been activated successfully',
+  },
+  'onboarding.resendActivationAction': {
+    ar: 'إعادة إرسال دعوة التفعيل',
+    en: 'Resend Activation Invitation',
+  },
+  'onboarding.sendNewActivationInvite': {
+    ar: 'إرسال دعوة تفعيل جديدة',
+    en: 'Send New Activation Invite',
+  },
+  'onboarding.resendActivationNeutral': {
+    ar: 'لو الحساب مؤهل للتفعيل، سيتم إرسال دعوة جديدة إلى بريدك الإلكتروني.',
+    en: 'If the account is eligible for activation, a new invitation will be sent to your email.',
+  },
+  'onboarding.accountAlreadyExistsTitle': {
+    ar: 'لديك حساب مسجل بالفعل',
+    en: 'Account Already Exists',
+  },
+  'onboarding.accountAlreadyExistsDesc': {
+    ar: 'هذا البريد الإلكتروني مرتبط بحساب مفعل بالفعل على منصة وصلة. يمكنك تسجيل الدخول مباشرة أو استعادة كلمة المرور.',
+    en: 'This email address is already linked to an active Wasla account. Please sign in or reset your password.',
+  },
+  'onboarding.identityConflictTitle': {
+    ar: 'تعارض في بيانات الهوية أو الحساب',
+    en: 'Identity or Account Conflict Detected',
+  },
+  'onboarding.identityConflictDesc': {
+    ar: 'تعذر إتمام الربط التلقائي لوجود تعارض في البيانات المسجلة. يرجى مراجعة استقبال العيادة أو التواصل مع إدارة المنصة للمراجعة اليدوية الآمنة.',
+    en: 'Automatic linking could not proceed due to a data conflict. Please contact clinic reception or platform support for manual verification.',
+  },
+  'onboarding.errors.verificationRequired': {
+    ar: 'يجب تأكيد البريد الإلكتروني أولاً قبل المتابعة.',
+    en: 'Email verification is required before continuing.',
+  },
+  'onboarding.errors.tokenInvalidOrExpired': {
+    ar: 'انتهت صلاحية جلسة التحقق من البريد الإلكتروني. يرجى تأكيد البريد برمز جديد.',
+    en: 'Your email verification token has expired. Please verify your email again.',
+  },
+  'onboarding.errors.otpInvalidOrExpired': {
+    ar: 'رمز التحقق غير صحيح أو منتهي الصلاحية.',
+    en: 'The verification code is invalid or has expired.',
+  },
+  'onboarding.errors.tooManyAttempts': {
+    ar: 'تم تجاوز عدد محاولات التحقق المسموح بها. يرجى طلب رمز جديد.',
+    en: 'Too many verification attempts. Please request a new code.',
+  },
+  'onboarding.errors.claimRequired': {
+    ar: 'يوجد ملف طبي مسجل بالفعل قد يخصك. يرجى استكمال طلب إثبات ملكية الملف بدلاً من إنشاء ملف جديد.',
+    en: 'An existing medical profile may match your details. Please submit an ownership claim instead of creating a duplicate record.',
+  },
+  'onboarding.errors.noClaimableProfile': {
+    ar: 'لا يوجد ملف طبي مطابق قابل للمطالبة بهذه البيانات. يمكنك مراجعة البيانات أو إنشاء حساب جديد.',
+    en: 'No claimable medical profile matched these details. Please verify your information or create a new account.',
+  },
+  'onboarding.errors.proofInsufficient': {
+    ar: 'مستندات إثبات الهوية المرفقة غير كافية. يرجى رفع بطاقة هوية رسمية أو تقديم رقم توثيق حضوري من الاستقبال.',
+    en: 'Insufficient identity proof. Please upload an official ID document or provide an in-person reception attestation.',
+  },
+  'onboarding.errors.pendingAlreadyExists': {
+    ar: 'يوجد طلب إثبات ملكية قيد المراجعة بالفعل لهذا البريد الإلكتروني.',
+    en: 'A pending ownership claim already exists for this email address.',
+  },
+  'onboarding.errors.concurrencyConflict': {
+    ar: 'تم تحديث بيانات الطلب من طرف آخر. تم جلب أحدث نسخة من البيانات، يرجى المراجعة والمحاولة مرة أخرى.',
+    en: 'This claim was updated elsewhere. The latest version has been loaded; please review and try again.',
+  },
+  'onboarding.errors.activationInvalidOrExpired': {
+    ar: 'رابط أو رمز التفعيل غير صالح أو منتهي الصلاحية. يمكنك طلب إعادة إرسال دعوة التفعيل.',
+    en: 'The activation token is invalid or expired. You can request a new activation invitation below.',
+  },
+  'onboarding.errors.ageRestricted': {
+    ar: 'التسجيل الذاتي غير متاح للقُصّر. يرجى التسجيل من خلال ولي الأمر أو مراجعة استقبال العيادة.',
+    en: 'Self-registration is restricted for minors. Please register via a legal guardian or clinic reception.',
+  },
+  'onboarding.errors.idempotencyReused': {
+    ar: 'تمت معالجة طلب سابق بنفس المفتاح. يرجى المحاولة مرة أخرى.',
+    en: 'A previous request with the same key was already processed. Please try again.',
+  },
+  'reception.patients.verifyIdentityInPerson': {
+    ar: 'توثيق هوية المريض حضوريًا (لإثبات الملكية)',
+    en: 'In-Person Identity Attestation (Profile Claim)',
+  },
+  'reception.patients.attestationHelp': {
+    ar: 'استخدم هذا الإجراء بعد التحقق الحضوري من بطاقة هوية المريض في العيادة لمنحه رقم توثيق يتيح له امتلاك ملفه الطبي في تطبيق وصلة.',
+    en: 'Use this after verifying the patient’s government ID in person to issue an Attestation ID for claiming their medical profile.',
+  },
+  'reception.patients.claimantEmailLabel': {
+    ar: 'البريد الإلكتروني للمريض (Claimant Email)',
+    en: 'Patient Claimant Email',
+  },
+  'reception.patients.verificationBasisLabel': {
+    ar: 'مستند التحقق الذي تم الاطلاع عليه',
+    en: 'Verified Identity Document Basis',
+  },
+  'reception.patients.basisGovernmentId': {
+    ar: 'تم الاطلاع على البطاقة الشخصية الأصلية (GovernmentIdSeen)',
+    en: 'Original Government ID Verified (GovernmentIdSeen)',
+  },
+  'reception.patients.basisBirthCertificate': {
+    ar: 'تم الاطلاع على شهادة الميلاد الأصلية (BirthCertificateSeen)',
+    en: 'Original Birth Certificate Verified (BirthCertificateSeen)',
+  },
+  'reception.patients.basisGuardianId': {
+    ar: 'تم الاطلاع على هوية ولي الأمر القانوني (GuardianIdSeen)',
+    en: 'Legal Guardian ID Verified (GuardianIdSeen)',
+  },
+  'reception.patients.verificationReasonLabel': {
+    ar: 'بيان التحقق الحضوري',
+    en: 'Verification Statement / Reason',
+  },
+  'reception.patients.verificationReasonPlaceholder': {
+    ar: 'مثال: تم التحقق حضوريًا من بطاقة الرقم القومي ومطابقة البيانات بالعيادة',
+    en: 'Example: Verified national ID card in person at the clinic reception desk',
+  },
+  'reception.patients.verifiedInPersonConfirm': {
+    ar: 'أقر بأن المريض حضر شخصيًا وتم التحقق من هويته الرسمية أمامي في العيادة',
+    en: 'I confirm the patient appeared in person and their official ID was verified at the clinic',
+  },
+  'reception.patients.attestationFieldsRequired': {
+    ar: 'يرجى تأكيد الحضور الشخصي وكتابة بيان التحقق.',
+    en: 'Please confirm in-person verification and provide a verification statement.',
+  },
+  'reception.patients.attestationCreatedToast': {
+    ar: 'تم إصدار رقم التوثيق الحضوري للمريض بنجاح.',
+    en: 'In-person identity attestation issued successfully.',
+  },
+  'reception.patients.attestationIdResultLabel': {
+    ar: 'رقم التوثيق الحضوري (Attestation ID)',
+    en: 'Issued Attestation ID',
+  },
+  'reception.patients.attestationValidityNote': {
+    ar: 'سلّم هذا الرقم للمريض لإدخاله في شاشة إثبات ملكية الملف (صالح لمدة 48 ساعة).',
+    en: 'Provide this ID to the patient for their profile claim form (valid for 48 hours).',
+  },
+  'reception.patients.copyAttestationId': { ar: 'نسخ رقم التوثيق', en: 'Copy Attestation ID' },
+  'reception.patients.attestationCopied': {
+    ar: 'تم نسخ رقم التوثيق الحضوري.',
+    en: 'Attestation ID copied to clipboard.',
+  },
+  'reception.patients.confirmAttestationAction': {
+    ar: 'إصدار رقم التوثيق الحضوري',
+    en: 'Issue In-Person Attestation',
+  },
+  'reception.patients.accountTypeLabel': {
+    ar: 'نوع التسجيل للمريض',
+    en: 'Patient Registration Type',
+  },
+  'reception.patients.accountTypeBasic': {
+    ar: 'ملف طبي أساسي (لحجز المواعيد والزيارات فقط)',
+    en: 'Basic Medical Profile (Appointments & Visits Only)',
+  },
+  'reception.patients.accountTypeFull': {
+    ar: 'حساب مريض كامل مع إرسال دعوة تفعيل بالبريد الإلكتروني',
+    en: 'Full Patient Account with Email Activation Invite',
+  },
+  'adminClaims.navTitle': { ar: 'طلبات ملكية ملفات المرضى', en: 'Patient Profile Claims' },
+  'adminClaims.title': {
+    ar: 'مراجعة طلبات إثبات ملكية ملفات المرضى',
+    en: 'Patient Profile Ownership Claims Review',
+  },
+  'adminClaims.subtitle': {
+    ar: 'راجع مستندات الهوية وطابق الملفات الطبية للموافقة على ربط حسابات المرضى أو طلب استكمال البيانات.',
+    en: 'Review identity evidence and match candidate patient records to approve profile linking or request modifications.',
+  },
+  'adminClaims.emailSearchPlaceholder': {
+    ar: 'ابحث بالبريد الإلكتروني...',
+    en: 'Search by claimant email...',
+  },
+  'adminClaims.evidenceCount': { ar: 'عدد المستندات', en: 'Evidence Files' },
+  'adminClaims.reviewClaimAction': { ar: 'مراجعة الطلب', en: 'Review Claim' },
+  'adminClaims.noClaimsTitle': { ar: 'لا توجد طلبات مطابقة', en: 'No Matching Claims Found' },
+  'adminClaims.noClaimsDesc': {
+    ar: 'لا توجد طلبات إثبات ملكية ملفات مرضى في هذه الحالة حاليًا.',
+    en: 'There are currently no patient ownership claims matching the selected filter.',
+  },
+  'adminClaims.drawerTitle': {
+    ar: 'تفاصيل ومراجعة طلب إثبات الملكية',
+    en: 'Ownership Claim Review & Details',
+  },
+  'adminClaims.claimantInfoTitle': { ar: 'بيانات مقدّم الطلب', en: 'Claimant Information' },
+  'adminClaims.candidatePatientsTitle': {
+    ar: 'المرضى المرشحون للمطابقة (Target Patient)',
+    en: 'Candidate Patient Profiles (Target Patient)',
+  },
+  'adminClaims.candidatePatientsHelp': {
+    ar: 'اختر ملف المريض المستهدف بدقة بعد مراجعة الهوية (لا يتم الدمج التلقائي).',
+    en: 'Explicitly select the target patient record after verifying identity (no automatic merging).',
+  },
+  'adminClaims.targetPatientIdLabel': {
+    ar: 'معرّف ملف المريض المستهدف (Target Patient ID)',
+    en: 'Target Patient ID',
+  },
+  'adminClaims.evidenceTitle': {
+    ar: 'المستندات وأدلة الإثبات',
+    en: 'Identity Evidence & Documents',
+  },
+  'adminClaims.evidenceHelp': {
+    ar: 'عاين المستندات وحدد الأدلة التي تمت مراجعتها لتفعيل قرار الموافقة.',
+    en: 'Preview documents and check the reviewed evidence items required before approving.',
+  },
+  'adminClaims.revision': { ar: 'النسخة', en: 'Revision' },
+  'adminClaims.viewEvidenceAction': { ar: 'معاينة المستند', en: 'Preview Document' },
+  'adminClaims.evidencePreviewTitle': {
+    ar: 'معاينة مستند الهوية',
+    en: 'Identity Document Preview',
+  },
+  'adminClaims.decisionTitle': { ar: 'قرار المراجعة', en: 'Review Decision' },
+  'adminClaims.reviewNoteLabel': {
+    ar: 'ملاحظة المراجعة عند الموافقة (اختياري)',
+    en: 'Approval Review Note (Optional)',
+  },
+  'adminClaims.reviewNotePlaceholder': {
+    ar: 'مثال: تمت مطابقة البطاقة الشخصية مع بيانات الملف...',
+    en: 'Example: Verified national ID against patient profile...',
+  },
+  'adminClaims.modOrRejectReasonLabel': {
+    ar: 'سبب طلب التعديل أو الرفض (يظهر للمريض)',
+    en: 'Reason for Modification Request or Rejection (Visible to Applicant)',
+  },
+  'adminClaims.modOrRejectReasonPlaceholder': {
+    ar: 'اكتب السبب بوضوح في حال طلب تعديل أو رفض الطلب...',
+    en: 'Clearly state the reason when requesting modifications or rejecting...',
+  },
+  'adminClaims.approveAction': {
+    ar: 'موافقة وإرسال دعوة التفعيل',
+    en: 'Approve & Send Activation Invite',
+  },
+  'adminClaims.requestModAction': { ar: 'طلب تعديل / استكمال', en: 'Request Modification' },
+  'adminClaims.rejectAction': { ar: 'رفض الطلب', en: 'Reject Claim' },
+  'adminClaims.approvedToast': {
+    ar: 'تمت الموافقة على الطلب وإرسال دعوة التفعيل للمريض.',
+    en: 'Claim approved and activation invitation sent to the patient.',
+  },
+  'adminClaims.modificationRequestedToast': {
+    ar: 'تم إرسال طلب التعديل إلى المريض بنجاح.',
+    en: 'Modification request sent to the applicant.',
+  },
+  'adminClaims.rejectedToast': { ar: 'تم رفض طلب إثبات الملكية.', en: 'Ownership claim rejected.' },
+  'adminClaims.historyTitle': { ar: 'سجل المراجعة (Audit History)', en: 'Claim Audit History' },
+  'tickets.workstation.step1': { ar: '١. الشكوى والتشخيص الطبي', en: '1. Complaint & Diagnosis' },
+  'tickets.workstation.step1Sub': {
+    ar: 'سجّل شكوى المريض، الفحص السريري، والتشخيص الطبي للزيارة',
+    en: 'Record patient complaint, clinical findings, and visit diagnosis',
+  },
+  'tickets.workstation.step2': { ar: '٢. الروشتة والأدوية', en: '2. Prescription & Medications' },
+  'tickets.workstation.step2Sub': {
+    ar: 'أضف الأدوية والجرعات المطلوبة للمريض (اختياري)',
+    en: 'Add prescribed medications and dosages for the patient (optional)',
+  },
+  'tickets.workstation.step3': {
+    ar: '٣. التحاليل والأشعة المطلوبة',
+    en: '3. Lab & Radiology Requests',
+  },
+  'tickets.workstation.step3Sub': {
+    ar: 'اطلب تحاليل معملية أو فحوصات أشعة في نفس الشاشة (اختياري)',
+    en: 'Order laboratory tests or radiology scans on the same screen (optional)',
+  },
+  'tickets.workstation.step4': {
+    ar: '٤. تحديد الاستشارة وإنهاء الكشف',
+    en: '4. Follow-Up & Complete Consultation',
+  },
+  'tickets.workstation.notesLabel': {
+    ar: 'شكوى المريض والملاحظات الطبية',
+    en: 'Patient Complaint & Clinical Notes',
+  },
+  'tickets.workstation.notesRequiredBadge': {
+    ar: 'مطلوب لإنهاء الكشف',
+    en: 'Required to complete visit',
+  },
+  'tickets.workstation.notesAutoSaveHint': {
+    ar: 'يتم حفظ الملاحظات والتشخيص تلقائياً عند الضغط على (حفظ وإنهاء الكشف) بالأسفل.',
+    en: 'Notes and diagnosis are saved automatically when you click (Save & Complete Visit) below.',
+  },
+  'tickets.workstation.saveNotesNow': { ar: 'حفظ الملاحظات الآن', en: 'Save notes now' },
+  'tickets.workstation.addDiagnosisBtn': { ar: '+ إضافة التشخيص', en: '+ Add Diagnosis' },
+  'tickets.workstation.updateDiagnosisBtn': { ar: 'حفظ تعديل التشخيص', en: 'Save Diagnosis Edit' },
+  'tickets.workstation.diagnosisPlaceholder': {
+    ar: 'اكتب التشخيص الطبي هنا (مثال: نزلة شعبية حادة)...',
+    en: 'Type medical diagnosis here (e.g. Acute Bronchitis)...',
+  },
+  'tickets.workstation.diagnosisNotesPlaceholder': {
+    ar: 'تعليمات أو ملاحظات للتشخيص (اختياري)...',
+    en: 'Diagnosis instructions or notes (optional)...',
+  },
+  'tickets.workstation.followUpTitle': {
+    ar: 'فترة السماح للاستشارة المجانية (اختياري)',
+    en: 'Free Follow-Up Grace Period (Optional)',
+  },
+  'tickets.workstation.days7': { ar: 'بعد 7 أيام', en: 'In 7 days' },
+  'tickets.workstation.days10': { ar: 'بعد 10 أيام', en: 'In 10 days' },
+  'tickets.workstation.days14': { ar: 'بعد 14 يوم', en: 'In 14 days' },
+  'tickets.workstation.noFollowUp': { ar: 'بدون استشارة', en: 'No follow-up' },
+  'tickets.workstation.completeBtn': { ar: 'حفظ وإنهاء الكشف', en: 'Save & Complete Visit' },
+  'tickets.workstation.completeAndNextBtn': {
+    ar: 'حفظ وإنهاء الكشف + نداء التالي',
+    en: 'Save, Complete & Call Next',
+  },
+  'tickets.workstation.pastVisitsLink': { ar: 'سجل الكشوفات السابقة', en: 'Past Visits History' },
+  'tickets.workstation.syncingEncounter': {
+    ar: 'جارٍ تحضير ملف الكشف الطبي...',
+    en: 'Preparing clinical consultation sheet...',
+  },
+  'tickets.workstation.optionalBadge': { ar: 'اختياري', en: 'Optional' },
+  'tickets.workstation.doneBadge': { ar: 'تم الإدخال', en: 'Entered' },
+  'tickets.workstation.readyToComplete': { ar: 'جاهز لإنهاء الكشف', en: 'Ready to complete visit' },
+  'tickets.workstation.blockerFixHint': {
+    ar: 'يمكنك الضغط على زر "تعديل" بجانب كل دواء لتحديد الجرعة ومدة العلاج، أو الضغط على "حذف الدواء" لإزالته من الروشتة إذا تم إضافته بالخطأ.',
+    en: 'You can click "Edit" next to each medication to specify dose and duration, or click "Delete medication" to remove it if added by mistake.',
   },
 };
