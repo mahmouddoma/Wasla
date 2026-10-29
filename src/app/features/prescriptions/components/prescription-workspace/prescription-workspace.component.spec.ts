@@ -78,6 +78,7 @@ describe('Prescription editing, correction and privacy', () => {
       voidPrescription: vi.fn(),
       versions: vi.fn(),
       versionDetails: vi.fn(),
+      pdf: vi.fn(),
     },
     toast = { success: vi.fn(), error: vi.fn() };
   beforeEach(async () => {
@@ -111,6 +112,23 @@ describe('Prescription editing, correction and privacy', () => {
     await fixture.whenStable();
   });
   afterEach(() => localStorage.removeItem('wasla_lang'));
+  it('requests the authenticated issued version PDF instead of printing the application', async () => {
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    component.state.set({
+      ...state,
+      draft: null,
+      current: { versionNumber: 2, status: 'Finalized', items: [item] },
+    });
+    api.pdf.mockReturnValue(of(new Blob(['pdf'], { type: 'application/pdf' })));
+    await component.printPrescription();
+    expect(api.pdf).toHaveBeenCalledWith('rx1', 2);
+    expect(component.pdfBlob()?.type).toBe('application/pdf');
+    expect(print).not.toHaveBeenCalled();
+  });
+  it('does not export a draft', async () => {
+    await component.printPrescription();
+    expect(api.pdf).not.toHaveBeenCalled();
+  });
   it('adds exactly one catalog source with the current root token and a stable retry intent', async () => {
     expect(component).toBeTruthy();
     component.beginAdd();
@@ -244,6 +262,8 @@ describe('Prescription editing, correction and privacy', () => {
     expect(text).not.toContain('internal-secret');
     expect(text).not.toContain('catalog-secret');
     expect(text).not.toContain('9876');
-    expect(fixture.nativeElement.querySelector('button')).toBeNull();
+    const buttons: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('button');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].textContent).toContain('Print');
   });
 });

@@ -1,35 +1,51 @@
+import { Subscription } from 'rxjs';
+import { ClinicalFilterQuery } from '../../../../domains/doctor-patients';
 import {
   ChangeDetectionStrategy,
   Component,
   inject,
   input,
   OnInit,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import { DoctorPatientsApi, DoctorPatientAppointment } from '../../../../domains/doctor-patients';
-import { ReservationsApi } from '../../../../domains/reservations';
-import { ToastService } from '../../../../core/notifications/toast.service';
 
 @Component({
   selector: 'app-patient-appointments-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, LocalizedDatePipe],
+  imports: [CommonModule, TranslatePipe, LocalizedDatePipe],
   templateUrl: './patient-appointments-list.component.html',
   styleUrl: './patient-appointments-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PatientAppointmentsListComponent implements OnInit {
+export class PatientAppointmentsListComponent implements OnInit, OnChanges, OnDestroy {
+  ngOnDestroy(): void {
+    this.historyRequest?.unsubscribe();
+  }
+  private historyRequest: Subscription | undefined;
   private readonly doctorPatientsApi = inject(DoctorPatientsApi);
-  private readonly reservationsApi = inject(ReservationsApi);
-  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly session = inject(AuthSession);
   protected readonly language = inject(LanguageService);
 
+  readonly filters = input<Partial<ClinicalFilterQuery>>({});
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['filters'] && !changes['filters'].firstChange) {
+      this.pageNumber.set(1);
+      this.loadAppointments();
+    }
+  }
   readonly patientId = input.required<string>();
+  readonly practiceNames = input<Readonly<Record<string, string>>>({});
   readonly isHistoricalOnly = input<boolean>(false);
 
   readonly appointments = signal<readonly DoctorPatientAppointment[]>([]);
@@ -39,10 +55,6 @@ export class PatientAppointmentsListComponent implements OnInit {
   readonly totalCount = signal<number>(0);
   readonly pageSize = 10;
 
-  readonly cancellingReservation = signal<DoctorPatientAppointment | null>(null);
-  readonly cancelReason = signal<string>('');
-  readonly cancelLoading = signal<boolean>(false);
-
   ngOnInit(): void {
     this.loadAppointments();
   }
@@ -51,11 +63,14 @@ export class PatientAppointmentsListComponent implements OnInit {
     const pid = this.patientId();
     if (!pid) return;
 
+    this.historyRequest?.unsubscribe();
+    this.appointments.set([]);
     this.loading.set(true);
     this.error.set(false);
 
-    this.doctorPatientsApi
+    this.historyRequest = this.doctorPatientsApi
       .appointments(pid, {
+        ...this.filters(),
         pageNumber: this.pageNumber(),
         pageSize: this.pageSize,
       })
@@ -77,54 +92,14 @@ export class PatientAppointmentsListComponent implements OnInit {
     this.loadAppointments();
   }
 
-  openCancel(item: DoctorPatientAppointment): void {
-    if (this.isHistoricalOnly() || item.status !== 'Active') {
-      this.toast.error(this.language.t('doctorPatients.toasts.cannotCancel'));
-      return;
-    }
-    this.cancellingReservation.set(item);
-    this.cancelReason.set('');
-  }
-
-  closeCancel(): void {
-    this.cancellingReservation.set(null);
-  }
-
-  confirmCancel(): void {
-    const res = this.cancellingReservation();
-    if (!res) return;
-
-    const reason = this.cancelReason().trim();
-    if (!reason) {
-      this.toast.error(this.language.t('doctorPatients.toasts.reasonRequired'));
-      return;
-    }
-
-    this.cancelLoading.set(true);
-    const key = `cancel-${res.reservationId}-${Date.now()}`;
-
-    this.reservationsApi
-      .cancel(
-        { actor: 'Doctor', practiceId: res.practiceId },
-        res.reservationId,
-        {
-          reasonCode: 'DoctorCancelled',
-          comment: reason,
-          rowVersion: 'AAAA==',
-        },
-        key,
-      )
-      .subscribe({
-        next: () => {
-          this.cancelLoading.set(false);
-          this.toast.success(this.language.t('doctorPatients.toasts.cancelSuccess'));
-          this.closeCancel();
-          this.loadAppointments();
-        },
-        error: () => {
-          this.cancelLoading.set(false);
-          this.toast.error(this.language.t('doctorPatients.toasts.cancelFailed'));
-        },
-      });
+  viewReservation(item: DoctorPatientAppointment): void {
+    if (!this.session.hasPermission('DoctorPracticeReservations.ViewOwn')) return;
+    void this.router.navigate(['/doctor/reservations'], {
+      queryParams: {
+        practiceId: item.practiceId,
+        reservationId: item.reservationId,
+        returnPatientId: this.patientId(),
+      },
+    });
   }
 }

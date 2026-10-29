@@ -1,6 +1,9 @@
+import { PdfViewerComponent } from '../../../../shared/components/pdf-viewer/pdf-viewer.component';
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import {
   ChangeDetectionStrategy,
+  OnDestroy,
+  computed,
   Component,
   effect,
   inject,
@@ -33,7 +36,7 @@ import {
 type Action = 'remove' | 'startCorrection' | 'finalize' | 'discard' | 'void';
 @Component({
   selector: 'app-prescription-workspace',
-  imports: [LocalizedDatePipe, ReactiveFormsModule, TranslatePipe],
+  imports: [LocalizedDatePipe, ReactiveFormsModule, TranslatePipe, PdfViewerComponent],
   templateUrl: './prescription-workspace.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',
@@ -41,7 +44,14 @@ type Action = 'remove' | 'startCorrection' | 'finalize' | 'discard' | 'void';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PrescriptionWorkspaceComponent {
+export class PrescriptionWorkspaceComponent implements OnDestroy {
+  ngOnDestroy(): void {
+    this.generation++;
+    this.pdfBlob.set(null);
+  }
+  printPatientPrescription(): void {
+    if (this.patientView()) window.print();
+  }
   private readonly api = inject(PrescriptionsApi);
   private readonly catalog = inject(DrugCatalogApi);
   private readonly session = inject(AuthSession);
@@ -60,6 +70,15 @@ export class PrescriptionWorkspaceComponent {
   readonly changed = output<PrescriptionState | null>();
   readonly busyChanged = output<boolean>();
   private loadedContext: string | null = null;
+  readonly pdfBlob = signal<Blob | null>(null);
+  readonly pdfLoading = signal(false);
+  readonly canExportPdf = computed(
+    () =>
+      this.session.hasPermission('Prescriptions.ExportOwn') &&
+      !this.patientView() &&
+      (this.historical() || this.state()?.current)?.status !== 'Draft' &&
+      !!(this.historical() || this.state()?.current),
+  );
   readonly state = signal<PrescriptionState | null>(null);
   readonly busy = signal(false);
   readonly messages = signal<string[]>([]);
@@ -126,6 +145,11 @@ export class PrescriptionWorkspaceComponent {
   constructor() {
     effect(() => this.busyChanged.emit(this.busy()));
     effect(() => {
+      this.prescriptionId();
+      this.encounterId();
+      if (!this.session.hasPermission('Prescriptions.ExportOwn')) this.pdfBlob.set(null);
+    });
+    effect(() => {
       const initial = this.initial(),
         id = this.prescriptionId(),
         encounterId = this.encounterId(),
@@ -140,6 +164,7 @@ export class PrescriptionWorkspaceComponent {
         }
         this.loadedContext = context;
         this.generation++;
+        this.pdfBlob.set(null);
         this.state.set(initial);
         this.editing.set(false);
         this.pending.set(null);
@@ -280,8 +305,22 @@ export class PrescriptionWorkspaceComponent {
     const en = patient?.practice?.nameEn || patient?.practiceNameEn;
     return isAr ? ar || en || '' : en || ar || '';
   }
-  printPrescription(): void {
-    window.print();
+  async printPrescription(): Promise<void> {
+    const state = this.state(),
+      version = this.historical() || state?.current;
+    if (!state || !version || !this.canExportPdf() || this.pdfLoading()) return;
+    const generation = this.generation;
+    this.pdfLoading.set(true);
+    try {
+      const blob = await firstValueFrom(this.api.pdf(state.prescriptionId, version.versionNumber));
+      if (generation !== this.generation || !this.canExportPdf()) return;
+      if (!blob.size || !blob.type.includes('application/pdf')) throw new Error('Invalid PDF');
+      this.pdfBlob.set(blob);
+    } catch (error) {
+      this.toast.error(this.language.t('doctorPatients.pdf.failed'));
+    } finally {
+      this.pdfLoading.set(false);
+    }
   }
   async load() {
     const id = this.prescriptionId() || this.state()?.prescriptionId;
@@ -325,7 +364,7 @@ export class PrescriptionWorkspaceComponent {
       clinical.duration ??
       (clinical.durationValue
         ? `${clinical.durationValue} ${clinical.durationUnit ?? ''}`.trim()
-        : (item as any).duration ?? '');
+        : ((item as any).duration ?? ''));
     this.clinical.reset({
       strength: clinical.strength ?? item.strength ?? '',
       dosageForm: clinical.dosageForm ?? item.dosageForm ?? '',

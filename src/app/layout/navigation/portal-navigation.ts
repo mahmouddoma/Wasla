@@ -4,7 +4,8 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 import { ReceptionPracticeContext } from '../../domains/reception-practices';
 import { NavigationItem } from './navigation-item';
 
-export type NavigationGroup = 'daily' | 'health' | 'management' | 'finance' | 'account';
+export type NavigationGroup =
+  'daily' | 'health' | 'management' | 'finance' | 'analytics' | 'account';
 export interface NavigationSection {
   readonly id: NavigationGroup;
   readonly labelKey: string;
@@ -127,16 +128,6 @@ export class PortalNavigation {
     if (userType === 'doctor') {
       const items: NavigationItem[] = [
         ...this.diagnosticItems('Doctor'),
-        ...(this.session.hasPermission('Prescriptions.ViewOwn')
-          ? [
-              {
-                id: 'prescriptions',
-                labelKey: 'medications.prescription',
-                route: '/doctor/prescriptions',
-                icon: 'clipboard-list' as const,
-              },
-            ]
-          : []),
         ...(['lab', 'radiology'] as const).flatMap((kind) =>
           this.session.hasPermission(
             (kind === 'lab' ? 'Lab' : 'Radiology') + 'CatalogRequests.ViewOwn',
@@ -220,6 +211,30 @@ export class PortalNavigation {
           labelKey: 'sidebar.receptions',
           route: '/doctor/receptions',
           icon: 'users',
+        },
+        {
+          id: 'expenses',
+          labelKey: 'finance.viewExpenses',
+          route: '/doctor/expenses',
+          icon: 'receipt',
+        },
+        {
+          id: 'salaries',
+          labelKey: 'finance.viewSalaries',
+          route: '/doctor/salaries',
+          icon: 'receipt',
+        },
+        {
+          id: 'reports',
+          labelKey: 'doctorRemediation.reports',
+          route: '/doctor/reports',
+          icon: 'chart',
+        },
+        {
+          id: 'insights',
+          labelKey: 'doctorRemediation.insights',
+          route: '/doctor/insights',
+          icon: 'chart',
         },
         { id: 'finance', labelKey: 'sidebar.finance', route: '/doctor/finance', icon: 'receipt' },
         { id: 'revenue', labelKey: 'sidebar.revenue', route: '/doctor/revenue', icon: 'chart' },
@@ -422,6 +437,10 @@ export class PortalNavigation {
       receptions: [PERMISSIONS.receptionUsersViewOwn],
       finance: [PERMISSIONS.doctorPracticePaymentsViewOwn],
       revenue: [PERMISSIONS.doctorRevenueViewOwn],
+      expenses: [PERMISSIONS.financialExpensesViewOwn],
+      salaries: [PERMISSIONS.salaryPlansViewOwn, PERMISSIONS.salaryObligationsViewOwn],
+      reports: [PERMISSIONS.doctorReportsViewOwn],
+      insights: [PERMISSIONS.doctorInsightsViewOwn],
     };
     return (
       !required[id] || required[id].some((permission) => this.session.hasPermission(permission))
@@ -493,7 +512,7 @@ export class PortalNavigation {
               'dependent-records',
             ]
           : this.user()?.userType === 'Doctor'
-            ? ['prescriptions', 'lab-requests', 'radiology-requests']
+            ? ['lab-requests', 'radiology-requests']
             : [],
       management: [
         'practices',
@@ -510,7 +529,9 @@ export class PortalNavigation {
         'family-requests',
         ...(this.user()?.userType === 'Doctor' ? ['profile'] : []),
       ],
-      finance: this.user()?.userType === 'Patient' ? [] : ['finance', 'revenue'],
+      finance:
+        this.user()?.userType === 'Patient' ? [] : ['finance', 'revenue', 'expenses', 'salaries'],
+      analytics: this.user()?.userType === 'Doctor' ? ['reports', 'insights'] : [],
       account:
         this.user()?.userType === 'Patient'
           ? ['profile', 'family', 'medical-access', 'finance']

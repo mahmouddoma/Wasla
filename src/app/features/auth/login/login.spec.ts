@@ -1,3 +1,4 @@
+import { DoctorApi } from '../../../domains/doctors';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
@@ -28,6 +29,7 @@ describe('Login', () => {
     doctorId: 'doc-1',
     patientId: null,
   };
+  const doctorApi = { onboardingStatus: vi.fn(() => of({ approvalStatus: 'Approved' })) };
   const api = {
     login: vi.fn(() => of(sampleLoginResponse)),
     currentUser: vi.fn(() => of(sampleUser)),
@@ -47,6 +49,7 @@ describe('Login', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    doctorApi.onboardingStatus.mockReturnValue(of({ approvalStatus: 'Approved' }));
     route.snapshot.queryParamMap.get.mockReturnValue(null);
     api.login.mockReturnValue(of(sampleLoginResponse));
     api.currentUser.mockReturnValue(of(sampleUser));
@@ -60,6 +63,7 @@ describe('Login', () => {
         provideRouter([]),
         { provide: ActivatedRoute, useValue: route },
         { provide: AuthApi, useValue: api },
+        { provide: DoctorApi, useValue: doctorApi },
         { provide: AuthSession, useValue: session },
         { provide: ToastService, useValue: toast },
       ],
@@ -110,7 +114,7 @@ describe('Login', () => {
     expect(session.begin).toHaveBeenCalledWith(sampleLoginResponse);
     expect(api.currentUser).toHaveBeenCalledOnce();
     expect(session.complete).toHaveBeenCalledWith(sampleUser);
-    expect(navigate).toHaveBeenCalledWith(['/workspace']);
+    expect(navigate).toHaveBeenCalledWith(['/workspace/doctor']);
   });
 
   it('preserves a local reservation return URL after completing the session', async () => {
@@ -139,7 +143,7 @@ describe('Login', () => {
     });
     fixture.detectChanges();
     await fixture.componentInstance['onSubmit'](new Event('submit', { cancelable: true }));
-    expect(navigate).toHaveBeenCalledWith(['/workspace']);
+    expect(navigate).toHaveBeenCalledWith(['/workspace/doctor']);
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
   it('navigates to change-password when password change is required', async () => {
@@ -181,11 +185,22 @@ describe('Login', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('performs quickLogin for demo roles and navigates to destination', () => {
-    fixture.componentInstance.quickLogin('Doctor');
-    expect(session.begin).toHaveBeenCalled();
-    expect(session.complete).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/workspace']);
+  it('does not create a synthetic session when a doctor-like username fails authentication', async () => {
+    api.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
+    fixture.componentInstance['model'].set({ identifier: 'doctor1', password: 'InvalidPassword!' });
+    await fixture.componentInstance['onSubmit'](new Event('submit', { cancelable: true }));
+    expect(session.begin).not.toHaveBeenCalled();
+    expect(session.complete).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+  it('routes a pending doctor to approval even when the session advertises operational permissions', async () => {
+    doctorApi.onboardingStatus.mockReturnValue(of({ approvalStatus: 'Pending' }));
+    fixture.componentInstance['model'].set({
+      identifier: 'doctor1',
+      password: 'StrongPassword123!',
+    });
+    await fixture.componentInstance['onSubmit'](new Event('submit', { cancelable: true }));
+    expect(navigate).toHaveBeenCalledWith(['/doctor/onboarding']);
   });
 });

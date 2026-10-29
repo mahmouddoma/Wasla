@@ -1,221 +1,87 @@
-<div class="diagnostics-container">
-  <!-- Kind Switcher: Lab vs Radiology -->
-  <div class="kind-switcher">
-    <button
-      type="button"
-      class="kind-btn"
-      [class.active]="currentKind() === 'lab'"
-      (click)="setKind('lab')"
-    >
-      {{ 'diagnostics.lab' | t }}
-    </button>
-    <button
-      type="button"
-      class="kind-btn"
-      [class.active]="currentKind() === 'radiology'"
-      (click)="setKind('radiology')"
-    >
-      {{ 'diagnostics.radiology' | t }}
-    </button>
+<section class="diagnostic-history">
+  <div class="actions">
+    @for (kind of ['lab', 'radiology']; track kind) {
+      @if (
+        allowed(kind === 'lab' ? 'lab' : 'radiology', 'requests') ||
+        allowed(kind === 'lab' ? 'lab' : 'radiology', 'results') ||
+        allowed(kind === 'lab' ? 'lab' : 'radiology', 'submissions')
+      ) {
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="currentKind() === kind"
+          (click)="setKind(kind === 'lab' ? 'lab' : 'radiology')"
+        >
+          {{ 'diagnostics.' + kind | t }}
+        </button>
+      }
+    }
   </div>
-
-  <!-- Sub Tabs: Requests, Results, Submissions -->
-  <div class="subtabs-bar">
-    <button
-      type="button"
-      class="subtab-btn"
-      [class.active]="currentTab() === 'requests'"
-      (click)="setTab('requests')"
-    >
-      {{ 'doctorPatients.diagnostics.requests' | t }}
-    </button>
-    <button
-      type="button"
-      class="subtab-btn"
-      [class.active]="currentTab() === 'results'"
-      (click)="setTab('results')"
-    >
-      {{ 'doctorPatients.diagnostics.results' | t }}
-    </button>
-    <button
-      type="button"
-      class="subtab-btn"
-      [class.active]="currentTab() === 'submissions'"
-      (click)="setTab('submissions')"
-    >
-      {{ 'doctorPatients.diagnostics.submissions' | t }}
-    </button>
+  <div class="actions">
+    @for (tab of ['requests', 'results', 'submissions']; track tab) {
+      @if (
+        allowed(
+          currentKind(),
+          tab === 'requests' ? 'requests' : tab === 'results' ? 'results' : 'submissions'
+        )
+      ) {
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="currentTab() === tab"
+          (click)="
+            setTab(tab === 'requests' ? 'requests' : tab === 'results' ? 'results' : 'submissions')
+          "
+        >
+          {{ 'doctorPatients.diagnostics.' + tab | t }}
+        </button>
+      }
+    }
   </div>
-
   @if (currentTab() === 'submissions') {
-    <div class="warning-banner">
-      {{ 'doctorPatients.diagnostics.pendingWarning' | t }}
-    </div>
+    <p>{{ 'doctorRemediation.submissionHelp' | t }}</p>
   }
-
   @if (loading()) {
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <span>{{ 'common.loading' | t }}</span>
-    </div>
+    <p role="status">{{ 'common.loading' | t }}</p>
   } @else if (error()) {
-    <div class="error-state">
-      <p>{{ 'common.failedToLoad' | t }}</p>
-      <button type="button" class="btn btn-outline" (click)="loadData()">
-        {{ 'common.retry' | t }}
+    <p role="alert">{{ 'common.failedToLoad' | t }}</p>
+    <button class="btn btn-outline-secondary" (click)="loadData()">{{ 'common.retry' | t }}</button>
+  } @else {
+    <ul class="history">
+      @for (row of rows(); track row.id) {
+        <li>
+          <bdi>{{ row.date | localizedDate: language.currentLang() }}</bdi
+          ><span>{{ 'diagnostics.status.' + row.status | t }}</span
+          ><button class="btn btn-outline-secondary" (click)="openSource(row.id)">
+            {{ 'common.viewDetails' | t }}
+          </button>
+        </li>
+      } @empty {
+        <li class="empty-state">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Medicine-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>{{ 'doctorRemediation.empty' | t }}</h3>
+          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+          <button class="btn btn-outline-secondary" (click)="loadData()">
+            {{ 'common.refresh' | t }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+  @if (total() > 20) {
+    <div class="actions">
+      <button class="btn" [disabled]="page() <= 1" (click)="loadData(page() - 1)">
+        {{ 'common.previous' | t }}</button
+      ><span>{{ page() }}</span
+      ><button class="btn" [disabled]="page() * 20 >= total()" (click)="loadData(page() + 1)">
+        {{ 'common.next' | t }}
       </button>
     </div>
-  } @else {
-    <!-- Requests View -->
-    @if (currentTab() === 'requests') {
-      @if (requests().length === 0) {
-        <div class="empty-state">
-          <p>{{ 'doctorPatients.overview.noData' | t }}</p>
-        </div>
-      } @else {
-        <div class="items-list">
-          @for (req of requests(); track req.requestId) {
-            <div class="diag-card">
-              <div class="card-header">
-                <span class="req-id">#{{ req.requestId.substring(0, 8) }}</span>
-                <span class="badge badge-status" [attr.data-status]="req.status">{{ req.status }}</span>
-              </div>
-              <div class="card-body">
-                <div class="detail-row">
-                  <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
-                  <span class="val">{{ req.requestedAtUtc | localizedDate: language.currentLang() }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">{{ 'doctorPatients.filter.practice' | t }}:</span>
-                  <span class="val">{{ req.practiceId }}</span>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    }
-
-    <!-- Results View -->
-    @if (currentTab() === 'results') {
-      @if (results().length === 0) {
-        <div class="empty-state">
-          <p>{{ 'doctorPatients.overview.noData' | t }}</p>
-        </div>
-      } @else {
-        <div class="items-list">
-          @for (res of results(); track res.resultId) {
-            <div class="diag-card">
-              <div class="card-header">
-                <span class="req-id">#{{ res.resultId.substring(0, 8) }}</span>
-                <span class="badge badge-success">{{ res.current.status }}</span>
-              </div>
-              <div class="card-body">
-                <div class="detail-row">
-                  <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
-                  <span class="val">{{ (res.current.externalReportDate || res.current.reviewedAtUtc) | localizedDate: language.currentLang() }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">{{ 'doctorPatients.attendance.ticketNum' | t }}:</span>
-                  <span class="val">#{{ res.requestId.substring(0, 8) }}</span>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    }
-
-    <!-- Submissions View -->
-    @if (currentTab() === 'submissions') {
-      @if (submissions().length === 0) {
-        <div class="empty-state">
-          <p>{{ 'doctorPatients.overview.noData' | t }}</p>
-        </div>
-      } @else {
-        <div class="items-list">
-          @for (sub of submissions(); track sub.submissionId) {
-            <div class="diag-card">
-              <div class="card-header">
-                <span class="req-id">#{{ sub.submissionId.substring(0, 8) }}</span>
-                <span class="badge badge-warning">{{ sub.status }}</span>
-              </div>
-              <div class="card-body">
-                <div class="detail-row">
-                  <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
-                  <span class="val">{{ sub.submittedAtUtc | localizedDate: language.currentLang() }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">{{ 'doctorPatients.attendance.ticketNum' | t }}:</span>
-                  <span class="val">#{{ sub.requestId.substring(0, 8) }}</span>
-                </div>
-              </div>
-              @if (!isHistoricalOnly() && sub.status === 'PendingReview') {
-                <div class="card-actions">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline"
-                    (click)="openReview(sub, 'accept')"
-                  >
-                    {{ 'doctorPatients.diagnostics.accept' | t }}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline text-danger"
-                    (click)="openReview(sub, 'reject')"
-                  >
-                    {{ 'doctorPatients.diagnostics.reject' | t }}
-                  </button>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      }
-    }
   }
-
-  <!-- Review Modal -->
-  @if (reviewingSubmission()) {
-    <div class="modal-backdrop" (click)="closeReview()">
-      <div class="modal-dialog" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h4>
-            {{ reviewAction() === 'accept' ? ('doctorPatients.diagnostics.accept' | t) : ('doctorPatients.diagnostics.reject' | t) }}
-          </h4>
-          <button type="button" class="close-btn" (click)="closeReview()">&times;</button>
-        </div>
-        <div class="modal-body">
-          @if (reviewAction() === 'reject') {
-            <div class="form-group">
-              <label class="form-label">{{ 'doctorPatients.diagnostics.rejectReasonLabel' | t }}</label>
-              <textarea
-                class="form-control"
-                rows="3"
-                [(ngModel)]="reviewReason"
-                [placeholder]="'doctorPatients.diagnostics.rejectReasonPlaceholder' | t"
-              ></textarea>
-            </div>
-          } @else {
-            <p>{{ 'doctorPatients.diagnostics.confirmAccept' | t }}</p>
-          }
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeReview()" [disabled]="reviewingLoading()">
-            {{ 'common.cancel' | t }}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            [class.btn-primary]="reviewAction() === 'accept'"
-            [class.btn-danger]="reviewAction() === 'reject'"
-            [disabled]="reviewingLoading() || (reviewAction() === 'reject' && !reviewReason().trim())"
-            (click)="submitReview()"
-          >
-            {{ reviewAction() === 'accept' ? ('doctorPatients.diagnostics.accept' | t) : ('doctorPatients.diagnostics.reject' | t) }}
-          </button>
-        </div>
-      </div>
-    </div>
-  }
-</div>
+</section>

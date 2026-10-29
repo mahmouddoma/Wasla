@@ -3,12 +3,17 @@ import { PatientPrescriptionsListComponent } from './patient-prescriptions-list.
 import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
 import { PrescriptionsApi } from '../../../../domains/prescriptions';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { of, throwError } from 'rxjs';
+import { provideRouter } from '@angular/router';
 
 describe('PatientPrescriptionsListComponent', () => {
   let component: PatientPrescriptionsListComponent;
   let fixture: ComponentFixture<PatientPrescriptionsListComponent>;
-  let doctorPatientsApi: { prescriptions: ReturnType<typeof vi.fn>; prescriptionPdf: ReturnType<typeof vi.fn> };
+  let doctorPatientsApi: {
+    prescriptions: ReturnType<typeof vi.fn>;
+    prescriptionPdf: ReturnType<typeof vi.fn>;
+  };
   let prescriptionsApi: { versions: ReturnType<typeof vi.fn> };
   let toast: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
 
@@ -28,13 +33,26 @@ describe('PatientPrescriptionsListComponent', () => {
 
   beforeEach(async () => {
     doctorPatientsApi = {
-      prescriptions: vi.fn().mockReturnValue(of({ items: [mockPrescription], totalCount: 1, pageNumber: 1, pageSize: 10 })),
-      prescriptionPdf: vi.fn().mockReturnValue(of(new Blob(['%PDF-1.4'], { type: 'application/pdf' }))),
+      prescriptions: vi
+        .fn()
+        .mockReturnValue(
+          of({ items: [mockPrescription], totalCount: 1, pageNumber: 1, pageSize: 10 }),
+        ),
+      prescriptionPdf: vi
+        .fn()
+        .mockReturnValue(of(new Blob(['%PDF-1.4'], { type: 'application/pdf' }))),
     };
     prescriptionsApi = {
-      versions: vi.fn().mockReturnValue(of([
-        { versionNumber: 1, status: 'Finalized', finalizedOnUtc: '2026-10-28T08:00:00Z', items: [] },
-      ])),
+      versions: vi.fn().mockReturnValue(
+        of([
+          {
+            versionNumber: 1,
+            status: 'Finalized',
+            finalizedAtUtc: '2026-10-28T08:00:00Z',
+            items: [],
+          },
+        ]),
+      ),
     };
     toast = {
       error: vi.fn(),
@@ -44,9 +62,11 @@ describe('PatientPrescriptionsListComponent', () => {
     await TestBed.configureTestingModule({
       imports: [PatientPrescriptionsListComponent],
       providers: [
+        provideRouter([]),
         { provide: DoctorPatientsApi, useValue: doctorPatientsApi },
         { provide: PrescriptionsApi, useValue: prescriptionsApi },
         { provide: ToastService, useValue: toast },
+        { provide: AuthSession, useValue: { hasPermission: () => true } },
       ],
     }).compileComponents();
 
@@ -58,7 +78,10 @@ describe('PatientPrescriptionsListComponent', () => {
 
   it('creates component and loads prescriptions', () => {
     expect(component).toBeTruthy();
-    expect(doctorPatientsApi.prescriptions).toHaveBeenCalledWith('pat-1', { pageNumber: 1, pageSize: 10 });
+    expect(doctorPatientsApi.prescriptions).toHaveBeenCalledWith('pat-1', {
+      pageNumber: 1,
+      pageSize: 10,
+    });
     expect(component.prescriptions().length).toBe(1);
     expect(component.loading()).toBe(false);
   });
@@ -70,14 +93,16 @@ describe('PatientPrescriptionsListComponent', () => {
     component.viewPdf(mockPrescription);
 
     expect(doctorPatientsApi.prescriptionPdf).toHaveBeenCalledWith('rx-1', 1, 'inline');
-    expect(createUrlSpy).toHaveBeenCalled();
-    expect(openSpy).toHaveBeenCalledWith('blob:test', '_blank');
+    expect(component.pdfBlob()?.type).toBe('application/pdf');
+    expect(openSpy).not.toHaveBeenCalled();
   });
 
   it('loads version history', () => {
     component.viewVersions(mockPrescription);
     expect(prescriptionsApi.versions).toHaveBeenCalledWith('rx-1');
     expect(component.selectedVersions()?.length).toBe(1);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.v-date')?.textContent.trim()).toBeTruthy();
 
     component.closeVersionsModal();
     expect(component.selectedVersions()).toBeNull();
@@ -90,4 +115,3 @@ describe('PatientPrescriptionsListComponent', () => {
     expect(component.loading()).toBe(false);
   });
 });
-

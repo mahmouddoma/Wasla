@@ -54,7 +54,9 @@ function createMockFinanceApi(overrides: Partial<MockFinanceApi> = {}): MockFina
   };
 }
 
-type MockReceptionContext = Partial<Record<keyof ReceptionPracticeContext, ReturnType<typeof vi.fn> | (() => unknown)>>;
+type MockReceptionContext = Partial<
+  Record<keyof ReceptionPracticeContext, ReturnType<typeof vi.fn> | (() => unknown)>
+>;
 
 function makeItem(id: string): FinancialTransactionItem {
   return {
@@ -167,7 +169,9 @@ describe('FinanceWorkspace — Patient Actor & Baseline', () => {
         {
           provide: FinanceApi,
           useValue: {
-            myTransactions: vi.fn(() => of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 })),
+            myTransactions: vi.fn(() =>
+              of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+            ),
             myPaymentReceipt: vi.fn(() => of(samplePaymentReceipt)),
           },
         },
@@ -337,10 +341,13 @@ describe('Reception Finance — Clinic Context & Permissions', () => {
     grants = ['PracticePayments.View'];
     selectedClinicId = 'p1';
     await createComponent();
-    expect(api.practiceTransactions).toHaveBeenCalledWith('p1', expect.objectContaining({
-      fromDate: expect.any(String),
-      toDate: expect.any(String),
-    }));
+    expect(api.practiceTransactions).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({
+        fromDate: expect.any(String),
+        toDate: expect.any(String),
+      }),
+    );
   });
 
   it('clears active detail, receipt and list on clinic switch A -> B', async () => {
@@ -424,8 +431,18 @@ describe('Async & Race Hardening', () => {
   });
 
   it('ignores late transaction list response from Clinic A after switching to Clinic B', async () => {
-    const listA$ = new Subject<{ items: FinancialTransactionItem[]; totalCount: number; pageNumber: number; pageSize: number }>();
-    const listB$ = new Subject<{ items: FinancialTransactionItem[]; totalCount: number; pageNumber: number; pageSize: number }>();
+    const listA$ = new Subject<{
+      items: FinancialTransactionItem[];
+      totalCount: number;
+      pageNumber: number;
+      pageSize: number;
+    }>();
+    const listB$ = new Subject<{
+      items: FinancialTransactionItem[];
+      totalCount: number;
+      pageNumber: number;
+      pageSize: number;
+    }>();
     api.practiceTransactions!.mockReturnValueOnce(listA$).mockReturnValueOnce(listB$);
 
     const fixture = TestBed.createComponent(FinanceWorkspace);
@@ -458,7 +475,9 @@ describe('Async & Race Hardening', () => {
   });
 
   it('newer detail request wins over earlier pending detail request', async () => {
-    api.practiceTransactions.mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
+    api.practiceTransactions.mockReturnValue(
+      of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+    );
     const detail1$ = new Subject<PaymentDetail>();
     const detail2$ = new Subject<PaymentDetail>();
     api.paymentDetail.mockReturnValueOnce(detail1$).mockReturnValueOnce(detail2$);
@@ -484,7 +503,9 @@ describe('Async & Race Hardening', () => {
   });
 
   it('discards stale 403 error from Clinic A and does not refresh Reception context in Clinic B', async () => {
-    api.practiceTransactions.mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
+    api.practiceTransactions.mockReturnValue(
+      of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+    );
     const fixture = TestBed.createComponent(FinanceWorkspace);
     await fixture.whenStable();
     const c = fixture.componentInstance;
@@ -500,7 +521,9 @@ describe('Async & Race Hardening', () => {
   });
 
   it('current-scope 403 triggers refresh and clears sensitive state', async () => {
-    api.practiceTransactions.mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
+    api.practiceTransactions.mockReturnValue(
+      of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+    );
     const fixture = TestBed.createComponent(FinanceWorkspace);
     await fixture.whenStable();
     const c = fixture.componentInstance;
@@ -536,7 +559,9 @@ describe('Load, Error & Empty States', () => {
           provide: ReceptionPracticeContext,
           useValue: {
             refresh: async () => undefined,
-            practices: () => [{ id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View'] }],
+            practices: () => [
+              { id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View'] },
+            ],
             currentPracticeId: () => 'p1',
             select: vi.fn(),
             ensureLoaded: async () => undefined,
@@ -551,7 +576,9 @@ describe('Load, Error & Empty States', () => {
   });
 
   it('distinguishes load failure from empty state and provides retry action', async () => {
-    api.practiceTransactions.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    api.practiceTransactions.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 })),
+    );
     const fixture = TestBed.createComponent(FinanceWorkspace);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -562,7 +589,9 @@ describe('Load, Error & Empty States', () => {
     expect(fixture.nativeElement.querySelector('.cell-empty-table')).toBeNull();
 
     // Test retry
-    api.practiceTransactions.mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
+    api.practiceTransactions.mockReturnValue(
+      of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+    );
     c['retryLoad']();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -571,7 +600,9 @@ describe('Load, Error & Empty States', () => {
   });
 
   it('renders genuine empty today state without fake filter reset recommendation', async () => {
-    api.practiceTransactions.mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
+    api.practiceTransactions.mockReturnValue(
+      of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+    );
     const fixture = TestBed.createComponent(FinanceWorkspace);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -581,7 +612,9 @@ describe('Load, Error & Empty States', () => {
   });
 
   it('renders filtered empty state with reset filters button when filters active', async () => {
-    api.practiceTransactions.mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
+    api.practiceTransactions.mockReturnValue(
+      of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+    );
     const fixture = TestBed.createComponent(FinanceWorkspace);
     await fixture.whenStable();
     const c = fixture.componentInstance;
@@ -599,7 +632,9 @@ describe('Mutation Idempotency & Retained Intent Keys', () => {
 
   beforeEach(() => {
     api = createMockFinanceApi({
-      practiceTransactions: vi.fn(() => of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 })),
+      practiceTransactions: vi.fn(() =>
+        of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+      ),
       paymentDetail: vi.fn(() => of(samplePayment)),
       refundPayment: vi.fn(),
       correctPayment: vi.fn(),
@@ -619,7 +654,17 @@ describe('Mutation Idempotency & Retained Intent Keys', () => {
           provide: ReceptionPracticeContext,
           useValue: {
             refresh: async () => undefined,
-            practices: () => [{ id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View', 'PracticePayments.Refund', 'PracticePayments.Correct'] }],
+            practices: () => [
+              {
+                id: 'p1',
+                isActive: true,
+                permissionCodes: [
+                  'PracticePayments.View',
+                  'PracticePayments.Refund',
+                  'PracticePayments.Correct',
+                ],
+              },
+            ],
             currentPracticeId: () => 'p1',
             select: vi.fn(),
             ensureLoaded: async () => undefined,
@@ -662,7 +707,9 @@ describe('Mutation Idempotency & Retained Intent Keys', () => {
     expect(key1).toBeTruthy();
 
     // Retry with exact same data
-    api.refundPayment.mockReturnValueOnce(of({ refundId: 'r1', transactionNumber: 'REF-1', amount: 300, currencyCode: 'EGP' }));
+    api.refundPayment.mockReturnValueOnce(
+      of({ refundId: 'r1', transactionNumber: 'REF-1', amount: 300, currencyCode: 'EGP' }),
+    );
     c['refund']();
     await fixture.whenStable();
 
@@ -697,7 +744,9 @@ describe('409 Concurrency Handling', () => {
 
   beforeEach(() => {
     api = createMockFinanceApi({
-      practiceTransactions: vi.fn(() => of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 })),
+      practiceTransactions: vi.fn(() =>
+        of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+      ),
       paymentDetail: vi.fn(),
       correctPayment: vi.fn(),
       refundPayment: vi.fn(),
@@ -717,7 +766,17 @@ describe('409 Concurrency Handling', () => {
           provide: ReceptionPracticeContext,
           useValue: {
             refresh: async () => undefined,
-            practices: () => [{ id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View', 'PracticePayments.Refund', 'PracticePayments.Correct'] }],
+            practices: () => [
+              {
+                id: 'p1',
+                isActive: true,
+                permissionCodes: [
+                  'PracticePayments.View',
+                  'PracticePayments.Refund',
+                  'PracticePayments.Correct',
+                ],
+              },
+            ],
             currentPracticeId: () => 'p1',
             select: vi.fn(),
             ensureLoaded: async () => undefined,
@@ -790,7 +849,9 @@ describe('Refund Flow & Done State', () => {
 
   beforeEach(() => {
     api = createMockFinanceApi({
-      practiceTransactions: vi.fn(() => of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 })),
+      practiceTransactions: vi.fn(() =>
+        of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+      ),
       paymentDetail: vi.fn(() => of(samplePayment)),
       refundPayment: vi.fn(() =>
         of({
@@ -820,7 +881,13 @@ describe('Refund Flow & Done State', () => {
           provide: ReceptionPracticeContext,
           useValue: {
             refresh: async () => undefined,
-            practices: () => [{ id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View', 'PracticePayments.Refund'] }],
+            practices: () => [
+              {
+                id: 'p1',
+                isActive: true,
+                permissionCodes: ['PracticePayments.View', 'PracticePayments.Refund'],
+              },
+            ],
             currentPracticeId: () => 'p1',
             select: vi.fn(),
             ensureLoaded: async () => undefined,
@@ -868,7 +935,9 @@ describe('Audit History Formatting', () => {
           provide: ReceptionPracticeContext,
           useValue: {
             refresh: async () => undefined,
-            practices: () => [{ id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View'] }],
+            practices: () => [
+              { id: 'p1', isActive: true, permissionCodes: ['PracticePayments.View'] },
+            ],
             currentPracticeId: () => 'p1',
             select: vi.fn(),
             ensureLoaded: async () => undefined,
@@ -933,7 +1002,10 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { data: { actor: 'Doctor', view: 'transactions' }, queryParamMap: { get: () => null } },
+            snapshot: {
+              data: { actor: 'Doctor', view: 'transactions' },
+              queryParamMap: { get: () => null },
+            },
           },
         },
         {
@@ -942,8 +1014,19 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
             doctorTransactions: () => of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
           },
         },
-        { provide: ReceptionPracticeContext, useValue: { refresh: async () => undefined, practices: () => [], currentPracticeId: () => '', select: () => undefined } },
-        { provide: DoctorPracticesApi, useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) } },
+        {
+          provide: ReceptionPracticeContext,
+          useValue: {
+            refresh: async () => undefined,
+            practices: () => [],
+            currentPracticeId: () => '',
+            select: () => undefined,
+          },
+        },
+        {
+          provide: DoctorPracticesApi,
+          useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) },
+        },
         { provide: AuthSession, useValue: { hasPermission: () => true } },
       ],
     });
@@ -955,15 +1038,24 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
   });
 
   it('initializes in revenue view on /doctor/revenue and loads dashboard', async () => {
-    const doctorRevenue = vi.fn(() => of({
-      summary: { grossRevenue: 1000, totalRefunds: 100, netRevenue: 900, paymentCount: 5, refundCount: 1, currencyCode: 'EGP' },
-      dailyTrend: [],
-      byPractice: [],
-      paymentMethods: [],
-      refundMethods: [],
-      bySegment: [],
-      byVisitType: [],
-    }));
+    const doctorRevenue = vi.fn(() =>
+      of({
+        summary: {
+          grossRevenue: 1000,
+          totalRefunds: 100,
+          netRevenue: 900,
+          paymentCount: 5,
+          refundCount: 1,
+          currencyCode: 'EGP',
+        },
+        dailyTrend: [],
+        byPractice: [],
+        paymentMethods: [],
+        refundMethods: [],
+        bySegment: [],
+        byVisitType: [],
+      }),
+    );
 
     TestBed.configureTestingModule({
       imports: [FinanceWorkspace],
@@ -972,15 +1064,29 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { data: { actor: 'Doctor', view: 'revenue' }, queryParamMap: { get: () => null } },
+            snapshot: {
+              data: { actor: 'Doctor', view: 'revenue' },
+              queryParamMap: { get: () => null },
+            },
           },
         },
         {
           provide: FinanceApi,
           useValue: { doctorRevenue },
         },
-        { provide: ReceptionPracticeContext, useValue: { refresh: async () => undefined, practices: () => [], currentPracticeId: () => '', select: () => undefined } },
-        { provide: DoctorPracticesApi, useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) } },
+        {
+          provide: ReceptionPracticeContext,
+          useValue: {
+            refresh: async () => undefined,
+            practices: () => [],
+            currentPracticeId: () => '',
+            select: () => undefined,
+          },
+        },
+        {
+          provide: DoctorPracticesApi,
+          useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) },
+        },
         { provide: AuthSession, useValue: { hasPermission: () => true } },
       ],
     });
@@ -989,80 +1095,5 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance['view']()).toBe('revenue');
     expect(doctorRevenue).toHaveBeenCalled();
-  });
-
-  describe('Recurring Expense Plan CRUD', () => {
-    it('should open and close recurring expense plan drawer with default values', async () => {
-      TestBed.configureTestingModule({
-        providers: [
-          provideRouter([]),
-          {
-            provide: ActivatedRoute,
-            useValue: {
-              snapshot: { data: { actor: 'Doctor', view: 'expenses' }, queryParamMap: { get: () => null } },
-            },
-          },
-          { provide: FinanceApi, useValue: createMockFinanceApi() },
-          { provide: ReceptionPracticeContext, useValue: { refresh: async () => undefined, practices: () => [], currentPracticeId: () => '', select: () => undefined } },
-          { provide: DoctorPracticesApi, useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) } },
-          { provide: AuthSession, useValue: { hasPermission: () => true } },
-        ],
-      });
-
-      const fixture = TestBed.createComponent(FinanceWorkspace);
-      const comp = fixture.componentInstance;
-      await fixture.whenStable();
-
-      expect(comp['isExpensePlanDrawerOpen']()).toBe(false);
-
-      comp['openCreateExpensePlanDrawer']();
-      expect(comp['isExpensePlanDrawerOpen']()).toBe(true);
-      expect(comp['editingExpensePlan']()).toBeNull();
-      expect(comp['planCategory']()).toBe('Utilities');
-      expect(comp['planCadence']()).toBe('Monthly');
-
-      comp['closeExpensePlanDrawer']();
-      expect(comp['isExpensePlanDrawerOpen']()).toBe(false);
-    });
-
-    it('should populate drawer when editing an existing plan', async () => {
-      TestBed.configureTestingModule({
-        providers: [
-          provideRouter([]),
-          {
-            provide: ActivatedRoute,
-            useValue: {
-              snapshot: { data: { actor: 'Doctor', view: 'expenses' }, queryParamMap: { get: () => null } },
-            },
-          },
-          { provide: FinanceApi, useValue: createMockFinanceApi() },
-          { provide: ReceptionPracticeContext, useValue: { refresh: async () => undefined, practices: () => [], currentPracticeId: () => '', select: () => undefined } },
-          { provide: DoctorPracticesApi, useValue: { list: () => of([{ id: 'd-p1', nameAr: 'عيادة دكتور', isActive: true }]) } },
-          { provide: AuthSession, useValue: { hasPermission: () => true } },
-        ],
-      });
-
-      const fixture = TestBed.createComponent(FinanceWorkspace);
-      const comp = fixture.componentInstance;
-      await fixture.whenStable();
-
-      const samplePlan = {
-        id: 'plan-99',
-        category: 'Rent',
-        cadence: 'Monthly',
-        dueDay: 5,
-        amount: 5000,
-        amountPolicy: 'Fixed',
-        effectiveFrom: '2026-10-01',
-        descriptionAr: 'إيجار الشهر',
-      };
-
-      comp['openEditExpensePlanDrawer'](samplePlan);
-      expect(comp['isExpensePlanDrawerOpen']()).toBe(true);
-      expect(comp['editingExpensePlan']()).toEqual(samplePlan);
-      expect(comp['planCategory']()).toBe('Rent');
-      expect(comp['planAmount']()).toBe(5000);
-      expect(comp['planDueDay']()).toBe(5);
-    });
   });
 });

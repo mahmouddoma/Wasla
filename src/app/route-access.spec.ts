@@ -1,3 +1,5 @@
+import { of } from 'rxjs';
+import { DoctorApi } from './domains/doctors';
 import { TestBed } from '@angular/core/testing';
 import { Data, Route, Router, Routes, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
@@ -122,6 +124,10 @@ describe('Complete route authorization matrix', () => {
       providers: [
         provideRouter(configuration),
         {
+          provide: DoctorApi,
+          useValue: { onboardingStatus: () => of({ approvalStatus: 'Approved' }) },
+        },
+        {
           provide: ReceptionPracticeContext,
           useValue: {
             ensureLoaded,
@@ -153,7 +159,11 @@ describe('Complete route authorization matrix', () => {
       login(actor, []);
       delegated = [];
       for (const entry of entries.filter((entry) => entry.actor === actor)) {
-        const actorOnly = entry.url === '/patient/reservations';
+        const actorOnly = [
+          '/patient/reservations',
+          '/reception/worklist',
+          '/reception/handovers',
+        ].includes(entry.url);
         await router.navigateByUrl('/privacy');
         await router.navigateByUrl(entry.url);
         if (actorOnly) expect(router.url, entry.url).toBe(entry.url);
@@ -258,6 +268,17 @@ describe('Complete route authorization matrix', () => {
     login('Doctor', []);
     await router.navigateByUrl('/doctor/practices');
     expect(router.url).toBe('/workspace/doctor');
+    vi.spyOn(TestBed.inject(DoctorApi), 'onboardingStatus').mockReturnValue(
+      of({
+        doctorId: 'doctor-id',
+        approvalStatus: 'Pending',
+        rejectionReason: null,
+        suspensionReason: null,
+        approvedOnUtc: null,
+        hasProfileImage: false,
+        rowVersion: 'rv',
+      }),
+    );
     login('Doctor', ['DoctorOnboarding.ViewOwn']);
     await router.navigateByUrl('/doctor/queue');
     expect(router.url).toBe('/doctor/onboarding');

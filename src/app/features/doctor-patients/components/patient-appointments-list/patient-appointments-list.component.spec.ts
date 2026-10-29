@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PatientAppointmentsListComponent } from './patient-appointments-list.component';
 import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
+import { Router, provideRouter } from '@angular/router';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { ReservationsApi } from '../../../../domains/reservations';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { of, throwError } from 'rxjs';
@@ -45,6 +47,8 @@ describe('PatientAppointmentsListComponent', () => {
     await TestBed.configureTestingModule({
       imports: [PatientAppointmentsListComponent],
       providers: [
+        provideRouter([]),
+        { provide: AuthSession, useValue: { hasPermission: () => true } },
         { provide: DoctorPatientsApi, useValue: doctorPatientsApi },
         { provide: ReservationsApi, useValue: reservationsApi },
         { provide: ToastService, useValue: toast },
@@ -67,24 +71,13 @@ describe('PatientAppointmentsListComponent', () => {
     expect(component.loading()).toBe(false);
   });
 
-  it('cancels active appointment with reason', () => {
-    component.openCancel(mockAppointment);
-    expect(component.cancellingReservation()?.reservationId).toBe('res-1');
-
-    component.cancelReason.set('Patient requested cancellation');
-    component.confirmCancel();
-
-    expect(reservationsApi.cancel).toHaveBeenCalledWith(
-      { actor: 'Doctor', practiceId: 'prac-1' },
-      'res-1',
-      {
-        reasonCode: 'DoctorCancelled',
-        comment: 'Patient requested cancellation',
-        rowVersion: 'AAAA==',
-      },
-      expect.any(String),
-    );
-    expect(toast.success).toHaveBeenCalledWith('تم إلغاء الموعد بنجاح');
+  it('opens the original reservation workflow with source IDs instead of sending a fabricated revision', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    component.viewReservation(mockAppointment);
+    expect(navigate).toHaveBeenCalledWith(['/doctor/reservations'], {
+      queryParams: { practiceId: 'prac-1', reservationId: 'res-1', returnPatientId: 'pat-1' },
+    });
+    expect(reservationsApi.cancel).not.toHaveBeenCalled();
   });
 
   it('handles load error', () => {

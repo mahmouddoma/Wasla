@@ -13,6 +13,14 @@
     </div>
   } @else if (attendances().length === 0) {
     <div class="empty-state">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Medical prescription-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
       <p>{{ 'doctorPatients.overview.noData' | t }}</p>
     </div>
   } @else {
@@ -35,7 +43,9 @@
               <td>
                 <span class="ticket-number">#{{ item.ticketNumber }}</span>
                 @if (item.isArchived) {
-                  <span class="badge badge-archived">{{ 'doctorPatients.attendance.archived' | t }}</span>
+                  <span class="badge badge-archived">{{
+                    'doctorPatients.attendance.archived' | t
+                  }}</span>
                 }
               </td>
               <td>{{ item.practiceName || item.practiceId }}</td>
@@ -43,13 +53,13 @@
               <td>{{ item.checkInAtUtc | localizedDate: language.currentLang() }}</td>
               <td>
                 <span class="badge badge-status" [attr.data-status]="item.ticketStatus">
-                  {{ item.ticketStatus }}
+                  {{ 'tickets.status.' + item.ticketStatus | t }}
                 </span>
               </td>
               <td>
                 @if (item.encounterId) {
                   <span class="badge badge-encounter" [attr.data-status]="item.encounterStatus">
-                    {{ item.encounterStatus }}
+                    {{ 'encounters.status.' + item.encounterStatus | t }}
                   </span>
                 } @else {
                   <span class="text-muted">{{ 'doctorPatients.attendance.noEncounter' | t }}</span>
@@ -90,7 +100,7 @@
           [disabled]="pageNumber() <= 1"
           (click)="onPageChange(pageNumber() - 1)"
         >
-          &larr;
+          {{ 'common.previous' | t }}
         </button>
         <span class="page-info">{{ pageNumber() }}</span>
         <button
@@ -99,44 +109,47 @@
           [disabled]="pageNumber() * pageSize >= totalCount()"
           (click)="onPageChange(pageNumber() + 1)"
         >
-          &rarr;
+          {{ 'common.next' | t }}
         </button>
       </div>
     }
   }
 
-  @if (selectedTicket()) {
-    <div class="modal-backdrop" (click)="closeTicketModal()">
-      <div class="modal-dialog" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h4>{{ 'doctorPatients.attendance.viewTicket' | t }} #{{ selectedTicket()?.ticketNumber }}</h4>
-          <button type="button" class="close-btn" (click)="closeTicketModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="info-row">
-            <span class="label">{{ 'doctorPatients.attendance.ticketStatus' | t }}:</span>
-            <span class="val">{{ selectedTicket()?.status }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
-            <span class="val">{{ selectedTicket()?.businessDate }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">{{ 'doctorPatients.attendance.checkInTime' | t }}:</span>
-            <span class="val">{{ selectedTicket()?.checkInTimeUtc | localizedDate: language.currentLang() }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">{{ 'doctorPatients.attendance.source' | t }}:</span>
-            <span class="val">{{ selectedTicket()?.source }}</span>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeTicketModal()">
-            {{ 'common.close' | t }}
-          </button>
-        </div>
-      </div>
+  <app-side-drawer
+    [opened]="!!selectedTicket()"
+    [title]="'doctorPatients.attendance.viewTicket' | t"
+    (closed)="closeTicketModal()"
+  >
+    <div class="info-row">
+      <span class="label">{{ 'doctorPatients.attendance.ticketStatus' | t }}:</span>
+      <span class="val">{{ 'tickets.status.' + selectedTicket()?.status | t }}</span>
     </div>
-  }
+    <div class="info-row">
+      <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
+      <span class="val">{{ selectedTicket()?.businessDate }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">{{ 'doctorPatients.attendance.checkInTime' | t }}:</span>
+      <span class="val">{{
+        selectedTicket()?.checkInTimeUtc | localizedDate: language.currentLang()
+      }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">{{ 'doctorPatients.attendance.source' | t }}:</span>
+      <span class="val">{{ 'tickets.source.' + (selectedTicket()?.source || 'unknown') | t }}</span>
+    </div>
+    @if (selectedTicket()?.timeline?.length) {
+      <h3>{{ 'doctorRemediation.ticketTimeline' | t }}</h3>
+      <ol>
+        @for (event of selectedTicket()?.timeline; track event.eventId) {
+          <li class="info-row">
+            <span>{{ ticketEventLabel(event.eventType) }}</span>
+            <time class="val" dir="ltr">{{
+              event.occurredAtUtc | localizedDate: language.currentLang()
+            }}</time>
+          </li>
+        }
+      </ol>
+    }
+  </app-side-drawer>
 </div>
-

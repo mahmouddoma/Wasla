@@ -103,6 +103,37 @@ describe('Encounter workspace workflow', () => {
     store.practiceId.set('p1');
     store.detail.set(encounterFixture);
   });
+  it('denies writes when source capabilities are missing even for Doctor role', async () => {
+    store.detail.set({
+      ...encounterFixture,
+      capabilities: {} as typeof encounterFixture.capabilities,
+    });
+    expect(store.canEditNotes()).toBe(false);
+    expect(store.canManageDiagnoses()).toBe(false);
+    expect(store.canComplete()).toBe(false);
+    await store.saveNotes('Denied');
+    await store.complete();
+    expect(api.updateNotes).not.toHaveBeenCalled();
+    expect(tickets.complete).not.toHaveBeenCalled();
+  });
+  it('opens an owned closed practice as history and hides all write actions', async () => {
+    practiceApi.list.mockReturnValue(
+      of([{ id: 'p1', nameAr: 'Clinic', nameEn: 'Clinic', isActive: false }]),
+    );
+    await store.initialize(true, 'p1', 'e1');
+    expect(api.details).toHaveBeenCalledWith('p1', 'e1');
+    expect(store.historical()).toBe(true);
+    expect(store.canEditNotes()).toBe(false);
+    expect(store.canComplete()).toBe(false);
+  });
+  it('does not replace an unavailable source practice with the first active practice', async () => {
+    practiceApi.list.mockReturnValue(
+      of([{ id: 'active', nameAr: 'Clinic', nameEn: 'Clinic', isActive: true }]),
+    );
+    await store.initialize(true, 'closed-source', 'e1');
+    expect(api.details).not.toHaveBeenCalled();
+    expect(store.failed()).toBe(true);
+  });
   it('uses updated encounter versions for consecutive notes and diagnosis mutations', async () => {
     api.updateNotes.mockReturnValue(of({ ...encounterFixture, rowVersion: 'ev2' }));
     api.addDiagnosis.mockReturnValue(of({ ...encounterFixture, rowVersion: 'ev3' }));

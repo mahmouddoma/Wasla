@@ -34,18 +34,24 @@ describe('PatientAttendanceListComponent', () => {
 
   beforeEach(async () => {
     doctorPatientsApi = {
-      attendances: vi.fn().mockReturnValue(of({ items: [mockAttendance], totalCount: 1, pageNumber: 1, pageSize: 10 })),
+      attendances: vi
+        .fn()
+        .mockReturnValue(
+          of({ items: [mockAttendance], totalCount: 1, pageNumber: 1, pageSize: 10 }),
+        ),
     };
     ticketsApi = {
-      ticket: vi.fn().mockReturnValue(of({
-        ticketId: 't-1',
-        ticketNumber: 42,
-        status: 'Completed',
-        businessDate: '2026-10-28',
-        checkInTimeUtc: '2026-10-28T08:00:00Z',
-        source: 'WalkIn',
-        checkInMode: 'Kiosk',
-      })),
+      ticket: vi.fn().mockReturnValue(
+        of({
+          ticketId: 't-1',
+          ticketNumber: 42,
+          status: 'Completed',
+          businessDate: '2026-10-28',
+          checkInTimeUtc: '2026-10-28T08:00:00Z',
+          source: 'WalkIn',
+          checkInMode: 'Kiosk',
+        }),
+      ),
     };
     toast = {
       error: vi.fn(),
@@ -73,7 +79,10 @@ describe('PatientAttendanceListComponent', () => {
 
   it('creates component and loads attendances', () => {
     expect(component).toBeTruthy();
-    expect(doctorPatientsApi.attendances).toHaveBeenCalledWith('pat-1', { pageNumber: 1, pageSize: 10 });
+    expect(doctorPatientsApi.attendances).toHaveBeenCalledWith('pat-1', {
+      pageNumber: 1,
+      pageSize: 10,
+    });
     expect(component.attendances().length).toBe(1);
     expect(component.loading()).toBe(false);
   });
@@ -99,6 +108,22 @@ describe('PatientAttendanceListComponent', () => {
     });
   });
 
+  it('renders the immutable source timeline without mutation controls', () => {
+    ticketsApi.ticket.mockReturnValue(
+      of({
+        status: 'Completed',
+        timeline: [
+          { eventId: 'evt-1', eventType: 'Completed', occurredAtUtc: '2026-10-28T09:00:00Z' },
+        ],
+      }),
+    );
+    component.inspectTicket(mockAttendance);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('ol li')?.textContent).toContain(
+      component.ticketEventLabel('Completed'),
+    );
+    expect(component.ticketEventLabel('UnknownFutureEvent')).not.toContain('UnknownFutureEvent');
+  });
   it('handles load error', () => {
     doctorPatientsApi.attendances.mockReturnValue(throwError(() => new Error('Network error')));
     component.loadAttendances();
@@ -106,4 +131,3 @@ describe('PatientAttendanceListComponent', () => {
     expect(component.loading()).toBe(false);
   });
 });
-

@@ -1,0 +1,338 @@
+<main class="directory-workspace doctor-dashboard">
+  <app-page-header
+    [heading]="'doctorRemediation.dashboard' | t"
+    [description]="'doctorRemediation.dashboardHelp' | t"
+    icon="workspace"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="refresh()"
+  />
+
+  @if (canView()) {
+    <!-- Filters -->
+    <section class="dashboard-panel filter-panel" [attr.aria-label]="'common.search' | t">
+      <div class="section-heading">
+        <div class="section-heading__content">
+          <span class="section-heading__icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 7h16M7 12h10M10 17h4"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <h2>{{ 'common.search' | t }}</h2>
+        </div>
+      </div>
+
+      <form class="filters-form" (ngSubmit)="refresh()">
+        <div class="filter-field filter-field--practice">
+          <label for="dashboard-practice">
+            {{ 'finance.practice' | t }}
+          </label>
+
+          <div class="select-control">
+            <select
+              id="dashboard-practice"
+              class="field-input"
+              name="practice"
+              [(ngModel)]="filters.practiceId"
+              [disabled]="loading()"
+            >
+              <option value="">
+                {{ 'doctorPatients.filter.allPractices' | t }}
+              </option>
+
+              @for (practice of options()?.practices; track practice.id) {
+                <option [value]="practice.id">
+                  {{ text(practice.nameAr, practice.nameEn) }}
+                </option>
+              }
+            </select>
+
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label for="dashboard-from">
+            {{ 'doctorRemediation.fromDate' | t }}
+          </label>
+
+          <input
+            id="dashboard-from"
+            type="date"
+            class="field-input date-input"
+            name="from"
+            dir="ltr"
+            [(ngModel)]="filters.fromDate"
+            [max]="filters.toDate || null"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <div class="filter-field">
+          <label for="dashboard-to">
+            {{ 'doctorRemediation.toDate' | t }}
+          </label>
+
+          <input
+            id="dashboard-to"
+            type="date"
+            class="field-input date-input"
+            name="to"
+            dir="ltr"
+            [(ngModel)]="filters.toDate"
+            [min]="filters.fromDate || null"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <div class="filter-actions">
+          <button
+            type="submit"
+            class="btn btn-primary filter-submit"
+            [disabled]="loading() || !validDateRange()"
+          >
+            @if (loading()) {
+              <span class="button-spinner" aria-hidden="true"></span>
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8" />
+                <path
+                  d="m16 16 4 4"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+            }
+
+            <span>{{ 'common.search' | t }}</span>
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <!-- Quick actions -->
+  @if (actions().length) {
+    <section class="dashboard-section" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
+      <div class="section-heading">
+        <div class="section-heading__content">
+          <span class="section-accent"></span>
+          <h2>{{ 'doctorRemediation.dailyActions' | t }}</h2>
+        </div>
+      </div>
+
+      <nav class="quick-actions" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
+        @for (action of actions(); track action.id) {
+          <a
+            class="quick-action"
+            [class.quick-action--primary]="action.id === 'queue'"
+            [routerLink]="action.route"
+            [queryParams]="
+              filters.practiceId && ['queue', 'reservations', 'encounters'].includes(action.id)
+                ? { practiceId: filters.practiceId }
+                : {}
+            "
+          >
+            <span class="quick-action__label">
+              {{ action.labelKey | t }}
+            </span>
+
+            <svg class="quick-action__arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 12h14m-6-6 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        }
+      </nav>
+    </section>
+  }
+
+  <!-- API errors -->
+  @if (messages().length) {
+    <div class="dashboard-alert" role="alert">
+      <span class="dashboard-alert__icon" aria-hidden="true">!</span>
+
+      <div class="dashboard-alert__content">
+        @for (message of messages(); track $index) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Overview -->
+  @if (canView()) {
+    <section
+      class="dashboard-section overview-section"
+      [attr.aria-label]="'doctorRemediation.overview' | t"
+      aria-live="polite"
+      aria-busy="{{ loading() }}"
+    >
+      <div class="section-heading overview-heading">
+        <div class="section-heading__content">
+          <span class="section-accent"></span>
+          <h2>{{ 'doctorRemediation.overview' | t }}</h2>
+        </div>
+
+        @if (model(); as report) {
+          <span class="overview-meta">
+            {{ 'doctorRemediation.lastUpdated' | t }}
+            <bdi>{{ report.dataFreshnessUtc }}</bdi>
+          </span>
+        }
+      </div>
+
+      @if (loading()) {
+        <div class="metric-grid" role="status">
+          <span class="sr-only">{{ 'common.loading' | t }}</span>
+
+          @for (item of skeletonItems; track item) {
+            <div class="metric-card metric-card--skeleton" aria-hidden="true">
+              <span class="skeleton skeleton--label"></span>
+              <span class="skeleton skeleton--value"></span>
+              <span class="skeleton skeleton--footer"></span>
+            </div>
+          }
+        </div>
+      } @else if (failed()) {
+        <div class="dashboard-state dashboard-state--error">
+          <div class="dashboard-state__symbol">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" />
+              <path
+                d="M12 7.5v5.5M12 16.5h.01"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+
+          <h3>{{ 'common.failedToLoad' | t }}</h3>
+
+          <button type="button" class="btn btn-primary" (click)="retry()">
+            {{ 'common.retry' | t }}
+          </button>
+        </div>
+      } @else if (model(); as report) {
+        @if (report.metrics?.length) {
+          <div class="metric-grid">
+            @for (metric of report.metrics; track metric.metricCode) {
+              <article class="metric-card">
+                <div class="metric-card__header">
+                  <span class="metric-card__name">
+                    {{ text(metric.nameAr, metric.nameEn) }}
+                  </span>
+
+                  <span class="metric-card__indicator" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M4 18V11M9.3 18V6M14.7 18v-9M20 18V4"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+
+                <div class="metric-card__body">
+                  <strong class="metric-card__value" dir="ltr">
+                    {{ format(metric) }}
+                  </strong>
+
+                  @if (metric.unit) {
+                    <span class="metric-card__unit">
+                      {{ metric.unit }}
+                    </span>
+                  }
+                </div>
+
+                <div class="metric-card__footer">
+                  @if (metric.denominator != null) {
+                    <span class="metric-card__sample">
+                      {{ 'doctorRemediation.sample' | t }}:
+                      <bdi>{{ formatNumber(metric.denominator) }}</bdi>
+                    </span>
+                  } @else {
+                    <span class="metric-card__footer-spacer"></span>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="dashboard-state dashboard-state--empty">
+            <img
+              class="dashboard-state__illustration"
+              src="/SVG-AVATAR/Doctors-bro.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+
+            <h3>{{ 'doctorRemediation.empty' | t }}</h3>
+            <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+          </div>
+        }
+
+        @if (report.metrics?.length) {
+          <div class="report-warnings">
+            @for (warning of report.warnings; track warning) {
+              <div class="report-warning" role="status">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 3 2.8 19h18.4L12 3Z"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M12 9v4.5M12 16.5h.01"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <span>{{ warning }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="report-context">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" />
+            <path
+              d="M12 11v5M12 8h.01"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+
+          <p>{{ 'doctorRemediation.cohortHelp' | t }}</p>
+        </div>
+      } @else {
+        <div class="dashboard-state">
+          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+        </div>
+      }
+    </section>
+  }
+</main>

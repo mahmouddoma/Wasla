@@ -1,128 +1,85 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { PatientDiagnosticsTabComponent } from './patient-diagnostics-tab.component';
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { of, Subject, throwError } from 'rxjs';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { DiagnosticsApi } from '../../../../domains/diagnostics';
-import type { DiagnosticSubmissionSummary } from '../../../../domains/diagnostics/contracts';
-import { ToastService } from '../../../../core/notifications/toast.service';
-import { of, throwError } from 'rxjs';
-
-describe('PatientDiagnosticsTabComponent', () => {
-  let component: PatientDiagnosticsTabComponent;
-  let fixture: ComponentFixture<PatientDiagnosticsTabComponent>;
-  let diagnosticsApi: {
-    requests: ReturnType<typeof vi.fn>;
-    results: ReturnType<typeof vi.fn>;
-    inbox: ReturnType<typeof vi.fn>;
-    submission: ReturnType<typeof vi.fn>;
-    accept: ReturnType<typeof vi.fn>;
-    reject: ReturnType<typeof vi.fn>;
-  };
-  let toast: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
-
-  const mockRequest = {
-    requestId: 'req-1',
-    medicalEncounterId: 'enc-1',
-    patientId: 'pat-1',
-    practiceId: 'prac-1',
-    origin: 'DuringEncounter' as const,
-    status: 'Requested' as const,
-    requestedAtUtc: '2026-10-28T08:00:00Z',
-    rowVersion: 'AAAA==',
-  };
-
-  const mockSubmission = {
-    submissionId: 'sub-1',
-    requestId: 'req-1',
-    status: 'PendingReview' as const,
-    submittedAtUtc: '2026-10-28T09:00:00Z',
-  };
-
-  beforeEach(async () => {
-    diagnosticsApi = {
-      requests: vi.fn().mockReturnValue(of({ items: [mockRequest], totalCount: 1, pageNumber: 1, pageSize: 20 })),
-      results: vi.fn().mockReturnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 })),
-      inbox: vi.fn().mockReturnValue(of({ items: [mockSubmission], totalCount: 1, pageNumber: 1, pageSize: 20 })),
-      submission: vi.fn().mockReturnValue(of({
-        submissionId: 'sub-1',
-        requestId: 'req-1',
-        status: 'PendingReview',
-        rowVersion: 'AAAA==',
-      })),
-      accept: vi.fn().mockReturnValue(of({})),
-      reject: vi.fn().mockReturnValue(of({})),
-    };
-    toast = {
-      error: vi.fn(),
-      success: vi.fn(),
-    };
-
-    await TestBed.configureTestingModule({
+import { PatientDiagnosticsTabComponent } from './patient-diagnostics-tab.component';
+describe('Patient diagnostic history', () => {
+  const api = { requests: vi.fn(), results: vi.fn(), inbox: vi.fn() };
+  let grants: Set<string>;
+  beforeEach(() => {
+    vi.resetAllMocks();
+    grants = new Set([
+      'LabRequests.ViewOwn',
+      'LabResults.ViewOwn',
+      'LabResultSubmissions.ViewOwn',
+      'RadiologyRequests.ViewOwn',
+    ]);
+    for (const method of Object.values(api))
+      method.mockReturnValue(of({ items: [], totalCount: 0 }));
+    TestBed.configureTestingModule({
       imports: [PatientDiagnosticsTabComponent],
       providers: [
-        { provide: DiagnosticsApi, useValue: diagnosticsApi },
-        { provide: ToastService, useValue: toast },
+        provideRouter([]),
+        { provide: DiagnosticsApi, useValue: api },
+        { provide: AuthSession, useValue: { hasPermission: (p: string) => grants.has(p) } },
       ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(PatientDiagnosticsTabComponent);
-    component = fixture.componentInstance;
-    fixture.componentRef.setInput('patientId', 'pat-1');
-    fixture.detectChanges();
+    });
   });
-
-  it('creates component and loads lab requests by default', () => {
-    expect(component).toBeTruthy();
-    expect(diagnosticsApi.requests).toHaveBeenCalledWith('lab', 'Doctor', {
-      PatientId: 'pat-1',
+  function create() {
+    const fixture = TestBed.createComponent(PatientDiagnosticsTabComponent);
+    fixture.componentRef.setInput('patientId', 'patient');
+    return fixture;
+  }
+  it('loads only the selected permitted source with patient scope', async () => {
+    const fixture = create();
+    await fixture.whenStable();
+    expect(api.requests).toHaveBeenCalledWith('lab', 'Doctor', {
+      PatientId: 'patient',
       PageNumber: 1,
       PageSize: 20,
     });
-    expect(component.requests().length).toBe(1);
-    expect(component.loading()).toBe(false);
+    expect(api.results).not.toHaveBeenCalled();
+    expect(api.inbox).not.toHaveBeenCalled();
   });
-
-  it('switches to radiology', () => {
-    component.setKind('radiology');
-    expect(component.currentKind()).toBe('radiology');
-    expect(diagnosticsApi.requests).toHaveBeenCalledWith('radiology', 'Doctor', expect.any(Object));
+  it('keeps Lab and Radiology permissions independent', async () => {
+    grants = new Set(['RadiologyRequests.ViewOwn']);
+    const fixture = create();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.currentKind()).toBe('radiology');
+    expect(api.requests).toHaveBeenCalledWith('radiology', 'Doctor', expect.anything());
+    fixture.componentInstance.setKind('lab');
+    expect(fixture.componentInstance.currentKind()).toBe('radiology');
   });
-
-  it('switches to submissions tab and accepts submission', () => {
-    component.setTab('submissions');
-    expect(component.currentTab()).toBe('submissions');
-    expect(diagnosticsApi.inbox).toHaveBeenCalledWith('lab', expect.any(Object));
-    expect(component.submissions().length).toBe(1);
-
-    component.openReview(mockSubmission as unknown as DiagnosticSubmissionSummary, 'accept');
-    expect(component.reviewingSubmission()?.submissionId).toBe('sub-1');
-
-    component.submitReview();
-    expect(diagnosticsApi.accept).toHaveBeenCalledWith(
-      'lab',
-      'sub-1',
-      { coveredLabRequestItemIds: null, rowVersion: 'AAAA==' },
-      expect.any(String),
-    );
-    expect(toast.success).toHaveBeenCalledWith('تم اعتماد نتيجة الفحص بنجاح');
+  it('opens source review with exact patient and submission identifiers', async () => {
+    const fixture = create();
+    await fixture.whenStable();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture.componentInstance.setTab('submissions');
+    fixture.componentInstance.openSource('submission');
+    expect(navigate).toHaveBeenCalledWith(['/diagnostics/doctor', 'lab'], {
+      queryParams: { patientId: 'patient', view: 'submissions', submissionId: 'submission' },
+    });
   });
-
-  it('rejects submission with reason', () => {
-    component.setTab('submissions');
-    component.openReview(mockSubmission as unknown as DiagnosticSubmissionSummary, 'reject');
-    component.reviewReason.set('الملف غير واضح');
-
-    component.submitReview();
-    expect(diagnosticsApi.reject).toHaveBeenCalledWith(
-      'lab',
-      'sub-1',
-      { patientVisibleReason: 'الملف غير واضح', rowVersion: 'AAAA==' },
-    );
-    expect(toast.success).toHaveBeenCalledWith('تم رفض الملف المرفوع بنجاح');
+  it('ignores an old scope response', async () => {
+    const fixture = create();
+    await fixture.whenStable();
+    const old = new Subject<object>();
+    api.requests.mockReturnValueOnce(old);
+    const pending = fixture.componentInstance.loadData();
+    fixture.componentInstance.setTab('results');
+    old.next({ items: [{ requestId: 'old' }], totalCount: 1 });
+    old.complete();
+    await pending;
+    expect(fixture.componentInstance.requests()).toEqual([]);
   });
-
-  it('handles load error', () => {
-    diagnosticsApi.requests.mockReturnValue(throwError(() => new Error('Error')));
-    component.loadData();
-    expect(component.error()).toBe(true);
-    expect(component.loading()).toBe(false);
+  it('shows an error instead of a fake official result', async () => {
+    const fixture = create();
+    await fixture.whenStable();
+    api.results.mockReturnValue(throwError(() => new Error('unavailable')));
+    fixture.componentInstance.setTab('results');
+    await Promise.resolve();
+    expect(fixture.componentInstance.error()).toBe(true);
+    expect(fixture.componentInstance.results()).toEqual([]);
   });
 });

@@ -4,6 +4,8 @@ import {
   accountActorGuard,
   anonymousOnlyMatchGuard,
   authenticatedGuard,
+  permissionGuard,
+  doctorOperationalGuard,
   catalogManagerAreaGuard,
 } from './core/auth/auth.guards';
 
@@ -27,9 +29,9 @@ export const routes: Routes = [
     path: 'doctors/:doctorId',
     canMatch: [anonymousOnlyMatchGuard],
     loadComponent: () =>
-      import(
-        './features/public-doctor-details/pages/public-doctor-details/public-doctor-details'
-      ).then((m) => m.PublicDoctorDetailsPage),
+      import('./features/public-doctor-details/pages/public-doctor-details/public-doctor-details').then(
+        (m) => m.PublicDoctorDetailsPage,
+      ),
     title: 'routes.doctorDetails',
   },
 
@@ -56,7 +58,12 @@ export const routes: Routes = [
     path: '',
     canActivate: [authenticatedGuard],
     loadComponent: () => import('./layout/portal-layout/portal-layout').then((m) => m.PortalLayout),
-    canActivateChild: [authenticatedGuard, accountActorGuard, catalogManagerAreaGuard],
+    canActivateChild: [
+      authenticatedGuard,
+      accountActorGuard,
+      catalogManagerAreaGuard,
+      doctorOperationalGuard,
+    ],
     children: [
       {
         path: 'medical-catalog',
@@ -129,6 +136,8 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/encounters/encounters.routes').then((m) => m.ENCOUNTER_ROUTES),
       },
+      { path: 'doctor/my-patients/:patientId', redirectTo: 'doctor/patients/:patientId' },
+      { path: 'doctor/my-patients', redirectTo: 'doctor/patients', pathMatch: 'full' },
       {
         path: 'doctor/patients',
         data: { actor: 'Doctor', permission: 'DoctorPatients.ViewOwn' },
@@ -147,6 +156,14 @@ export const routes: Routes = [
         path: 'patient/follow-ups',
         loadChildren: () =>
           import('./features/follow-ups/follow-ups.routes').then((m) => m.FOLLOW_UP_ROUTES),
+      },
+      {
+        path: 'workspace/doctor',
+        data: { actor: 'Doctor' },
+        loadComponent: () =>
+          import('./features/doctor-dashboard/pages/doctor-dashboard/doctor-dashboard.component').then(
+            (m) => m.DoctorDashboardComponent,
+          ),
       },
       {
         path: 'workspace/:area',
@@ -196,20 +213,26 @@ export const routes: Routes = [
         data: {
           actor: 'Doctor',
           view: 'expenses',
-          permission: 'DoctorPracticePayments.ViewOwn',
+          permission: 'FinancialExpenses.ViewOwn',
         },
-        loadChildren: () =>
-          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+        canActivate: [permissionGuard],
+        loadComponent: () =>
+          import('./features/operating-finance/pages/operating-finance/operating-finance.component').then(
+            (m) => m.OperatingFinanceComponent,
+          ),
       },
       {
         path: 'doctor/salaries',
         data: {
           actor: 'Doctor',
           view: 'salaries',
-          permission: 'DoctorPracticePayments.ViewOwn',
+          permission: ['SalaryPlans.ViewOwn', 'SalaryObligations.ViewOwn'],
         },
-        loadChildren: () =>
-          import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
+        canActivate: [permissionGuard],
+        loadComponent: () =>
+          import('./features/operating-finance/pages/operating-finance/operating-finance.component').then(
+            (m) => m.OperatingFinanceComponent,
+          ),
       },
       {
         path: 'reception/finance',
@@ -280,17 +303,19 @@ export const routes: Routes = [
       },
       {
         path: 'doctor/reports',
-        data: { actor: 'Doctor' },
+        data: { actor: 'Doctor', tab: 'reports', permission: 'Reports.Doctor.ViewOwn' },
+        canActivate: [permissionGuard],
         loadComponent: () =>
-          import('./features/doctor-reports/doctor-reports.component').then(
+          import('./features/doctor-reports/pages/doctor-reports/doctor-reports.component').then(
             (m) => m.DoctorReportsComponent,
           ),
       },
       {
         path: 'doctor/insights',
-        data: { actor: 'Doctor' },
+        data: { actor: 'Doctor', tab: 'insights', permission: 'Insights.Doctor.ViewOwn' },
+        canActivate: [permissionGuard],
         loadComponent: () =>
-          import('./features/doctor-reports/doctor-reports.component').then(
+          import('./features/doctor-reports/pages/doctor-reports/doctor-reports.component').then(
             (m) => m.DoctorReportsComponent,
           ),
       },

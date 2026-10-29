@@ -19,7 +19,12 @@
           >
             <option value="">{{ 'reservations.choose' | t }}</option>
             @for (practice of store.practices(); track practice.id) {
-              <option [value]="practice.id">{{ label(practice) }}</option>
+              <option [value]="practice.id">
+                {{ label(practice)
+                }}{{
+                  !practice.isActive ? ' (' + ('doctorPatients.historicalBadge' | t) + ')' : ''
+                }}
+              </option>
             }
           </select></label
         >
@@ -45,6 +50,9 @@
       </div>
     }
   </app-page-header>
+  @if (store.historical()) {
+    <p class="history-notice" role="status">{{ 'doctorRemediation.historicalReadOnly' | t }}</p>
+  }
   <section class="directory" [attr.aria-busy]="store.loading()">
     @if (store.loading()) {
       <p role="status">{{ 'reservations.loading' | t }}</p>
@@ -71,7 +79,12 @@
         <div class="directory-title-group">
           <span class="directory-badge-dot" aria-hidden="true"></span>
           <h3 class="directory-title">
-            {{ (store.doctor() ? 'encounters.doctorDirectoryTitle' : 'encounters.patientDirectoryTitle') | t }}
+            {{
+              (store.doctor()
+                ? 'encounters.doctorDirectoryTitle'
+                : 'encounters.patientDirectoryTitle'
+              ) | t
+            }}
           </h3>
           <span class="directory-count-pill">
             {{ store.page().totalCount }} {{ 'encounters.recordsCount' | t }}
@@ -81,7 +94,9 @@
       <div class="table-responsive">
         <table class="table encounters-table align-middle mb-0">
           <caption class="visually-hidden">
-            {{ 'encounters.title' | t }}
+            {{
+              'encounters.title' | t
+            }}
           </caption>
           <thead>
             <tr>
@@ -101,9 +116,32 @@
                   <div class="table-doctor-cell">
                     <div class="doctor-avatar-badge" aria-hidden="true">
                       @if (store.doctor()) {
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
                       } @else {
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path
+                            d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"
+                          />
+                          <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
+                          <circle cx="20" cy="10" r="2" />
+                        </svg>
                       }
                     </div>
                     <span class="cell-primary-text">{{ doctorOrPatient(item) }}</span>
@@ -112,16 +150,46 @@
                 <td class="td-practice">
                   <div class="table-practice-cell">
                     <div class="practice-icon-badge" aria-hidden="true">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="22.01"/><line x1="15" y1="22" x2="15" y2="22.01"/><line x1="10" y1="6" x2="14" y2="6"/><line x1="12" y1="4" x2="12" y2="8"/></svg>
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                        <line x1="9" y1="22" x2="9" y2="22.01" />
+                        <line x1="15" y1="22" x2="15" y2="22.01" />
+                        <line x1="10" y1="6" x2="14" y2="6" />
+                        <line x1="12" y1="4" x2="12" y2="8" />
+                      </svg>
                     </div>
                     <span class="cell-subtle-text">{{ practiceLabel(item) }}</span>
                   </div>
                 </td>
                 <td class="td-date">
                   <div class="table-date-cell">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="date-icon" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="date-icon"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
                     <span dir="ltr" class="cell-date-text">
-                      {{ item.completedAtUtc || item.startedAtUtc | localizedDate: language.currentLang() }}
+                      {{
+                        item.completedAtUtc || item.startedAtUtc
+                          | localizedDate: language.currentLang()
+                      }}
                     </span>
                   </div>
                 </td>
@@ -137,7 +205,18 @@
                     [disabled]="!store.canReadDetails()"
                     (click)="store.inspect(item.encounterId)"
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
                     <span>{{ 'reservations.inspect' | t }}</span>
                   </button>
                 </td>
@@ -147,19 +226,27 @@
         </table>
       </div>
       <nav class="pagination-row" [attr.aria-label]="'reservations.pagination' | t">
-        <button
-          class="btn-pagination"
-          (click)="page(-1)"
-          [disabled]="store.page().pageNumber <= 1"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        <button class="btn-pagination" (click)="page(-1)" [disabled]="store.page().pageNumber <= 1">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
           <span>{{ 'reservations.previous' | t }}</span>
         </button>
         <div class="pagination-indicator" dir="ltr">
           <span class="page-current">{{ store.page().pageNumber }}</span>
           <span class="page-sep">/</span>
           <span class="page-total">{{ totalPages() }}</span>
-          <span class="page-count-badge">({{ store.page().totalCount }} {{ 'encounters.totalCount' | t }})</span>
+          <span class="page-count-badge"
+            >({{ store.page().totalCount }} {{ 'encounters.totalCount' | t }})</span
+          >
         </div>
         <button
           class="btn-pagination"
@@ -167,7 +254,17 @@
           [disabled]="store.page().pageNumber * store.page().pageSize >= store.page().totalCount"
         >
           <span>{{ 'reservations.next' | t }}</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </nav>
     }
@@ -206,7 +303,10 @@
                       <span class="dot-sep">·</span>
                       <span class="sub-detail-item">
                         <i class="fa-regular fa-calendar-check text-slate" aria-hidden="true"></i>
-                        <time dir="ltr">{{ (detail.completedAtUtc || detail.startedAtUtc) | localizedDate: language.currentLang() }}</time>
+                        <time dir="ltr">{{
+                          detail.completedAtUtc || detail.startedAtUtc
+                            | localizedDate: language.currentLang()
+                        }}</time>
                       </span>
                     }
                   </div>
@@ -233,7 +333,11 @@
             </div>
 
             <!-- 2. Segmented Navigation Tabs Bar -->
-            <nav class="encounter-tabs-bar" role="tablist" [attr.aria-label]="'encounters.details' | t">
+            <nav
+              class="encounter-tabs-bar"
+              role="tablist"
+              [attr.aria-label]="'encounters.details' | t"
+            >
               <button
                 type="button"
                 role="tab"
@@ -298,12 +402,18 @@
                 <div class="content-block notes-block">
                   <div class="block-header">
                     <div class="block-title-wrap">
-                      <i class="fa-solid fa-feather-pointed block-icon text-teal" aria-hidden="true"></i>
+                      <i
+                        class="fa-solid fa-feather-pointed block-icon text-teal"
+                        aria-hidden="true"
+                      ></i>
                       <h4 class="block-title">{{ 'encounters.clinicalNotes' | t }}</h4>
                     </div>
                   </div>
 
-                  <form class="notes-form" (submit)="$event.preventDefault(); store.saveNotes(model().clinicalNotes)">
+                  <form
+                    class="notes-form"
+                    (submit)="$event.preventDefault(); store.saveNotes(model().clinicalNotes)"
+                  >
                     <div class="form-group">
                       <textarea
                         rows="4"
@@ -327,7 +437,10 @@
                 <div class="content-block diagnoses-block">
                   <div class="block-header">
                     <div class="block-title-wrap">
-                      <i class="fa-solid fa-stethoscope block-icon text-blue" aria-hidden="true"></i>
+                      <i
+                        class="fa-solid fa-stethoscope block-icon text-blue"
+                        aria-hidden="true"
+                      ></i>
                       <h4 class="block-title">{{ 'encounters.diagnoses' | t }}</h4>
                     </div>
                   </div>
@@ -335,13 +448,22 @@
                   <div class="diagnoses-unified-list">
                     @for (diagnosis of diagnoses(detail); track diagnosis.diagnosisId) {
                       @if (!diagnosis.isVoided) {
-                        <div class="diagnosis-row-card" [class.is-editing]="model().diagnosisId === diagnosis.diagnosisId">
+                        <div
+                          class="diagnosis-row-card"
+                          [class.is-editing]="model().diagnosisId === diagnosis.diagnosisId"
+                        >
                           <div class="diagnosis-row-top">
                             <div class="diagnosis-name-wrap">
-                              <span class="diagnosis-tag-pill" [class.tag-primary]="diagnosis.type === 'Primary'" [class.tag-secondary]="diagnosis.type === 'Secondary'">
+                              <span
+                                class="diagnosis-tag-pill"
+                                [class.tag-primary]="diagnosis.type === 'Primary'"
+                                [class.tag-secondary]="diagnosis.type === 'Secondary'"
+                              >
                                 {{ 'encounters.diagnosis.' + diagnosis.type | t }}
                               </span>
-                              <strong class="diagnosis-name-text">{{ diagnosis.displayText }}</strong>
+                              <strong class="diagnosis-name-text">{{
+                                diagnosis.displayText
+                              }}</strong>
                             </div>
                             @if (store.canManageDiagnoses()) {
                               <div class="diagnosis-inline-actions">
@@ -415,12 +537,25 @@
                   @if (store.canManageDiagnoses()) {
                     <div class="add-diagnosis-subpanel">
                       <div class="subpanel-header">
-                        <i class="fa-solid" [class.fa-plus]="!model().diagnosisId" [class.fa-pen-to-square]="!!model().diagnosisId" aria-hidden="true"></i>
+                        <i
+                          class="fa-solid"
+                          [class.fa-plus]="!model().diagnosisId"
+                          [class.fa-pen-to-square]="!!model().diagnosisId"
+                          aria-hidden="true"
+                        ></i>
                         <span class="subpanel-title">
-                          {{ model().diagnosisId ? ('encounters.diagnosisText' | t) : ('encounters.addDiagnosis' | t) }}
+                          {{
+                            model().diagnosisId
+                              ? ('encounters.diagnosisText' | t)
+                              : ('encounters.addDiagnosis' | t)
+                          }}
                         </span>
                         @if (model().diagnosisId) {
-                          <button type="button" class="btn-cancel-edit-link" (click)="cancelEditDiagnosis()">
+                          <button
+                            type="button"
+                            class="btn-cancel-edit-link"
+                            (click)="cancelEditDiagnosis()"
+                          >
                             {{ 'encounters.cancelEdit' | t }}
                           </button>
                         }
@@ -431,21 +566,37 @@
                             <label class="form-group flex-1">
                               <span class="label-text">{{ 'encounters.diagnosisType' | t }}</span>
                               <select class="form-control" [formField]="fields.type">
-                                <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
-                                <option value="Secondary">{{ 'encounters.diagnosis.Secondary' | t }}</option>
+                                <option value="Primary">
+                                  {{ 'encounters.diagnosis.Primary' | t }}
+                                </option>
+                                <option value="Secondary">
+                                  {{ 'encounters.diagnosis.Secondary' | t }}
+                                </option>
                               </select>
                             </label>
                             <label class="form-group flex-2">
                               <span class="label-text">{{ 'encounters.diagnosisText' | t }}</span>
-                              <input class="form-control" [formField]="fields.displayText" [placeholder]="'encounters.diagnosisText' | t" />
+                              <input
+                                class="form-control"
+                                [formField]="fields.displayText"
+                                [placeholder]="'encounters.diagnosisText' | t"
+                              />
                             </label>
                           </div>
                           <label class="form-group">
                             <span class="label-text">{{ 'encounters.diagnosisNotes' | t }}</span>
-                            <textarea rows="2" class="form-control" [formField]="fields.notes" [placeholder]="'encounters.diagnosisNotes' | t"></textarea>
+                            <textarea
+                              rows="2"
+                              class="form-control"
+                              [formField]="fields.notes"
+                              [placeholder]="'encounters.diagnosisNotes' | t"
+                            ></textarea>
                           </label>
                           <div class="subpanel-footer">
-                            <button class="btn btn-primary btn-sm" [disabled]="!model().displayText.trim()">
+                            <button
+                              class="btn btn-primary btn-sm"
+                              [disabled]="!model().displayText.trim()"
+                            >
                               <i class="fa-solid fa-check" aria-hidden="true"></i>
                               <span>{{ 'common.save' | t }}</span>
                             </button>
@@ -461,7 +612,10 @@
                   <div class="content-block followup-block">
                     <div class="block-header">
                       <div class="block-title-wrap">
-                        <i class="fa-regular fa-calendar-plus block-icon text-teal" aria-hidden="true"></i>
+                        <i
+                          class="fa-regular fa-calendar-plus block-icon text-teal"
+                          aria-hidden="true"
+                        ></i>
                         <h4 class="block-title">{{ 'encounters.createFollowUp' | t }}</h4>
                       </div>
                     </div>
@@ -471,9 +625,17 @@
                     >
                       <label class="form-group flex-1">
                         <span class="label-text">{{ 'followUps.validUntil' | t }}</span>
-                        <input type="date" class="form-control" dir="ltr" [formField]="fields.validUntil" />
+                        <input
+                          type="date"
+                          class="form-control"
+                          dir="ltr"
+                          [formField]="fields.validUntil"
+                        />
                       </label>
-                      <button class="btn btn-primary" [disabled]="store.busy() || !model().validUntil">
+                      <button
+                        class="btn btn-primary"
+                        [disabled]="store.busy() || !model().validUntil"
+                      >
                         <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
                         <span>{{ 'encounters.createFollowUp' | t }}</span>
                       </button>
@@ -486,10 +648,16 @@
                       <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
                     </div>
                     <div class="notice-body">
-                      <strong class="notice-title">{{ 'followUps.followUp' | t }} ({{ 'encounters.availableStatus' | t }})</strong>
+                      <strong class="notice-title"
+                        >{{ 'followUps.followUp' | t }} ({{
+                          'encounters.availableStatus' | t
+                        }})</strong
+                      >
                       <p class="notice-desc">
-                        {{ 'encounters.statusLabel' | t }} {{ 'followUps.status.' + eligibility.status | t }} ·
-                        {{ 'followUps.validUntil' | t }}: <time dir="ltr">{{ eligibility.validUntil }}</time>
+                        {{ 'encounters.statusLabel' | t }}
+                        {{ 'followUps.status.' + eligibility.status | t }} ·
+                        {{ 'followUps.validUntil' | t }}:
+                        <time dir="ltr">{{ eligibility.validUntil }}</time>
                       </p>
                     </div>
                   </div>
@@ -504,7 +672,11 @@
                         <h4 class="block-title">{{ 'encounters.amendment' | t }}</h4>
                       </div>
                       @if (!showAmendmentForm()) {
-                        <button type="button" class="btn btn-outline-primary" (click)="startAmendment()">
+                        <button
+                          type="button"
+                          class="btn btn-outline-primary"
+                          (click)="startAmendment()"
+                        >
                           <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                           <span>{{ 'encounters.createAmendment' | t }}</span>
                         </button>
@@ -512,7 +684,10 @@
                     </div>
 
                     @if (showAmendmentForm()) {
-                      <form class="amendment-form" (submit)="$event.preventDefault(); submitAmendment()">
+                      <form
+                        class="amendment-form"
+                        (submit)="$event.preventDefault(); submitAmendment()"
+                      >
                         <p class="amendment-help-text">
                           {{ 'encounters.amendmentImmutableHelp' | t }}
                         </p>
@@ -563,7 +738,9 @@
                             @for (diag of diagnoses(detail); track diag.diagnosisId) {
                               <div
                                 class="void-diag-item"
-                                [class.voided]="stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)"
+                                [class.voided]="
+                                  stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                "
                               >
                                 <span>
                                   <b>{{ diag.displayText }}</b>
@@ -600,7 +777,9 @@
                               [value]="newDiagnosisType()"
                               (change)="onNewDiagnosisTypeChange($event)"
                             >
-                              <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                              <option value="Primary">
+                                {{ 'encounters.diagnosis.Primary' | t }}
+                              </option>
                               <option value="Secondary">
                                 {{ 'encounters.diagnosis.Secondary' | t }}
                               </option>
@@ -657,7 +836,9 @@
                             {{ 'encounters.amendmentChanges' | t }}: {{ stagedChanges().length }}
                           </span>
                           @if (stagedChanges().length === 0) {
-                            <span class="summary-warning">{{ 'encounters.noChangesSelected' | t }}</span>
+                            <span class="summary-warning">{{
+                              'encounters.noChangesSelected' | t
+                            }}</span>
                           }
                         </div>
 
@@ -695,10 +876,19 @@
                   [practiceId]="store.practiceId()"
                   [encounterId]="detail.encounterId"
                   [canManage]="
-                    detail.status === 'InProgress' && !!detail.capabilities.canManagePrescription
+                    !store.historical() &&
+                    detail.status === 'InProgress' &&
+                    detail.capabilities.canManagePrescription === true
                   "
-                  [canRequest]="!!detail.capabilities.canRequestNewMedication"
-                  [disabled]="store.busy() || store.diagnosticBusy() || store.detailLoading()"
+                  [canRequest]="
+                    !store.historical() && detail.capabilities.canRequestNewMedication === true
+                  "
+                  [disabled]="
+                    store.historical() ||
+                    store.busy() ||
+                    store.diagnosticBusy() ||
+                    store.detailLoading()
+                  "
                   (changed)="store.prescriptionChanged($event)"
                   (busyChanged)="store.prescriptionBusy.set($event)"
                 />
@@ -711,7 +901,11 @@
                 @for (kind of ['lab', 'radiology']; track kind) {
                   <div class="diagnostic-category-panel">
                     <div class="category-panel-header">
-                      <div class="category-icon-box" [class.lab]="kind === 'lab'" [class.radiology]="kind === 'radiology'">
+                      <div
+                        class="category-icon-box"
+                        [class.lab]="kind === 'lab'"
+                        [class.radiology]="kind === 'radiology'"
+                      >
                         <i
                           class="fa-solid"
                           [class.fa-flask-vial]="kind === 'lab'"
@@ -721,13 +915,21 @@
                       </div>
                       <div class="category-meta-text">
                         <h4 class="category-title">
-                          {{ (kind === 'lab' ? 'diagnostics.labRequests' : 'diagnostics.radiologyRequests') | t }}
+                          {{
+                            (kind === 'lab'
+                              ? 'diagnostics.labRequests'
+                              : 'diagnostics.radiologyRequests'
+                            ) | t
+                          }}
                         </h4>
                       </div>
                       <a
                         class="btn-open-diagnostics"
                         [routerLink]="'/diagnostics/doctor/' + kind"
-                        [queryParams]="{ encounterId: detail.encounterId, practiceId: store.practiceId() }"
+                        [queryParams]="{
+                          encounterId: detail.encounterId,
+                          practiceId: store.practiceId(),
+                        }"
                         (click)="store.close()"
                       >
                         <span>{{ 'encounters.viewAll' | t }}</span>
@@ -740,7 +942,9 @@
                         kind === 'lab' ? 'canManageLabRequest' : 'canManageRadiologyRequest'
                       ] ||
                       detail.capabilities[
-                        kind === 'lab' ? 'canCreatePostVisitLabRequest' : 'canCreatePostVisitRadiologyRequest'
+                        kind === 'lab'
+                          ? 'canCreatePostVisitLabRequest'
+                          : 'canCreatePostVisitRadiologyRequest'
                       ] ||
                       detail[kind === 'lab' ? 'labRequestDraft' : 'radiologyRequestDraft']
                     ) {
@@ -757,6 +961,7 @@
                           "
                           [completed]="detail.status === 'Completed'"
                           [canPostVisit]="
+                            !store.historical() &&
                             !!detail.capabilities[
                               kind === 'lab'
                                 ? 'canCreatePostVisitLabRequest'
@@ -764,7 +969,9 @@
                             ]
                           "
                           [locked]="store.busy() || store.clinicalBusy()"
-                          (changed)="store.diagnosticChanged(kind === 'lab' ? 'lab' : 'radiology', $event)"
+                          (changed)="
+                            store.diagnosticChanged(kind === 'lab' ? 'lab' : 'radiology', $event)
+                          "
                           (busyChanged)="store.diagnosticBusy.set($event)"
                         />
                       </div>
@@ -782,14 +989,21 @@
                     <div class="section-header-row">
                       <h3>{{ 'encounters.amendment' | t }}</h3>
                       @if (!showAmendmentForm()) {
-                        <button type="button" class="btn btn-outline-primary" (click)="startAmendment()">
+                        <button
+                          type="button"
+                          class="btn btn-outline-primary"
+                          (click)="startAmendment()"
+                        >
                           {{ 'encounters.createAmendment' | t }}
                         </button>
                       }
                     </div>
 
                     @if (showAmendmentForm()) {
-                      <form class="amendment-form" (submit)="$event.preventDefault(); submitAmendment()">
+                      <form
+                        class="amendment-form"
+                        (submit)="$event.preventDefault(); submitAmendment()"
+                      >
                         <p class="amendment-help-text">
                           {{ 'encounters.amendmentImmutableHelp' | t }}
                         </p>
@@ -840,7 +1054,9 @@
                             @for (diag of diagnoses(detail); track diag.diagnosisId) {
                               <div
                                 class="void-diag-item"
-                                [class.voided]="stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)"
+                                [class.voided]="
+                                  stagedDiagnosisIdsToRemove().includes(diag.diagnosisId)
+                                "
                               >
                                 <span>
                                   <b>{{ diag.displayText }}</b>
@@ -877,7 +1093,9 @@
                               [value]="newDiagnosisType()"
                               (change)="onNewDiagnosisTypeChange($event)"
                             >
-                              <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
+                              <option value="Primary">
+                                {{ 'encounters.diagnosis.Primary' | t }}
+                              </option>
                               <option value="Secondary">
                                 {{ 'encounters.diagnosis.Secondary' | t }}
                               </option>
@@ -934,7 +1152,9 @@
                             {{ 'encounters.amendmentChanges' | t }}: {{ stagedChanges().length }}
                           </span>
                           @if (stagedChanges().length === 0) {
-                            <span class="summary-warning">{{ 'encounters.noChangesSelected' | t }}</span>
+                            <span class="summary-warning">{{
+                              'encounters.noChangesSelected' | t
+                            }}</span>
                           }
                         </div>
 
@@ -964,10 +1184,17 @@
                 <section class="content-block history-section">
                   <div class="block-header">
                     <div class="block-title-wrap">
-                      <i class="fa-solid fa-clock-rotate-left block-icon text-teal" aria-hidden="true"></i>
+                      <i
+                        class="fa-solid fa-clock-rotate-left block-icon text-teal"
+                        aria-hidden="true"
+                      ></i>
                       <h4 class="block-title">{{ 'encounters.history' | t }}</h4>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="store.loadHistory()">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      (click)="store.loadHistory()"
+                    >
                       <i class="fa-solid fa-rotate" aria-hidden="true"></i>
                       <span>{{ 'common.refresh' | t }}</span>
                     </button>
@@ -982,7 +1209,9 @@
                         <i class="fa-solid fa-user-doctor text-teal" aria-hidden="true"></i>
                         <span>{{ amendment.author }}</span>
                         <span>·</span>
-                        <time dir="ltr">{{ amendment.createdOnUtc | localizedDate: language.currentLang() }}</time>
+                        <time dir="ltr">{{
+                          amendment.createdOnUtc | localizedDate: language.currentLang()
+                        }}</time>
                       </p>
                       @for (change of amendment.changes; track $index) {
                         <dl class="history-diff-grid">
@@ -1044,18 +1273,49 @@
                 <span>{{ 'encounters.patientVisitCompleted' | t }}</span>
               </span>
               <div class="visit-date-pill">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                <time dir="ltr">{{ detail.completedAtUtc | localizedDate: language.currentLang() }}</time>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                <time dir="ltr">{{
+                  detail.completedAtUtc | localizedDate: language.currentLang()
+                }}</time>
               </div>
             </div>
 
             <div class="visit-meta-info">
               <h4 class="visit-doctor-name">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
                 <span>{{ doctorNameDetail(detail) }}</span>
               </h4>
               <p class="visit-clinic-name">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3h6v4H9z"/></svg>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3h6v4H9z" />
+                </svg>
                 <span>{{ practiceNameDetail(detail) }}</span>
               </p>
             </div>
@@ -1069,7 +1329,12 @@
             </div>
 
             <div class="diagnoses-list">
-              @for (diagnosis of (detail.diagnoses?.length ? detail.diagnoses : (detail.currentActiveDiagnoses || [])); track diagnosis.diagnosisId) {
+              @for (
+                diagnosis of detail.diagnoses?.length
+                  ? detail.diagnoses
+                  : detail.currentActiveDiagnoses || [];
+                track diagnosis.diagnosisId
+              ) {
                 @if (!diagnosis.isVoided) {
                   <article class="diagnosis-card">
                     <div class="diagnosis-header-row">
@@ -1077,7 +1342,10 @@
                         <span class="diagnosis-icon-badge">📋</span>
                         <h6 class="diagnosis-name">{{ diagnosis.displayText }}</h6>
                       </div>
-                      <span class="diagnosis-type-pill" [class.primary]="diagnosis.type === 'Primary'">
+                      <span
+                        class="diagnosis-type-pill"
+                        [class.primary]="diagnosis.type === 'Primary'"
+                      >
                         {{ 'encounters.diagnosis.' + diagnosis.type | t }}
                       </span>
                     </div>
@@ -1085,7 +1353,18 @@
                     @if (diagnosis.notes) {
                       <div class="diagnosis-notes-box">
                         <div class="notes-header">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path
+                              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                            />
+                          </svg>
                           <span>{{ 'encounters.doctorInstructions' | t }}</span>
                         </div>
                         <p class="notes-content">{{ diagnosis.notes }}</p>
@@ -1106,8 +1385,15 @@
             <section class="visit-followup-card">
               <div class="followup-icon">🗓️</div>
               <div class="followup-info">
-                <strong>{{ 'followUps.followUp' | t }} ({{ 'encounters.availableStatus' | t }})</strong>
-                <p>{{ 'encounters.statusLabel' | t }} {{ 'followUps.status.' + eligibility.status | t }} {{ 'encounters.validUntilLabel' | t }} <time dir="ltr">{{ eligibility.validUntil }}</time></p>
+                <strong
+                  >{{ 'followUps.followUp' | t }} ({{ 'encounters.availableStatus' | t }})</strong
+                >
+                <p>
+                  {{ 'encounters.statusLabel' | t }}
+                  {{ 'followUps.status.' + eligibility.status | t }}
+                  {{ 'encounters.validUntilLabel' | t }}
+                  <time dir="ltr">{{ eligibility.validUntil }}</time>
+                </p>
               </div>
             </section>
           }
@@ -1116,11 +1402,24 @@
           <footer class="visit-footer-card">
             <div class="visit-footer-tip">
               <span class="tip-icon">💊</span>
-              <p>{{ 'encounters.prescriptionsSectionHint' | t }} <strong>{{ 'medications.prescription' | t }}</strong>.</p>
+              <p>
+                {{ 'encounters.prescriptionsSectionHint' | t }}
+                <strong>{{ 'medications.prescription' | t }}</strong
+                >.
+              </p>
             </div>
             <a routerLink="/patient/prescriptions" class="btn-goto-rx" (click)="store.close()">
               <span>{{ 'encounters.goToPrescriptions' | t }}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
             </a>
           </footer>
         </div>

@@ -1,9 +1,14 @@
+import { Subscription } from 'rxjs';
+import { ClinicalFilterQuery } from '../../../../domains/doctor-patients';
 import {
   ChangeDetectionStrategy,
   Component,
   inject,
   input,
   OnInit,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
   output,
   signal,
 } from '@angular/core';
@@ -23,13 +28,26 @@ import { Router } from '@angular/router';
   styleUrl: './patient-diagnosis-timeline.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PatientDiagnosisTimelineComponent implements OnInit {
+export class PatientDiagnosisTimelineComponent implements OnInit, OnChanges, OnDestroy {
+  ngOnDestroy(): void {
+    this.historyRequest?.unsubscribe();
+  }
+  private historyRequest: Subscription | undefined;
   private readonly doctorPatientsApi = inject(DoctorPatientsApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   protected readonly language = inject(LanguageService);
 
+  readonly filters = input<Partial<ClinicalFilterQuery>>({});
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['filters'] && !changes['filters'].firstChange) {
+      this.pageNumber.set(1);
+      this.loadDiagnoses();
+    }
+  }
   readonly patientId = input.required<string>();
+  readonly practiceNames = input<Readonly<Record<string, string>>>({});
+  readonly canViewEncounters = input(false);
   readonly isHistoricalOnly = input<boolean>(false);
 
   readonly viewEncounter = output<{ encounterId: string; practiceId: string }>();
@@ -49,11 +67,14 @@ export class PatientDiagnosisTimelineComponent implements OnInit {
     const pid = this.patientId();
     if (!pid) return;
 
+    this.historyRequest?.unsubscribe();
+    this.diagnoses.set([]);
     this.loading.set(true);
     this.error.set(false);
 
-    this.doctorPatientsApi
+    this.historyRequest = this.doctorPatientsApi
       .diagnoses(pid, {
+        ...this.filters(),
         pageNumber: this.pageNumber(),
         pageSize: this.pageSize,
       })
@@ -76,7 +97,7 @@ export class PatientDiagnosisTimelineComponent implements OnInit {
   }
 
   navigateToEncounter(item: DoctorPatientDiagnosis): void {
-    if (!item.encounterId) {
+    if (!item.encounterId || !this.canViewEncounters()) {
       this.toast.error(this.language.t('doctorPatients.toasts.cannotViewDiagnosisEncounter'));
       return;
     }
@@ -89,4 +110,3 @@ export class PatientDiagnosisTimelineComponent implements OnInit {
     });
   }
 }
-

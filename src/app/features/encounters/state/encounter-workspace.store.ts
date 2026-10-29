@@ -29,7 +29,12 @@ export class EncounterWorkspaceStore {
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
   readonly doctor = signal(false);
-  readonly practices = signal<readonly { id: string; nameAr: string; nameEn: string | null }[]>([]);
+  readonly practices = signal<
+    readonly { id: string; nameAr: string; nameEn: string | null; isActive: boolean }[]
+  >([]);
+  readonly historical = computed(
+    () => this.practices().find((p) => p.id === this.practiceId())?.isActive === false,
+  );
   readonly practiceId = signal('');
   readonly query = signal<EncounterQuery>({ pageNumber: 1, pageSize: 20 });
   readonly page = signal<EncounterPage>({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
@@ -51,12 +56,16 @@ export class EncounterWorkspaceStore {
   readonly canReadDetails = computed(() =>
     this.doctor()
       ? this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwn) &&
-        this.session.hasPermission(PERMISSIONS.diagnosesViewOwn)
+        this.session.hasPermission(PERMISSIONS.diagnosesViewOwn) &&
+        (!this.historical() ||
+          this.session.hasPermission(PERMISSIONS.doctorPatientsViewHistoricalOwn))
       : this.session.hasPermission(PERMISSIONS.medicalEncountersViewOwnCompleted),
   );
   readonly canEditNotes = computed(
     () =>
       !this.clinicalBusy() &&
+      this.doctor() &&
+      !this.historical() &&
       this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canEditClinicalNotes &&
       this.session.hasPermission(PERMISSIONS.medicalEncountersUpdateOwn),
@@ -64,6 +73,8 @@ export class EncounterWorkspaceStore {
   readonly canManageDiagnoses = computed(
     () =>
       !this.clinicalBusy() &&
+      this.doctor() &&
+      !this.historical() &&
       this.detail()?.status === 'InProgress' &&
       !!this.detail()?.capabilities?.canManageDiagnoses &&
       this.session.hasPermission(PERMISSIONS.diagnosesManageOwn),
@@ -71,21 +82,26 @@ export class EncounterWorkspaceStore {
   readonly canComplete = computed(
     () =>
       !this.clinicalBusy() &&
+      this.doctor() &&
+      !this.historical() &&
       this.detail()?.status === 'InProgress' &&
-      (this.doctor() ||
-        this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn) ||
-        this.session.hasPermission('PracticeTickets.Complete')),
+      this.detail()?.capabilities?.canComplete === true &&
+      this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn),
   );
   readonly canCreateFollowUp = computed(
     () =>
+      this.doctor() &&
+      !this.historical() &&
       this.detail()?.status === 'Completed' &&
       !!this.detail()?.capabilities?.canCreateFollowUpEligibility &&
       this.session.hasPermission(PERMISSIONS.followUpEligibilityCreateOwn),
   );
   readonly canAmend = computed(
     () =>
+      this.doctor() &&
+      !this.historical() &&
       this.detail()?.status === 'Completed' &&
-      (this.detail()?.capabilities?.canAmend ?? true) &&
+      this.detail()?.capabilities?.canAmend === true &&
       this.session.hasPermission(PERMISSIONS.medicalEncountersAmendOwn),
   );
 
@@ -107,15 +123,18 @@ export class EncounterWorkspaceStore {
   async initialize(doctor: boolean, practiceId = '', encounterId = '', ticketId = '') {
     this.doctor.set(doctor);
     try {
-      if (doctor)
-        this.practices.set(
-          (await firstValueFrom(this.practicesApi.list())).filter((p) => p.isActive),
-        );
+      if (doctor) this.practices.set(await firstValueFrom(this.practicesApi.list()));
       const id = this.practices().some((p) => p.id === practiceId)
         ? practiceId
-        : this.practices().length === 1
+        : !practiceId && this.practices().length === 1
           ? this.practices()[0].id
           : '';
+      if (doctor && practiceId && !id) {
+        this.close();
+        this.failed.set(true);
+        this.messages.set(['doctorRemediation.sourceUnavailable']);
+        return;
+      }
       await this.selectPractice(id);
       if (encounterId) await this.inspect(encounterId);
       else if (doctor && ticketId && id && this.canReadDetails()) {
@@ -251,7 +270,8 @@ export class EncounterWorkspaceStore {
         unsavedNotes !== undefined &&
         unsavedNotes.trim() &&
         unsavedNotes !== (detail.clinicalNotes ?? '') &&
-        detail.capabilities?.canEditClinicalNotes
+        detail.capabilities?.canEditClinicalNotes === true &&
+        this.canEditNotes()
       ) {
         detail = await firstValueFrom(
           this.api.updateNotes(
@@ -266,7 +286,8 @@ export class EncounterWorkspaceStore {
       if (
         unsavedDiagnosis &&
         unsavedDiagnosis.displayText.trim() &&
-        detail.capabilities?.canManageDiagnoses
+        detail.capabilities?.canManageDiagnoses === true &&
+        this.canManageDiagnoses()
       ) {
         detail = await firstValueFrom(
           this.api.addDiagnosis(
@@ -430,8 +451,9 @@ export class EncounterWorkspaceStore {
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];
     this.messages.set(messages.length ? messages : ['encounters.failed']);
     this.toast.error(messages[0] || 'encounters.failed');
-    if (error instanceof HttpErrorResponse && (error.status === 403 || error.status === 404)) {
+    if (error instanceof HttpErrorResponse && [401, 403, 404].includes(error.status)) {
       this.detailSequence++;
+      this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
       this.detail.set(null);
       this.patientDetail.set(null);
       this.history.set([]);

@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { PrescriptionsApi } from '../prescriptions';
 import { environment } from '../../../environments/environment';
 import {
   ClinicalFilterQuery,
@@ -17,6 +18,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class DoctorPatientsApi {
+  private readonly prescriptionsApi = inject(PrescriptionsApi);
   private readonly http = inject(HttpClient);
   private readonly root = `${environment.apiBaseUrl}/api/v1/doctors/me`;
 
@@ -105,7 +107,7 @@ export class DoctorPatientsApi {
   ): Observable<ClinicalPage<DoctorPatientFollowUp>> {
     return this.http.get<ClinicalPage<DoctorPatientFollowUp>>(
       `${this.root}/patients/${this.id(patientId)}/follow-ups`,
-      { params: this.clinicalParams(query) },
+      { params: this.clinicalParams({ ...query, fromDate: undefined, toDate: undefined }) },
     );
   }
 
@@ -114,11 +116,7 @@ export class DoctorPatientsApi {
     versionNumber: number,
     disposition: 'inline' | 'attachment' = 'inline',
   ): Observable<Blob> {
-    const params = new HttpParams().set('disposition', disposition);
-    return this.http.get(
-      `${this.root}/prescriptions/${this.id(prescriptionId)}/versions/${versionNumber}/pdf`,
-      { params, responseType: 'blob' },
-    );
+    return this.prescriptionsApi.pdf(prescriptionId, versionNumber, disposition);
   }
 
   private clinicalParams(query?: Partial<ClinicalFilterQuery>): HttpParams {
@@ -151,4 +149,3 @@ export class DoctorPatientsApi {
     return encodeURIComponent(value.trim());
   }
 }
-

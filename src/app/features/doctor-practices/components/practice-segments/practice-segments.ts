@@ -1,8 +1,24 @@
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
-import { FormField, form, maxLength, min, required, submit } from '@angular/forms/signals';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  OnInit,
+  computed,
+  signal,
+} from '@angular/core';
+import {
+  FormField,
+  form,
+  disabled,
+  maxLength,
+  min,
+  required,
+  submit,
+} from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import {
@@ -31,6 +47,8 @@ export class PracticeSegments implements OnInit {
 
   private readonly api = inject(DoctorPracticesApi);
   private readonly toast = inject(ToastService);
+  readonly section = signal<'segments' | 'visitTypes' | 'prices'>('segments');
+  readonly editingPriceId = signal<string | null>(null);
   protected readonly segments = signal<DoctorPracticeSegment[]>([]);
   protected readonly visitTypes = signal<DoctorPracticeVisitType[]>([]);
   protected readonly prices = signal<DoctorPracticePrice[]>([]);
@@ -39,6 +57,9 @@ export class PracticeSegments implements OnInit {
   protected readonly messages = signal<string[]>([]);
   protected readonly editingSegmentId = signal<string | null>(null);
   protected readonly editingVisitTypeId = signal<string | null>(null);
+  readonly editingDefault = computed(() =>
+    this.segments().some((s) => s.id === this.editingSegmentId() && s.isDefault),
+  );
   protected readonly isAddingPrice = signal(false);
   protected readonly isAddingSegment = signal(false);
   protected readonly segmentModel = signal({
@@ -63,12 +84,15 @@ export class PracticeSegments implements OnInit {
   });
   protected readonly priceModel = signal({ segmentId: '', visitTypeId: '', price: 0 });
   protected readonly priceForm = form(this.priceModel, (field) => {
+    disabled(field.segmentId, () => !!this.editingPriceId());
+    disabled(field.visitTypeId, () => !!this.editingPriceId());
     required(field.segmentId, { message: 'ui.full.479' });
     required(field.visitTypeId, { message: 'ui.full.480' });
     min(field.price, 0.01, { message: 'ui.full.481' });
   });
 
   async ngOnInit(): Promise<void> {
+    this.section.set(this.canViewSegments() || this.canManageSegments() ? 'segments' : 'prices');
     await this.load();
   }
 
@@ -106,12 +130,15 @@ export class PracticeSegments implements OnInit {
   }
 
   protected openAddPrice(): void {
+    if (!this.canManagePricing()) return;
+    this.editingPriceId.set(null);
     this.isAddingPrice.set(true);
     this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
     this.priceForm().reset();
   }
 
   protected closeAddPrice(): void {
+    this.editingPriceId.set(null);
     this.isAddingPrice.set(false);
     this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
     this.priceForm().reset();
@@ -120,7 +147,7 @@ export class PracticeSegments implements OnInit {
   protected async saveSegment(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.segmentForm, async () => {
-      if (this.activeAction()) return;
+      if (this.activeAction() || !this.canManageSegments()) return;
       const value = this.segmentModel();
       const quota = nullableNumber(value.reservedDailyQuota);
       const release = nullableNumber(value.quotaReleaseBeforeMinutes);
@@ -177,7 +204,7 @@ export class PracticeSegments implements OnInit {
     event.preventDefault();
     await submit(this.visitTypeForm, async () => {
       const current = this.visitTypes().find((item) => item.id === this.editingVisitTypeId());
-      if (!current || this.activeAction()) return;
+      if (!current || this.activeAction() || !this.canManagePricing()) return;
       this.activeAction.set('visit-type');
       try {
         const value = this.visitTypeModel();
@@ -203,14 +230,23 @@ export class PracticeSegments implements OnInit {
   protected async addPrice(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.priceForm, async () => {
-      if (this.activeAction()) return;
+      if (this.activeAction() || !this.canManagePricing()) return;
       this.activeAction.set('price');
       try {
-        await firstValueFrom(this.api.addPrice(this.practiceId(), this.priceModel()));
+        const editing = this.prices().find((p) => p.id === this.editingPriceId());
+        await firstValueFrom(
+          editing
+            ? this.api.updatePrice(this.practiceId(), editing.id, {
+                price: this.priceModel().price,
+                rowVersion: editing.rowVersion,
+              })
+            : this.api.addPrice(this.practiceId(), this.priceModel()),
+        );
         await this.loadPrices();
         this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
         this.priceForm().reset();
         this.isAddingPrice.set(false);
+        this.editingPriceId.set(null);
         this.toast.success(this.uiLanguage.t('ui.full.486'));
       } catch (error) {
         await this.handleMutationError(error, this.loadPrices.bind(this));
@@ -220,29 +256,23 @@ export class PracticeSegments implements OnInit {
     });
   }
 
-  protected async changePrice(item: DoctorPracticePrice): Promise<void> {
-    const entered = window.prompt(this.uiLanguage.t('ui.full.487'), String(item.price));
-    if (entered === null) return;
-    const price = Number(entered);
-    if (!Number.isFinite(price) || price <= 0) {
-      this.messages.set([this.uiLanguage.t('ui.full.488')]);
-      return;
-    }
-    this.activeAction.set(`price-${item.id}`);
-    try {
-      await firstValueFrom(
-        this.api.updatePrice(this.practiceId(), item.id, { price, rowVersion: item.rowVersion }),
-      );
-      await this.loadPrices();
-      this.toast.success(this.uiLanguage.t('ui.full.489'));
-    } catch (error) {
-      await this.handleMutationError(error, this.loadPrices.bind(this));
-    } finally {
-      this.activeAction.set(null);
-    }
+  protected changePrice(item: DoctorPracticePrice): void {
+    if (!this.canManagePricing() || this.activeAction()) return;
+    this.editingPriceId.set(item.id);
+    this.priceModel.set({
+      segmentId: item.segmentId,
+      visitTypeId: item.visitTypeId,
+      price: item.price,
+    });
+    this.priceForm().reset();
+    this.isAddingPrice.set(true);
+  }
+  priceFor(segmentId: string, visitTypeId: string): DoctorPracticePrice | undefined {
+    return this.prices().find((p) => p.segmentId === segmentId && p.visitTypeId === visitTypeId);
   }
 
   protected async deletePrice(item: DoctorPracticePrice): Promise<void> {
+    if (!this.canManagePricing() || this.activeAction()) return;
     if (!window.confirm(this.uiLanguage.t('ui.full.490'))) return;
     this.activeAction.set(`price-${item.id}`);
     try {
@@ -259,10 +289,18 @@ export class PracticeSegments implements OnInit {
   }
 
   protected segmentName(id: string): string {
-    return this.segments().find((item) => item.id === id)?.nameAr ?? id;
+    const item = this.segments().find((item) => item.id === id);
+    return (
+      (this.uiLanguage.isRtl() ? item?.nameAr || item?.nameEn : item?.nameEn || item?.nameAr) ||
+      this.uiLanguage.t('doctorRemediation.unavailable')
+    );
   }
   protected visitTypeName(id: string): string {
-    return this.visitTypes().find((item) => item.id === id)?.nameAr ?? id;
+    const item = this.visitTypes().find((item) => item.id === id);
+    return (
+      (this.uiLanguage.isRtl() ? item?.nameAr || item?.nameEn : item?.nameEn || item?.nameAr) ||
+      this.uiLanguage.t('doctorRemediation.unavailable')
+    );
   }
 
   private async load(): Promise<void> {

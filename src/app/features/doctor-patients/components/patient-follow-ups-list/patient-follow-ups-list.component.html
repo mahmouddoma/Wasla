@@ -17,6 +17,14 @@
     </div>
   } @else if (followUps().length === 0) {
     <div class="empty-state">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Doctors-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
       <p>{{ 'doctorPatients.overview.noData' | t }}</p>
     </div>
   } @else {
@@ -26,21 +34,39 @@
           <div class="fu-header">
             <span class="fu-id">#{{ fu.eligibilityId.substring(0, 8) }}</span>
             <div class="badge-group">
-              <span class="badge badge-status" [attr.data-status]="fu.status">{{ fu.status }}</span>
+              <span class="badge badge-status" [attr.data-status]="fu.status">{{
+                'followUps.status.' + fu.status | t
+              }}</span>
               @if (fu.isHistoricalPractice) {
-                <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+                <span class="badge badge-historical">{{
+                  'doctorPatients.historicalBadge' | t
+                }}</span>
               }
             </div>
           </div>
 
           <div class="fu-body">
+            @if (canViewSource(fu)) {
+              <a
+                class="btn btn-outline"
+                routerLink="/doctor/encounters"
+                [queryParams]="{
+                  practiceId: fu.practiceId,
+                  encounterId: fu.sourceEncounterId,
+                  returnPatientId: patientId(),
+                }"
+                >{{ 'doctorRemediation.viewSource' | t }}</a
+              >
+            }
             <div class="detail-row">
               <span class="label">{{ 'doctorPatients.followUp.validUntil' | t }}:</span>
               <span class="val">{{ fu.validUntil | localizedDate: language.currentLang() }}</span>
             </div>
             <div class="detail-row">
               <span class="label">{{ 'doctorPatients.filter.practice' | t }}:</span>
-              <span class="val">{{ fu.practiceId }}</span>
+              <span class="val">{{
+                practiceNames()[fu.practiceId] || ('doctorRemediation.unavailable' | t)
+              }}</span>
             </div>
             @if (fu.reservedReservationId) {
               <div class="detail-row">
@@ -67,7 +93,7 @@
           [disabled]="pageNumber() <= 1"
           (click)="onPageChange(pageNumber() - 1)"
         >
-          &larr;
+          {{ 'common.previous' | t }}
         </button>
         <span class="page-info">{{ pageNumber() }}</span>
         <button
@@ -76,7 +102,7 @@
           [disabled]="pageNumber() * pageSize >= totalCount()"
           (click)="onPageChange(pageNumber() + 1)"
         >
-          &rarr;
+          {{ 'common.next' | t }}
         </button>
       </div>
     }

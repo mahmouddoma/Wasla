@@ -1,10 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   OnInit,
+  OnDestroy,
+  DestroyRef,
   signal,
 } from '@angular/core';
+import { Subscription, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -19,8 +24,10 @@ import {
   DoctorPatientQuery,
 } from '../../../../domains/doctor-patients';
 import { DoctorPracticesApi, DoctorPractice } from '../../../../domains/doctor-practices';
-import { ToastService } from '../../../../core/notifications/toast.service';
-import { PatientDetailDrawerComponent, PatientDrawerTab } from '../../components/patient-detail-drawer/patient-detail-drawer.component';
+import {
+  PatientDetailDrawerComponent,
+  PatientDrawerTab,
+} from '../../components/patient-detail-drawer/patient-detail-drawer.component';
 
 @Component({
   selector: 'app-doctor-patients-directory',
@@ -36,11 +43,15 @@ import { PatientDetailDrawerComponent, PatientDrawerTab } from '../../components
   templateUrl: './doctor-patients-directory.component.html',
   styleUrl: './doctor-patients-directory.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[attr.dir]': 'language.dir()', '[attr.lang]': 'language.currentLang()' },
 })
-export class DoctorPatientsDirectoryComponent implements OnInit {
+export class DoctorPatientsDirectoryComponent implements OnInit, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
+  private request: Subscription | undefined;
+  private listSequence = 0;
+  private readonly searchChanges = new Subject<string>();
   private readonly doctorPatientsApi = inject(DoctorPatientsApi);
   private readonly doctorPracticesApi = inject(DoctorPracticesApi);
-  private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly language = inject(LanguageService);
@@ -55,7 +66,8 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
   // States
   readonly loading = signal<boolean>(true);
   readonly error = signal<boolean>(false);
-  readonly errorMessage = signal<string>('');
+  private readonly errorKey = signal('');
+  readonly errorMessage = computed(() => this.language.t(this.errorKey()));
 
   // Filters & Query
   readonly search = signal<string>('');
@@ -77,16 +89,35 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
     this.loadPractices();
     this.loadPatients();
 
-    // Check route params for direct deep-link
-    this.route.paramMap.subscribe((params) => {
+    this.searchChanges
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.onSearch());
+
+    // Route state contains identifiers only, never patient search text.
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const pid = params.get('patientId');
       if (pid) {
-        this.openPatient(pid);
+        this.inspectedPatientId.set(pid);
+        this.drawerOpened.set(true);
       }
     });
 
-    this.route.queryParamMap.subscribe((q) => {
-      const tab = q.get('tab') as PatientDrawerTab;
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((q) => {
+      const patientId = q.get('patientId') || this.route.snapshot.paramMap.get('patientId');
+      this.inspectedPatientId.set(patientId);
+      this.drawerOpened.set(!!patientId);
+      const value = q.get('tab');
+      const tab = [
+        'overview',
+        'attendances',
+        'diagnoses',
+        'prescriptions',
+        'diagnostics',
+        'appointments',
+        'followUps',
+      ].includes(value || '')
+        ? (value as PatientDrawerTab)
+        : 'overview';
       if (tab) {
         this.drawerTab.set(tab);
       }
@@ -108,9 +139,13 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
       this.asOfUtc.set(null);
     }
 
+    const seq = ++this.listSequence;
+    this.request?.unsubscribe();
+    this.patients.set([]);
+    this.summary.set(null);
     this.loading.set(true);
     this.error.set(false);
-    this.errorMessage.set('');
+    this.errorKey.set('');
 
     const query: DoctorPatientQuery = {
       search: this.search().trim() || undefined,
@@ -118,15 +153,17 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
       practiceScope: this.practiceScope() !== 'all' ? this.practiceScope() : undefined,
       lastAttendanceFrom: this.fromDate() || undefined,
       lastAttendanceTo: this.toDate() || undefined,
-      minAttendanceCount: this.minAttendance() && this.minAttendance()! > 0 ? this.minAttendance()! : undefined,
+      minAttendanceCount:
+        this.minAttendance() && this.minAttendance()! > 0 ? this.minAttendance()! : undefined,
       hasUpcomingAppointment: this.hasUpcoming() !== null ? this.hasUpcoming()! : undefined,
       pageNumber: this.pageNumber(),
       pageSize: this.pageSize,
       asOfUtc: this.asOfUtc() || undefined,
     };
 
-    this.doctorPatientsApi.list(query).subscribe({
+    this.request = this.doctorPatientsApi.list(query).subscribe({
       next: (res) => {
+        if (seq !== this.listSequence) return;
         this.patients.set(res.items || []);
         this.totalCount.set(res.totalCount);
         this.summary.set(res.summary);
@@ -136,17 +173,31 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
+        if (seq !== this.listSequence) return;
+        this.patients.set([]);
+        this.summary.set(null);
+        this.totalCount.set(0);
         this.loading.set(false);
         this.error.set(true);
         if (err.status === 403) {
-          this.errorMessage.set(this.language.t('doctorPatients.toasts.noDirectoryPermission'));
+          this.errorKey.set('doctorPatients.toasts.noDirectoryPermission');
         } else if (err.status === 429) {
-          this.errorMessage.set(this.language.t('doctorPatients.toasts.rateLimited'));
+          this.errorKey.set('doctorPatients.toasts.rateLimited');
         } else {
-          this.errorMessage.set(this.language.t('doctorPatients.toasts.directoryLoadFailed'));
+          this.errorKey.set('doctorPatients.toasts.directoryLoadFailed');
         }
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.listSequence++;
+    this.request?.unsubscribe();
+  }
+
+  updateSearch(value: string): void {
+    this.search.set(value);
+    this.searchChanges.next(value);
   }
 
   onSearch(): void {
@@ -179,13 +230,33 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
     this.inspectedPatientId.set(patientId);
     this.drawerTab.set(tab);
     this.drawerOpened.set(true);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { patientId, tab },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  onDrawerTabChanged(tab: PatientDrawerTab): void {
+    this.drawerTab.set(tab);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+    });
   }
 
   closeDrawer(): void {
     this.drawerOpened.set(false);
     this.inspectedPatientId.set(null);
     if (this.route.snapshot.paramMap.get('patientId')) {
-      this.router.navigate(['/doctor/patients'], { replaceUrl: true });
+      void this.router.navigate(['/doctor/patients']);
+    } else {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { patientId: null, tab: null },
+        queryParamsHandling: 'merge',
+      });
     }
   }
 
@@ -197,7 +268,7 @@ export class DoctorPatientsDirectoryComponent implements OnInit {
       this.fromDate() ||
       this.toDate() ||
       (this.minAttendance() && this.minAttendance()! > 0) ||
-      this.hasUpcoming() !== null
+      this.hasUpcoming() !== null,
     );
   }
 }

@@ -1,5 +1,16 @@
+import { firstValueFrom } from 'rxjs';
+import { AuthSession } from '../../../../core/auth/auth-session';
+import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
+import { ToastService } from '../../../../core/notifications/toast.service';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
@@ -33,6 +44,33 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationWorkspaceComponent implements OnInit {
+  private readonly doctorPatients = inject(DoctorPatientsApi);
+  private readonly doctorSession = inject(AuthSession);
+  private readonly patientToast = inject(ToastService);
+  readonly patientLoading = signal(false);
+  canOpenPatient(): boolean {
+    return (
+      this.store.actor() === 'Doctor' &&
+      this.doctorSession.hasPermission('DoctorPatients.ViewOwn') &&
+      !!this.store.detail()?.patient.id
+    );
+  }
+  async openPatient(): Promise<void> {
+    const source = this.store.detail();
+    if (!source?.patient.id || !this.canOpenPatient() || this.patientLoading()) return;
+    this.patientLoading.set(true);
+    try {
+      await firstValueFrom(this.doctorPatients.overview(source.patient.id));
+      if (this.store.detail()?.reservationId !== source.reservationId || !this.canOpenPatient())
+        return;
+      await this.router.navigate(['/doctor/patients', source.patient.id]);
+    } catch {
+      this.patientToast.error(this.language.t('doctorRemediation.patientUnavailable'));
+    } finally {
+      this.patientLoading.set(false);
+    }
+  }
+
   readonly receptionViews = ['Today', 'Upcoming', 'All', 'Archive'] as const;
   readonly store = inject(ReservationWorkspaceStore);
   readonly language = inject(LanguageService);
@@ -142,13 +180,14 @@ export class ReservationWorkspaceComponent implements OnInit {
     return 'status-neutral';
   }
 
-  readonly attestationBasis = signal<'GovernmentIdSeen' | 'ApprovedAlternateEvidence'>('GovernmentIdSeen');
+  readonly attestationBasis = signal<'GovernmentIdSeen' | 'ApprovedAlternateEvidence'>(
+    'GovernmentIdSeen',
+  );
   readonly attestationReason = signal('');
 
   onAttestationBasisChange(event: Event): void {
     const val = (event.target as HTMLSelectElement).value as
-      | 'GovernmentIdSeen'
-      | 'ApprovedAlternateEvidence';
+      'GovernmentIdSeen' | 'ApprovedAlternateEvidence';
     this.attestationBasis.set(val);
   }
 
@@ -158,10 +197,7 @@ export class ReservationWorkspaceComponent implements OnInit {
   }
 
   confirmAttestation(): void {
-    void this.store.confirmAttestationAndBook(
-      this.attestationBasis(),
-      this.attestationReason(),
-    );
+    void this.store.confirmAttestationAndBook(this.attestationBasis(), this.attestationReason());
   }
 
   cancelAttestation(): void {
@@ -197,7 +233,8 @@ export class ReservationWorkspaceComponent implements OnInit {
   }
 
   drawerDescription(): string {
-    if (this.store.pendingAttestation()) return this.language.t('reservations.attestation.subtitle');
+    if (this.store.pendingAttestation())
+      return this.language.t('reservations.attestation.subtitle');
     if (this.store.detail()) {
       return this.store.actor() === 'Reception'
         ? this.label(this.store.detail()?.patient)

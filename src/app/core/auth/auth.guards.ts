@@ -2,6 +2,27 @@ import { inject } from '@angular/core';
 import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 import { AuthSession } from './auth-session';
 import { PERMISSIONS } from './permissions';
+import { DoctorApi } from '../../domains/doctors';
+import { firstValueFrom } from 'rxjs';
+
+/** Approval is read from the account source, independently of role and grants. */
+export const doctorOperationalGuard: CanActivateFn = async (_route, state) => {
+  const session = inject(AuthSession);
+  const router = inject(Router);
+  if (session.user()?.userType !== 'Doctor') return true;
+  if (!/^\/(?:doctor|workspace\/doctor|diagnostics\/doctor)(?:\/|\?|$)/.test(state.url))
+    return true;
+  if (/^\/doctor\/(?:onboarding|profile)(?:\/|\?|$)/.test(state.url)) return true;
+  const api = inject(DoctorApi);
+  try {
+    const status = await firstValueFrom(api.onboardingStatus());
+    return status.approvalStatus === 'Approved'
+      ? true
+      : router.createUrlTree(['/doctor/onboarding']);
+  } catch {
+    return router.createUrlTree(['/doctor/onboarding']);
+  }
+};
 
 export const anonymousOnlyMatchGuard: CanMatchFn = () => {
   const session = inject(AuthSession);

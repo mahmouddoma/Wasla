@@ -62,7 +62,9 @@ describe('QueueWorkspace', () => {
     addDiagnosis: vi.fn(() =>
       of({
         ...mockEncounter,
-        diagnoses: [{ diagnosisId: 'd1', type: 'Primary' as const, displayText: 'Flu', notes: null }],
+        diagnoses: [
+          { diagnosisId: 'd1', type: 'Primary' as const, displayText: 'Flu', notes: null },
+        ],
       }),
     ),
     updateDiagnosis: vi.fn(() => of(mockEncounter)),
@@ -139,6 +141,12 @@ describe('QueueWorkspace', () => {
     fastTrack: false,
     callAttempts: [],
     rowVersion: 'doctor-rv',
+    operationalCapabilities: {
+      canCancel: false,
+      canRestore: false,
+      canQueueMutate: true,
+      canMutateOperationalRecord: true,
+    },
   };
   it('preserves Doctor Start with both required permissions and the ticket row version', async () => {
     api.start.mockReturnValue(of({ ...doctorTicket, status: 'InProgress' }));
@@ -149,6 +157,14 @@ describe('QueueWorkspace', () => {
       { rowVersion: 'doctor-rv' },
       expect.any(String),
     );
+  });
+  it('does not start when the source capability is missing', async () => {
+    api.start.mockClear();
+    await fixture.componentInstance['act']('start', {
+      ...doctorTicket,
+      operationalCapabilities: undefined,
+    });
+    expect(api.start).not.toHaveBeenCalled();
   });
   it('does not start when either existing clinical permission is absent', async () => {
     api.start.mockClear();
@@ -191,7 +207,10 @@ describe('QueueWorkspace', () => {
       rowVersion: 'ticket-rv-1',
     };
     api.details.mockReturnValue(of(inProgTicket));
-    api.complete.mockReturnValue(of({ ...inProgTicket, status: 'Completed' }));
+    api.complete.mockImplementation(() => {
+      encountersApi.byTicket.mockReturnValue(of({ ...mockEncounter, status: 'Completed' }));
+      return of({ ...inProgTicket, status: 'Completed' });
+    });
 
     fixture.componentInstance['queue'].set({
       ...queue,

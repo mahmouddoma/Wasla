@@ -13,6 +13,14 @@
     </div>
   } @else if (prescriptions().length === 0) {
     <div class="empty-state">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Medical prescription-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
       <p>{{ 'doctorPatients.overview.noData' | t }}</p>
     </div>
   } @else {
@@ -24,15 +32,40 @@
               <span class="rx-id">#{{ rx.prescriptionId.substring(0, 8) }}</span>
               <span class="badge badge-version">v{{ rx.currentVersionNumber }}</span>
               <span class="badge badge-status" [attr.data-status]="rx.currentStatus">
-                {{ rx.currentStatus }}
+                {{ 'prescriptions.status.' + rx.currentStatus | t }}
               </span>
               @if (rx.isHistoricalPractice) {
-                <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+                <span class="badge badge-historical">{{
+                  'doctorPatients.historicalBadge' | t
+                }}</span>
               }
             </div>
 
             <div class="rx-actions">
-              @if (rx.canExport && rx.currentStatus !== 'Draft') {
+              @if (canViewEncounters()) {
+                <a
+                  class="btn btn-sm btn-outline"
+                  routerLink="/doctor/encounters"
+                  [queryParams]="{
+                    practiceId: rx.practiceId,
+                    encounterId: rx.encounterId,
+                    returnPatientId: patientId(),
+                  }"
+                  >{{ 'doctorRemediation.viewSource' | t }}</a
+                >
+              }
+              @if (rx.canView) {
+                <a
+                  class="btn btn-sm btn-outline"
+                  routerLink="/doctor/prescriptions"
+                  [queryParams]="{
+                    prescriptionId: rx.prescriptionId,
+                    returnPatientId: patientId(),
+                  }"
+                  >{{ 'common.viewDetails' | t }}</a
+                >
+              }
+              @if (canExport(rx)) {
                 <button
                   type="button"
                   class="btn btn-sm btn-outline"
@@ -71,8 +104,10 @@
 
           <div class="rx-details">
             <div class="detail-item">
-              <span class="detail-label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
-              <span class="detail-val">{{ rx.visitDateUtc | localizedDate: language.currentLang() }}</span>
+              <span class="detail-label">{{ 'doctorPatients.prescription.visitDate' | t }}:</span>
+              <span class="detail-val">{{
+                rx.visitDateUtc | localizedDate: language.currentLang()
+              }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">{{ 'doctorPatients.prescription.medCount' | t }}:</span>
@@ -80,7 +115,9 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">{{ 'doctorPatients.filter.practice' | t }}:</span>
-              <span class="detail-val">{{ rx.practiceId }}</span>
+              <span class="detail-val">{{
+                practiceNames()[rx.practiceId] || ('doctorRemediation.unavailable' | t)
+              }}</span>
             </div>
           </div>
         </div>
@@ -95,7 +132,7 @@
           [disabled]="pageNumber() <= 1"
           (click)="onPageChange(pageNumber() - 1)"
         >
-          &larr;
+          {{ 'common.previous' | t }}
         </button>
         <span class="page-info">{{ pageNumber() }}</span>
         <button
@@ -104,48 +141,43 @@
           [disabled]="pageNumber() * pageSize >= totalCount()"
           (click)="onPageChange(pageNumber() + 1)"
         >
-          &rarr;
+          {{ 'common.next' | t }}
         </button>
       </div>
     }
   }
 
-  @if (selectedVersions()) {
-    <div class="modal-backdrop" (click)="closeVersionsModal()">
-      <div class="modal-dialog" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h4>{{ 'doctorPatients.prescription.viewVersions' | t }}</h4>
-          <button type="button" class="close-btn" (click)="closeVersionsModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="versions-list">
-            @for (v of selectedVersions(); track v.versionNumber) {
-              <div class="version-row">
-                <div>
-                  <strong>v{{ v.versionNumber }}</strong> —
-                  <span class="badge" [attr.data-status]="v.status">{{ v.status }}</span>
-                  <span class="v-date">{{ (v.finalizedOnUtc || v.voidedOnUtc) | localizedDate: language.currentLang() }}</span>
-                </div>
-                @if (v.status !== 'Draft') {
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline"
-                    [disabled]="pdfLoading()"
-                    (click)="viewVersionPdf(v.versionNumber)"
-                  >
-                    PDF
-                  </button>
-                }
-              </div>
-            }
+  <app-side-drawer
+    [opened]="!!selectedVersions()"
+    [title]="'doctorPatients.prescription.viewVersions' | t"
+    (closed)="closeVersionsModal()"
+  >
+    <div class="versions-list">
+      @for (v of selectedVersions(); track v.versionNumber) {
+        <div class="version-row">
+          <div>
+            <strong>v{{ v.versionNumber }}</strong> —
+            <span class="badge" [attr.data-status]="v.status">{{
+              'prescriptions.status.' + v.status | t
+            }}</span>
+            <span class="v-date">{{
+              v.voidedAtUtc || v.finalizedAtUtc | localizedDate: language.currentLang()
+            }}</span>
           </div>
+          @if (canExportVersion(v)) {
+            <button
+              type="button"
+              class="btn btn-sm btn-outline"
+              [disabled]="pdfLoading()"
+              (click)="viewVersionPdf(v.versionNumber)"
+            >
+              {{ 'doctorRemediation.pdf' | t }}
+            </button>
+          }
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeVersionsModal()">
-            {{ 'common.close' | t }}
-          </button>
-        </div>
-      </div>
+      }
     </div>
-  }
+  </app-side-drawer>
 </div>
+
+<app-pdf-viewer [blob]="pdfBlob()" (closed)="pdfBlob.set(null)"></app-pdf-viewer>

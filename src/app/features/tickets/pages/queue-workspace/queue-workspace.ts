@@ -143,29 +143,39 @@ export class QueueWorkspace implements OnInit {
         (this.activeEncounter()?.clinicalNotes ?? '').trim()
       ),
   );
+  private readonly writableClinicalSource = computed(
+    () =>
+      this.isDoctor() &&
+      this.practices().some((p) => p.id === this.practiceId()) &&
+      this.activeEncounter()?.practice.id === this.practiceId(),
+  );
   protected readonly canEditClinicalNotes = computed(
     () =>
-      (this.activeEncounter()?.status ?? 'InProgress') === 'InProgress' &&
-      (this.activeEncounter()?.capabilities?.canEditClinicalNotes ?? true) &&
-      (this.isDoctor() || this.session.hasPermission(PERMISSIONS.medicalEncountersUpdateOwn)),
+      this.writableClinicalSource() &&
+      this.activeEncounter()?.status === 'InProgress' &&
+      this.activeEncounter()?.capabilities?.canEditClinicalNotes === true &&
+      this.session.hasPermission(PERMISSIONS.medicalEncountersUpdateOwn),
   );
   protected readonly canManageDiagnoses = computed(
     () =>
-      (this.activeEncounter()?.status ?? 'InProgress') === 'InProgress' &&
-      (this.activeEncounter()?.capabilities?.canManageDiagnoses ?? true) &&
-      (this.isDoctor() || this.session.hasPermission(PERMISSIONS.diagnosesManageOwn)),
+      this.writableClinicalSource() &&
+      this.activeEncounter()?.status === 'InProgress' &&
+      this.activeEncounter()?.capabilities?.canManageDiagnoses === true &&
+      this.session.hasPermission(PERMISSIONS.diagnosesManageOwn),
   );
   protected readonly canCompleteVisit = computed(
     () =>
-      (this.activeEncounter()?.status ?? 'InProgress') === 'InProgress' &&
-      (this.isDoctor() ||
-        this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn) ||
-        this.session.hasPermission('PracticeTickets.Complete')),
+      this.writableClinicalSource() &&
+      this.activeEncounter()?.status === 'InProgress' &&
+      this.activeEncounter()?.capabilities?.canComplete === true &&
+      this.session.hasPermission(PERMISSIONS.doctorPracticeTicketsCompleteOwn),
   );
   protected readonly canCreateFollowUp = computed(
     () =>
-      (this.activeEncounter()?.capabilities?.canCreateFollowUpEligibility ?? true) &&
-      (this.isDoctor() || this.session.hasPermission(PERMISSIONS.followUpEligibilityCreateOwn)),
+      this.writableClinicalSource() &&
+      this.activeEncounter()?.status === 'Completed' &&
+      this.activeEncounter()?.capabilities?.canCreateFollowUpEligibility === true &&
+      this.session.hasPermission(PERMISSIONS.followUpEligibilityCreateOwn),
   );
 
   protected readonly actor = signal<TicketActor>('Doctor');
@@ -262,8 +272,11 @@ export class QueueWorkspace implements OnInit {
   protected readonly canViewQueue = computed(() => this.permitted(PERMISSIONS.practiceTicketsView));
   protected readonly canRefund = computed(
     () =>
-      this.isDoctor() ||
-      (this.reception.currentPracticeId() === this.practiceId() &&
+      (this.isDoctor() &&
+        this.session.hasPermission(PERMISSIONS.doctorPracticePaymentsViewOwn) &&
+        this.session.hasPermission(PERMISSIONS.doctorPracticePaymentsRefundOwn)) ||
+      (this.actor() === 'Reception' &&
+        this.reception.currentPracticeId() === this.practiceId() &&
         this.reception.allows(PERMISSIONS.practicePaymentsView) &&
         this.reception.allows(PERMISSIONS.practicePaymentsRefund)),
   );
@@ -282,7 +295,7 @@ export class QueueWorkspace implements OnInit {
   );
 
   private permitted(permission: string): boolean {
-    if (this.isDoctor()) return true;
+    if (this.isDoctor()) return this.session.hasPermission(permission);
     const currentId = this.reception.currentPracticeId() || this.practiceId();
     const matchesPractice =
       !this.reception.currentPracticeId() ||
@@ -753,7 +766,14 @@ export class QueueWorkspace implements OnInit {
     if (action === 'manual-call' && this.queueOccupied()) return;
     if (action === 'recall' && !this.canRecall(ticket)) return;
     if (action === 'restore' && ticket.isRefunded) return;
-    if (action === 'start' && !this.canStart()) return;
+    if (
+      action === 'start' &&
+      (!this.canStart() ||
+        ticket.isArchived ||
+        ticket.operationalCapabilities?.canQueueMutate !== true ||
+        (ticket.practice.id || ticket.doctorPracticeId) !== this.practiceId())
+    )
+      return;
     const allowed =
       action === 'manual-call'
         ? this.canManualCall()
@@ -1292,7 +1312,8 @@ export class QueueWorkspace implements OnInit {
       if (
         m.clinicalNotes.trim() &&
         m.clinicalNotes !== (detail.clinicalNotes ?? '') &&
-        detail.capabilities?.canEditClinicalNotes !== false
+        detail.capabilities?.canEditClinicalNotes === true &&
+        this.session.hasPermission(PERMISSIONS.medicalEncountersUpdateOwn)
       ) {
         detail = await firstValueFrom(
           this.encountersApi.updateNotes(
@@ -1306,7 +1327,11 @@ export class QueueWorkspace implements OnInit {
       }
 
       // 2. Auto-save draft diagnosis if doctor typed one without clicking '+ Add'
-      if (m.displayText.trim() && detail.capabilities?.canManageDiagnoses !== false) {
+      if (
+        m.displayText.trim() &&
+        detail.capabilities?.canManageDiagnoses === true &&
+        this.session.hasPermission(PERMISSIONS.diagnosesManageOwn)
+      ) {
         const currentActive = (detail.diagnoses ?? []).filter((d) => !d.isVoided);
         const autoType: DiagnosisType =
           !m.diagnosisId && currentActive.some((d) => d.type === 'Primary') ? 'Secondary' : m.type;
@@ -1347,7 +1372,7 @@ export class QueueWorkspace implements OnInit {
         firstValueFrom(this.encountersApi.byTicket(practiceId, inProgTicket.ticketId)),
       ]);
       this.activeEncounter.set(latest);
-      if (latest.status !== 'InProgress') return;
+      if (latest.status !== 'InProgress' || !this.canCompleteVisit()) return;
 
       const prescription = latest.prescription;
       const encounterBlockers = latest.completionBlockers ?? [];
@@ -1406,13 +1431,20 @@ export class QueueWorkspace implements OnInit {
 
       // 4. Optional Follow-Up creation if Doctor picked a follow-up date
       const followUpDate = this.clinicalModel().validUntil.trim();
-      if (followUpDate && this.canCreateFollowUp()) {
+      if (followUpDate && this.session.hasPermission(PERMISSIONS.followUpEligibilityCreateOwn)) {
         try {
-          await firstValueFrom(
-            this.encountersApi.createFollowUp(practiceId, latest.encounterId, followUpDate),
+          const completed = await firstValueFrom(
+            this.encountersApi.byTicket(practiceId, inProgTicket.ticketId),
           );
+          if (!this.current(practiceId, generation)) return;
+          this.activeEncounter.set(completed);
+          if (this.canCreateFollowUp()) {
+            await firstValueFrom(
+              this.encountersApi.createFollowUp(practiceId, completed.encounterId, followUpDate),
+            );
+          } else this.toast.error('doctorRemediation.followUpNotCreated');
         } catch {
-          // Non-blocking if follow-up fails after completion
+          this.toast.error('doctorRemediation.followUpNotCreated');
         }
       }
 
@@ -1739,6 +1771,17 @@ export class QueueWorkspace implements OnInit {
       this.messages.set(['reception.accessChanged']);
       this.toast.error('reception.accessChanged');
       return;
+    }
+    if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
+      this.generation++;
+      this.queue.set(this.emptyQueue());
+      this.selected.set(null);
+      this.activeEncounter.set(null);
+      this.resetClinicalForm();
+      this.ticketDetailOpen.set(false);
+      this.archiveOpen.set(false);
+      this.archivedTickets.set([]);
+      this.resetWalkIn();
     }
     const parsed = parseApiErrors(error);
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];

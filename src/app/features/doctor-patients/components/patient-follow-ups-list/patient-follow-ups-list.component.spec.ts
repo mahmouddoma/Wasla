@@ -24,14 +24,14 @@ describe('PatientFollowUpsListComponent', () => {
 
   beforeEach(async () => {
     doctorPatientsApi = {
-      followUps: vi.fn().mockReturnValue(of({ items: [mockFollowUp], totalCount: 1, pageNumber: 1, pageSize: 10 })),
+      followUps: vi
+        .fn()
+        .mockReturnValue(of({ items: [mockFollowUp], totalCount: 1, pageNumber: 1, pageSize: 10 })),
     };
 
     await TestBed.configureTestingModule({
       imports: [PatientFollowUpsListComponent],
-      providers: [
-        { provide: DoctorPatientsApi, useValue: doctorPatientsApi },
-      ],
+      providers: [{ provide: DoctorPatientsApi, useValue: doctorPatientsApi }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PatientFollowUpsListComponent);
@@ -42,7 +42,10 @@ describe('PatientFollowUpsListComponent', () => {
 
   it('creates component and loads follow-ups', () => {
     expect(component).toBeTruthy();
-    expect(doctorPatientsApi.followUps).toHaveBeenCalledWith('pat-1', { pageNumber: 1, pageSize: 10 });
+    expect(doctorPatientsApi.followUps).toHaveBeenCalledWith('pat-1', {
+      pageNumber: 1,
+      pageSize: 10,
+    });
     expect(component.followUps().length).toBe(1);
     expect(component.loading()).toBe(false);
   });
@@ -54,4 +57,3 @@ describe('PatientFollowUpsListComponent', () => {
     expect(component.loading()).toBe(false);
   });
 });
-

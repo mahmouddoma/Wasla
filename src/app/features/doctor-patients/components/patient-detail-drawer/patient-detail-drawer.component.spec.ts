@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { LanguageService } from '../../../../core/i18n/language.service';
 import { SimpleChange } from '@angular/core';
 import { PatientDetailDrawerComponent } from './patient-detail-drawer.component';
 import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
@@ -100,6 +101,7 @@ describe('PatientDetailDrawerComponent', () => {
       ],
     }).compileComponents();
 
+    TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(PatientDetailDrawerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -107,6 +109,19 @@ describe('PatientDetailDrawerComponent', () => {
 
   it('creates component', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('translates patient demographics when switching language in the open drawer', async () => {
+    fixture.componentRef.setInput('opened', true);
+    fixture.componentRef.setInput('patientId', 'pat-1');
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.meta-row')?.textContent).toContain('ذكر');
+
+    TestBed.inject(LanguageService).setLanguage('en');
+    await fixture.whenStable();
+    expect(element.querySelector('.meta-row')?.textContent).toContain('Male');
+    expect(element.querySelector('.secondary-name')?.tagName).toBe('BDI');
   });
 
   it('loads overview when drawer is opened with patientId', () => {
@@ -123,7 +138,12 @@ describe('PatientDetailDrawerComponent', () => {
     expect(component.loading()).toBe(false);
   });
 
-  it('switches tabs and respects capabilities', () => {
+  it('switches tabs only after the patient source grants access', async () => {
+    component.setTab('diagnoses');
+    expect(component.activeTab()).toBe('overview');
+    fixture.componentRef.setInput('opened', true);
+    fixture.componentRef.setInput('patientId', 'pat-1');
+    await fixture.whenStable();
     component.setTab('diagnoses');
     expect(component.activeTab()).toBe('diagnoses');
   });
@@ -152,4 +172,3 @@ describe('PatientDetailDrawerComponent', () => {
     expect(component.loading()).toBe(false);
   });
 });
-

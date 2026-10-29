@@ -17,6 +17,14 @@
     </div>
   } @else if (diagnoses().length === 0) {
     <div class="empty-state">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Doctors-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
       <p>{{ 'doctorPatients.overview.noData' | t }}</p>
     </div>
   } @else {
@@ -26,13 +34,19 @@
           <div class="timeline-dot"></div>
           <div class="card-content">
             <div class="card-top">
-              <span class="diagnosis-title">{{ diag.displayText || ('doctorPatients.overview.noData' | t) }}</span>
+              <span class="diagnosis-title">{{
+                diag.displayText || ('doctorPatients.overview.noData' | t)
+              }}</span>
               <div class="badges-row">
                 @if (diag.diagnosisType) {
-                  <span class="badge badge-type">{{ diag.diagnosisType }}</span>
+                  <span class="badge badge-type">{{
+                    'encounters.diagnosis.' + diag.diagnosisType | t
+                  }}</span>
                 }
                 @if (diag.isHistoricalPractice) {
-                  <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+                  <span class="badge badge-historical">{{
+                    'doctorPatients.historicalBadge' | t
+                  }}</span>
                 }
               </div>
             </div>
@@ -44,25 +58,23 @@
               </span>
               <span class="meta-item">
                 <strong>{{ 'doctorPatients.filter.practice' | t }}:</strong>
-                {{ diag.practiceId }}
+                {{ practiceNames()[diag.practiceId] || ('doctorRemediation.unavailable' | t) }}
               </span>
               @if (diag.encounterStatus) {
                 <span class="meta-item">
                   <strong>{{ 'doctorPatients.attendance.encounterStatus' | t }}:</strong>
-                  {{ diag.encounterStatus }}
+                  {{ 'encounters.status.' + diag.encounterStatus | t }}
                 </span>
               }
             </div>
 
-            <div class="card-action">
-              <button
-                type="button"
-                class="btn-link"
-                (click)="navigateToEncounter(diag)"
-              >
-                {{ 'doctorPatients.diagnosis.viewEncounter' | t }} &rarr;
-              </button>
-            </div>
+            @if (canViewEncounters()) {
+              <div class="card-action">
+                <button type="button" class="btn-link" (click)="navigateToEncounter(diag)">
+                  {{ 'doctorPatients.diagnosis.viewEncounter' | t }} {{ 'common.next' | t }}
+                </button>
+              </div>
+            }
           </div>
         </div>
       }
@@ -76,7 +88,7 @@
           [disabled]="pageNumber() <= 1"
           (click)="onPageChange(pageNumber() - 1)"
         >
-          &larr;
+          {{ 'common.previous' | t }}
         </button>
         <span class="page-info">{{ pageNumber() }}</span>
         <button
@@ -85,10 +97,9 @@
           [disabled]="pageNumber() * pageSize >= totalCount()"
           (click)="onPageChange(pageNumber() + 1)"
         >
-          &rarr;
+          {{ 'common.next' | t }}
         </button>
       </div>
     }
   }
 </div>
-

@@ -41,10 +41,12 @@
         </svg>
         <input
           type="search"
+          id="patient-search"
           class="form-control search-input"
+          [attr.aria-label]="'doctorPatients.searchPlaceholder' | t"
           [placeholder]="'doctorPatients.searchPlaceholder' | t"
           [ngModel]="search()"
-          (ngModelChange)="search.set($event)"
+          (ngModelChange)="updateSearch($event)"
           (keyup.enter)="onSearch()"
         />
       </div>
@@ -63,8 +65,11 @@
     <div class="filters-row options-row">
       <!-- Practice Select -->
       <div class="filter-field">
-        <label class="field-label">{{ 'doctorPatients.filter.practice' | t }}</label>
+        <label class="field-label" for="patient-practice">{{
+          'doctorPatients.filter.practice' | t
+        }}</label>
         <select
+          id="patient-practice"
           class="form-control select-control"
           [ngModel]="selectedPracticeId()"
           (ngModelChange)="selectedPracticeId.set($event); onSearch()"
@@ -72,7 +77,7 @@
           <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
           @for (p of practices(); track p.id) {
             <option [value]="p.id">
-              {{ language.isRtl() ? (p.nameAr || p.nameEn) : (p.nameEn || p.nameAr) }}
+              {{ language.isRtl() ? p.nameAr || p.nameEn : p.nameEn || p.nameAr }}
               {{ !p.isActive ? '(' + ('doctorPatients.historicalBadge' | t) + ')' : '' }}
             </option>
           }
@@ -81,8 +86,11 @@
 
       <!-- Scope Select -->
       <div class="filter-field">
-        <label class="field-label">{{ 'doctorPatients.filter.scope' | t }}</label>
+        <label class="field-label" for="patient-scope">{{
+          'doctorPatients.filter.scope' | t
+        }}</label>
         <select
+          id="patient-scope"
           class="form-control select-control"
           [ngModel]="practiceScope()"
           (ngModelChange)="practiceScope.set($event); onSearch()"
@@ -95,10 +103,14 @@
 
       <!-- From Date -->
       <div class="filter-field">
-        <label class="field-label">{{ 'doctorPatients.filter.fromDate' | t }}</label>
+        <label class="field-label" for="patient-from-date">{{
+          'doctorPatients.filter.fromDate' | t
+        }}</label>
         <input
+          id="patient-from-date"
           type="date"
-          class="form-control"
+          dir="ltr"
+          class="form-control ltr-text"
           [ngModel]="fromDate()"
           (ngModelChange)="fromDate.set($event); onSearch()"
         />
@@ -106,10 +118,14 @@
 
       <!-- To Date -->
       <div class="filter-field">
-        <label class="field-label">{{ 'doctorPatients.filter.toDate' | t }}</label>
+        <label class="field-label" for="patient-to-date">{{
+          'doctorPatients.filter.toDate' | t
+        }}</label>
         <input
+          id="patient-to-date"
           type="date"
-          class="form-control"
+          dir="ltr"
+          class="form-control ltr-text"
           [ngModel]="toDate()"
           (ngModelChange)="toDate.set($event); onSearch()"
         />
@@ -117,9 +133,13 @@
 
       <!-- Min Attendance -->
       <div class="filter-field small-field">
-        <label class="field-label">{{ 'doctorPatients.filter.minAttendance' | t }}</label>
+        <label class="field-label" for="patient-min-attendance">{{
+          'doctorPatients.filter.minAttendance' | t
+        }}</label>
         <input
+          id="patient-min-attendance"
           type="number"
+          dir="ltr"
           min="1"
           class="form-control"
           [ngModel]="minAttendance()"
@@ -132,9 +152,11 @@
         <label class="checkbox-label">
           <input
             type="checkbox"
+            class="sr-only-chk"
             [checked]="hasUpcoming() === true"
             (change)="toggleUpcoming($event)"
           />
+          <span class="checkbox-indicator" aria-hidden="true"></span>
           <span>{{ 'doctorPatients.filter.hasUpcoming' | t }}</span>
         </label>
       </div>
@@ -157,6 +179,13 @@
       </div>
     } @else if (patients().length === 0) {
       <div class="state-container empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
         @if (isFiltered()) {
           <h3>{{ 'doctorPatients.emptyFilter.title' | t }}</h3>
           <p>{{ 'doctorPatients.emptyFilter.desc' | t }}</p>
@@ -177,10 +206,11 @@
                 <th>{{ 'doctorPatients.col.patient' | t }}</th>
                 <th>{{ 'doctorPatients.col.contact' | t }}</th>
                 <th>{{ 'doctorPatients.filter.practice' | t }}</th>
+                <th>{{ 'doctorRemediation.firstAttendance' | t }}</th>
                 <th>{{ 'doctorPatients.col.lastAttendance' | t }}</th>
                 <th>{{ 'doctorPatients.col.attendanceCount' | t }}</th>
                 <th>{{ 'doctorPatients.col.encounters' | t }}</th>
-                <th class="text-end">{{ 'doctorPatients.col.actions' | t }}</th>
+                <th class="actions-cell">{{ 'doctorPatients.col.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -189,19 +219,33 @@
                   <td class="name-cell">
                     <div class="patient-cell-content">
                       <div class="mini-avatar">
-                        {{ (item.nameAr || item.nameEn || 'P').charAt(0) }}
+                        {{
+                          (
+                            (language.isRtl()
+                              ? item.nameAr || item.nameEn
+                              : item.nameEn || item.nameAr) || '?'
+                          ).charAt(0)
+                        }}
                       </div>
                       <div>
                         <div class="primary-name">
-                          {{ language.isRtl() ? (item.nameAr || item.nameEn) : (item.nameEn || item.nameAr) }}
+                          {{
+                            language.isRtl()
+                              ? item.nameAr || item.nameEn
+                              : item.nameEn || item.nameAr
+                          }}
                           @if (item.nameAr && item.nameEn) {
-                            <span class="en-sub">({{ language.isRtl() ? item.nameEn : item.nameAr }})</span>
+                            <bdi class="en-sub"
+                              >({{ language.isRtl() ? item.nameEn : item.nameAr }})</bdi
+                            >
                           }
                         </div>
                         <div class="demographics">
                           <span>{{ item.age }} {{ 'doctorPatients.yearsOld' | t }}</span>
                           <span>&bull;</span>
-                          <span>{{ item.gender }}</span>
+                          <span>{{
+                            (item.gender === 'Male' ? 'common.male' : 'common.female') | t
+                          }}</span>
                         </div>
                       </div>
                     </div>
@@ -210,19 +254,29 @@
                   <td>
                     <div class="contact-details">
                       @if (item.phoneNumber) {
-                        <span>{{ item.phoneNumber }}</span>
+                        <span dir="ltr" class="ltr-text">{{ item.phoneNumber }}</span>
                       } @else {
                         <span class="muted-text">{{ 'doctorPatients.noPhone' | t }}</span>
                       }
                       @if (item.email) {
-                        <span class="muted-text small-text">{{ item.email }}</span>
+                        <span dir="ltr" class="muted-text small-text ltr-text">{{
+                          item.email
+                        }}</span>
                       }
                     </div>
                   </td>
 
                   <td>
                     <div class="practice-cell">
-                      <span>{{ language.isRtl() ? (item.lastPractice.nameAr || item.lastPractice.nameEn) : (item.lastPractice.nameEn || item.lastPractice.nameAr) }}</span>
+                      <small
+                        >{{ 'doctorRemediation.practiceCount' | t }}:
+                        {{ item.practiceCount }}</small
+                      >
+                      <span>{{
+                        language.isRtl()
+                          ? item.lastPractice.nameAr || item.lastPractice.nameEn
+                          : item.lastPractice.nameEn || item.lastPractice.nameAr
+                      }}</span>
                       @if (!item.lastPractice.isActive || item.historicalOnly) {
                         <span class="badge badge-historical">{{
                           'doctorPatients.historicalBadge' | t
@@ -232,11 +286,16 @@
                   </td>
 
                   <td>
+                    <bdi>{{
+                      item.firstAttendanceAtUtc | localizedDate: language.currentLang()
+                    }}</bdi>
+                  </td>
+                  <td>
                     <div class="attendance-date">
-                      <span>{{ item.lastAttendanceBusinessDate }}</span>
-                      <span class="sub-time">{{
+                      <span dir="ltr" class="ltr-text">{{ item.lastAttendanceBusinessDate }}</span>
+                      <bdi class="sub-time">{{
                         item.lastAttendanceAtUtc | localizedDate: language.currentLang()
-                      }}</span>
+                      }}</bdi>
                     </div>
                   </td>
 
@@ -261,7 +320,7 @@
                     }
                   </td>
 
-                  <td class="text-end" (click)="$event.stopPropagation()">
+                  <td class="actions-cell" (click)="$event.stopPropagation()">
                     <div class="action-buttons">
                       @if (item.hasUpcomingAppointment) {
                         <span
@@ -276,7 +335,8 @@
                         class="btn btn-sm btn-outline"
                         (click)="openPatient(item.patientId)"
                       >
-                        {{ 'doctorPatients.action.viewPatient' | t }} <span class="dir-arrow">{{ language.isRtl() ? '←' : '→' }}</span>
+                        {{ 'doctorPatients.action.viewPatient' | t }}
+                        <span class="dir-arrow">{{ language.isRtl() ? '←' : '→' }}</span>
                       </button>
                     </div>
                   </td>
@@ -290,15 +350,14 @@
           <div class="pagination-footer">
             <span class="page-summary">
               {{ (pageNumber() - 1) * pageSize + 1 }} -
-              {{
-                pageNumber() * pageSize > totalCount() ? totalCount() : pageNumber() * pageSize
-              }}
+              {{ pageNumber() * pageSize > totalCount() ? totalCount() : pageNumber() * pageSize }}
               {{ 'doctorPatients.pagination.of' | t }} {{ totalCount() }}
             </span>
             <div class="pagination-controls">
               <button
                 type="button"
                 class="btn btn-outline"
+                [attr.aria-label]="'common.previous' | t"
                 [disabled]="pageNumber() <= 1"
                 (click)="onPageChange(pageNumber() - 1)"
               >
@@ -308,6 +367,7 @@
               <button
                 type="button"
                 class="btn btn-outline"
+                [attr.aria-label]="'common.next' | t"
                 [disabled]="pageNumber() * pageSize >= totalCount()"
                 (click)="onPageChange(pageNumber() + 1)"
               >
@@ -326,5 +386,6 @@
     [patientId]="inspectedPatientId()"
     [initialTab]="drawerTab()"
     (closed)="closeDrawer()"
+    (tabChanged)="onDrawerTabChanged($event)"
   ></app-patient-detail-drawer>
 </div>

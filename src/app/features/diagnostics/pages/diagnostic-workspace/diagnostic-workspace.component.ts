@@ -85,6 +85,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
   readonly query = signal<DiagnosticQuery>({
     PageNumber: 1,
     PageSize: 20,
+    PatientId: this.route.snapshot.queryParamMap.get('patientId') ?? undefined,
     EncounterId: this.route.snapshot.queryParamMap.get('encounterId') ?? undefined,
     PracticeId: this.route.snapshot.queryParamMap.get('practiceId') ?? undefined,
   });
@@ -132,11 +133,17 @@ export class DiagnosticWorkspaceComponent implements OnInit {
   private listSequence = 0;
   private detailSequence = 0;
   private intent: { signature: string; key: string; files: readonly File[] } | null = null;
-  ngOnInit() {
-    const initial = this.views()[0];
+  async ngOnInit() {
+    const query = this.route.snapshot.queryParamMap;
+    const requested = query.get('view') as View;
+    const initial = this.views().includes(requested) ? requested : this.views()[0];
     if (initial) {
       this.view.set(initial);
-      void this.load();
+      await this.load();
+      const id = query.get(
+        initial === 'requests' ? 'requestId' : initial === 'results' ? 'resultId' : 'submissionId',
+      );
+      if (id) await this.inspect(id, initial);
     }
   }
   allowed(scope: string, action: string) {

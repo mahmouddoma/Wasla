@@ -16,7 +16,9 @@
           <div class="rx-meta-pill">
             <span class="rx-status-dot"></span>
             <span class="rx-status-text">{{ 'prescriptions.status.' + patient.status | t }}</span>
-            <span class="rx-version-tag">{{ 'prescriptions.version' | t }} {{ patient.versionNumber }}</span>
+            <span class="rx-version-tag"
+              >{{ 'prescriptions.version' | t }} {{ patient.versionNumber }}</span
+            >
           </div>
         </div>
 
@@ -25,12 +27,35 @@
             {{ doctorNamePatient(patient) }}
           </h4>
           <p class="rx-clinic-title">
-            <svg class="rx-info-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3h6v4H9z"/></svg>
+            <svg
+              class="rx-info-icon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3h6v4H9z" />
+            </svg>
             {{ practiceNamePatient(patient) }}
           </p>
           <div class="rx-date-stamp">
-            <svg class="rx-info-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            <time dir="ltr">{{ patient.visitDateUtc | localizedDate: language.currentLang() }}</time>
+            <svg
+              class="rx-info-icon"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            <time dir="ltr">{{
+              patient.visitDateUtc | localizedDate: language.currentLang()
+            }}</time>
           </div>
         </div>
       </header>
@@ -121,10 +146,13 @@
         </div>
 
         <div class="rx-footer-actions">
-          <a role="button" tabindex="0" class="btn-rx-action print-btn" (click)="printPrescription()" (keydown.enter)="printPrescription()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
-            <span>{{ 'medications.printPrescription' | t }}</span>
-          </a>
+          <button
+            type="button"
+            class="btn-rx-action print-btn"
+            (click)="printPatientPrescription()"
+          >
+            {{ 'medications.printPrescription' | t }}
+          </button>
         </div>
       </footer>
     </div>
@@ -139,7 +167,12 @@
               {{ version.versionNumber }} · {{ 'prescriptions.status.' + version.status | t }}
             </span>
           </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="historical.set(null)" [disabled]="busy() || disabled()">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            (click)="historical.set(null)"
+            [disabled]="busy() || disabled()"
+          >
             <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
             <span>{{ 'prescriptions.backCurrent' | t }}</span>
           </button>
@@ -149,14 +182,20 @@
           @if (state.current) {
             <span class="rx-state-pill finalized">
               <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-              <span>{{ 'prescriptions.status.' + state.current.status | t }} · {{ 'prescriptions.version' | t }} {{ state.current.versionNumber }}</span>
+              <span
+                >{{ 'prescriptions.status.' + state.current.status | t }} ·
+                {{ 'prescriptions.version' | t }} {{ state.current.versionNumber }}</span
+              >
             </span>
           }
           @if (state.draft) {
             <span class="rx-state-pill draft">
               <i class="fa-solid fa-file-pen" aria-hidden="true"></i>
               <span>
-                {{ (correctionMode() ? 'prescriptions.correctionMode' : 'prescriptions.status.Draft') | t }}
+                {{
+                  (correctionMode() ? 'prescriptions.correctionMode' : 'prescriptions.status.Draft')
+                    | t
+                }}
                 · {{ state.draft.versionNumber }}
               </span>
             </span>
@@ -171,7 +210,9 @@
         (
           (
             historical() ||
-            (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current)
+            (correctionMode() || (canManage() && state()?.draft)
+              ? state()?.draft
+              : state()?.current)
           )?.items || []
         ).length === 0 && !editing()
       ) {
@@ -201,7 +242,9 @@
         @for (
           item of (
             historical() ||
-            (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current)
+            (correctionMode() || (canManage() && state()?.draft)
+              ? state()?.draft
+              : state()?.current)
           )?.items || [];
           track item.itemId
         ) {
@@ -216,11 +259,21 @@
               </div>
               @if (editable()) {
                 <div class="actions">
-                  <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy() || disabled()" (click)="editItem(item)">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="busy() || disabled()"
+                    (click)="editItem(item)"
+                  >
                     <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                     <span>{{ 'medications.edit' | t }}</span>
                   </button>
-                  <button type="button" class="btn btn-sm btn-danger" [disabled]="busy() || disabled()" (click)="ask('remove', item.itemId)">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger"
+                    [disabled]="busy() || disabled()"
+                    (click)="ask('remove', item.itemId)"
+                  >
                     <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                     <span>{{ 'prescriptions.remove' | t }}</span>
                   </button>
@@ -273,7 +326,12 @@
       @if (!historical()) {
         <div class="actions rx-toolbar-actions">
           @if (editable() && !editing()) {
-            <button type="button" class="btn btn-primary" [disabled]="busy() || disabled()" (click)="beginAdd()">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="busy() || disabled()"
+              (click)="beginAdd()"
+            >
               <i class="fa-solid fa-plus" aria-hidden="true"></i>
               <span>{{ 'prescriptions.add' | t }}</span>
             </button>
@@ -310,7 +368,12 @@
               state.capabilities.canFinalizeCorrection &&
               allowed('Prescriptions.CorrectOwn')
             ) {
-              <button type="button" class="btn btn-primary" [disabled]="busy() || disabled()" (click)="ask('finalize')">
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="busy() || disabled()"
+                (click)="ask('finalize')"
+              >
                 <i class="fa-solid fa-check" aria-hidden="true"></i>
                 <span>{{ 'prescriptions.finalize' | t }}</span>
               </button>
@@ -320,7 +383,12 @@
               state.capabilities.canDiscardCorrection &&
               allowed('Prescriptions.CorrectOwn')
             ) {
-              <button type="button" class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="ask('discard')">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                [disabled]="busy() || disabled()"
+                (click)="ask('discard')"
+              >
                 {{ 'prescriptions.discard' | t }}
               </button>
             }
@@ -330,12 +398,22 @@
               state.capabilities.canVoid &&
               allowed('Prescriptions.VoidOwn')
             ) {
-              <button type="button" class="btn btn-danger" [disabled]="busy() || disabled()" (click)="ask('void')">
+              <button
+                type="button"
+                class="btn btn-danger"
+                [disabled]="busy() || disabled()"
+                (click)="ask('void')"
+              >
                 {{ 'prescriptions.void' | t }}
               </button>
             }
             @if (allowed('Prescriptions.ViewOwn')) {
-              <button type="button" class="btn btn-outline-secondary" [disabled]="busy() || disabled()" (click)="loadVersions()">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                [disabled]="busy() || disabled()"
+                (click)="loadVersions()"
+              >
                 <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
                 <span>{{ 'prescriptions.versions' | t }}</span>
               </button>
@@ -351,7 +429,12 @@
               <div class="rx-step-header">
                 <span class="rx-step-title">{{ 'prescriptions.stepChoose' | t }}</span>
                 @if (canRequest() && allowed('DrugCatalogRequests.CreateOwn')) {
-                  <button type="button" class="rx-link-btn" [disabled]="busy() || disabled()" (click)="useMissing()">
+                  <button
+                    type="button"
+                    class="rx-link-btn"
+                    [disabled]="busy() || disabled()"
+                    (click)="useMissing()"
+                  >
                     <i class="fa-solid fa-circle-plus" aria-hidden="true"></i>
                     <span>{{ 'prescriptions.missing' | t }}</span>
                   </button>
@@ -376,7 +459,11 @@
                 }
                 @if (drugs(); as drugs) {
                   @if (drugs.items.length) {
-                    <div class="rx-catalog-list" role="listbox" [attr.aria-label]="'medications.doctorSearch' | t">
+                    <div
+                      class="rx-catalog-list"
+                      role="listbox"
+                      [attr.aria-label]="'medications.doctorSearch' | t"
+                    >
                       @for (drug of drugs.items; track drug.drugCatalogId) {
                         <button
                           type="button"
@@ -389,19 +476,25 @@
                           <div class="rx-option-main">
                             <i
                               class="fa-solid"
-                              [class.fa-circle-check]="selectedDrug()?.drugCatalogId === drug.drugCatalogId"
-                              [class.fa-capsules]="selectedDrug()?.drugCatalogId !== drug.drugCatalogId"
+                              [class.fa-circle-check]="
+                                selectedDrug()?.drugCatalogId === drug.drugCatalogId
+                              "
+                              [class.fa-capsules]="
+                                selectedDrug()?.drugCatalogId !== drug.drugCatalogId
+                              "
                               aria-hidden="true"
                             ></i>
                             <div class="rx-option-text">
                               <strong>{{ itemName(drug) }}</strong>
                               <small>
-                                {{ drug.scientificName }} · {{ drug.manufacturer }} · {{ drug.strengthText }} ·
-                                {{ drug.dosageForm }} · {{ drug.route }}
+                                {{ drug.scientificName }} · {{ drug.manufacturer }} ·
+                                {{ drug.strengthText }} · {{ drug.dosageForm }} · {{ drug.route }}
                               </small>
                             </div>
                           </div>
-                          <span class="rx-price-tag">{{ 'medications.priceEgp' | t }}: {{ drug.priceEgp ?? '—' }}</span>
+                          <span class="rx-price-tag"
+                            >{{ 'medications.priceEgp' | t }}: {{ drug.priceEgp ?? '—' }}</span
+                          >
                         </button>
                       }
                     </div>
@@ -431,7 +524,9 @@
                       type="button"
                       class="btn btn-sm btn-outline-secondary"
                       [disabled]="
-                        busy() || searching() || drugs.pageNumber * drugs.pageSize >= drugs.totalCount
+                        busy() ||
+                        searching() ||
+                        drugs.pageNumber * drugs.pageSize >= drugs.totalCount
                       "
                       (click)="search(searchText(), drugs.pageNumber + 1)"
                     >
@@ -455,7 +550,11 @@
                   @for (field of metadataFields; track field) {
                     <label class="rx-field">
                       <span>{{ 'requests.' + field | t }}</span>
-                      <input class="field-input" [formControlName]="field" [readonly]="busy() || disabled()" />
+                      <input
+                        class="field-input"
+                        [formControlName]="field"
+                        [readonly]="busy() || disabled()"
+                      />
                     </label>
                   }
                 </div>
@@ -464,7 +563,10 @@
               @if (selectedDrug(); as selected) {
                 <div class="rx-selected-banner">
                   <i class="fa-solid fa-check-double" aria-hidden="true"></i>
-                  <span>{{ 'prescriptions.selected' | t }}: <strong>{{ itemName(selected) }}</strong></span>
+                  <span
+                    >{{ 'prescriptions.selected' | t }}:
+                    <strong>{{ itemName(selected) }}</strong></span
+                  >
                 </div>
               }
             </div>
@@ -478,7 +580,11 @@
               @for (field of clinicalFields; track field) {
                 <label class="rx-field" [class.full]="field === 'instructions'">
                   <span>{{ 'prescriptions.' + field | t }}</span>
-                  <input class="field-input" [formControlName]="field" [readonly]="busy() || disabled()" />
+                  <input
+                    class="field-input"
+                    [formControlName]="field"
+                    [readonly]="busy() || disabled()"
+                  />
                 </label>
               }
               <label class="rx-field">
@@ -538,7 +644,12 @@
             </label>
           }
           <div class="actions">
-            <button type="button" class="btn btn-sm btn-primary" [disabled]="busy() || disabled()" (click)="confirm()">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              [disabled]="busy() || disabled()"
+              (click)="confirm()"
+            >
               {{ 'medications.confirm' | t }}
             </button>
             <button
@@ -575,3 +686,14 @@
   }
 </section>
 
+@if (canExportPdf()) {
+  <button
+    type="button"
+    class="btn btn-outline-secondary"
+    [disabled]="pdfLoading()"
+    (click)="printPrescription()"
+  >
+    {{ 'doctorPatients.prescription.viewPrint' | t }}
+  </button>
+}
+<app-pdf-viewer [blob]="pdfBlob()" (closed)="pdfBlob.set(null)"></app-pdf-viewer>

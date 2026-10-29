@@ -12,11 +12,7 @@
         ? 'finance.reception.title'
         : view() === 'revenue'
           ? 'finance.revenue.title'
-          : view() === 'expenses'
-            ? 'finance.viewExpenses'
-            : view() === 'salaries'
-              ? 'finance.viewSalaries'
-              : 'finance.title'
+          : 'finance.title'
       ) | t
     "
     [description]="
@@ -24,11 +20,7 @@
         ? 'finance.reception.subtitle'
         : view() === 'revenue'
           ? 'finance.revenue.subtitle'
-          : view() === 'expenses'
-            ? 'finance.obligations'
-            : view() === 'salaries'
-              ? 'finance.viewSalaries'
-              : 'finance.subtitle'
+          : 'finance.subtitle'
       ) | t
     "
     [icon]="view() === 'revenue' ? 'revenue' : 'finance'"
@@ -42,63 +34,59 @@
     <div pageHeaderActions class="header-actions-cluster">
       @if (isDoctor()) {
         <nav class="view-switcher-pill" role="tablist" [attr.aria-label]="'finance.title' | t">
-          <a
-            routerLink="/doctor/finance"
-            role="tab"
-            class="view-switch-btn"
-            [class.active]="view() === 'transactions'"
-            [attr.aria-selected]="view() === 'transactions'"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <line x1="2" x2="22" y1="10" y2="10" />
-              <path d="M6 15h2m4 0h6" />
-            </svg>
-            <span>{{ 'finance.viewTransactions' | t }}</span>
-          </a>
+          @if (allows('doctorPracticePaymentsViewOwn')) {
+            <a
+              routerLink="/doctor/finance"
+              role="tab"
+              class="view-switch-btn"
+              [class.active]="view() === 'transactions'"
+              [attr.aria-selected]="view() === 'transactions'"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <line x1="2" x2="22" y1="10" y2="10" />
+                <path d="M6 15h2m4 0h6" />
+              </svg>
+              <span>{{ 'finance.viewTransactions' | t }}</span>
+            </a>
+          }
 
-          <a
-            routerLink="/doctor/revenue"
-            role="tab"
-            class="view-switch-btn"
-            [class.active]="view() === 'revenue'"
-            [attr.aria-selected]="view() === 'revenue'"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-              <polyline points="16 7 22 7 22 13" />
-            </svg>
-            <span>{{ 'finance.viewRevenue' | t }}</span>
-          </a>
+          @if (allows('doctorRevenueViewOwn')) {
+            <a
+              routerLink="/doctor/revenue"
+              role="tab"
+              class="view-switch-btn"
+              [class.active]="view() === 'revenue'"
+              [attr.aria-selected]="view() === 'revenue'"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                <polyline points="16 7 22 7 22 13" />
+              </svg>
+              <span>{{ 'finance.viewRevenue' | t }}</span>
+            </a>
+          }
 
-          <a
-            routerLink="/doctor/expenses"
-            role="tab"
-            class="view-switch-btn"
-            [class.active]="view() === 'expenses'"
-            [attr.aria-selected]="view() === 'expenses'"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            <span>{{ 'finance.viewExpenses' | t }}</span>
-          </a>
+          @if (allows('financialExpensesViewOwn')) {
+            <a routerLink="/doctor/expenses" role="tab" class="view-switch-btn">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              <span>{{ 'finance.viewExpenses' | t }}</span>
+            </a>
+          }
 
-          <a
-            routerLink="/doctor/salaries"
-            role="tab"
-            class="view-switch-btn"
-            [class.active]="view() === 'salaries'"
-            [attr.aria-selected]="view() === 'salaries'"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <span>{{ 'finance.viewSalaries' | t }}</span>
-          </a>
+          @if (allows('salaryPlansViewOwn')) {
+            <a routerLink="/doctor/salaries" role="tab" class="view-switch-btn">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>{{ 'finance.viewSalaries' | t }}</span>
+            </a>
+          }
         </nav>
       }
 
@@ -661,10 +649,12 @@
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
                     </span>
-                    <h2 id="heading-activity-breakdown">{{ 'finance.revenue.activityAndClinics' | t }}</h2>
+                    <h2 id="heading-activity-breakdown">
+                      {{ 'finance.revenue.activityAndClinics' | t }}
+                    </h2>
                   </div>
                   <span class="surface-counter-pill">
-                    {{ (dashboard()?.dailyTrend?.length || 0) }}
+                    {{ dashboard()?.dailyTrend?.length || 0 }}
                   </span>
                 </header>
 
@@ -692,7 +682,9 @@
                               @if (row.refunds > 0) {
                                 <span class="meta-divider">·</span>
                                 <span class="meta-item text-danger">
-                                  <span class="meta-label">{{ 'finance.revenue.refunds' | t }}:</span>
+                                  <span class="meta-label"
+                                    >{{ 'finance.revenue.refunds' | t }}:</span
+                                  >
                                   <strong class="meta-val" dir="ltr">{{ row.refunds }}</strong>
                                   <span class="meta-curr">{{ 'tickets.currency' | t }}</span>
                                 </span>
@@ -730,8 +722,12 @@
                       @for (row of dashboard()?.byPractice || []; track row.practiceId) {
                         <div class="practice-breakdown-row">
                           <div class="practice-row-main">
-                            <span class="practice-name">{{ label({ nameAr: row.practiceNameAr, nameEn: row.practiceNameEn }) }}</span>
-                            <span class="practice-meta">{{ row.paymentCount }} {{ 'finance.payments' | t }}</span>
+                            <span class="practice-name">{{
+                              label({ nameAr: row.practiceNameAr, nameEn: row.practiceNameEn })
+                            }}</span>
+                            <span class="practice-meta"
+                              >{{ row.paymentCount }} {{ 'finance.payments' | t }}</span
+                            >
                           </div>
                           <div class="practice-row-amount">
                             <span class="amount-num" dir="ltr">{{ row.netRevenue }}</span>
@@ -758,7 +754,9 @@
                         <line x1="1" y1="10" x2="23" y2="10" />
                       </svg>
                     </span>
-                    <h2 id="heading-channels-breakdown">{{ 'finance.revenue.channelsTitle' | t }}</h2>
+                    <h2 id="heading-channels-breakdown">
+                      {{ 'finance.revenue.channelsTitle' | t }}
+                    </h2>
                   </div>
                 </header>
 
@@ -777,8 +775,12 @@
                       @for (row of dashboard()?.paymentMethods || []; track row.method) {
                         <div class="channel-breakdown-row">
                           <div class="channel-main-info">
-                            <span class="channel-badge">{{ 'finance.method.' + row.method | t }}</span>
-                            <span class="channel-count">{{ row.transactionCount }} {{ 'finance.payments' | t }}</span>
+                            <span class="channel-badge">{{
+                              'finance.method.' + row.method | t
+                            }}</span>
+                            <span class="channel-count"
+                              >{{ row.transactionCount }} {{ 'finance.payments' | t }}</span
+                            >
                           </div>
                           <div class="channel-amount-info">
                             <span class="amount-num" dir="ltr">{{ row.amount }}</span>
@@ -813,8 +815,12 @@
                           @for (row of dashboard()?.refundMethods || []; track row.method) {
                             <div class="channel-breakdown-row is-refund">
                               <div class="channel-main-info">
-                                <span class="channel-badge is-refund-badge">{{ 'finance.method.' + row.method | t }}</span>
-                                <span class="channel-count">{{ row.transactionCount }} {{ 'finance.refunds' | t }}</span>
+                                <span class="channel-badge is-refund-badge">{{
+                                  'finance.method.' + row.method | t
+                                }}</span>
+                                <span class="channel-count"
+                                  >{{ row.transactionCount }} {{ 'finance.refunds' | t }}</span
+                                >
                               </div>
                               <div class="channel-amount-info is-refund-val">
                                 <span class="amount-num" dir="ltr">{{ row.amount }}</span>
@@ -859,213 +865,6 @@
           </button>
         </div>
       }
-    } @else if (view() === 'expenses') {
-      <!-- ═══════════════════════════════════════════════════════════════════ -->
-      <!-- VIEW: OPERATING EXPENSES (المصروفات التشغيلية)                      -->
-      <!-- ═══════════════════════════════════════════════════════════════════ -->
-      <section class="transactions-view-surface medical-table-card">
-        <div class="table-meta-bar">
-          <div class="meta-start">
-            <h2 class="meta-heading">{{ 'finance.viewExpenses' | t }}</h2>
-            <span class="meta-counter-pill">{{ expenses().length }}</span>
-          </div>
-          <div class="meta-end">
-            <button
-              type="button"
-              class="btn-add-plan"
-              (click)="openCreateExpensePlanDrawer()"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>{{ 'finance.addRecurringExpense' | t }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="table-body-wrap">
-          <div class="table-scroll-container">
-            <table class="modern-finance-table" [class.is-empty]="!expenses().length">
-              <thead>
-                <tr>
-                  <th>{{ 'finance.expenseCategory' | t }}</th>
-                  <th>{{ 'finance.cadence' | t }}</th>
-                  <th>{{ 'finance.dueDay' | t }}</th>
-                  <th>{{ 'finance.fixedAmount' | t }}</th>
-                  <th>{{ 'finance.planStatus' | t }}</th>
-                  <th class="text-end">{{ 'reservations.actions' | t }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (exp of expenses(); track exp.id) {
-                  <tr>
-                    <td class="font-medium">
-                      {{ exp.descriptionAr || exp.description || ('finance.cat' + exp.category | t) }}
-                    </td>
-                    <td>
-                      <span class="category-pill">{{ exp.cadence === 'Monthly' ? ('finance.cadenceMonthly' | t) : exp.cadence }}</span>
-                    </td>
-                    <td>{{ exp.dueDay }} {{ 'finance.dayOfMonth' | t }}</td>
-                    <td class="font-bold">
-                      {{ exp.amount || exp.fixedAmount }} {{ 'tickets.currency' | t }}
-                    </td>
-                    <td>
-                      <span
-                        class="status-pill"
-                        [class.pill-success]="exp.status === 'Active'"
-                        [class.pill-warning]="exp.status === 'Paused'"
-                        [class.pill-neutral]="exp.status === 'Ended'"
-                      >
-                        {{ exp.status === 'Active' ? ('finance.planStatusActive' | t) : (exp.status === 'Paused' ? ('finance.planStatusPaused' | t) : ('finance.planStatusEnded' | t)) }}
-                      </span>
-                    </td>
-                    <td class="text-end">
-                      <div class="actions-group">
-                        <button
-                          type="button"
-                          class="btn-table-action"
-                          (click)="openEditExpensePlanDrawer(exp)"
-                        >
-                          {{ 'common.edit' | t }}
-                        </button>
-                        @if (exp.status === 'Active') {
-                          <button
-                            type="button"
-                            class="btn-table-action text-warning"
-                            (click)="togglePauseExpensePlan(exp)"
-                          >
-                            {{ 'finance.pausePlan' | t }}
-                          </button>
-                        } @else if (exp.status === 'Paused') {
-                          <button
-                            type="button"
-                            class="btn-table-action text-success"
-                            (click)="togglePauseExpensePlan(exp)"
-                          >
-                            {{ 'finance.resumePlan' | t }}
-                          </button>
-                        }
-                        @if (exp.status !== 'Ended') {
-                          <button
-                            type="button"
-                            class="btn-table-action text-danger"
-                            (click)="endExpensePlan(exp)"
-                          >
-                            {{ 'finance.endPlan' | t }}
-                          </button>
-                        }
-                        <button
-                          type="button"
-                          class="btn-table-action text-teal"
-                          (click)="openExpenseSettlement(exp)"
-                        >
-                          {{ 'finance.settle' | t }}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="6" class="cell-empty">
-                      {{ 'common.nothingFound' | t }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    } @else if (view() === 'salaries') {
-      <!-- ═══════════════════════════════════════════════════════════════════ -->
-      <!-- VIEW: RECEPTION SALARIES (رواتب الاستقبال)                          -->
-      <!-- ═══════════════════════════════════════════════════════════════════ -->
-      <section class="transactions-view-surface medical-table-card">
-        <div class="table-meta-bar">
-          <div class="meta-start">
-            <h2 class="meta-heading">{{ 'finance.viewSalaries' | t }}</h2>
-            <span class="meta-counter-pill">{{ salaryPlans().length }}</span>
-          </div>
-          <div class="meta-end">
-            <button
-              type="button"
-              class="btn-add-plan"
-              (click)="openCreateSalaryPlanDrawer()"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>{{ 'finance.addSalaryPlanBtn' | t }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="table-body-wrap">
-          <div class="table-scroll-container">
-            <table class="modern-finance-table" [class.is-empty]="!salaryPlans().length">
-              <thead>
-                <tr>
-                  <th>{{ 'finance.receptionStaff' | t }}</th>
-                  <th>{{ 'finance.cadence' | t }}</th>
-                  <th>{{ 'finance.salaryDueDay' | t }}</th>
-                  <th>{{ 'finance.salaryAmount' | t }}</th>
-                  <th>{{ 'finance.planStatus' | t }}</th>
-                  <th class="text-end">{{ 'reservations.actions' | t }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (plan of salaryPlans(); track plan.id) {
-                  <tr>
-                    <td class="font-medium">{{ plan.receptionistName || 'موظف استقبال' }}</td>
-                    <td>
-                      <span class="category-pill">{{ plan.cadence === 'Monthly' ? ('finance.cadenceMonthly' | t) : plan.cadence }}</span>
-                    </td>
-                    <td>{{ plan.dueDay || 28 }} {{ 'finance.dayOfMonth' | t }}</td>
-                    <td class="font-bold">{{ plan.amount || plan.fixedSalary }} {{ 'tickets.currency' | t }}</td>
-                    <td>
-                      <span
-                        class="status-pill"
-                        [class.pill-success]="plan.status === 'Active'"
-                        [class.pill-neutral]="plan.status === 'Ended'"
-                      >
-                        {{ plan.status === 'Active' ? ('finance.planStatusActive' | t) : ('finance.planStatusEnded' | t) }}
-                      </span>
-                    </td>
-                    <td class="text-end">
-                      <div class="actions-group">
-                        <button
-                          type="button"
-                          class="btn-table-action"
-                          (click)="openEditSalaryPlanDrawer(plan)"
-                        >
-                          {{ 'common.edit' | t }}
-                        </button>
-                        @if (plan.status !== 'Ended') {
-                          <button
-                            type="button"
-                            class="btn-table-action text-danger"
-                            (click)="endSalaryPlanAction(plan)"
-                          >
-                            {{ 'finance.endSalaryPlan' | t }}
-                          </button>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="6" class="cell-empty">
-                      {{ 'common.nothingFound' | t }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
     } @else {
       <!-- ═══════════════════════════════════════════════════════════════════ -->
       <!-- VIEW 2: TRANSACTIONS WORKSPACE (الحركات المالية)                   -->
@@ -1965,9 +1764,7 @@
                   <strong class="context-main-name">{{ patientDisplayName(value) }}</strong>
                 </div>
                 @if (value.ticketNumber) {
-                  <span class="context-ticket-pill" dir="ltr">
-                    #{{ value.ticketNumber }}
-                  </span>
+                  <span class="context-ticket-pill" dir="ltr"> #{{ value.ticketNumber }} </span>
                 }
               </div>
 
@@ -2218,364 +2015,4 @@
       }
     </app-side-drawer>
   }
-
-  <!-- Phase 18 Expense Settlement Slide-Over Drawer -->
-  <app-side-drawer
-    [opened]="selectedExpense() !== null"
-    [title]="'finance.settle' | t"
-    (closed)="closeExpenseDrawer()"
-  >
-    @if (selectedExpense(); as exp) {
-      <div class="drawer-content-box">
-        <div class="drawer-summary-band">
-          <span class="summary-label">{{ 'finance.expenseCategory' | t }}</span>
-          <p class="summary-val">{{ exp.description || exp.category }}</p>
-          <span class="summary-label">{{ 'finance.fixedAmount' | t }}</span>
-          <p class="summary-val">{{ exp.fixedAmount }} {{ 'tickets.currency' | t }}</p>
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="settle-amount-input">
-            {{ 'finance.fixedAmount' | t }}
-          </label>
-          <input
-            id="settle-amount-input"
-            type="number"
-            class="drawer-input"
-            [value]="settlementAmount()"
-            (input)="settlementAmount.set(+$any($event.target).value)"
-          />
-        </div>
-
-        <div class="drawer-actions-row">
-          <button
-            type="button"
-            class="btn-drawer-cancel"
-            (click)="closeExpenseDrawer()"
-            [disabled]="busy()"
-          >
-            {{ 'common.cancel' | t }}
-          </button>
-          <button
-            type="button"
-            class="btn-drawer-confirm"
-            (click)="submitExpenseSettlement()"
-            [disabled]="busy() || settlementAmount() <= 0"
-          >
-            {{ 'finance.settle' | t }}
-          </button>
-        </div>
-      </div>
-    }
-  </app-side-drawer>
-
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- DRAWER: ADD / EDIT RECURRING EXPENSE PLAN                          -->
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <app-side-drawer
-    [opened]="isExpensePlanDrawerOpen()"
-    [busy]="busy()"
-    [title]="editingExpensePlan() ? ('finance.editRecurringExpense' | t) : ('finance.addRecurringExpense' | t)"
-    [description]="'finance.recurringExpenseDesc' | t"
-    (closed)="closeExpensePlanDrawer()"
-  >
-    <div class="drawer-content-box">
-      <!-- Grid Row 1: Category & Cadence -->
-      <div class="drawer-form-grid">
-        <div class="form-group-block">
-          <label class="form-label-text" for="plan-category-select">
-            {{ 'finance.expenseCategory' | t }}
-          </label>
-          <select
-            id="plan-category-select"
-            class="drawer-select"
-            [value]="planCategory()"
-            (change)="planCategory.set($any($event.target).value)"
-          >
-            <option value="Utilities">{{ 'finance.catUtilities' | t }}</option>
-            <option value="Rent">{{ 'finance.catRent' | t }}</option>
-            <option value="Maintenance">{{ 'finance.catMaintenance' | t }}</option>
-            <option value="Supplies">{{ 'finance.catSupplies' | t }}</option>
-            <option value="Transport">{{ 'finance.catTransport' | t }}</option>
-            <option value="Other">{{ 'finance.catOther' | t }}</option>
-          </select>
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="plan-cadence-select">
-            {{ 'finance.cadence' | t }}
-          </label>
-          <select
-            id="plan-cadence-select"
-            class="drawer-select"
-            [value]="planCadence()"
-            (change)="planCadence.set($any($event.target).value)"
-          >
-            <option value="Monthly">{{ 'finance.cadenceMonthly' | t }}</option>
-            <option value="Weekly">{{ 'finance.cadenceWeekly' | t }}</option>
-            <option value="Quarterly">{{ 'finance.cadenceQuarterly' | t }}</option>
-            <option value="Annual">{{ 'finance.cadenceAnnual' | t }}</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Grid Row 2: Amount & Due Day -->
-      <div class="drawer-form-grid">
-        <div class="form-group-block">
-          <label class="form-label-text" for="plan-amount-input">
-            {{ 'tickets.currency' | t }} / {{ 'finance.fixedAmount' | t }}
-          </label>
-          <input
-            id="plan-amount-input"
-            type="number"
-            min="0"
-            step="50"
-            class="drawer-input"
-            [value]="planAmount()"
-            (input)="planAmount.set(+$any($event.target).value)"
-          />
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="plan-due-day-input">
-            {{ 'finance.dueDay' | t }} (1 - 31)
-          </label>
-          <input
-            id="plan-due-day-input"
-            type="number"
-            min="1"
-            max="31"
-            class="drawer-input"
-            [value]="planDueDay()"
-            (input)="planDueDay.set(+$any($event.target).value)"
-          />
-        </div>
-      </div>
-
-      <!-- Grid Row 3: Effective Dates -->
-      <div class="drawer-form-grid">
-        <div class="form-group-block">
-          <label class="form-label-text" for="plan-start-date">
-            {{ 'finance.effectiveFrom' | t }}
-          </label>
-          <input
-            id="plan-start-date"
-            type="date"
-            class="drawer-input"
-            [value]="planEffectiveFrom()"
-            (input)="planEffectiveFrom.set($any($event.target).value)"
-          />
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="plan-end-date">
-            {{ 'finance.effectiveTo' | t }}
-          </label>
-          <input
-            id="plan-end-date"
-            type="date"
-            class="drawer-input"
-            [value]="planEffectiveTo()"
-            (input)="planEffectiveTo.set($any($event.target).value)"
-          />
-        </div>
-      </div>
-
-      <!-- Grid Row 4: Amount Policy -->
-      <div class="form-group-block">
-        <label class="form-label-text" for="plan-policy-select">
-          {{ 'finance.amountPolicy' | t }}
-        </label>
-        <select
-          id="plan-policy-select"
-          class="drawer-select"
-          [value]="planAmountPolicy()"
-          (change)="planAmountPolicy.set($any($event.target).value)"
-        >
-          <option value="Fixed">{{ 'finance.policyFixed' | t }}</option>
-          <option value="Estimated">{{ 'finance.policyEstimated' | t }}</option>
-          <option value="Variable">{{ 'finance.policyVariable' | t }}</option>
-        </select>
-      </div>
-
-      <!-- Description / Details -->
-      <div class="form-group-block">
-        <label class="form-label-text" for="plan-desc-input">
-          {{ 'finance.expenseDesc' | t }}
-        </label>
-        <textarea
-          id="plan-desc-input"
-          class="drawer-textarea"
-          rows="3"
-          [value]="planDescription()"
-          (input)="planDescription.set($any($event.target).value)"
-          [placeholder]="'finance.recurringExpenseDesc' | t"
-        ></textarea>
-      </div>
-
-      <!-- Actions -->
-      <div class="drawer-actions-row">
-        <button
-          type="button"
-          class="btn-drawer-cancel"
-          (click)="closeExpensePlanDrawer()"
-          [disabled]="busy()"
-        >
-          {{ 'common.cancel' | t }}
-        </button>
-        <button
-          type="button"
-          class="btn-drawer-confirm"
-          (click)="submitExpensePlan()"
-          [disabled]="busy() || planAmount() <= 0"
-        >
-          {{ 'finance.savePlan' | t }}
-        </button>
-      </div>
-    </div>
-  </app-side-drawer>
-
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- DRAWER: ADD / EDIT RECEPTION SALARY PLAN                           -->
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <app-side-drawer
-    [opened]="isSalaryPlanDrawerOpen()"
-    [busy]="busy()"
-    [title]="editingSalaryPlan() ? ('finance.editSalaryPlan' | t) : ('finance.addSalaryPlanBtn' | t)"
-    [description]="'finance.salaryPlanDesc' | t"
-    (closed)="closeSalaryPlanDrawer()"
-  >
-    <div class="drawer-content-box">
-      <!-- Grid Row 1: Staff & Cadence -->
-      <div class="drawer-form-grid">
-        <div class="form-group-block">
-          <label class="form-label-text" for="salary-staff-select">
-            {{ 'finance.receptionStaff' | t }}
-          </label>
-          <select
-            id="salary-staff-select"
-            class="drawer-select"
-            [value]="salaryReceptionId()"
-            (change)="salaryReceptionId.set($any($event.target).value)"
-          >
-            @for (staff of receptionStaffList(); track staff.id) {
-              <option [value]="staff.id">{{ staff.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="salary-cadence-select">
-            {{ 'finance.cadence' | t }}
-          </label>
-          <select
-            id="salary-cadence-select"
-            class="drawer-select"
-            [value]="salaryCadence()"
-            (change)="salaryCadence.set($any($event.target).value)"
-          >
-            <option value="Monthly">{{ 'finance.cadenceMonthly' | t }}</option>
-            <option value="Weekly">{{ 'finance.cadenceWeekly' | t }}</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Grid Row 2: Salary Amount & Due Day -->
-      <div class="drawer-form-grid">
-        <div class="form-group-block">
-          <label class="form-label-text" for="salary-amount-input">
-            {{ 'tickets.currency' | t }} / {{ 'finance.salaryAmount' | t }}
-          </label>
-          <input
-            id="salary-amount-input"
-            type="number"
-            min="0"
-            step="100"
-            class="drawer-input"
-            [value]="salaryAmount()"
-            (input)="salaryAmount.set(+$any($event.target).value)"
-          />
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="salary-due-day-input">
-            {{ 'finance.salaryDueDay' | t }} (1 - 31)
-          </label>
-          <input
-            id="salary-due-day-input"
-            type="number"
-            min="1"
-            max="31"
-            class="drawer-input"
-            [value]="salaryDueDay()"
-            (input)="salaryDueDay.set(+$any($event.target).value)"
-          />
-        </div>
-      </div>
-
-      <!-- Grid Row 3: Effective Dates -->
-      <div class="drawer-form-grid">
-        <div class="form-group-block">
-          <label class="form-label-text" for="salary-start-date">
-            {{ 'finance.effectiveFrom' | t }}
-          </label>
-          <input
-            id="salary-start-date"
-            type="date"
-            class="drawer-input"
-            [value]="salaryEffectiveFrom()"
-            (input)="salaryEffectiveFrom.set($any($event.target).value)"
-          />
-        </div>
-
-        <div class="form-group-block">
-          <label class="form-label-text" for="salary-end-date">
-            {{ 'finance.effectiveTo' | t }}
-          </label>
-          <input
-            id="salary-end-date"
-            type="date"
-            class="drawer-input"
-            [value]="salaryEffectiveTo()"
-            (input)="salaryEffectiveTo.set($any($event.target).value)"
-          />
-        </div>
-      </div>
-
-      <!-- Description / Details -->
-      <div class="form-group-block">
-        <label class="form-label-text" for="salary-desc-input">
-          {{ 'finance.expenseDesc' | t }}
-        </label>
-        <textarea
-          id="salary-desc-input"
-          class="drawer-textarea"
-          rows="3"
-          [value]="salaryDescription()"
-          (input)="salaryDescription.set($any($event.target).value)"
-          [placeholder]="'finance.salaryPlanDesc' | t"
-        ></textarea>
-      </div>
-
-      <!-- Actions -->
-      <div class="drawer-actions-row">
-        <button
-          type="button"
-          class="btn-drawer-cancel"
-          (click)="closeSalaryPlanDrawer()"
-          [disabled]="busy()"
-        >
-          {{ 'common.cancel' | t }}
-        </button>
-        <button
-          type="button"
-          class="btn-drawer-confirm"
-          (click)="submitSalaryPlan()"
-          [disabled]="busy() || salaryAmount() <= 0"
-        >
-          {{ 'finance.saveSalaryPlan' | t }}
-        </button>
-      </div>
-    </div>
-  </app-side-drawer>
 </main>

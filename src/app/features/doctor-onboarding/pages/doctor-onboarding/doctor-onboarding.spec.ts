@@ -58,7 +58,7 @@ describe('DoctorOnboarding', () => {
     hasPermission: vi.fn(() => false),
     clear: vi.fn(),
     complete: vi.fn(),
-    destinationFor: vi.fn(() => '/doctor/workspace'),
+    destinationFor: vi.fn(() => '/workspace/doctor'),
   };
 
   const mockRouter = {
@@ -72,7 +72,7 @@ describe('DoctorOnboarding', () => {
     vi.clearAllMocks();
     mockDoctorApi.onboardingStatus.mockReturnValue(of(pendingStatus));
     mockAuthApi.currentUser.mockReturnValue(of(mockUser));
-    mockAuthSession.destinationFor.mockReturnValue('/doctor/workspace');
+    mockAuthSession.destinationFor.mockReturnValue('/workspace/doctor');
 
     await TestBed.configureTestingModule({
       imports: [DoctorOnboarding],
@@ -108,14 +108,18 @@ describe('DoctorOnboarding', () => {
   it('uses the shared bilingual header and refreshes the approval status', async () => {
     const language = TestBed.inject(LanguageService);
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('app-page-header')?.textContent).toContain(language.t('doctor.onboardingStatus'));
+    expect(element.querySelector('app-page-header')?.textContent).toContain(
+      language.t('doctor.onboardingStatus'),
+    );
     mockDoctorApi.onboardingStatus.mockClear();
     element.querySelector<HTMLButtonElement>('.page-header__action-btn')!.click();
     await fixture.whenStable();
     expect(mockDoctorApi.onboardingStatus).toHaveBeenCalledOnce();
     language.setLanguage('en');
     await fixture.whenStable();
-    expect(element.querySelector('app-page-header')?.textContent).toContain(language.t('doctor.onboardingDescription'));
+    expect(element.querySelector('app-page-header')?.textContent).toContain(
+      language.t('doctor.onboardingDescription'),
+    );
   });
 
   it('should navigate away if status is approved', async () => {
@@ -126,7 +130,7 @@ describe('DoctorOnboarding', () => {
 
     expect(mockAuthApi.currentUser).toHaveBeenCalled();
     expect(mockAuthSession.complete).toHaveBeenCalledWith(mockUser);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/doctor/workspace', { replaceUrl: true });
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/workspace/doctor', { replaceUrl: true });
   });
 
   it('should handle load error gracefully', async () => {

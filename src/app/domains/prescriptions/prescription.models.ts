@@ -41,9 +41,11 @@ export interface PrescriptionVersion {
   readonly versionNumber: number;
   readonly status: PrescriptionVersionStatus;
   readonly previousVersionId?: string | null;
-  readonly finalizedOnUtc?: string | null;
-  readonly voidedOnUtc?: string | null;
-  readonly reason?: string | null;
+  readonly finalizedAtUtc?: string | null;
+  readonly voidedAtUtc?: string | null;
+  readonly correctionReason?: string | null;
+  readonly voidReason?: string | null;
+  readonly createdAtUtc?: string | null;
   readonly items: readonly PrescriptionItem[];
 }
 export interface PrescriptionState {

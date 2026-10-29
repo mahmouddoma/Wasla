@@ -27,7 +27,11 @@ describe('PatientDiagnosisTimelineComponent', () => {
 
   beforeEach(async () => {
     doctorPatientsApi = {
-      diagnoses: vi.fn().mockReturnValue(of({ items: [mockDiagnosis], totalCount: 1, pageNumber: 1, pageSize: 15 })),
+      diagnoses: vi
+        .fn()
+        .mockReturnValue(
+          of({ items: [mockDiagnosis], totalCount: 1, pageNumber: 1, pageSize: 15 }),
+        ),
     };
     toast = {
       error: vi.fn(),
@@ -49,12 +53,16 @@ describe('PatientDiagnosisTimelineComponent', () => {
     fixture = TestBed.createComponent(PatientDiagnosisTimelineComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('patientId', 'pat-1');
+    fixture.componentRef.setInput('canViewEncounters', true);
     fixture.detectChanges();
   });
 
   it('creates component and loads diagnoses', () => {
     expect(component).toBeTruthy();
-    expect(doctorPatientsApi.diagnoses).toHaveBeenCalledWith('pat-1', { pageNumber: 1, pageSize: 15 });
+    expect(doctorPatientsApi.diagnoses).toHaveBeenCalledWith('pat-1', {
+      pageNumber: 1,
+      pageSize: 15,
+    });
     expect(component.diagnoses().length).toBe(1);
     expect(component.loading()).toBe(false);
   });
@@ -71,6 +79,11 @@ describe('PatientDiagnosisTimelineComponent', () => {
     });
   });
 
+  it('does not open an encounter when the patient capability is absent', () => {
+    fixture.componentRef.setInput('canViewEncounters', false);
+    component.navigateToEncounter(mockDiagnosis);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
   it('handles load error', () => {
     doctorPatientsApi.diagnoses.mockReturnValue(throwError(() => new Error('Error')));
     component.loadDiagnoses();
@@ -78,4 +91,3 @@ describe('PatientDiagnosisTimelineComponent', () => {
     expect(component.loading()).toBe(false);
   });
 });
-

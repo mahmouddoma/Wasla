@@ -120,9 +120,6 @@ export class DoctorOnboarding {
   private async openDoctorArea(): Promise<void> {
     const user = await firstValueFrom(this.authApi.currentUser());
     this.session.complete(user);
-    const destination = this.session.destinationFor(user);
-    if (destination !== '/doctor/onboarding') {
-      await this.router.navigateByUrl(destination, { replaceUrl: true });
-    }
+    await this.router.navigateByUrl('/workspace/doctor', { replaceUrl: true });
   }
 }

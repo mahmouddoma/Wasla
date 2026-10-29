@@ -1,4 +1,5 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
+import { SKIP_ERROR_TOAST } from '../../core/notifications/api-error-toast.interceptor';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import {
@@ -52,6 +53,24 @@ export class PrescriptionsApi {
   versions(prescriptionId: string) {
     return this.http.get<readonly PrescriptionVersion[]>(
       this.prescription(prescriptionId) + '/versions',
+    );
+  }
+  pdf(
+    prescriptionId: string,
+    versionNumber: number,
+    disposition: 'inline' | 'attachment' = 'inline',
+  ) {
+    if (!prescriptionId.trim() || !Number.isInteger(versionNumber) || versionNumber < 1) {
+      throw new Error('Issued prescription version required');
+    }
+    return this.http.get(
+      this.prescription(prescriptionId) + '/versions/' + versionNumber + '/pdf',
+      {
+        params: { disposition },
+        responseType: 'blob',
+          cache: 'no-store',
+          context: new HttpContext().set(SKIP_ERROR_TOAST, true),
+      },
     );
   }
   versionDetails(prescriptionId: string, versionNumber: number) {

@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { PrescriptionsApi } from './prescriptions-api';
 import { AddPrescriptionItem, PrescriptionClinicalFields } from './prescription.models';
 import { environment } from '../../../environments/environment';
+import { SKIP_ERROR_TOAST } from '../../core/notifications/api-error-toast.interceptor';
 const fields: PrescriptionClinicalFields = {
   strength: null,
   dosageForm: null,
@@ -31,6 +32,21 @@ describe('Prescription HTTP contracts', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('requests issued PDFs as private binary with the selected disposition', () => {
+    api.pdf('rx/1', 2, 'attachment').subscribe();
+    const request = http.expectOne((r) =>
+      r.url.endsWith('/doctors/me/prescriptions/rx%2F1/versions/2/pdf'),
+    );
+    expect(request.request.responseType).toBe('blob');
+    expect(request.request.params.get('disposition')).toBe('attachment');
+    expect(request.request.context.get(SKIP_ERROR_TOAST)).toBe(true);
+    expect(request.request.cache).toBe('no-store');
+    request.flush(new Blob(['pdf'], { type: 'application/pdf' }));
+  });
+  it('rejects invalid version identifiers before requesting a PDF', () => {
+    expect(() => api.pdf('rx', 0)).toThrow();
+    expect(() => api.pdf('', 1)).toThrow();
+  });
   const doctor = '/doctors/me/prescriptions/rx%2F1',
     encounter = '/doctors/me/practices/p%2F1/encounters/e%2F1/prescription/items';
   const cases: readonly [

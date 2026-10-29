@@ -414,8 +414,7 @@
                     <span class="meta-pill meta-ahead">{{ 'tickets.queue.oneAhead' | t }}</span>
                   } @else {
                     <span class="meta-pill meta-ahead">{{
-                      'tickets.queue.multipleAhead'
-                        | t: { count: ticket.patientsAheadNow }
+                      'tickets.queue.multipleAhead' | t: { count: ticket.patientsAheadNow }
                     }}</span>
                   }
                 </div>
@@ -635,7 +634,7 @@
               <span>{{ 'tickets.queue.noResponse' | t }}</span>
             </button>
           }
-          @if (called && canStart()) {
+          @if (called && canStart() && called.operationalCapabilities?.canQueueMutate === true) {
             <button
               type="button"
               class="btn btn-primary btn-action-start"
@@ -743,10 +742,16 @@
 
       <!-- ═══ Unified Single-Page Doctor Clinical Workstation (No Popups / No Sidebars) ═══ -->
       @if (!called && isDoctor() && canOpenClinical()) {
-        <div class="doctor-clinical-workstation" [attr.aria-busy]="clinicalBusy() || encounterLoading()">
+        <div
+          class="doctor-clinical-workstation"
+          [attr.aria-busy]="clinicalBusy() || encounterLoading()"
+        >
           <!-- ── Visual Workflow Steps Bar ── -->
           <div class="ws-steps-bar" role="region" [attr.aria-label]="'encounters.details' | t">
-            <div class="ws-step-pill" [class.is-done]="hasClinicalNotes() || activeDiagnoses().length > 0">
+            <div
+              class="ws-step-pill"
+              [class.is-done]="hasClinicalNotes() || activeDiagnoses().length > 0"
+            >
               <span class="ws-step-icon" aria-hidden="true">
                 @if (hasClinicalNotes() || activeDiagnoses().length > 0) {
                   ✓
@@ -757,13 +762,29 @@
               <span class="ws-step-text">{{ 'tickets.workstation.step1' | t }}</span>
             </div>
             <span class="ws-step-arrow" aria-hidden="true">←</span>
-            <div class="ws-step-pill" [class.is-done]="!!(activeEncounter()?.prescription?.draft?.items?.length || activeEncounter()?.prescription?.current?.items?.length)">
+            <div
+              class="ws-step-pill"
+              [class.is-done]="
+                !!(
+                  activeEncounter()?.prescription?.draft?.items?.length ||
+                  activeEncounter()?.prescription?.current?.items?.length
+                )
+              "
+            >
               <span class="ws-step-icon" aria-hidden="true">2</span>
               <span class="ws-step-text">{{ 'tickets.workstation.step2' | t }}</span>
               <span class="ws-step-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
             </div>
             <span class="ws-step-arrow" aria-hidden="true">←</span>
-            <div class="ws-step-pill" [class.is-done]="!!(activeEncounter()?.labRequestDraft?.items?.length || activeEncounter()?.radiologyRequestDraft?.items?.length)">
+            <div
+              class="ws-step-pill"
+              [class.is-done]="
+                !!(
+                  activeEncounter()?.labRequestDraft?.items?.length ||
+                  activeEncounter()?.radiologyRequestDraft?.items?.length
+                )
+              "
+            >
               <span class="ws-step-icon" aria-hidden="true">3</span>
               <span class="ws-step-text">{{ 'tickets.workstation.step3' | t }}</span>
               <span class="ws-step-tag">{{ 'tickets.workstation.optionalBadge' | t }}</span>
@@ -800,7 +821,12 @@
                     <span class="ws-req-star">*</span>
                   </div>
                   <span class="ws-status-tag" [class.is-complete]="hasClinicalNotes()">
-                    {{ (hasClinicalNotes() ? 'tickets.workstation.doneBadge' : 'tickets.workstation.notesRequiredBadge') | t }}
+                    {{
+                      (hasClinicalNotes()
+                        ? 'tickets.workstation.doneBadge'
+                        : 'tickets.workstation.notesRequiredBadge'
+                      ) | t
+                    }}
                   </span>
                 </div>
                 <textarea
@@ -813,8 +839,14 @@
                   [placeholder]="'encounters.clinicalNotesPlaceholder' | t"
                 ></textarea>
                 <div class="ws-notes-foot">
-                  <span class="ws-auto-hint">{{ 'tickets.workstation.notesAutoSaveHint' | t }}</span>
-                  @if (canEditClinicalNotes() && clinicalModel().clinicalNotes.trim() && clinicalModel().clinicalNotes !== (activeEncounter()?.clinicalNotes ?? '')) {
+                  <span class="ws-auto-hint">{{
+                    'tickets.workstation.notesAutoSaveHint' | t
+                  }}</span>
+                  @if (
+                    canEditClinicalNotes() &&
+                    clinicalModel().clinicalNotes.trim() &&
+                    clinicalModel().clinicalNotes !== (activeEncounter()?.clinicalNotes ?? '')
+                  ) {
                     <button
                       type="button"
                       class="btn btn-outline-secondary btn-sm"
@@ -843,7 +875,10 @@
                 @if (activeDiagnoses().length > 0) {
                   <div class="ws-diagnoses-list">
                     @for (diag of activeDiagnoses(); track diag.diagnosisId) {
-                      <div class="ws-diag-item" [class.is-editing]="clinicalModel().diagnosisId === diag.diagnosisId">
+                      <div
+                        class="ws-diag-item"
+                        [class.is-editing]="clinicalModel().diagnosisId === diag.diagnosisId"
+                      >
                         <div class="ws-diag-main">
                           <span
                             class="ws-diag-type-badge"
@@ -921,7 +956,9 @@
                         [attr.aria-label]="'encounters.diagnosisType' | t"
                       >
                         <option value="Primary">{{ 'encounters.diagnosis.Primary' | t }}</option>
-                        <option value="Secondary">{{ 'encounters.diagnosis.Secondary' | t }}</option>
+                        <option value="Secondary">
+                          {{ 'encounters.diagnosis.Secondary' | t }}
+                        </option>
                       </select>
                       <input
                         type="text"
@@ -1058,17 +1095,21 @@
                       [practiceId]="practiceId()"
                       [encounterId]="encId"
                       [canManage]="
-                        (activeEncounter()?.status ?? 'InProgress') === 'InProgress' &&
-                        (activeEncounter()?.capabilities?.canManagePrescription ?? true)
+                        activeEncounter()?.status === 'InProgress' &&
+                        activeEncounter()?.capabilities?.canManagePrescription === true
                       "
-                      [canRequest]="activeEncounter()?.capabilities?.canRequestNewMedication ?? true"
+                      [canRequest]="
+                        activeEncounter()?.capabilities?.canRequestNewMedication === true
+                      "
                       [disabled]="busy() || clinicalSaving() || diagnosticBusy()"
                       (changed)="onPrescriptionChanged($event)"
                       (busyChanged)="prescriptionBusy.set($event)"
                     />
                   </div>
                 } @else if (encounterLoading()) {
-                  <p class="ws-sync-notice" role="status">{{ 'tickets.workstation.syncingEncounter' | t }}</p>
+                  <p class="ws-sync-notice" role="status">
+                    {{ 'tickets.workstation.syncingEncounter' | t }}
+                  </p>
                 }
               </div>
 
@@ -1096,9 +1137,13 @@
                         kind="lab"
                         [practiceId]="practiceId()"
                         [encounterId]="encId"
-                        [canManageEncounter]="activeEncounter()?.capabilities?.canManageLabRequest ?? true"
+                        [canManageEncounter]="
+                          activeEncounter()?.capabilities?.canManageLabRequest === true
+                        "
                         [completed]="activeEncounter()?.status === 'Completed'"
-                        [canPostVisit]="activeEncounter()?.capabilities?.canCreatePostVisitLabRequest ?? false"
+                        [canPostVisit]="
+                          activeEncounter()?.capabilities?.canCreatePostVisitLabRequest ?? false
+                        "
                         [locked]="busy() || clinicalBusy()"
                         (changed)="onDiagnosticChanged('lab', $event)"
                         (busyChanged)="diagnosticBusy.set($event)"
@@ -1114,9 +1159,14 @@
                         kind="radiology"
                         [practiceId]="practiceId()"
                         [encounterId]="encId"
-                        [canManageEncounter]="activeEncounter()?.capabilities?.canManageRadiologyRequest ?? true"
+                        [canManageEncounter]="
+                          activeEncounter()?.capabilities?.canManageRadiologyRequest === true
+                        "
                         [completed]="activeEncounter()?.status === 'Completed'"
-                        [canPostVisit]="activeEncounter()?.capabilities?.canCreatePostVisitRadiologyRequest ?? false"
+                        [canPostVisit]="
+                          activeEncounter()?.capabilities?.canCreatePostVisitRadiologyRequest ??
+                          false
+                        "
                         [locked]="busy() || clinicalBusy()"
                         (changed)="onDiagnosticChanged('radiology', $event)"
                         (busyChanged)="diagnosticBusy.set($event)"
@@ -1124,7 +1174,9 @@
                     </div>
                   </div>
                 } @else if (encounterLoading()) {
-                  <p class="ws-sync-notice" role="status">{{ 'tickets.workstation.syncingEncounter' | t }}</p>
+                  <p class="ws-sync-notice" role="status">
+                    {{ 'tickets.workstation.syncingEncounter' | t }}
+                  </p>
                 }
               </div>
             </div>
@@ -1134,8 +1186,17 @@
           @if (clinicalBlockers().length) {
             <div class="ws-clinical-blocker-alert" role="alert">
               <div class="ws-blocker-header">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  />
                 </svg>
                 <strong>{{ 'medications.resolveBlockers' | t }}</strong>
               </div>
@@ -1156,7 +1217,12 @@
                 <span class="ws-docked-status" [class.is-ready]="hasClinicalNotes()">
                   <span class="ws-dot" aria-hidden="true"></span>
                   <span>
-                    {{ (hasClinicalNotes() ? 'tickets.workstation.readyToComplete' : 'encounters.completeHint') | t }}
+                    {{
+                      (hasClinicalNotes()
+                        ? 'tickets.workstation.readyToComplete'
+                        : 'encounters.completeHint'
+                      ) | t
+                    }}
                   </span>
                 </span>
               </div>
@@ -1973,7 +2039,11 @@
                 <span>{{ 'tickets.queue.restoreWaiting' | t }}</span>
               </button>
             }
-            @if (ticket.status === 'Called' && canStart()) {
+            @if (
+              ticket.status === 'Called' &&
+              canStart() &&
+              ticket.operationalCapabilities?.canQueueMutate === true
+            ) {
               <button
                 type="button"
                 class="btn-drawer-action btn-primary"

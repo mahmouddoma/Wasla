@@ -133,6 +133,23 @@ describe('PracticeSegments', () => {
     expect(model.nameAr).toBe('شريحة عامة');
   });
 
+  it('opens an inline price editor without immediately changing the backend', () => {
+    component['changePrice'](mockPrices[0]);
+    expect(component.editingPriceId()).toBe('pr-1');
+    expect(component['priceModel']().price).toBe(250);
+    expect(mockApi.updatePrice).not.toHaveBeenCalled();
+  });
+  it('shows the price matrix with translated names and distinguishes absent prices', async () => {
+    component.section.set('prices');
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('table')).toBeTruthy();
+    expect(element.textContent).toContain('250');
+    TestBed.inject(LanguageService).setLanguage('en');
+    await fixture.whenStable();
+    expect(element.textContent).toContain('General Segment');
+    expect(element.textContent).toContain('Regular Consultation');
+  });
   it('should delete a price when confirmed', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockApi.deletePrice.mockReturnValue(of(undefined));

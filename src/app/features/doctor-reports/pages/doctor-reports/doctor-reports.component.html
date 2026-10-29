@@ -1,0 +1,292 @@
+<main class="directory-workspace">
+  <app-page-header
+    [heading]="
+      (activeTab() === 'reports' ? 'doctorRemediation.reports' : 'doctorRemediation.insights') | t
+    "
+    [description]="'doctorRemediation.analyticsHelp' | t"
+    icon="revenue"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="refresh()"
+  >
+    <div pageHeaderDeck class="toolbar">
+      @if (options()?.practices?.length) {
+        <label
+          >{{ 'finance.practice' | t
+          }}<span class="select-control"
+            ><select class="field-input" [(ngModel)]="filters.practiceId">
+              <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
+              @for (practice of options()?.practices; track practice.id) {
+                <option [value]="practice.id">{{ text(practice.nameAr, practice.nameEn) }}</option>
+              }</select
+            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+        ></label>
+      }
+      <label
+        >{{ 'doctorPatients.filter.fromDate' | t
+        }}<input type="date" dir="ltr" class="field-input" [(ngModel)]="filters.fromDate"
+      /></label>
+      <label
+        >{{ 'doctorPatients.filter.toDate' | t
+        }}<input type="date" dir="ltr" class="field-input" [(ngModel)]="filters.toDate"
+      /></label>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="refresh()"
+        [disabled]="loading() || retryBlocked()"
+      >
+        {{ 'common.search' | t }}
+      </button>
+    </div>
+  </app-page-header>
+  @for (message of messages(); track $index) {
+    <p class="error-text" role="alert">{{ message | t }}</p>
+  }
+  @if (loading()) {
+    <p role="status" aria-live="polite">{{ 'common.loading' | t }}</p>
+  } @else if (failed()) {
+    <div class="empty-state">
+      <h2>{{ 'common.failedToLoad' | t }}</h2>
+      <button class="btn btn-primary" (click)="refresh()">{{ 'common.retry' | t }}</button>
+    </div>
+  } @else {
+    <div class="surface table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>{{ 'doctorRemediation.title' | t }}</th>
+            <th>{{ 'doctorRemediation.status' | t }}</th>
+            <th>{{ 'doctorPatients.col.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (activeTab() === 'insights') {
+            @for (insight of insights(); track insight.insightId) {
+              <tr>
+                <td>
+                  <strong>{{ text(insight.titleAr, insight.titleEn) }}</strong>
+                  <p>{{ text(insight.explanationAr, insight.explanationEn) }}</p>
+                </td>
+                <td>{{ stateLabel(insight.state) }}</td>
+                <td>
+                  <button class="btn btn-outline-secondary" (click)="openInsight(insight)">
+                    {{ 'common.viewDetails' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (report of reports(); track report.reportCode) {
+              <tr>
+                <td>
+                  <strong>{{ text(report.titleAr, report.titleEn) }}</strong>
+                  <p>{{ report.description }}</p>
+                </td>
+                <td>{{ report.scope || ('doctorRemediation.unavailable' | t) }}</td>
+                <td>
+                  @if (report.canPreview) {
+                    <button class="btn btn-outline-secondary" (click)="openReport(report)">
+                      {{ 'doctorRemediation.viewReport' | t }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+      @if (activeTab() === 'insights' ? !insights().length : !reports().length) {
+        <div class="empty-state">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Doctors-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h2>{{ 'doctorRemediation.empty' | t }}</h2>
+          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+          <button class="btn btn-primary" (click)="refresh()">{{ 'common.refresh' | t }}</button>
+        </div>
+      }
+    </div>
+    @if (activeTab() === 'insights' && totalCount() > 20) {
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="pageNumber() <= 1"
+          (click)="refresh(pageNumber() - 1)"
+        >
+          {{ 'common.previous' | t }}</button
+        ><span>{{ pageNumber() }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="pageNumber() * 20 >= totalCount()"
+          (click)="refresh(pageNumber() + 1)"
+        >
+          {{ 'common.next' | t }}
+        </button>
+      </nav>
+    }
+  }
+  <app-side-drawer
+    [opened]="!!selectedInsight() || !!selectedReport() || detailLoading()"
+    [title]="'common.viewDetails' | t"
+    (closed)="closeDrawer()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    }
+    @if (selectedInsight(); as insight) {
+      <h2>{{ text(insight.titleAr, insight.titleEn) }}</h2>
+      <p>{{ text(insight.explanationAr, insight.explanationEn) }}</p>
+      <dl>
+        <dt>{{ 'doctorRemediation.currentValue' | t }}</dt>
+        <dd>{{ insight.currentValue ?? ('doctorRemediation.unavailable' | t) }}</dd>
+        <dt>{{ 'doctorRemediation.previousValue' | t }}</dt>
+        <dd>{{ insight.previousValue ?? ('doctorRemediation.unavailable' | t) }}</dd>
+        <dt>{{ 'doctorRemediation.sample' | t }}</dt>
+        <dd>{{ insight.sampleCount ?? ('doctorRemediation.unavailable' | t) }}</dd>
+      </dl>
+      <p>{{ text(insight.evidenceSummaryAr, insight.evidenceSummaryEn) }}</p>
+      <p>{{ text(insight.suggestedActionAr, insight.suggestedActionEn) }}</p>
+      <div class="actions">
+        @if (canTransition(insight, 'acknowledge')) {
+          <button class="btn btn-primary" (click)="acknowledgeInsight(insight)">
+            {{ 'doctorRemediation.acknowledge' | t }}
+          </button>
+        }
+        @if (canTransition(insight, 'resolve')) {
+          <button class="btn btn-primary" (click)="resolveInsight(insight)">
+            {{ 'doctorRemediation.resolve' | t }}
+          </button>
+        }
+      </div>
+      @if (canTransition(insight, 'dismiss')) {
+        <form class="section detail-form" (ngSubmit)="submitDismiss()">
+          <label
+            >{{ 'doctorRemediation.reason' | t
+            }}<textarea
+              class="field-input"
+              name="dismissReason"
+              [(ngModel)]="dismissReason"
+              required
+              maxlength="2000"
+            ></textarea></label
+          ><button
+            class="btn btn-outline-secondary"
+            [disabled]="submitting() || retryBlocked() || !dismissReason.trim()"
+          >
+            {{ 'doctorRemediation.dismiss' | t }}
+          </button>
+        </form>
+      }
+      <h3>{{ 'doctorRemediation.history' | t }}</h3>
+      <ul class="history">
+        @for (event of history(); track event.id) {
+          <li>
+            <bdi>{{ event.recordedAtUtc }}</bdi> {{ stateLabel(event.state) }}
+            <p>{{ event.reason }}</p>
+          </li>
+        }
+      </ul>
+    }
+    @if (selectedReport(); as report) {
+      <h2>{{ text(report.titleAr, report.titleEn) }}</h2>
+      @if (preview(); as model) {
+        <p>
+          <bdi>{{ model.window?.fromDate }}</bdi> / <bdi>{{ model.window?.toDate }}</bdi>
+        </p>
+        <p>
+          {{ 'doctorRemediation.sample' | t }}:
+          {{ model.eligibleSampleCount ?? ('doctorRemediation.unavailable' | t) }}
+        </p>
+        @for (warning of model.warnings; track warning) {
+          <p role="status">{{ warning }}</p>
+        }
+        <dl>
+          @for (metric of model.metrics; track metric.metricCode) {
+            <dt>{{ text(metric.nameAr, metric.nameEn) }}</dt>
+            <dd>
+              {{ metric.value ?? ('doctorRemediation.unavailable' | t) }} {{ metric.unit }}
+              @if (report.canDrillDown) {
+                <button class="btn btn-link" (click)="openDrilldown(metric)">
+                  {{ 'common.viewDetails' | t }}
+                </button>
+              }
+            </dd>
+          }
+        </dl>
+        @for (series of model.series; track $index) {
+          <section class="section">
+            <h3>{{ text(series.nameAr, series.nameEn) }}</h3>
+            <dl>
+              @for (metric of series.metrics; track metric.metricCode) {
+                <dt>{{ text(metric.nameAr, metric.nameEn) }}</dt>
+                <dd>
+                  {{ metric.value ?? ('doctorRemediation.unavailable' | t) }} {{ metric.unit }}
+                </dd>
+              }
+            </dl>
+          </section>
+        }
+        <div class="actions">
+          @for (format of ['pdf', 'xlsx']; track format) {
+            @if (canExport(report, format === 'pdf' ? 'pdf' : 'xlsx')) {
+              <button
+                class="btn btn-primary"
+                [disabled]="exporting()"
+                (click)="exportReport(report, format === 'pdf' ? 'pdf' : 'xlsx')"
+              >
+                {{ (format === 'pdf' ? 'doctorRemediation.pdf' : 'doctorRemediation.excel') | t }}
+              </button>
+            }
+          }
+        </div>
+      }
+      @if (drilldown(); as rows) {
+        <section class="section">
+          <h3>{{ 'doctorRemediation.details' | t }}</h3>
+          <ul class="history">
+            @for (row of rows.items; track row.id) {
+              <li>
+                <bdi>{{ row.businessDate }}</bdi> {{ row.reference }}
+                <span>{{ row.metricValue ?? ('doctorRemediation.unavailable' | t) }}</span>
+                @if (sourceLink(row); as link) {
+                  <a
+                    class="btn btn-outline-secondary"
+                    [routerLink]="link.route"
+                    [queryParams]="link.query"
+                    >{{ 'doctorRemediation.viewSource' | t }}</a
+                  >
+                }
+              </li>
+            } @empty {
+              <li>{{ 'doctorRemediation.empty' | t }}</li>
+            }
+          </ul>
+          @if (drillMetric(); as metric) {
+            <div class="actions">
+              <button
+                class="btn btn-outline-secondary"
+                [disabled]="(rows.pageNumber || 1) <= 1"
+                (click)="openDrilldown(metric, (rows.pageNumber || 1) - 1)"
+              >
+                {{ 'common.previous' | t }}</button
+              ><span>{{ rows.pageNumber }}</span
+              ><button
+                class="btn btn-outline-secondary"
+                [disabled]="(rows.pageNumber || 1) * 20 >= (rows.totalCount || 0)"
+                (click)="openDrilldown(metric, (rows.pageNumber || 1) + 1)"
+              >
+                {{ 'common.next' | t }}
+              </button>
+            </div>
+          }
+        </section>
+      }
+    }
+  </app-side-drawer>
+</main>

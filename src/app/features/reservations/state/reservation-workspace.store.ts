@@ -155,7 +155,9 @@ export class ReservationWorkspaceStore {
   private readonly language = inject(LanguageService);
   readonly actor = signal<ReservationActor>('Patient');
   readonly practiceId = signal('');
-  readonly practices = signal<{ id: string; nameAr: string; nameEn: string | null }[]>([]);
+  readonly practices = signal<
+    { id: string; nameAr: string; nameEn: string | null; isActive?: boolean }[]
+  >([]);
   readonly patients = signal<BookablePatient[]>([]);
   readonly metadata = signal<ReservationMetadata | null>(null);
   readonly filters = signal<ReservationFilterOptions | null>(null);
@@ -207,10 +209,20 @@ export class ReservationWorkspaceStore {
     () => this.actor() === 'Reception' && this.session.hasPermission('Patients.Register'),
   );
   readonly canCancel = computed(
-    () => !!this.detail()?.capabilities?.canCancel && this.allowed('Cancel'),
+    () =>
+      this.detail()?.capabilities?.canCancel === true &&
+      !this.detail()?.isArchived &&
+      (this.actor() !== 'Doctor' ||
+        this.practices().find((p) => p.id === this.practiceId())?.isActive !== false) &&
+      this.allowed('Cancel'),
   );
   readonly canReschedule = computed(
-    () => !!this.detail()?.capabilities?.canReschedule && this.allowed('Reschedule'),
+    () =>
+      this.detail()?.capabilities?.canReschedule === true &&
+      !this.detail()?.isArchived &&
+      (this.actor() !== 'Doctor' ||
+        this.practices().find((p) => p.id === this.practiceId())?.isActive !== false) &&
+      this.allowed('Reschedule'),
   );
   readonly canRestore = computed(
     () =>
@@ -296,7 +308,10 @@ export class ReservationWorkspaceStore {
       }
       if (actor === 'Doctor')
         this.practices.set(
-          (await firstValueFrom(this.practicesApi.list())).filter((p) => p.isActive),
+          (await firstValueFrom(this.practicesApi.list())).filter(
+            (p) =>
+              p.isActive || this.session.hasPermission(PERMISSIONS.doctorPatientsViewHistoricalOwn),
+          ),
         );
       if (actor === 'Reception') {
         await this.reception.ensureLoaded();
@@ -306,7 +321,11 @@ export class ReservationWorkspaceStore {
         const candidate =
           this.practices().find((p) => p.id === practiceId)?.id ||
           (actor === 'Reception' ? this.reception.currentPracticeId() : '') ||
-          (this.practices().length === 1 ? this.practices()[0].id : '');
+          (!practiceId && this.practices().length === 1 ? this.practices()[0].id : '');
+        if (actor === 'Doctor' && practiceId && !candidate) {
+          this.messages.set(['doctorRemediation.sourceUnavailable']);
+          return;
+        }
         await this.selectPractice(candidate);
       } else {
         this.practiceId.set(practiceId);
@@ -737,9 +756,7 @@ export class ReservationWorkspaceStore {
         return;
       }
       if (mode === 'create' && this.isAttestationRequired(error)) {
-        const patientName =
-          this.bookingPatient()?.nameAr ||
-          draft.patientId;
+        const patientName = this.bookingPatient()?.nameAr || draft.patientId;
         this.pendingAttestation.set({
           draft,
           patientId: draft.patientId,

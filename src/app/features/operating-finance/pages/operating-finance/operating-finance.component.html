@@ -1,0 +1,546 @@
+<main class="directory-workspace">
+  <app-page-header
+    [heading]="(salary() ? 'finance.viewSalaries' : 'finance.viewExpenses') | t"
+    [description]="'doctorRemediation.financeHelp' | t"
+    icon="finance"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  >
+    <div pageHeaderDeck class="toolbar">
+      <label
+        >{{ 'finance.practice' | t
+        }}<span class="select-control"
+          ><select class="field-input" [(ngModel)]="filters.practiceId">
+            <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
+            @for (practice of options()?.practices; track practice.id) {
+              <option [value]="practice.id">{{ text(practice.nameAr, practice.nameEn) }}</option>
+            }</select
+          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+      ></label>
+      <label
+        >{{ 'doctorRemediation.fromDate' | t
+        }}<input class="field-input" type="date" dir="ltr" [(ngModel)]="filters.fromDate"
+      /></label>
+      <label
+        >{{ 'doctorRemediation.toDate' | t
+        }}<input class="field-input" type="date" dir="ltr" [(ngModel)]="filters.toDate"
+      /></label>
+      <button class="btn btn-primary" (click)="load()" [disabled]="loading() || retryBlocked()">
+        {{ 'common.search' | t }}
+      </button>
+    </div>
+  </app-page-header>
+  <nav class="actions" [attr.aria-label]="'doctorRemediation.financeSections' | t">
+    @if (!salary()) {
+      <button
+        class="btn"
+        [class.btn-primary]="tab() === 'expenses'"
+        (click)="switchTab('expenses')"
+      >
+        {{ 'doctorRemediation.oneTime' | t }}
+      </button>
+    }
+    @if (canReadPlans()) {
+      <button class="btn" [class.btn-primary]="tab() === 'plans'" (click)="switchTab('plans')">
+        {{ (salary() ? 'doctorRemediation.salaryPlans' : 'doctorRemediation.recurringPlans') | t }}
+      </button>
+    }
+    @if (canReadObligations()) {
+      <button
+        class="btn"
+        [class.btn-primary]="tab() === 'obligations'"
+        (click)="switchTab('obligations')"
+      >
+        {{ 'doctorRemediation.obligations' | t }}
+      </button>
+    }
+    @if (canManage()) {
+      <button
+        class="btn btn-outline-secondary"
+        (click)="openCreate(tab() === 'expenses' ? 'createExpense' : 'createPlan')"
+      >
+        {{
+          (tab() === 'expenses' ? 'doctorRemediation.addExpense' : 'doctorRemediation.addPlan') | t
+        }}
+      </button>
+    }
+  </nav>
+  @for (message of messages(); track $index) {
+    <p role="alert" class="error-text">{{ message | t }}</p>
+  }
+  @if (loading()) {
+    <p role="status" aria-live="polite">{{ 'common.loading' | t }}</p>
+  } @else if (failed()) {
+    <div class="empty-state">
+      <h2>{{ 'common.failedToLoad' | t }}</h2>
+      <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
+    </div>
+  } @else {
+    <div class="surface table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>{{ 'doctorRemediation.title' | t }}</th>
+            <th>{{ 'finance.fixedAmount' | t }}</th>
+            <th>{{ 'doctorRemediation.date' | t }}</th>
+            <th>{{ 'doctorRemediation.status' | t }}</th>
+            <th>{{ 'doctorPatients.col.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (tab() === 'plans') {
+            @for (plan of plans(); track plan.id) {
+              <tr>
+                <td>
+                  {{
+                    salary()
+                      ? staffName(plan.receptionId)
+                      : text(revision(plan)?.descriptionAr, revision(plan)?.descriptionEn)
+                  }}
+                </td>
+                <td>
+                  <bdi
+                    >{{ revision(plan)?.amount ?? ('doctorRemediation.unavailable' | t) }}
+                    {{ revision(plan)?.currencyCode }}</bdi
+                  >
+                </td>
+                <td>
+                  <bdi>{{ plan.effectiveFrom }}</bdi>
+                </td>
+                <td>{{ stateLabel(plan.status) }}</td>
+                <td>
+                  <button class="btn btn-outline-secondary" (click)="inspectPlan(plan)">
+                    {{ 'common.viewDetails' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (obligation of obligations(); track obligation.id) {
+              <tr>
+                <td>{{ text(obligation.descriptionAr, obligation.descriptionEn) }}</td>
+                <td>
+                  <bdi
+                    >{{ obligation.amount ?? ('doctorRemediation.unavailable' | t) }}
+                    {{ obligation.currencyCode }}</bdi
+                  >
+                </td>
+                <td>
+                  <bdi>{{ obligation.dueBusinessDate }}</bdi>
+                </td>
+                <td>{{ stateLabel(obligation.status) }}</td>
+                <td>
+                  <button class="btn btn-outline-secondary" (click)="inspectObligation(obligation)">
+                    {{ 'common.viewDetails' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+      @if (tab() === 'plans' ? !plans().length : !obligations().length) {
+        <div class="empty-state">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Payment Information-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h2>{{ 'doctorRemediation.empty' | t }}</h2>
+          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+          <button class="btn btn-primary" (click)="load()">{{ 'common.refresh' | t }}</button>
+        </div>
+      }
+    </div>
+    @if (total() > 20) {
+      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page() <= 1"
+          (click)="load(page() - 1)"
+        >
+          {{ 'common.previous' | t }}</button
+        ><span>{{ page() }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="page() * 20 >= total()"
+          (click)="load(page() + 1)"
+        >
+          {{ 'common.next' | t }}
+        </button>
+      </nav>
+    }
+  }
+  <app-side-drawer [opened]="drawer()" [title]="'common.viewDetails' | t" (closed)="close()">
+    @if (detailLoading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    }
+    @if (selectedPlan(); as plan) {
+      <h2>
+        {{
+          salary()
+            ? staffName(plan.receptionId)
+            : text(revision(plan)?.descriptionAr, revision(plan)?.descriptionEn)
+        }}
+      </h2>
+      <dl>
+        <dt>{{ 'finance.fixedAmount' | t }}</dt>
+        <dd>
+          <bdi
+            >{{ revision(plan)?.amount ?? ('doctorRemediation.unavailable' | t) }}
+            {{ revision(plan)?.currencyCode }}</bdi
+          >
+        </dd>
+        <dt>{{ 'doctorRemediation.status' | t }}</dt>
+        <dd>{{ stateLabel(plan.status) }}</dd>
+        <dt>{{ 'doctorRemediation.fromDate' | t }}</dt>
+        <dd>
+          <bdi>{{ plan.effectiveFrom }}</bdi>
+        </dd>
+      </dl>
+      @if (mode() === 'view') {
+        <div class="actions">
+          @if (!salary() && canReadObligations()) {
+            <button class="btn btn-primary" (click)="viewObligations(plan)">
+              {{ 'doctorRemediation.viewObligations' | t }}
+            </button>
+          }
+          @if (
+            canManage() &&
+            plan.rowVersion &&
+            allowed(plan, '', salary() ? 'SalaryPlans.ManageOwn' : 'FinancialExpenses.ManageOwn')
+          ) {
+            <button class="btn btn-outline-secondary" (click)="editPlan()">
+              {{ 'common.edit' | t }}
+            </button>
+          }
+          @for (action of ['end', 'pause', 'resume']; track action) {
+            @if (planAction(action === 'end' ? 'end' : action === 'pause' ? 'pause' : 'resume')) {
+              <button
+                class="btn btn-outline-secondary"
+                (click)="
+                  prepare(action === 'end' ? 'end' : action === 'pause' ? 'pause' : 'resume')
+                "
+              >
+                {{ 'doctorRemediation.' + action | t }}
+              </button>
+            }
+          }
+        </div>
+      }
+    }
+    @if (selectedObligation(); as obligation) {
+      <h2>{{ text(obligation.descriptionAr, obligation.descriptionEn) }}</h2>
+      <dl>
+        <dt>{{ 'finance.fixedAmount' | t }}</dt>
+        <dd>
+          <bdi
+            >{{ obligation.amount ?? ('doctorRemediation.unavailable' | t) }}
+            {{ obligation.currencyCode }}</bdi
+          >
+        </dd>
+        <dt>{{ 'doctorRemediation.date' | t }}</dt>
+        <dd>
+          <bdi>{{ obligation.dueBusinessDate }}</bdi>
+        </dd>
+        <dt>{{ 'doctorRemediation.status' | t }}</dt>
+        <dd>{{ stateLabel(obligation.status) }}</dd>
+      </dl>
+      @if (mode() === 'view') {
+        <div class="actions">
+          @if (obligationAction('correct')) {
+            <button class="btn btn-outline-secondary" (click)="prepare('correctObligation')">
+              {{ 'doctorRemediation.correctObligation' | t }}
+            </button>
+          }
+          @if (obligationAction('confirm-actual')) {
+            <button class="btn btn-primary" (click)="prepare('confirmActual')">
+              {{ 'doctorRemediation.confirmActual' | t }}
+            </button>
+          }
+          @if (
+            obligationAction('settle') &&
+            (obligation.amountPolicy !== 'Variable' || obligation.actualAmountConfirmed)
+          ) {
+            <button class="btn btn-primary" (click)="prepare('settle')">
+              {{ 'finance.settle' | t }}
+            </button>
+          }
+          @if (obligationAction('cancel')) {
+            <button class="btn btn-outline-danger" (click)="prepare('cancel')">
+              {{ 'doctorRemediation.cancelObligation' | t }}
+            </button>
+          }
+          @if (obligation.activeSettlementId && !salary()) {
+            <button
+              class="btn btn-outline-secondary"
+              (click)="openSettlement(obligation.activeSettlementId)"
+            >
+              {{ 'doctorRemediation.receipt' | t }}
+            </button>
+          }
+        </div>
+      }
+    }
+    @if (settlement(); as payment) {
+      <h2>{{ 'doctorRemediation.receipt' | t }}</h2>
+      <dl>
+        <dt>{{ 'doctorRemediation.reference' | t }}</dt>
+        <dd>{{ payment.receiptNumber }}</dd>
+        <dt>{{ 'finance.fixedAmount' | t }}</dt>
+        <dd>
+          <bdi>{{ payment.amount }} {{ payment.currencyCode }}</bdi>
+        </dd>
+        <dt>{{ 'doctorRemediation.date' | t }}</dt>
+        <dd>
+          <bdi>{{ payment.businessDate }}</bdi>
+        </dd>
+      </dl>
+      @if (
+        mode() === 'view' &&
+        allowed(payment, '/reverse', 'FinancialExpenses.ReverseOwn') &&
+        payment.obligationRowVersion
+      ) {
+        <button class="btn btn-outline-danger" (click)="prepare('reverse')">
+          {{ 'doctorRemediation.reverse' | t }}
+        </button>
+      }
+    }
+    @if (mode() !== 'view') {
+      <form class="detail-form section" (ngSubmit)="submit()">
+        <h3 class="full">{{ 'doctorRemediation.' + mode() | t }}</h3>
+        @if (['createPlan', 'editPlan', 'createExpense', 'correctObligation'].includes(mode())) {
+          @if (salary() && mode() !== 'correctObligation') {
+            <label class="full"
+              >{{ 'finance.receptionStaff' | t
+              }}<span class="select-control"
+                ><select
+                  class="field-input"
+                  name="reception"
+                  [(ngModel)]="draft.receptionId"
+                  required
+                >
+                  <option value="">{{ 'doctorRemediation.chooseStaff' | t }}</option>
+                  @for (staff of options()?.receptions; track staff.id) {
+                    <option [value]="staff.id">{{ text(staff.nameAr, staff.nameEn) }}</option>
+                  }</select
+                ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+            ></label>
+            @if (!options()?.receptions?.length) {
+              <p class="full">{{ 'doctorRemediation.noStaff' | t }}</p>
+            }
+          }
+          @if (!salary()) {
+            <label
+              >{{ 'finance.expenseCategory' | t
+              }}<span class="select-control"
+                ><select class="field-input" name="category" [(ngModel)]="draft.category" required>
+                  @for (category of options()?.categories; track category.code) {
+                    <option [value]="category.code">
+                      {{ text(category.nameAr, category.nameEn) }}
+                    </option>
+                  }</select
+                ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+            ></label>
+          }
+          <label
+            >{{ 'finance.practice' | t
+            }}<span class="select-control"
+              ><select class="field-input" name="practice" [(ngModel)]="draft.practiceId">
+                <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
+                @for (practice of options()?.practices; track practice.id) {
+                  <option [value]="practice.id">
+                    {{ text(practice.nameAr, practice.nameEn) }}
+                  </option>
+                }</select
+              ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+          ></label>
+          @if (mode() === 'createPlan' || mode() === 'editPlan') {
+            <label
+              >{{ 'finance.dueDay' | t
+              }}<input
+                type="number"
+                dir="ltr"
+                class="field-input"
+                name="dueDay"
+                [(ngModel)]="draft.dueDay"
+                min="1"
+                max="31"
+                required
+            /></label>
+            <label
+              >{{ 'doctorRemediation.fromDate' | t
+              }}<input
+                type="date"
+                dir="ltr"
+                class="field-input"
+                name="effectiveFrom"
+                [(ngModel)]="draft.effectiveFrom"
+                required /></label
+            ><label
+              >{{ 'doctorRemediation.toDate' | t
+              }}<input
+                type="date"
+                dir="ltr"
+                class="field-input"
+                name="effectiveTo"
+                [(ngModel)]="draft.effectiveTo"
+            /></label>
+            @if (!salary()) {
+              <label
+                >{{ 'finance.cadence' | t
+                }}<span class="select-control"
+                  ><select class="field-input" name="cadence" [(ngModel)]="draft.cadence">
+                    @for (option of options()?.cadences; track option.code) {
+                      <option [value]="option.code">
+                        {{ text(option.nameAr, option.nameEn) }}
+                      </option>
+                    }</select
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" /></svg></span></label
+              ><label
+                >{{ 'doctorRemediation.amountPolicy' | t
+                }}<span class="select-control"
+                  ><select class="field-input" name="policy" [(ngModel)]="draft.amountPolicy">
+                    @for (option of options()?.amountPolicies; track option.code) {
+                      <option [value]="option.code">
+                        {{ text(option.nameAr, option.nameEn) }}
+                      </option>
+                    }</select
+                  ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+              ></label>
+            }
+          }
+          <label class="full"
+            >{{ 'doctorRemediation.descriptionAr' | t
+            }}<textarea
+              class="field-input"
+              name="descriptionAr"
+              [(ngModel)]="draft.descriptionAr"
+              maxlength="2000"
+            ></textarea></label
+          ><label class="full"
+            >{{ 'doctorRemediation.descriptionEn' | t
+            }}<textarea
+              class="field-input"
+              name="descriptionEn"
+              dir="ltr"
+              [(ngModel)]="draft.descriptionEn"
+              maxlength="2000"
+            ></textarea>
+          </label>
+        }
+        @if (
+          [
+            'createPlan',
+            'editPlan',
+            'createExpense',
+            'correctObligation',
+            'confirmActual',
+            'settle',
+          ].includes(mode())
+        ) {
+          <label
+            >{{ 'finance.fixedAmount' | t
+            }}<input
+              type="text"
+              inputmode="decimal"
+              dir="ltr"
+              class="field-input ltr-text"
+              name="amount"
+              [(ngModel)]="draft.amount"
+              [readonly]="mode() === 'settle'"
+              required
+              pattern="[0-9]+(\.[0-9]{1,2})?"
+          /></label>
+        }
+        @if (['settle', 'createExpense', 'reverse', 'correctObligation'].includes(mode())) {
+          <label
+            >{{ 'doctorRemediation.date' | t
+            }}<input
+              type="date"
+              dir="ltr"
+              class="field-input ltr-text"
+              name="businessDate"
+              [(ngModel)]="draft.businessDate"
+              required
+          /></label>
+        }
+        @if (mode() === 'settle') {
+          <p class="full">{{ 'doctorRemediation.settlementConfirm' | t }}</p>
+          <label
+            >{{ 'finance.method' | t
+            }}<span class="select-control"
+              ><select
+                class="field-input"
+                name="paymentMethod"
+                [(ngModel)]="draft.paymentMethod"
+                required
+              >
+                @for (method of options()?.paymentMethods; track method.code) {
+                  <option [value]="method.code">{{ text(method.nameAr, method.nameEn) }}</option>
+                }</select
+              ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
+          ></label>
+        }
+        @if (!['createPlan', 'settle'].includes(mode())) {
+          <label class="full"
+            >{{ 'doctorRemediation.reason' | t
+            }}<textarea
+              class="field-input"
+              name="reason"
+              [(ngModel)]="draft.reason"
+              required
+              maxlength="2000"
+            ></textarea>
+          </label>
+        }
+        <div class="actions full">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="mode.set('view')"
+            [disabled]="busy()"
+          >
+            {{ 'common.cancel' | t }}</button
+          ><button
+            class="btn btn-primary"
+            [disabled]="
+              busy() ||
+              retryBlocked() ||
+              ([
+                'createPlan',
+                'editPlan',
+                'createExpense',
+                'correctObligation',
+                'confirmActual',
+                'settle',
+              ].includes(mode()) &&
+                !validMoney())
+            "
+          >
+            {{ (busy() ? 'common.loading' : 'common.confirm') | t }}
+          </button>
+        </div>
+      </form>
+    }
+    @for (message of messages(); track $index) {
+      <p class="error-text" role="alert">{{ message | t }}</p>
+    }
+    @if (history().length) {
+      <h3>{{ 'doctorRemediation.history' | t }}</h3>
+      <ul class="history">
+        @for (event of history(); track event.id) {
+          <li>
+            <bdi>{{ event.recordedAtUtc }}</bdi>
+            <p>{{ event.reason }}</p>
+          </li>
+        }
+      </ul>
+    }
+  </app-side-drawer>
+</main>
