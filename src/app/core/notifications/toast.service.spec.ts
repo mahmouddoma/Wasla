@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ToastService } from './toast.service';
+import { LanguageService } from '../i18n/language.service';
 
 describe('ToastService', () => {
   let service: ToastService;
@@ -11,6 +12,29 @@ describe('ToastService', () => {
 
   afterEach(() => {
     for (const message of service.messages()) service.dismiss(message.id);
+    localStorage.removeItem('wasla_lang');
+  });
+
+  it('updates open notifications and titles when the language changes', () => {
+    const language = TestBed.inject(LanguageService);
+    language.setLanguage('ar');
+    service.success('reservations.saved', 60000, 'common.success');
+    const id = service.messages()[0].id;
+    expect(service.messages()[0].message).toBe(language.t('reservations.saved'));
+    language.setLanguage('en');
+    expect(service.messages()[0]).toEqual(
+      expect.objectContaining({
+        id,
+        message: language.t('reservations.saved'),
+        title: language.t('common.success'),
+      }),
+    );
+  });
+
+  it('preserves server text that has no translation key', () => {
+    service.error('Server explanation');
+    TestBed.inject(LanguageService).setLanguage('en');
+    expect(service.messages()[0].message).toBe('Server explanation');
   });
 
   it('shows a normalized error and dismisses it', () => {

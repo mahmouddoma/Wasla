@@ -15,6 +15,10 @@ import { ModalFocus } from '../../directives/modal-focus';
   templateUrl: './side-drawer.html',
   styleUrl: './side-drawer.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[attr.dir]': 'language.dir()',
+    '[attr.lang]': 'language.currentLang()',
+  },
 })
 export class SideDrawer {
   protected readonly language = inject(LanguageService);

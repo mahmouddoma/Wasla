@@ -9,6 +9,10 @@ import { ToastService } from '../../core/notifications/toast.service';
   templateUrl: './toast-container.html',
   styleUrl: './toast-container.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[attr.dir]': 'uiLanguage.dir()',
+    '[attr.lang]': 'uiLanguage.currentLang()',
+  },
 })
 export class ToastContainer {
   protected readonly uiLanguage = inject(LanguageService);

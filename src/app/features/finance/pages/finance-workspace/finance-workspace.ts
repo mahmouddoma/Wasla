@@ -304,6 +304,14 @@ export class FinanceWorkspace implements OnInit {
     }
   }
 
+  protected formatAmount(value: number | null | undefined): string {
+    if (value === null || value === undefined)
+      return this.language.t('doctorRemediation.unavailable');
+    return new Intl.NumberFormat(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-GB', {
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+
   protected label(
     item:
       | {
@@ -325,31 +333,20 @@ export class FinanceWorkspace implements OnInit {
     return this.language.currentLang() === 'en' ? en || ar : ar || en;
   }
 
-  protected patientDisplayName(value: any): string {
-    if (!value) return '';
-    if (value.patient) {
-      const p = this.label(value.patient);
-      if (p) return p;
-    }
-    return (
-      (this.language.currentLang() === 'en'
-        ? value.patientNameEn || value.patientNameAr || value.patientName
-        : value.patientNameAr || value.patientNameEn || value.patientName) ||
-      this.language.t('finance.privateContext')
-    );
+  protected patientDisplayName(value: PaymentDetail): string {
+    return this.label(value.patient) || this.language.t('finance.privateContext');
   }
-
-  protected practiceDisplayName(value: any): string {
-    if (!value) return '';
-    if (value.practice) {
-      const p = this.label(value.practice);
-      if (p) return p;
-    }
-    return this.language.currentLang() === 'en'
-      ? value.practiceNameEn || value.practiceNameAr || ''
-      : value.practiceNameAr || value.practiceNameEn || '';
+  protected practiceDisplayName(value: PaymentDetail): string {
+    return this.label(value.practice);
   }
-
+  protected readonly revenueDetails = computed(() => {
+    const value = this.dashboard();
+    return [
+      { key: 'finance.revenue.byDoctorPractice', rows: value?.byPractice ?? [] },
+      { key: 'finance.revenue.bySegment', rows: value?.bySegment ?? [] },
+      { key: 'finance.revenue.byVisitType', rows: value?.byVisitType ?? [] },
+    ];
+  });
   protected async copyTransactionNumber(txNumber: string): Promise<void> {
     if (!txNumber) return;
     try {

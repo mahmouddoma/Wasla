@@ -145,6 +145,8 @@ export interface CorrectionAudit {
 }
 
 export interface PaymentDetail {
+  readonly segment?: { readonly nameAr?: string | null; readonly nameEn?: string | null };
+  readonly visitType?: { readonly nameAr?: string | null; readonly nameEn?: string | null };
   readonly payment: PaymentRecord;
   readonly refund: RefundRecord | null;
   readonly patient: { readonly id: string; readonly nameAr: string; readonly nameEn?: string | null };
@@ -158,6 +160,26 @@ export interface PaymentDetail {
   readonly refundableAmount: number;
   readonly paymentCorrections: readonly CorrectionAudit[];
   readonly refundCorrections: readonly CorrectionAudit[];
+}
+
+/** Current API uses flat identity fields; older responses used nested identities. */
+export interface PaymentDetailResponse extends Omit<PaymentDetail, 'patient' | 'doctor' | 'practice'> {
+  readonly patient?: PaymentDetail['patient'];
+  readonly doctor?: PaymentDetail['doctor'];
+  readonly practice?: PaymentDetail['practice'];
+  readonly patientId?: string;
+  readonly patientNameAr?: string;
+  readonly patientNameEn?: string | null;
+  readonly doctorId?: string;
+  readonly doctorNameAr?: string;
+  readonly doctorNameEn?: string | null;
+  readonly doctorPracticeId?: string;
+  readonly practiceNameAr?: string;
+  readonly practiceNameEn?: string | null;
+  readonly segmentNameAr?: string | null;
+  readonly segmentNameEn?: string | null;
+  readonly visitTypeNameAr?: string | null;
+  readonly visitTypeNameEn?: string | null;
 }
 
 export interface PaymentReceipt {

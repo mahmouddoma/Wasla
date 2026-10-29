@@ -1,10 +1,4 @@
-<main class="finance-workspace" [dir]="language.dir()">
-  <!-- Ambient backdrop lighting -->
-  <div class="ambient-glow-mesh" aria-hidden="true">
-    <div class="ambient-circle circle-teal"></div>
-    <div class="ambient-circle circle-navy"></div>
-  </div>
-
+<main class="finance-workspace container-fluid" [dir]="language.dir()">
   <!-- Enterprise Page Header -->
   <app-page-header
     [heading]="
@@ -454,16 +448,6 @@
     </div>
   } @else {
     <!-- Error Alerts Feed -->
-    @for (message of messages(); track $index) {
-      <div class="state-alert-banner" role="alert">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-        <span>{{ message | t }}</span>
-      </div>
-    }
 
     <!-- Loading State Indicator -->
     @if (listLoading()) {
@@ -481,7 +465,7 @@
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <h3 class="state-error-title">{{ 'finance.loadFailedTitle' | t }}</h3>
+        <h3 class="state-error-title">{{ 'common.retryGuidance' | t }}</h3>
         <p class="state-error-subtitle">{{ 'finance.loadFailedHelp' | t }}</p>
         <button class="btn-deck-submit" type="button" (click)="retryLoad()">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -516,7 +500,7 @@
                 </span>
               </div>
               <div class="kpi-card-value">
-                <span class="kpi-number">{{ summary.netRevenue }}</span>
+                <span class="kpi-number">{{ formatAmount(summary.netRevenue) }}</span>
                 <span class="kpi-currency">{{ 'tickets.currency' | t }}</span>
               </div>
               <div class="kpi-card-footer">
@@ -545,7 +529,7 @@
                 </span>
               </div>
               <div class="kpi-card-value" [class.is-danger]="summary.totalRefunds > 0">
-                <span class="kpi-number">{{ summary.totalRefunds }}</span>
+                <span class="kpi-number">{{ formatAmount(summary.totalRefunds) }}</span>
                 <span class="kpi-currency">{{ 'tickets.currency' | t }}</span>
               </div>
               <div class="kpi-card-footer">
@@ -572,7 +556,7 @@
                 </span>
               </div>
               <div class="kpi-card-value">
-                <span class="kpi-number">{{ summary.grossRevenue }}</span>
+                <span class="kpi-number">{{ formatAmount(summary.grossRevenue) }}</span>
                 <span class="kpi-currency">{{ 'tickets.currency' | t }}</span>
               </div>
               <div class="kpi-card-footer">
@@ -583,6 +567,23 @@
             </article>
           </section>
 
+          @if (!isAdmin()) {
+            <details class="revenue-data-details">
+              <summary>{{ 'finance.revenue.fullBreakdown' | t }}</summary>
+              @for (group of revenueDetails(); track group.key) {
+                @if (group.rows.length) {
+                  <section><h3>{{ group.key | t }}</h3>
+                    <div class="revenue-data-scroll"><table>
+                      <thead><tr><th>{{ 'doctorRemediation.title' | t }}</th><th>{{ 'finance.revenue.gross' | t }}</th><th>{{ 'finance.revenue.refunds' | t }}</th><th>{{ 'finance.revenue.net' | t }}</th><th>{{ 'finance.payments' | t }}</th><th>{{ 'finance.refunds' | t }}</th></tr></thead>
+                      <tbody>@for (row of group.rows; track $index) {
+                        <tr><th scope="row">{{ label({nameAr: row.practiceNameAr || row.segmentNameAr || row.visitTypeNameAr, nameEn: row.practiceNameEn || row.segmentNameEn || row.visitTypeNameEn}) }}</th><td>{{ formatAmount(row.grossRevenue) }}</td><td>{{ formatAmount(row.refunds) }}</td><td>{{ formatAmount(row.netRevenue) }}</td><td>{{ formatAmount(row.paymentCount) }}</td><td>{{ formatAmount(row.refundCount) }}</td></tr>
+                      }</tbody>
+                    </table></div>
+                  </section>
+                }
+              }
+            </details>
+          }
           @if (isAdmin()) {
             <!-- Admin Doctor & Clinic Breakdown Table -->
             <section class="revenue-surface-card">
@@ -617,10 +618,12 @@
                         <td class="cell-sub">
                           {{ label({ nameAr: row.practiceNameAr, nameEn: row.practiceNameEn }) }}
                         </td>
-                        <td dir="ltr" class="cell-amount">{{ row.grossRevenue }}</td>
-                        <td dir="ltr" class="cell-amount text-negative">{{ row.refunds }}</td>
+                        <td dir="ltr" class="cell-amount">{{ formatAmount(row.grossRevenue) }}</td>
+                        <td dir="ltr" class="cell-amount text-negative">
+                          {{ formatAmount(row.refunds) }}
+                        </td>
                         <td dir="ltr" class="cell-amount text-highlight">
-                          <strong>{{ row.netRevenue }}</strong>
+                          <strong>{{ formatAmount(row.netRevenue) }}</strong>
                         </td>
                       </tr>
                     } @empty {
@@ -676,7 +679,9 @@
                             <div class="timeline-row-details">
                               <span class="meta-item">
                                 <span class="meta-label">{{ 'finance.revenue.gross' | t }}:</span>
-                                <strong class="meta-val" dir="ltr">{{ row.grossRevenue }}</strong>
+                                <strong class="meta-val" dir="ltr">{{
+                                  formatAmount(row.grossRevenue)
+                                }}</strong>
                                 <span class="meta-curr">{{ 'tickets.currency' | t }}</span>
                               </span>
                               @if (row.refunds > 0) {
@@ -685,7 +690,9 @@
                                   <span class="meta-label"
                                     >{{ 'finance.revenue.refunds' | t }}:</span
                                   >
-                                  <strong class="meta-val" dir="ltr">{{ row.refunds }}</strong>
+                                  <strong class="meta-val" dir="ltr">{{
+                                    formatAmount(row.refunds)
+                                  }}</strong>
                                   <span class="meta-curr">{{ 'tickets.currency' | t }}</span>
                                 </span>
                               }
@@ -693,7 +700,9 @@
                           </div>
                           <div class="timeline-row-net">
                             <span class="net-val-pill">
-                              <span class="net-val-num" dir="ltr">{{ row.netRevenue }}</span>
+                              <span class="net-val-num" dir="ltr">{{
+                                formatAmount(row.netRevenue)
+                              }}</span>
                               <span class="net-val-curr">{{ 'tickets.currency' | t }}</span>
                             </span>
                           </div>
@@ -730,7 +739,9 @@
                             >
                           </div>
                           <div class="practice-row-amount">
-                            <span class="amount-num" dir="ltr">{{ row.netRevenue }}</span>
+                            <span class="amount-num" dir="ltr">{{
+                              formatAmount(row.netRevenue)
+                            }}</span>
                             <span class="amount-curr">{{ 'tickets.currency' | t }}</span>
                           </div>
                         </div>
@@ -783,7 +794,7 @@
                             >
                           </div>
                           <div class="channel-amount-info">
-                            <span class="amount-num" dir="ltr">{{ row.amount }}</span>
+                            <span class="amount-num" dir="ltr">{{ formatAmount(row.amount) }}</span>
                             <span class="amount-curr">{{ 'tickets.currency' | t }}</span>
                           </div>
                         </div>
@@ -823,7 +834,9 @@
                                 >
                               </div>
                               <div class="channel-amount-info is-refund-val">
-                                <span class="amount-num" dir="ltr">{{ row.amount }}</span>
+                                <span class="amount-num" dir="ltr">{{
+                                  formatAmount(row.amount)
+                                }}</span>
                                 <span class="amount-curr">{{ 'tickets.currency' | t }}</span>
                               </div>
                             </div>
@@ -903,12 +916,12 @@
             >
               <thead>
                 <tr>
-                  <th scope="col" style="width: 140px">{{ 'finance.type' | t }}</th>
-                  <th scope="col" style="width: 160px">{{ 'finance.amount' | t }}</th>
+                  <th scope="col">{{ 'finance.type' | t }}</th>
+                  <th scope="col">{{ 'finance.amount' | t }}</th>
                   <th scope="col">{{ 'finance.context' | t }}</th>
-                  <th scope="col" style="width: 150px">{{ 'finance.method' | t }}</th>
-                  <th scope="col" style="width: 140px">{{ 'finance.date' | t }}</th>
-                  <th scope="col" style="width: 100px" class="text-center">
+                  <th scope="col">{{ 'finance.method' | t }}</th>
+                  <th scope="col">{{ 'finance.date' | t }}</th>
+                  <th scope="col" class="text-center">
                     {{ 'finance.detail.view' | t }}
                   </th>
                 </tr>
@@ -940,7 +953,8 @@
                       [class.is-refund-amount]="item.transactionType === 'Refund'"
                     >
                       <span class="tx-amount-digits">
-                        {{ item.transactionType === 'Refund' ? '−' : '+' }}{{ item.amount }}
+                        {{ item.transactionType === 'Refund' ? '−' : '+'
+                        }}{{ formatAmount(item.amount) }}
                       </span>
                       <span class="tx-currency-label">{{ item.currencyCode }}</span>
                     </td>
@@ -1247,7 +1261,9 @@
                 <tr>
                   <td>
                     <div class="line-item-main">{{ 'finance.medicalExamination' | t }}</div>
-                    <div class="sub-ticket" dir="ltr">Ticket #{{ value.ticketNumber }}</div>
+                    <div class="sub-ticket">
+                      {{ 'finance.ticketNumber' | t }} <bdi>#{{ value.ticketNumber }}</bdi>
+                    </div>
                   </td>
                   <td dir="ltr" class="td-val">
                     <strong>{{ value.amount }} {{ value.currencyCode }}</strong>
@@ -1278,12 +1294,13 @@
           <!-- 6. Receipt Number & Barcode (Authenticity marker) -->
           <footer class="slip-footer-stamp">
             <div class="slip-tx-box" dir="ltr">
-              <span class="slip-tx-label">Ref:</span>
+              <span class="slip-tx-label">{{ 'finance.referenceLabel' | t }}</span>
               <span class="slip-tx-id">{{ receiptNumber(value) }}</span>
             </div>
             @if ('originalPaymentTransactionNumber' in value) {
               <div class="slip-tx-sub" dir="ltr">
-                <span>Orig Payment:</span> {{ value.originalPaymentTransactionNumber }}
+                <span>{{ 'finance.originalPaymentLabel' | t }}</span>
+                {{ value.originalPaymentTransactionNumber }}
               </div>
             }
 
@@ -1779,6 +1796,29 @@
               </div>
             </div>
 
+            <dl class="payment-business-context">
+              <div><dt>{{ 'finance.recordedAt' | t }}</dt><dd><bdi>{{ value.payment.collectedOnUtc }}</bdi></dd></div>
+              @if (value.payment.notes) {<div><dt>{{ 'finance.audit.field.notes' | t }}</dt><dd>{{ value.payment.notes }}</dd></div>}
+              <div><dt>{{ 'finance.doctor' | t }}</dt><dd>{{ label(value.doctor) }}</dd></div>
+              @if (value.segment?.nameAr || value.segment?.nameEn || value.segmentSnapshot) {<div><dt>{{ 'finance.segmentLabel' | t }}</dt><dd>{{ value.segment ? label(value.segment) : value.segmentSnapshot }}</dd></div>}
+              @if (value.visitType?.nameAr || value.visitType?.nameEn || value.visitTypeSnapshot) {<div><dt>{{ 'finance.visitTypeLabel' | t }}</dt><dd>{{ value.visitType ? label(value.visitType) : value.visitTypeSnapshot }}</dd></div>}
+            </dl>
+            @if (value.refund; as refund) {
+              <details class="revenue-data-details">
+                <summary>{{ 'finance.refunds' | t }}</summary>
+                <dl class="payment-business-context">
+                  <div><dt>{{ 'finance.referenceLabel' | t }}</dt><dd><bdi>{{ refund.transactionNumber }}</bdi></dd></div>
+                  <div><dt>{{ 'finance.amount' | t }}</dt><dd>{{ formatAmount(refund.amount) }} {{ refund.currencyCode }}</dd></div>
+                  <div><dt>{{ 'finance.method' | t }}</dt><dd>{{ 'finance.method.' + refund.refundMethod | t }}</dd></div>
+                  <div><dt>{{ 'finance.refund.reasonCode' | t }}</dt><dd>{{ 'finance.refund.code.' + refund.refundReasonCode | t }}</dd></div>
+                  <div><dt>{{ 'finance.recordedAt' | t }}</dt><dd><bdi>{{ refund.refundedOnUtc }}</bdi></dd></div>
+                  @if (refund.reason) {<div><dt>{{ 'finance.refund.reasonCode' | t }}</dt><dd>{{ refund.reason }}</dd></div>}
+                  @if (refund.notes) {<div><dt>{{ 'finance.audit.field.notes' | t }}</dt><dd>{{ refund.notes }}</dd></div>}
+                  @if (refund.referenceNumber) {<div><dt>{{ 'finance.referenceNumber' | t }}</dt><dd><bdi>{{ refund.referenceNumber }}</bdi></dd></div>}
+                  @if (refund.refundedByDisplayName) {<div><dt>{{ 'finance.recordedBy' | t }}</dt><dd>{{ refund.refundedByDisplayName }}</dd></div>}
+                </dl>
+              </details>
+            }
             <!-- 3. Key Financial Facts (Structured Unified Rows) -->
             <div class="detail-facts-surface">
               <div class="fact-row">

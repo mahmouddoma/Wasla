@@ -1,0 +1,58 @@
+<details class="report-data" (toggle)="toggle($event)">
+  <summary>{{ 'reportData.additional' | t }}</summary>
+  @if (expanded()) {
+    <dl class="report-facts">
+      <div><dt>{{ 'reportData.status' | t }}</dt><dd>{{ language.label('reportData.status', report().dataStatus) }}</dd></div>
+      <div><dt>{{ 'reportData.eligible' | t }}</dt><dd>{{ format(report().eligibleSampleCount) }}</dd></div>
+      <div><dt>{{ 'reportData.excluded' | t }}</dt><dd>{{ format(report().excludedSampleCount) }}</dd></div>
+      <div><dt>{{ 'reportData.totalRecords' | t }}</dt><dd>{{ format(report().detailRowCount) }}</dd></div>
+      <div><dt>{{ 'reportData.updated' | t }}</dt><dd><bdi>{{ report().dataFreshnessUtc || report().window?.generatedAtUtc || ('doctorRemediation.unavailable' | t) }}</bdi></dd></div>
+    </dl>
+    <details>
+      <summary>{{ 'reportData.calculations' | t }}</summary>
+      <div class="table-scroll"><table>
+        <thead><tr><th>{{ 'doctorRemediation.title' | t }}</th><th>{{ 'reportData.numerator' | t }}</th><th>{{ 'reportData.denominator' | t }}</th><th>{{ 'reportData.eligible' | t }}</th><th>{{ 'reportData.excluded' | t }}</th><th>{{ 'reportData.status' | t }}</th></tr></thead>
+        <tbody>@for (metric of report().metrics; track $index) {
+          <tr><th scope="row">{{ label(metric) }}</th><td>{{ format(metric.numerator) }}</td><td>{{ format(metric.denominator) }}</td><td>{{ format(metric.eligibleSampleCount) }}</td><td>{{ format(metric.excludedSampleCount) }}</td><td>{{ language.label('reportData.status', metric.dataStatus) }} @if (metric.warningCode) {<small>{{ metric.warningCode | t }}</small>}</td></tr>
+        }</tbody>
+      </table></div>
+    </details>
+    @for (group of groups(); track group.title) {
+      @if (group.rows.length) {
+        <details><summary>{{ group.title | t }} <span>{{ format(group.rows.length) }}</span></summary>
+          @for (point of group.rows; track $index) {
+            <section class="data-group">
+              <h4>{{ (language.isRtl() ? point.nameAr || point.nameEn : point.nameEn || point.nameAr) || point.key }}</h4>
+              <dl class="metric-values">@for (metric of point.metrics; track $index) {
+                <div><dt>{{ label(metric) }}</dt><dd>{{ format(metric.value) }} <small>{{ unit(metric.unit) }}</small></dd></div>
+              }</dl>
+            </section>
+          }
+        </details>
+      }
+    }
+    @if (report().previousPeriodComparisons?.length) {
+      <details><summary>{{ 'reportData.comparisons' | t }}</summary>
+        @for (item of report().previousPeriodComparisons; track $index) {
+          <section class="data-group"><h4>{{ metricName(item.metricCode) }}</h4><p><bdi>{{ item.previousFromDate }} — {{ item.previousToDate }}</bdi></p>
+            <dl class="report-facts">
+              <div><dt>{{ 'reportData.current' | t }}</dt><dd>{{ format(item.currentValue) }}</dd></div>
+              <div><dt>{{ 'reportData.previous' | t }}</dt><dd>{{ format(item.previousValue) }}</dd></div>
+              <div><dt>{{ 'reportData.change' | t }}</dt><dd>{{ format(item.absoluteChange) }}</dd></div>
+              <div><dt>{{ 'reportData.changePercent' | t }}</dt><dd>{{ format(item.relativeChangePercent) }}</dd></div>
+            </dl>
+          </section>
+        }
+      </details>
+    }
+    @if (report().records?.length) {
+      <details><summary>{{ 'reportData.returnedRecords' | t }} <span>{{ format(report().records?.length) }}</span></summary>
+        <p>{{ 'reportData.recordsHint' | t }}</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>{{ 'finance.referenceLabel' | t }}</th><th>{{ 'doctorRemediation.date' | t }}</th><th>{{ 'reportData.status' | t }}</th><th>{{ 'finance.amount' | t }}</th><th>{{ 'reportData.value' | t }}</th></tr></thead>
+          <tbody>@for (row of report().records; track $index) {<tr><th scope="row"><bdi>{{ row.reference }}</bdi></th><td><bdi>{{ row.businessDate }}</bdi></td><td>{{ language.label('reportData.recordStatus', row.status) }}</td><td>{{ format(row.amount) }}</td><td>{{ format(row.metricValue) }}</td></tr>}</tbody>
+        </table></div>
+      </details>
+    }
+  }
+</details>

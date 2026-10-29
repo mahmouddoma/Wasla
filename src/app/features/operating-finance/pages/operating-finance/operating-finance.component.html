@@ -1,4 +1,4 @@
-<main class="directory-workspace">
+<main class="directory-workspace container-fluid">
   <app-page-header
     [heading]="(salary() ? 'finance.viewSalaries' : 'finance.viewExpenses') | t"
     [description]="'doctorRemediation.financeHelp' | t"
@@ -67,14 +67,12 @@
       </button>
     }
   </nav>
-  @for (message of messages(); track $index) {
-    <p role="alert" class="error-text">{{ message | t }}</p>
-  }
+
   @if (loading()) {
     <p role="status" aria-live="polite">{{ 'common.loading' | t }}</p>
   } @else if (failed()) {
     <div class="empty-state">
-      <h2>{{ 'common.failedToLoad' | t }}</h2>
+      <h2>{{ 'common.retryGuidance' | t }}</h2>
       <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
     </div>
   } @else {
@@ -93,24 +91,24 @@
           @if (tab() === 'plans') {
             @for (plan of plans(); track plan.id) {
               <tr>
-                <td>
+                <td [attr.data-label]="'doctorRemediation.title' | t">
                   {{
                     salary()
                       ? staffName(plan.receptionId)
                       : text(revision(plan)?.descriptionAr, revision(plan)?.descriptionEn)
                   }}
                 </td>
-                <td>
+                <td [attr.data-label]="'finance.fixedAmount' | t">
                   <bdi
                     >{{ revision(plan)?.amount ?? ('doctorRemediation.unavailable' | t) }}
                     {{ revision(plan)?.currencyCode }}</bdi
                   >
                 </td>
-                <td>
+                <td [attr.data-label]="'doctorRemediation.date' | t">
                   <bdi>{{ plan.effectiveFrom }}</bdi>
                 </td>
-                <td>{{ stateLabel(plan.status) }}</td>
-                <td>
+                <td [attr.data-label]="'doctorRemediation.status' | t">{{ stateLabel(plan.status) }}</td>
+                <td [attr.data-label]="'doctorPatients.col.actions' | t">
                   <button class="btn btn-outline-secondary" (click)="inspectPlan(plan)">
                     {{ 'common.viewDetails' | t }}
                   </button>
@@ -120,18 +118,18 @@
           } @else {
             @for (obligation of obligations(); track obligation.id) {
               <tr>
-                <td>{{ text(obligation.descriptionAr, obligation.descriptionEn) }}</td>
-                <td>
+                <td [attr.data-label]="'doctorRemediation.title' | t">{{ text(obligation.descriptionAr, obligation.descriptionEn) }}</td>
+                <td [attr.data-label]="'finance.fixedAmount' | t">
                   <bdi
                     >{{ obligation.amount ?? ('doctorRemediation.unavailable' | t) }}
                     {{ obligation.currencyCode }}</bdi
                   >
                 </td>
-                <td>
+                <td [attr.data-label]="'doctorRemediation.date' | t">
                   <bdi>{{ obligation.dueBusinessDate }}</bdi>
                 </td>
-                <td>{{ stateLabel(obligation.status) }}</td>
-                <td>
+                <td [attr.data-label]="'doctorRemediation.status' | t">{{ stateLabel(obligation.status) }}</td>
+                <td [attr.data-label]="'doctorPatients.col.actions' | t">
                   <button class="btn btn-outline-secondary" (click)="inspectObligation(obligation)">
                     {{ 'common.viewDetails' | t }}
                   </button>
@@ -528,9 +526,7 @@
         </div>
       </form>
     }
-    @for (message of messages(); track $index) {
-      <p class="error-text" role="alert">{{ message | t }}</p>
-    }
+
     @if (history().length) {
       <h3>{{ 'doctorRemediation.history' | t }}</h3>
       <ul class="history">

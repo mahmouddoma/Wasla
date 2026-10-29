@@ -40,9 +40,13 @@ describe('SideDrawer', () => {
       '[role="dialog"]',
     )!;
     expect(panel.dir).toBe('rtl');
+    expect(fixture.nativeElement.dir).toBe('rtl');
+    expect(fixture.nativeElement.lang).toBe('ar');
     language.setLanguage('en');
     await fixture.whenStable();
     expect(panel.dir).toBe('ltr');
+    expect(fixture.nativeElement.dir).toBe('ltr');
+    expect(fixture.nativeElement.lang).toBe('en');
   });
 
   it('renders its heading and emits close for the close button and Escape', async () => {

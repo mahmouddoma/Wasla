@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { LanguageService } from '../i18n/language.service';
 
 export type ToastKind = 'success' | 'error';
@@ -18,7 +18,13 @@ export class ToastService {
   private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
   private nextId = 0;
 
-  readonly messages = this.state.asReadonly();
+  readonly messages = computed(() =>
+    this.state().map((toast) => ({
+      ...toast,
+      message: this.language.t(toast.message),
+      title: toast.title ? this.language.t(toast.title) : undefined,
+    })),
+  );
 
   error(message: string, duration = 6500, title?: string): void {
     this.show('error', message, duration, title);
@@ -33,18 +39,17 @@ export class ToastService {
     if (!rawMessage) return;
 
     const normalizedMessage = this.language.t(rawMessage).trim() || rawMessage;
-    const normalizedTitle = title ? this.language.t(title).trim() : undefined;
 
-    const duplicate = this.state().find(
+    const duplicate = this.messages().find(
       (toast) => toast.kind === kind && toast.message === normalizedMessage,
     );
     if (duplicate) this.dismiss(duplicate.id);
 
     const toast: ToastMessage = {
       id: ++this.nextId,
-      message: normalizedMessage,
+      message: rawMessage,
       kind,
-      title: normalizedTitle,
+      title: title?.trim() || undefined,
       duration,
     };
     this.state.update((messages) => [...messages, toast]);

@@ -193,6 +193,16 @@ describe('FinanceWorkspace — Patient Actor & Baseline', () => {
     fixture.detectChanges();
   });
 
+  it('keeps server feedback out of the page and formats amounts by language', async () => {
+    fixture.componentInstance['messages'].set(['Server-only financial response']);
+    for (const lang of ['ar', 'en'] as const) {
+      fixture.componentInstance['language'].setLanguage(lang);
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).not.toContain('Server-only financial response');
+      expect(fixture.nativeElement.querySelector('main').dir).toBe(lang === 'ar' ? 'rtl' : 'ltr');
+      expect(fixture.componentInstance['formatAmount'](123456.75)).toBe(new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { maximumFractionDigits: 2 }).format(123456.75));
+    }
+  });
   it('renders accessible transactions list for Patient and hides staff actions', async () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toBeTruthy();
@@ -1097,3 +1107,5 @@ describe('Doctor Finance & Revenue Route Consistency', () => {
     expect(doctorRevenue).toHaveBeenCalled();
   });
 });
+
+afterEach(() => localStorage.removeItem('wasla_lang'));

@@ -1,4 +1,4 @@
-<main class="clinical-shell" [dir]="language.dir()">
+<main class="clinical-shell container-fluid" [dir]="language.dir()">
   <app-page-header
     [heading]="'encounters.title' | t"
     [description]="'encounters.subtitle' | t"
@@ -58,7 +58,7 @@
       <p role="status">{{ 'reservations.loading' | t }}</p>
     } @else if (store.failed()) {
       <div class="empty-state" role="alert">
-        <h2>{{ 'encounters.failed' | t }}</h2>
+        <h2>{{ 'common.retryGuidance' | t }}</h2>
         <button class="btn btn-primary" (click)="store.load()">{{ 'common.retry' | t }}</button>
       </div>
     } @else if (!store.page().items.length) {
@@ -112,7 +112,12 @@
           <tbody>
             @for (item of store.page().items; track item.encounterId) {
               <tr class="table-data-row">
-                <td class="td-entity">
+                <td
+                  class="td-entity"
+                  [attr.data-label]="
+                    (store.doctor() ? 'reservations.patient' : 'reservations.doctor') | t
+                  "
+                >
                   <div class="table-doctor-cell">
                     <div class="doctor-avatar-badge" aria-hidden="true">
                       @if (store.doctor()) {
@@ -147,7 +152,7 @@
                     <span class="cell-primary-text">{{ doctorOrPatient(item) }}</span>
                   </div>
                 </td>
-                <td class="td-practice">
+                <td class="td-practice" [attr.data-label]="'reservations.practice' | t">
                   <div class="table-practice-cell">
                     <div class="practice-icon-badge" aria-hidden="true">
                       <svg
@@ -168,7 +173,7 @@
                     <span class="cell-subtle-text">{{ practiceLabel(item) }}</span>
                   </div>
                 </td>
-                <td class="td-date">
+                <td class="td-date" [attr.data-label]="'encounters.date' | t">
                   <div class="table-date-cell">
                     <svg
                       width="15"
@@ -193,7 +198,7 @@
                     </span>
                   </div>
                 </td>
-                <td class="td-status">
+                <td class="td-status" [attr.data-label]="'reservations.status' | t">
                   <span class="status-pill status-{{ item.status.toLowerCase() }}">
                     <span class="pill-dot" aria-hidden="true"></span>
                     <span>{{ 'encounters.status.' + item.status | t }}</span>
@@ -269,9 +274,7 @@
       </nav>
     }
   </section>
-  @for (message of store.messages(); track $index) {
-    <p role="alert">{{ message | t }}</p>
-  }
+
   @if (store.detail() || store.patientDetail() || store.detailLoading()) {
     <app-side-drawer
       [opened]="true"
@@ -1423,9 +1426,6 @@
             </a>
           </footer>
         </div>
-      }
-      @for (message of store.messages(); track $index) {
-        <p role="alert">{{ message | t }}</p>
       }
     </app-side-drawer>
   }

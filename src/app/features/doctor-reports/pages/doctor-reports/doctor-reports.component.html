@@ -1,4 +1,4 @@
-<main class="directory-workspace doctor-reports">
+<main class="directory-workspace doctor-reports container-fluid">
   <!-- ============================= -->
   <!-- PAGE HEADER & FILTERS -->
   <!-- ============================= -->
@@ -43,7 +43,7 @@
 
       <label class="reports-filter">
         <span class="reports-filter__label">
-          {{ 'doctorPatients.filter.fromDate' | t }}
+          {{ 'doctorReports.fromDate' | t }}
         </span>
 
         <input class="field-input" type="date" dir="ltr" [(ngModel)]="filters.fromDate" />
@@ -51,7 +51,7 @@
 
       <label class="reports-filter">
         <span class="reports-filter__label">
-          {{ 'doctorPatients.filter.toDate' | t }}
+          {{ 'doctorReports.toDate' | t }}
         </span>
 
         <input class="field-input" type="date" dir="ltr" [(ngModel)]="filters.toDate" />
@@ -71,16 +71,6 @@
   <!-- ============================= -->
   <!-- ERROR MESSAGES -->
   <!-- ============================= -->
-
-  @if (messages().length) {
-    <div class="reports-messages" role="alert">
-      @for (message of messages(); track $index) {
-        <p class="error-text">
-          {{ message | t }}
-        </p>
-      }
-    </div>
-  }
 
   <!-- ============================= -->
   <!-- REPORTS CONTENT -->
@@ -116,7 +106,7 @@
       </div>
     } @else if (failed()) {
       <div class="reports-state reports-state--error">
-        <h3>{{ 'common.failedToLoad' | t }}</h3>
+        <h3>{{ 'common.retryGuidance' | t }}</h3>
 
         <button
           type="button"
@@ -310,6 +300,8 @@
   <app-side-drawer
     [opened]="!!selectedInsight() || !!selectedReport() || detailLoading()"
     [title]="'common.viewDetails' | t"
+    [width]="'900px'"
+    [wide]="true"
     (closed)="closeDrawer()"
   >
     <div class="reports-drawer-content">
@@ -470,10 +462,10 @@
 
           @if (preview(); as model) {
             <!-- SUMMARY -->
-            <section class="report-summary" aria-label="Report summary">
+            <section class="report-summary" [attr.aria-label]="'doctorReports.summary' | t">
               <div class="report-summary__item">
                 <span>
-                  {{ 'doctorPatients.filter.fromDate' | t }}
+                  {{ 'doctorReports.fromDate' | t }}
                 </span>
 
                 <strong>
@@ -485,7 +477,7 @@
 
               <div class="report-summary__item">
                 <span>
-                  {{ 'doctorPatients.filter.toDate' | t }}
+                  {{ 'doctorReports.toDate' | t }}
                 </span>
 
                 <strong>
@@ -506,6 +498,7 @@
               </div>
             </section>
 
+            <app-report-data-sections [report]="model" />
             <!-- EXPORT TOOLBAR -->
             @if (canExport(report, 'pdf') || canExport(report, 'xlsx')) {
               <div class="report-export-toolbar">
@@ -562,6 +555,7 @@
             @if (model.warnings?.length) {
               <section class="report-warnings">
                 <div class="report-warnings__heading">
+                  <strong>{{ 'doctorReports.dataNotes' | t }}</strong>
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
                       d="M12 3 2 21h20L12 3Z"
@@ -586,7 +580,7 @@
                   @for (warning of model.warnings; track $index) {
                     <li>
                       <span aria-hidden="true">!</span>
-                      <p>{{ warning }}</p>
+                      <p>{{ warning | t }}</p>
                     </li>
                   }
                 </ul>
@@ -618,14 +612,14 @@
 
                         @if (metric.unit) {
                           <small class="report-metric-row__unit">
-                            {{ metric.unit }}
+                            {{ metricUnit(metric.unit) }}
                           </small>
                         }
                       </div>
 
                       <div class="report-metric-row__value">
                         <strong dir="auto">
-                          {{ metric.value ?? ('doctorRemediation.unavailable' | t) }}
+                          {{ formatMetricValue(metric.value) }}
                         </strong>
                       </div>
                     </div>
@@ -672,14 +666,14 @@
 
                           @if (metric.unit) {
                             <small class="report-metric-row__unit">
-                              {{ metric.unit }}
+                              {{ metricUnit(metric.unit) }}
                             </small>
                           }
                         </div>
 
                         <div class="report-metric-row__value">
                           <strong dir="auto">
-                            {{ metric.value ?? ('doctorRemediation.unavailable' | t) }}
+                            {{ formatMetricValue(metric.value) }}
                           </strong>
                         </div>
                       </div>
@@ -700,7 +694,7 @@
             </div>
           } @else {
             <div class="report-empty">
-              {{ 'common.failedToLoad' | t }}
+              {{ 'common.retryGuidance' | t }}
             </div>
           }
 
@@ -735,7 +729,7 @@
 
                     <div class="report-drilldown__value">
                       <strong>
-                        {{ row.metricValue ?? ('doctorRemediation.unavailable' | t) }}
+                        {{ formatMetricValue(row.metricValue) }}
                       </strong>
                     </div>
 

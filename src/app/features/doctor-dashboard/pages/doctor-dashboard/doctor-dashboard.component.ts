@@ -1,3 +1,4 @@
+import { ReportDataSectionsComponent } from '../../../reporting';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -38,7 +39,7 @@ interface DashboardFilters {
 @Component({
   selector: 'app-doctor-dashboard',
   standalone: true,
-  imports: [FormsModule, RouterLink, TranslatePipe, PageHeader, SideDrawer],
+  imports: [ReportDataSectionsComponent, FormsModule, RouterLink, TranslatePipe, PageHeader, SideDrawer],
   templateUrl: './doctor-dashboard.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',

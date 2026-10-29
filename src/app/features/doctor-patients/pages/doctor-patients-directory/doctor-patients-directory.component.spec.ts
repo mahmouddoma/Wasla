@@ -144,7 +144,7 @@ describe('DoctorPatientsDirectoryComponent', () => {
     expect(doctorPatientsApi.list).toHaveBeenCalledTimes(requests);
   });
 
-  it('updates a visible error when the language changes', async () => {
+  it('shows request errors only in a toast and keeps translated retry guidance', async () => {
     doctorPatientsApi.list.mockReturnValue(throwError(() => ({ status: 403 })));
     component.loadPatients();
     await fixture.whenStable();
@@ -153,7 +153,7 @@ describe('DoctorPatientsDirectoryComponent', () => {
     await fixture.whenStable();
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('.error-state p')?.textContent).toBe(
-      language.t('doctorPatients.toasts.noDirectoryPermission'),
+      language.t('common.retryGuidance'),
     );
   });
 

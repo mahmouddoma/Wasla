@@ -249,4 +249,25 @@ describe('Doctor dashboard', () => {
     await first;
     expect(component.model()?.reportCode).toBe('latest');
   });
+  it('does not repeat server feedback in page content', async () => {
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.messages.set(['Server-only feedback']);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).not.toContain('Server-only feedback');
+  });
+  it('keeps useful report warnings translated in both languages', async () => {
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    const warning = 'Report.HistoricalCapacityNotRecorded';
+    component.model.set({ metrics: [{ metricCode: 'CapacityMinutes', value: null }], warnings: [warning] });
+    for (const lang of ['ar', 'en'] as const) {
+      component.language.setLanguage(lang);
+      await fixture.whenStable();
+      const text = fixture.nativeElement.querySelector('.report-warning')?.textContent;
+      expect(text).toContain(component.language.t(warning));
+      expect(text).not.toContain(warning);
+    }
+  });
 });

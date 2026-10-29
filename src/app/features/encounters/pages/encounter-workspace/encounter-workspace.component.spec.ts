@@ -21,7 +21,10 @@ describe('Encounter workspace UI', () => {
           provide: ActivatedRoute,
           useValue: { snapshot: { data: { actor: 'Doctor' }, queryParamMap: { get: () => null } } },
         },
-        { provide: AuthSession, useValue: { user: () => ({ userType: 'Doctor' }), hasPermission: () => true } },
+        {
+          provide: AuthSession,
+          useValue: { user: () => ({ userType: 'Doctor' }), hasPermission: () => true },
+        },
         { provide: DoctorPracticesApi, useValue: { list: () => of([]) } },
         { provide: EncountersApi, useValue: { list: () => of({ items: [], totalCount: 0 }) } },
       ],
@@ -93,7 +96,9 @@ describe('Encounter workspace UI', () => {
       .mockResolvedValue(undefined);
 
     // Initial state: drawer open, Completed encounter, canAmend is true
-    expect(fixture.nativeElement.textContent).toContain(TestBed.inject(LanguageService).t('encounters.createAmendment'));
+    expect(fixture.nativeElement.textContent).toContain(
+      TestBed.inject(LanguageService).t('encounters.createAmendment'),
+    );
 
     // Start amendment
     fixture.componentInstance.startAmendment();
@@ -148,5 +153,12 @@ describe('Encounter workspace UI', () => {
       expect(historyList.querySelector('button.edit')).toBeNull();
       expect(historyList.querySelector('button.delete')).toBeNull();
     }
+  });
+  it('does not repeat server feedback in page content', async () => {
+    const fixture = TestBed.createComponent(EncounterWorkspaceComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.store.messages.set(['Server-only feedback']);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).not.toContain('Server-only feedback');
   });
 });

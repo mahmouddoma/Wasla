@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+import { toPaymentDetail } from './finance-mappers';
 import { environment } from '../../../environments/environment';
 import {
   AdminRevenueAggregates,
@@ -12,6 +13,7 @@ import {
   FinancialTransactionQuery,
   PageResult,
   PaymentDetail,
+  PaymentDetailResponse,
   PaymentReceipt,
   RefundPaymentRequest,
   RefundPaymentResponse,
@@ -45,7 +47,7 @@ export class FinanceApi {
   }
 
   paymentDetail(practiceId: string, paymentId: string): Observable<PaymentDetail> {
-    return this.http.get<PaymentDetail>(`${this.practice(practiceId)}/payments/${this.id(paymentId)}`);
+    return this.http.get<PaymentDetailResponse>(`${this.practice(practiceId)}/payments/${this.id(paymentId)}`).pipe(map(toPaymentDetail));
   }
 
   refundPayment(practiceId: string, paymentId: string, body: RefundPaymentRequest, intentKey: string) {

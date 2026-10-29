@@ -576,16 +576,14 @@ describe('ReservationWorkspaceComponent', () => {
     expect(comp.isTodaySelected()).toBe(true);
   });
 
-  it('classifies message tones and allows dismissing messages in the drawer', () => {
+  it('keeps request feedback out of the page and drawer', async () => {
     const f = TestBed.createComponent(ReservationWorkspaceComponent);
-    const comp = f.componentInstance;
-
-    expect(comp.messageTone('للمريض استشارة مستقبلية نشطة بالفعل مع هذا الطبيب.')).toBe('warning');
-    expect(comp.messageTone('فشل حفظ الموعد')).toBe('danger');
-    expect(comp.messageTone('معلومات إضافية')).toBe('info');
-
-    comp.store.messages.set(['رسالة 1', 'رسالة 2']);
-    comp.dismissMessage(0);
-    expect(comp.store.messages()).toEqual(['رسالة 2']);
+    await f.whenStable();
+    f.componentInstance.store.messages.set(['Server response must only appear in a toast']);
+    await f.whenStable();
+    expect(f.nativeElement.textContent).not.toContain(
+      'Server response must only appear in a toast',
+    );
+    expect(f.nativeElement.querySelector('.drawer-messages-stack')).toBeNull();
   });
 });

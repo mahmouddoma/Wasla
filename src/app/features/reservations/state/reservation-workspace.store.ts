@@ -324,6 +324,7 @@ export class ReservationWorkspaceStore {
           (!practiceId && this.practices().length === 1 ? this.practices()[0].id : '');
         if (actor === 'Doctor' && practiceId && !candidate) {
           this.messages.set(['doctorRemediation.sourceUnavailable']);
+          this.toast.error('doctorRemediation.sourceUnavailable');
           return;
         }
         await this.selectPractice(candidate);
@@ -1105,6 +1106,7 @@ export class ReservationWorkspaceStore {
           selected.practiceId !== this.practiceId()
         ) {
           this.messages.set(['followUps.unavailable']);
+          this.toast.error('followUps.unavailable');
           return;
         }
         this.eligibility.set(selected);

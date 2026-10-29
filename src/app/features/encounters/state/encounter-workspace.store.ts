@@ -133,6 +133,7 @@ export class EncounterWorkspaceStore {
         this.close();
         this.failed.set(true);
         this.messages.set(['doctorRemediation.sourceUnavailable']);
+        this.toast.error('doctorRemediation.sourceUnavailable');
         return;
       }
       await this.selectPractice(id);
@@ -315,11 +316,13 @@ export class EncounterWorkspaceStore {
           ),
         );
         this.toast.error('medications.resolveBlockers');
+        for (const message of new Set(this.messages())) this.toast.error(message);
         return;
       }
       if (prescription?.draft && prescription.completionBlockers.length) {
         this.messages.set(prescription.completionBlockers.map((blocker) => blocker.message));
         this.toast.error('medications.resolveBlockers');
+        for (const message of new Set(this.messages())) this.toast.error(message);
         return;
       }
       const body = {

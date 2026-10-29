@@ -92,4 +92,30 @@ describe('Doctor reports and insights', () => {
     expect(component.selectedInsight()).toBeNull();
     expect(component.insights()).toEqual([]);
   });
+  it('translates units and formats unavailable and numeric values for each language', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      component.language.setLanguage(lang);
+      expect(component.metricUnit('count')).toBe(component.language.t('doctorWorkspace.unit.count'));
+      expect(component.metricUnit('minutes')).toBe(component.language.t('doctorWorkspace.unit.minutes'));
+      expect(component.formatMetricValue(null)).toBe(component.language.t('doctorRemediation.unavailable'));
+      expect(component.formatMetricValue(1234.5)).toBe(new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { maximumFractionDigits: 1 }).format(1234.5));
+    }
+  });
+  it('keeps server feedback out of content and translates report data notes', async () => {
+    const fixture = TestBed.createComponent(DoctorReportsComponent);
+    await fixture.whenStable();
+    const page = fixture.componentInstance;
+    page.selectedReport.set({ reportCode: 'overview', canPreview: true });
+    page.preview.set({ metrics: [{ metricCode: 'CheckIns', nameEn: 'Attendance', value: 1, unit: 'count' }], warnings: ['Report.ExcludedInvalidSamples'] });
+    page.messages.set(['Server-only response']);
+    for (const lang of ['ar', 'en'] as const) {
+      page.language.setLanguage(lang);
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).not.toContain('Server-only response');
+      expect(fixture.nativeElement.querySelector('.report-warning, .report-warnings__list')?.textContent).toContain(page.language.t('Report.ExcludedInvalidSamples'));
+      expect(fixture.nativeElement.textContent).not.toContain('Report.ExcludedInvalidSamples');
+    }
+  });
 });
+
+afterEach(() => localStorage.removeItem('wasla_lang'));

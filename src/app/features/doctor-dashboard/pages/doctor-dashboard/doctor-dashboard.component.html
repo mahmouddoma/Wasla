@@ -171,19 +171,6 @@
     </section>
   }
 
-  <!-- API errors -->
-  @if (messages().length) {
-    <div class="dashboard-alert" role="alert">
-      <span class="dashboard-alert__icon" aria-hidden="true">!</span>
-
-      <div class="dashboard-alert__content">
-        @for (message of messages(); track $index) {
-          <p>{{ message | t }}</p>
-        }
-      </div>
-    </div>
-  }
-
   <!-- Overview -->
   @if (canView()) {
     <section
@@ -232,7 +219,7 @@
             </svg>
           </div>
 
-          <h3>{{ 'common.failedToLoad' | t }}</h3>
+          <h3>{{ 'common.retryGuidance' | t }}</h3>
 
           <button type="button" class="btn btn-primary" (click)="retry()">
             {{ 'common.retry' | t }}
@@ -451,12 +438,13 @@
                   />
                 </svg>
 
-                <span>{{ warning }}</span>
+                <span>{{ warning | t }}</span>
               </div>
             }
           </div>
         }
 
+        <app-report-data-sections [report]="report" />
         <div class="report-context">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" />
@@ -502,7 +490,7 @@
         </div>
       } @else if (detailFailed()) {
         <div class="dashboard-state" role="alert">
-          <h3>{{ 'common.failedToLoad' | t }}</h3>
+          <h3>{{ 'common.retryGuidance' | t }}</h3>
           <button class="btn btn-primary" type="button" (click)="openDrilldown(metric)">
             {{ 'common.retry' | t }}
           </button>

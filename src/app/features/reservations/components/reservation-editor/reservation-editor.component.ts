@@ -91,7 +91,7 @@ export class ReservationEditorComponent {
       price: number;
       isDefault: boolean;
     }[] = [];
-    const curr = this.language.currentLang() === 'en' ? 'EGP' : 'ج.م';
+    const curr = this.language.t('tickets.currency');
     for (const v of visitTypes) {
       const vName = this.label(v);
       for (const s of v.segments) {
@@ -217,12 +217,13 @@ export class ReservationEditorComponent {
     const h = parseInt(parts[0], 10);
     const m = parts[1] || '00';
     if (isNaN(h)) return time;
-    const isEn = this.language.currentLang() === 'en';
-    const period = h >= 12 ? (isEn ? 'PM' : 'م') : isEn ? 'AM' : 'ص';
+    const period = this.language.t(h >= 12 ? 'common.pm' : 'common.am');
     const h12 = h % 12 || 12;
     const timeFormatted = `${h12}:${m} ${period}`;
     if (duration) {
-      const minText = isEn ? 'min' : duration >= 3 && duration <= 10 ? 'دقائق' : 'دقيقة';
+      const minText = this.language.t(
+        duration >= 3 && duration <= 10 ? 'common.minutesShort' : 'common.minuteShort',
+      );
       return `${timeFormatted} (${duration} ${minText})`;
     }
     return timeFormatted;

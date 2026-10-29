@@ -1,3 +1,4 @@
+import { ReportDataSectionsComponent } from '../../../reporting';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -31,7 +32,7 @@ export type ReportCatalogItem = Schema['ReportCatalogEntry'];
 @Component({
   selector: 'app-doctor-reports',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, PageHeader, SideDrawer, RouterLink],
+  imports: [ReportDataSectionsComponent, FormsModule, TranslatePipe, PageHeader, SideDrawer, RouterLink],
   templateUrl: './doctor-reports.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',
@@ -518,7 +519,7 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
 
   formatMetricValue(value: string | number | null | undefined): string {
     if (value === null || value === undefined || value === '') {
-      return '—';
+      return this.language.t('doctorRemediation.unavailable');
     }
 
     const numeric = typeof value === 'number' ? value : Number(value);
@@ -527,10 +528,21 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
       return String(value);
     }
 
-    return new Intl.NumberFormat(this.language.isRtl() ? 'en-US' : 'en-US', {
+    return new Intl.NumberFormat(this.language.isRtl() ? 'ar-EG' : 'en-GB', {
       maximumFractionDigits: 1,
       minimumFractionDigits: 0,
     }).format(numeric);
+  }
+
+  metricUnit(unit: string): string {
+    const keys: Readonly<Record<string, string>> = {
+      count: 'doctorWorkspace.unit.count',
+      percent: 'doctorWorkspace.unit.percent',
+      minutes: 'doctorWorkspace.unit.minutes',
+      hours: 'doctorWorkspace.unit.hours',
+      egp: 'tickets.currency',
+    };
+    return this.language.t(keys[unit.toLowerCase()] || unit);
   }
 
   // Drilldown source navigation

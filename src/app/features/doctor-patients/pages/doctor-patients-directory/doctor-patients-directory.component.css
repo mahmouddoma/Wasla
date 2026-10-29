@@ -1,11 +1,16 @@
 :host {
   display: block;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: patient-directory;
 }
 
 .directory-page {
   padding: clamp(16px, 3vw, 32px);
   max-width: 1440px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* One continuous summary, without isolated cards. */
@@ -116,7 +121,6 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 14px;
   padding-top: 10px;
   border-top: 1px solid var(--wasla-border-subtle, #f1f5f9);
 }
@@ -125,18 +129,15 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 150px;
-  flex: 1;
+  min-width: 0;
 }
 
 .filter-field.small-field {
-  max-width: 120px;
-  min-width: 90px;
+  min-width: 0;
 }
 
 .filter-field.check-field {
-  min-width: auto;
-  flex: 0 0 auto;
+  min-width: 0;
   justify-content: flex-end;
   padding-bottom: 8px;
 }
@@ -205,20 +206,43 @@
   border-collapse: collapse;
   font-size: 0.875rem;
   text-align: start;
-  min-width: 1040px;
+  table-layout: fixed;
 }
 
 .directory-table th,
 .directory-table td {
   padding: 18px 16px;
   border-bottom: 1px solid var(--wasla-border-subtle, #f1f5f9);
+  overflow-wrap: break-word;
 }
 
 .directory-table th {
   background: var(--wasla-navy-50, #f8fafc);
   font-weight: 700;
   color: var(--wasla-navy-800, #1e293b);
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.directory-table th:first-child {
+  width: 24%;
+}
+.directory-table th:nth-child(2) {
+  width: 16%;
+}
+.directory-table th:nth-child(3) {
+  width: 14%;
+}
+.directory-table th:nth-child(4) {
+  width: 16%;
+}
+.directory-table th:nth-child(5) {
+  width: 7%;
+}
+.directory-table th:nth-child(6) {
+  width: 10%;
+}
+.directory-table th:last-child {
+  width: 13%;
 }
 
 .patient-row {
@@ -236,6 +260,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.patient-cell-content > div:last-child {
+  min-width: 0;
+  flex: 1;
 }
 
 .mobile-patient-context {
@@ -271,10 +299,14 @@
 
 .demographics {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: 0.75rem;
   color: var(--wasla-slate, #64748b);
   margin-top: 2px;
+}
+.demographics > span {
+  white-space: nowrap;
 }
 
 .contact-details {
@@ -368,6 +400,12 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+.action-buttons .badge {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.6;
+}
+.badge-label-compact { display: none; }
 
 .actions-cell {
   text-align: end;
@@ -525,7 +563,7 @@
   height: auto;
 }
 
-@media (max-width: 575px) {
+@container patient-directory (max-width: 600px) {
   .search-row {
     flex-wrap: wrap;
   }
@@ -540,7 +578,9 @@
   }
 }
 
-@media (max-width: 767px) {
+@container patient-directory (max-width: 760px) {
+  .badge-label-full { display: none; }
+  .badge-label-compact { display: inline; }
   .summary-section {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -572,6 +612,9 @@
   }
   .directory-table th:first-child {
     width: 64%;
+  }
+  .directory-table th:last-child {
+    width: 36%;
   }
   .directory-table th,
   .directory-table td {
@@ -607,13 +650,51 @@
     flex-direction: column;
   }
   .action-buttons .btn {
+    max-width: 100%;
     white-space: normal;
     line-height: 1.8;
     padding: 8px;
     text-align: start;
   }
-  .filter-field {
-    min-width: min(100%, 180px);
+}
+
+@container patient-directory (min-width: 761px) and (max-width: 1180px) {
+  .directory-table th:nth-child(3),
+  .directory-table td:nth-child(3),
+  .directory-table th:nth-child(6),
+  .directory-table td:nth-child(6) {
+    display: none;
+  }
+  .directory-table th:first-child {
+    width: 30%;
+  }
+  .directory-table th:nth-child(2) {
+    width: 17%;
+  }
+  .directory-table th:nth-child(4) {
+    width: 25%;
+  }
+  .directory-table th:nth-child(5) {
+    width: 10%;
+  }
+  .directory-table th:last-child {
+    width: 18%;
+  }
+  .directory-table th,
+  .directory-table td {
+    padding: 16px 12px;
+  }
+  .patient-cell-content {
+    gap: 8px;
+    align-items: start;
+  }
+}
+@container patient-directory (max-width: 600px) {
+  .options-row > .filter-field {
+    width: 100%;
+  }
+  .directory-heading {
+    flex-wrap: wrap;
   }
 }
 @media (prefers-reduced-motion: reduce) {

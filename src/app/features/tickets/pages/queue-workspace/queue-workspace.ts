@@ -1006,7 +1006,7 @@ export class QueueWorkspace implements OnInit {
       const h = parseInt(hStr, 10);
       const isPm = h >= 12;
       const h12 = h % 12 || 12;
-      const suffix = this.language.currentLang() === 'ar' ? (isPm ? 'م' : 'ص') : isPm ? 'PM' : 'AM';
+      const suffix = this.language.t(isPm ? 'common.pm' : 'common.am');
       return `${h12}:${mStr} ${suffix}`;
     }
     const date = new Date(trimmed);
@@ -1816,22 +1816,21 @@ export class QueueWorkspace implements OnInit {
         }[]
       | null,
   ): readonly string[] {
-    const isAr = this.language.currentLang() === 'ar';
-    const fieldMapAr: Record<string, string> = {
-      dose: 'الجرعة',
-      frequency: 'التكرار / عدد المرات',
-      frequencyCode: 'التكرار',
-      frequencyText: 'التكرار',
-      duration: 'مدة العلاج',
-      durationValue: 'مدة العلاج',
-      durationType: 'نوع المدة',
-      durationUnit: 'وحدة المدة',
-      instructions: 'تعليمات الاستخدام',
-      quantity: 'الكمية',
-      quantityValue: 'الكمية',
-      strength: 'التركيز',
-      dosageForm: 'الشكل الدوائي',
-      route: 'طريقة الاستخدام',
+    const fieldKeys: Readonly<Record<string, string>> = {
+      dose: 'prescriptions.dose',
+      frequency: 'prescriptions.frequency',
+      frequencyCode: 'prescriptions.frequency',
+      frequencyText: 'prescriptions.frequency',
+      duration: 'prescriptions.duration',
+      durationValue: 'prescriptions.duration',
+      durationType: 'prescriptions.durationType',
+      durationUnit: 'prescriptions.durationUnit',
+      instructions: 'prescriptions.instructions',
+      quantity: 'prescriptions.quantity',
+      quantityValue: 'prescriptions.quantity',
+      strength: 'medications.strengthText',
+      dosageForm: 'medications.dosageForm',
+      route: 'medications.route',
     };
 
     const messages = new Set<string>();
@@ -1845,26 +1844,19 @@ export class QueueWorkspace implements OnInit {
       const item = draftItems?.find((it) => it.itemId && b.itemId && it.itemId === b.itemId);
       const drugName = item?.medicationName || item?.scientificName;
       const rawField = b.field?.trim();
-      const localizedField = rawField ? (isAr ? fieldMapAr[rawField] || rawField : rawField) : '';
+      const localizedField = rawField ? this.language.t(fieldKeys[rawField] || rawField) : '';
 
       if (drugName && localizedField) {
         messages.add(
-          isAr
-            ? `دواء (${drugName}): يرجى تحديد ${localizedField}.`
-            : `Medication (${drugName}): please specify ${localizedField}.`,
+          this.language.t('queue.medicationFieldRequired', {
+            name: drugName,
+            field: localizedField,
+          }),
         );
       } else if (drugName) {
-        messages.add(
-          isAr
-            ? `دواء (${drugName}): يرجى إكمال الحقول المطلوبة.`
-            : `Medication (${drugName}): please complete required fields.`,
-        );
+        messages.add(this.language.t('queue.medicationFieldsRequired', { name: drugName }));
       } else if (localizedField) {
-        messages.add(
-          isAr
-            ? `الروشتة: يرجى تحديد ${localizedField}.`
-            : `Prescription: please specify ${localizedField}.`,
-        );
+        messages.add(this.language.t('queue.prescriptionFieldRequired', { field: localizedField }));
       }
     }
 

@@ -40,7 +40,7 @@ describe('Encounter workspace workflow', () => {
       }),
     );
   });
-  it('renders all diagnostic completion blockers before sending a completion command', async () => {
+  it('toasts all diagnostic completion blockers before sending a completion command', async () => {
     tickets.details.mockReturnValue(of({ rowVersion: 'tv2' }));
     api.byTicket.mockReturnValue(
       of({
@@ -54,6 +54,8 @@ describe('Encounter workspace workflow', () => {
     await store.complete();
     expect(tickets.complete).not.toHaveBeenCalled();
     expect(store.messages()).toEqual(['Review lab order', 'Review imaging order']);
+    expect(toast.error).toHaveBeenCalledWith('Review lab order');
+    expect(toast.error).toHaveBeenCalledWith('Review imaging order');
   });
   it('blocks parent mutations during diagnostic writes', async () => {
     store.diagnosticBusy.set(true);
@@ -250,6 +252,8 @@ describe('Encounter workspace workflow', () => {
     await store.complete();
     expect(tickets.complete).not.toHaveBeenCalled();
     expect(store.messages()).toEqual(['First item dose required', 'Second item dose required']);
+    expect(toast.error).toHaveBeenCalledWith('First item dose required');
+    expect(toast.error).toHaveBeenCalledWith('Second item dose required');
     expect(toast.error).toHaveBeenCalledWith('medications.resolveBlockers');
   });
   it('refreshes independent prescription state after a completion conflict', async () => {
