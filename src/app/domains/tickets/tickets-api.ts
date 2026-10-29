@@ -177,6 +177,12 @@ export class TicketsApi {
       .pipe(map(normalizeTicket));
   }
 
+  ticket(practiceId: string, ticketId: string): Observable<PracticeTicket> {
+    return this.http
+      .get<PracticeTicket>(this.ticketUrl(practiceId, ticketId))
+      .pipe(map(normalizeTicket));
+  }
+
   private mutate(
     practiceId: string,
     ticketId: string,

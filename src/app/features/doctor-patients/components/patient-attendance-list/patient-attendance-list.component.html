@@ -1,0 +1,142 @@
+<div class="attendance-container">
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'common.loading' | t }}</span>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ 'common.failedToLoad' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadAttendances()">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (attendances().length === 0) {
+    <div class="empty-state">
+      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'doctorPatients.attendance.ticketNum' | t }}</th>
+            <th>{{ 'doctorPatients.filter.practice' | t }}</th>
+            <th>{{ 'doctorPatients.filter.fromDate' | t }}</th>
+            <th>{{ 'doctorPatients.attendance.checkInTime' | t }}</th>
+            <th>{{ 'doctorPatients.attendance.ticketStatus' | t }}</th>
+            <th>{{ 'doctorPatients.attendance.encounterStatus' | t }}</th>
+            <th>{{ 'doctorPatients.col.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of attendances(); track item.ticketId) {
+            <tr>
+              <td>
+                <span class="ticket-number">#{{ item.ticketNumber }}</span>
+                @if (item.isArchived) {
+                  <span class="badge badge-archived">{{ 'doctorPatients.attendance.archived' | t }}</span>
+                }
+              </td>
+              <td>{{ item.practiceName || item.practiceId }}</td>
+              <td>{{ item.businessDate }}</td>
+              <td>{{ item.checkInAtUtc | localizedDate: language.currentLang() }}</td>
+              <td>
+                <span class="badge badge-status" [attr.data-status]="item.ticketStatus">
+                  {{ item.ticketStatus }}
+                </span>
+              </td>
+              <td>
+                @if (item.encounterId) {
+                  <span class="badge badge-encounter" [attr.data-status]="item.encounterStatus">
+                    {{ item.encounterStatus }}
+                  </span>
+                } @else {
+                  <span class="text-muted">{{ 'doctorPatients.attendance.noEncounter' | t }}</span>
+                }
+              </td>
+              <td class="action-cell">
+                @if (item.canViewTicket) {
+                  <button
+                    type="button"
+                    class="btn-link"
+                    (click)="inspectTicket(item)"
+                    [disabled]="viewingTicketLoading()"
+                  >
+                    {{ 'doctorPatients.attendance.viewTicket' | t }}
+                  </button>
+                }
+                @if (item.encounterId && item.canViewEncounter) {
+                  <button
+                    type="button"
+                    class="btn-link btn-primary-link"
+                    (click)="navigateToEncounter(item)"
+                  >
+                    {{ 'doctorPatients.attendance.viewEncounter' | t }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalCount() > pageSize) {
+      <div class="pagination-bar">
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() <= 1"
+          (click)="onPageChange(pageNumber() - 1)"
+        >
+          &larr;
+        </button>
+        <span class="page-info">{{ pageNumber() }}</span>
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() * pageSize >= totalCount()"
+          (click)="onPageChange(pageNumber() + 1)"
+        >
+          &rarr;
+        </button>
+      </div>
+    }
+  }
+
+  @if (selectedTicket()) {
+    <div class="modal-backdrop" (click)="closeTicketModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h4>{{ 'doctorPatients.attendance.viewTicket' | t }} #{{ selectedTicket()?.ticketNumber }}</h4>
+          <button type="button" class="close-btn" (click)="closeTicketModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="info-row">
+            <span class="label">{{ 'doctorPatients.attendance.ticketStatus' | t }}:</span>
+            <span class="val">{{ selectedTicket()?.status }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
+            <span class="val">{{ selectedTicket()?.businessDate }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">{{ 'doctorPatients.attendance.checkInTime' | t }}:</span>
+            <span class="val">{{ selectedTicket()?.checkInTimeUtc | localizedDate: language.currentLang() }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">{{ 'doctorPatients.attendance.source' | t }}:</span>
+            <span class="val">{{ selectedTicket()?.source }}</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeTicketModal()">
+            {{ 'common.close' | t }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

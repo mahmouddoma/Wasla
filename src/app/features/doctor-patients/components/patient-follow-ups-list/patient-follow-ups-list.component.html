@@ -1,0 +1,84 @@
+<div class="follow-ups-container">
+  <div class="info-banner">
+    {{ 'doctorPatients.followUp.createNotice' | t }}
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'common.loading' | t }}</span>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ 'common.failedToLoad' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadFollowUps()">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (followUps().length === 0) {
+    <div class="empty-state">
+      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+    </div>
+  } @else {
+    <div class="cards-list">
+      @for (fu of followUps(); track fu.eligibilityId) {
+        <div class="fu-card">
+          <div class="fu-header">
+            <span class="fu-id">#{{ fu.eligibilityId.substring(0, 8) }}</span>
+            <div class="badge-group">
+              <span class="badge badge-status" [attr.data-status]="fu.status">{{ fu.status }}</span>
+              @if (fu.isHistoricalPractice) {
+                <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="fu-body">
+            <div class="detail-row">
+              <span class="label">{{ 'doctorPatients.followUp.validUntil' | t }}:</span>
+              <span class="val">{{ fu.validUntil | localizedDate: language.currentLang() }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">{{ 'doctorPatients.filter.practice' | t }}:</span>
+              <span class="val">{{ fu.practiceId }}</span>
+            </div>
+            @if (fu.reservedReservationId) {
+              <div class="detail-row">
+                <span class="label">{{ 'doctorPatients.tab.appointments' | t }}:</span>
+                <span class="val">#{{ fu.reservedReservationId.substring(0, 8) }}</span>
+              </div>
+            }
+            @if (fu.reservedTicketId) {
+              <div class="detail-row">
+                <span class="label">{{ 'doctorPatients.tab.attendances' | t }}:</span>
+                <span class="val">#{{ fu.reservedTicketId.substring(0, 8) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (totalCount() > pageSize) {
+      <div class="pagination-bar">
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() <= 1"
+          (click)="onPageChange(pageNumber() - 1)"
+        >
+          &larr;
+        </button>
+        <span class="page-info">{{ pageNumber() }}</span>
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() * pageSize >= totalCount()"
+          (click)="onPageChange(pageNumber() + 1)"
+        >
+          &rarr;
+        </button>
+      </div>
+    }
+  }
+</div>

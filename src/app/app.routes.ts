@@ -130,6 +130,14 @@ export const routes: Routes = [
           import('./features/encounters/encounters.routes').then((m) => m.ENCOUNTER_ROUTES),
       },
       {
+        path: 'doctor/patients',
+        data: { actor: 'Doctor', permission: 'DoctorPatients.ViewOwn' },
+        loadChildren: () =>
+          import('./features/doctor-patients/doctor-patients.routes').then(
+            (m) => m.DOCTOR_PATIENTS_ROUTES,
+          ),
+      },
+      {
         path: 'patient/encounters',
         data: { actor: 'Patient' },
         loadChildren: () =>

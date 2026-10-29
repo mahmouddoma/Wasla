@@ -1,0 +1,151 @@
+<div class="prescriptions-container">
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'common.loading' | t }}</span>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ 'common.failedToLoad' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadPrescriptions()">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (prescriptions().length === 0) {
+    <div class="empty-state">
+      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+    </div>
+  } @else {
+    <div class="cards-list">
+      @for (rx of prescriptions(); track rx.prescriptionId) {
+        <div class="rx-card" [class.is-voided]="rx.currentStatus === 'Voided'">
+          <div class="rx-header">
+            <div class="rx-title-group">
+              <span class="rx-id">#{{ rx.prescriptionId.substring(0, 8) }}</span>
+              <span class="badge badge-version">v{{ rx.currentVersionNumber }}</span>
+              <span class="badge badge-status" [attr.data-status]="rx.currentStatus">
+                {{ rx.currentStatus }}
+              </span>
+              @if (rx.isHistoricalPractice) {
+                <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+              }
+            </div>
+
+            <div class="rx-actions">
+              @if (rx.canExport && rx.currentStatus !== 'Draft') {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline"
+                  [disabled]="pdfLoading()"
+                  (click)="viewPdf(rx)"
+                >
+                  {{ 'doctorPatients.prescription.viewPrint' | t }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline"
+                  [disabled]="pdfLoading()"
+                  (click)="downloadPdf(rx)"
+                >
+                  {{ 'doctorPatients.prescription.downloadPdf' | t }}
+                </button>
+              }
+              @if (rx.hasVersions) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link"
+                  [disabled]="versionsLoading()"
+                  (click)="viewVersions(rx)"
+                >
+                  {{ 'doctorPatients.prescription.viewVersions' | t }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (rx.currentStatus === 'Voided') {
+            <div class="warning-banner">
+              {{ 'doctorPatients.prescription.supersededWarning' | t }}
+            </div>
+          }
+
+          <div class="rx-details">
+            <div class="detail-item">
+              <span class="detail-label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
+              <span class="detail-val">{{ rx.visitDateUtc | localizedDate: language.currentLang() }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">{{ 'doctorPatients.prescription.medCount' | t }}:</span>
+              <span class="detail-val">{{ rx.medicationCount }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">{{ 'doctorPatients.filter.practice' | t }}:</span>
+              <span class="detail-val">{{ rx.practiceId }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (totalCount() > pageSize) {
+      <div class="pagination-bar">
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() <= 1"
+          (click)="onPageChange(pageNumber() - 1)"
+        >
+          &larr;
+        </button>
+        <span class="page-info">{{ pageNumber() }}</span>
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() * pageSize >= totalCount()"
+          (click)="onPageChange(pageNumber() + 1)"
+        >
+          &rarr;
+        </button>
+      </div>
+    }
+  }
+
+  @if (selectedVersions()) {
+    <div class="modal-backdrop" (click)="closeVersionsModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h4>{{ 'doctorPatients.prescription.viewVersions' | t }}</h4>
+          <button type="button" class="close-btn" (click)="closeVersionsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="versions-list">
+            @for (v of selectedVersions(); track v.versionNumber) {
+              <div class="version-row">
+                <div>
+                  <strong>v{{ v.versionNumber }}</strong> —
+                  <span class="badge" [attr.data-status]="v.status">{{ v.status }}</span>
+                  <span class="v-date">{{ (v.finalizedOnUtc || v.voidedOnUtc) | localizedDate: language.currentLang() }}</span>
+                </div>
+                @if (v.status !== 'Draft') {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline"
+                    [disabled]="pdfLoading()"
+                    (click)="viewVersionPdf(v.versionNumber)"
+                  >
+                    PDF
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeVersionsModal()">
+            {{ 'common.close' | t }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

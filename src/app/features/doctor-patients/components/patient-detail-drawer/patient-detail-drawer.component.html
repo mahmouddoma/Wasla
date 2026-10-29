@@ -1,0 +1,332 @@
+<app-side-drawer
+  [opened]="opened()"
+  [title]="'doctorPatients.drawer.title' | t"
+  [width]="'min(100vw, 840px)'"
+  (closed)="onClose()"
+>
+  <div class="drawer-inner">
+    @if (loading()) {
+      <div class="drawer-loading">
+        <div class="spinner"></div>
+        <span>{{ 'common.loading' | t }}</span>
+      </div>
+    } @else if (error()) {
+      <div class="drawer-error">
+        <p>{{ 'common.failedToLoad' | t }}</p>
+        <button type="button" class="btn btn-outline" (click)="loadOverview()">
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
+    } @else if (patient()) {
+      <!-- Patient Profile Header (Read-Only) -->
+      <header class="patient-header">
+        <div class="header-main">
+          <div class="avatar-circle">
+            {{ (patient()?.nameAr || patient()?.nameEn || 'P').charAt(0) }}
+          </div>
+          <div class="patient-identity">
+            <h3 class="patient-name">
+              {{ language.isRtl() ? (patient()?.nameAr || patient()?.nameEn) : (patient()?.nameEn || patient()?.nameAr) }}
+              @if (patient()?.nameAr && patient()?.nameEn) {
+                <span class="secondary-name">({{ language.isRtl() ? patient()?.nameEn : patient()?.nameAr }})</span>
+              }
+            </h3>
+
+            <div class="meta-row">
+              <span class="meta-tag">{{ patient()?.age }} {{ 'doctorPatients.yearsOld' | t }}</span>
+              <span class="meta-tag">{{ patient()?.gender }}</span>
+              <span class="meta-tag">{{ patient()?.dateOfBirth }}</span>
+              @if (patient()?.attendanceCount! >= 2) {
+                <span class="badge badge-returning">{{ 'doctorPatients.summary.returningBadge' | t }}</span>
+              }
+              @if (patient()?.historicalOnly) {
+                <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+              }
+            </div>
+
+            <div class="contact-row">
+              <span class="contact-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                {{ patient()?.phoneNumber || ('doctorPatients.noPhone' | t) }}
+              </span>
+              <span class="contact-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                {{ patient()?.email || ('doctorPatients.noEmail' | t) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="registry-notice">
+          {{ 'doctorPatients.drawer.readOnlyNotice' | t }}
+        </div>
+
+        @if (patient()?.historicalOnly) {
+          <div class="historical-banner">
+            {{ 'doctorPatients.drawer.historicalNotice' | t }}
+          </div>
+        }
+      </header>
+
+      <!-- Navigation Tabs -->
+      <nav class="drawer-tabs">
+        <button
+          type="button"
+          class="tab-link"
+          [class.active]="activeTab() === 'overview'"
+          (click)="setTab('overview')"
+        >
+          {{ 'doctorPatients.tab.overview' | t }}
+        </button>
+
+        @if (capabilities()?.canViewAttendances) {
+          <button
+            type="button"
+            class="tab-link"
+            [class.active]="activeTab() === 'attendances'"
+            (click)="setTab('attendances')"
+          >
+            {{ 'doctorPatients.tab.attendances' | t }}
+          </button>
+        }
+
+        @if (capabilities()?.canViewDiagnoses) {
+          <button
+            type="button"
+            class="tab-link"
+            [class.active]="activeTab() === 'diagnoses'"
+            (click)="setTab('diagnoses')"
+          >
+            {{ 'doctorPatients.tab.diagnoses' | t }}
+          </button>
+        }
+
+        @if (capabilities()?.canViewPrescriptions) {
+          <button
+            type="button"
+            class="tab-link"
+            [class.active]="activeTab() === 'prescriptions'"
+            (click)="setTab('prescriptions')"
+          >
+            {{ 'doctorPatients.tab.prescriptions' | t }}
+          </button>
+        }
+
+        @if (capabilities()?.canViewLabRequests || capabilities()?.canViewRadiologyRequests) {
+          <button
+            type="button"
+            class="tab-link"
+            [class.active]="activeTab() === 'diagnostics'"
+            (click)="setTab('diagnostics')"
+          >
+            {{ 'doctorPatients.tab.diagnostics' | t }}
+          </button>
+        }
+
+        @if (capabilities()?.canViewAppointments) {
+          <button
+            type="button"
+            class="tab-link"
+            [class.active]="activeTab() === 'appointments'"
+            (click)="setTab('appointments')"
+          >
+            {{ 'doctorPatients.tab.appointments' | t }}
+          </button>
+        }
+
+        @if (capabilities()?.canViewFollowUps) {
+          <button
+            type="button"
+            class="tab-link"
+            [class.active]="activeTab() === 'followUps'"
+            (click)="setTab('followUps')"
+          >
+            {{ 'doctorPatients.tab.followUps' | t }}
+          </button>
+        }
+
+        <button
+          type="button"
+          class="tab-link"
+          [class.active]="activeTab() === 'sharedRecords'"
+          (click)="setTab('sharedRecords')"
+        >
+          {{ 'doctorPatients.tab.sharedRecords' | t }}
+        </button>
+      </nav>
+
+      <!-- Tab Content Area -->
+      <section class="drawer-content">
+        <!-- Overview Tab -->
+        @if (activeTab() === 'overview') {
+          <div class="overview-section">
+            <div class="cards-grid">
+              <!-- Visited Practices -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.overview.attendedPractices' | t }}</span>
+                <div class="practices-chips">
+                  @for (p of overview()?.practices; track p.id) {
+                    <span class="chip" [class.inactive]="!p.isActive">
+                      {{ language.isRtl() ? (p.nameAr || p.nameEn || p.id) : (p.nameEn || p.nameAr || p.id) }}
+                      @if (!p.isActive) {
+                        ({{ 'doctorPatients.historicalBadge' | t }})
+                      }
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <!-- Last Attendance -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.overview.lastTicket' | t }}</span>
+                @if (overview()?.lastAttendance; as att) {
+                  <div class="card-highlight">
+                    <strong>#{{ att.ticketNumber }}</strong> — {{ att.ticketStatus }}
+                  </div>
+                  <div class="card-sub">{{ att.businessDate }} ({{ att.practiceName }})</div>
+                } @else {
+                  <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
+                }
+              </div>
+
+              <!-- Latest Diagnosis -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.overview.lastDiagnosis' | t }}</span>
+                @if (overview()?.lastDiagnosis; as diag) {
+                  <div class="card-highlight">{{ diag.displayText }}</div>
+                  <div class="card-sub">{{ diag.encounterDate | localizedDate: language.currentLang() }}</div>
+                } @else {
+                  <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
+                }
+              </div>
+
+              <!-- Latest Prescription -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.overview.lastPrescription' | t }}</span>
+                @if (overview()?.lastPrescription; as rx) {
+                  <div class="card-highlight">#{{ rx.prescriptionId.substring(0, 8) }} (v{{ rx.currentVersionNumber }})</div>
+                  <div class="card-sub">{{ rx.currentStatus }} — {{ rx.medicationCount }} {{ 'doctorPatients.overview.medications' | t }}</div>
+                } @else {
+                  <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
+                }
+              </div>
+
+              <!-- Diagnostic Counts -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.tab.diagnostics' | t }}</span>
+                <div class="counts-row">
+                  <div class="count-box">
+                    <span class="count-num">
+                      {{ overview()?.labRequestCount !== null ? overview()?.labRequestCount : ('doctorPatients.unavailable' | t) }}
+                    </span>
+                    <span class="count-lbl">{{ 'doctorPatients.overview.labRequests' | t }}</span>
+                  </div>
+                  <div class="count-box">
+                    <span class="count-num">
+                      {{ overview()?.radiologyRequestCount !== null ? overview()?.radiologyRequestCount : ('doctorPatients.unavailable' | t) }}
+                    </span>
+                    <span class="count-lbl">{{ 'doctorPatients.overview.radiologyRequests' | t }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Next Appointment -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.overview.nextAppointment' | t }}</span>
+                @if (overview()?.nextAppointment; as app) {
+                  <div class="card-highlight">{{ app.scheduledStart | localizedDate: language.currentLang() }}</div>
+                  <div class="card-sub">{{ app.visitType }} — {{ app.status }}</div>
+                } @else {
+                  <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
+                }
+              </div>
+
+              <!-- Current Follow-Up -->
+              <div class="summary-card">
+                <span class="card-title">{{ 'doctorPatients.overview.currentFollowUp' | t }}</span>
+                @if (overview()?.currentFollowUp; as fu) {
+                  <div class="card-highlight">{{ fu.status }}</div>
+                  <div class="card-sub">{{ 'doctorPatients.followUp.validUntil' | t }}: {{ fu.validUntil | localizedDate: language.currentLang() }}</div>
+                } @else {
+                  <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Attendances Tab -->
+        @if (activeTab() === 'attendances' && patientId()) {
+          <app-patient-attendance-list
+            [patientId]="patientId()!"
+            [isHistoricalOnly]="patient()?.historicalOnly || false"
+          ></app-patient-attendance-list>
+        }
+
+        <!-- Diagnoses Tab -->
+        @if (activeTab() === 'diagnoses' && patientId()) {
+          <app-patient-diagnosis-timeline
+            [patientId]="patientId()!"
+            [isHistoricalOnly]="patient()?.historicalOnly || false"
+          ></app-patient-diagnosis-timeline>
+        }
+
+        <!-- Prescriptions Tab -->
+        @if (activeTab() === 'prescriptions' && patientId()) {
+          <app-patient-prescriptions-list
+            [patientId]="patientId()!"
+            [isHistoricalOnly]="patient()?.historicalOnly || false"
+          ></app-patient-prescriptions-list>
+        }
+
+        <!-- Diagnostics Tab -->
+        @if (activeTab() === 'diagnostics' && patientId()) {
+          <app-patient-diagnostics-tab
+            [patientId]="patientId()!"
+            [isHistoricalOnly]="patient()?.historicalOnly || false"
+          ></app-patient-diagnostics-tab>
+        }
+
+        <!-- Appointments Tab -->
+        @if (activeTab() === 'appointments' && patientId()) {
+          <app-patient-appointments-list
+            [patientId]="patientId()!"
+            [isHistoricalOnly]="patient()?.historicalOnly || false"
+          ></app-patient-appointments-list>
+        }
+
+        <!-- Follow-Ups Tab -->
+        @if (activeTab() === 'followUps' && patientId()) {
+          <app-patient-follow-ups-list
+            [patientId]="patientId()!"
+            [isHistoricalOnly]="patient()?.historicalOnly || false"
+          ></app-patient-follow-ups-list>
+        }
+
+        <!-- Shared Medical Record Tab -->
+        @if (activeTab() === 'sharedRecords' && patientId()) {
+          <app-patient-shared-records
+            [patientId]="patientId()!"
+          ></app-patient-shared-records>
+        }
+      </section>
+    }
+  </div>
+
+  <!-- Create Follow-Up Dialog -->
+  @if (showCreateFollowUp()) {
+    <app-create-followup-dialog
+      [opened]="showCreateFollowUp()"
+      [practiceId]="createFollowUpPracticeId()"
+      [encounterId]="createFollowUpEncounterId()"
+      [isHistoricalPractice]="patient()?.historicalOnly || false"
+      (closed)="showCreateFollowUp.set(false)"
+      (created)="onFollowUpCreated()"
+    ></app-create-followup-dialog>
+  }
+</app-side-drawer>

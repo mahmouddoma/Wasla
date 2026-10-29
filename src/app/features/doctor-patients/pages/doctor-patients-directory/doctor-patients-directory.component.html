@@ -1,0 +1,330 @@
+<div class="directory-page">
+  <app-page-header
+    [heading]="'doctorPatients.title' | t"
+    [description]="'doctorPatients.subtitle' | t"
+    [icon]="'doctors'"
+  ></app-page-header>
+
+  <!-- Summary Cards -->
+  @if (summary(); as sum) {
+    <section class="summary-section mt-3">
+      <div class="metric-card">
+        <span class="metric-label">{{ 'doctorPatients.summary.allTimeUnique' | t }}</span>
+        <span class="metric-value">{{ sum.allTimeUniquePatients }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">{{ 'doctorPatients.summary.attendedLast30Days' | t }}</span>
+        <span class="metric-value">{{ sum.attendedLast30Days }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">{{ 'doctorPatients.summary.returning' | t }}</span>
+        <span class="metric-value">{{ sum.returningPatients }}</span>
+      </div>
+    </section>
+  }
+
+  <!-- Search & Filters Surface -->
+  <section class="filters-surface">
+    <div class="filters-row search-row">
+      <div class="search-input-wrap">
+        <svg
+          class="search-icon"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="search"
+          class="form-control search-input"
+          [placeholder]="'doctorPatients.searchPlaceholder' | t"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          (keyup.enter)="onSearch()"
+        />
+      </div>
+
+      <button type="button" class="btn btn-primary" (click)="onSearch()">
+        {{ 'common.search' | t }}
+      </button>
+
+      @if (isFiltered()) {
+        <button type="button" class="btn btn-outline" (click)="resetFilters()">
+          {{ 'doctorPatients.filter.reset' | t }}
+        </button>
+      }
+    </div>
+
+    <div class="filters-row options-row">
+      <!-- Practice Select -->
+      <div class="filter-field">
+        <label class="field-label">{{ 'doctorPatients.filter.practice' | t }}</label>
+        <select
+          class="form-control select-control"
+          [ngModel]="selectedPracticeId()"
+          (ngModelChange)="selectedPracticeId.set($event); onSearch()"
+        >
+          <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
+          @for (p of practices(); track p.id) {
+            <option [value]="p.id">
+              {{ language.isRtl() ? (p.nameAr || p.nameEn) : (p.nameEn || p.nameAr) }}
+              {{ !p.isActive ? '(' + ('doctorPatients.historicalBadge' | t) + ')' : '' }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- Scope Select -->
+      <div class="filter-field">
+        <label class="field-label">{{ 'doctorPatients.filter.scope' | t }}</label>
+        <select
+          class="form-control select-control"
+          [ngModel]="practiceScope()"
+          (ngModelChange)="practiceScope.set($event); onSearch()"
+        >
+          <option value="all">{{ 'doctorPatients.filter.scopeAll' | t }}</option>
+          <option value="active">{{ 'doctorPatients.filter.scopeActive' | t }}</option>
+          <option value="historicalOnly">{{ 'doctorPatients.filter.scopeHistorical' | t }}</option>
+        </select>
+      </div>
+
+      <!-- From Date -->
+      <div class="filter-field">
+        <label class="field-label">{{ 'doctorPatients.filter.fromDate' | t }}</label>
+        <input
+          type="date"
+          class="form-control"
+          [ngModel]="fromDate()"
+          (ngModelChange)="fromDate.set($event); onSearch()"
+        />
+      </div>
+
+      <!-- To Date -->
+      <div class="filter-field">
+        <label class="field-label">{{ 'doctorPatients.filter.toDate' | t }}</label>
+        <input
+          type="date"
+          class="form-control"
+          [ngModel]="toDate()"
+          (ngModelChange)="toDate.set($event); onSearch()"
+        />
+      </div>
+
+      <!-- Min Attendance -->
+      <div class="filter-field small-field">
+        <label class="field-label">{{ 'doctorPatients.filter.minAttendance' | t }}</label>
+        <input
+          type="number"
+          min="1"
+          class="form-control"
+          [ngModel]="minAttendance()"
+          (ngModelChange)="minAttendance.set($event); onSearch()"
+        />
+      </div>
+
+      <!-- Has Upcoming Appointment Toggle -->
+      <div class="filter-field check-field">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [checked]="hasUpcoming() === true"
+            (change)="toggleUpcoming($event)"
+          />
+          <span>{{ 'doctorPatients.filter.hasUpcoming' | t }}</span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Directory Table Section -->
+  <section class="table-section">
+    @if (loading()) {
+      <div class="state-container">
+        <div class="spinner"></div>
+        <span>{{ 'common.loading' | t }}</span>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <p>{{ errorMessage() || ('common.failedToLoad' | t) }}</p>
+        <button type="button" class="btn btn-outline" (click)="loadPatients()">
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
+    } @else if (patients().length === 0) {
+      <div class="state-container empty-state">
+        @if (isFiltered()) {
+          <h3>{{ 'doctorPatients.emptyFilter.title' | t }}</h3>
+          <p>{{ 'doctorPatients.emptyFilter.desc' | t }}</p>
+          <button type="button" class="btn btn-outline" (click)="resetFilters()">
+            {{ 'doctorPatients.filter.reset' | t }}
+          </button>
+        } @else {
+          <h3>{{ 'doctorPatients.empty.title' | t }}</h3>
+          <p>{{ 'doctorPatients.empty.desc' | t }}</p>
+        }
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>{{ 'doctorPatients.col.patient' | t }}</th>
+                <th>{{ 'doctorPatients.col.contact' | t }}</th>
+                <th>{{ 'doctorPatients.filter.practice' | t }}</th>
+                <th>{{ 'doctorPatients.col.lastAttendance' | t }}</th>
+                <th>{{ 'doctorPatients.col.attendanceCount' | t }}</th>
+                <th>{{ 'doctorPatients.col.encounters' | t }}</th>
+                <th class="text-end">{{ 'doctorPatients.col.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of patients(); track item.patientId) {
+                <tr class="patient-row" (click)="openPatient(item.patientId)">
+                  <td class="name-cell">
+                    <div class="patient-cell-content">
+                      <div class="mini-avatar">
+                        {{ (item.nameAr || item.nameEn || 'P').charAt(0) }}
+                      </div>
+                      <div>
+                        <div class="primary-name">
+                          {{ language.isRtl() ? (item.nameAr || item.nameEn) : (item.nameEn || item.nameAr) }}
+                          @if (item.nameAr && item.nameEn) {
+                            <span class="en-sub">({{ language.isRtl() ? item.nameEn : item.nameAr }})</span>
+                          }
+                        </div>
+                        <div class="demographics">
+                          <span>{{ item.age }} {{ 'doctorPatients.yearsOld' | t }}</span>
+                          <span>&bull;</span>
+                          <span>{{ item.gender }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="contact-details">
+                      @if (item.phoneNumber) {
+                        <span>{{ item.phoneNumber }}</span>
+                      } @else {
+                        <span class="muted-text">{{ 'doctorPatients.noPhone' | t }}</span>
+                      }
+                      @if (item.email) {
+                        <span class="muted-text small-text">{{ item.email }}</span>
+                      }
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="practice-cell">
+                      <span>{{ language.isRtl() ? (item.lastPractice.nameAr || item.lastPractice.nameEn) : (item.lastPractice.nameEn || item.lastPractice.nameAr) }}</span>
+                      @if (!item.lastPractice.isActive || item.historicalOnly) {
+                        <span class="badge badge-historical">{{
+                          'doctorPatients.historicalBadge' | t
+                        }}</span>
+                      }
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="attendance-date">
+                      <span>{{ item.lastAttendanceBusinessDate }}</span>
+                      <span class="sub-time">{{
+                        item.lastAttendanceAtUtc | localizedDate: language.currentLang()
+                      }}</span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="visits-cell">
+                      <span class="count-badge">{{ item.attendanceCount }}</span>
+                      @if (item.attendanceCount >= 2) {
+                        <span class="badge badge-returning">{{
+                          'doctorPatients.summary.returningBadge' | t
+                        }}</span>
+                      }
+                    </div>
+                  </td>
+
+                  <td>
+                    @if (item.completedEncounterCount !== null) {
+                      <span class="count-badge encounter-badge">{{
+                        item.completedEncounterCount
+                      }}</span>
+                    } @else {
+                      <span class="muted-text">{{ 'doctorPatients.unavailable' | t }}</span>
+                    }
+                  </td>
+
+                  <td class="text-end" (click)="$event.stopPropagation()">
+                    <div class="action-buttons">
+                      @if (item.hasUpcomingAppointment) {
+                        <span
+                          class="badge badge-upcoming"
+                          [title]="'doctorPatients.upcomingBadge' | t"
+                        >
+                          {{ 'doctorPatients.upcomingBadge' | t }}
+                        </span>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline"
+                        (click)="openPatient(item.patientId)"
+                      >
+                        {{ 'doctorPatients.action.viewPatient' | t }} <span class="dir-arrow">{{ language.isRtl() ? '←' : '→' }}</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (totalCount() > pageSize) {
+          <div class="pagination-footer">
+            <span class="page-summary">
+              {{ (pageNumber() - 1) * pageSize + 1 }} -
+              {{
+                pageNumber() * pageSize > totalCount() ? totalCount() : pageNumber() * pageSize
+              }}
+              {{ 'doctorPatients.pagination.of' | t }} {{ totalCount() }}
+            </span>
+            <div class="pagination-controls">
+              <button
+                type="button"
+                class="btn btn-outline"
+                [disabled]="pageNumber() <= 1"
+                (click)="onPageChange(pageNumber() - 1)"
+              >
+                {{ language.isRtl() ? '→' : '←' }}
+              </button>
+              <span class="current-page">{{ pageNumber() }}</span>
+              <button
+                type="button"
+                class="btn btn-outline"
+                [disabled]="pageNumber() * pageSize >= totalCount()"
+                (click)="onPageChange(pageNumber() + 1)"
+              >
+                {{ language.isRtl() ? '←' : '→' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Patient Inspection Drawer -->
+  <app-patient-detail-drawer
+    [opened]="drawerOpened()"
+    [patientId]="inspectedPatientId()"
+    [initialTab]="drawerTab()"
+    (closed)="closeDrawer()"
+  ></app-patient-detail-drawer>
+</div>

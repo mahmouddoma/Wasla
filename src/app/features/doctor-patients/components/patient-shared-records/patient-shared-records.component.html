@@ -1,0 +1,60 @@
+<div class="shared-records-container">
+  <div class="governance-notice">
+    <div class="notice-icon">&bull;</div>
+    <div class="notice-text">
+      <strong>{{ 'doctorPatients.tab.sharedRecords' | t }}:</strong>
+      {{ 'doctorPatients.shared.notice' | t }}
+    </div>
+  </div>
+
+  @if (!activeTicketId() || !activePracticeId()) {
+    <div class="inactive-session-box">
+      <div class="lock-indicator">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h4>{{ 'doctorPatients.shared.noActiveEncounter' | t }}</h4>
+    </div>
+  } @else if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'common.loading' | t }}</span>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ 'common.failedToLoad' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="checkAndLoad()">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (overview()) {
+    <div class="overview-content">
+      <h4 class="session-title">{{ 'doctorPatients.shared.activeTitle' | t }}</h4>
+
+      <div class="shared-summary-grid">
+        <div class="summary-card">
+          <span class="card-label">{{ 'doctorPatients.overview.visitsCount' | t }}</span>
+          <span class="card-value">{{ overview()?.visitsCount ?? 0 }}</span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label">{{ 'doctorPatients.overview.diagnosesCount' | t }}</span>
+          <span class="card-value">{{ overview()?.diagnosesCount ?? 0 }}</span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label">{{ 'doctorPatients.overview.prescriptionsCount' | t }}</span>
+          <span class="card-value">{{ overview()?.prescriptionsCount ?? 0 }}</span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label">{{ 'doctorPatients.overview.labCount' | t }}</span>
+          <span class="card-value">{{ overview()?.labOrdersCount ?? 0 }}</span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label">{{ 'doctorPatients.overview.radiologyCount' | t }}</span>
+          <span class="card-value">{{ overview()?.radiologyOrdersCount ?? 0 }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

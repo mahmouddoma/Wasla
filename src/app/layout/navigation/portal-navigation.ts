@@ -175,6 +175,16 @@ export class PortalNavigation {
               },
             ]
           : []),
+        ...(this.session.hasPermission(PERMISSIONS.doctorPatientsViewOwn)
+          ? [
+              {
+                id: 'doctor-patients',
+                labelKey: 'sidebar.myPatients',
+                route: '/doctor/patients',
+                icon: 'users' as const,
+              },
+            ]
+          : []),
         {
           id: 'workspace',
           labelKey: 'sidebar.workspace',
@@ -470,7 +480,7 @@ export class PortalNavigation {
             'find-doctor',
             'queue',
             'tickets',
-            ...(this.user()?.userType === 'Doctor' ? ['encounters'] : []),
+            ...(this.user()?.userType === 'Doctor' ? ['encounters', 'doctor-patients'] : []),
           ],
       health:
         this.user()?.userType === 'Patient'

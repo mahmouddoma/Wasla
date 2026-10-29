@@ -1,0 +1,94 @@
+<div class="diagnosis-container">
+  <div class="notice-banner">
+    {{ 'doctorPatients.diagnosis.amendmentNote' | t }}
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'common.loading' | t }}</span>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ 'common.failedToLoad' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadDiagnoses()">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (diagnoses().length === 0) {
+    <div class="empty-state">
+      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+    </div>
+  } @else {
+    <div class="timeline-list">
+      @for (diag of diagnoses(); track diag.diagnosisId) {
+        <div class="timeline-card">
+          <div class="timeline-dot"></div>
+          <div class="card-content">
+            <div class="card-top">
+              <span class="diagnosis-title">{{ diag.displayText || ('doctorPatients.overview.noData' | t) }}</span>
+              <div class="badges-row">
+                @if (diag.diagnosisType) {
+                  <span class="badge badge-type">{{ diag.diagnosisType }}</span>
+                }
+                @if (diag.isHistoricalPractice) {
+                  <span class="badge badge-historical">{{ 'doctorPatients.historicalBadge' | t }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="card-meta">
+              <span class="meta-item">
+                <strong>{{ 'doctorPatients.diagnosis.date' | t }}:</strong>
+                {{ diag.encounterDate | localizedDate: language.currentLang() }}
+              </span>
+              <span class="meta-item">
+                <strong>{{ 'doctorPatients.filter.practice' | t }}:</strong>
+                {{ diag.practiceId }}
+              </span>
+              @if (diag.encounterStatus) {
+                <span class="meta-item">
+                  <strong>{{ 'doctorPatients.attendance.encounterStatus' | t }}:</strong>
+                  {{ diag.encounterStatus }}
+                </span>
+              }
+            </div>
+
+            <div class="card-action">
+              <button
+                type="button"
+                class="btn-link"
+                (click)="navigateToEncounter(diag)"
+              >
+                {{ 'doctorPatients.diagnosis.viewEncounter' | t }} &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (totalCount() > pageSize) {
+      <div class="pagination-bar">
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() <= 1"
+          (click)="onPageChange(pageNumber() - 1)"
+        >
+          &larr;
+        </button>
+        <span class="page-info">{{ pageNumber() }}</span>
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="pageNumber() * pageSize >= totalCount()"
+          (click)="onPageChange(pageNumber() + 1)"
+        >
+          &rarr;
+        </button>
+      </div>
+    }
+  }
+</div>
+

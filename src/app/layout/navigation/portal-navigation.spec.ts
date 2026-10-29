@@ -1,4 +1,4 @@
-﻿import { signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AuthSession } from '../../core/auth/auth-session';
 import { CurrentUser } from '../../core/auth/auth.models';
@@ -127,19 +127,32 @@ describe('PortalNavigation', () => {
         .sections()
         .find((g) => g.id === 'health')
         ?.items.map((i) => i.id),
-    ).toEqual(['encounters', 'prescriptions', 'follow-ups']);
+    ).toEqual(['encounters', 'prescriptions', 'follow-ups', 'dependent-records']);
     expect(
       nav
         .sections()
         .find((g) => g.id === 'account')
         ?.items.map((i) => i.id),
-    ).toEqual(['family']);
+    ).toEqual(['family', 'medical-access']);
     expect(nav.mobileItems().map((i) => i.id)).toEqual([
       'workspace',
       'reservations',
       'find-doctor',
       'tickets',
     ]);
+  });
+  it('shows my patients in daily group for Doctor when permitted', () => {
+    setUser('Doctor', [
+      'DoctorPracticeReservations.ViewOwn',
+      PERMISSIONS.doctorPatientsViewOwn,
+    ]);
+    const nav = TestBed.inject(PortalNavigation);
+    expect(
+      nav
+        .sections()
+        .find((g) => g.id === 'daily')
+        ?.items.map((i) => i.id),
+    ).toEqual(['workspace', 'reservations', 'queue', 'doctor-patients']);
   });
   it('preserves catalog manager routes and independent import/history permissions', () => {
     setUser('DrugCatalogManager', [

@@ -1,0 +1,68 @@
+@if (opened()) {
+  <div class="dialog-overlay" (click)="cancel()">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3 class="dialog-title">{{ 'doctorPatients.followUp.dialogTitle' | t }}</h3>
+        <button
+          type="button"
+          class="dialog-close-btn"
+          [attr.aria-label]="'common.close' | t"
+          (click)="cancel()"
+          [disabled]="submitting()"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div class="dialog-body">
+        <p class="dialog-desc">{{ 'doctorPatients.followUp.createNotice' | t }}</p>
+
+        @if (isHistoricalPractice()) {
+          <div class="historical-warning">
+            {{ 'doctorPatients.drawer.historicalNotice' | t }}
+          </div>
+        } @else {
+          <div class="form-group">
+            <label for="validUntilInput" class="form-label">
+              {{ 'doctorPatients.followUp.selectDate' | t }}
+            </label>
+            <input
+              id="validUntilInput"
+              type="date"
+              class="form-control"
+              [ngModel]="validUntil()"
+              (ngModelChange)="validUntil.set($event)"
+              [disabled]="submitting()"
+            />
+          </div>
+        }
+      </div>
+
+      <div class="dialog-footer">
+        <button
+          type="button"
+          class="btn btn-outline"
+          (click)="cancel()"
+          [disabled]="submitting()"
+        >
+          {{ 'common.cancel' | t }}
+        </button>
+        @if (!isHistoricalPractice()) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="submit()"
+            [disabled]="submitting() || !validUntil()"
+          >
+            @if (submitting()) {
+              {{ 'common.saving' | t }}
+            } @else {
+              {{ 'doctorPatients.followUp.createAction' | t }}
+            }
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
