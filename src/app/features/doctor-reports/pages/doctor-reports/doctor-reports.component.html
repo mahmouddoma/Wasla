@@ -1,4 +1,8 @@
-<main class="directory-workspace">
+<main class="directory-workspace doctor-reports">
+  <!-- ============================= -->
+  <!-- PAGE HEADER & FILTERS -->
+  <!-- ============================= -->
+
   <app-page-header
     [heading]="
       (activeTab() === 'reports' ? 'doctorRemediation.reports' : 'doctorRemediation.insights') | t
@@ -10,283 +14,775 @@
     [actionLoading]="loading()"
     (actionClicked)="refresh()"
   >
-    <div pageHeaderDeck class="toolbar">
+    <div pageHeaderDeck class="toolbar reports-filters">
       @if (options()?.practices?.length) {
-        <label
-          >{{ 'finance.practice' | t
-          }}<span class="select-control"
-            ><select class="field-input" [(ngModel)]="filters.practiceId">
-              <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
+        <label class="reports-filter">
+          <span class="reports-filter__label">
+            {{ 'finance.practice' | t }}
+          </span>
+
+          <span class="select-control">
+            <select class="field-input" [(ngModel)]="filters.practiceId">
+              <option value="">
+                {{ 'doctorPatients.filter.allPractices' | t }}
+              </option>
+
               @for (practice of options()?.practices; track practice.id) {
-                <option [value]="practice.id">{{ text(practice.nameAr, practice.nameEn) }}</option>
-              }</select
-            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
-        ></label>
+                <option [value]="practice.id">
+                  {{ text(practice.nameAr, practice.nameEn) }}
+                </option>
+              }
+            </select>
+
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
+        </label>
       }
-      <label
-        >{{ 'doctorPatients.filter.fromDate' | t
-        }}<input type="date" dir="ltr" class="field-input" [(ngModel)]="filters.fromDate"
-      /></label>
-      <label
-        >{{ 'doctorPatients.filter.toDate' | t
-        }}<input type="date" dir="ltr" class="field-input" [(ngModel)]="filters.toDate"
-      /></label>
+
+      <label class="reports-filter">
+        <span class="reports-filter__label">
+          {{ 'doctorPatients.filter.fromDate' | t }}
+        </span>
+
+        <input class="field-input" type="date" dir="ltr" [(ngModel)]="filters.fromDate" />
+      </label>
+
+      <label class="reports-filter">
+        <span class="reports-filter__label">
+          {{ 'doctorPatients.filter.toDate' | t }}
+        </span>
+
+        <input class="field-input" type="date" dir="ltr" [(ngModel)]="filters.toDate" />
+      </label>
+
       <button
         type="button"
-        class="btn btn-primary"
-        (click)="refresh()"
+        class="btn btn-primary reports-search"
         [disabled]="loading() || retryBlocked()"
+        (click)="refresh()"
       >
         {{ 'common.search' | t }}
       </button>
     </div>
   </app-page-header>
-  @for (message of messages(); track $index) {
-    <p class="error-text" role="alert">{{ message | t }}</p>
-  }
-  @if (loading()) {
-    <p role="status" aria-live="polite">{{ 'common.loading' | t }}</p>
-  } @else if (failed()) {
-    <div class="empty-state">
-      <h2>{{ 'common.failedToLoad' | t }}</h2>
-      <button class="btn btn-primary" (click)="refresh()">{{ 'common.retry' | t }}</button>
-    </div>
-  } @else {
-    <div class="surface table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>{{ 'doctorRemediation.title' | t }}</th>
-            <th>{{ 'doctorRemediation.status' | t }}</th>
-            <th>{{ 'doctorPatients.col.actions' | t }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (activeTab() === 'insights') {
-            @for (insight of insights(); track insight.insightId) {
-              <tr>
-                <td>
-                  <strong>{{ text(insight.titleAr, insight.titleEn) }}</strong>
-                  <p>{{ text(insight.explanationAr, insight.explanationEn) }}</p>
-                </td>
-                <td>{{ stateLabel(insight.state) }}</td>
-                <td>
-                  <button class="btn btn-outline-secondary" (click)="openInsight(insight)">
-                    {{ 'common.viewDetails' | t }}
-                  </button>
-                </td>
-              </tr>
-            }
-          } @else {
-            @for (report of reports(); track report.reportCode) {
-              <tr>
-                <td>
-                  <strong>{{ text(report.titleAr, report.titleEn) }}</strong>
-                  <p>{{ report.description }}</p>
-                </td>
-                <td>{{ report.scope || ('doctorRemediation.unavailable' | t) }}</td>
-                <td>
-                  @if (report.canPreview) {
-                    <button class="btn btn-outline-secondary" (click)="openReport(report)">
-                      {{ 'doctorRemediation.viewReport' | t }}
-                    </button>
-                  }
-                </td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-      @if (activeTab() === 'insights' ? !insights().length : !reports().length) {
-        <div class="empty-state">
-          <img
-            class="state-empty-illustration"
-            src="/SVG-AVATAR/Doctors-bro.svg"
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-          <h2>{{ 'doctorRemediation.empty' | t }}</h2>
-          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
-          <button class="btn btn-primary" (click)="refresh()">{{ 'common.refresh' | t }}</button>
-        </div>
+
+  <!-- ============================= -->
+  <!-- ERROR MESSAGES -->
+  <!-- ============================= -->
+
+  @if (messages().length) {
+    <div class="reports-messages" role="alert">
+      @for (message of messages(); track $index) {
+        <p class="error-text">
+          {{ message | t }}
+        </p>
       }
     </div>
-    @if (activeTab() === 'insights' && totalCount() > 20) {
-      <nav class="pager" [attr.aria-label]="'reservations.pagination' | t">
-        <button
-          class="btn btn-outline-secondary"
-          [disabled]="pageNumber() <= 1"
-          (click)="refresh(pageNumber() - 1)"
-        >
-          {{ 'common.previous' | t }}</button
-        ><span>{{ pageNumber() }}</span
-        ><button
-          class="btn btn-outline-secondary"
-          [disabled]="pageNumber() * 20 >= totalCount()"
-          (click)="refresh(pageNumber() + 1)"
-        >
-          {{ 'common.next' | t }}
-        </button>
-      </nav>
-    }
   }
+
+  <!-- ============================= -->
+  <!-- REPORTS CONTENT -->
+  <!-- ============================= -->
+
+  <section class="reports-content">
+    <header class="reports-content__header">
+      <div class="reports-content__heading">
+        <h2>
+          {{
+            (activeTab() === 'reports' ? 'doctorRemediation.reports' : 'doctorRemediation.insights')
+              | t
+          }}
+        </h2>
+
+        <p>
+          {{ 'doctorRemediation.analyticsHelp' | t }}
+        </p>
+      </div>
+
+      @if (!loading() && !failed()) {
+        <span class="reports-content__count">
+          {{ activeTab() === 'reports' ? reports().length : totalCount() }}
+        </span>
+      }
+    </header>
+
+    @if (loading()) {
+      <div class="reports-state" role="status" aria-live="polite">
+        <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+
+        <span>{{ 'common.loading' | t }}</span>
+      </div>
+    } @else if (failed()) {
+      <div class="reports-state reports-state--error">
+        <h3>{{ 'common.failedToLoad' | t }}</h3>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="retryBlocked()"
+          (click)="refresh()"
+        >
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
+    } @else {
+      <div class="reports-table-container table-responsive">
+        <table class="table reports-table mb-0">
+          <thead>
+            <tr>
+              <th scope="col">
+                {{ 'doctorRemediation.title' | t }}
+              </th>
+
+              <th scope="col">
+                {{ 'doctorRemediation.status' | t }}
+              </th>
+
+              <th scope="col" class="reports-table__actions">
+                {{ 'doctorPatients.col.actions' | t }}
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <!-- INSIGHTS TAB -->
+            @if (activeTab() === 'insights') {
+              @for (insight of insights(); track insight.insightId) {
+                <tr>
+                  <td>
+                    <div class="report-info">
+                      <span class="report-info__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M4 19V5m0 14h16M8 15l4-5 3 2 4-6"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+
+                      <div class="report-info__text">
+                        <strong>
+                          {{ text(insight.titleAr, insight.titleEn) }}
+                        </strong>
+
+                        <p>
+                          {{ text(insight.explanationAr, insight.explanationEn) }}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span class="report-status">
+                      {{ stateLabel(insight.state) }}
+                    </span>
+                  </td>
+
+                  <td class="reports-table__actions">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary reports-view-btn"
+                      (click)="openInsight(insight)"
+                    >
+                      {{ 'common.viewDetails' | t }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            } @else {
+              <!-- REPORTS TAB -->
+              @for (report of reports(); track report.reportCode) {
+                <tr>
+                  <td>
+                    <div class="report-info">
+                      <span class="report-info__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <rect
+                            x="5"
+                            y="3"
+                            width="14"
+                            height="18"
+                            rx="2"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                          />
+                          <path
+                            d="M9 8h6M9 12h6M9 16h4"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </span>
+
+                      <div class="report-info__text">
+                        <strong>
+                          {{ text(report.titleAr, report.titleEn) }}
+                        </strong>
+
+                        @if (report.description) {
+                          <p>{{ report.description }}</p>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span class="report-scope" dir="auto">
+                      {{ report.scope || ('doctorRemediation.unavailable' | t) }}
+                    </span>
+                  </td>
+
+                  <td class="reports-table__actions">
+                    @if (report.canPreview) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary reports-view-btn"
+                        (click)="openReport(report)"
+                      >
+                        {{ 'doctorRemediation.viewReport' | t }}
+                      </button>
+                    } @else {
+                      <span class="reports-unavailable">
+                        {{ 'doctorRemediation.unavailable' | t }}
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+
+        @if (activeTab() === 'insights' ? !insights().length : !reports().length) {
+          <div class="reports-state reports-state--empty">
+            <h3>{{ 'doctorRemediation.empty' | t }}</h3>
+            <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="refresh()"
+              [disabled]="retryBlocked()"
+            >
+              {{ 'common.refresh' | t }}
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- PAGINATION -->
+      @if (activeTab() === 'insights' && totalCount() > 20) {
+        <nav class="pager reports-pagination" [attr.aria-label]="'reservations.pagination' | t">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="pageNumber() <= 1"
+            (click)="refresh(pageNumber() - 1)"
+          >
+            {{ 'common.previous' | t }}
+          </button>
+
+          <span>{{ pageNumber() }}</span>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="pageNumber() * 20 >= totalCount()"
+            (click)="refresh(pageNumber() + 1)"
+          >
+            {{ 'common.next' | t }}
+          </button>
+        </nav>
+      }
+    }
+  </section>
+
+  <!-- ============================= -->
+  <!-- SHARED SIDE DRAWER -->
+  <!-- ============================= -->
+
   <app-side-drawer
     [opened]="!!selectedInsight() || !!selectedReport() || detailLoading()"
     [title]="'common.viewDetails' | t"
     (closed)="closeDrawer()"
   >
-    @if (detailLoading()) {
-      <p role="status">{{ 'common.loading' | t }}</p>
-    }
-    @if (selectedInsight(); as insight) {
-      <h2>{{ text(insight.titleAr, insight.titleEn) }}</h2>
-      <p>{{ text(insight.explanationAr, insight.explanationEn) }}</p>
-      <dl>
-        <dt>{{ 'doctorRemediation.currentValue' | t }}</dt>
-        <dd>{{ insight.currentValue ?? ('doctorRemediation.unavailable' | t) }}</dd>
-        <dt>{{ 'doctorRemediation.previousValue' | t }}</dt>
-        <dd>{{ insight.previousValue ?? ('doctorRemediation.unavailable' | t) }}</dd>
-        <dt>{{ 'doctorRemediation.sample' | t }}</dt>
-        <dd>{{ insight.sampleCount ?? ('doctorRemediation.unavailable' | t) }}</dd>
-      </dl>
-      <p>{{ text(insight.evidenceSummaryAr, insight.evidenceSummaryEn) }}</p>
-      <p>{{ text(insight.suggestedActionAr, insight.suggestedActionEn) }}</p>
-      <div class="actions">
-        @if (canTransition(insight, 'acknowledge')) {
-          <button class="btn btn-primary" (click)="acknowledgeInsight(insight)">
-            {{ 'doctorRemediation.acknowledge' | t }}
-          </button>
-        }
-        @if (canTransition(insight, 'resolve')) {
-          <button class="btn btn-primary" (click)="resolveInsight(insight)">
-            {{ 'doctorRemediation.resolve' | t }}
-          </button>
-        }
-      </div>
-      @if (canTransition(insight, 'dismiss')) {
-        <form class="section detail-form" (ngSubmit)="submitDismiss()">
-          <label
-            >{{ 'doctorRemediation.reason' | t
-            }}<textarea
-              class="field-input"
-              name="dismissReason"
-              [(ngModel)]="dismissReason"
-              required
-              maxlength="2000"
-            ></textarea></label
-          ><button
-            class="btn btn-outline-secondary"
-            [disabled]="submitting() || retryBlocked() || !dismissReason.trim()"
-          >
-            {{ 'doctorRemediation.dismiss' | t }}
-          </button>
-        </form>
+    <div class="reports-drawer-content">
+      @if (detailLoading() && !selectedReport()) {
+        <div class="report-drawer-loading" role="status">
+          <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+
+          {{ 'common.loading' | t }}
+        </div>
       }
-      <h3>{{ 'doctorRemediation.history' | t }}</h3>
-      <ul class="history">
-        @for (event of history(); track event.id) {
-          <li>
-            <bdi>{{ event.recordedAtUtc }}</bdi> {{ stateLabel(event.state) }}
-            <p>{{ event.reason }}</p>
-          </li>
-        }
-      </ul>
-    }
-    @if (selectedReport(); as report) {
-      <h2>{{ text(report.titleAr, report.titleEn) }}</h2>
-      @if (preview(); as model) {
-        <p>
-          <bdi>{{ model.window?.fromDate }}</bdi> / <bdi>{{ model.window?.toDate }}</bdi>
-        </p>
-        <p>
-          {{ 'doctorRemediation.sample' | t }}:
-          {{ model.eligibleSampleCount ?? ('doctorRemediation.unavailable' | t) }}
-        </p>
-        @for (warning of model.warnings; track warning) {
-          <p role="status">{{ warning }}</p>
-        }
-        <dl>
-          @for (metric of model.metrics; track metric.metricCode) {
-            <dt>{{ text(metric.nameAr, metric.nameEn) }}</dt>
-            <dd>
-              {{ metric.value ?? ('doctorRemediation.unavailable' | t) }} {{ metric.unit }}
-              @if (report.canDrillDown) {
-                <button class="btn btn-link" (click)="openDrilldown(metric)">
-                  {{ 'common.viewDetails' | t }}
-                </button>
-              }
-            </dd>
-          }
-        </dl>
-        @for (series of model.series; track $index) {
-          <section class="section">
-            <h3>{{ text(series.nameAr, series.nameEn) }}</h3>
-            <dl>
-              @for (metric of series.metrics; track metric.metricCode) {
-                <dt>{{ text(metric.nameAr, metric.nameEn) }}</dt>
-                <dd>
-                  {{ metric.value ?? ('doctorRemediation.unavailable' | t) }} {{ metric.unit }}
-                </dd>
-              }
-            </dl>
-          </section>
-        }
-        <div class="actions">
-          @for (format of ['pdf', 'xlsx']; track format) {
-            @if (canExport(report, format === 'pdf' ? 'pdf' : 'xlsx')) {
-              <button
-                class="btn btn-primary"
-                [disabled]="exporting()"
-                (click)="exportReport(report, format === 'pdf' ? 'pdf' : 'xlsx')"
-              >
-                {{ (format === 'pdf' ? 'doctorRemediation.pdf' : 'doctorRemediation.excel') | t }}
+
+      <!-- ============================= -->
+      <!-- INSIGHT DETAILS -->
+      <!-- ============================= -->
+
+      @if (selectedInsight(); as insight) {
+        <section class="insight-detail">
+          <header class="insight-detail__header">
+            <h2>
+              {{ text(insight.titleAr, insight.titleEn) }}
+            </h2>
+
+            <p>
+              {{ text(insight.explanationAr, insight.explanationEn) }}
+            </p>
+
+            <span class="report-status">
+              {{ stateLabel(insight.state) }}
+            </span>
+          </header>
+
+          <div class="insight-summary">
+            <div class="insight-summary__item">
+              <span>
+                {{ 'doctorRemediation.currentValue' | t }}
+              </span>
+              <strong dir="auto">
+                {{ insight.currentValue ?? ('doctorRemediation.unavailable' | t) }}
+              </strong>
+            </div>
+
+            <div class="insight-summary__item">
+              <span>
+                {{ 'doctorRemediation.previousValue' | t }}
+              </span>
+              <strong dir="auto">
+                {{ insight.previousValue ?? ('doctorRemediation.unavailable' | t) }}
+              </strong>
+            </div>
+
+            <div class="insight-summary__item">
+              <span>
+                {{ 'doctorRemediation.sample' | t }}
+              </span>
+              <strong>
+                {{ insight.sampleCount ?? ('doctorRemediation.unavailable' | t) }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="insight-detail__description">
+            <p>
+              {{ text(insight.evidenceSummaryAr, insight.evidenceSummaryEn) }}
+            </p>
+
+            <p>
+              {{ text(insight.suggestedActionAr, insight.suggestedActionEn) }}
+            </p>
+          </div>
+
+          <div class="insight-detail__actions">
+            @if (canTransition(insight, 'acknowledge')) {
+              <button type="button" class="btn btn-primary" (click)="acknowledgeInsight(insight)">
+                {{ 'doctorRemediation.acknowledge' | t }}
               </button>
             }
+
+            @if (canTransition(insight, 'resolve')) {
+              <button type="button" class="btn btn-primary" (click)="resolveInsight(insight)">
+                {{ 'doctorRemediation.resolve' | t }}
+              </button>
+            }
+          </div>
+
+          @if (canTransition(insight, 'dismiss')) {
+            <form class="insight-dismiss-form" (ngSubmit)="submitDismiss()">
+              <label>
+                {{ 'doctorRemediation.reason' | t }}
+
+                <textarea
+                  class="field-input"
+                  name="dismissReason"
+                  [(ngModel)]="dismissReason"
+                  required
+                  maxlength="2000"
+                ></textarea>
+              </label>
+
+              <button
+                type="submit"
+                class="btn btn-outline-secondary"
+                [disabled]="submitting() || retryBlocked() || !dismissReason.trim()"
+              >
+                {{ 'doctorRemediation.dismiss' | t }}
+              </button>
+            </form>
+          }
+
+          <!-- INSIGHT HISTORY -->
+          <section class="insight-history">
+            <h3>
+              {{ 'doctorRemediation.history' | t }}
+            </h3>
+
+            <ul class="history">
+              @for (event of history(); track event.id) {
+                <li>
+                  <bdi>{{ event.recordedAtUtc }}</bdi>
+
+                  <strong>
+                    {{ stateLabel(event.state) }}
+                  </strong>
+
+                  @if (event.reason) {
+                    <p>{{ event.reason }}</p>
+                  }
+                </li>
+              } @empty {
+                <li>
+                  {{ 'doctorRemediation.empty' | t }}
+                </li>
+              }
+            </ul>
+          </section>
+        </section>
+      }
+
+      <!-- ============================= -->
+      <!-- REPORT DETAILS -->
+      <!-- ============================= -->
+
+      @if (selectedReport(); as report) {
+        <div class="report-detail">
+          <!-- REPORT IDENTITY -->
+          <header class="report-detail__intro">
+            <span class="report-detail__eyebrow" dir="auto">
+              {{ report.scope || ('doctorRemediation.unavailable' | t) }}
+            </span>
+
+            <h2>
+              {{ text(report.titleAr, report.titleEn) }}
+            </h2>
+
+            @if (report.description) {
+              <p>{{ report.description }}</p>
+            }
+          </header>
+
+          @if (preview(); as model) {
+            <!-- SUMMARY -->
+            <section class="report-summary" aria-label="Report summary">
+              <div class="report-summary__item">
+                <span>
+                  {{ 'doctorPatients.filter.fromDate' | t }}
+                </span>
+
+                <strong>
+                  <bdi>
+                    {{ model.window?.fromDate || '—' }}
+                  </bdi>
+                </strong>
+              </div>
+
+              <div class="report-summary__item">
+                <span>
+                  {{ 'doctorPatients.filter.toDate' | t }}
+                </span>
+
+                <strong>
+                  <bdi>
+                    {{ model.window?.toDate || '—' }}
+                  </bdi>
+                </strong>
+              </div>
+
+              <div class="report-summary__item">
+                <span>
+                  {{ 'doctorRemediation.sample' | t }}
+                </span>
+
+                <strong>
+                  {{ model.eligibleSampleCount ?? ('doctorRemediation.unavailable' | t) }}
+                </strong>
+              </div>
+            </section>
+
+            <!-- EXPORT TOOLBAR -->
+            @if (canExport(report, 'pdf') || canExport(report, 'xlsx')) {
+              <div class="report-export-toolbar">
+                @if (canExport(report, 'pdf')) {
+                  <button
+                    type="button"
+                    class="btn btn-primary report-export-btn"
+                    [disabled]="exporting()"
+                    (click)="exportReport(report, 'pdf')"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+
+                    {{ 'doctorRemediation.pdf' | t }}
+                  </button>
+                }
+
+                @if (canExport(report, 'xlsx')) {
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary report-export-btn"
+                    [disabled]="exporting()"
+                    (click)="exportReport(report, 'xlsx')"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M7 3h8l4 4v14H7V3Z"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linejoin="round"
+                      />
+                      <path
+                        d="m10 12 5 6m0-6-5 6"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+
+                    {{ 'doctorRemediation.excel' | t }}
+                  </button>
+                }
+              </div>
+            }
+
+            <!-- WARNINGS -->
+            @if (model.warnings?.length) {
+              <section class="report-warnings">
+                <div class="report-warnings__heading">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 3 2 21h20L12 3Z"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M12 9v5m0 3h.01"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+
+                  <span>
+                    {{ model.warnings?.length }}
+                  </span>
+                </div>
+
+                <ul class="report-warnings__list">
+                  @for (warning of model.warnings; track $index) {
+                    <li>
+                      <span aria-hidden="true">!</span>
+                      <p>{{ warning }}</p>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+
+            <!-- MAIN METRICS -->
+            <section class="report-metrics-section">
+              <header class="report-section-header">
+                <div>
+                  <h3>
+                    {{ 'doctorRemediation.details' | t }}
+                  </h3>
+                </div>
+
+                <span class="report-section-count">
+                  {{ model.metrics?.length }}
+                </span>
+              </header>
+
+              <div class="report-metrics-list">
+                @for (metric of model.metrics; track metric.metricCode) {
+                  <article class="report-metric-row">
+                    <div class="report-metric-row__main">
+                      <div class="report-metric-row__info">
+                        <span class="report-metric-row__name">
+                          {{ text(metric.nameAr, metric.nameEn) }}
+                        </span>
+
+                        @if (metric.unit) {
+                          <small class="report-metric-row__unit">
+                            {{ metric.unit }}
+                          </small>
+                        }
+                      </div>
+
+                      <div class="report-metric-row__value">
+                        <strong dir="auto">
+                          {{ metric.value ?? ('doctorRemediation.unavailable' | t) }}
+                        </strong>
+                      </div>
+                    </div>
+
+                    @if (report.canDrillDown && metric.metricCode) {
+                      <button
+                        type="button"
+                        class="report-metric-row__action"
+                        (click)="openDrilldown(metric)"
+                      >
+                        {{ 'common.viewDetails' | t }}
+                      </button>
+                    }
+                  </article>
+                } @empty {
+                  <div class="report-empty">
+                    {{ 'doctorRemediation.empty' | t }}
+                  </div>
+                }
+              </div>
+            </section>
+
+            <!-- SERIES -->
+            @for (series of model.series; track $index) {
+              <section class="report-series-section">
+                <header class="report-section-header">
+                  <h3>
+                    {{ text(series.nameAr, series.nameEn) }}
+                  </h3>
+
+                  <span class="report-section-count">
+                    {{ series.metrics?.length }}
+                  </span>
+                </header>
+
+                <div class="report-metrics-list">
+                  @for (metric of series.metrics; track metric.metricCode) {
+                    <article class="report-metric-row">
+                      <div class="report-metric-row__main">
+                        <div class="report-metric-row__info">
+                          <span class="report-metric-row__name">
+                            {{ text(metric.nameAr, metric.nameEn) }}
+                          </span>
+
+                          @if (metric.unit) {
+                            <small class="report-metric-row__unit">
+                              {{ metric.unit }}
+                            </small>
+                          }
+                        </div>
+
+                        <div class="report-metric-row__value">
+                          <strong dir="auto">
+                            {{ metric.value ?? ('doctorRemediation.unavailable' | t) }}
+                          </strong>
+                        </div>
+                      </div>
+                    </article>
+                  } @empty {
+                    <div class="report-empty">
+                      {{ 'doctorRemediation.empty' | t }}
+                    </div>
+                  }
+                </div>
+              </section>
+            }
+          } @else if (detailLoading()) {
+            <div class="report-drawer-loading" role="status">
+              <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+
+              {{ 'common.loading' | t }}
+            </div>
+          } @else {
+            <div class="report-empty">
+              {{ 'common.failedToLoad' | t }}
+            </div>
+          }
+
+          <!-- ============================= -->
+          <!-- METRIC DRILLDOWN -->
+          <!-- ============================= -->
+
+          @if (drilldown(); as rows) {
+            <section class="report-drilldown">
+              <header class="report-section-header">
+                <h3>
+                  {{ 'doctorRemediation.details' | t }}
+                </h3>
+
+                <span class="report-section-count">
+                  {{ rows.totalCount || 0 }}
+                </span>
+              </header>
+
+              <div class="report-drilldown__list">
+                @for (row of rows.items; track row.id) {
+                  <article class="report-drilldown__item">
+                    <div class="report-drilldown__info">
+                      <strong>
+                        {{ row.reference }}
+                      </strong>
+
+                      <small>
+                        <bdi>{{ row.businessDate }}</bdi>
+                      </small>
+                    </div>
+
+                    <div class="report-drilldown__value">
+                      <strong>
+                        {{ row.metricValue ?? ('doctorRemediation.unavailable' | t) }}
+                      </strong>
+                    </div>
+
+                    @if (sourceLink(row); as link) {
+                      <a
+                        class="btn btn-outline-secondary"
+                        [routerLink]="link.route"
+                        [queryParams]="link.query"
+                      >
+                        {{ 'doctorRemediation.viewSource' | t }}
+                      </a>
+                    }
+                  </article>
+                } @empty {
+                  <div class="report-empty">
+                    {{ 'doctorRemediation.empty' | t }}
+                  </div>
+                }
+              </div>
+
+              @if (drillMetric(); as metric) {
+                <nav class="report-drilldown__pagination">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [disabled]="(rows.pageNumber || 1) <= 1"
+                    (click)="openDrilldown(metric, (rows.pageNumber || 1) - 1)"
+                  >
+                    {{ 'common.previous' | t }}
+                  </button>
+
+                  <span>{{ rows.pageNumber }}</span>
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [disabled]="(rows.pageNumber || 1) * 20 >= (rows.totalCount || 0)"
+                    (click)="openDrilldown(metric, (rows.pageNumber || 1) + 1)"
+                  >
+                    {{ 'common.next' | t }}
+                  </button>
+                </nav>
+              }
+            </section>
           }
         </div>
       }
-      @if (drilldown(); as rows) {
-        <section class="section">
-          <h3>{{ 'doctorRemediation.details' | t }}</h3>
-          <ul class="history">
-            @for (row of rows.items; track row.id) {
-              <li>
-                <bdi>{{ row.businessDate }}</bdi> {{ row.reference }}
-                <span>{{ row.metricValue ?? ('doctorRemediation.unavailable' | t) }}</span>
-                @if (sourceLink(row); as link) {
-                  <a
-                    class="btn btn-outline-secondary"
-                    [routerLink]="link.route"
-                    [queryParams]="link.query"
-                    >{{ 'doctorRemediation.viewSource' | t }}</a
-                  >
-                }
-              </li>
-            } @empty {
-              <li>{{ 'doctorRemediation.empty' | t }}</li>
-            }
-          </ul>
-          @if (drillMetric(); as metric) {
-            <div class="actions">
-              <button
-                class="btn btn-outline-secondary"
-                [disabled]="(rows.pageNumber || 1) <= 1"
-                (click)="openDrilldown(metric, (rows.pageNumber || 1) - 1)"
-              >
-                {{ 'common.previous' | t }}</button
-              ><span>{{ rows.pageNumber }}</span
-              ><button
-                class="btn btn-outline-secondary"
-                [disabled]="(rows.pageNumber || 1) * 20 >= (rows.totalCount || 0)"
-                (click)="openDrilldown(metric, (rows.pageNumber || 1) + 1)"
-              >
-                {{ 'common.next' | t }}
-              </button>
-            </div>
-          }
-        </section>
-      }
-    }
+    </div>
   </app-side-drawer>
 </main>
