@@ -9,6 +9,57 @@
     (actionClicked)="refresh()"
   />
 
+  <!-- Quick actions -->
+  @if (actions().length) {
+    <section class="dashboard-section" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
+      <div class="section-heading">
+        <div class="section-heading__content">
+          <span class="section-accent"></span>
+          <h2>{{ 'doctorRemediation.dailyActions' | t }}</h2>
+        </div>
+      </div>
+
+      <nav class="quick-actions" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
+        @for (action of actions(); track action.id) {
+          <a
+            class="quick-action"
+            [class.quick-action--primary]="action.id === 'queue' || action.id === 'encounters'"
+            [routerLink]="action.route"
+            [queryParams]="
+              filters.practiceId && ['queue', 'reservations', 'encounters'].includes(action.id)
+                ? { practiceId: filters.practiceId }
+                : {}
+            "
+          >
+            <span class="quick-action__content">
+              <span class="quick-action__label">
+                {{ action.labelKey | t }}
+              </span>
+              @if (action.id === 'queue' || action.id === 'encounters') {
+                <span class="quick-action__help">{{
+                  (action.id === 'queue'
+                    ? 'doctorWorkspace.queueHelp'
+                    : 'doctorWorkspace.encountersHelp'
+                  ) | t
+                }}</span>
+              }
+            </span>
+
+            <svg class="quick-action__arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 12h14m-6-6 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        }
+      </nav>
+    </section>
+  }
+
   @if (canView()) {
     <!-- Filters -->
     <section class="dashboard-panel filter-panel" [attr.aria-label]="'common.search' | t">
@@ -120,47 +171,6 @@
     </section>
   }
 
-  <!-- Quick actions -->
-  @if (actions().length) {
-    <section class="dashboard-section" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
-      <div class="section-heading">
-        <div class="section-heading__content">
-          <span class="section-accent"></span>
-          <h2>{{ 'doctorRemediation.dailyActions' | t }}</h2>
-        </div>
-      </div>
-
-      <nav class="quick-actions" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
-        @for (action of actions(); track action.id) {
-          <a
-            class="quick-action"
-            [class.quick-action--primary]="action.id === 'queue'"
-            [routerLink]="action.route"
-            [queryParams]="
-              filters.practiceId && ['queue', 'reservations', 'encounters'].includes(action.id)
-                ? { practiceId: filters.practiceId }
-                : {}
-            "
-          >
-            <span class="quick-action__label">
-              {{ action.labelKey | t }}
-            </span>
-
-            <svg class="quick-action__arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M5 12h14m-6-6 6 6-6 6"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </a>
-        }
-      </nav>
-    </section>
-  }
-
   <!-- API errors -->
   @if (messages().length) {
     <div class="dashboard-alert" role="alert">
@@ -191,17 +201,17 @@
         @if (model(); as report) {
           <span class="overview-meta">
             {{ 'doctorRemediation.lastUpdated' | t }}
-            <bdi>{{ report.dataFreshnessUtc }}</bdi>
+            <bdi>{{ formatUpdated(report.dataFreshnessUtc) }}</bdi>
           </span>
         }
       </div>
 
       @if (loading()) {
-        <div class="metric-grid" role="status">
+        <div class="metric-strip" role="status">
           <span class="sr-only">{{ 'common.loading' | t }}</span>
 
           @for (item of skeletonItems; track item) {
-            <div class="metric-card metric-card--skeleton" aria-hidden="true">
+            <div class="metric-item metric-item--skeleton" aria-hidden="true">
               <span class="skeleton skeleton--label"></span>
               <span class="skeleton skeleton--value"></span>
               <span class="skeleton skeleton--footer"></span>
@@ -229,52 +239,181 @@
           </button>
         </div>
       } @else if (model(); as report) {
-        @if (report.metrics?.length) {
-          <div class="metric-grid">
-            @for (metric of report.metrics; track metric.metricCode) {
-              <article class="metric-card">
-                <div class="metric-card__header">
-                  <span class="metric-card__name">
-                    {{ text(metric.nameAr, metric.nameEn) }}
-                  </span>
-
-                  <span class="metric-card__indicator" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M4 18V11M9.3 18V6M14.7 18v-9M20 18V4"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </span>
-                </div>
-
-                <div class="metric-card__body">
-                  <strong class="metric-card__value" dir="ltr">
-                    {{ format(metric) }}
-                  </strong>
-
-                  @if (metric.unit) {
-                    <span class="metric-card__unit">
-                      {{ metric.unit }}
-                    </span>
-                  }
-                </div>
-
-                <div class="metric-card__footer">
-                  @if (metric.denominator != null) {
-                    <span class="metric-card__sample">
-                      {{ 'doctorRemediation.sample' | t }}:
-                      <bdi>{{ formatNumber(metric.denominator) }}</bdi>
-                    </span>
-                  } @else {
-                    <span class="metric-card__footer-spacer"></span>
-                  }
-                </div>
-              </article>
-            }
+        @let metrics = report.metrics ?? [];
+        @if (metrics.length) {
+          <div class="overview-window">
+            <span>{{ 'doctorDashboard.period' | t }}</span>
+            <strong
+              >{{ formatDay(report.window?.fromDate) }} —
+              {{ formatDay(report.window?.toDate) }}</strong
+            >
+            <span class="window-note">{{ 'doctorDashboard.periodHelp' | t }}</span>
           </div>
+          <dl class="metric-strip">
+            @for (metric of highlights(); track metric.metricCode) {
+              <div class="metric-item">
+                <dt>{{ text(metric.nameAr, metric.nameEn) }}</dt>
+                <dd>
+                  <strong dir="ltr">{{ format(metric) }}</strong>
+                  @if (metric.unit && metric.unit !== 'count') {
+                    <span>{{ metricUnit(metric.unit) }}</span>
+                  }
+                </dd>
+                @if (canDrilldown(metric)) {
+                  <button class="metric-link" type="button" (click)="openDrilldown(metric)">
+                    {{ 'doctorDashboard.viewDetails' | t }} <span aria-hidden="true">↗</span>
+                  </button>
+                }
+              </div>
+            }
+          </dl>
+
+          @if (chartPoints().length) {
+            <section class="activity-surface" [attr.aria-label]="'doctorDashboard.activity' | t">
+              <div class="activity-heading">
+                <div>
+                  <h3>{{ 'doctorDashboard.activity' | t }}</h3>
+                  <p>{{ 'doctorDashboard.activityHelp' | t }}</p>
+                </div>
+                <div class="chart-options" [attr.aria-label]="'doctorDashboard.activity' | t">
+                  @for (code of chartOptions; track code) {
+                    <button
+                      type="button"
+                      [class.active]="chartCode() === code"
+                      [attr.aria-pressed]="chartCode() === code"
+                      (click)="chartCode.set(code)"
+                    >
+                      {{ 'doctorDashboard.chart.' + code | t }}
+                    </button>
+                  }
+                </div>
+              </div>
+              <div
+                class="activity-plot"
+                role="img"
+                [attr.aria-label]="
+                  ('doctorDashboard.activity' | t) +
+                  ': ' +
+                  ('doctorDashboard.chart.' + chartCode() | t)
+                "
+              >
+                @for (point of chartPoints(); track $index) {
+                  <div
+                    class="activity-column"
+                    [title]="
+                      formatDay(point.key) +
+                      ': ' +
+                      (point.value == null
+                        ? ('doctorRemediation.unavailable' | t)
+                        : formatNumber(point.value))
+                    "
+                  >
+                    <div class="bar-track"><span [style.height.%]="point.height"></span></div>
+                    <span class="chart-date">
+                      @if ($first || $last || $index === 14) {
+                        {{ formatDay(point.key) }}
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+              <details class="daily-values">
+                <summary>{{ 'doctorDashboard.dailyValues' | t }}</summary>
+                <div class="daily-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{{ 'doctorDashboard.date' | t }}</th>
+                        <th>{{ 'doctorDashboard.chart.' + chartCode() | t }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (point of chartPoints(); track $index) {
+                        <tr>
+                          <td>{{ formatDay(point.key) }}</td>
+                          <td>
+                            {{
+                              point.value == null
+                                ? ('doctorRemediation.unavailable' | t)
+                                : formatNumber(point.value)
+                            }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </section>
+          }
+
+          <section class="performance-workspace">
+            <div class="performance-heading">
+              <h3>{{ 'doctorWorkspace.moreMetrics' | t }}</h3>
+              <p>{{ 'doctorDashboard.metricsHelp' | t }}</p>
+            </div>
+            <nav class="performance-nav" [attr.aria-label]="'doctorWorkspace.moreMetrics' | t">
+              @for (group of groups(); track group.id) {
+                <button
+                  type="button"
+                  [class.active]="activeGroup()?.id === group.id"
+                  [attr.aria-pressed]="activeGroup()?.id === group.id"
+                  (click)="selectedGroup.set(group.id)"
+                >
+                  {{ 'doctorDashboard.group.' + group.id | t }}
+                  <span>{{ formatNumber(group.metrics.length) }}</span>
+                </button>
+              }
+            </nav>
+            @if (activeGroup(); as group) {
+              <div class="group-heading">
+                <h4>{{ 'doctorDashboard.group.' + group.id | t }}</h4>
+                <span>{{ 'doctorDashboard.clickDetails' | t }}</span>
+              </div>
+              <div class="metric-directory">
+                @for (metric of group.metrics; track metric.metricCode) {
+                  <article class="metric-row">
+                    <div class="metric-description">
+                      <h5>{{ text(metric.nameAr, metric.nameEn) }}</h5>
+                      @if (metric.denominator != null) {
+                        <small
+                          >{{ 'doctorRemediation.sample' | t }}:
+                          {{ formatNumber(metric.denominator) }}</small
+                        >
+                      }
+                      @if (metric.dataStatus === 'NotAvailable') {
+                        <small>{{ 'doctorDashboard.notEnoughData' | t }}</small>
+                      }
+                    </div>
+                    <div class="metric-result">
+                      <strong dir="ltr">{{ format(metric) }}</strong>
+                      @if (metric.unit && metric.unit !== 'count') {
+                        <span>{{ metricUnit(metric.unit) }}</span>
+                      }
+                    </div>
+                    @if (canDrilldown(metric)) {
+                      <button
+                        type="button"
+                        class="detail-button"
+                        [attr.aria-label]="
+                          ('doctorDashboard.viewDetails' | t) +
+                          ': ' +
+                          text(metric.nameAr, metric.nameEn)
+                        "
+                        (click)="openDrilldown(metric)"
+                      >
+                        {{ 'doctorDashboard.viewDetails' | t }} <span aria-hidden="true">↗</span>
+                      </button>
+                    } @else {
+                      <span class="detail-unavailable">{{
+                        'doctorDashboard.summaryOnly' | t
+                      }}</span>
+                    }
+                  </article>
+                }
+              </div>
+            }
+          </section>
         } @else {
           <div class="dashboard-state dashboard-state--empty">
             <img
@@ -287,6 +426,9 @@
 
             <h3>{{ 'doctorRemediation.empty' | t }}</h3>
             <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+            <button type="button" class="btn btn-primary" (click)="refresh()">
+              {{ 'common.refresh' | t }}
+            </button>
           </div>
         }
 
@@ -335,4 +477,148 @@
       }
     </section>
   }
+  <app-side-drawer
+    [opened]="drillMetric() !== null"
+    [title]="text(drillMetric()?.nameAr, drillMetric()?.nameEn)"
+    [description]="'doctorDashboard.recordsHelp' | t"
+    [width]="'760px'"
+    [wide]="true"
+    (closed)="closeDrilldown()"
+  >
+    @if (drillMetric(); as metric) {
+      <div class="drill-summary">
+        <span>{{ 'doctorDashboard.selectedMetric' | t }}</span
+        ><strong
+          >{{ format(metric) }}
+          <small>{{
+            metric.unit && metric.unit !== 'count' ? metricUnit(metric.unit) : ''
+          }}</small></strong
+        >
+      </div>
+      @if (detailLoading()) {
+        <div class="dashboard-state" role="status">
+          <span class="button-spinner" aria-hidden="true"></span>
+          <p>{{ 'common.loading' | t }}</p>
+        </div>
+      } @else if (detailFailed()) {
+        <div class="dashboard-state" role="alert">
+          <h3>{{ 'common.failedToLoad' | t }}</h3>
+          <button class="btn btn-primary" type="button" (click)="openDrilldown(metric)">
+            {{ 'common.retry' | t }}
+          </button>
+        </div>
+      } @else if (drillRows(); as page) {
+        <div class="records-heading">
+          <h3>{{ 'doctorDashboard.records' | t }}</h3>
+          <span
+            >{{ formatNumber(page.totalCount ?? 0) }} {{ 'doctorDashboard.recordCount' | t }}</span
+          >
+        </div>
+        <div class="drill-records">
+          @if (page.items?.length) {
+            <table class="records-table" [class.records-table--with-links]="hasRecordLinks()">
+              <caption class="sr-only">
+                {{
+                  text(metric.nameAr, metric.nameEn)
+                }}
+                —
+                {{
+                  'doctorDashboard.records' | t
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'doctorDashboard.reference' | t }}</th>
+                  <th scope="col">{{ 'doctorDashboard.date' | t }}</th>
+                  <th scope="col" class="record-value-cell">{{ 'doctorDashboard.value' | t }}</th>
+                  @if (hasRecordLinks()) {
+                    <th scope="col" class="record-action-cell">
+                      {{ 'doctorDashboard.source' | t }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of page.items; track $index) {
+                  <tr class="drill-record">
+                    <th scope="row" class="record-reference">
+                      <bdi>{{ row.reference || ('doctorDashboard.record' | t) }}</bdi>
+                    </th>
+                    <td class="record-date">
+                      <bdi>{{ formatRecordDate(row.businessDate) }}</bdi>
+                    </td>
+                    <td class="record-value-cell">
+                      <strong class="record-value" dir="ltr">{{
+                        row.metricValue == null
+                          ? ('doctorRemediation.unavailable' | t)
+                          : formatNumber(row.metricValue)
+                      }}</strong>
+                    </td>
+                    @if (hasRecordLinks()) {
+                      <td class="record-action-cell">
+                        @if (sourceLink(row); as link) {
+                          <a
+                            class="record-source-link"
+                            [routerLink]="link.route"
+                            [queryParams]="link.query"
+                            [attr.aria-label]="
+                              ('doctorDashboard.openRecord' | t) +
+                              ': ' +
+                              (row.reference || ('doctorDashboard.record' | t))
+                            "
+                            >{{ 'doctorDashboard.openRecord' | t }}</a
+                          >
+                        } @else {
+                          <span
+                            class="record-no-source"
+                            [attr.aria-label]="'doctorRemediation.unavailable' | t"
+                            >—</span
+                          >
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="dashboard-state">
+              <img
+                src="/SVG-AVATAR/Doctors-bro.svg"
+                class="dashboard-state__illustration"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <h3>{{ 'doctorRemediation.empty' | t }}</h3>
+              <p>{{ 'doctorDashboard.emptyRecords' | t }}</p>
+              <button type="button" class="btn btn-primary" (click)="closeDrilldown()">
+                {{ 'doctorDashboard.backToDashboard' | t }}
+              </button>
+            </div>
+          }
+        </div>
+        @if ((page.totalCount ?? 0) > 20) {
+          <nav class="drill-pagination" [attr.aria-label]="'doctorDashboard.records' | t">
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              [disabled]="(page.pageNumber ?? 1) <= 1"
+              (click)="openDrilldown(metric, (page.pageNumber ?? 1) - 1)"
+            >
+              {{ 'common.previous' | t }}</button
+            ><span>{{ formatNumber(page.pageNumber ?? 1) }}</span
+            ><button
+              class="btn btn-outline-secondary"
+              type="button"
+              [disabled]="(page.pageNumber ?? 1) * 20 >= (page.totalCount ?? 0)"
+              (click)="openDrilldown(metric, (page.pageNumber ?? 1) + 1)"
+            >
+              {{ 'common.next' | t }}
+            </button>
+          </nav>
+        }
+      }
+    }
+  </app-side-drawer>
 </main>

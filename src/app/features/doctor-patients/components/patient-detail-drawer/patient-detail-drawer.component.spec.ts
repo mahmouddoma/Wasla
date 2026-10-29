@@ -162,6 +162,19 @@ describe('PatientDetailDrawerComponent', () => {
     expect(closedSpy).toHaveBeenCalled();
   });
 
+  it('exposes the current record section and renders the clinical summary without cards', async () => {
+    fixture.componentRef.setInput('opened', true);
+    fixture.componentRef.setInput('patientId', 'pat-1');
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.drawer-tabs [aria-current="page"]')?.textContent).toContain(
+      TestBed.inject(LanguageService).t('doctorPatients.tab.overview'),
+    );
+    expect(element.querySelectorAll('.clinical-entry')).toHaveLength(7);
+    expect(element.querySelector('.record-stats')?.textContent).toContain('3');
+    expect(element.querySelector('.cards-grid')).toBeNull();
+  });
+
   it('handles overview load error', () => {
     doctorPatientsApi.overview.mockReturnValue(throwError(() => new Error('Error')));
     fixture.componentRef.setInput('patientId', 'pat-1');

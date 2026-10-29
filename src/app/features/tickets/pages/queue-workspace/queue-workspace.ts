@@ -261,15 +261,27 @@ export class QueueWorkspace implements OnInit {
   });
 
   protected readonly isDoctor = computed(() => this.actor() === 'Doctor');
-  protected readonly canCallNext = computed(() => this.permitted(PERMISSIONS.practiceTicketsCall));
+  protected readonly canCallNext = computed(() =>
+    this.permitted(PERMISSIONS.practiceTicketsCall, PERMISSIONS.doctorPracticeTicketsCallOwn),
+  );
   protected readonly canManualCall = computed(() =>
-    this.permitted(PERMISSIONS.practiceTicketsManualCall),
+    this.permitted(
+      PERMISSIONS.practiceTicketsManualCall,
+      PERMISSIONS.doctorPracticeTicketsManualCallOwn,
+    ),
   );
   protected readonly canRestore = computed(() =>
-    this.permitted(PERMISSIONS.practiceTicketsRestoreNoShow),
+    this.permitted(
+      PERMISSIONS.practiceTicketsRestoreNoShow,
+      PERMISSIONS.doctorPracticeTicketsRestoreNoShowOwn,
+    ),
   );
-  protected readonly canCancel = computed(() => this.permitted(PERMISSIONS.practiceTicketsCancel));
-  protected readonly canViewQueue = computed(() => this.permitted(PERMISSIONS.practiceTicketsView));
+  protected readonly canCancel = computed(() =>
+    this.permitted(PERMISSIONS.practiceTicketsCancel, PERMISSIONS.doctorPracticeTicketsCancelOwn),
+  );
+  protected readonly canViewQueue = computed(() =>
+    this.permitted(PERMISSIONS.practiceTicketsView, PERMISSIONS.doctorPracticeTicketsViewOwn),
+  );
   protected readonly canRefund = computed(
     () =>
       (this.isDoctor() &&
@@ -294,8 +306,8 @@ export class QueueWorkspace implements OnInit {
       this.reception.allows(PERMISSIONS.patientsSearchBasic),
   );
 
-  private permitted(permission: string): boolean {
-    if (this.isDoctor()) return this.session.hasPermission(permission);
+  private permitted(permission: string, doctorPermission: string): boolean {
+    if (this.isDoctor()) return this.session.hasPermission(doctorPermission);
     const currentId = this.reception.currentPracticeId() || this.practiceId();
     const matchesPractice =
       !this.reception.currentPracticeId() ||

@@ -189,6 +189,21 @@ describe('DoctorPatientsDirectoryComponent', () => {
     expect(component.inspectedPatientId()).toBeNull();
   });
 
+  it('keeps advanced filters collapsed until needed and opens patient records using a labeled button', async () => {
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector<HTMLDetailsElement>('.advanced-filters')!.open).toBe(false);
+    component.selectedPracticeId.set('prac-1');
+    await fixture.whenStable();
+    expect(element.querySelector<HTMLDetailsElement>('.advanced-filters')!.open).toBe(true);
+    const button = element.querySelector<HTMLButtonElement>('.action-buttons button')!;
+    expect(button.getAttribute('aria-label')).toContain(mockPatientItem.nameAr);
+    button.click();
+    await fixture.whenStable();
+    expect(component.inspectedPatientId()).toBe('pat-1');
+    expect(element.querySelector('.patient-row--selected')).toBeTruthy();
+  });
+
   it('handles load error with customized message', () => {
     doctorPatientsApi.list.mockReturnValue(throwError(() => ({ status: 403 })));
     component.loadPatients();

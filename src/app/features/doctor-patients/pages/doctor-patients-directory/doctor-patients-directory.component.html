@@ -5,18 +5,18 @@
     [icon]="'doctors'"
   ></app-page-header>
 
-  <!-- Summary Cards -->
+  <!-- Continuous patient summary -->
   @if (summary(); as sum) {
-    <section class="summary-section mt-3">
-      <div class="metric-card">
+    <section class="summary-section">
+      <div class="summary-stat">
         <span class="metric-label">{{ 'doctorPatients.summary.allTimeUnique' | t }}</span>
         <span class="metric-value">{{ sum.allTimeUniquePatients }}</span>
       </div>
-      <div class="metric-card">
+      <div class="summary-stat">
         <span class="metric-label">{{ 'doctorPatients.summary.attendedLast30Days' | t }}</span>
         <span class="metric-value">{{ sum.attendedLast30Days }}</span>
       </div>
-      <div class="metric-card">
+      <div class="summary-stat">
         <span class="metric-label">{{ 'doctorPatients.summary.returning' | t }}</span>
         <span class="metric-value">{{ sum.returningPatients }}</span>
       </div>
@@ -62,109 +62,120 @@
       }
     </div>
 
-    <div class="filters-row options-row">
-      <!-- Practice Select -->
-      <div class="filter-field">
-        <label class="field-label" for="patient-practice">{{
-          'doctorPatients.filter.practice' | t
-        }}</label>
-        <select
-          id="patient-practice"
-          class="form-control select-control"
-          [ngModel]="selectedPracticeId()"
-          (ngModelChange)="selectedPracticeId.set($event); onSearch()"
-        >
-          <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
-          @for (p of practices(); track p.id) {
-            <option [value]="p.id">
-              {{ language.isRtl() ? p.nameAr || p.nameEn : p.nameEn || p.nameAr }}
-              {{ !p.isActive ? '(' + ('doctorPatients.historicalBadge' | t) + ')' : '' }}
+    <details class="advanced-filters" [open]="isFiltered()">
+      <summary>{{ 'doctorWorkspace.patientFilters' | t }}</summary>
+      <div class="filters-row options-row">
+        <!-- Practice Select -->
+        <div class="filter-field">
+          <label class="field-label" for="patient-practice">{{
+            'doctorPatients.filter.practice' | t
+          }}</label>
+          <select
+            id="patient-practice"
+            class="form-control select-control"
+            [ngModel]="selectedPracticeId()"
+            (ngModelChange)="selectedPracticeId.set($event); onSearch()"
+          >
+            <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
+            @for (p of practices(); track p.id) {
+              <option [value]="p.id">
+                {{ language.isRtl() ? p.nameAr || p.nameEn : p.nameEn || p.nameAr }}
+                {{ !p.isActive ? '(' + ('doctorPatients.historicalBadge' | t) + ')' : '' }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <!-- Scope Select -->
+        <div class="filter-field">
+          <label class="field-label" for="patient-scope">{{
+            'doctorPatients.filter.scope' | t
+          }}</label>
+          <select
+            id="patient-scope"
+            class="form-control select-control"
+            [ngModel]="practiceScope()"
+            (ngModelChange)="practiceScope.set($event); onSearch()"
+          >
+            <option value="all">{{ 'doctorPatients.filter.scopeAll' | t }}</option>
+            <option value="active">{{ 'doctorPatients.filter.scopeActive' | t }}</option>
+            <option value="historicalOnly">
+              {{ 'doctorPatients.filter.scopeHistorical' | t }}
             </option>
-          }
-        </select>
-      </div>
+          </select>
+        </div>
 
-      <!-- Scope Select -->
-      <div class="filter-field">
-        <label class="field-label" for="patient-scope">{{
-          'doctorPatients.filter.scope' | t
-        }}</label>
-        <select
-          id="patient-scope"
-          class="form-control select-control"
-          [ngModel]="practiceScope()"
-          (ngModelChange)="practiceScope.set($event); onSearch()"
-        >
-          <option value="all">{{ 'doctorPatients.filter.scopeAll' | t }}</option>
-          <option value="active">{{ 'doctorPatients.filter.scopeActive' | t }}</option>
-          <option value="historicalOnly">{{ 'doctorPatients.filter.scopeHistorical' | t }}</option>
-        </select>
-      </div>
-
-      <!-- From Date -->
-      <div class="filter-field">
-        <label class="field-label" for="patient-from-date">{{
-          'doctorPatients.filter.fromDate' | t
-        }}</label>
-        <input
-          id="patient-from-date"
-          type="date"
-          dir="ltr"
-          class="form-control ltr-text"
-          [ngModel]="fromDate()"
-          (ngModelChange)="fromDate.set($event); onSearch()"
-        />
-      </div>
-
-      <!-- To Date -->
-      <div class="filter-field">
-        <label class="field-label" for="patient-to-date">{{
-          'doctorPatients.filter.toDate' | t
-        }}</label>
-        <input
-          id="patient-to-date"
-          type="date"
-          dir="ltr"
-          class="form-control ltr-text"
-          [ngModel]="toDate()"
-          (ngModelChange)="toDate.set($event); onSearch()"
-        />
-      </div>
-
-      <!-- Min Attendance -->
-      <div class="filter-field small-field">
-        <label class="field-label" for="patient-min-attendance">{{
-          'doctorPatients.filter.minAttendance' | t
-        }}</label>
-        <input
-          id="patient-min-attendance"
-          type="number"
-          dir="ltr"
-          min="1"
-          class="form-control"
-          [ngModel]="minAttendance()"
-          (ngModelChange)="minAttendance.set($event); onSearch()"
-        />
-      </div>
-
-      <!-- Has Upcoming Appointment Toggle -->
-      <div class="filter-field check-field">
-        <label class="checkbox-label">
+        <!-- From Date -->
+        <div class="filter-field">
+          <label class="field-label" for="patient-from-date">{{
+            'doctorPatients.filter.fromDate' | t
+          }}</label>
           <input
-            type="checkbox"
-            class="sr-only-chk"
-            [checked]="hasUpcoming() === true"
-            (change)="toggleUpcoming($event)"
+            id="patient-from-date"
+            type="date"
+            dir="ltr"
+            class="form-control ltr-text"
+            [ngModel]="fromDate()"
+            (ngModelChange)="fromDate.set($event); onSearch()"
           />
-          <span class="checkbox-indicator" aria-hidden="true"></span>
-          <span>{{ 'doctorPatients.filter.hasUpcoming' | t }}</span>
-        </label>
+        </div>
+
+        <!-- To Date -->
+        <div class="filter-field">
+          <label class="field-label" for="patient-to-date">{{
+            'doctorPatients.filter.toDate' | t
+          }}</label>
+          <input
+            id="patient-to-date"
+            type="date"
+            dir="ltr"
+            class="form-control ltr-text"
+            [ngModel]="toDate()"
+            (ngModelChange)="toDate.set($event); onSearch()"
+          />
+        </div>
+
+        <!-- Min Attendance -->
+        <div class="filter-field small-field">
+          <label class="field-label" for="patient-min-attendance">{{
+            'doctorPatients.filter.minAttendance' | t
+          }}</label>
+          <input
+            id="patient-min-attendance"
+            type="number"
+            dir="ltr"
+            min="1"
+            class="form-control"
+            [ngModel]="minAttendance()"
+            (ngModelChange)="minAttendance.set($event); onSearch()"
+          />
+        </div>
+
+        <!-- Has Upcoming Appointment Toggle -->
+        <div class="filter-field check-field">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              class="sr-only-chk"
+              [checked]="hasUpcoming() === true"
+              (change)="toggleUpcoming($event)"
+            />
+            <span class="checkbox-indicator" aria-hidden="true"></span>
+            <span>{{ 'doctorPatients.filter.hasUpcoming' | t }}</span>
+          </label>
+        </div>
       </div>
-    </div>
+    </details>
   </section>
 
   <!-- Directory Table Section -->
-  <section class="table-section">
+  <section class="table-section" [attr.aria-busy]="loading()">
+    <div class="directory-heading">
+      <h2>{{ 'doctorWorkspace.patientDirectory' | t }}</h2>
+      @if (!loading() && !error()) {
+        <span>{{ totalCount() }} {{ 'doctorWorkspace.patientCount' | t }}</span>
+      }
+    </div>
     @if (loading()) {
       <div class="state-container">
         <div class="spinner"></div>
@@ -206,7 +217,7 @@
                 <th>{{ 'doctorPatients.col.patient' | t }}</th>
                 <th>{{ 'doctorPatients.col.contact' | t }}</th>
                 <th>{{ 'doctorPatients.filter.practice' | t }}</th>
-                <th>{{ 'doctorRemediation.firstAttendance' | t }}</th>
+
                 <th>{{ 'doctorPatients.col.lastAttendance' | t }}</th>
                 <th>{{ 'doctorPatients.col.attendanceCount' | t }}</th>
                 <th>{{ 'doctorPatients.col.encounters' | t }}</th>
@@ -215,7 +226,11 @@
             </thead>
             <tbody>
               @for (item of patients(); track item.patientId) {
-                <tr class="patient-row" (click)="openPatient(item.patientId)">
+                <tr
+                  class="patient-row"
+                  [class.patient-row--selected]="inspectedPatientId() === item.patientId"
+                  (click)="openPatient(item.patientId)"
+                >
                   <td class="name-cell">
                     <div class="patient-cell-content">
                       <div class="mini-avatar">
@@ -246,6 +261,17 @@
                           <span>{{
                             (item.gender === 'Male' ? 'common.male' : 'common.female') | t
                           }}</span>
+                        </div>
+                        <div class="mobile-patient-context">
+                          @if (item.phoneNumber) {
+                            <bdi dir="ltr">{{ item.phoneNumber }}</bdi>
+                          }
+                          <span
+                            >{{ 'doctorPatients.col.lastAttendance' | t }}:
+                            <bdi>{{
+                              item.lastAttendanceAtUtc | localizedDate: language.currentLang()
+                            }}</bdi></span
+                          >
                         </div>
                       </div>
                     </div>
@@ -286,16 +312,16 @@
                   </td>
 
                   <td>
-                    <bdi>{{
-                      item.firstAttendanceAtUtc | localizedDate: language.currentLang()
-                    }}</bdi>
-                  </td>
-                  <td>
                     <div class="attendance-date">
-                      <span dir="ltr" class="ltr-text">{{ item.lastAttendanceBusinessDate }}</span>
                       <bdi class="sub-time">{{
                         item.lastAttendanceAtUtc | localizedDate: language.currentLang()
                       }}</bdi>
+                      <span class="sub-time"
+                        >{{ 'doctorRemediation.firstAttendance' | t }}:
+                        <bdi>{{
+                          item.firstAttendanceAtUtc | localizedDate: language.currentLang()
+                        }}</bdi></span
+                      >
                     </div>
                   </td>
 
@@ -333,6 +359,13 @@
                       <button
                         type="button"
                         class="btn btn-sm btn-outline"
+                        [attr.aria-label]="
+                          ('doctorPatients.action.viewPatient' | t) +
+                          ' — ' +
+                          (language.isRtl()
+                            ? item.nameAr || item.nameEn
+                            : item.nameEn || item.nameAr)
+                        "
                         (click)="openPatient(item.patientId)"
                       >
                         {{ 'doctorPatients.action.viewPatient' | t }}

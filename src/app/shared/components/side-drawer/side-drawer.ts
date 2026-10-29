@@ -23,6 +23,7 @@ export class SideDrawer {
   title = input('');
   description = input('');
   width = input('560px');
+  wide = input(false);
   theme = input<'light' | 'navy'>('light');
   closed = output<void>();
 

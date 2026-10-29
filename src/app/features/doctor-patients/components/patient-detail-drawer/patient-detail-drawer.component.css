@@ -4,6 +4,7 @@
 
 .drawer-inner {
   padding: 4px 0 24px;
+  color: var(--wasla-navy-900, #0b2740);
 }
 
 .drawer-loading,
@@ -45,8 +46,8 @@
 }
 
 .avatar-circle {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: var(--wasla-teal-50, #f0fdfa);
   color: var(--wasla-teal-700, #0f766e);
@@ -54,7 +55,7 @@
   place-items: center;
   font-size: 1.25rem;
   font-weight: 800;
-  border: 1px solid var(--wasla-teal-100, #ccfbf1);
+  border: 1px solid var(--wasla-border-subtle);
   flex-shrink: 0;
 }
 
@@ -63,8 +64,12 @@
 }
 
 .patient-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   margin: 0 0 6px;
-  font-size: 1.2rem;
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  overflow-wrap: anywhere;
   font-weight: 800;
   color: var(--wasla-navy-900, #0f172a);
 }
@@ -73,7 +78,9 @@
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--wasla-slate, #64748b);
-  margin-inline-start: 6px;
+  display: block;
+  text-align: match-parent;
+  margin-top: 6px;
 }
 
 .meta-row {
@@ -88,10 +95,7 @@
   font-size: 0.8rem;
   color: var(--wasla-navy-700, #334155);
   font-weight: 600;
-  background: var(--wasla-navy-50, #f8fafc);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  padding-inline-end: 8px;
 }
 
 .badge {
@@ -148,25 +152,38 @@
   border: 1px solid #fef3c7;
 }
 
+.patient-record-layout {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
 .drawer-tabs {
   display: flex;
-  overflow-x: auto;
+  flex-direction: column;
   gap: 4px;
-  border-bottom: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  margin-bottom: 16px;
-  padding-bottom: 2px;
+  position: sticky;
+  top: 0;
+  padding-inline-end: 16px;
+  border-inline-end: 1px solid var(--wasla-border-subtle);
+}
+.record-main {
+  min-width: 0;
 }
 
 .tab-link {
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-control, 10px);
+  text-align: start;
   padding: 8px 12px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--wasla-slate, #64748b);
   cursor: pointer;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.8;
+  min-height: 44px;
   transition: all 0.15s ease;
 }
 
@@ -176,23 +193,45 @@
 
 .tab-link.active {
   color: var(--wasla-teal-600, #0d9488);
-  border-bottom-color: var(--wasla-teal-600, #0d9488);
+  background: var(--wasla-teal-50, #f0fbfa);
+  font-weight: 800;
 }
 
 .drawer-content {
   min-height: 200px;
 }
 
-.cards-grid {
+.record-heading {
+  margin: 4px 0 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.record-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-block: 0 20px;
+  border-bottom: 1px solid var(--wasla-border-subtle);
+  font-size: 0.8125rem;
+}
+.record-stats strong {
+  font-size: 1.25rem;
+  margin-inline-end: 6px;
+}
+.clinical-ledger {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+}
+.tab-link:focus-visible {
+  outline: 2px solid var(--wasla-teal-700);
+  outline-offset: 2px;
 }
 
-.summary-card {
+.clinical-entry {
   background: var(--wasla-surface, #ffffff);
   border-block-end: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  padding-block: 16px;
+  padding-block: 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -211,7 +250,7 @@
 }
 
 .card-sub {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--wasla-slate, #64748b);
 }
 
@@ -316,4 +355,43 @@
   fill: none;
   stroke: currentColor;
   pointer-events: none;
+}
+
+@container (max-width: 600px) {
+  .clinical-ledger {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .patient-record-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .drawer-tabs {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0 0 16px;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--wasla-border-subtle);
+  }
+  .tab-link {
+    padding: 10px;
+    font-size: 0.8125rem;
+  }
+  .header-main {
+    gap: 12px;
+  }
+  .avatar-circle {
+    width: 48px;
+    height: 48px;
+  }
+  .patient-identity,
+  .contact-item {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
 }

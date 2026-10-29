@@ -119,6 +119,45 @@ describe('QueueWorkspace', () => {
     expect(api.queue).toHaveBeenCalledWith('p1');
   });
 
+  it('loads the doctor queue with ViewOwn without requiring reception permissions', async () => {
+    const grants = ['DoctorPracticeTickets.ViewOwn'];
+    vi.mocked(TestBed.inject(AuthSession).hasPermission).mockImplementation((code) =>
+      grants.includes(code),
+    );
+    api.queue.mockClear();
+    const doctorFixture = TestBed.createComponent(QueueWorkspace);
+    await doctorFixture.whenStable();
+    expect(doctorFixture.componentInstance['canViewQueue']()).toBe(true);
+    expect(api.queue).toHaveBeenCalledWith('p1');
+    expect(doctorFixture.componentInstance['canCallNext']()).toBe(false);
+  });
+
+  it.each([
+    ['DoctorPracticeTickets.CallOwn', 'canCallNext'],
+    ['DoctorPracticeTickets.ManualCallOwn', 'canManualCall'],
+    ['DoctorPracticeTickets.RestoreNoShowOwn', 'canRestore'],
+    ['DoctorPracticeTickets.CancelOwn', 'canCancel'],
+  ] as const)('maps %s to the doctor capability %s', async (permission, capability) => {
+    vi.mocked(TestBed.inject(AuthSession).hasPermission).mockImplementation(
+      (code) => code === 'DoctorPracticeTickets.ViewOwn' || code === permission,
+    );
+    const doctorFixture = TestBed.createComponent(QueueWorkspace);
+    await doctorFixture.whenStable();
+    expect(doctorFixture.componentInstance[capability]()).toBe(true);
+  });
+
+  it('does not authorize a doctor using reception-only ticket permissions', async () => {
+    vi.mocked(TestBed.inject(AuthSession).hasPermission).mockImplementation((code) =>
+      code.startsWith('PracticeTickets.'),
+    );
+    api.queue.mockClear();
+    const doctorFixture = TestBed.createComponent(QueueWorkspace);
+    await doctorFixture.whenStable();
+    expect(doctorFixture.componentInstance['canViewQueue']()).toBe(false);
+    expect(doctorFixture.componentInstance['canCallNext']()).toBe(false);
+    expect(api.queue).not.toHaveBeenCalled();
+  });
+
   it('shows a compact current state, waiting list and secondary no-show list', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('الآن');

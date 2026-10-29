@@ -21,6 +21,16 @@ describe('SideDrawer', () => {
     expect(component).toBeTruthy();
   });
 
+  it('keeps the wider record layout opt-in', async () => {
+    fixture.componentRef.setInput('opened', true);
+    await fixture.whenStable();
+    const panel = (fixture.nativeElement as HTMLElement).querySelector('.side-drawer-panel')!;
+    expect(panel.classList.contains('side-drawer-panel--wide')).toBe(false);
+    fixture.componentRef.setInput('wide', true);
+    await fixture.whenStable();
+    expect(panel.classList.contains('side-drawer-panel--wide')).toBe(true);
+  });
+
   it('updates the panel direction when the language changes while open', async () => {
     const language = TestBed.inject(LanguageService);
     fixture.componentRef.setInput('opened', true);
