@@ -1,4 +1,3 @@
-import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { Subscription } from 'rxjs';
 import { ClinicalFilterQuery } from '../../../../domains/doctor-patients';
 import {
@@ -25,7 +24,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-patient-attendance-list',
   standalone: true,
-  imports: [SideDrawer, CommonModule, TranslatePipe, LocalizedDatePipe],
+  imports: [CommonModule, TranslatePipe, LocalizedDatePipe],
   templateUrl: './patient-attendance-list.component.html',
   styleUrl: './patient-attendance-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,6 +63,8 @@ export class PatientAttendanceListComponent implements OnInit, OnChanges, OnDest
   readonly pageSize = 10;
 
   readonly selectedTicket = signal<PracticeTicket | null>(null);
+  readonly inspectedAttendance = signal<DoctorPatientAttendance | null>(null);
+  readonly ticketLoadFailed = signal(false);
   readonly viewingTicketLoading = signal<boolean>(false);
 
   ngOnInit(): void {
@@ -75,6 +76,7 @@ export class PatientAttendanceListComponent implements OnInit, OnChanges, OnDest
     if (!pid) return;
 
     this.historyRequest?.unsubscribe();
+    this.closeTicketDetails();
     this.attendances.set([]);
     this.loading.set(true);
     this.error.set(false);
@@ -110,7 +112,9 @@ export class PatientAttendanceListComponent implements OnInit, OnChanges, OnDest
     }
 
     this.ticketRequest?.unsubscribe();
+    this.inspectedAttendance.set(item);
     this.selectedTicket.set(null);
+    this.ticketLoadFailed.set(false);
     this.viewingTicketLoading.set(true);
     this.ticketRequest = this.ticketsApi.ticket(item.practiceId, item.ticketId).subscribe({
       next: (ticket) => {
@@ -118,15 +122,19 @@ export class PatientAttendanceListComponent implements OnInit, OnChanges, OnDest
         this.viewingTicketLoading.set(false);
       },
       error: () => {
+        this.ticketLoadFailed.set(true);
         this.toast.error(this.language.t('doctorPatients.toasts.ticketLoadFailed'));
         this.viewingTicketLoading.set(false);
       },
     });
   }
 
-  closeTicketModal(): void {
+  closeTicketDetails(): void {
     this.ticketRequest?.unsubscribe();
     this.selectedTicket.set(null);
+    this.inspectedAttendance.set(null);
+    this.viewingTicketLoading.set(false);
+    this.ticketLoadFailed.set(false);
   }
 
   ticketEventLabel(event: string | null | undefined): string {

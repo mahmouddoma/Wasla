@@ -4,7 +4,7 @@ import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
 import { TicketsApi } from '../../../../domains/tickets';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 describe('PatientAttendanceListComponent', () => {
   let component: PatientAttendanceListComponent;
@@ -87,13 +87,61 @@ describe('PatientAttendanceListComponent', () => {
     expect(component.loading()).toBe(false);
   });
 
-  it('inspects ticket and displays modal', () => {
-    component.inspectTicket(mockAttendance);
+  it('expands ticket details inside the visit list without opening another drawer', () => {
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.action-cell .btn-link');
+    button.click();
+    fixture.detectChanges();
     expect(ticketsApi.ticket).toHaveBeenCalledWith('p-1', 't-1');
     expect(component.selectedTicket()?.ticketNumber).toBe(42);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelector('.attendance-entry .ticket-details')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-side-drawer')).toBeNull();
+    expect(router.navigate).not.toHaveBeenCalled();
 
-    component.closeTicketModal();
+    button.click();
+    fixture.detectChanges();
     expect(component.selectedTicket()).toBeNull();
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(fixture.nativeElement.querySelector('.ticket-details')).toBeNull();
+  });
+
+  it('shows loading in place and cancels the ticket request when collapsed', () => {
+    const pendingTicket = new Subject();
+    ticketsApi.ticket.mockReturnValue(pendingTicket);
+    component.inspectTicket(mockAttendance);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.ticket-loading[role="status"]')).toBeTruthy();
+    expect(pendingTicket.observed).toBe(true);
+    component.closeTicketDetails();
+    fixture.detectChanges();
+    expect(pendingTicket.observed).toBe(false);
+    expect(component.viewingTicketLoading()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.ticket-details')).toBeNull();
+  });
+
+  it('keeps a failed ticket in place and allows retry without losing the visit list', () => {
+    ticketsApi.ticket.mockReturnValue(throwError(() => new Error('Unavailable')));
+    component.inspectTicket(mockAttendance);
+    fixture.detectChanges();
+    expect(component.ticketLoadFailed()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.ticket-details [role="alert"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.attendance-row')).toBeTruthy();
+    ticketsApi.ticket.mockReturnValue(of({ ticketNumber: 42, status: 'Completed' }));
+    fixture.nativeElement.querySelector('.ticket-details .error-state button').click();
+    fixture.detectChanges();
+    expect(component.ticketLoadFailed()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.ticket-facts')).toBeTruthy();
+  });
+
+  it('clears expanded details when the visit list is refreshed and enforces permissions', () => {
+    component.inspectTicket(mockAttendance);
+    component.loadAttendances();
+    expect(component.inspectedAttendance()).toBeNull();
+    expect(component.selectedTicket()).toBeNull();
+    ticketsApi.ticket.mockClear();
+    component.inspectTicket({ ...mockAttendance, canViewTicket: false });
+    expect(ticketsApi.ticket).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalled();
   });
 
   it('navigates to encounter when authorized', () => {
@@ -119,7 +167,7 @@ describe('PatientAttendanceListComponent', () => {
     );
     component.inspectTicket(mockAttendance);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('ol li')?.textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.ticket-timeline li')?.textContent).toContain(
       component.ticketEventLabel('Completed'),
     );
     expect(component.ticketEventLabel('UnknownFutureEvent')).not.toContain('UnknownFutureEvent');

@@ -1,18 +1,22 @@
 <div class="follow-ups-container">
+  <h4 class="history-heading">
+    <i class="fa-solid fa-calendar-days" aria-hidden="true"></i
+    >{{ 'doctorPatients.tab.followUps' | t }}
+  </h4>
   <div class="info-banner">
     {{ 'doctorPatients.followUp.createNotice' | t }}
   </div>
 
   @if (loading()) {
-    <div class="loading-state">
+    <div class="loading-state" role="status">
       <div class="spinner"></div>
       <span>{{ 'common.loading' | t }}</span>
     </div>
   } @else if (error()) {
-    <div class="error-state">
+    <div class="error-state" role="alert">
       <p>{{ 'common.retryGuidance' | t }}</p>
       <button type="button" class="btn btn-outline" (click)="loadFollowUps()">
-        {{ 'common.retry' | t }}
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.retry' | t }}
       </button>
     </div>
   } @else if (followUps().length === 0) {
@@ -24,8 +28,11 @@
         loading="lazy"
         decoding="async"
       />
-      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
-      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+      <h3>{{ 'doctorPatients.historyEmpty.followUps' | t }}</h3>
+      <p>{{ 'doctorPatients.historyEmpty.followUpsHelp' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadFollowUps()">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.refresh' | t }}
+      </button>
     </div>
   } @else {
     <div class="cards-list">
@@ -55,6 +62,7 @@
                   encounterId: fu.sourceEncounterId,
                   returnPatientId: patientId(),
                 }"
+                ><i class="fa-solid fa-stethoscope" aria-hidden="true"></i
                 >{{ 'doctorRemediation.viewSource' | t }}</a
               >
             }

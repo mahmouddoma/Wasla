@@ -1,11 +1,18 @@
 <div class="attendance-container">
+  <div class="attendance-heading">
+    <h4>
+      <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+      {{ 'doctorPatients.tab.attendances' | t }}
+    </h4>
+    <p>{{ 'doctorPatients.attendance.help' | t }}</p>
+  </div>
   @if (loading()) {
-    <div class="loading-state">
+    <div class="loading-state" role="status">
       <div class="spinner"></div>
       <span>{{ 'common.loading' | t }}</span>
     </div>
   } @else if (error()) {
-    <div class="error-state">
+    <div class="error-state" role="alert">
       <p>{{ 'common.retryGuidance' | t }}</p>
       <button type="button" class="btn btn-outline" (click)="loadAttendances()">
         {{ 'common.retry' | t }}
@@ -24,73 +31,194 @@
       <p>{{ 'doctorPatients.overview.noData' | t }}</p>
     </div>
   } @else {
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>{{ 'doctorPatients.attendance.ticketNum' | t }}</th>
-            <th>{{ 'doctorPatients.filter.practice' | t }}</th>
-            <th>{{ 'doctorPatients.filter.fromDate' | t }}</th>
-            <th>{{ 'doctorPatients.attendance.checkInTime' | t }}</th>
-            <th>{{ 'doctorPatients.attendance.ticketStatus' | t }}</th>
-            <th>{{ 'doctorPatients.attendance.encounterStatus' | t }}</th>
-            <th>{{ 'doctorPatients.col.actions' | t }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of attendances(); track item.ticketId) {
-            <tr>
-              <td>
-                <span class="ticket-number">#{{ item.ticketNumber }}</span>
-                @if (item.isArchived) {
-                  <span class="badge badge-archived">{{
-                    'doctorPatients.attendance.archived' | t
-                  }}</span>
-                }
-              </td>
-              <td>{{ item.practiceName || item.practiceId }}</td>
-              <td>{{ item.businessDate }}</td>
-              <td>{{ item.checkInAtUtc | localizedDate: language.currentLang() }}</td>
-              <td>
-                <span class="badge badge-status" [attr.data-status]="item.ticketStatus">
-                  {{ 'tickets.status.' + item.ticketStatus | t }}
+    <ol class="attendance-list">
+      @for (item of attendances(); track item.ticketId) {
+        <li class="attendance-entry">
+          <div
+            class="attendance-row"
+            [class.attendance-row--selected]="inspectedAttendance()?.ticketId === item.ticketId"
+          >
+            <div [attr.data-label]="'doctorPatients.attendance.ticketNum' | t">
+              <span class="ticket-number">#{{ item.ticketNumber }}</span>
+              @if (item.isArchived) {
+                <span class="badge badge-archived">{{
+                  'doctorPatients.attendance.archived' | t
+                }}</span>
+              }
+            </div>
+            <div [attr.data-label]="'doctorPatients.filter.practice' | t">
+              {{
+                item.practiceName ||
+                  practiceNames()[item.practiceId] ||
+                  ('doctorRemediation.unavailable' | t)
+              }}
+            </div>
+            <div [attr.data-label]="'doctorPatients.attendance.visitDate' | t">
+              <bdi>{{ item.businessDate }}</bdi
+              ><small class="attendance-time"
+                ><bdi>{{ item.checkInAtUtc | localizedDate: language.currentLang() }}</bdi></small
+              >
+            </div>
+            <div [attr.data-label]="'doctorPatients.attendance.ticketStatus' | t">
+              <span class="badge badge-status" [attr.data-status]="item.ticketStatus">
+                {{ 'tickets.status.' + item.ticketStatus | t }}
+              </span>
+            </div>
+            <div [attr.data-label]="'doctorPatients.attendance.encounterStatus' | t">
+              @if (item.encounterId) {
+                <span class="badge badge-encounter" [attr.data-status]="item.encounterStatus">
+                  {{ 'encounters.status.' + item.encounterStatus | t }}
                 </span>
-              </td>
-              <td>
-                @if (item.encounterId) {
-                  <span class="badge badge-encounter" [attr.data-status]="item.encounterStatus">
-                    {{ 'encounters.status.' + item.encounterStatus | t }}
-                  </span>
+              } @else {
+                <span class="text-muted">{{ 'doctorPatients.attendance.noEncounter' | t }}</span>
+              }
+            </div>
+            <div class="action-cell">
+              @if (item.canViewTicket) {
+                <button
+                  #ticketButton
+                  type="button"
+                  class="btn-link"
+                  [attr.aria-expanded]="inspectedAttendance()?.ticketId === item.ticketId"
+                  [attr.aria-controls]="
+                    inspectedAttendance()?.ticketId === item.ticketId
+                      ? 'ticket-details-' + item.ticketId
+                      : null
+                  "
+                  (click)="
+                    inspectedAttendance()?.ticketId === item.ticketId
+                      ? closeTicketDetails()
+                      : inspectTicket(item)
+                  "
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-chevron-up]="inspectedAttendance()?.ticketId === item.ticketId"
+                    [class.fa-chevron-down]="inspectedAttendance()?.ticketId !== item.ticketId"
+                    aria-hidden="true"
+                  ></i>
+                  {{
+                    (inspectedAttendance()?.ticketId === item.ticketId
+                      ? 'doctorPatients.attendance.hideTicket'
+                      : 'doctorPatients.attendance.viewTicket'
+                    ) | t
+                  }}
+                </button>
+              }
+              @if (item.encounterId && item.canViewEncounter) {
+                <button
+                  type="button"
+                  class="btn-link btn-primary-link"
+                  (click)="navigateToEncounter(item)"
+                >
+                  <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+                  {{ 'doctorPatients.attendance.viewEncounter' | t }}
+                </button>
+              }
+            </div>
+          </div>
+          @if (inspectedAttendance()?.ticketId === item.ticketId) {
+            <section
+              class="ticket-details"
+              [id]="'ticket-details-' + item.ticketId"
+              [attr.aria-label]="
+                ('doctorPatients.attendance.viewTicket' | t) + ' #' + item.ticketNumber
+              "
+              [attr.aria-busy]="viewingTicketLoading()"
+            >
+              <div class="ticket-detail-heading">
+                <h5>
+                  <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                  {{ 'doctorPatients.attendance.ticketNum' | t }}
+                  <bdi>#{{ item.ticketNumber }}</bdi>
+                </h5>
+              </div>
+              @if (viewingTicketLoading()) {
+                <div class="ticket-loading" role="status">
+                  <span class="spinner" aria-hidden="true"></span>{{ 'common.loading' | t }}
+                </div>
+              } @else if (ticketLoadFailed()) {
+                <div class="error-state" role="alert">
+                  <p>{{ 'common.retryGuidance' | t }}</p>
+                  <button type="button" class="btn btn-outline" (click)="inspectTicket(item)">
+                    {{ 'common.retry' | t }}
+                  </button>
+                </div>
+              } @else if (selectedTicket(); as ticket) {
+                <dl class="ticket-facts">
+                  <div>
+                    <dt>
+                      <i class="fa-solid fa-ticket" aria-hidden="true"></i
+                      >{{ 'doctorPatients.attendance.ticketStatus' | t }}
+                    </dt>
+                    <dd>
+                      <span class="badge badge-status" [attr.data-status]="ticket.status">{{
+                        'tickets.status.' + ticket.status | t
+                      }}</span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <i class="fa-regular fa-calendar" aria-hidden="true"></i
+                      >{{ 'doctorPatients.attendance.visitDate' | t }}
+                    </dt>
+                    <dd>
+                      <bdi>{{ ticket.businessDate || ('doctorRemediation.unavailable' | t) }}</bdi>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <i class="fa-regular fa-clock" aria-hidden="true"></i
+                      >{{ 'doctorPatients.attendance.checkInTime' | t }}
+                    </dt>
+                    <dd>
+                      <bdi>{{
+                        (ticket.checkInTimeUtc | localizedDate: language.currentLang()) ||
+                          ('doctorRemediation.unavailable' | t)
+                      }}</bdi>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i
+                      >{{ 'doctorPatients.attendance.source' | t }}
+                    </dt>
+                    <dd>
+                      {{
+                        ticket.source
+                          ? ('tickets.source.' + ticket.source | t)
+                          : ('doctorRemediation.unavailable' | t)
+                      }}
+                    </dd>
+                  </div>
+                </dl>
+                <h6 class="timeline-heading">
+                  <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i
+                  >{{ 'doctorRemediation.ticketTimeline' | t }}
+                </h6>
+                @if (ticket.timeline?.length) {
+                  <ol class="ticket-timeline">
+                    @for (event of ticket.timeline; track event.eventId) {
+                      <li>
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i
+                        ><span>{{ ticketEventLabel(event.eventType) }}</span
+                        ><time [attr.datetime]="event.occurredAtUtc" dir="ltr">{{
+                          event.occurredAtUtc | localizedDate: language.currentLang()
+                        }}</time>
+                      </li>
+                    }
+                  </ol>
                 } @else {
-                  <span class="text-muted">{{ 'doctorPatients.attendance.noEncounter' | t }}</span>
+                  <p class="timeline-empty">
+                    {{ 'doctorPatients.attendance.noTimeline' | t }}
+                  </p>
                 }
-              </td>
-              <td class="action-cell">
-                @if (item.canViewTicket) {
-                  <button
-                    type="button"
-                    class="btn-link"
-                    (click)="inspectTicket(item)"
-                    [disabled]="viewingTicketLoading()"
-                  >
-                    {{ 'doctorPatients.attendance.viewTicket' | t }}
-                  </button>
-                }
-                @if (item.encounterId && item.canViewEncounter) {
-                  <button
-                    type="button"
-                    class="btn-link btn-primary-link"
-                    (click)="navigateToEncounter(item)"
-                  >
-                    {{ 'doctorPatients.attendance.viewEncounter' | t }}
-                  </button>
-                }
-              </td>
-            </tr>
+              }
+            </section>
           }
-        </tbody>
-      </table>
-    </div>
+        </li>
+      }
+    </ol>
 
     @if (totalCount() > pageSize) {
       <div class="pagination-bar">
@@ -114,42 +242,4 @@
       </div>
     }
   }
-
-  <app-side-drawer
-    [opened]="!!selectedTicket()"
-    [title]="'doctorPatients.attendance.viewTicket' | t"
-    (closed)="closeTicketModal()"
-  >
-    <div class="info-row">
-      <span class="label">{{ 'doctorPatients.attendance.ticketStatus' | t }}:</span>
-      <span class="val">{{ 'tickets.status.' + selectedTicket()?.status | t }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
-      <span class="val">{{ selectedTicket()?.businessDate }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">{{ 'doctorPatients.attendance.checkInTime' | t }}:</span>
-      <span class="val">{{
-        selectedTicket()?.checkInTimeUtc | localizedDate: language.currentLang()
-      }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">{{ 'doctorPatients.attendance.source' | t }}:</span>
-      <span class="val">{{ 'tickets.source.' + (selectedTicket()?.source || 'unknown') | t }}</span>
-    </div>
-    @if (selectedTicket()?.timeline?.length) {
-      <h3>{{ 'doctorRemediation.ticketTimeline' | t }}</h3>
-      <ol>
-        @for (event of selectedTicket()?.timeline; track event.eventId) {
-          <li class="info-row">
-            <span>{{ ticketEventLabel(event.eventType) }}</span>
-            <time class="val" dir="ltr">{{
-              event.occurredAtUtc | localizedDate: language.currentLang()
-            }}</time>
-          </li>
-        }
-      </ol>
-    }
-  </app-side-drawer>
 </div>

@@ -1,14 +1,18 @@
 <div class="prescriptions-container">
+  <h4 class="history-heading">
+    <i class="fa-solid fa-prescription" aria-hidden="true"></i
+    >{{ 'doctorPatients.tab.prescriptions' | t }}
+  </h4>
   @if (loading()) {
-    <div class="loading-state">
+    <div class="loading-state" role="status">
       <div class="spinner"></div>
       <span>{{ 'common.loading' | t }}</span>
     </div>
   } @else if (error()) {
-    <div class="error-state">
+    <div class="error-state" role="alert">
       <p>{{ 'common.retryGuidance' | t }}</p>
       <button type="button" class="btn btn-outline" (click)="loadPrescriptions()">
-        {{ 'common.retry' | t }}
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.retry' | t }}
       </button>
     </div>
   } @else if (prescriptions().length === 0) {
@@ -20,8 +24,11 @@
         loading="lazy"
         decoding="async"
       />
-      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
-      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+      <h3>{{ 'doctorPatients.historyEmpty.prescriptions' | t }}</h3>
+      <p>{{ 'doctorPatients.historyEmpty.prescriptionsHelp' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadPrescriptions()">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.refresh' | t }}
+      </button>
     </div>
   } @else {
     <div class="cards-list">
@@ -51,6 +58,7 @@
                     encounterId: rx.encounterId,
                     returnPatientId: patientId(),
                   }"
+                  ><i class="fa-solid fa-stethoscope" aria-hidden="true"></i
                   >{{ 'doctorRemediation.viewSource' | t }}</a
                 >
               }
@@ -62,6 +70,7 @@
                     prescriptionId: rx.prescriptionId,
                     returnPatientId: patientId(),
                   }"
+                  ><i class="fa-solid fa-eye" aria-hidden="true"></i
                   >{{ 'common.viewDetails' | t }}</a
                 >
               }
@@ -72,7 +81,8 @@
                   [disabled]="pdfLoading()"
                   (click)="viewPdf(rx)"
                 >
-                  {{ 'doctorPatients.prescription.viewPrint' | t }}
+                  <i class="fa-solid fa-print" aria-hidden="true"></i
+                  >{{ 'doctorPatients.prescription.viewPrint' | t }}
                 </button>
                 <button
                   type="button"
@@ -80,7 +90,8 @@
                   [disabled]="pdfLoading()"
                   (click)="downloadPdf(rx)"
                 >
-                  {{ 'doctorPatients.prescription.downloadPdf' | t }}
+                  <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i
+                  >{{ 'doctorPatients.prescription.downloadPdf' | t }}
                 </button>
               }
               @if (rx.hasVersions) {
@@ -90,7 +101,8 @@
                   [disabled]="versionsLoading()"
                   (click)="viewVersions(rx)"
                 >
-                  {{ 'doctorPatients.prescription.viewVersions' | t }}
+                  <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i
+                  >{{ 'doctorPatients.prescription.viewVersions' | t }}
                 </button>
               }
             </div>

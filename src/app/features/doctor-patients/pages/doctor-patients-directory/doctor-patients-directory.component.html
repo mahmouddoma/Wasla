@@ -3,22 +3,38 @@
     [heading]="'doctorPatients.title' | t"
     [description]="'doctorPatients.subtitle' | t"
     [icon]="'doctors'"
+    ><i
+      pageHeaderIcon
+      class="fa-solid fa-hospital-user directory-header-icon"
+      aria-hidden="true"
+    ></i
   ></app-page-header>
 
   <!-- Continuous patient summary -->
   @if (summary(); as sum) {
-    <section class="summary-section">
-      <div class="summary-stat">
-        <span class="metric-label">{{ 'doctorPatients.summary.allTimeUnique' | t }}</span>
-        <span class="metric-value">{{ sum.allTimeUniquePatients }}</span>
+    <section class="summary-section" [attr.aria-label]="'doctorWorkspace.patientDirectory' | t">
+      <div class="summary-stat summary-stat--total">
+        <span class="summary-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+        <div class="summary-copy">
+          <span class="metric-label">{{ 'doctorPatients.summary.allTimeUnique' | t }}</span>
+          <span class="metric-value">{{ sum.allTimeUniquePatients }}</span>
+        </div>
       </div>
-      <div class="summary-stat">
-        <span class="metric-label">{{ 'doctorPatients.summary.attendedLast30Days' | t }}</span>
-        <span class="metric-value">{{ sum.attendedLast30Days }}</span>
+      <div class="summary-stat summary-stat--recent">
+        <span class="summary-icon" aria-hidden="true"
+          ><i class="fa-solid fa-calendar-check"></i
+        ></span>
+        <div class="summary-copy">
+          <span class="metric-label">{{ 'doctorPatients.summary.attendedLast30Days' | t }}</span>
+          <span class="metric-value">{{ sum.attendedLast30Days }}</span>
+        </div>
       </div>
-      <div class="summary-stat">
-        <span class="metric-label">{{ 'doctorPatients.summary.returning' | t }}</span>
-        <span class="metric-value">{{ sum.returningPatients }}</span>
+      <div class="summary-stat summary-stat--returning">
+        <span class="summary-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
+        <div class="summary-copy">
+          <span class="metric-label">{{ 'doctorPatients.summary.returning' | t }}</span>
+          <span class="metric-value">{{ sum.returningPatients }}</span>
+        </div>
       </div>
     </section>
   }
@@ -27,24 +43,13 @@
   <section class="filters-surface">
     <div class="filters-row search-row">
       <div class="search-input-wrap">
-        <svg
-          class="search-icon"
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
+        <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
         <input
           type="search"
           id="patient-search"
           class="form-control search-input"
           [attr.aria-label]="'doctorPatients.searchPlaceholder' | t"
-          [placeholder]="'doctorPatients.searchPlaceholder' | t"
+          [placeholder]="'doctorPatients.searchShort' | t"
           [ngModel]="search()"
           (ngModelChange)="updateSearch($event)"
           (keyup.enter)="onSearch()"
@@ -52,21 +57,27 @@
       </div>
 
       <button type="button" class="btn btn-primary" (click)="onSearch()">
-        {{ 'common.search' | t }}
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i
+        ><span>{{ 'common.search' | t }}</span>
       </button>
 
       @if (isFiltered()) {
         <button type="button" class="btn btn-outline" (click)="resetFilters()">
-          {{ 'doctorPatients.filter.reset' | t }}
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i
+          ><span>{{ 'doctorPatients.filter.reset' | t }}</span>
         </button>
       }
     </div>
 
     <details class="advanced-filters" [open]="isFiltered()">
-      <summary>{{ 'doctorWorkspace.patientFilters' | t }}</summary>
-      <div class="filters-row options-row row g-3">
+      <summary>
+        <i class="fa-solid fa-sliders filter-icon" aria-hidden="true"></i
+        ><span>{{ 'doctorWorkspace.patientFilters' | t }}</span
+        ><i class="fa-solid fa-chevron-down filter-chevron" aria-hidden="true"></i>
+      </summary>
+      <div class="filters-row options-row">
         <!-- Practice Select -->
-        <div class="filter-field col-12 col-sm-6 col-xl-4">
+        <div class="filter-field">
           <label class="field-label" for="patient-practice">{{
             'doctorPatients.filter.practice' | t
           }}</label>
@@ -87,7 +98,7 @@
         </div>
 
         <!-- Scope Select -->
-        <div class="filter-field col-12 col-sm-6 col-xl-4">
+        <div class="filter-field">
           <label class="field-label" for="patient-scope">{{
             'doctorPatients.filter.scope' | t
           }}</label>
@@ -106,7 +117,7 @@
         </div>
 
         <!-- From Date -->
-        <div class="filter-field col-12 col-sm-6 col-xl-4">
+        <div class="filter-field">
           <label class="field-label" for="patient-from-date">{{
             'doctorPatients.filter.fromDate' | t
           }}</label>
@@ -121,7 +132,7 @@
         </div>
 
         <!-- To Date -->
-        <div class="filter-field col-12 col-sm-6 col-xl-4">
+        <div class="filter-field">
           <label class="field-label" for="patient-to-date">{{
             'doctorPatients.filter.toDate' | t
           }}</label>
@@ -136,7 +147,7 @@
         </div>
 
         <!-- Min Attendance -->
-        <div class="filter-field small-field col-12 col-sm-6 col-xl-4">
+        <div class="filter-field small-field">
           <label class="field-label" for="patient-min-attendance">{{
             'doctorPatients.filter.minAttendance' | t
           }}</label>
@@ -145,14 +156,14 @@
             type="number"
             dir="ltr"
             min="1"
-            class="form-control"
+            class="form-control ltr-text"
             [ngModel]="minAttendance()"
             (ngModelChange)="minAttendance.set($event); onSearch()"
           />
         </div>
 
         <!-- Has Upcoming Appointment Toggle -->
-        <div class="filter-field check-field col-12 col-sm-6 col-xl-4">
+        <div class="filter-field check-field">
           <label class="checkbox-label">
             <input
               type="checkbox"
@@ -171,18 +182,22 @@
   <!-- Directory Table Section -->
   <section class="table-section" [attr.aria-busy]="loading()">
     <div class="directory-heading">
-      <h2>{{ 'doctorWorkspace.patientDirectory' | t }}</h2>
+      <h2>
+        <i class="fa-solid fa-address-book" aria-hidden="true"></i
+        >{{ 'doctorWorkspace.patientDirectory' | t }}
+      </h2>
       @if (!loading() && !error()) {
         <span>{{ totalCount() }} {{ 'doctorWorkspace.patientCount' | t }}</span>
       }
     </div>
     @if (loading()) {
-      <div class="state-container">
-        <div class="spinner"></div>
+      <div class="state-container" role="status">
+        <i class="fa-solid fa-circle-notch fa-spin loading-icon" aria-hidden="true"></i>
         <span>{{ 'common.loading' | t }}</span>
       </div>
     } @else if (error()) {
-      <div class="state-container error-state">
+      <div class="state-container error-state" role="alert">
+        <i class="fa-solid fa-circle-exclamation error-icon" aria-hidden="true"></i>
         <p>{{ 'common.retryGuidance' | t }}</p>
         <button type="button" class="btn btn-outline" (click)="loadPatients()">
           {{ 'common.retry' | t }}
@@ -211,17 +226,17 @@
     } @else {
       <div class="table-card">
         <div class="table-responsive">
-          <table class="directory-table">
+          <table class="directory-table" [attr.aria-label]="'doctorWorkspace.patientDirectory' | t">
             <thead>
               <tr>
-                <th>{{ 'doctorPatients.col.patient' | t }}</th>
-                <th>{{ 'doctorPatients.col.contact' | t }}</th>
-                <th>{{ 'doctorPatients.filter.practice' | t }}</th>
+                <th scope="col">{{ 'doctorPatients.col.patient' | t }}</th>
+                <th scope="col">{{ 'doctorPatients.col.contact' | t }}</th>
+                <th scope="col">{{ 'doctorPatients.filter.practice' | t }}</th>
 
-                <th>{{ 'doctorPatients.col.lastAttendance' | t }}</th>
-                <th>{{ 'doctorPatients.col.attendanceCount' | t }}</th>
-                <th>{{ 'doctorPatients.col.encounters' | t }}</th>
-                <th class="actions-cell">{{ 'doctorPatients.col.actions' | t }}</th>
+                <th scope="col">{{ 'doctorPatients.col.lastAttendance' | t }}</th>
+                <th scope="col">{{ 'doctorPatients.col.attendanceCount' | t }}</th>
+                <th scope="col">{{ 'doctorPatients.col.encounters' | t }}</th>
+                <th scope="col" class="actions-cell">{{ 'doctorPatients.col.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +295,10 @@
                   <td>
                     <div class="contact-details">
                       @if (item.phoneNumber) {
-                        <span dir="ltr" class="ltr-text">{{ item.phoneNumber }}</span>
+                        <span class="contact-line"
+                          ><i class="fa-solid fa-phone" aria-hidden="true"></i
+                          ><bdi dir="ltr" class="ltr-text">{{ item.phoneNumber }}</bdi></span
+                        >
                       } @else {
                         <span class="muted-text">{{ 'doctorPatients.noPhone' | t }}</span>
                       }
@@ -313,7 +331,7 @@
 
                   <td>
                     <div class="attendance-date">
-                      <bdi class="sub-time">{{
+                      <bdi class="sub-time last-visit">{{
                         item.lastAttendanceAtUtc | localizedDate: language.currentLang()
                       }}</bdi>
                       <span class="sub-time"
@@ -327,7 +345,10 @@
 
                   <td>
                     <div class="visits-cell">
-                      <span class="count-badge">{{ item.attendanceCount }}</span>
+                      <span class="count-badge"
+                        ><i class="fa-solid fa-calendar-check" aria-hidden="true"></i
+                        >{{ item.attendanceCount }}</span
+                      >
                       @if (item.attendanceCount >= 2) {
                         <span class="badge badge-returning">{{
                           'doctorPatients.summary.returningBadge' | t
@@ -338,9 +359,10 @@
 
                   <td>
                     @if (item.completedEncounterCount !== null) {
-                      <span class="count-badge encounter-badge">{{
-                        item.completedEncounterCount
-                      }}</span>
+                      <span class="count-badge encounter-badge"
+                        ><i class="fa-solid fa-stethoscope" aria-hidden="true"></i
+                        >{{ item.completedEncounterCount }}</span
+                      >
                     } @else {
                       <span class="muted-text">{{ 'doctorPatients.unavailable' | t }}</span>
                     }
@@ -363,7 +385,7 @@
                       }
                       <button
                         type="button"
-                        class="btn btn-sm btn-outline"
+                        class="btn btn-sm patient-profile-button"
                         [attr.aria-label]="
                           ('doctorPatients.action.viewPatient' | t) +
                           ' — ' +
@@ -373,8 +395,12 @@
                         "
                         (click)="openPatient(item.patientId)"
                       >
-                        {{ 'doctorPatients.action.viewPatient' | t }}
-                        <span class="dir-arrow">{{ language.isRtl() ? '←' : '→' }}</span>
+                        <i class="fa-solid fa-folder-open" aria-hidden="true"></i
+                        ><span class="profile-label-full">{{
+                          'doctorPatients.action.viewPatient' | t
+                        }}</span>
+                        <span class="profile-label-short">{{ 'common.view' | t }}</span>
+                        <i class="fa-solid fa-arrow-left dir-arrow" aria-hidden="true"></i>
                       </button>
                     </div>
                   </td>
@@ -399,7 +425,7 @@
                 [disabled]="pageNumber() <= 1"
                 (click)="onPageChange(pageNumber() - 1)"
               >
-                {{ language.isRtl() ? '→' : '←' }}
+                <i class="fa-solid fa-arrow-right dir-arrow" aria-hidden="true"></i>
               </button>
               <span class="current-page">{{ pageNumber() }}</span>
               <button
@@ -409,7 +435,7 @@
                 [disabled]="pageNumber() * pageSize >= totalCount()"
                 (click)="onPageChange(pageNumber() + 1)"
               >
-                {{ language.isRtl() ? '←' : '→' }}
+                <i class="fa-solid fa-arrow-left dir-arrow" aria-hidden="true"></i>
               </button>
             </div>
           </div>

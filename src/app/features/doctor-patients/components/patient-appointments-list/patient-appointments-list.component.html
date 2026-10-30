@@ -1,18 +1,22 @@
 <div class="appointments-container">
+  <h4 class="history-heading">
+    <i class="fa-solid fa-calendar-check" aria-hidden="true"></i
+    >{{ 'doctorPatients.tab.appointments' | t }}
+  </h4>
   <div class="policy-notice">
     {{ 'doctorPatients.appointments.noDirectBookingNotice' | t }}
   </div>
 
   @if (loading()) {
-    <div class="loading-state">
+    <div class="loading-state" role="status">
       <div class="spinner"></div>
       <span>{{ 'common.loading' | t }}</span>
     </div>
   } @else if (error()) {
-    <div class="error-state">
+    <div class="error-state" role="alert">
       <p>{{ 'common.retryGuidance' | t }}</p>
       <button type="button" class="btn btn-outline" (click)="loadAppointments()">
-        {{ 'common.retry' | t }}
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.retry' | t }}
       </button>
     </div>
   } @else if (appointments().length === 0) {
@@ -24,8 +28,11 @@
         loading="lazy"
         decoding="async"
       />
-      <h3>{{ 'doctorRemediation.empty' | t }}</h3>
-      <p>{{ 'doctorPatients.overview.noData' | t }}</p>
+      <h3>{{ 'doctorPatients.historyEmpty.appointments' | t }}</h3>
+      <p>{{ 'doctorPatients.historyEmpty.appointmentsHelp' | t }}</p>
+      <button type="button" class="btn btn-outline" (click)="loadAppointments()">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.refresh' | t }}
+      </button>
     </div>
   } @else {
     <div class="cards-list">
@@ -49,7 +56,7 @@
             @if (app.reservationId) {
               <div class="app-actions">
                 <button type="button" class="btn btn-sm btn-outline" (click)="viewReservation(app)">
-                  {{ 'common.viewDetails' | t }}
+                  <i class="fa-solid fa-eye" aria-hidden="true"></i>{{ 'common.viewDetails' | t }}
                 </button>
               </div>
             }
@@ -63,7 +70,7 @@
               }}</span>
             </div>
             <div class="detail-row">
-              <span class="label">{{ 'doctorPatients.filter.fromDate' | t }}:</span>
+              <span class="label">{{ 'doctorPatients.attendance.visitDate' | t }}:</span>
               <span class="val">{{ app.businessDate }}</span>
             </div>
             @if (app.visitType) {

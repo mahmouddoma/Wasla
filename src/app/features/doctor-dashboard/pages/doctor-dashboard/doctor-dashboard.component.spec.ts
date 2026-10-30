@@ -48,6 +48,30 @@ describe('Doctor dashboard', () => {
     expect(api.call).not.toHaveBeenCalled();
   });
 
+  it('renders Font Awesome icons and semantic colors without losing metric labels', async () => {
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.model.set({
+      metrics: [
+        { metricCode: 'AppointmentsScheduled', nameEn: 'Appointments', value: 12 },
+        { metricCode: 'CheckIns', nameEn: 'Attendance', value: 8 },
+        { metricCode: 'ClinicalWorkflowCompleted', nameEn: 'Completed care', value: 6 },
+        { metricCode: 'NetCollected', nameEn: 'Collections', value: 120 },
+      ],
+    });
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.page-header__icon .fa-chart-line')).toBeTruthy();
+    expect(
+      element.querySelector('.metric-item[data-group="bookings"] .fa-calendar-check'),
+    ).toBeTruthy();
+    expect(element.querySelector('.metric-item[data-group="queue"] .fa-users-line')).toBeTruthy();
+    expect(element.querySelector('.metric-item[data-group="care"] .fa-stethoscope')).toBeTruthy();
+    expect(element.querySelector('.metric-item[data-group="finance"] .fa-wallet')).toBeTruthy();
+    expect(fixture.componentInstance.metricGroup('unknown')).toBe('other');
+    expect(element.querySelectorAll('.metric-item dt').length).toBe(4);
+  });
+
   it('shows a compact summary and a complete categorized directory without hiding metrics in a long accordion', async () => {
     const fixture = TestBed.createComponent(DoctorDashboardComponent);
     await fixture.whenStable();
@@ -261,7 +285,10 @@ describe('Doctor dashboard', () => {
     await fixture.whenStable();
     const component = fixture.componentInstance;
     const warning = 'Report.HistoricalCapacityNotRecorded';
-    component.model.set({ metrics: [{ metricCode: 'CapacityMinutes', value: null }], warnings: [warning] });
+    component.model.set({
+      metrics: [{ metricCode: 'CapacityMinutes', value: null }],
+      warnings: [warning],
+    });
     for (const lang of ['ar', 'en'] as const) {
       component.language.setLanguage(lang);
       await fixture.whenStable();

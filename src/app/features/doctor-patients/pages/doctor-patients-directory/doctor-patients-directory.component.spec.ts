@@ -121,6 +121,20 @@ describe('DoctorPatientsDirectoryComponent', () => {
     expect(component.loading()).toBe(false);
   });
 
+  it('renders Font Awesome icons with labeled summary metrics and patient actions', () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.page-header__icon .fa-hospital-user')).toBeTruthy();
+    expect(element.querySelector('.page-header__icon svg')).toBeNull();
+    expect(element.querySelectorAll('.summary-stat .summary-icon .fa-solid').length).toBe(3);
+    expect(element.querySelector('.summary-stat--total')?.textContent).toContain('100');
+    expect(element.querySelector('.summary-stat--recent')?.textContent).toContain('25');
+    expect(element.querySelector('.summary-stat--returning')?.textContent).toContain('40');
+    expect(element.querySelector('.search-input-wrap .fa-magnifying-glass')).toBeTruthy();
+    expect(element.querySelector('.patient-profile-button')?.getAttribute('aria-label')).toContain(
+      mockPatientItem.nameAr,
+    );
+  });
+
   it('switches directory labels, names, demographics and direction without reloading data', async () => {
     const language = TestBed.inject(LanguageService);
     const element: HTMLElement = fixture.nativeElement;

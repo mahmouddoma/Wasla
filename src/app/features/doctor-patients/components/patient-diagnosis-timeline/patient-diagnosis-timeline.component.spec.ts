@@ -79,6 +79,22 @@ describe('PatientDiagnosisTimelineComponent', () => {
     });
   });
 
+  it('renders diagnosis identity, structured metadata and an explicit encounter action', () => {
+    expect(fixture.nativeElement.querySelector('.diagnosis-title').textContent).toContain(
+      'Acute Bronchitis',
+    );
+    expect(fixture.nativeElement.querySelectorAll('.diagnosis-meta dd').length).toBe(3);
+    const action: HTMLButtonElement = fixture.nativeElement.querySelector('.encounter-action');
+    expect(action.querySelector('.fa-file-medical')).toBeTruthy();
+    action.click();
+    expect(router.navigate).toHaveBeenCalledWith(['/doctor/encounters'], {
+      queryParams: { practiceId: 'prac-1', encounterId: 'enc-1' },
+    });
+    fixture.componentRef.setInput('canViewEncounters', false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.encounter-action')).toBeNull();
+  });
+
   it('does not open an encounter when the patient capability is absent', () => {
     fixture.componentRef.setInput('canViewEncounters', false);
     component.navigateToEncounter(mockDiagnosis);

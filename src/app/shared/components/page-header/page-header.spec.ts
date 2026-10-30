@@ -22,6 +22,7 @@ describe('PageHeader', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.page-header__icon svg')).toBeTruthy();
   });
 
   it('should emit actionClicked when action button is pressed', () => {

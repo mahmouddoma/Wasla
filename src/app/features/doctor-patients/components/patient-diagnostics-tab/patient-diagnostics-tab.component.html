@@ -1,5 +1,12 @@
 <section class="diagnostic-history">
-  <div class="actions">
+  <h4 class="history-heading">
+    <i class="fa-solid fa-flask" aria-hidden="true"></i>{{ 'doctorPatients.tab.diagnostics' | t }}
+  </h4>
+  <div
+    class="actions kind-switch"
+    role="group"
+    [attr.aria-label]="'doctorPatients.tab.diagnostics' | t"
+  >
     @for (kind of ['lab', 'radiology']; track kind) {
       @if (
         allowed(kind === 'lab' ? 'lab' : 'radiology', 'requests') ||
@@ -10,14 +17,25 @@
           type="button"
           class="btn"
           [class.btn-primary]="currentKind() === kind"
+          [attr.aria-pressed]="currentKind() === kind"
           (click)="setKind(kind === 'lab' ? 'lab' : 'radiology')"
         >
-          {{ 'diagnostics.' + kind | t }}
+          <i
+            class="fa-solid"
+            [class.fa-flask]="kind === 'lab'"
+            [class.fa-x-ray]="kind === 'radiology'"
+            aria-hidden="true"
+          ></i
+          >{{ 'diagnostics.' + kind | t }}
         </button>
       }
     }
   </div>
-  <div class="actions">
+  <div
+    class="actions record-switch"
+    role="group"
+    [attr.aria-label]="'doctorPatients.tab.diagnostics' | t"
+  >
     @for (tab of ['requests', 'results', 'submissions']; track tab) {
       @if (
         allowed(
@@ -29,11 +47,19 @@
           type="button"
           class="btn"
           [class.btn-primary]="currentTab() === tab"
+          [attr.aria-pressed]="currentTab() === tab"
           (click)="
             setTab(tab === 'requests' ? 'requests' : tab === 'results' ? 'results' : 'submissions')
           "
         >
-          {{ 'doctorPatients.diagnostics.' + tab | t }}
+          <i
+            class="fa-solid"
+            [class.fa-clipboard-list]="tab === 'requests'"
+            [class.fa-file-medical]="tab === 'results'"
+            [class.fa-folder-open]="tab === 'submissions'"
+            aria-hidden="true"
+          ></i
+          >{{ 'doctorPatients.diagnostics.' + tab | t }}
         </button>
       }
     }
@@ -45,7 +71,9 @@
     <p role="status">{{ 'common.loading' | t }}</p>
   } @else if (error()) {
     <p role="alert">{{ 'common.retryGuidance' | t }}</p>
-    <button class="btn btn-outline-secondary" (click)="loadData()">{{ 'common.retry' | t }}</button>
+    <button class="btn btn-outline-secondary" (click)="loadData()">
+      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.retry' | t }}
+    </button>
   } @else {
     <ul class="history">
       @for (row of rows(); track row.id) {
@@ -53,7 +81,7 @@
           <bdi>{{ row.date | localizedDate: language.currentLang() }}</bdi
           ><span>{{ 'diagnostics.status.' + row.status | t }}</span
           ><button class="btn btn-outline-secondary" (click)="openSource(row.id)">
-            {{ 'common.viewDetails' | t }}
+            <i class="fa-solid fa-eye" aria-hidden="true"></i>{{ 'common.viewDetails' | t }}
           </button>
         </li>
       } @empty {
@@ -65,10 +93,10 @@
             loading="lazy"
             decoding="async"
           />
-          <h3>{{ 'doctorRemediation.empty' | t }}</h3>
-          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+          <h3>{{ 'doctorPatients.historyEmpty.diagnostics' | t }}</h3>
+          <p>{{ 'doctorPatients.historyEmpty.diagnosticsHelp' | t }}</p>
           <button class="btn btn-outline-secondary" (click)="loadData()">
-            {{ 'common.refresh' | t }}
+            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>{{ 'common.refresh' | t }}
           </button>
         </li>
       }

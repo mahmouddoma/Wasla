@@ -25,12 +25,28 @@ export class ReportDataSectionsComponent {
   toggle(event: Event): void {
     this.expanded.set((event.target as HTMLDetailsElement).open);
   }
+  formatDate(value: string | null | undefined, includeTime = true): string {
+    if (!value) return this.language.t('doctorRemediation.unavailable');
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return this.language.t('doctorRemediation.unavailable');
+    return new Intl.DateTimeFormat(this.language.isRtl() ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'medium',
+      ...(includeTime ? { timeStyle: 'short' as const } : {}),
+    }).format(date);
+  }
   format(value: number | null | undefined): string {
-    return value == null ? this.language.t('doctorRemediation.unavailable') :
-      new Intl.NumberFormat(this.language.isRtl() ? 'ar-EG' : 'en-GB', { maximumFractionDigits: 2 }).format(value);
+    return value == null
+      ? this.language.t('doctorRemediation.unavailable')
+      : new Intl.NumberFormat(this.language.isRtl() ? 'ar-EG' : 'en-GB', {
+          maximumFractionDigits: 2,
+        }).format(value);
   }
   label(metric: Metric): string {
-    return (this.language.isRtl() ? metric.nameAr || metric.nameEn : metric.nameEn || metric.nameAr) || metric.metricCode || this.language.t('doctorRemediation.unavailable');
+    return (
+      (this.language.isRtl() ? metric.nameAr || metric.nameEn : metric.nameEn || metric.nameAr) ||
+      metric.metricCode ||
+      this.language.t('doctorRemediation.unavailable')
+    );
   }
   metricName(code: string | null | undefined): string {
     const metric = this.report().metrics?.find((item) => item.metricCode === code);
@@ -38,7 +54,13 @@ export class ReportDataSectionsComponent {
   }
   unit(value: string | null | undefined): string {
     if (!value) return '';
-    const keys: Readonly<Record<string, string>> = { count: 'doctorWorkspace.unit.count', percent: 'doctorWorkspace.unit.percent', minutes: 'doctorWorkspace.unit.minutes', hours: 'doctorWorkspace.unit.hours', egp: 'tickets.currency' };
+    const keys: Readonly<Record<string, string>> = {
+      count: 'doctorWorkspace.unit.count',
+      percent: 'doctorWorkspace.unit.percent',
+      minutes: 'doctorWorkspace.unit.minutes',
+      hours: 'doctorWorkspace.unit.hours',
+      egp: 'tickets.currency',
+    };
     return this.language.t(keys[value.toLowerCase()] || value);
   }
 }
