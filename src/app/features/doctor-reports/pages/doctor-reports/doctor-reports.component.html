@@ -127,7 +127,10 @@
               </th>
 
               <th scope="col">
-                {{ 'doctorRemediation.status' | t }}
+                {{
+                  (activeTab() === 'reports' ? 'doctorReports.scope' : 'doctorRemediation.status')
+                    | t
+                }}
               </th>
 
               <th scope="col" class="reports-table__actions">
@@ -224,7 +227,7 @@
 
                   <td>
                     <span class="report-scope" dir="auto">
-                      {{ report.scope || ('doctorRemediation.unavailable' | t) }}
+                      {{ scopeLabel(report.scope) }}
                     </span>
                   </td>
 
@@ -251,6 +254,13 @@
 
         @if (activeTab() === 'insights' ? !insights().length : !reports().length) {
           <div class="reports-state reports-state--empty">
+            <img
+              class="state-empty-illustration"
+              src="/SVG-AVATAR/Payment Information-bro.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
             <h3>{{ 'doctorRemediation.empty' | t }}</h3>
             <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
 
@@ -299,9 +309,16 @@
 
   <app-side-drawer
     [opened]="!!selectedInsight() || !!selectedReport() || detailLoading()"
-    [title]="'common.viewDetails' | t"
-    [width]="'900px'"
-    [wide]="true"
+    [title]="
+      selectedReport()
+        ? text(selectedReport()?.titleAr, selectedReport()?.titleEn)
+        : selectedInsight()
+          ? text(selectedInsight()?.titleAr, selectedInsight()?.titleEn)
+          : ('common.viewDetails' | t)
+    "
+    [width]="activeTab() === 'reports' ? '900px' : '640px'"
+    [wide]="activeTab() === 'reports'"
+    [busy]="submitting()"
     (closed)="closeDrawer()"
   >
     <div class="reports-drawer-content">
@@ -320,67 +337,69 @@
       @if (selectedInsight(); as insight) {
         <section class="insight-detail">
           <header class="insight-detail__header">
-            <h2>
-              {{ text(insight.titleAr, insight.titleEn) }}
-            </h2>
-
-            <p>
-              {{ text(insight.explanationAr, insight.explanationEn) }}
-            </p>
-
-            <span class="report-status">
-              {{ stateLabel(insight.state) }}
-            </span>
+            <span class="report-status">{{ stateLabel(insight.state) }}</span>
+            <p>{{ text(insight.explanationAr, insight.explanationEn) }}</p>
           </header>
 
-          <div class="insight-summary">
-            <div class="insight-summary__item">
-              <span>
-                {{ 'doctorRemediation.currentValue' | t }}
-              </span>
-              <strong dir="auto">
-                {{ insight.currentValue ?? ('doctorRemediation.unavailable' | t) }}
-              </strong>
+          <dl class="insight-comparison" [attr.aria-label]="'doctorInsights.comparison' | t">
+            <div class="insight-comparison__item">
+              <dt>{{ 'doctorRemediation.currentValue' | t }}</dt>
+              <dd>
+                <bdi>{{ formatMetricValue(insight.currentValue) }}</bdi>
+              </dd>
             </div>
-
-            <div class="insight-summary__item">
-              <span>
-                {{ 'doctorRemediation.previousValue' | t }}
-              </span>
-              <strong dir="auto">
-                {{ insight.previousValue ?? ('doctorRemediation.unavailable' | t) }}
-              </strong>
+            <div class="insight-comparison__item">
+              <dt>{{ 'doctorRemediation.previousValue' | t }}</dt>
+              <dd>
+                <bdi>{{ formatMetricValue(insight.previousValue) }}</bdi>
+              </dd>
             </div>
-
-            <div class="insight-summary__item">
-              <span>
-                {{ 'doctorRemediation.sample' | t }}
-              </span>
-              <strong>
-                {{ insight.sampleCount ?? ('doctorRemediation.unavailable' | t) }}
-              </strong>
+            <div class="insight-comparison__item">
+              <dt>{{ 'doctorRemediation.sample' | t }}</dt>
+              <dd>
+                <bdi>{{ formatMetricValue(insight.sampleCount) }}</bdi>
+              </dd>
             </div>
-          </div>
+          </dl>
 
           <div class="insight-detail__description">
-            <p>
-              {{ text(insight.evidenceSummaryAr, insight.evidenceSummaryEn) }}
-            </p>
-
-            <p>
-              {{ text(insight.suggestedActionAr, insight.suggestedActionEn) }}
-            </p>
+            @if (
+              (insight.evidenceSummaryAr || insight.evidenceSummaryEn) &&
+              text(insight.evidenceSummaryAr, insight.evidenceSummaryEn) !==
+                text(insight.explanationAr, insight.explanationEn)
+            ) {
+              <section>
+                <h3>{{ 'doctorInsights.evidence' | t }}</h3>
+                <p>{{ text(insight.evidenceSummaryAr, insight.evidenceSummaryEn) }}</p>
+              </section>
+            }
+            @if (insight.suggestedActionAr || insight.suggestedActionEn) {
+              <section>
+                <h3>{{ 'doctorInsights.nextStep' | t }}</h3>
+                <p>{{ text(insight.suggestedActionAr, insight.suggestedActionEn) }}</p>
+              </section>
+            }
           </div>
 
           <div class="insight-detail__actions">
             @if (canTransition(insight, 'acknowledge')) {
-              <button type="button" class="btn btn-primary" (click)="acknowledgeInsight(insight)">
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="submitting() || retryBlocked()"
+                (click)="acknowledgeInsight(insight)"
+              >
                 {{ 'doctorRemediation.acknowledge' | t }}
               </button>
             }
 
             @if (canTransition(insight, 'resolve')) {
-              <button type="button" class="btn btn-primary" (click)="resolveInsight(insight)">
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="submitting() || retryBlocked()"
+                (click)="resolveInsight(insight)"
+              >
                 {{ 'doctorRemediation.resolve' | t }}
               </button>
             }
@@ -430,8 +449,15 @@
                   }
                 </li>
               } @empty {
-                <li>
-                  {{ 'doctorRemediation.empty' | t }}
+                <li class="insight-history__empty">
+                  <img
+                    class="state-empty-illustration"
+                    src="/SVG-AVATAR/Doctors-bro.svg"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <p>{{ 'doctorInsights.noHistory' | t }}</p>
                 </li>
               }
             </ul>
@@ -447,8 +473,8 @@
         <div class="report-detail">
           <!-- REPORT IDENTITY -->
           <header class="report-detail__intro">
-            <span class="report-detail__eyebrow" dir="auto">
-              {{ report.scope || ('doctorRemediation.unavailable' | t) }}
+            <span class="report-detail__scope" dir="auto">
+              {{ scopeLabel(report.scope) }}
             </span>
 
             <h2>

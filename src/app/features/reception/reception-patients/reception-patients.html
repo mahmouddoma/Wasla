@@ -58,7 +58,11 @@
           <h2 class="selected-patient-name">{{ displayName(patient) }}</h2>
           <div class="selected-patient-meta">
             @if (patient.phoneNumber) {
-              <a [href]="'tel:' + patient.phoneNumber" class="meta-item meta-item-link" title="اتصال">
+              <a
+                [href]="'tel:' + patient.phoneNumber"
+                class="meta-item meta-item-link"
+                [title]="'reception.audit.call' | t"
+              >
                 <svg
                   viewBox="0 0 24 24"
                   width="14"
@@ -93,7 +97,7 @@
                 </svg>
                 <bdi dir="ltr" class="ltr-text">{{ patient.dateOfBirth }}</bdi>
                 @if (calculateAge(patient.dateOfBirth); as age) {
-                  <span class="age-label">({{ age }} سنة)</span>
+                  <span class="age-label">({{ 'reception.audit.age' | t: { age: age } }})</span>
                 }
               </span>
             }
@@ -439,7 +443,9 @@
                         </svg>
                         <bdi class="ltr-text">{{ patient.dateOfBirth }}</bdi>
                         @if (calculateAge(patient.dateOfBirth); as age) {
-                          <span class="age-suffix">({{ age }} سنة)</span>
+                          <span class="age-suffix"
+                            >({{ 'reception.audit.age' | t: { age: age } }})</span
+                          >
                         }
                       </span>
                     }
@@ -502,7 +508,14 @@
               <p>{{ 'reception.patients.trySearch' | t }}</p>
               @if (canRegister()) {
                 <button class="btn btn-primary" type="button" (click)="registrationOpen.set(true)">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
@@ -517,7 +530,11 @@
           <footer class="patients-pagination-bar" [attr.aria-label]="'discovery.pages' | t">
             <div class="pagination-size-group">
               <span class="pagination-size-label">{{ 'reception.patients.perPage' | t }}</span>
-              <div class="page-size-pills" role="radiogroup" [attr.aria-label]="'reception.patients.perPage' | t">
+              <div
+                class="page-size-pills"
+                role="radiogroup"
+                [attr.aria-label]="'reception.patients.perPage' | t"
+              >
                 @for (size of pageSizeOptions; track size) {
                   <button
                     type="button"
@@ -613,7 +630,14 @@
               type="button"
               (click)="registrationOpen.set(true)"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -645,11 +669,7 @@
       [title]="'reception.patients.verifyIdentityInPerson' | t"
       (closed)="attestationDrawerOpen.set(false)"
     >
-      <form
-        class="registration-form"
-        (submit)="submitClaimIdentityAttestation($event)"
-        novalidate
-      >
+      <form class="registration-form" (submit)="submitClaimIdentityAttestation($event)" novalidate>
         <div class="section-title-row">
           <h3>{{ displayName(patient) }}</h3>
           <p class="section-subtitle">{{ 'reception.patients.attestationHelp' | t }}</p>

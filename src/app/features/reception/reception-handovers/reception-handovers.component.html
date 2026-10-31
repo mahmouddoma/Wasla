@@ -5,70 +5,111 @@
     icon="reception"
     [actionLabel]="'handovers.create' | t"
     actionIcon="add"
+    [actionDisabled]="!practiceId() || !canCreate() || submitting()"
     (actionClicked)="openCreateDrawer()"
   >
+    <button
+      pageHeaderActions
+      class="btn-wasla-ghost"
+      type="button"
+      [disabled]="loading() || !practiceId() || !canView()"
+      (click)="loadHandovers(pageNumber())"
+    >
+      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> {{ 'finance.refresh' | t }}
+    </button>
   </app-page-header>
-
-  <!-- Handovers List Table -->
-  <div class="table-surface">
-    @if (loading() && handovers().length === 0) {
-      <div class="loading-state">
-        <div class="spinner"></div>
+  <section class="table-surface" [attr.aria-busy]="loading()">
+    @if (!practiceId()) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-cuate.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'reception.audit.choosePractice' | t }}</h2>
+        <p>{{ 'reception.audit.choosePracticeHint' | t }}</p>
+      </div>
+    } @else if (!canView()) {
+      <div class="empty-state" role="status">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-cuate.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'reception.access.handovers' | t }}</h2>
+        <p>{{ 'reception.access.askDoctor' | t }}</p>
+      </div>
+    } @else if (loading()) {
+      <div class="loading-state" role="status">
+        <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
         <p>{{ 'common.loading' | t }}</p>
       </div>
-    } @else if (handovers().length === 0) {
+    } @else if (error()) {
+      <div class="empty-state" role="alert">
+        <h2>{{ 'reception.audit.loadFailed' | t }}</h2>
+        <button type="button" class="btn-wasla-primary" (click)="loadHandovers(pageNumber())">
+          {{ 'finance.refresh' | t }}
+        </button>
+      </div>
+    } @else if (!handovers().length) {
       <div class="empty-state">
-        <p>{{ 'common.nothingFound' | t }}</p>
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-cuate.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'common.nothingFound' | t }}</h2>
+        <p>{{ 'reception.audit.emptyHandovers' | t }}</p>
+        <button
+          type="button"
+          class="btn-wasla-primary"
+          [disabled]="!canCreate()"
+          (click)="openCreateDrawer()"
+        >
+          {{ 'handovers.create' | t }}
+        </button>
       </div>
     } @else {
       <div class="table-responsive">
         <table class="handovers-table">
           <thead>
             <tr>
-              <th>{{ 'handovers.summary' | t }}</th>
-              <th>{{ 'handovers.creator' | t }}</th>
-              <th>{{ 'reservations.time' | t }}</th>
-              <th>{{ 'handovers.acknowledgedBy' | t }}</th>
-              <th>{{ 'reservations.status' | t }}</th>
-              <th class="text-end">{{ 'reservations.actions' | t }}</th>
+              <th scope="col">{{ 'handovers.summary' | t }}</th>
+              <th scope="col">{{ 'reservations.time' | t }}</th>
+              <th scope="col">{{ 'reservations.status' | t }}</th>
+              <th scope="col">{{ 'reservations.actions' | t }}</th>
             </tr>
           </thead>
           <tbody>
-            @for (item of handovers(); track item.id) {
-              <tr (click)="openViewDrawer(item)" class="interactive-row">
+            @for (item of handovers(); track $index) {
+              <tr>
                 <td class="cell-summary">
-                  <span class="summary-text">{{ item.summary }}</span>
+                  <span class="summary-text">{{
+                    item.summary || ('reception.audit.unavailable' | t)
+                  }}</span>
                 </td>
-                <td class="cell-muted font-medium">{{ item.createdByName }}</td>
-                <td class="cell-muted">{{ item.createdAt }}</td>
-                <td>
-                  @if (item.acknowledgedByName) {
-                    <span class="ack-tag">{{ item.acknowledgedByName }}</span>
-                  } @else {
-                    <span class="unack-text">-</span>
-                  }
+                <td dir="ltr" class="ltr-text">
+                  {{ item.createdOnUtc ? (item.createdOnUtc | date: 'short') : '—' }}
                 </td>
                 <td>
-                  <span
-                    class="status-pill"
-                    [class.pill-open]="item.status === 'Open'"
-                    [class.pill-closed]="item.status === 'Closed'"
-                  >
-                    {{ item.status === 'Open' ? ('handovers.openShift' | t) : ('handovers.closedShift' | t) }}
-                  </span>
+                  <span class="status-pill" [class.pill-closed]="item.status === 'Closed'">{{
+                    statusLabel(item)
+                  }}</span>
                 </td>
-                <td class="text-end" (click)="$event.stopPropagation()">
+                <td>
                   <button
                     type="button"
                     class="btn-icon-subtle"
                     (click)="openViewDrawer(item)"
-                    [title]="'common.viewDetails' | t"
+                    [attr.aria-label]="'common.viewDetails' | t"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="1" />
-                      <circle cx="19" cy="12" r="1" />
-                      <circle cx="5" cy="12" r="1" />
-                    </svg>
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
                   </button>
                 </td>
               </tr>
@@ -77,90 +118,100 @@
         </table>
       </div>
     }
-  </div>
-
-  <!-- Slide-Over Drawer for View/Actions & Create -->
+  </section>
+  @if (totalPages() > 1) {
+    <nav class="drawer-actions" [attr.aria-label]="'discovery.page' | t">
+      <button
+        type="button"
+        class="btn-wasla-ghost"
+        [disabled]="loading() || pageNumber() <= 1"
+        (click)="loadHandovers(pageNumber() - 1)"
+      >
+        {{ 'discovery.previous' | t }}
+      </button>
+      <span>{{ pageNumber() }} / {{ totalPages() }}</span>
+      <button
+        type="button"
+        class="btn-wasla-ghost"
+        [disabled]="loading() || pageNumber() >= totalPages()"
+        (click)="loadHandovers(pageNumber() + 1)"
+      >
+        {{ 'discovery.next' | t }}
+      </button>
+    </nav>
+  }
   <app-side-drawer
     [opened]="drawerMode() !== null"
+    [busy]="submitting()"
     [title]="drawerMode() === 'create' ? ('handovers.create' | t) : ('handovers.title' | t)"
     (closed)="closeDrawer()"
   >
     @if (drawerMode() === 'create') {
-      <div class="drawer-form-body">
+      <form class="drawer-form-body" (ngSubmit)="submitNewHandover()">
         <label class="form-label" for="handover-summary">{{ 'handovers.summary' | t }}</label>
         <textarea
           id="handover-summary"
+          name="summary"
           class="form-control"
           rows="5"
+          required
           [(ngModel)]="newSummary"
+          [disabled]="submitting()"
           [placeholder]="'handovers.summary' | t"
         ></textarea>
-
         <div class="drawer-actions">
           <button
-            type="button"
+            type="submit"
             class="btn-wasla-primary"
             [disabled]="submitting() || !newSummary.trim()"
-            (click)="submitNewHandover()"
           >
-            {{ 'common.submit' | t }}
+            {{ (submitting() ? 'common.loading' : 'common.submit') | t }}
           </button>
-          <button type="button" class="btn-wasla-ghost" (click)="closeDrawer()">
+          <button
+            type="button"
+            class="btn-wasla-ghost"
+            [disabled]="submitting()"
+            (click)="closeDrawer()"
+          >
             {{ 'common.cancel' | t }}
           </button>
         </div>
-      </div>
-    } @else if (drawerMode() === 'view' && selectedHandover()) {
+      </form>
+    } @else if (selectedHandover(); as item) {
       <div class="drawer-detail-body">
-        <div class="detail-section">
-          <h4 class="section-title">{{ 'handovers.summary' | t }}</h4>
-          <p class="summary-box">{{ selectedHandover()!.summary }}</p>
-        </div>
-
-        <div class="metadata-grid">
+        <section class="detail-section">
+          <h3 class="section-title">{{ 'handovers.summary' | t }}</h3>
+          <p class="summary-box">{{ item.summary }}</p>
+        </section>
+        <dl class="metadata-grid">
           <div class="meta-item">
-            <span class="meta-label">{{ 'handovers.creator' | t }}</span>
-            <span class="meta-val">{{ selectedHandover()!.createdByName }}</span>
+            <dt class="meta-label">{{ 'reservations.time' | t }}</dt>
+            <dd class="meta-val ltr-text" dir="ltr">
+              {{ item.createdOnUtc ? (item.createdOnUtc | date: 'short') : '—' }}
+            </dd>
           </div>
           <div class="meta-item">
-            <span class="meta-label">{{ 'reservations.time' | t }}</span>
-            <span class="meta-val">{{ selectedHandover()!.createdAt }}</span>
+            <dt class="meta-label">{{ 'reservations.status' | t }}</dt>
+            <dd class="meta-val">{{ statusLabel(item) }}</dd>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">{{ 'reservations.status' | t }}</span>
-            <span class="meta-val">
-              <span
-                class="status-pill"
-                [class.pill-open]="selectedHandover()!.status === 'Open'"
-                [class.pill-closed]="selectedHandover()!.status === 'Closed'"
-              >
-                {{ selectedHandover()!.status === 'Open' ? ('handovers.openShift' | t) : ('handovers.closedShift' | t) }}
-              </span>
-            </span>
-          </div>
-          @if (selectedHandover()!.acknowledgedByName) {
-            <div class="meta-item">
-              <span class="meta-label">{{ 'handovers.acknowledgedBy' | t }}</span>
-              <span class="meta-val">{{ selectedHandover()!.acknowledgedByName }}</span>
-            </div>
-          }
-        </div>
-
+        </dl>
         <div class="drawer-footer-actions">
-          @if (selectedHandover()!.status === 'Open') {
-            @if (!selectedHandover()!.acknowledgedByName) {
-              <button
-                type="button"
-                class="btn-wasla-primary"
-                (click)="acknowledgeHandover(selectedHandover()!)"
-              >
-                {{ 'handovers.acknowledge' | t }}
-              </button>
-            }
+          @if (canAct(item, 'Acknowledge')) {
+            <button
+              type="button"
+              class="btn-wasla-primary"
+              [disabled]="submitting()"
+              (click)="acknowledgeHandover(item)"
+            >
+              {{ 'handovers.acknowledge' | t }}
+            </button>
+          }
+          @if (canAct(item, 'Close')) {
             <button
               type="button"
               class="btn-wasla-ghost"
-              (click)="closeHandover(selectedHandover()!)"
+              [disabled]="submitting()"
+              (click)="closeHandover(item)"
             >
               {{ 'handovers.close' | t }}
             </button>

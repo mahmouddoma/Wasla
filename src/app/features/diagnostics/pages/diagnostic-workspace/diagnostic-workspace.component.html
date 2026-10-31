@@ -32,36 +32,39 @@
   <section class="directory diagnostics-board" [attr.aria-busy]="loading()">
     <!-- ── Integrated Filters Toolbar ────────────────────────────────── -->
     <div class="diagnostics-filters-toolbar">
-      <div class="filter-field-group">
-        <label for="diag-status" class="filter-field-label">{{ 'reservations.status' | t }}</label>
-        <div class="filter-select-wrap">
-          <select
-            id="diag-status"
-            class="filter-select"
-            [ngModel]="status()"
-            (ngModelChange)="status.set($event); load()"
-            [disabled]="busy()"
-          >
-            <option value="">{{ 'common.all' | t }}</option>
-            @for (value of statuses(); track value) {
-              <option [value]="value">{{ 'diagnostics.status.' + value | t }}</option>
-            }
-          </select>
-          <svg
-            class="select-chevron"
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path d="m4 6 4 4 4-4" />
-          </svg>
+      @if (view() !== 'results') {
+        <div class="filter-field-group">
+          <label for="diag-status" class="filter-field-label">{{
+            'reservations.status' | t
+          }}</label>
+          <div class="filter-select-wrap">
+            <select
+              id="diag-status"
+              class="filter-select"
+              [ngModel]="status()"
+              (ngModelChange)="status.set($event); load()"
+              [disabled]="busy()"
+            >
+              <option value="">{{ 'common.all' | t }}</option>
+              @for (value of statuses(); track value) {
+                <option [value]="value">{{ 'diagnostics.status.' + value | t }}</option>
+              }
+            </select>
+            <svg
+              class="select-chevron"
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="m4 6 4 4 4-4" />
+            </svg>
+          </div>
         </div>
-      </div>
-
+      }
       <div class="filter-field-group">
         <label for="diag-from" class="filter-field-label">{{ 'diagnostics.from' | t }}</label>
         <input
@@ -287,7 +290,7 @@
                   (click)="inspect(res.resultId, 'results')"
                   [disabled]="busy()"
                 >
-                  {{ res.current.externalProviderName || ('common.details' | t) }}
+                  {{ res.current?.externalProviderName || ('common.details' | t) }}
                 </button>
               </li>
             }
@@ -392,6 +395,23 @@
             {{ v.externalReportDate | localizedDate: language.currentLang() }}
           </p>
           <p>{{ 'diagnostics.status.' + v.status | t }}</p>
+          <p>{{ 'diagnostics.version' | t }} {{ v.versionNumber }}</p>
+          @if (doctor) {
+            <p>
+              {{ 'diagnostics.reviewedAt' | t }}:
+              {{ v.reviewedAtUtc | localizedDate: language.currentLang() }}
+            </p>
+            <p>
+              {{ 'diagnostics.uploadedBy' | t }}:
+              {{ 'diagnostics.uploader.' + v.originallyUploadedBy | t }}
+            </p>
+            <h4>{{ 'diagnostics.coveredItems' | t }}</h4>
+            <ul>
+              @for (id of v.coveredItemIds; track id) {
+                <li>{{ coveredItemName(id) }}</li>
+              }
+            </ul>
+          }
           @if (doctor) {
             <p>{{ v.correctionReason }}</p>
             <p>{{ v.voidReason }}</p>
@@ -405,6 +425,10 @@
                   [disabled]="busy()"
                 >
                   {{ 'diagnostics.download' | t }} · {{ file.originalFileName }}
+                  <bdi
+                    >{{ file.contentType }} · {{ file.sizeBytes }}
+                    {{ 'diagnostics.bytes' | t }}</bdi
+                  >
                 </button>
               </li>
             }
@@ -544,6 +568,8 @@
           correction() ? (result()?.rowVersion ?? null) : (request()?.rowVersion ?? null)
         "
         [items]="request()?.items ?? []"
+        [requestStatus]="request()?.status ?? 'Draft'"
+        [previousCovered]="correction() ? (result()?.current?.coveredItemIds ?? []) : []"
         [busy]="busy()"
         (submitted)="upload($event)"
         (cancelled)="uploadOpen.set(false)"

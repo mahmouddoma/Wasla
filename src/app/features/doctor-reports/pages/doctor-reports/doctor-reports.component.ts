@@ -32,7 +32,14 @@ export type ReportCatalogItem = Schema['ReportCatalogEntry'];
 @Component({
   selector: 'app-doctor-reports',
   standalone: true,
-  imports: [ReportDataSectionsComponent, FormsModule, TranslatePipe, PageHeader, SideDrawer, RouterLink],
+  imports: [
+    ReportDataSectionsComponent,
+    FormsModule,
+    TranslatePipe,
+    PageHeader,
+    SideDrawer,
+    RouterLink,
+  ],
   templateUrl: './doctor-reports.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',
@@ -145,6 +152,13 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
     const value = this.language.t(key);
 
     return value === key ? this.language.t('doctorRemediation.unavailable') : value;
+  }
+
+  scopeLabel(scope: string | null | undefined): string {
+    if (scope?.replace(/\s/g, '').toLowerCase() === 'ownedpractices') {
+      return this.language.t('doctorReports.ownedPractices');
+    }
+    return scope || this.language.t('doctorRemediation.unavailable');
   }
 
   setTab(tab: 'insights' | 'reports'): void {

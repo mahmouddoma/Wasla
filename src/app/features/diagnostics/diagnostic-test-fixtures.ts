@@ -78,6 +78,6 @@ export const diagnosticSubmission: DiagnosticSubmissionResponse = {
   acceptedResultId: null,
   submittedAtUtc: '2026-10-07T09:00:00Z',
   rowVersion: 'submission-rv',
-  attachments: diagnosticResult.current.attachments,
+  attachments: diagnosticResult.current?.attachments ?? [],
   capabilities: { canWithdraw: true, canAccept: true, canReject: true },
 };

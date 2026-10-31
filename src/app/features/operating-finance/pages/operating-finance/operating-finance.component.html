@@ -32,33 +32,73 @@
       </button>
     </div>
   </app-page-header>
-  <nav class="actions" [attr.aria-label]="'doctorRemediation.financeSections' | t">
+  @if (optionsFailed()) {
+    <div class="feedback" role="alert">
+      <p>{{ 'operating.optionsFailed' | t }}</p>
+      <button class="btn btn-outline-secondary" type="button" (click)="loadOptions()">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  }
+  @if (!drawer() && messages().length) {
+    <div class="feedback" role="alert">
+      @for (message of messages(); track $index) {
+        <p>{{ message | t }}</p>
+      }
+    </div>
+  }
+  <nav class="finance-navigation" [attr.aria-label]="'doctorRemediation.financeSections' | t">
     @if (!salary()) {
       <button
-        class="btn"
-        [class.btn-primary]="tab() === 'expenses'"
+        class="btn finance-tab"
+        [class.is-active]="tab() === 'overview'"
+        [attr.aria-current]="tab() === 'overview' ? 'page' : null"
+        (click)="switchTab('overview')"
+      >
+        {{ 'operating.overview' | t }}
+      </button>
+      <button
+        class="btn finance-tab"
+        [class.is-active]="tab() === 'transactions'"
+        [attr.aria-current]="tab() === 'transactions' ? 'page' : null"
+        (click)="switchTab('transactions')"
+      >
+        {{ 'operating.transactions' | t }}
+      </button>
+    }
+    @if (!salary()) {
+      <button
+        class="btn finance-tab"
+        [class.is-active]="tab() === 'expenses'"
+        [attr.aria-current]="tab() === 'expenses' ? 'page' : null"
         (click)="switchTab('expenses')"
       >
         {{ 'doctorRemediation.oneTime' | t }}
       </button>
     }
     @if (canReadPlans()) {
-      <button class="btn" [class.btn-primary]="tab() === 'plans'" (click)="switchTab('plans')">
+      <button
+        class="btn finance-tab"
+        [class.is-active]="tab() === 'plans'"
+        [attr.aria-current]="tab() === 'plans' ? 'page' : null"
+        (click)="switchTab('plans')"
+      >
         {{ (salary() ? 'doctorRemediation.salaryPlans' : 'doctorRemediation.recurringPlans') | t }}
       </button>
     }
     @if (canReadObligations()) {
       <button
-        class="btn"
-        [class.btn-primary]="tab() === 'obligations'"
+        class="btn finance-tab"
+        [class.is-active]="tab() === 'obligations'"
+        [attr.aria-current]="tab() === 'obligations' ? 'page' : null"
         (click)="switchTab('obligations')"
       >
         {{ 'doctorRemediation.obligations' | t }}
       </button>
     }
-    @if (canManage()) {
+    @if (canManage() && ['plans', 'expenses', 'obligations'].includes(tab())) {
       <button
-        class="btn btn-outline-secondary"
+        class="btn btn-primary finance-create"
         (click)="openCreate(tab() === 'expenses' ? 'createExpense' : 'createPlan')"
       >
         {{
@@ -75,6 +115,43 @@
       <h2>{{ 'common.retryGuidance' | t }}</h2>
       <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
     </div>
+  } @else if (tab() === 'overview') {
+    <section class="operating-summary">
+      @if (overview(); as report) {
+        <h2>{{ text(report.titleAr, report.titleEn) }}</h2>
+        @if (report.dataStatus && report.dataStatus !== 'Complete') {
+          <p role="status">{{ 'operating.partialData' | t }}</p>
+        }
+        <dl class="summary-list">
+          @for (metric of report.metrics; track metric.metricCode) {
+            <div>
+              <dt>{{ text(metric.nameAr, metric.nameEn) }}</dt>
+              <dd>
+                {{
+                  metric.unit === 'EGP'
+                    ? money(metric.value)
+                    : (metric.value ?? ('doctorRemediation.unavailable' | t))
+                }}
+              </dd>
+            </div>
+          }
+        </dl>
+      }
+      @if (!overview()?.metrics?.length) {
+        <div class="empty-state">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Payment Information-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h2>{{ 'doctorRemediation.empty' | t }}</h2>
+          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+          <button class="btn btn-primary" (click)="load()">{{ 'common.refresh' | t }}</button>
+        </div>
+      }
+    </section>
   } @else {
     <div class="surface table-responsive">
       <table class="table mb-0">
@@ -83,12 +160,43 @@
             <th>{{ 'doctorRemediation.title' | t }}</th>
             <th>{{ 'finance.fixedAmount' | t }}</th>
             <th>{{ 'doctorRemediation.date' | t }}</th>
-            <th>{{ 'doctorRemediation.status' | t }}</th>
+            <th>
+              {{
+                (tab() === 'transactions' ? 'operating.recordedAt' : 'doctorRemediation.status') | t
+              }}
+            </th>
             <th>{{ 'doctorPatients.col.actions' | t }}</th>
           </tr>
         </thead>
         <tbody>
-          @if (tab() === 'plans') {
+          @if (tab() === 'transactions') {
+            @for (movement of movements(); track movement.id) {
+              <tr>
+                <td [attr.data-label]="'doctorRemediation.title' | t">
+                  {{ movementLabel(movement.movementType) }}
+                </td>
+                <td [attr.data-label]="'finance.fixedAmount' | t">
+                  <bdi>{{ money(movement.amount) }}</bdi>
+                </td>
+                <td [attr.data-label]="'doctorRemediation.date' | t">
+                  <bdi>{{ movement.businessDate }}</bdi>
+                </td>
+                <td [attr.data-label]="'operating.recordedAt' | t">
+                  <bdi>{{ movement.recordedAtUtc }}</bdi>
+                </td>
+                <td [attr.data-label]="'doctorPatients.col.actions' | t">
+                  @if (movement.obligationId) {
+                    <button
+                      class="btn btn-outline-secondary"
+                      (click)="inspectObligation({ id: movement.obligationId })"
+                    >
+                      {{ 'common.viewDetails' | t }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          } @else if (tab() === 'plans') {
             @for (plan of plans(); track plan.id) {
               <tr>
                 <td [attr.data-label]="'doctorRemediation.title' | t">
@@ -107,7 +215,9 @@
                 <td [attr.data-label]="'doctorRemediation.date' | t">
                   <bdi>{{ plan.effectiveFrom }}</bdi>
                 </td>
-                <td [attr.data-label]="'doctorRemediation.status' | t">{{ stateLabel(plan.status) }}</td>
+                <td [attr.data-label]="'doctorRemediation.status' | t">
+                  {{ stateLabel(plan.status) }}
+                </td>
                 <td [attr.data-label]="'doctorPatients.col.actions' | t">
                   <button class="btn btn-outline-secondary" (click)="inspectPlan(plan)">
                     {{ 'common.viewDetails' | t }}
@@ -118,7 +228,9 @@
           } @else {
             @for (obligation of obligations(); track obligation.id) {
               <tr>
-                <td [attr.data-label]="'doctorRemediation.title' | t">{{ text(obligation.descriptionAr, obligation.descriptionEn) }}</td>
+                <td [attr.data-label]="'doctorRemediation.title' | t">
+                  {{ text(obligation.descriptionAr, obligation.descriptionEn) }}
+                </td>
                 <td [attr.data-label]="'finance.fixedAmount' | t">
                   <bdi
                     >{{ obligation.amount ?? ('doctorRemediation.unavailable' | t) }}
@@ -128,7 +240,9 @@
                 <td [attr.data-label]="'doctorRemediation.date' | t">
                   <bdi>{{ obligation.dueBusinessDate }}</bdi>
                 </td>
-                <td [attr.data-label]="'doctorRemediation.status' | t">{{ stateLabel(obligation.status) }}</td>
+                <td [attr.data-label]="'doctorRemediation.status' | t">
+                  {{ stateLabel(obligation.status) }}
+                </td>
                 <td [attr.data-label]="'doctorPatients.col.actions' | t">
                   <button class="btn btn-outline-secondary" (click)="inspectObligation(obligation)">
                     {{ 'common.viewDetails' | t }}
@@ -139,7 +253,13 @@
           }
         </tbody>
       </table>
-      @if (tab() === 'plans' ? !plans().length : !obligations().length) {
+      @if (
+        tab() === 'plans'
+          ? !plans().length
+          : tab() === 'transactions'
+            ? !movements().length
+            : !obligations().length
+      ) {
         <div class="empty-state">
           <img
             class="state-empty-illustration"
@@ -173,7 +293,19 @@
       </nav>
     }
   }
-  <app-side-drawer [opened]="drawer()" [title]="'common.viewDetails' | t" (closed)="close()">
+  <app-side-drawer
+    [opened]="drawer()"
+    [busy]="busy()"
+    [title]="(mode() === 'view' ? 'common.viewDetails' : 'doctorRemediation.' + mode()) | t"
+    (closed)="close()"
+  >
+    @if (messages().length) {
+      <div class="feedback" role="alert">
+        @for (message of messages(); track $index) {
+          <p>{{ message | t }}</p>
+        }
+      </div>
+    }
     @if (detailLoading()) {
       <p role="status">{{ 'common.loading' | t }}</p>
     }
@@ -199,7 +331,26 @@
         <dd>
           <bdi>{{ plan.effectiveFrom }}</bdi>
         </dd>
+        <dt>{{ 'operating.firstCoveredMonth' | t }}</dt>
+        <dd>
+          <bdi>{{ plan.firstCoveredMonth || '—' }}</bdi>
+        </dd>
+        <dt>{{ 'finance.dueDay' | t }}</dt>
+        <dd>{{ revision(plan)?.dueDay }}</dd>
+        <dt>{{ 'operating.allocations' | t }}</dt>
+        <dd>
+          <ul class="allocation-details">
+            @for (allocation of revision(plan)?.allocations; track allocation.practiceId) {
+              <li>
+                {{ practiceName(allocation.practiceId) }} <bdi>{{ allocation.percentage }}%</bdi>
+              </li>
+            }
+          </ul>
+        </dd>
       </dl>
+      @if (salary()) {
+        <p class="finance-guidance">{{ 'operating.planNotPayment' | t }}</p>
+      }
       @if (mode() === 'view') {
         <div class="actions">
           @if (!salary() && canReadObligations()) {
@@ -247,6 +398,26 @@
         </dd>
         <dt>{{ 'doctorRemediation.status' | t }}</dt>
         <dd>{{ stateLabel(obligation.status) }}</dd>
+        @if (salary()) {
+          <dt>{{ 'finance.receptionStaff' | t }}</dt>
+          <dd>{{ staffName(obligation.receptionId) }}</dd>
+          <dt>{{ 'operating.period' | t }}</dt>
+          <dd>
+            <bdi>{{ obligation.periodMonth }} / {{ obligation.periodYear }}</bdi>
+          </dd>
+        }
+        <dt>{{ 'operating.dueState' | t }}</dt>
+        <dd>{{ dueStateLabel(obligation.dueState) }}</dd>
+        <dt>{{ 'operating.allocations' | t }}</dt>
+        <dd>
+          <ul class="allocation-details">
+            @for (allocation of obligation.allocations; track allocation.practiceId) {
+              <li>
+                {{ practiceName(allocation.practiceId) }} <bdi>{{ allocation.percentage }}%</bdi>
+              </li>
+            }
+          </ul>
+        </dd>
       </dl>
       @if (mode() === 'view') {
         <div class="actions">
@@ -273,7 +444,7 @@
               {{ 'doctorRemediation.cancelObligation' | t }}
             </button>
           }
-          @if (obligation.activeSettlementId && !salary()) {
+          @if (obligation.activeSettlementId) {
             <button
               class="btn btn-outline-secondary"
               (click)="openSettlement(obligation.activeSettlementId)"
@@ -300,7 +471,11 @@
       </dl>
       @if (
         mode() === 'view' &&
-        allowed(payment, '/reverse', 'FinancialExpenses.ReverseOwn') &&
+        allowed(
+          payment,
+          '/reverse',
+          salary() ? 'SalarySettlements.ReverseOwn' : 'FinancialExpenses.ReverseOwn'
+        ) &&
         payment.obligationRowVersion
       ) {
         <button class="btn btn-outline-danger" (click)="prepare('reverse')">
@@ -309,8 +484,7 @@
       }
     }
     @if (mode() !== 'view') {
-      <form class="detail-form section" (ngSubmit)="submit()">
-        <h3 class="full">{{ 'doctorRemediation.' + mode() | t }}</h3>
+      <form class="detail-form finance-form" (ngSubmit)="submit()">
         @if (['createPlan', 'editPlan', 'createExpense', 'correctObligation'].includes(mode())) {
           @if (salary() && mode() !== 'correctObligation') {
             <label class="full"
@@ -345,18 +519,13 @@
                 ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
             ></label>
           }
-          <label
-            >{{ 'finance.practice' | t
-            }}<span class="select-control"
-              ><select class="field-input" name="practice" [(ngModel)]="draft.practiceId">
-                <option value="">{{ 'doctorPatients.filter.allPractices' | t }}</option>
-                @for (practice of options()?.practices; track practice.id) {
-                  <option [value]="practice.id">
-                    {{ text(practice.nameAr, practice.nameEn) }}
-                  </option>
-                }</select
-              ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
-          ></label>
+          <app-operating-allocation-editor
+            class="full"
+            [practices]="options()?.practices ?? []"
+            [value]="draft.allocations"
+            [disabled]="busy()"
+            (valueChange)="setAllocations($event)"
+          />
           @if (mode() === 'createPlan' || mode() === 'editPlan') {
             <label
               >{{ 'finance.dueDay' | t
@@ -419,6 +588,7 @@
               class="field-input"
               name="descriptionAr"
               [(ngModel)]="draft.descriptionAr"
+              required
               maxlength="2000"
             ></textarea></label
           ><label class="full"
@@ -468,7 +638,43 @@
               required
           /></label>
         }
-        @if (mode() === 'settle') {
+        @if (mode() === 'createExpense') {
+          <label
+            >{{ 'operating.dueDate' | t
+            }}<input
+              class="field-input ltr-text"
+              dir="ltr"
+              type="date"
+              name="dueBusinessDate"
+              [(ngModel)]="draft.dueBusinessDate"
+              required
+          /></label>
+          @if (can('FinancialExpenses.SettleOwn')) {
+            <label class="confirmation-row full"
+              ><input
+                class="sr-only-chk"
+                type="checkbox"
+                name="paidNow"
+                [(ngModel)]="draft.paidNow"
+              /><span class="check-mark" aria-hidden="true"><i class="fa-solid fa-check"></i></span
+              >{{ 'operating.paidNow' | t }}</label
+            >
+          }
+          @if (draft.paidNow) {
+            <label
+              >{{ 'operating.paymentDate' | t
+              }}<input
+                class="field-input ltr-text"
+                type="date"
+                dir="ltr"
+                name="paymentDate"
+                [(ngModel)]="draft.paymentDate"
+                [max]="today()"
+                required
+            /></label>
+          }
+        }
+        @if (mode() === 'settle' || (mode() === 'createExpense' && draft.paidNow)) {
           <p class="full">{{ 'doctorRemediation.settlementConfirm' | t }}</p>
           <label
             >{{ 'finance.method' | t
@@ -484,6 +690,36 @@
                 }</select
               ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span
           ></label>
+          <label
+            >{{ 'operating.paymentReference' | t
+            }}<input
+              class="field-input"
+              name="reference"
+              [(ngModel)]="draft.reference"
+              maxlength="200"
+          /></label>
+          @if ((mode() === 'settle' ? draft.businessDate : draft.paymentDate) < today()) {
+            <label class="full"
+              >{{ 'operating.backdateReason' | t
+              }}<textarea
+                class="field-input"
+                name="backdateReason"
+                [(ngModel)]="draft.backdateReason"
+                required
+                maxlength="2000"
+              ></textarea>
+            </label>
+          }
+          <label class="confirmation-row full"
+            ><input
+              class="sr-only-chk"
+              type="checkbox"
+              name="paymentConfirmed"
+              [(ngModel)]="draft.paymentConfirmed"
+              required
+            /><span class="check-mark" aria-hidden="true"><i class="fa-solid fa-check"></i></span
+            >{{ 'operating.confirmPayment' | t }}</label
+          >
         }
         @if (!['createPlan', 'settle'].includes(mode())) {
           <label class="full"
@@ -497,11 +733,13 @@
             ></textarea>
           </label>
         }
-        <div class="actions full">
+        <div class="actions full form-actions">
           <button
             type="button"
             class="btn btn-outline-secondary"
-            (click)="mode.set('view')"
+            (click)="
+              mode() === 'createPlan' || mode() === 'createExpense' ? close() : mode.set('view')
+            "
             [disabled]="busy()"
           >
             {{ 'common.cancel' | t }}</button
@@ -537,6 +775,27 @@
           </li>
         }
       </ul>
+      @if (historyTotal() > 20) {
+        <nav class="pager" [attr.aria-label]="'doctorRemediation.history' | t">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="historyLoading() || historyPage() <= 1"
+            (click)="loadHistoryPage(historyPage() - 1)"
+          >
+            {{ 'common.previous' | t }}
+          </button>
+          <span>{{ historyPage() }}</span>
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="historyLoading() || historyPage() * 20 >= historyTotal()"
+            (click)="loadHistoryPage(historyPage() + 1)"
+          >
+            {{ 'common.next' | t }}
+          </button>
+        </nav>
+      }
     }
   </app-side-drawer>
 </main>

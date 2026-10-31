@@ -5,6 +5,7 @@ import { FormField, form, submit } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { PatientSearchItem } from '../../../../domains/patients';
+import { hasReceptionPatientSearchCriteria } from '../../patient-search-criteria';
 import { PatientsApi } from '../../../../domains/patients';
 
 @Component({
@@ -32,8 +33,14 @@ export class PatientPicker {
     event.preventDefault();
     await submit(this.searchForm, async () => {
       if (this.loading()) return;
+      if (!hasReceptionPatientSearchCriteria(this.model())) {
+        this.message.set(this.uiLanguage.t('reception.patients.searchRuleHelp'));
+        return;
+      }
       this.loading.set(true);
       this.message.set('');
+      this.results.set([]);
+      this.searched.set(false);
       try {
         const response = await firstValueFrom(
           this.api.search({ ...this.model(), pageNumber: 1, pageSize: 20 }),

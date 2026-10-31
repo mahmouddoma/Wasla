@@ -128,7 +128,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
       ? ['Requested', 'PartiallyCompleted', 'Completed', 'Cancelled']
       : this.view() === 'results'
         ? ['Finalized', 'Voided']
-        : ['PendingReview', 'Accepted', 'Rejected', 'Withdrawn'],
+        : ['PendingReview', 'Accepted', 'Rejected', 'Withdrawn', 'NoLongerApplicable'],
   );
   private listSequence = 0;
   private detailSequence = 0;
@@ -139,6 +139,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
     const initial = this.views().includes(requested) ? requested : this.views()[0];
     if (initial) {
       this.view.set(initial);
+      if (initial === 'submissions') this.status.set('PendingReview');
       await this.load();
       const id = query.get(
         initial === 'requests' ? 'requestId' : initial === 'results' ? 'resultId' : 'submissionId',
@@ -168,7 +169,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
     if (this.busy() || !this.allowedView(view)) return;
     this.close();
     this.view.set(view);
-    this.status.set('');
+    this.status.set(view === 'submissions' ? 'PendingReview' : '');
     await this.load();
   }
   async load(pageNumber = 1) {
@@ -179,7 +180,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
     const query = {
       ...this.query(),
       PageNumber: pageNumber,
-      Status: this.view() === 'submissions' ? undefined : this.status() || undefined,
+      Status: this.view() === 'requests' ? this.status() || undefined : undefined,
       FromUtc: this.from() ? `${this.from()}T00:00:00Z` : undefined,
       ToUtc: this.to() ? `${this.to()}T23:59:59Z` : undefined,
     };
@@ -205,7 +206,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
             id: i.resultId,
             title: i.current?.externalProviderName ?? '',
             reference: 'report',
-            status: i.current?.status ?? '',
+            status: i.current?.status ?? 'NoCurrentResult',
             date: i.current?.externalReportDate ?? null,
           })),
         };
@@ -249,6 +250,12 @@ export class DiagnosticWorkspaceComponent implements OnInit {
         if (sequence === this.detailSequence) {
           this.result.set(result);
           this.version.set(result.current);
+          if (this.doctor && this.allowedView('requests')) {
+            const request = await firstValueFrom(
+              this.api.request(this.kind, this.actor, result.requestId),
+            );
+            if (sequence === this.detailSequence) this.request.set(request);
+          }
         }
       } else {
         const submission = await firstValueFrom(this.api.submission(this.kind, this.actor, id));
@@ -384,6 +391,7 @@ export class DiagnosticWorkspaceComponent implements OnInit {
       );
     return (
       this.doctor &&
+      this.submission()?.status === 'PendingReview' &&
       this.allowed('ResultSubmissions', 'ReviewOwn') &&
       !!this.submission()?.capabilities?.[action === 'accept' ? 'canAccept' : 'canReject']
     );
@@ -480,6 +488,15 @@ export class DiagnosticWorkspaceComponent implements OnInit {
       !!this.result()?.capabilities?.canCorrect
     );
   }
+  coveredItemName(id: string): string {
+    const item = this.request()?.items?.find((value) => value.itemId === id);
+    return (
+      (this.language.isRtl()
+        ? item?.nameArSnapshot || item?.nameEnSnapshot
+        : item?.nameEnSnapshot || item?.nameArSnapshot) ||
+      this.language.t('diagnostics.coveredTest')
+    );
+  }
   async download(file: DiagnosticAttachmentResponse, type: 'results' | 'result-submissions') {
     if (this.busy() || !this.allowedView(type === 'results' ? 'results' : 'submissions')) return;
     const id = type === 'results' ? this.result()?.resultId : this.submission()?.submissionId;
@@ -559,7 +576,10 @@ export class DiagnosticWorkspaceComponent implements OnInit {
     } finally {
       this.busy.set(false);
     }
-    if (saved) await this.load(this.page().pageNumber);
+    if (saved) {
+      await this.load(this.page().pageNumber);
+      if (this.doctor && this.result()) await this.loadVersions();
+    }
   }
   private async refresh() {
     try {

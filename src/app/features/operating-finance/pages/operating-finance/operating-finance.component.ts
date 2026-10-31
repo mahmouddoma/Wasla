@@ -21,12 +21,16 @@ import { Phase18Api, Phase18Responses } from '../../../../domains/phase18';
 import type { components } from '../../../../domains/phase18';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
+import {
+  AllocationEditorComponent,
+  AllocationDraft,
+} from '../../components/allocation-editor/allocation-editor.component';
 
 type Schema = components['schemas'];
 type Plan = Schema['OperatingPlanResponse'];
 type Obligation = Schema['OperatingObligationResponse'];
 type Command = Schema['OperatingFinanceWriteResponse'];
-type Tab = 'expenses' | 'plans' | 'obligations';
+type Tab = 'expenses' | 'plans' | 'obligations' | 'overview' | 'transactions';
 type Mode =
   | 'view'
   | 'createPlan'
@@ -43,7 +47,7 @@ type Mode =
 
 @Component({
   selector: 'app-operating-finance',
-  imports: [FormsModule, TranslatePipe, PageHeader, SideDrawer],
+  imports: [FormsModule, TranslatePipe, PageHeader, SideDrawer, AllocationEditorComponent],
   templateUrl: './operating-finance.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',
@@ -62,12 +66,18 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
   readonly tab = signal<Tab>('plans');
   readonly plans = signal<Plan[]>([]);
   readonly obligations = signal<Obligation[]>([]);
+  readonly overview = signal<Schema['ReportModel'] | null>(null);
+  readonly movements = signal<Schema['OperatingMovementResponse'][]>([]);
   readonly selectedPlan = signal<Plan | null>(null);
   readonly selectedObligation = signal<Obligation | null>(null);
   readonly settlement = signal<Schema['OperatingSettlementResponse'] | null>(null);
   readonly receipt = signal<Phase18Responses['P18-029'] | null>(null);
   readonly history = signal<Schema['OperatingHistoryResponse'][]>([]);
+  readonly historyPage = signal(1);
+  readonly historyTotal = signal(0);
+  readonly historyLoading = signal(false);
   readonly options = signal<Schema['OperatingFinanceOptions'] | null>(null);
+  readonly optionsFailed = signal(false);
   readonly loading = signal(false);
   readonly detailLoading = signal(false);
   readonly failed = signal(false);
@@ -100,9 +110,19 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     this.salary.set(this.route.snapshot.data['view'] === 'salaries');
     this.tab.set(this.canReadPlans() ? 'plans' : 'obligations');
     void this.load();
-    this.api
-      .call('P18-045', {})
-      .subscribe({ next: (value) => this.options.set(value), error: () => {} });
+    void this.loadOptions();
+  }
+  async loadOptions(): Promise<void> {
+    this.optionsFailed.set(false);
+    try {
+      const value = await firstValueFrom(this.api.call('P18-045', {}));
+      if (!this.destroyed) this.options.set(value);
+    } catch (error) {
+      if (!this.destroyed) {
+        this.optionsFailed.set(true);
+        this.failure(error);
+      }
+    }
   }
   ngOnDestroy(): void {
     clearTimeout(this.retryTimer);
@@ -138,6 +158,15 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     const staff = this.options()?.receptions?.find((r) => r.id === id);
     return this.text(staff?.nameAr, staff?.nameEn);
   }
+  practiceName(id: string | null | undefined): string {
+    const practice = this.options()?.practices?.find((item) => item.id === id);
+    return this.text(practice?.nameAr, practice?.nameEn);
+  }
+  dueStateLabel(state: string | null | undefined): string {
+    return state && ['Upcoming', 'Due', 'Overdue'].includes(state)
+      ? this.language.t('operating.due.' + state)
+      : this.language.t('doctorRemediation.unavailable');
+  }
   async switchTab(tab: Tab): Promise<void> {
     if (this.busy()) return;
     this.tab.set(tab);
@@ -154,9 +183,23 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     this.page.set(page);
     this.plans.set([]);
     this.obligations.set([]);
+    this.overview.set(null);
+    this.movements.set([]);
     const query = { ...this.filters, pageNumber: page, pageSize: 20 };
     try {
-      if (this.tab() === 'plans') {
+      if (this.tab() === 'overview' || this.tab() === 'transactions') {
+        if (this.salary() || !this.can('FinancialExpenses.ViewOwn')) return;
+        if (this.tab() === 'overview') {
+          const report = await firstValueFrom(this.api.call('P18-036', { query }));
+          if (seq === this.sequence && !this.destroyed) this.overview.set(report);
+        } else {
+          const page = await firstValueFrom(this.api.call('P18-044', { query }));
+          if (seq === this.sequence && !this.destroyed) {
+            this.movements.set(this.validate(page.items));
+            this.total.set(page.totalCount ?? 0);
+          }
+        }
+      } else if (this.tab() === 'plans') {
         if (!this.canReadPlans()) return;
         const result = await firstValueFrom(
           this.api.call(this.salary() ? 'P18-058' : 'P18-064', { query }),
@@ -197,6 +240,19 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     if (items.some((item) => !item.id)) throw new Error('Invalid finance contract');
     return items;
   }
+  money(value: number | null | undefined, currency = 'EGP'): string {
+    return value == null
+      ? this.language.t('doctorRemediation.unavailable')
+      : new Intl.NumberFormat(this.language.isRtl() ? 'ar-EG' : 'en-GB', {
+          style: 'currency',
+          currency,
+        }).format(value);
+  }
+  movementLabel(type: string | null | undefined): string {
+    return type === 'Settlement' || type === 'Reversal'
+      ? this.language.t('operating.movement.' + type)
+      : this.language.t('doctorRemediation.unavailable');
+  }
   async inspectPlan(plan: Plan): Promise<void> {
     if (!plan.id || !this.canReadPlans()) return;
     const seq = this.beginDetail();
@@ -215,6 +271,7 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       if (seq === this.detailSequence && !this.destroyed) {
         this.selectedPlan.set(detail);
         this.history.set(history.items || []);
+        this.historyTotal.set(history.totalCount ?? history.items?.length ?? 0);
       }
     } catch (error) {
       if (seq === this.detailSequence) this.failure(error);
@@ -247,6 +304,7 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       if (seq === this.detailSequence && !this.destroyed) {
         this.selectedObligation.set(detail);
         this.history.set(history.items || []);
+        this.historyTotal.set(history.totalCount ?? history.items?.length ?? 0);
       }
     } catch (error) {
       if (seq === this.detailSequence) this.failure(error);
@@ -292,6 +350,7 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     const plan = this.selectedPlan();
     return (
       !!plan?.rowVersion &&
+      (!this.salary() || operation === 'end') &&
       this.canManage() &&
       this.allowed(
         plan,
@@ -302,13 +361,14 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
   }
   obligationAction(operation: 'settle' | 'confirm-actual' | 'cancel' | 'correct'): boolean {
     const obligation = this.selectedObligation();
-    if (!obligation?.rowVersion || (this.salary() && !['cancel', 'correct'].includes(operation)))
-      return false;
+    if (!obligation?.rowVersion || (this.salary() && operation === 'confirm-actual')) return false;
     return this.allowed(
       obligation,
       '/' + operation,
       this.salary()
-        ? 'SalaryPlans.ManageOwn'
+        ? operation === 'settle'
+          ? 'SalarySettlements.RecordOwn'
+          : 'SalaryPlans.ManageOwn'
         : operation === 'settle'
           ? 'FinancialExpenses.SettleOwn'
           : 'FinancialExpenses.ManageOwn',
@@ -318,6 +378,9 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     if (!this.canManage()) return;
     this.clearDetail();
     this.draft = this.emptyDraft();
+    const practices = this.options()?.practices ?? [];
+    if (practices.length === 1 && practices[0].id)
+      this.draft.allocations = [{ practiceId: practices[0].id, percentage: 100 }];
     this.mode.set(kind);
     this.drawer.set(true);
   }
@@ -347,6 +410,10 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       amountPolicy: revision.amountPolicy || 'Fixed',
       descriptionAr: revision.descriptionAr || '',
       descriptionEn: revision.descriptionEn || '',
+      allocations: (revision.allocations ?? []).map((item) => ({
+        practiceId: item.practiceId ?? '',
+        percentage: item.percentage ?? 0,
+      })),
     };
     this.mode.set('editPlan');
   }
@@ -361,6 +428,10 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
             category: obligation?.category || 'Other',
             descriptionAr: obligation?.descriptionAr || '',
             descriptionEn: obligation?.descriptionEn || '',
+            allocations: (obligation?.allocations ?? []).map((item) => ({
+              practiceId: item.practiceId ?? '',
+              percentage: item.percentage ?? 0,
+            })),
           }
         : {}),
     };
@@ -378,6 +449,7 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       mode,
       plan: plan?.id,
       obligation: obligation?.id,
+      settlement: this.settlement()?.id,
       draft: this.draft,
     });
     let key = this.intents.get(signature);
@@ -387,24 +459,23 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     }
     const path = { id: plan?.id || obligation?.id || '' };
     let command: Observable<Command>;
-    const allocations = this.draft.practiceId
-      ? [{ practiceId: this.draft.practiceId, percentage: 100 }]
-      : mode === 'editPlan' && plan
-        ? this.revision(plan)?.allocations?.map((a) => ({
-            practiceId: a.practiceId,
-            percentage: a.percentage,
-          }))
-        : mode === 'correctObligation'
-          ? obligation?.allocations?.map((a) => ({
-              practiceId: a.practiceId,
-              percentage: a.percentage,
-            }))
-          : undefined;
+    const allocations = this.draft.allocations;
+    if (
+      ['createPlan', 'editPlan', 'createExpense', 'correctObligation'].includes(mode) &&
+      (!this.validAllocations() || !this.draft.descriptionAr.trim())
+    ) {
+      this.messages.set(['operating.invalidAllocationOrDescription']);
+      return;
+    }
     if (mode === 'createPlan' || mode === 'editPlan') {
       if (
         !this.canManage() ||
         !this.validMoney() ||
         !this.draft.effectiveFrom ||
+        !Number.isInteger(this.draft.dueDay) ||
+        this.draft.dueDay < 1 ||
+        this.draft.dueDay > 31 ||
+        (!!this.draft.effectiveTo && this.draft.effectiveTo < this.draft.effectiveFrom) ||
         (!this.draft.reason.trim() && mode === 'editPlan') ||
         (this.salary() && !this.options()?.receptions?.some((r) => r.id === this.draft.receptionId))
       )
@@ -416,8 +487,8 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
         effectiveTo: this.draft.effectiveTo || null,
         receptionId: this.salary() ? this.draft.receptionId : null,
         category: this.draft.category,
-        cadence: this.draft.cadence,
-        amountPolicy: this.draft.amountPolicy,
+        cadence: this.salary() ? 'Monthly' : this.draft.cadence,
+        amountPolicy: this.salary() ? 'Fixed' : this.draft.amountPolicy,
         descriptionAr: this.draft.descriptionAr,
         descriptionEn: this.draft.descriptionEn,
         allocations,
@@ -441,7 +512,13 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
         this.salary() ||
         !this.validMoney() ||
         !this.draft.reason.trim() ||
-        !this.draft.businessDate
+        !this.draft.businessDate ||
+        !this.draft.dueBusinessDate
+      )
+        return;
+      if (
+        this.draft.paidNow &&
+        (!this.can('FinancialExpenses.SettleOwn') || !this.validPayment(this.draft.paymentDate))
       )
         return;
       command = this.api.call('P18-032', {
@@ -449,11 +526,14 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
           amount,
           category: this.draft.category,
           businessDate: this.draft.businessDate,
-          dueBusinessDate: this.draft.businessDate,
+          dueBusinessDate: this.draft.dueBusinessDate,
           descriptionAr: this.draft.descriptionAr,
           descriptionEn: this.draft.descriptionEn,
           allocations,
-          paidNow: false,
+          paidNow: this.draft.paidNow,
+          payment: this.draft.paidNow
+            ? this.paymentBody(amount, null, this.draft.paymentDate)
+            : undefined,
           reason: this.draft.reason.trim(),
         },
         idempotencyKey: key,
@@ -485,18 +565,13 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
         !this.obligationAction('settle') ||
         !this.validMoney() ||
         amount !== obligation.amount ||
+        !this.validPayment(this.draft.businessDate) ||
         (obligation.amountPolicy === 'Variable' && obligation.actualAmountConfirmed !== true)
       )
         return;
-      command = this.api.call('P18-043', {
+      command = this.api.call(this.salary() ? 'P18-086' : 'P18-043', {
         path: { id: obligation.id },
-        body: {
-          amount,
-          paidBusinessDate: this.draft.businessDate,
-          paymentMethod: this.draft.paymentMethod,
-          rowVersion: obligation.rowVersion,
-          reportTimeZoneId: this.options()?.defaultReportTimeZoneId,
-        },
+        body: this.paymentBody(amount, obligation.rowVersion, this.draft.businessDate),
         idempotencyKey: key,
       });
     } else if (mode === 'correctObligation') {
@@ -547,16 +622,23 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       if (
         !settlement?.id ||
         !settlement.obligationRowVersion ||
-        !this.allowed(settlement, '/reverse', 'FinancialExpenses.ReverseOwn') ||
+        !this.allowed(
+          settlement,
+          '/reverse',
+          this.salary() ? 'SalarySettlements.ReverseOwn' : 'FinancialExpenses.ReverseOwn',
+        ) ||
+        !this.draft.businessDate ||
+        this.draft.businessDate > this.today() ||
         !this.draft.reason.trim()
       )
         return;
-      command = this.api.call('P18-030', {
+      command = this.api.call(this.salary() ? 'P18-090' : 'P18-030', {
         path: { id: settlement.id },
         body: {
           businessDate: this.draft.businessDate,
           rowVersion: settlement.obligationRowVersion,
           reason: this.draft.reason.trim(),
+          reportTimeZoneId: this.options()?.defaultReportTimeZoneId,
         },
         idempotencyKey: key,
       });
@@ -573,6 +655,9 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       this.mode.set('view');
       await this.load(this.page());
       if (result.settlementId) await this.openSettlement(result.settlementId);
+      else if (mode === 'createPlan') await this.inspectPlan({ id: result.id });
+      else if (mode === 'createExpense')
+        await this.inspectObligation({ id: result.obligationId || result.id });
       else if (obligation) await this.inspectObligation(obligation);
       else if (plan) await this.inspectPlan(plan);
       else {
@@ -597,14 +682,15 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     const seq = this.beginDetail();
     try {
       const [detail, receipt, history] = await Promise.all([
-        firstValueFrom(this.api.call('P18-027', { path: { id } })),
-        firstValueFrom(this.api.call('P18-029', { path: { id } })),
-        firstValueFrom(this.api.call('P18-028', { path: { id } })),
+        firstValueFrom(this.api.call(this.salary() ? 'P18-087' : 'P18-027', { path: { id } })),
+        firstValueFrom(this.api.call(this.salary() ? 'P18-089' : 'P18-029', { path: { id } })),
+        firstValueFrom(this.api.call(this.salary() ? 'P18-088' : 'P18-028', { path: { id } })),
       ]);
       if (seq === this.detailSequence && !this.destroyed) {
         this.settlement.set(detail);
         this.receipt.set(receipt);
         this.history.set(history.items || []);
+        this.historyTotal.set(history.totalCount ?? history.items?.length ?? 0);
       }
     } catch (error) {
       if (seq === this.detailSequence) this.failure(error);
@@ -615,11 +701,99 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
   validMoney(): boolean {
     return /^\d+(\.\d{1,2})?$/.test(this.draft.amount) && Number(this.draft.amount) > 0;
   }
+  async loadHistoryPage(page: number): Promise<void> {
+    if (this.historyLoading() || page < 1 || page > Math.ceil(this.historyTotal() / 20)) return;
+    const plan = this.selectedPlan(),
+      obligation = this.selectedObligation(),
+      settlement = this.settlement();
+    const id = plan?.id || obligation?.id || settlement?.id;
+    if (!id) return;
+    const sequence = this.detailSequence;
+    this.historyLoading.set(true);
+    try {
+      const endpoint = plan
+        ? this.salary()
+          ? 'P18-063'
+          : 'P18-069'
+        : obligation
+          ? this.salary()
+            ? 'P18-085'
+            : 'P18-042'
+          : this.salary()
+            ? 'P18-088'
+            : 'P18-028';
+      const result = await firstValueFrom(
+        this.api.call(endpoint, { path: { id }, query: { pageNumber: page, pageSize: 20 } }),
+      );
+      if (sequence === this.detailSequence && !this.destroyed) {
+        this.history.set(result.items ?? []);
+        this.historyPage.set(page);
+        this.historyTotal.set(result.totalCount ?? 0);
+      }
+    } catch (error) {
+      if (sequence === this.detailSequence) this.failure(error);
+    } finally {
+      if (sequence === this.detailSequence) this.historyLoading.set(false);
+    }
+  }
+  validAllocations(): boolean {
+    const rows = this.draft.allocations;
+    return (
+      rows.length > 0 &&
+      new Set(rows.map((row) => row.practiceId)).size === rows.length &&
+      rows.every(
+        (row) =>
+          this.options()?.practices?.some((practice) => practice.id === row.practiceId) &&
+          Number.isFinite(row.percentage) &&
+          row.percentage > 0 &&
+          row.percentage <= 100 &&
+          /^\d+(\.\d{1,2})?$/.test(String(row.percentage)),
+      ) &&
+      rows.reduce((sum, row) => sum + Math.round(row.percentage * 100), 0) === 10000
+    );
+  }
+  setAllocations(rows: AllocationDraft[]): void {
+    this.draft.allocations = rows;
+  }
+  today(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.options()?.defaultReportTimeZoneId || 'Africa/Cairo',
+    }).format(new Date());
+  }
+  private validPayment(date: string): boolean {
+    if (
+      !date ||
+      date > this.today() ||
+      !this.draft.paymentConfirmed ||
+      !this.options()?.paymentMethods?.some((method) => method.code === this.draft.paymentMethod) ||
+      (date < this.today() && !this.draft.backdateReason.trim())
+    ) {
+      this.messages.set(['operating.invalidPayment']);
+      return false;
+    }
+    return true;
+  }
+  private paymentBody(
+    amount: number,
+    rowVersion: string | null | undefined,
+    date: string,
+  ): Schema['OperatingSettlementRequest'] {
+    return {
+      amount,
+      rowVersion,
+      paidBusinessDate: date,
+      paymentMethod: this.draft.paymentMethod,
+      reference: this.draft.reference.trim() || null,
+      backdateReason: this.draft.backdateReason.trim() || null,
+      reportTimeZoneId: this.options()?.defaultReportTimeZoneId,
+    };
+  }
   close(): void {
     if (this.busy()) return;
     this.detailSequence++;
     this.drawer.set(false);
     this.clearDetail();
+    this.draft = this.emptyDraft();
   }
   private clearDetail(): void {
     this.selectedPlan.set(null);
@@ -627,6 +801,9 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
     this.settlement.set(null);
     this.receipt.set(null);
     this.history.set([]);
+    this.historyPage.set(1);
+    this.historyTotal.set(0);
+    this.historyLoading.set(false);
     this.fields.set({});
     this.mode.set('view');
   }
@@ -664,6 +841,7 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       this.clearDetail();
       this.drawer.set(false);
       this.intents.clear();
+      this.draft = this.emptyDraft();
     }
   }
   private emptyDraft() {
@@ -681,6 +859,17 @@ export class OperatingFinanceComponent implements OnInit, OnDestroy {
       paymentMethod: 'Cash' as Schema['OperatingPaymentMethod'],
       receptionId: '',
       practiceId: '',
+      allocations: [] as AllocationDraft[],
+      dueBusinessDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(
+        new Date(),
+      ),
+      paymentDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(
+        new Date(),
+      ),
+      paidNow: false,
+      paymentConfirmed: false,
+      reference: '',
+      backdateReason: '',
       descriptionAr: '',
       descriptionEn: '',
       reason: '',

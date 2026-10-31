@@ -56,6 +56,7 @@ describe.each(['Doctor', 'Patient'] as const)('%s diagnostic workspace', (actor)
     api.result.mockReturnValue(of(diagnosticResult));
     api.submission.mockReturnValue(of(diagnosticSubmission));
     api.submissions.mockReturnValue(of(page));
+    api.versions.mockReturnValue(of([]));
     api.upload.mockReturnValue(
       of({
         request: diagnosticRequest,

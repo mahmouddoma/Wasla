@@ -10,6 +10,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import {
   FormField,
@@ -34,10 +35,10 @@ import {
   PagedResponse,
   PatientRelationshipType,
   PatientSearchItem,
-  isValidPatientSearchCriteria,
 } from '../../../domains/patients';
 import { PatientsApi } from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
+import { hasReceptionPatientSearchCriteria } from '../patient-search-criteria';
 
 @Component({
   selector: 'app-reception-patients',
@@ -191,7 +192,7 @@ export class ReceptionPatients {
         this.canSearch() &&
         this.selectedPracticeAllows(PERMISSIONS.patientsSearchBasic)
       )
-        void this.search();
+        untracked(() => void this.search());
     });
 
     const params = this.route.snapshot.queryParamMap;
@@ -231,7 +232,7 @@ export class ReceptionPatients {
   }
 
   protected hasValidSearchCriteria(): boolean {
-    return isValidPatientSearchCriteria(this.searchModel());
+    return hasReceptionPatientSearchCriteria(this.searchModel());
   }
 
   protected setPageSize(size: number): void {
@@ -380,7 +381,8 @@ export class ReceptionPatients {
       this.messages.set([this.uiLanguage.t('ui.full.761')]);
       return;
     }
-    if (event && !this.hasValidSearchCriteria()) {
+    if (!this.hasValidSearchCriteria()) {
+      if (!event) return;
       const msg = this.uiLanguage.t('reception.patients.searchRuleHelp');
       this.toast.error(msg);
       this.messages.set([msg]);
@@ -521,10 +523,10 @@ export class ReceptionPatients {
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(id);
-      }
+      } else throw new Error('Clipboard unavailable');
       this.toast.success(this.uiLanguage.t('reception.patients.attestationCopied'));
     } catch {
-      this.toast.success(id);
+      this.toast.error(this.uiLanguage.t('reception.audit.copyFailed'));
     }
   }
 

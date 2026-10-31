@@ -55,7 +55,7 @@ export type DiagnosticResultResponse = {
   readonly resultId: string;
   readonly requestId: string;
   readonly currentVersionNumber: number;
-  readonly current: DiagnosticVersionResponse;
+  readonly current: DiagnosticVersionResponse | null;
   readonly rowVersion: string | null;
   readonly capabilities: DiagnosticResultCapabilities;
 };

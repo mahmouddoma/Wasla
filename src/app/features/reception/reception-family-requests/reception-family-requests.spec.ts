@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { ReceptionFamilyRequests } from './reception-family-requests';
 import { FamiliesApi, FamilyRequestDetails, FamilyRequestPage } from '../../../domains/families';
@@ -124,22 +124,32 @@ describe('ReceptionFamilyRequests', () => {
   });
 
   it('should open request details when selected', async () => {
-    await (component as unknown as { openRequest: (id: string) => Promise<void> }).openRequest('req-1');
+    await (component as unknown as { openRequest: (id: string) => Promise<void> }).openRequest(
+      'req-1',
+    );
     fixture.detectChanges();
 
     expect(mockFamiliesApi.assistedDetails).toHaveBeenCalledWith('req-1');
-    const selected = (component as unknown as { selectedRequest: () => FamilyRequestDetails | null }).selectedRequest();
+    const selected = (
+      component as unknown as { selectedRequest: () => FamilyRequestDetails | null }
+    ).selectedRequest();
     expect(selected?.requestId).toBe('req-1');
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('app-side-drawer [role="dialog"]')).toBeTruthy();
   });
 
   it('should close details panel when closeDetails is called', async () => {
-    await (component as unknown as { openRequest: (id: string) => Promise<void> }).openRequest('req-1');
+    await (component as unknown as { openRequest: (id: string) => Promise<void> }).openRequest(
+      'req-1',
+    );
     fixture.detectChanges();
 
     (component as unknown as { closeDetails: () => void }).closeDetails();
     fixture.detectChanges();
 
-    const selected = (component as unknown as { selectedRequest: () => FamilyRequestDetails | null }).selectedRequest();
+    const selected = (
+      component as unknown as { selectedRequest: () => FamilyRequestDetails | null }
+    ).selectedRequest();
     expect(selected).toBeNull();
   });
 
@@ -148,7 +158,9 @@ describe('ReceptionFamilyRequests', () => {
       throwError(() => ({ status: 500, error: { message: 'Server error' } })),
     );
 
-    await (component as unknown as { loadRequests: (page?: number) => Promise<void> }).loadRequests(1);
+    await (component as unknown as { loadRequests: (page?: number) => Promise<void> }).loadRequests(
+      1,
+    );
     fixture.detectChanges();
 
     const messages = (component as unknown as { messages: () => string[] }).messages();
@@ -159,5 +171,30 @@ describe('ReceptionFamilyRequests', () => {
     (component as unknown as { logout: () => void }).logout();
     expect(mockAuthSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('ignores a delayed detail response after the drawer is closed', async () => {
+    const pending = new Subject<FamilyRequestDetails>();
+    mockFamiliesApi.assistedDetails.mockReturnValueOnce(pending);
+    const loading = component['openRequest']('req-1');
+    component['closeDetails']();
+    pending.next(mockDetails);
+    pending.complete();
+    await loading;
+    expect(component['selectedRequest']()).toBeNull();
+  });
+
+  it('reports failed resubmission without changing the selected record', async () => {
+    const request = { ...mockDetails, status: 'ModificationRequested' as const };
+    component['selectedRequest'].set(request);
+    component['revisionFiles'].set([
+      new File(['evidence'], 'evidence.pdf', { type: 'application/pdf' }),
+    ]);
+    component['revisionTypes'].set('BirthCertificate');
+    mockFamiliesApi.resubmitAssisted.mockReturnValueOnce(throwError(() => new Error('offline')));
+    await component['resubmit']();
+    expect(mockToast.error).toHaveBeenCalled();
+    expect(mockToast.success).not.toHaveBeenCalled();
+    expect(component['selectedRequest']()).toEqual(request);
   });
 });

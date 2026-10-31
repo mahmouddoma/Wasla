@@ -25,12 +25,13 @@ import {
 import { PatientSearchItem } from '../../../domains/patients';
 import { PatientPicker } from '../components/patient-picker/patient-picker';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 
 import { SlicePipe } from '@angular/common';
 
 @Component({
   selector: 'app-reception-family-requests',
-  imports: [FormField, RouterLink, PatientPicker, TranslatePipe, PageHeader, SlicePipe],
+  imports: [FormField, RouterLink, PatientPicker, TranslatePipe, PageHeader, SlicePipe, SideDrawer],
   templateUrl: './reception-family-requests.html',
   styleUrl: './reception-family-requests.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -91,6 +92,8 @@ export class ReceptionFamilyRequests {
     PERMISSIONS.familyRelationshipRequestsResubmitAssisted,
   );
   protected readonly activeView = signal<'all' | 'form' | 'list'>('all');
+  private listSequence = 0;
+  private detailSequence = 0;
 
   protected setView(view: 'all' | 'form' | 'list'): void {
     this.activeView.set(view);
@@ -106,6 +109,7 @@ export class ReceptionFamilyRequests {
 
   protected async submitRequest(event: Event): Promise<void> {
     event.preventDefault();
+    if (!this.canCreate || this.submitting()) return;
     await submit(this.requestForm, async () => {
       const requester = this.requester();
       const target = this.target();
@@ -118,7 +122,10 @@ export class ReceptionFamilyRequests {
         return;
       }
       const documentTypes = splitTypes(this.requestModel().documentTypes);
-      const fileError = getEvidenceFileValidationError(this.evidenceFiles(), this.uiLanguage.currentLang());
+      const fileError = getEvidenceFileValidationError(
+        this.evidenceFiles(),
+        this.uiLanguage.currentLang(),
+      );
       if (fileError) {
         this.messages.set([fileError]);
         return;
@@ -145,6 +152,7 @@ export class ReceptionFamilyRequests {
         await this.loadRequests(1);
       } catch (error) {
         this.messages.set(flattenErrors(error));
+        this.toast.error(this.messages().join(' ') || this.uiLanguage.t('common.requestFailed'));
       } finally {
         this.submitting.set(false);
       }
@@ -158,25 +166,30 @@ export class ReceptionFamilyRequests {
       return;
     }
     this.loading.set(true);
+    const sequence = ++this.listSequence;
     this.messages.set([]);
     try {
       this.pageNumber.set(pageNumber);
-      this.result.set(
-        await firstValueFrom(this.api.assistedRequests({ ...this.filterModel(), pageNumber })),
+      const result = await firstValueFrom(
+        this.api.assistedRequests({ ...this.filterModel(), pageNumber }),
       );
+      if (sequence === this.listSequence) this.result.set(result);
     } catch (error) {
-      this.messages.set(flattenErrors(error));
+      if (sequence === this.listSequence) this.messages.set(flattenErrors(error));
     } finally {
-      this.loading.set(false);
+      if (sequence === this.listSequence) this.loading.set(false);
     }
   }
 
   protected async openRequest(requestId: string): Promise<void> {
+    const sequence = ++this.detailSequence;
     this.resetFeedback();
+    this.selectedRequest.set(null);
     try {
-      this.selectedRequest.set(await firstValueFrom(this.api.assistedDetails(requestId)));
+      const details = await firstValueFrom(this.api.assistedDetails(requestId));
+      if (sequence === this.detailSequence) this.selectedRequest.set(details);
     } catch (error) {
-      this.messages.set(flattenErrors(error));
+      if (sequence === this.detailSequence) this.messages.set(flattenErrors(error));
     }
   }
 
@@ -194,9 +207,18 @@ export class ReceptionFamilyRequests {
 
   protected async resubmit(): Promise<void> {
     const request = this.selectedRequest();
-    if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
+    if (
+      !request ||
+      request.status !== 'ModificationRequested' ||
+      !this.canResubmit ||
+      this.submitting()
+    )
+      return;
     const documentTypes = splitTypes(this.revisionTypes());
-    const fileError = getEvidenceFileValidationError(this.revisionFiles(), this.uiLanguage.currentLang());
+    const fileError = getEvidenceFileValidationError(
+      this.revisionFiles(),
+      this.uiLanguage.currentLang(),
+    );
     if (fileError) {
       this.messages.set([fileError]);
       return;
@@ -222,12 +244,10 @@ export class ReceptionFamilyRequests {
       await this.loadRequests(this.pageNumber());
     } catch (error) {
       this.messages.set(flattenErrors(error));
+      this.toast.error(this.messages().join(' ') || this.uiLanguage.t('common.requestFailed'));
       if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.openRequest(request.requestId);
-        this.messages.update((items) => [
-          ...items,
-          this.uiLanguage.t('ui.full.736'),
-        ]);
+        this.messages.update((items) => [...items, this.uiLanguage.t('ui.full.736')]);
       }
     } finally {
       this.submitting.set(false);
@@ -255,6 +275,8 @@ export class ReceptionFamilyRequests {
   }
 
   protected closeDetails(): void {
+    if (this.submitting()) return;
+    ++this.detailSequence;
     this.selectedRequest.set(null);
   }
 

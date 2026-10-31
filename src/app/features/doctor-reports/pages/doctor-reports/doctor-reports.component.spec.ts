@@ -50,6 +50,76 @@ describe('Doctor reports and insights', () => {
     expect(component.insights()).toEqual([]);
     expect(component.reports()).toEqual([]);
   });
+  it('renders separate formatted comparison values and avoids repeating the insight explanation', async () => {
+    const fixture = TestBed.createComponent(DoctorReportsComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.selectedInsight.set({
+      ...insight,
+      currentValue: 31.818181818181817,
+      previousValue: 70,
+      sampleCount: 22,
+      explanationAr: 'شرح الملاحظة',
+      explanationEn: 'Insight explanation',
+      evidenceSummaryAr: 'شرح الملاحظة',
+      evidenceSummaryEn: 'Insight explanation',
+      suggestedActionAr: 'راجع مواعيد العيادة',
+      suggestedActionEn: 'Review clinic appointments',
+    });
+    fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    const values = Array.from(element.querySelectorAll('.insight-comparison dd'));
+    expect(values.map((value) => value.textContent?.trim())).toEqual(
+      [31.818181818181817, 70, 22].map((value) =>
+        fixture.componentInstance.formatMetricValue(value),
+      ),
+    );
+    expect(element.querySelector('.insight-detail__header h2')).toBeNull();
+    expect(element.querySelector('.side-drawer-panel--wide')).toBeNull();
+    expect(
+      element
+        .querySelector<HTMLElement>('.side-drawer-panel')
+        ?.style.getPropertyValue('--drawer-width'),
+    ).toBe('640px');
+    expect(element.querySelectorAll('.insight-detail__description section')).toHaveLength(1);
+    expect(element.querySelector('.insight-history__empty img')).not.toBeNull();
+  });
+  it('translates the clinic scope in both languages', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      component.language.setLanguage(lang);
+      expect(component.scopeLabel('Owned Practices')).toBe(
+        component.language.t('doctorReports.ownedPractices'),
+      );
+      expect(component.scopeLabel('OwnedPractices')).toBe(
+        component.language.t('doctorReports.ownedPractices'),
+      );
+      expect(component.scopeLabel(null)).toBe(
+        component.language.t('doctorRemediation.unavailable'),
+      );
+    }
+  });
+  it('renders an illustrated empty directory and uses the selected report as the drawer title', async () => {
+    TestBed.inject(ActivatedRoute).snapshot.data['tab'] = 'reports';
+    const fixture = TestBed.createComponent(DoctorReportsComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.reports-state--empty img')).not.toBeNull();
+    fixture.componentInstance.selectedReport.set({
+      reportCode: 'overview',
+      titleAr: 'نظرة عامة',
+      titleEn: 'Overview',
+      scope: 'Owned Practices',
+    });
+    fixture.detectChanges();
+    expect(element.querySelector('.drawer-titles h2')?.textContent?.trim()).toBe(
+      fixture.componentInstance.text('نظرة عامة', 'Overview'),
+    );
+    expect(element.querySelector('.report-detail__scope')?.textContent?.trim()).toBe(
+      fixture.componentInstance.scopeLabel('Owned Practices'),
+    );
+  });
   it('loads only the route-specific source on entry', async () => {
     component.ngOnInit();
     await Promise.resolve();
@@ -95,10 +165,20 @@ describe('Doctor reports and insights', () => {
   it('translates units and formats unavailable and numeric values for each language', () => {
     for (const lang of ['ar', 'en'] as const) {
       component.language.setLanguage(lang);
-      expect(component.metricUnit('count')).toBe(component.language.t('doctorWorkspace.unit.count'));
-      expect(component.metricUnit('minutes')).toBe(component.language.t('doctorWorkspace.unit.minutes'));
-      expect(component.formatMetricValue(null)).toBe(component.language.t('doctorRemediation.unavailable'));
-      expect(component.formatMetricValue(1234.5)).toBe(new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { maximumFractionDigits: 1 }).format(1234.5));
+      expect(component.metricUnit('count')).toBe(
+        component.language.t('doctorWorkspace.unit.count'),
+      );
+      expect(component.metricUnit('minutes')).toBe(
+        component.language.t('doctorWorkspace.unit.minutes'),
+      );
+      expect(component.formatMetricValue(null)).toBe(
+        component.language.t('doctorRemediation.unavailable'),
+      );
+      expect(component.formatMetricValue(1234.5)).toBe(
+        new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', {
+          maximumFractionDigits: 1,
+        }).format(1234.5),
+      );
     }
   });
   it('keeps server feedback out of content and translates report data notes', async () => {
@@ -106,13 +186,18 @@ describe('Doctor reports and insights', () => {
     await fixture.whenStable();
     const page = fixture.componentInstance;
     page.selectedReport.set({ reportCode: 'overview', canPreview: true });
-    page.preview.set({ metrics: [{ metricCode: 'CheckIns', nameEn: 'Attendance', value: 1, unit: 'count' }], warnings: ['Report.ExcludedInvalidSamples'] });
+    page.preview.set({
+      metrics: [{ metricCode: 'CheckIns', nameEn: 'Attendance', value: 1, unit: 'count' }],
+      warnings: ['Report.ExcludedInvalidSamples'],
+    });
     page.messages.set(['Server-only response']);
     for (const lang of ['ar', 'en'] as const) {
       page.language.setLanguage(lang);
       await fixture.whenStable();
       expect(fixture.nativeElement.textContent).not.toContain('Server-only response');
-      expect(fixture.nativeElement.querySelector('.report-warning, .report-warnings__list')?.textContent).toContain(page.language.t('Report.ExcludedInvalidSamples'));
+      expect(
+        fixture.nativeElement.querySelector('.report-warning, .report-warnings__list')?.textContent,
+      ).toContain(page.language.t('Report.ExcludedInvalidSamples'));
       expect(fixture.nativeElement.textContent).not.toContain('Report.ExcludedInvalidSamples');
     }
   });

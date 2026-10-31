@@ -6,10 +6,21 @@
     </div>
     @if (selectedPatient(); as patient) {
       <span class="selection-badge">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="13"
+          height="13"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          aria-hidden="true"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
-        <span>{{ 'ui.full.707' | t }} {{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</span>
+        <span
+          >{{ 'ui.full.707' | t }}
+          {{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</span
+        >
       </span>
     }
   </header>
@@ -22,7 +33,13 @@
 
     <label class="picker-field">
       <span>{{ 'ui.full.708' | t }}</span>
-      <input type="tel" dir="ltr" [formField]="searchForm.phoneNumber" placeholder="01xxxxxxxxx" />
+      <input
+        type="tel"
+        dir="ltr"
+        class="ltr-text"
+        [formField]="searchForm.phoneNumber"
+        [placeholder]="'reception.audit.phoneExample' | t"
+      />
     </label>
 
     <label class="picker-field">
@@ -35,7 +52,15 @@
         <span class="spinner-xs" aria-hidden="true"></span>
         <span>{{ uiLanguage.t('discovery.loading') }}</span>
       } @else {
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -58,22 +83,52 @@
           (click)="choose(patient)"
         >
           <div class="result-details">
-            <strong>{{ uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr }}</strong>
-            <span>{{ patient.dateOfBirth }} · {{ patient.gender === 'Male' ? uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
+            <strong>{{
+              uiLanguage.isRtl() ? patient.nameAr : patient.nameEn || patient.nameAr
+            }}</strong>
+            <span
+              >{{ patient.dateOfBirth }} ·
+              {{
+                patient.gender === 'Male'
+                  ? uiLanguage.t('register.male')
+                  : uiLanguage.t('register.female')
+              }}</span
+            >
             <small dir="ltr">{{
-              patient.phoneNumber || (patient.hasContactPhone ? uiLanguage.t('ui.expressions.212') : uiLanguage.t('ui.expressions.213'))
+              patient.phoneNumber ||
+                (patient.hasContactPhone
+                  ? uiLanguage.t('ui.expressions.212')
+                  : uiLanguage.t('ui.expressions.213'))
             }}</small>
           </div>
           <div class="result-check" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
         </button>
       } @empty {
-        <p class="empty">
-          {{ 'ui.full.709' | t }}
-        </p>
+        <div class="empty">
+          <img
+            class="state-empty-illustration"
+            src="/SVG-AVATAR/Doctors-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>{{ 'ui.full.709' | t }}</h3>
+          <p>{{ 'reception.patients.searchRuleHelp' | t }}</p>
+          <button type="button" class="btn-picker-search" (click)="search($event)">
+            {{ 'discovery.search' | t }}
+          </button>
+        </div>
       }
     </div>
   }

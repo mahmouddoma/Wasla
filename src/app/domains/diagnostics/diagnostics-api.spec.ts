@@ -286,6 +286,11 @@ describe.each(['lab', 'radiology'] as const)('%s diagnostic API contracts', (kin
         (r) => r.url === `${environment.apiBaseUrl}/api/v1/${c.path.replace('K', kind)}`,
       );
       expect(req.request.method).toBe(c.method);
+      if (c.name === 'inbox') {
+        expect(req.request.params.get('SubmissionStatus')).toBe('PendingReview');
+        expect(req.request.params.has('status')).toBe(false);
+        expect(req.request.params.has('Status')).toBe(false);
+      }
       if (c.key) expect(req.request.headers.get('Idempotency-Key')).toBe('stable-key');
       if (c.name === 'remove item') {
         expect(req.request.params.get('rowVersion')).toBe('token+/=');

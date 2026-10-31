@@ -36,10 +36,7 @@ describe('PatientPicker', () => {
 
     await TestBed.configureTestingModule({
       imports: [PatientPicker],
-      providers: [
-        { provide: PatientsApi, useValue: mockPatientsApi },
-        LanguageService,
-      ],
+      providers: [{ provide: PatientsApi, useValue: mockPatientsApi }, LanguageService],
     }).compileComponents();
 
     TestBed.inject(LanguageService).setLanguage('ar');
@@ -57,6 +54,7 @@ describe('PatientPicker', () => {
   });
 
   it('should search patients and display results', async () => {
+    component['model'].update((model) => ({ ...model, name: 'Ahmed', dateOfBirth: '1990-01-01' }));
     const event = new Event('submit');
     const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
 
@@ -81,6 +79,7 @@ describe('PatientPicker', () => {
   });
 
   it('should handle search error gracefully', async () => {
+    component['model'].update((model) => ({ ...model, name: 'Ahmed', dateOfBirth: '1990-01-01' }));
     const errorResponse = new HttpErrorResponse({
       status: 400,
       error: { detail: 'Invalid search criteria' },
@@ -93,5 +92,12 @@ describe('PatientPicker', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Invalid search criteria');
+  });
+
+  it('does not send an empty patient search', async () => {
+    await component['search'](new Event('submit'));
+    expect(mockPatientsApi.search).not.toHaveBeenCalled();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('[role=alert]')).toBeTruthy();
   });
 });

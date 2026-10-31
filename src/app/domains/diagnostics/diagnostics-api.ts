@@ -147,7 +147,15 @@ export class DiagnosticsApi {
   inbox(kind: DiagnosticKind, query: DiagnosticQuery, status?: string) {
     return this.http.get<C.DiagnosticSubmissionSummaryClinicalPage>(
       this.collection(kind, 'result-submissions', 'Doctor'),
-      { params: this.params({ ...query, status }) },
+      // DiagnosticFilter.Status is an order status. Use its dedicated submission field;
+      // the controller's status alias also binds to the order enum and returns HTTP 400.
+      {
+        params: this.params({
+          ...query,
+          Status: undefined,
+          SubmissionStatus: status || query.SubmissionStatus,
+        }),
+      },
     );
   }
   submissions(kind: DiagnosticKind, requestId: string, pageNumber: number) {

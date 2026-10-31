@@ -8,14 +8,13 @@
   >
     <div pageHeaderActions class="family-requests-actions">
       <!-- View Mode Segmented Controls (Split / Form / List) -->
-      <div class="workspace-view-segmented" role="tablist" [attr.aria-label]="'family.viewAll' | t">
+      <div class="workspace-view-segmented" role="group" [attr.aria-label]="'family.viewAll' | t">
         <button
           type="button"
           class="segmented-btn"
           [class.active]="activeView() === 'all'"
           (click)="setView('all')"
-          role="tab"
-          [attr.aria-selected]="activeView() === 'all'"
+          [attr.aria-pressed]="activeView() === 'all'"
         >
           <svg
             viewBox="0 0 24 24"
@@ -37,8 +36,7 @@
           class="segmented-btn"
           [class.active]="activeView() === 'form'"
           (click)="setView('form')"
-          role="tab"
-          [attr.aria-selected]="activeView() === 'form'"
+          [attr.aria-pressed]="activeView() === 'form'"
         >
           <svg
             viewBox="0 0 24 24"
@@ -59,8 +57,7 @@
           class="segmented-btn"
           [class.active]="activeView() === 'list'"
           (click)="setView('list')"
-          role="tab"
-          [attr.aria-selected]="activeView() === 'list'"
+          [attr.aria-pressed]="activeView() === 'list'"
         >
           <svg
             viewBox="0 0 24 24"
@@ -256,7 +253,7 @@
                 id="family-id-input"
                 dir="ltr"
                 class="field-input"
-                placeholder="e.g. fam-12345"
+                [placeholder]="'family.idPlaceholder' | t"
                 [formField]="requestForm.familyId"
               />
             </div>
@@ -626,22 +623,18 @@
               </button>
             } @empty {
               <div class="empty-state-block">
-                <div class="empty-icon-wrap" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="36"
-                    height="36"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                  >
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    <line x1="8" y1="11" x2="14" y2="11"></line>
-                  </svg>
-                </div>
+                <img
+                  class="state-empty-illustration"
+                  src="/SVG-AVATAR/Doctors-cuate.svg"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
                 <h3>{{ 'ui.full.722' | t }}</h3>
                 <p>{{ 'ui.full.719' | t }}</p>
+                <button type="button" class="btn-filter-apply" (click)="loadRequests(1)">
+                  {{ 'finance.refresh' | t }}
+                </button>
               </div>
             }
           </div>
@@ -700,10 +693,12 @@
 
   <!-- ── 4. Slide-Over Details Drawer (نافذة التفاصيل الجانبية) ────────── -->
   @if (selectedRequest(); as request) {
-    <!-- Backdrop overlay -->
-    <div class="drawer-backdrop" (click)="closeDetails()" aria-hidden="true"></div>
-
-    <aside class="details-drawer" [attr.aria-label]="'common.requestDetails' | t">
+    <app-side-drawer
+      [opened]="true"
+      [busy]="submitting()"
+      [title]="'common.requestDetails' | t"
+      (closed)="closeDetails()"
+    >
       <header class="drawer-top-bar">
         <div class="drawer-title-group">
           <span
@@ -913,7 +908,7 @@
                 <input
                   id="revision-types-input"
                   class="field-input"
-                  placeholder="BirthCertificate, NationalId"
+                  [placeholder]="'family.documentTypesPlaceholder' | t"
                   (input)="revisionTypesChanged($event)"
                 />
               </div>
@@ -935,6 +930,6 @@
           </section>
         }
       </div>
-    </aside>
+    </app-side-drawer>
   }
 </main>

@@ -91,6 +91,7 @@ describe('ReceptionPatients', () => {
     fixture = TestBed.createComponent(ReceptionPatients);
     component = fixture.componentInstance;
     await fixture.whenStable();
+    component['searchModel'].update((model) => ({ ...model, phoneNumber: '01011122233' }));
   });
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -114,18 +115,10 @@ describe('ReceptionPatients', () => {
     expect(component['selectedPracticeId']()).toBe(samplePractice.id);
   });
 
-  it('loads the first page of patients automatically for the selected clinic', async () => {
+  it('does not send an empty search on initial clinic selection', async () => {
     await fixture.whenStable();
-
-    expect(patientsApi.search).toHaveBeenCalledWith({
-      name: '',
-      phoneNumber: '',
-      dateOfBirth: '',
-      pageSize: 10,
-      doctorPracticeId: samplePractice.id,
-      pageNumber: 1,
-    });
-    expect(component['results']()).toEqual(samplePage);
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    expect(component['results']()).toBeNull();
   });
 
   it('searches for patients in selected practice and populates results', async () => {
@@ -133,7 +126,7 @@ describe('ReceptionPatients', () => {
     component['searchModel'].set({
       name: 'أحمد',
       phoneNumber: '',
-      dateOfBirth: '',
+      dateOfBirth: '1990-01-01',
       pageSize: 10,
     });
     fixture.detectChanges();
@@ -143,12 +136,33 @@ describe('ReceptionPatients', () => {
     expect(patientsApi.search).toHaveBeenCalledWith({
       name: 'أحمد',
       phoneNumber: '',
-      dateOfBirth: '',
+      dateOfBirth: '1990-01-01',
       pageSize: 10,
       doctorPracticeId: samplePractice.id,
       pageNumber: 1,
     });
     expect(component['results']()).toEqual(samplePage);
+  });
+
+  it('requires a birth date with a name and makes no request for insufficient criteria', async () => {
+    component['searchModel'].set({ name: 'Ahmed', phoneNumber: '', dateOfBirth: '', pageSize: 10 });
+    await component['search'](1, new Event('submit'));
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('reports clipboard failure without claiming the reference was copied', async () => {
+    component['generatedAttestationId'].set('attestation-reference');
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
+    await component['copyAttestationId']();
+    expect(toast.error).toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    if (original) Object.defineProperty(navigator, 'clipboard', original);
+    else Reflect.deleteProperty(navigator, 'clipboard');
   });
 
   it('creates patient record successfully, notifies, and sets createdPatientId', async () => {

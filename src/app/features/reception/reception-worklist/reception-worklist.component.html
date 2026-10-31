@@ -6,125 +6,122 @@
     [actionLabel]="'finance.refresh' | t"
     actionIcon="refresh"
     [actionLoading]="loading()"
-    [actionDisabled]="loading()"
+    [actionDisabled]="loading() || !practiceId() || !canView()"
     (actionClicked)="loadData()"
-  >
-    <div pageHeaderActions class="worklist-header-actions">
-      @if (attentionCount() > 0) {
-        <div class="attention-badge-pill">
-          <span class="pulse-dot"></span>
-          <span>{{ attentionCount() }} {{ 'worklist.attention' | t }}</span>
-        </div>
+  />
+  <div class="filter-toolbar">
+    <div class="filter-tabs" role="group" [attr.aria-label]="'reservations.status' | t">
+      @for (filter of filters; track filter) {
+        <button
+          type="button"
+          class="filter-tab"
+          [class.active]="selectedFilter() === filter"
+          [attr.aria-pressed]="selectedFilter() === filter"
+          (click)="setFilter(filter)"
+        >
+          {{ 'worklist.filter.' + filter | t }}
+        </button>
       }
     </div>
-  </app-page-header>
-
-  <!-- Filter tabs bar -->
-  <div class="filter-toolbar">
-    <div class="filter-tabs" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        class="filter-tab"
-        [class.active]="selectedFilter() === 'all'"
-        (click)="setFilter('all')"
-      >
-        {{ 'common.all' | t }}
-        <span class="count-pill">{{ worklistItems().length }}</span>
-      </button>
-
-      <button
-        type="button"
-        role="tab"
-        class="filter-tab"
-        [class.active]="selectedFilter() === 'waiting'"
-        (click)="setFilter('waiting')"
-      >
-        {{ 'tickets.status.waiting' | t }}
-        <span class="count-pill">{{ worklistItems().length - (worklistItems().length > 1 ? 1 : 0) }}</span>
-      </button>
-
-      <button
-        type="button"
-        role="tab"
-        class="filter-tab"
-        [class.active]="selectedFilter() === 'checkedIn'"
-        (click)="setFilter('checkedIn')"
-      >
-        {{ 'tickets.status.inProgress' | t }}
-      </button>
-    </div>
   </div>
-
-  <!-- Unified Worklist Table (Seamless surface, NO card-overuse) -->
-  <div class="table-surface">
-    @if (loading() && worklistItems().length === 0) {
-      <div class="loading-state">
-        <div class="spinner"></div>
+  <section class="table-surface" [attr.aria-busy]="loading()">
+    @if (!practiceId()) {
+      <div class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'reception.audit.choosePractice' | t }}</h2>
+        <p>{{ 'reception.audit.choosePracticeHint' | t }}</p>
+      </div>
+    } @else if (!canView()) {
+      <div class="empty-state" role="status">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'reception.access.worklist' | t }}</h2>
+        <p>{{ 'reception.access.askDoctor' | t }}</p>
+      </div>
+    } @else if (loading()) {
+      <div class="loading-state" role="status">
+        <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
         <p>{{ 'common.loading' | t }}</p>
       </div>
-    } @else if (filteredItems().length === 0) {
+    } @else if (error()) {
+      <div class="empty-state" role="alert">
+        <h2>{{ 'reception.audit.loadFailed' | t }}</h2>
+        <button type="button" class="btn-action-primary" (click)="loadData(pageNumber())">
+          {{ 'finance.refresh' | t }}
+        </button>
+      </div>
+    } @else if (!filteredItems().length) {
       <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M8 12h8" />
-        </svg>
-        <p>{{ 'common.nothingFound' | t }}</p>
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medical prescription-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'common.nothingFound' | t }}</h2>
+        <p>{{ 'reception.audit.emptyWorklist' | t }}</p>
+        <button type="button" class="btn-action-primary" (click)="setFilter('all'); loadData()">
+          {{ 'finance.refresh' | t }}
+        </button>
       </div>
     } @else {
       <div class="table-responsive">
         <table class="worklist-table">
           <thead>
             <tr>
-              <th>{{ 'tickets.table.ticketNumber' | t }}</th>
-              <th>{{ 'reservations.patient' | t }}</th>
-              <th>{{ 'worklist.visitType' | t }}</th>
-              <th>{{ 'worklist.segment' | t }}</th>
-              <th>{{ 'reservations.time' | t }}</th>
-              <th>{{ 'reservations.status' | t }}</th>
-              <th class="text-end">{{ 'reservations.actions' | t }}</th>
+              <th scope="col">{{ 'tickets.table.ticketNumber' | t }}</th>
+              <th scope="col">{{ 'reservations.patient' | t }}</th>
+              <th scope="col">{{ 'reception.audit.task' | t }}</th>
+              <th scope="col">{{ 'reservations.time' | t }}</th>
+              <th scope="col">{{ 'reservations.actions' | t }}</th>
             </tr>
           </thead>
           <tbody>
-            @for (item of filteredItems(); track item.id) {
-              <tr [class.row-checked-in]="item.checkedIn">
-                <td class="cell-mono">{{ item.ticketNumber }}</td>
-                <td class="cell-primary font-medium">{{ item.patientName }}</td>
-                <td>{{ item.visitType }}</td>
-                <td>
-                  <span class="segment-tag">{{ item.segment }}</span>
+            @for (item of filteredItems(); track $index) {
+              <tr>
+                <td dir="ltr" class="ltr-text">{{ item.reference || '—' }}</td>
+                <td class="cell-primary">{{ patientName(item) }}</td>
+                <td>{{ category(item) }}</td>
+                <td dir="ltr" class="ltr-text">
+                  {{ item.occurredAtUtc ? (item.occurredAtUtc | date: 'short') : '—' }}
                 </td>
-                <td class="cell-muted">{{ item.time }}</td>
                 <td>
-                  <span
-                    class="status-pill"
-                    [class.pill-success]="item.checkedIn"
-                    [class.pill-waiting]="!item.checkedIn"
+                  <a
+                    class="btn-action-primary"
+                    [routerLink]="
+                      item.category === 'OpenHandover'
+                        ? '/reception/handovers'
+                        : item.resourceType === 'Ticket' ||
+                            item.category === 'QueueAttention' ||
+                            item.category === 'TicketNoShow'
+                          ? '/reception/queue'
+                          : '/reception/reservations'
+                    "
+                    [queryParams]="{ practiceId: practiceId(), patientId: item.patientId }"
+                    ><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    {{
+                      (item.category === 'OpenHandover'
+                        ? 'reception.audit.openHandovers'
+                        : item.resourceType === 'Ticket' ||
+                            item.category === 'QueueAttention' ||
+                            item.category === 'TicketNoShow'
+                          ? 'reception.audit.openQueue'
+                          : 'reception.audit.openReservations'
+                      ) | t
+                    }}</a
                   >
-                    {{ item.status }}
-                  </span>
-                </td>
-                <td class="text-end">
-                  @if (!item.checkedIn) {
-                    <button
-                      type="button"
-                      class="btn-action-primary"
-                      (click)="checkInPatient(item)"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      <span>{{ 'worklist.checkIn' | t }}</span>
-                    </button>
-                  } @else {
-                    <span class="checked-in-label">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                      </svg>
-                      {{ 'tickets.status.inProgress' | t }}
-                    </span>
-                  }
                 </td>
               </tr>
             }
@@ -132,5 +129,26 @@
         </table>
       </div>
     }
-  </div>
+  </section>
+  @if (totalPages() > 1) {
+    <nav class="filter-toolbar" [attr.aria-label]="'discovery.page' | t">
+      <button
+        type="button"
+        class="filter-tab"
+        [disabled]="loading() || pageNumber() <= 1"
+        (click)="loadData(pageNumber() - 1)"
+      >
+        {{ 'discovery.previous' | t }}
+      </button>
+      <span>{{ pageNumber() }} / {{ totalPages() }}</span>
+      <button
+        type="button"
+        class="filter-tab"
+        [disabled]="loading() || pageNumber() >= totalPages()"
+        (click)="loadData(pageNumber() + 1)"
+      >
+        {{ 'discovery.next' | t }}
+      </button>
+    </nav>
+  }
 </main>

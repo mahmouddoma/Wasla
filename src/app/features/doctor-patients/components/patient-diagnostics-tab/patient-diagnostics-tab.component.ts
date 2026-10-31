@@ -58,8 +58,8 @@ export class PatientDiagnosticsTabComponent implements OnInit, OnChanges, OnDest
       : this.currentTab() === 'results'
         ? this.results().map((r) => ({
             id: r.resultId,
-            date: r.current.reviewedAtUtc,
-            status: r.current.status,
+            date: r.current?.reviewedAtUtc ?? null,
+            status: r.current?.status ?? 'NoCurrentResult',
           }))
         : this.submissions().map((r) => ({
             id: r.submissionId,

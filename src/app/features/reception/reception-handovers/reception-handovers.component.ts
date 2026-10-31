@@ -1,244 +1,207 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../core/notifications/toast.service';
-import { Phase18Api } from '../../../domains/phase18';
+import { Phase18Api, components } from '../../../domains/phase18';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 
-export interface HandoverDisplay {
-  id: string;
-  summary: string;
-  status: 'Open' | 'Closed';
-  createdByName: string;
-  createdAt: string;
-  acknowledgedByName?: string;
-  closedByName?: string;
-  annotationsCount: number;
-  rowVersion: string;
-}
+type Handover = components['schemas']['HandoverResponse'];
+type HandoverOperation = 'P18-099' | 'P18-101';
 
 @Component({
   selector: 'app-reception-handovers',
-  standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, PageHeader, SideDrawer],
+  imports: [DatePipe, FormsModule, TranslatePipe, PageHeader, SideDrawer],
   templateUrl: './reception-handovers.component.html',
   styleUrl: './reception-handovers.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReceptionHandoversComponent implements OnInit {
+export class ReceptionHandoversComponent {
   private readonly api = inject(Phase18Api);
-  private readonly receptionContext = inject(ReceptionPracticeContext);
+  private readonly context = inject(ReceptionPracticeContext);
   readonly language = inject(LanguageService);
   private readonly toast = inject(ToastService);
-
-  readonly loading = signal<boolean>(false);
-  readonly handovers = signal<HandoverDisplay[]>([]);
-  readonly selectedHandover = signal<HandoverDisplay | null>(null);
+  readonly practiceId = this.context.currentPracticeId;
+  readonly canView = computed(() => this.context.allows('Handovers.ViewAssigned'));
+  readonly canCreate = computed(
+    () => this.canView() && this.context.allows('Handovers.CreateAssigned'),
+  );
+  readonly loading = signal(false);
+  readonly error = signal(false);
+  readonly handovers = signal<Handover[]>([]);
+  readonly selectedHandover = signal<Handover | null>(null);
   readonly drawerMode = signal<'view' | 'create' | null>(null);
-
-  // Form states for Create / Annotate
+  readonly submitting = signal(false);
+  readonly pageNumber = signal(1);
+  readonly totalCount = signal(0);
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / 50)));
   newSummary = '';
-  newAnnotation = '';
-  submitting = signal<boolean>(false);
+  private sequence = 0;
+  // Retain a key after failure so a retry cannot duplicate an already processed creation.
+  private createAttempt: { practiceId: string; summary: string; key: string } | null = null;
+  private actionAttempt: { signature: string; key: string } | null = null;
 
-  readonly practiceId = computed(() => this.receptionContext.currentPracticeId() || 'practice-1');
-
-  ngOnInit(): void {
-    this.loadHandovers();
+  constructor() {
+    void this.context.ensureLoaded();
+    effect(() => {
+      this.practiceId();
+      this.drawerMode.set(null);
+      this.selectedHandover.set(null);
+      void this.loadHandovers();
+    });
   }
 
-  loadHandovers(): void {
-    this.loading.set(true);
-    const pid = this.practiceId();
-
-    this.api
-      .call('P18-096', {
-        path: { practiceId: pid },
-        query: { pageNumber: 1, pageSize: 50 },
-      })
-      .subscribe({
-        next: (res: any) => {
-          const items = res?.items || [];
-          if (items.length > 0) {
-            this.handovers.set(
-              items.map((item: any, idx: number) => ({
-                id: item.id || `h-${idx}`,
-                summary: item.summary || item.summaryAr || 'تسليم شيفت روتيني',
-                status: item.status || 'Open',
-                createdByName: item.createdByName || 'موظف الاستقبال',
-                createdAt: item.createdAt || 'اليوم 02:00 PM',
-                acknowledgedByName: item.acknowledgedByName,
-                closedByName: item.closedByName,
-                annotationsCount: item.annotationsCount || 0,
-                rowVersion: item.rowVersion || 'v1',
-              })),
-            );
-          } else {
-            // Demo data
-            this.handovers.set([
-              {
-                id: 'h-1',
-                summary: 'تم تسليم الخزينة، وتأكيد حضور 12 كشف لعيادة د. أحمد، ويوجد كشف مستعجل في الانتظار.',
-                status: 'Open',
-                createdByName: 'محمود عبد الفتاح',
-                createdAt: 'اليوم 03:00 PM',
-                annotationsCount: 1,
-                rowVersion: 'v1',
-              },
-              {
-                id: 'h-2',
-                summary: 'إغلاق شيفت الفترة الصباحية، تم استلام جميع مستحقات الكشوفات وتسوية المبالغ النقدية.',
-                status: 'Closed',
-                createdByName: 'سارة إبراهيم',
-                createdAt: 'أمس 09:00 PM',
-                acknowledgedByName: 'طارق حسني',
-                closedByName: 'طارق حسني',
-                annotationsCount: 2,
-                rowVersion: 'v2',
-              },
-            ]);
-          }
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-        },
-      });
+  async loadHandovers(page = 1): Promise<void> {
+    const practiceId = this.practiceId();
+    const sequence = ++this.sequence;
+    this.error.set(false);
+    this.handovers.set([]);
+    this.totalCount.set(0);
+    this.pageNumber.set(page);
+    this.loading.set(!!practiceId && this.canView());
+    if (!practiceId || !this.canView()) return;
+    try {
+      const response = await firstValueFrom(
+        this.api.call('P18-096', {
+          path: { practiceId },
+          query: { pageNumber: page, pageSize: 50 },
+        }),
+      );
+      if (sequence !== this.sequence || practiceId !== this.practiceId()) return;
+      this.handovers.set(response.items ?? []);
+      this.totalCount.set(response.totalCount ?? response.items?.length ?? 0);
+    } catch {
+      if (sequence === this.sequence) this.error.set(true);
+    } finally {
+      if (sequence === this.sequence) this.loading.set(false);
+    }
   }
 
   openCreateDrawer(): void {
+    if (!this.practiceId() || !this.canCreate() || this.submitting()) return;
     this.newSummary = '';
     this.drawerMode.set('create');
   }
 
-  openViewDrawer(handover: HandoverDisplay): void {
+  openViewDrawer(handover: Handover): void {
+    if (!this.canView() || this.submitting()) return;
     this.selectedHandover.set(handover);
-    this.newAnnotation = '';
     this.drawerMode.set('view');
   }
 
   closeDrawer(): void {
+    if (this.submitting()) return;
     this.drawerMode.set(null);
     this.selectedHandover.set(null);
   }
 
-  submitNewHandover(): void {
-    if (!this.newSummary.trim()) return;
+  canAct(handover: Handover, action: 'Acknowledge' | 'Close'): boolean {
+    return (
+      this.canView() &&
+      this.context.allows(
+        action === 'Acknowledge' ? 'Handovers.AcknowledgeAssigned' : 'Handovers.CloseAssigned',
+      ) &&
+      !!handover.id &&
+      !!handover.rowVersion &&
+      handover.status !== 'Closed' &&
+      (action !== 'Acknowledge' || handover.status === 'Open') &&
+      !!handover.availableActions?.some(
+        (item) => item.allowed && item.code?.toLowerCase() === action.toLowerCase(),
+      )
+    );
+  }
+
+  statusLabel(handover: Handover): string {
+    return this.language.t(
+      handover.status === 'Acknowledged'
+        ? 'handovers.acknowledgedShift'
+        : handover.status === 'Closed'
+          ? 'handovers.closedShift'
+          : 'handovers.openShift',
+    );
+  }
+
+  async submitNewHandover(): Promise<void> {
+    const practiceId = this.practiceId();
+    const summary = this.newSummary.trim();
+    if (!practiceId || !this.canCreate() || !summary || this.submitting()) return;
+    if (this.createAttempt?.practiceId !== practiceId || this.createAttempt.summary !== summary) {
+      this.createAttempt = { practiceId, summary, key: crypto.randomUUID() };
+    }
     this.submitting.set(true);
-
-    const pid = this.practiceId();
-    this.api
-      .call('P18-097', {
-        path: { practiceId: pid },
-        body: { summary: this.newSummary } as any,
-      })
-      .subscribe({
-        next: () => {
-          this.toast.success(
-            this.language.currentLang() === 'ar'
-              ? 'تم تسجيل تسليم الشيفت بنجاح'
-              : 'Shift handover submitted successfully',
-          );
-          this.submitting.set(false);
-          this.closeDrawer();
-          this.loadHandovers();
-        },
-        error: () => {
-          // Optimistic local add for demo
-          const item: HandoverDisplay = {
-            id: `h-${Date.now()}`,
-            summary: this.newSummary,
-            status: 'Open',
-            createdByName: 'أنا',
-            createdAt: 'الآن',
-            annotationsCount: 0,
-            rowVersion: 'v1',
-          };
-          this.handovers.update((list) => [item, ...list]);
-          this.toast.success(
-            this.language.currentLang() === 'ar'
-              ? 'تم تسجيل تسليم الشيفت بنجاح'
-              : 'Shift handover submitted successfully',
-          );
-          this.submitting.set(false);
-          this.closeDrawer();
-        },
-      });
+    try {
+      await firstValueFrom(
+        this.api.call('P18-097', {
+          path: { practiceId },
+          body: { summary },
+          idempotencyKey: this.createAttempt.key,
+        }),
+      );
+      this.createAttempt = null;
+      this.toast.success(this.language.t('handovers.success'));
+      if (practiceId === this.practiceId()) {
+        this.drawerMode.set(null);
+        this.selectedHandover.set(null);
+        await this.loadHandovers();
+      }
+    } catch {
+      this.toast.error(this.language.t('reception.audit.saveFailed'));
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
-  acknowledgeHandover(handover: HandoverDisplay): void {
-    const pid = this.practiceId();
-    this.api
-      .call('P18-099', {
-        path: { practiceId: pid, handoverId: handover.id },
-        body: { rowVersion: handover.rowVersion } as any,
-      })
-      .subscribe({
-        next: () => {
-          this.toast.success(
-            this.language.currentLang() === 'ar'
-              ? 'تم تأكيد استلام الشيفت'
-              : 'Handover acknowledged successfully',
-          );
-          this.loadHandovers();
-        },
-        error: () => {
-          this.handovers.update((list) =>
-            list.map((x) =>
-              x.id === handover.id ? { ...x, acknowledgedByName: 'أنا' } : x,
-            ),
-          );
-          if (this.selectedHandover()?.id === handover.id) {
-            this.selectedHandover.update((h) => (h ? { ...h, acknowledgedByName: 'أنا' } : null));
-          }
-          this.toast.success(
-            this.language.currentLang() === 'ar'
-              ? 'تم تأكيد استلام الشيفت'
-              : 'Handover acknowledged successfully',
-          );
-        },
-      });
+  acknowledgeHandover(handover: Handover): Promise<void> {
+    return this.performAction(handover, 'P18-099', 'Acknowledge');
   }
 
-  closeHandover(handover: HandoverDisplay): void {
-    const pid = this.practiceId();
-    this.api
-      .call('P18-101', {
-        path: { practiceId: pid, handoverId: handover.id },
-        body: { outcome: 'Completed', rowVersion: handover.rowVersion } as any,
-      })
-      .subscribe({
-        next: () => {
-          this.toast.success(
-            this.language.currentLang() === 'ar'
-              ? 'تم إغلاق الشيفت بنجاح'
-              : 'Handover closed successfully',
-          );
-          this.loadHandovers();
-          this.closeDrawer();
-        },
-        error: () => {
-          this.handovers.update((list) =>
-            list.map((x) => (x.id === handover.id ? { ...x, status: 'Closed' } : x)),
-          );
-          this.toast.success(
-            this.language.currentLang() === 'ar'
-              ? 'تم إغلاق الشيفت بنجاح'
-              : 'Handover closed successfully',
-          );
-          this.closeDrawer();
-        },
-      });
+  closeHandover(handover: Handover): Promise<void> {
+    return this.performAction(handover, 'P18-101', 'Close');
+  }
+
+  private async performAction(
+    handover: Handover,
+    operation: HandoverOperation,
+    action: 'Acknowledge' | 'Close',
+  ): Promise<void> {
+    const practiceId = this.practiceId();
+    if (!practiceId || !handover.id || this.submitting() || !this.canAct(handover, action)) return;
+    const signature = [practiceId, handover.id, operation, handover.rowVersion].join(':');
+    if (this.actionAttempt?.signature !== signature)
+      this.actionAttempt = { signature, key: crypto.randomUUID() };
+    this.submitting.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.api.call(operation, {
+          path: { practiceId, handoverId: handover.id },
+          body: {
+            rowVersion: handover.rowVersion,
+            ...(action === 'Close' ? { outcome: 'Completed' } : {}),
+          },
+          idempotencyKey: this.actionAttempt.key,
+        }),
+      );
+      this.actionAttempt = null;
+      this.toast.success(this.language.t('handovers.success'));
+      if (practiceId === this.practiceId()) {
+        this.selectedHandover.set(result);
+        await this.loadHandovers(this.pageNumber());
+      }
+    } catch {
+      this.toast.error(this.language.t('reception.audit.saveFailed'));
+    } finally {
+      this.submitting.set(false);
+    }
   }
 }

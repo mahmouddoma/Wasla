@@ -1,0 +1,61 @@
+<fieldset [disabled]="disabled()">
+  <legend>{{ 'operating.allocations' | t }}</legend>
+  <p>{{ 'operating.allocationHelp' | t }}</p>
+  @for (row of value(); track $index; let index = $index) {
+    <div class="allocation-row">
+      <label
+        >{{ 'finance.practice' | t }}
+        <span class="select-control">
+          <select
+            class="field-input"
+            [name]="'allocation-practice-' + index"
+            [ngModel]="row.practiceId"
+            (ngModelChange)="update(index, 'practiceId', $event)"
+            required
+          >
+            <option value="">{{ 'operating.choosePractice' | t }}</option>
+            @for (practice of practices(); track practice.id) {
+              <option [value]="practice.id">
+                {{
+                  language.isRtl()
+                    ? practice.nameAr || practice.nameEn
+                    : practice.nameEn || practice.nameAr
+                }}
+              </option>
+            }</select
+          ><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </span>
+      </label>
+      <label
+        >{{ 'operating.percentage' | t }}
+        <input
+          class="field-input ltr-text"
+          dir="ltr"
+          type="number"
+          min="0.01"
+          max="100"
+          step="0.01"
+          [name]="'allocation-percentage-' + index"
+          [ngModel]="row.percentage"
+          (ngModelChange)="update(index, 'percentage', $event)"
+          required
+        />
+      </label>
+      <button
+        class="remove"
+        type="button"
+        [disabled]="disabled()"
+        (click)="remove(index)"
+        [attr.aria-label]="'operating.removeAllocation' | t"
+      >
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+  <div class="allocation-footer">
+    <button type="button" [disabled]="disabled()" (click)="add()">
+      {{ 'operating.addAllocation' | t }}
+    </button>
+    <span aria-live="polite">{{ 'operating.allocationTotal' | t: { total: total() } }}</span>
+  </div>
+</fieldset>
