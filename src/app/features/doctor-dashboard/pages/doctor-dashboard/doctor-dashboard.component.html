@@ -147,6 +147,32 @@
         </div>
 
         <div class="filter-actions">
+          <div class="filter-presets" role="group">
+            <button
+              type="button"
+              class="btn-preset"
+              [disabled]="loading()"
+              (click)="setPreset('today')"
+            >
+              {{ 'doctorDashboard.filter.today' | t }}
+            </button>
+            <button
+              type="button"
+              class="btn-preset"
+              [disabled]="loading()"
+              (click)="setPreset('last7')"
+            >
+              {{ 'doctorDashboard.filter.last7Days' | t }}
+            </button>
+            <button
+              type="button"
+              class="btn-preset"
+              [disabled]="loading()"
+              (click)="setPreset('month')"
+            >
+              {{ 'doctorDashboard.filter.thisMonth' | t }}
+            </button>
+          </div>
           <button
             type="submit"
             class="btn btn-primary filter-submit"
@@ -242,6 +268,9 @@
                   <strong dir="ltr">{{ format(metric) }}</strong>
                   @if (metric.unit && metric.unit !== 'count') {
                     <span class="metric-unit-badge">{{ metricUnit(metric.unit) }}</span>
+                  }
+                  @if (metric.metricCode === 'CheckIns' && attendanceRatio()) {
+                    <span class="metric-ratio-badge">{{ 'doctorDashboard.attendanceRate' | t }}: {{ attendanceRatio() }}</span>
                   }
                 </dd>
                 @if (canDrilldown(metric)) {
@@ -376,13 +405,33 @@
                   <i [class]="groupIcons[group.id]" aria-hidden="true"></i>
                   {{ 'doctorDashboard.group.' + group.id | t }}
                 </h4>
+                <div class="group-heading__tools">
+                  <div class="search-input-wrap">
+                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                    <input
+                      type="search"
+                      class="field-input field-input--sm"
+                      [placeholder]="'doctorDashboard.searchMetrics' | t"
+                      [ngModel]="metricSearch()"
+                      (ngModelChange)="metricSearch.set($event)"
+                    />
+                  </div>
+                  <label class="compact-toggle">
+                    <input
+                      type="checkbox"
+                      [checked]="showOnlyActive()"
+                      (change)="showOnlyActive.set(!showOnlyActive())"
+                    />
+                    <span>{{ 'doctorDashboard.activeOnly' | t }}</span>
+                  </label>
+                </div>
                 <span
                   ><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                   {{ 'doctorDashboard.clickDetails' | t }}</span
                 >
               </div>
               <div class="metric-directory" [attr.data-group]="group.id">
-                @for (metric of group.metrics; track metric.metricCode) {
+                @for (metric of displayedGroupMetrics(); track metric.metricCode) {
                   <article class="metric-row">
                     <div class="metric-row-header">
                       <span class="metric-row-icon" aria-hidden="true">

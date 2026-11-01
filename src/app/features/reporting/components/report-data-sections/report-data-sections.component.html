@@ -3,10 +3,11 @@
     <span class="summary-icon" aria-hidden="true">
       <i class="fa-solid fa-layer-group"></i>
     </span>
-    <span class="summary-copy"
-      ><span>{{ 'reportData.additional' | t }}</span
-      ><small>{{ 'reportData.help' | t }}</small></span
-    ><svg class="summary-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <span class="summary-copy">
+      <span>{{ 'reportData.additional' | t }}</span>
+      <small>{{ 'reportData.help' | t }}</small>
+    </span>
+    <svg class="summary-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="m6 9 6 6 6-6"
         stroke="currentColor"
@@ -16,7 +17,9 @@
       />
     </svg>
   </summary>
+
   @if (expanded()) {
+    <!-- High-level data completeness facts -->
     <dl class="report-facts">
       <div class="report-fact-card">
         <dt>{{ 'reportData.status' | t }}</dt>
@@ -46,6 +49,140 @@
         </dd>
       </div>
     </dl>
+
+    <!-- Data Breakdowns (تقسيمات البيانات) with Smart Slice Selector -->
+    @if (breakdowns().length) {
+      <details class="report-sub-details" open>
+        <summary class="section-summary">
+          <i class="fa-solid fa-chart-pie section-summary-icon" aria-hidden="true"></i>
+          <span>{{ 'reportData.breakdowns' | t }}</span>
+          <span class="section-count">{{ format(breakdowns().length) }}</span>
+        </summary>
+
+        <div class="breakdown-workspace">
+          @if (breakdowns().length > 1) {
+            <div class="breakdown-toolbar">
+              <div class="slice-selector">
+                <label for="breakdown-slice-select">{{ 'reportData.selectBreakdown' | t }}</label>
+                <div class="select-control">
+                  <select
+                    id="breakdown-slice-select"
+                    class="field-input"
+                    [ngModel]="selectedBreakdownIndex()"
+                    (ngModelChange)="selectedBreakdownIndex.set($event)"
+                  >
+                    @for (item of breakdowns(); track $index) {
+                      <option [value]="$index">{{ pointTitle(item) }}</option>
+                    }
+                  </select>
+                  <svg class="select-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path
+                      d="m4 6 4 4 4-4"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="breakdown-tools">
+                <div class="search-input-wrap">
+                  <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                  <input
+                    type="search"
+                    class="field-input field-input--sm"
+                    [placeholder]="'doctorDashboard.searchMetrics' | t"
+                    [ngModel]="searchQuery()"
+                    (ngModelChange)="searchQuery.set($event)"
+                  />
+                </div>
+                <label class="compact-toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="showAllMetrics()"
+                    (change)="showAllMetrics.set(!showAllMetrics())"
+                  />
+                  <span>{{ 'reportData.showAllMetrics' | t }}</span>
+                </label>
+              </div>
+            </div>
+          }
+
+          @if (activeBreakdown(); as current) {
+            <section class="data-group">
+              <div class="data-group-header">
+                <h4>
+                  <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                  <span>{{ pointTitle(current) }}</span>
+                </h4>
+                <span class="metrics-active-badge">
+                  {{ format(filteredBreakdownMetrics(current.metrics).length) }} {{ 'reportData.activeMetricsCount' | t }}
+                </span>
+              </div>
+
+              @let metrics = filteredBreakdownMetrics(current.metrics);
+              @if (metrics.length) {
+                <dl class="metric-values">
+                  @for (metric of metrics; track $index) {
+                    <div class="metric-val-tile" [class.metric-val-tile--empty]="metric.value == null">
+                      <dt>{{ label(metric) }}</dt>
+                      <dd>
+                        <strong dir="ltr">{{ format(metric.value) }}</strong>
+                        @if (metric.unit) {
+                          <small>{{ unit(metric.unit) }}</small>
+                        }
+                      </dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <div class="empty-slice-state">
+                  <p>{{ 'reportData.noMetricsMatching' | t }}</p>
+                </div>
+              }
+            </section>
+          }
+        </div>
+      </details>
+    }
+
+    <!-- Series (جميع بيانات الفترة) -->
+    @if (series().length) {
+      <details class="report-sub-details">
+        <summary class="section-summary">
+          <i class="fa-solid fa-chart-line section-summary-icon" aria-hidden="true"></i>
+          <span>{{ 'reportData.series' | t }}</span>
+          <span class="section-count">{{ format(series().length) }}</span>
+        </summary>
+        <div class="data-groups-container">
+          @for (point of series(); track $index) {
+            <section class="data-group">
+              <h4>
+                <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                <span>{{ pointTitle(point) }}</span>
+              </h4>
+              <dl class="metric-values">
+                @for (metric of point.metrics; track $index) {
+                  <div class="metric-val-tile">
+                    <dt>{{ label(metric) }}</dt>
+                    <dd>
+                      <strong dir="ltr">{{ format(metric.value) }}</strong>
+                      @if (metric.unit) {
+                        <small>{{ unit(metric.unit) }}</small>
+                      }
+                    </dd>
+                  </div>
+                }
+              </dl>
+            </section>
+          }
+        </div>
+      </details>
+    }
+
+    <!-- Calculation details (تفاصيل الحسابات) -->
     <details class="report-sub-details">
       <summary class="section-summary">
         <i class="fa-solid fa-calculator section-summary-icon" aria-hidden="true"></i>
@@ -83,44 +220,8 @@
         </table>
       </div>
     </details>
-    @for (group of groups(); track group.title) {
-      @if (group.rows.length) {
-        <details class="report-sub-details">
-          <summary class="section-summary">
-            <i class="fa-solid fa-chart-line section-summary-icon" aria-hidden="true"></i>
-            <span>{{ group.title | t }}</span>
-            <span class="section-count">{{ format(group.rows.length) }}</span>
-          </summary>
-          <div class="data-groups-container">
-            @for (point of group.rows; track $index) {
-              <section class="data-group">
-                <h4>
-                  <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                  <span>{{
-                    (language.isRtl()
-                      ? point.nameAr || point.nameEn
-                      : point.nameEn || point.nameAr) || point.key
-                  }}</span>
-                </h4>
-                <dl class="metric-values">
-                  @for (metric of point.metrics; track $index) {
-                    <div class="metric-val-tile">
-                      <dt>{{ label(metric) }}</dt>
-                      <dd>
-                        <strong dir="ltr">{{ format(metric.value) }}</strong>
-                        @if (metric.unit) {
-                          <small>{{ unit(metric.unit) }}</small>
-                        }
-                      </dd>
-                    </div>
-                  }
-                </dl>
-              </section>
-            }
-          </div>
-        </details>
-      }
-    }
+
+    <!-- Previous period comparisons -->
     @if (report().previousPeriodComparisons?.length) {
       <details class="report-sub-details">
         <summary class="section-summary">
@@ -157,6 +258,8 @@
         </div>
       </details>
     }
+
+    <!-- Raw preview records -->
     @if (report().records?.length) {
       <details class="report-sub-details">
         <summary class="section-summary">

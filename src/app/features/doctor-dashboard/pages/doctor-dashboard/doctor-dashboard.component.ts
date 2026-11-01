@@ -167,10 +167,40 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   readonly selectedGroup = signal('queue');
+  readonly metricSearch = signal('');
+  readonly showOnlyActive = signal(false);
   readonly groups = computed(() => dashboardGroups(this.model()?.metrics ?? []));
   readonly activeGroup = computed<{ id: string; metrics: ReportMetric[] } | null>(
     () => this.groups().find((group) => group.id === this.selectedGroup()) ?? this.groups()[0],
   );
+  readonly displayedGroupMetrics = computed<ReportMetric[]>(() => {
+    const group = this.activeGroup();
+    if (!group) return [];
+    const query = this.metricSearch().trim().toLowerCase();
+    const activeOnly = this.showOnlyActive();
+
+    return group.metrics.filter((metric) => {
+      if (activeOnly && (metric.dataStatus === 'NotAvailable' || metric.value == null)) {
+        return false;
+      }
+      if (!query) return true;
+      const name = (this.text(metric.nameAr, metric.nameEn) || '').toLowerCase();
+      const code = (metric.metricCode || '').toLowerCase();
+      return name.includes(query) || code.includes(query);
+    });
+  });
+
+  readonly attendanceRatio = computed<string | null>(() => {
+    const metrics = this.model()?.metrics ?? [];
+    const scheduled = metrics.find((m) => m.metricCode === 'AppointmentsScheduled')?.value;
+    const checkIns = metrics.find((m) => m.metricCode === 'CheckIns')?.value;
+    if (scheduled && checkIns != null && scheduled > 0) {
+      const pct = Math.round((checkIns / scheduled) * 100);
+      return `${pct}%`;
+    }
+    return null;
+  });
+
   readonly highlights = computed(() => {
     const metrics = this.model()?.metrics ?? [];
     const codes = [
@@ -393,6 +423,29 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     fromDate: '',
     toDate: '',
   };
+
+  setPreset(preset: 'today' | 'last7' | 'month'): void {
+    const today = new Date();
+    const formatIso = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    const to = formatIso(today);
+    let from = to;
+    if (preset === 'last7') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 6);
+      from = formatIso(past);
+    } else if (preset === 'month') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      from = formatIso(start);
+    }
+    this.filters.fromDate = from;
+    this.filters.toDate = to;
+    void this.refresh();
+  }
 
   readonly validDateRange = (): boolean => {
     const { fromDate, toDate } = this.filters;
