@@ -363,6 +363,14 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
   }
 
   // Report preview
+  catalogQueryParams(): Record<string, string> {
+    const q: Record<string, string> = {};
+    if (this.filters.practiceId) q['practiceId'] = this.filters.practiceId;
+    if (this.filters.fromDate) q['fromDate'] = this.filters.fromDate;
+    if (this.filters.toDate) q['toDate'] = this.filters.toDate;
+    return q;
+  }
+
   async openReport(report: ReportCatalogItem): Promise<void> {
     if (
       !report.reportCode ||
@@ -372,46 +380,9 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
     ) {
       return;
     }
-
-    const seq = ++this.detailSequence;
-
-    this.selectedInsight.set(null);
-    this.selectedReport.set(report);
-
-    this.preview.set(null);
-    this.drillMetric.set(null);
-    this.drilldown.set(null);
-
-    this.detailLoading.set(true);
-
-    this.appliedFilters = Object.fromEntries(
-      Object.entries(this.filters).filter(([key]) =>
-        (report.allowedFilters || []).some((filter) => filter.toLowerCase() === key.toLowerCase()),
-      ),
-    );
-
-    try {
-      const model = await firstValueFrom(
-        this.api.call('P18-073', {
-          path: {
-            reportCode: report.reportCode,
-          },
-          query: this.appliedFilters,
-        }),
-      );
-
-      if (seq === this.detailSequence && !this.destroyed) {
-        this.preview.set(model);
-      }
-    } catch (error) {
-      if (seq === this.detailSequence) {
-        this.failure(error);
-      }
-    } finally {
-      if (seq === this.detailSequence) {
-        this.detailLoading.set(false);
-      }
-    }
+    await this.router.navigate(['/doctor/reports', report.reportCode], {
+      queryParams: this.catalogQueryParams(),
+    });
   }
 
   // Metric drilldown

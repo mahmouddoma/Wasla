@@ -117,16 +117,31 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   );
   readonly selectedGroup = signal('queue');
   readonly metricSearch = signal('');
+  readonly onlyActiveMetrics = signal(true);
   readonly groups = computed(() => dashboardGroups(this.visibleMetrics()));
   readonly activeGroup = computed<{ id: string; metrics: ReportMetric[] } | undefined>(
     () => this.groups().find((group) => group.id === this.selectedGroup()) ?? this.groups()[0],
   );
-  readonly displayedGroupMetrics = computed(() =>
-    (this.activeGroup()?.metrics ?? []).filter((metric) =>
-      this.metricLabel(metric)
+  readonly displayedGroupMetrics = computed(() => {
+    const search = this.metricSearch().trim().toLocaleLowerCase();
+    const groupMetrics = this.activeGroup()?.metrics ?? [];
+    return groupMetrics.filter((metric) => {
+      const labelMatch = this.metricLabel(metric)
         .toLocaleLowerCase()
-        .includes(this.metricSearch().trim().toLocaleLowerCase()),
-    ),
+        .includes(search);
+      if (!labelMatch) return false;
+      if (this.onlyActiveMetrics()) {
+        const val = measuredValue(metric);
+        return val !== null;
+      }
+      return true;
+    });
+  });
+  readonly totalGroupMetricsCount = computed(
+    () => this.activeGroup()?.metrics.length ?? 0,
+  );
+  readonly activeGroupMetricsCount = computed(
+    () => (this.activeGroup()?.metrics ?? []).filter((m) => measuredValue(m) !== null).length,
   );
   readonly cohort = computed(() =>
     selectMetrics(
@@ -137,6 +152,40 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   );
   readonly weekdayPatterns = computed(() => bookingPatterns(this.model(), 'weekday'));
   readonly hourPatterns = computed(() => bookingPatterns(this.model(), 'hour'));
+  readonly practiceBreakdowns = computed(() =>
+    (this.model()?.breakdowns ?? []).filter(
+      (p) =>
+        p.key?.startsWith('Practice:') ||
+        (!p.key?.startsWith('BookingWeekday:') &&
+          !p.key?.startsWith('BookingHour:') &&
+          !p.key?.startsWith('SegmentPriority:') &&
+          p.key !== 'BookingCreationCohortFunnel'),
+    ),
+  );
+  readonly weekdayBreakdownPoints = computed(() => {
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return (this.model()?.breakdowns ?? [])
+      .filter((p) => p.key?.startsWith('BookingWeekday:'))
+      .map((p) => {
+        const day = p.key?.replace('BookingWeekday:', '') ?? '';
+        const order = weekdays.indexOf(day);
+        const bookingsMetric = p.metrics?.find((m) => m.metricCode === 'BookingsCreated');
+        return {
+          point: p,
+          day,
+          arabicDay: this.dayArabicName(day),
+          order: order >= 0 ? order : 99,
+          bookingsCount: measuredValue(bookingsMetric) ?? 0,
+        };
+      })
+      .sort((a, b) => a.order - b.order);
+  });
+  readonly weekdayBreakdownMax = computed(() =>
+    Math.max(1, ...this.weekdayBreakdownPoints().map((d) => d.bookingsCount)),
+  );
+  readonly priorityBreakdownPoints = computed(() =>
+    (this.model()?.breakdowns ?? []).filter((p) => p.key?.startsWith('SegmentPriority:')),
+  );
   readonly modules = computed(() =>
     [
       { id: 'operations', codes: TIMING_CODES },

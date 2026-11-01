@@ -8,9 +8,18 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
-  'doctorOverview.metric.WaitToFirstCall': { ar: 'الانتظار حتى أول نداء', en: 'Wait until first call' },
-  'doctorOverview.metric.WaitToServiceStart': { ar: 'الانتظار حتى بدء الخدمة', en: 'Wait until service starts' },
-  'doctorOverview.metric.CallToStart': { ar: 'من النداء حتى بدء الخدمة', en: 'From call to service start' },
+  'doctorOverview.metric.WaitToFirstCall': {
+    ar: 'الانتظار حتى أول نداء',
+    en: 'Wait until first call',
+  },
+  'doctorOverview.metric.WaitToServiceStart': {
+    ar: 'الانتظار حتى بدء الخدمة',
+    en: 'Wait until service starts',
+  },
+  'doctorOverview.metric.CallToStart': {
+    ar: 'من النداء حتى بدء الخدمة',
+    en: 'From call to service start',
+  },
   'doctorOverview.metric.ServiceDuration': { ar: 'مدة الخدمة', en: 'Service duration' },
   'doctorOverview.metric.Waiting': { ar: 'في الانتظار', en: 'Waiting' },
   'doctorOverview.metric.Called': { ar: 'تم النداء', en: 'Called' },
@@ -18,22 +27,61 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorOverview.metric.TicketsCompleted': { ar: 'تذاكر مكتملة', en: 'Completed tickets' },
   'doctorOverview.metric.TicketsCancelled': { ar: 'تذاكر ملغاة', en: 'Cancelled tickets' },
   'doctorOverview.metric.TicketsNoShow': { ar: 'تذاكر لم تحضر', en: 'No-show tickets' },
-  'doctorOverview.metric.CancellationsByEvent': { ar: 'الإلغاءات المسجلة خلال الفترة', en: 'Cancellation events during the period' },
-  'doctorOverview.metric.TicketNoShowRate': { ar: 'نسبة عدم حضور التذاكر', en: 'Ticket no-show rate' },
-  'doctorOverview.metric.NewToDoctorPatients': { ar: 'مرضى جدد على الطبيب', en: 'Patients new to this doctor' },
-  'doctorOverview.metric.ReturningDoctorPatients': { ar: 'مرضى عائدون للطبيب', en: 'Returning patients' },
-  'doctorOverview.metric.UniqueDoctorPatients': { ar: 'إجمالي المرضى دون تكرار', en: 'Unique patients' },
-  'doctorOverview.metric.PatientRetention90d': { ar: 'عودة المرضى خلال ٩٠ يومًا', en: 'Patient retention over 90 days' },
+  'doctorOverview.metric.CancellationsByEvent': {
+    ar: 'الإلغاءات المسجلة خلال الفترة',
+    en: 'Cancellation events during the period',
+  },
+  'doctorOverview.metric.TicketNoShowRate': {
+    ar: 'نسبة عدم حضور التذاكر',
+    en: 'Ticket no-show rate',
+  },
+  'doctorOverview.metric.NewToDoctorPatients': {
+    ar: 'مرضى جدد على الطبيب',
+    en: 'Patients new to this doctor',
+  },
+  'doctorOverview.metric.ReturningDoctorPatients': {
+    ar: 'مرضى عائدون للطبيب',
+    en: 'Returning patients',
+  },
+  'doctorOverview.metric.UniqueDoctorPatients': {
+    ar: 'إجمالي المرضى دون تكرار',
+    en: 'Unique patients',
+  },
+  'doctorOverview.metric.PatientRetention90d': {
+    ar: 'عودة المرضى خلال ٩٠ يومًا',
+    en: 'Patient retention over 90 days',
+  },
   'doctorOverview.metric.FollowUpActivity': { ar: 'نشاط المتابعة', en: 'Follow-up activity' },
-  'doctorOverview.metric.ClinicalWorkflowCompleted': { ar: 'مسارات الكشف المكتملة', en: 'Completed clinical workflows' },
+  'doctorOverview.metric.ClinicalWorkflowCompleted': {
+    ar: 'مسارات الكشف المكتملة',
+    en: 'Completed clinical workflows',
+  },
   'doctorOverview.metric.GrossCollected': { ar: 'إجمالي التحصيل', en: 'Gross collected' },
   'doctorOverview.metric.Refunds': { ar: 'المبالغ المستردة', en: 'Refunds' },
-  'doctorOverview.metric.PaidOperatingExpenses': { ar: 'مصروفات التشغيل المدفوعة', en: 'Paid operating expenses' },
-  'doctorOverview.metric.NetOperatingCashResult': { ar: 'صافي النتيجة النقدية للتشغيل', en: 'Net operating cash result' },
-  'doctorOverview.metric.OutstandingDueInPeriod': { ar: 'المستحق غير المدفوع خلال الفترة', en: 'Outstanding due in the period' },
-  'doctorOverview.metric.AllOutstandingAsOf': { ar: 'إجمالي المستحق حتى لقطة التقرير', en: 'All outstanding at the snapshot' },
-  'doctorOverview.metric.OverdueAsOf': { ar: 'المتأخر حتى لقطة التقرير', en: 'Overdue at the snapshot' },
-  'doctorOverview.metric.ProjectedResultForPeriod': { ar: 'النتيجة المتوقعة للفترة', en: 'Projected result for the period' },
+  'doctorOverview.metric.PaidOperatingExpenses': {
+    ar: 'مصروفات التشغيل المدفوعة',
+    en: 'Paid operating expenses',
+  },
+  'doctorOverview.metric.NetOperatingCashResult': {
+    ar: 'صافي النتيجة النقدية للتشغيل',
+    en: 'Net operating cash result',
+  },
+  'doctorOverview.metric.OutstandingDueInPeriod': {
+    ar: 'المستحق غير المدفوع خلال الفترة',
+    en: 'Outstanding due in the period',
+  },
+  'doctorOverview.metric.AllOutstandingAsOf': {
+    ar: 'إجمالي المستحق حتى لقطة التقرير',
+    en: 'All outstanding at the snapshot',
+  },
+  'doctorOverview.metric.OverdueAsOf': {
+    ar: 'المتأخر حتى لقطة التقرير',
+    en: 'Overdue at the snapshot',
+  },
+  'doctorOverview.metric.ProjectedResultForPeriod': {
+    ar: 'النتيجة المتوقعة للفترة',
+    en: 'Projected result for the period',
+  },
   'doctorOverview.status.Completed': { ar: 'مكتملة', en: 'Completed' },
   'doctorOverview.status.Cancelled': { ar: 'ملغاة', en: 'Cancelled' },
   'doctorOverview.status.InProgress': { ar: 'قيد الخدمة', en: 'In progress' },
@@ -46,42 +94,129 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorOverview.resource.Encounter': { ar: 'كشف', en: 'Encounter' },
   'doctorOverview.resource.Patient': { ar: 'مريض', en: 'Patient' },
   'doctorOverview.snapshot': { ar: 'لقطة البيانات', en: 'Data snapshot' },
-  'doctorOverview.quality': { ar: 'بعض البيانات غير مكتملة — عرض التفاصيل', en: 'Some data is incomplete — view details' },
-  'doctorOverview.partial': { ar: 'بيانات غير مكتملة أو تحتاج تحديثًا', en: 'Partial data or refresh needed' },
+  'doctorOverview.quality': {
+    ar: 'بعض البيانات غير مكتملة — عرض التفاصيل',
+    en: 'Some data is incomplete — view details',
+  },
+  'doctorOverview.partial': {
+    ar: 'بيانات غير مكتملة أو تحتاج تحديثًا',
+    en: 'Partial data or refresh needed',
+  },
   'doctorOverview.notMeasured': { ar: 'غير قابل للقياس حاليًا', en: 'Not currently measured' },
-  'doctorOverview.trend': { ar: 'المواعيد والحضور يومًا بيوم', en: 'Daily appointments and check-ins' },
-  'doctorOverview.trendHelp': { ar: 'أعداد المواعيد في يومها والحضور الفعلي في يومه. ليست نسبة تحويل للحجوزات. الأيام بلا بيانات تظهر كغير متاحة في الجدول.', en: 'Appointments by scheduled day and check-ins by event day. These counts are not a booking conversion rate. Missing days are marked unavailable in the table.' },
-  'doctorOverview.noTrend': { ar: 'لا توجد بيانات يومية لهذه الفترة', en: 'No daily data for this period' },
-  'doctorOverview.cohort': { ar: 'مسار الحجوزات المنشأة خلال الفترة', en: 'Journey of bookings created in this period' },
-  'doctorOverview.cohortHelp': { ar: 'نفس مجموعة الحجوزات بحسب لقطة التقرير، وقد تستمر رحلتها بعد الفترة. بقية الحجوزات لا تعني بالضرورة عدم حضور.', en: 'The same booking cohort at the report snapshot; its journey may continue after this period. Remaining bookings are not necessarily no-shows.' },
+  'doctorOverview.trend': {
+    ar: 'المواعيد والحضور يومًا بيوم',
+    en: 'Daily appointments and check-ins',
+  },
+  'doctorOverview.trendHelp': {
+    ar: 'أعداد المواعيد في يومها والحضور الفعلي في يومه. ليست نسبة تحويل للحجوزات. الأيام بلا بيانات تظهر كغير متاحة في الجدول.',
+    en: 'Appointments by scheduled day and check-ins by event day. These counts are not a booking conversion rate. Missing days are marked unavailable in the table.',
+  },
+  'doctorOverview.noTrend': {
+    ar: 'لا توجد بيانات يومية لهذه الفترة',
+    en: 'No daily data for this period',
+  },
+  'doctorOverview.cohort': {
+    ar: 'مسار الحجوزات المنشأة خلال الفترة',
+    en: 'Journey of bookings created in this period',
+  },
+  'doctorOverview.cohortHelp': {
+    ar: 'نفس مجموعة الحجوزات بحسب لقطة التقرير، وقد تستمر رحلتها بعد الفترة. بقية الحجوزات لا تعني بالضرورة عدم حضور.',
+    en: 'The same booking cohort at the report snapshot; its journey may continue after this period. Remaining bookings are not necessarily no-shows.',
+  },
   'doctorOverview.cohort.BookingsCreated': { ar: 'حجوزات منشأة', en: 'Bookings created' },
   'doctorOverview.cohort.CheckIns': { ar: 'تم تسجيل حضورها', en: 'Checked in' },
   'doctorOverview.cohort.TicketsCompleted': { ar: 'تذاكر مكتملة', en: 'Tickets completed' },
-  'doctorOverview.metric.AppointmentsScheduled': { ar: 'المواعيد المجدولة', en: 'Scheduled appointments' },
+  'doctorOverview.metric.AppointmentsScheduled': {
+    ar: 'المواعيد المجدولة',
+    en: 'Scheduled appointments',
+  },
   'doctorOverview.metric.CheckIns': { ar: 'الحضور الفعلي', en: 'Actual check-ins' },
-  'doctorOverview.metric.ReservationToTicketConversion': { ar: 'تحويل الحجز لتذكرة', en: 'Reservation to ticket conversion' },
-  'doctorOverview.metric.CancellationRateScheduledCohort': { ar: 'نسبة إلغاء المواعيد', en: 'Scheduled appointment cancellation rate' },
-  'doctorOverview.metric.ReservationNoShowRate': { ar: 'عدم حضور الحجوزات', en: 'Reservation no-show rate' },
+  'doctorOverview.metric.ReservationToTicketConversion': {
+    ar: 'تحويل الحجز لتذكرة',
+    en: 'Reservation to ticket conversion',
+  },
+  'doctorOverview.metric.CancellationRateScheduledCohort': {
+    ar: 'نسبة إلغاء المواعيد',
+    en: 'Scheduled appointment cancellation rate',
+  },
+  'doctorOverview.metric.ReservationNoShowRate': {
+    ar: 'عدم حضور الحجوزات',
+    en: 'Reservation no-show rate',
+  },
   'doctorOverview.metric.NetCollected': { ar: 'صافي التحصيل', en: 'Net collected' },
-  'doctorOverview.help.AppointmentsScheduled': { ar: 'مواعيدها خلال الفترة المختارة', en: 'Scheduled within the selected period' },
-  'doctorOverview.help.CheckIns': { ar: 'تسجيلات الحضور خلال الفترة', en: 'Check-in events during the period' },
-  'doctorOverview.help.ReservationToTicketConversion': { ar: 'من الحجوزات المؤهلة حسب التقرير', en: 'Of eligible reservations in the report' },
-  'doctorOverview.help.CancellationRateScheduledCohort': { ar: 'من مجموعة المواعيد المجدولة', en: 'Of the scheduled appointment cohort' },
-  'doctorOverview.help.ReservationNoShowRate': { ar: 'للحجوزات وليس لتذاكر الانتظار', en: 'Reservations, distinct from queue tickets' },
-  'doctorOverview.help.NetCollected': { ar: 'بعد المبالغ المستردة، وليس صافي الربح', en: 'After refunds; not net profit' },
-  'doctorOverview.section.operations': { ar: 'تجربة الانتظار والخدمة', en: 'Waiting and service experience' },
-  'doctorOverview.sectionHelp.operations': { ar: 'متوسط الأوقات بالدقائق خلال الفترة؛ لكل مؤشر عينته الخاصة.', en: 'Average times in minutes during this period; each measure has its own sample.' },
-  'doctorOverview.section.queue': { ar: 'حالات تذاكر الفترة', en: 'Ticket outcomes for the period' },
-  'doctorOverview.sectionHelp.queue': { ar: 'ملخص تاريخي للفترة المختارة. لمتابعة الانتظار الآن، افتح قائمة الانتظار.', en: 'Historical summary for the selected period. Open the queue for current operations.' },
-  'doctorOverview.section.exceptions': { ar: 'الإلغاء وعدم الحضور', en: 'Cancellations and no-shows' },
-  'doctorOverview.sectionHelp.exceptions': { ar: 'الإلغاءات المسجلة في الفترة تختلف عن إلغاءات مجموعة المواعيد. عدم حضور الحجز يختلف عن عدم حضور التذكرة.', en: 'Cancellation events differ from cancellations in the scheduled cohort. Reservation no-shows differ from ticket no-shows.' },
+  'doctorOverview.help.AppointmentsScheduled': {
+    ar: 'مواعيدها خلال الفترة المختارة',
+    en: 'Scheduled within the selected period',
+  },
+  'doctorOverview.help.CheckIns': {
+    ar: 'تسجيلات الحضور خلال الفترة',
+    en: 'Check-in events during the period',
+  },
+  'doctorOverview.help.ReservationToTicketConversion': {
+    ar: 'من الحجوزات المؤهلة حسب التقرير',
+    en: 'Of eligible reservations in the report',
+  },
+  'doctorOverview.help.CancellationRateScheduledCohort': {
+    ar: 'من مجموعة المواعيد المجدولة',
+    en: 'Of the scheduled appointment cohort',
+  },
+  'doctorOverview.help.ReservationNoShowRate': {
+    ar: 'للحجوزات وليس لتذاكر الانتظار',
+    en: 'Reservations, distinct from queue tickets',
+  },
+  'doctorOverview.help.NetCollected': {
+    ar: 'بعد المبالغ المستردة، وليس صافي الربح',
+    en: 'After refunds; not net profit',
+  },
+  'doctorOverview.section.operations': {
+    ar: 'تجربة الانتظار والخدمة',
+    en: 'Waiting and service experience',
+  },
+  'doctorOverview.sectionHelp.operations': {
+    ar: 'متوسط الأوقات بالدقائق خلال الفترة؛ لكل مؤشر عينته الخاصة.',
+    en: 'Average times in minutes during this period; each measure has its own sample.',
+  },
+  'doctorOverview.section.queue': {
+    ar: 'حالات تذاكر الفترة',
+    en: 'Ticket outcomes for the period',
+  },
+  'doctorOverview.sectionHelp.queue': {
+    ar: 'ملخص تاريخي للفترة المختارة. لمتابعة الانتظار الآن، افتح قائمة الانتظار.',
+    en: 'Historical summary for the selected period. Open the queue for current operations.',
+  },
+  'doctorOverview.section.exceptions': {
+    ar: 'الإلغاء وعدم الحضور',
+    en: 'Cancellations and no-shows',
+  },
+  'doctorOverview.sectionHelp.exceptions': {
+    ar: 'الإلغاءات المسجلة في الفترة تختلف عن إلغاءات مجموعة المواعيد. عدم حضور الحجز يختلف عن عدم حضور التذكرة.',
+    en: 'Cancellation events differ from cancellations in the scheduled cohort. Reservation no-shows differ from ticket no-shows.',
+  },
   'doctorOverview.section.patients': { ar: 'المرضى والمتابعة', en: 'Patients and follow-up' },
-  'doctorOverview.sectionHelp.patients': { ar: 'الجديد هنا هو الجديد على الطبيب، وليس على منصة وصلة. نسبة العودة لها مجموعة قياس مستقلة.', en: 'New means new to this doctor, not new to Wasla. Retention uses a separate cohort.' },
-  'doctorOverview.section.finance': { ar: 'ملخص التحصيل والمصروفات', en: 'Collections and expenses' },
-  'doctorOverview.sectionHelp.finance': { ar: 'القيم المالية المصرح بها فقط. النتيجة النقدية ليست صافي الربح أو الرصيد البنكي، والتوقع مستقل عن التحصيل.', en: 'Authorized financial values only. Cash result is not net profit or bank balance; projections are separate from collections.' },
-  'doctorOverview.pattern.weekday': { ar: 'إنشاء الحجوزات حسب يوم الأسبوع', en: 'Booking creation by weekday' },
-  'doctorOverview.pattern.hour': { ar: 'إنشاء الحجوزات حسب الساعة', en: 'Booking creation by hour' },
-  'doctorOverview.patternHelp': { ar: 'وقت إنشاء الحجز، وليس موعد الكشف أو ساعات عمل العيادة. الأيام والساعات غير الواردة لا تعني صفرًا.', en: 'When bookings were created, not appointment times or clinic hours. Omitted days and hours do not imply zero.' },
+  'doctorOverview.sectionHelp.patients': {
+    ar: 'الجديد هنا هو الجديد على الطبيب، وليس على منصة وصلة. نسبة العودة لها مجموعة قياس مستقلة.',
+    en: 'New means new to this doctor, not new to Wasla. Retention uses a separate cohort.',
+  },
+  'doctorOverview.section.finance': {
+    ar: 'ملخص التحصيل والمصروفات',
+    en: 'Collections and expenses',
+  },
+  'doctorOverview.sectionHelp.finance': {
+    ar: 'القيم المالية المصرح بها فقط. النتيجة النقدية ليست صافي الربح أو الرصيد البنكي، والتوقع مستقل عن التحصيل.',
+    en: 'Authorized financial values only. Cash result is not net profit or bank balance; projections are separate from collections.',
+  },
+  'doctorOverview.pattern.weekday': {
+    ar: 'إنشاء الحجوزات حسب يوم الأسبوع',
+    en: 'Booking creation by weekday',
+  },
+  'doctorOverview.pattern.hour': {
+    ar: 'إنشاء الحجوزات حسب الساعة',
+    en: 'Booking creation by hour',
+  },
+  'doctorOverview.patternHelp': {
+    ar: 'وقت إنشاء الحجز، وليس موعد الكشف أو ساعات عمل العيادة. الأيام والساعات غير الواردة لا تعني صفرًا.',
+    en: 'When bookings were created, not appointment times or clinic hours. Omitted days and hours do not imply zero.',
+  },
   'doctorOverview.weekday.Sunday': { ar: 'الأحد', en: 'Sunday' },
   'doctorOverview.weekday.Monday': { ar: 'الاثنين', en: 'Monday' },
   'doctorOverview.weekday.Tuesday': { ar: 'الثلاثاء', en: 'Tuesday' },
@@ -126,9 +261,15 @@ export const TRANSLATIONS: TranslationDictionary = {
   'reportData.series': { ar: 'جميع بيانات الفترة', en: 'All period data' },
   'reportData.breakdowns': { ar: 'تقسيمات البيانات', en: 'Data breakdowns' },
   'reportData.selectBreakdown': { ar: 'شريحة البيانات', en: 'Data slice' },
-  'reportData.showAllMetrics': { ar: 'عرض كافة المؤشرات (بما فيها غير المحسوبة)', en: 'Show all metrics (including unmeasured)' },
+  'reportData.showAllMetrics': {
+    ar: 'عرض كافة المؤشرات (بما فيها غير المحسوبة)',
+    en: 'Show all metrics (including unmeasured)',
+  },
   'reportData.activeMetricsCount': { ar: 'مؤشر به بيانات', en: 'metrics with data' },
-  'reportData.noMetricsMatching': { ar: 'لا توجد مؤشرات مطابقة للبحث', en: 'No metrics matching the search' },
+  'reportData.noMetricsMatching': {
+    ar: 'لا توجد مؤشرات مطابقة للبحث',
+    en: 'No metrics matching the search',
+  },
   'reportData.calculations': { ar: 'تفاصيل حساب كل مؤشر', en: 'Calculation details by metric' },
   'reportData.status': { ar: 'اكتمال البيانات', en: 'Data completeness' },
   'reportData.status.Complete': { ar: 'مكتملة', en: 'Complete' },
@@ -213,6 +354,103 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorDashboard.searchMetrics': { ar: 'بحث في المؤشرات...', en: 'Search metrics...' },
   'doctorDashboard.allMetrics': { ar: 'جميع المؤشرات', en: 'All metrics' },
   'doctorDashboard.activeOnly': { ar: 'المؤشرات النشطة فقط', en: 'Active metrics only' },
+  'doctorDashboard.practicesSummary': {
+    ar: 'أداء الفروع والعيادات',
+    en: 'Clinics & Practices Performance',
+  },
+  'doctorDashboard.weeklySummary': {
+    ar: 'توزيع الحجوزات أسبوعياً',
+    en: 'Weekly Bookings Distribution',
+  },
+  'doctorDashboard.prioritySummary': {
+    ar: 'أولويات وشرائح الكشف',
+    en: 'Consultation Care Priorities',
+  },
+  'doctorDashboard.calculationMeaning': {
+    ar: 'المعنى السريري وكيف يُحسب',
+    en: 'Clinical meaning & calculation',
+  },
+  'doctorReports.backToReports': { ar: 'العودة لقائمة التقارير', en: 'Back to reports catalog' },
+  'doctorReports.purpose.overview': {
+    ar: 'صورة تشغيلية ومالية شاملة لكافة أنشطة العيادة خلال الفترة المحددة.',
+    en: 'Comprehensive operational and financial summary for clinic activities in the selected period.',
+  },
+  'doctorReports.purpose.reservations': {
+    ar: 'تحليل دقيق لمسار إنشاء المواعيد والحجوزات ومعدلات الإلغاء والتحويل.',
+    en: 'In-depth analysis of bookings, scheduling, cancellation rates, and attendance conversion.',
+  },
+  'doctorReports.purpose.queue': {
+    ar: 'متابعة أداء صالة الانتظار وأوقات انتظار المرضى ومعدلات إنجاز الكشوفات.',
+    en: 'Monitor waiting area performance, patient wait times, and consultation completion.',
+  },
+  'doctorReports.purpose.patients': {
+    ar: 'مؤشرات نشاط المرضى ونسب المرضى الجدد والمراجعين واستمرارية الرعاية الطبية.',
+    en: 'Patient activity metrics, new vs returning rates, and continuity of care.',
+  },
+  'doctorReports.purpose.practiceComparison': {
+    ar: 'مقارنة تحليلية لأداء العيادات والفروع التابعة لك في المؤشرات التشغيلية والمالية.',
+    en: 'Comparative analysis of your clinics and practices on operational and financial indicators.',
+  },
+  'doctorReports.purpose.operatingFinance': {
+    ar: 'البيان المالي التشغيلي: المقبوضات النقدية، المصروفات المدفوعة، وصافي التدفق النقدي والالتزامات.',
+    en: 'Operating financial statement: collections, paid expenses, net cash flow, and obligations.',
+  },
+  'doctorReports.purpose.expenses': {
+    ar: 'متابعة تفصيلية لمصروفات التشغيل المسددة والالتزامات المالية المستحقة والمتأخرة.',
+    en: 'Detailed tracking of paid operating expenses and due or overdue obligations.',
+  },
+  'doctorReports.purpose.salary': {
+    ar: 'كشف حركة الرواتب المسددة ومستحقات أجور الفريق الطبي والإداري بالعيادة.',
+    en: 'Record of salary payments and staff remuneration obligations.',
+  },
+  'doctorReports.purpose.recurringExpenses': {
+    ar: 'إدارة الالتزامات المالية المتكررة (إيجارات، خدمات دورية) والمدفوعات المسجلة.',
+    en: 'Manage recurring obligations (rent, recurring services) and recorded payments.',
+  },
+  'doctorReports.allMetricsExplorer': {
+    ar: 'دليل كافة المؤشرات التفصيلية',
+    en: 'Complete Metrics Explorer',
+  },
+  'doctorReports.obligationsSummary': {
+    ar: 'ملخص الالتزامات المالية المستحقة',
+    en: 'Financial Obligations Summary',
+  },
+  'doctorReports.patientDistribution': {
+    ar: 'توزيع المرضى الجدد والمراجعين',
+    en: 'New vs Returning Patients',
+  },
+  'doctorReports.retention90d': {
+    ar: 'معدل عودة المرضى (خلال 90 يوماً)',
+    en: '90-Day Patient Retention',
+  },
+  'doctorReports.practiceMatrix': {
+    ar: 'مصفوفة مقارنة الفروع والعيادات',
+    en: 'Practices Comparison Matrix',
+  },
+  'doctorReports.noChartData': {
+    ar: 'لا تتوفر بيانات رسم بياني لهذه الفترة، يرجى مراجعة الجدول التفصيلي أدناه.',
+    en: 'No chart data available for this period; please refer to the detailed table below.',
+  },
+  'doctorReports.exportPdf': { ar: 'تصدير PDF', en: 'Export PDF' },
+  'doctorReports.exportExcel': { ar: 'تصدير Excel', en: 'Export Excel' },
+  'doctorReports.grouping': { ar: 'التقسيم الزمني', en: 'Time grouping' },
+  'doctorReports.accessDenied': {
+    ar: 'غير مصرح بعرض هذا التقرير',
+    en: 'Access Denied for this report',
+  },
+  'doctorReports.accessDeniedHelp': {
+    ar: 'لا تملك الصلاحيات الكافية للاطلاع على هذا التقرير التخصصي أو بياناته المالية.',
+    en: 'You do not have sufficient permissions to view this specialized report or its financial records.',
+  },
+  'doctorRemediation.allPractices': { ar: 'جميع العيادات', en: 'All clinics' },
+  'doctorOverview.metric.BookingsCreated': { ar: 'الحجوزات المنشأة', en: 'Bookings Created' },
+  'common.exportSuccess': { ar: 'تم تصدير التقرير بنجاح', en: 'Report exported successfully' },
+  'common.exportFailed': { ar: 'فشل تصدير التقرير', en: 'Failed to export report' },
+  'doctorOverview.unit.minutes': { ar: 'دقيقة', en: 'minutes' },
+  'doctorReports.category.operational': { ar: 'التقارير التشغيلية', en: 'Operational Reports' },
+  'doctorReports.category.patients': { ar: 'تقارير المرضى', en: 'Patient Reports' },
+  'doctorReports.category.comparison': { ar: 'تقارير المقارنة', en: 'Comparison Reports' },
+  'doctorReports.category.finance': { ar: 'التقارير المالية', en: 'Financial Reports' },
   'doctorDashboard.attendanceRate': { ar: 'نسبة الحضور', en: 'Attendance rate' },
   'doctorDashboard.period': { ar: 'الفترة المعروضة', en: 'Reporting period' },
   'doctorDashboard.viewDetails': { ar: 'عرض التفاصيل', en: 'View details' },

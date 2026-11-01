@@ -624,131 +624,169 @@
                 }
               </nav>
 
-              <!-- Metric Search Bar -->
-              <div class="metric-search-wrap">
-                <label class="metric-search" for="overview-metric-search">
-                  <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
-                  <input
-                    id="overview-metric-search"
-                    type="search"
-                    class="field-input search-input"
-                    [placeholder]="'doctorDashboard.searchMetrics' | t"
-                    [ngModel]="metricSearch()"
-                    (ngModelChange)="metricSearch.set($event)"
-                  />
-                </label>
+              <!-- Metric Filter & Search Bar -->
+              <div class="metric-filter-bar">
+                <div class="metric-search-wrap">
+                  <label class="metric-search" for="overview-metric-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                    <input
+                      id="overview-metric-search"
+                      type="search"
+                      class="field-input search-input"
+                      [placeholder]="'doctorDashboard.searchMetrics' | t"
+                      [ngModel]="metricSearch()"
+                      (ngModelChange)="metricSearch.set($event)"
+                    />
+                  </label>
+                </div>
+
+                <div class="metric-view-toggle">
+                  <button
+                    type="button"
+                    class="btn-toggle-chip"
+                    [class.btn-toggle-chip--active]="onlyActiveMetrics()"
+                    (click)="onlyActiveMetrics.set(true)"
+                  >
+                    <i class="fa-solid fa-filter" aria-hidden="true"></i>
+                    <span>{{ 'doctorDashboard.activeOnly' | t }}</span>
+                    <span class="chip-count">({{ activeGroupMetricsCount() }})</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-toggle-chip"
+                    [class.btn-toggle-chip--active]="!onlyActiveMetrics()"
+                    (click)="onlyActiveMetrics.set(false)"
+                  >
+                    <span>{{ 'doctorDashboard.allMetrics' | t }}</span>
+                    <span class="chip-count">({{ totalGroupMetricsCount() }})</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Metrics Directory Multi-Column Grid -->
-              <div class="metric-directory">
-                @for (metric of displayedGroupMetrics(); track $index) {
-                  <article class="metric-row metric-card">
-                    <div class="metric-card__header">
-                      <div class="metric-card__title-group">
-                        <span class="kpi-icon-bubble-sm" [class]="metricColorClass(metric.metricCode)" aria-hidden="true">
-                          <i [class]="metricIcon(metric.metricCode)"></i>
-                        </span>
-                        <h3 class="metric-name">{{ metricLabel(metric) }}</h3>
-                      </div>
-                      @if (metricStatus(metric)) {
-                        <small class="metric-status-tag">{{ metricStatus(metric) }}</small>
-                      }
-                    </div>
-
-                    <div class="metric-card__value-box">
-                      <div class="metric-result metric-card__number-wrap">
-                        <strong class="result-number">{{ format(metric) }}</strong>
-                        @if (measuredValue(metric) !== null && metric.unit && metric.unit !== 'count') {
-                          <span class="result-unit">{{ metricUnit(metric.unit) }}</span>
+              @if (displayedGroupMetrics().length) {
+                <div class="metric-directory">
+                  @for (metric of displayedGroupMetrics(); track $index) {
+                    <article class="metric-row metric-card">
+                      <div class="metric-card__header">
+                        <div class="metric-card__title-group">
+                          <span class="kpi-icon-bubble-sm" [class]="metricColorClass(metric.metricCode)" aria-hidden="true">
+                            <i [class]="metricIcon(metric.metricCode)"></i>
+                          </span>
+                          <h3 class="metric-name">{{ metricLabel(metric) }}</h3>
+                        </div>
+                        @if (metricStatus(metric)) {
+                          <small class="metric-status-tag">{{ metricStatus(metric) }}</small>
                         }
                       </div>
-                      @if (metric.warningCode) {
-                        <p class="metric-warning-note">
-                          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-                          <span>{{ warningLabel(metric.warningCode) }}</span>
-                        </p>
-                      }
-                    </div>
 
-                    <!-- Plain Language Doctor Explanation -->
-                    <p class="metric-card__explanation">
-                      {{ metricHelpText(metric) }}
-                    </p>
-
-                    <!-- Contextual Badges -->
-                    @if (metric.denominator != null || metric.eligibleSampleCount != null || metric.excludedSampleCount != null) {
-                      <div class="metric-card__context-chips">
-                        @if (metric.denominator != null) {
-                          <span class="context-chip" [title]="'doctorOverview.ratioBasis' | t">
-                            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
-                            <span>{{ metric.numerator == null ? ('doctorRemediation.unavailable' | t) : formatNumber(metric.numerator) }} من {{ formatNumber(metric.denominator) }}</span>
-                          </span>
-                        }
-                        @if (metric.eligibleSampleCount != null) {
-                          <span class="context-chip" [title]="'doctorRemediation.sample' | t">
-                            <i class="fa-solid fa-users" aria-hidden="true"></i>
-                            <span>{{ 'doctorRemediation.sample' | t }}: {{ formatNumber(metric.eligibleSampleCount) }}</span>
-                          </span>
-                        }
-                        @if (metric.excludedSampleCount != null) {
-                          <span class="context-chip context-chip--muted" [title]="'doctorOverview.excluded' | t">
-                            <span>{{ 'doctorOverview.excluded' | t }}: {{ formatNumber(metric.excludedSampleCount) }}</span>
-                          </span>
-                        }
-                      </div>
-                    }
-
-                    <!-- Calculation Details Accordion for Inspection -->
-                    <details class="metric-calc-details">
-                      <summary><i class="fa-solid fa-circle-question" aria-hidden="true"></i> {{ 'doctorOverview.calculation' | t }}</summary>
-                      <div class="calc-details-content">
-                        <p>{{ 'doctorRemediation.cohortHelp' | t }}</p>
-                        @if (metric.denominator != null) {
-                          <p>
-                            {{ 'doctorOverview.ratioBasis' | t }}:
-                            {{
-                              metric.numerator == null
-                                ? ('doctorRemediation.unavailable' | t)
-                                : formatNumber(metric.numerator)
-                            }}
-                            / {{ formatNumber(metric.denominator) }}
-                          </p>
-                        }
-                        @if (metric.eligibleSampleCount != null) {
-                          <p>
-                            {{ 'doctorRemediation.sample' | t }}:
-                            {{ formatNumber(metric.eligibleSampleCount) }}
-                          </p>
-                        }
-                        @if (metric.excludedSampleCount != null) {
-                          <p>
-                            {{ 'doctorOverview.excluded' | t }}:
-                            {{ formatNumber(metric.excludedSampleCount) }}
+                      <div class="metric-card__value-box">
+                        <div class="metric-result metric-card__number-wrap">
+                          <strong class="result-number">{{ format(metric) }}</strong>
+                          @if (measuredValue(metric) !== null && metric.unit && metric.unit !== 'count') {
+                            <span class="result-unit">{{ metricUnit(metric.unit) }}</span>
+                          }
+                        </div>
+                        @if (metric.warningCode) {
+                          <p class="metric-warning-note">
+                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                            <span>{{ warningLabel(metric.warningCode) }}</span>
                           </p>
                         }
                       </div>
-                    </details>
 
-                    <!-- Card Action Footer -->
-                    <div class="metric-card__footer">
-                      @if (canDrilldown(metric)) {
-                        <button
-                          type="button"
-                          class="btn btn-outline-secondary drilldown-btn"
-                          (click)="openDrilldown(metric)"
-                        >
-                          <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
-                          <i class="fa-solid fa-arrow-left drill-arrow-icon" aria-hidden="true"></i>
-                        </button>
+                      <!-- Plain Language Doctor Explanation -->
+                      <p class="metric-card__explanation">
+                        {{ metricHelpText(metric) }}
+                      </p>
+
+                      <!-- Contextual Badges -->
+                      @if (metric.denominator != null || metric.eligibleSampleCount != null || metric.excludedSampleCount != null) {
+                        <div class="metric-card__context-chips">
+                          @if (metric.denominator != null) {
+                            <span class="context-chip" [title]="'doctorOverview.ratioBasis' | t">
+                              <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                              <span>{{ metric.numerator == null ? ('doctorRemediation.unavailable' | t) : formatNumber(metric.numerator) }} من {{ formatNumber(metric.denominator) }}</span>
+                            </span>
+                          }
+                          @if (metric.eligibleSampleCount != null) {
+                            <span class="context-chip" [title]="'doctorRemediation.sample' | t">
+                              <i class="fa-solid fa-users" aria-hidden="true"></i>
+                              <span>{{ 'doctorRemediation.sample' | t }}: {{ formatNumber(metric.eligibleSampleCount) }}</span>
+                            </span>
+                          }
+                          @if (metric.excludedSampleCount != null) {
+                            <span class="context-chip context-chip--muted" [title]="'doctorOverview.excluded' | t">
+                              <span>{{ 'doctorOverview.excluded' | t }}: {{ formatNumber(metric.excludedSampleCount) }}</span>
+                            </span>
+                          }
+                        </div>
                       }
-                    </div>
-                  </article>
-                }
-              </div>
 
-              <!-- Breakdowns Details Section (Multi-Column Grid) -->
+                      <!-- Calculation Details Accordion for Inspection -->
+                      <details class="metric-calc-details">
+                        <summary><i class="fa-solid fa-circle-question" aria-hidden="true"></i> {{ 'doctorDashboard.calculationMeaning' | t }}</summary>
+                        <div class="calc-details-content">
+                          <p>{{ metricHelpText(metric) }}</p>
+                          @if (metric.denominator != null) {
+                            <p class="calc-detail-row">
+                              <strong>{{ 'doctorOverview.ratioBasis' | t }}:</strong>
+                              {{
+                                metric.numerator == null
+                                  ? ('doctorRemediation.unavailable' | t)
+                                  : formatNumber(metric.numerator)
+                              }}
+                              / {{ formatNumber(metric.denominator) }}
+                            </p>
+                          }
+                          @if (metric.eligibleSampleCount != null) {
+                            <p class="calc-detail-row">
+                              <strong>{{ 'doctorRemediation.sample' | t }}:</strong>
+                              {{ formatNumber(metric.eligibleSampleCount) }}
+                            </p>
+                          }
+                          @if (metric.excludedSampleCount != null) {
+                            <p class="calc-detail-row">
+                              <strong>{{ 'doctorOverview.excluded' | t }}:</strong>
+                              {{ formatNumber(metric.excludedSampleCount) }}
+                            </p>
+                          }
+                        </div>
+                      </details>
+
+                      <!-- Card Action Footer -->
+                      <div class="metric-card__footer">
+                        @if (canDrilldown(metric) && measuredValue(metric) !== null && (measuredValue(metric) ?? 0) > 0) {
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary drilldown-btn"
+                            (click)="openDrilldown(metric)"
+                          >
+                            <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                            <i class="fa-solid fa-arrow-left drill-arrow-icon" aria-hidden="true"></i>
+                          </button>
+                        }
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="no-metrics-found">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  <p>{{ 'common.empty' | t }}</p>
+                  @if (onlyActiveMetrics()) {
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="onlyActiveMetrics.set(false)">
+                      {{ 'doctorDashboard.allMetrics' | t }}
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- ======================================== -->
+              <!-- BREAKDOWNS DETAILS SECTION               -->
+              <!-- ======================================== -->
               @if (report.breakdowns?.length) {
-                <details class="breakdown-details">
+                <details class="breakdown-details" open>
                   <summary class="breakdown-summary">
                     <span class="summary-title-wrap">
                       <i class="fa-solid fa-layer-group summary-icon" aria-hidden="true"></i>
@@ -758,58 +796,139 @@
                   </summary>
 
                   <div class="breakdown-body">
-                    @for (point of report.breakdowns; track $index) {
-                      <section class="breakdown-section">
+                    <!-- 1. Practice Summary Cards -->
+                    @if (practiceBreakdowns().length) {
+                      <div class="breakdown-category">
+                        <div class="breakdown-category-header">
+                          <span class="category-icon-bubble">
+                            <i class="fa-solid fa-hospital" aria-hidden="true"></i>
+                          </span>
+                          <h4>{{ 'doctorDashboard.practicesSummary' | t }}</h4>
+                        </div>
+
+                        <div class="practice-cards-grid">
+                          @for (point of practiceBreakdowns(); track $index) {
+                            <section class="breakdown-section practice-card">
+                              <div class="breakdown-header">
+                                <span class="breakdown-icon-bubble">
+                                  <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                                </span>
+                                <h5 class="breakdown-section-title">{{ breakdownTitle(point) }}</h5>
+                              </div>
+                              <dl class="summary-list breakdown-grid">
+                                @for (metric of point.metrics; track $index) {
+                                  @if (
+                                    canViewFinance() ||
+                                    (!financeCodes.includes(metric.metricCode ?? '') &&
+                                      metric.unit?.toLowerCase() !== 'egp')
+                                  ) {
+                                    <div class="summary-row breakdown-tile">
+                                      <dt class="summary-label">
+                                        <span class="summary-title">{{ metricLabel(metric) }}</span>
+                                        @if (metricStatus(metric)) {
+                                          <small class="summary-status-tag">{{ metricStatus(metric) }}</small>
+                                        }
+                                      </dt>
+                                      <dd class="summary-value-cell">
+                                        <div class="value-cluster">
+                                          <strong class="summary-number">{{ format(metric) }}</strong>
+                                          @if (
+                                            measuredValue(metric) !== null &&
+                                            metric.unit &&
+                                            metric.unit !== 'count'
+                                          ) {
+                                            <span class="summary-unit">{{ metricUnit(metric.unit) }}</span>
+                                          }
+                                        </div>
+                                        @if (canDrilldown(metric) && measuredValue(metric) !== null && (measuredValue(metric) ?? 0) > 0) {
+                                          <button
+                                            type="button"
+                                            class="metric-link"
+                                            (click)="openDrilldown(metric)"
+                                          >
+                                            <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                                            <i class="fa-solid fa-arrow-left metric-link-icon" aria-hidden="true"></i>
+                                          </button>
+                                        }
+                                      </dd>
+                                    </div>
+                                  }
+                                }
+                              </dl>
+                            </section>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <!-- 2. Weekly Distribution (Days of Week) -->
+                    @if (weekdayBreakdownPoints().length) {
+                      <section class="breakdown-section weekly-breakdown-card">
                         <div class="breakdown-header">
                           <span class="breakdown-icon-bubble">
-                            <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+                            <i class="fa-solid fa-calendar-week" aria-hidden="true"></i>
                           </span>
-                          <h3 class="breakdown-section-title">{{ breakdownTitle(point) }}</h3>
+                          <div>
+                            <h4 class="breakdown-section-title">{{ 'doctorDashboard.weeklySummary' | t }}</h4>
+                            <p class="section-help-text">{{ 'doctorOverview.patternHelp' | t }}</p>
+                          </div>
                         </div>
-                        <dl class="summary-list breakdown-grid">
-                          @for (metric of point.metrics; track $index) {
-                            @if (
-                              canViewFinance() ||
-                              (!financeCodes.includes(metric.metricCode ?? '') &&
-                                metric.unit?.toLowerCase() !== 'egp')
-                            ) {
-                              <div class="summary-row breakdown-tile">
-                                <dt class="summary-label">
-                                  <span class="summary-title">{{ metricLabel(metric) }}</span>
-                                  @if (metricStatus(metric)) {
-                                    <small class="summary-status-tag">{{ metricStatus(metric) }}</small>
-                                  }
-                                  @if (metric.warningCode) {
-                                    <small class="summary-warning-tag">{{ warningLabel(metric.warningCode) }}</small>
-                                  }
-                                </dt>
-                                <dd class="summary-value-cell">
-                                  <div class="value-cluster">
-                                    <strong class="summary-number">{{ format(metric) }}</strong>
-                                    @if (
-                                      measuredValue(metric) !== null &&
-                                      metric.unit &&
-                                      metric.unit !== 'count'
-                                    ) {
-                                      <span class="summary-unit">{{ metricUnit(metric.unit) }}</span>
-                                    }
-                                  </div>
-                                  @if (canDrilldown(metric)) {
-                                    <button
-                                      type="button"
-                                      class="metric-link"
-                                      (click)="openDrilldown(metric)"
-                                    >
-                                      <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
-                                      <i class="fa-solid fa-arrow-left metric-link-icon" aria-hidden="true"></i>
-                                    </button>
-                                  }
-                                </dd>
+
+                        <div class="weekday-tiles-grid">
+                          @for (item of weekdayBreakdownPoints(); track item.day) {
+                            <div class="weekday-tile">
+                              <span class="weekday-tile-name">{{ item.arabicDay }}</span>
+                              <div class="weekday-bar-track">
+                                <div
+                                  class="weekday-bar-fill"
+                                  [style.height.%]="(item.bookingsCount / weekdayBreakdownMax()) * 100"
+                                ></div>
                               </div>
-                            }
+                              <strong class="weekday-tile-count">{{ formatNumber(item.bookingsCount) }}</strong>
+                            </div>
                           }
-                        </dl>
+                        </div>
                       </section>
+                    }
+
+                    <!-- 3. Patient Priorities & Urgency -->
+                    @if (priorityBreakdownPoints().length) {
+                      <div class="breakdown-category">
+                        <div class="breakdown-category-header">
+                          <span class="category-icon-bubble">
+                            <i class="fa-solid fa-star" aria-hidden="true"></i>
+                          </span>
+                          <h4>{{ 'doctorDashboard.prioritySummary' | t }}</h4>
+                        </div>
+
+                        <div class="priority-cards-grid">
+                          @for (point of priorityBreakdownPoints(); track point.key) {
+                            <section class="breakdown-section priority-card">
+                              <div class="breakdown-header">
+                                <span class="breakdown-icon-bubble">
+                                  <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
+                                </span>
+                                <h5 class="breakdown-section-title">{{ breakdownTitle(point) }}</h5>
+                              </div>
+                              <dl class="summary-list breakdown-grid">
+                                @for (metric of point.metrics; track $index) {
+                                  <div class="summary-row breakdown-tile">
+                                    <dt class="summary-label">
+                                      <span class="summary-title">{{ metricLabel(metric) }}</span>
+                                    </dt>
+                                    <dd class="summary-value-cell">
+                                      <strong class="summary-number">{{ format(metric) }}</strong>
+                                      @if (measuredValue(metric) !== null && metric.unit && metric.unit !== 'count') {
+                                        <span class="summary-unit">{{ metricUnit(metric.unit) }}</span>
+                                      }
+                                    </dd>
+                                  </div>
+                                }
+                              </dl>
+                            </section>
+                          }
+                        </div>
+                      </div>
                     }
                   </div>
                 </details>

@@ -311,6 +311,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'doctor/reports/:reportCode',
+        data: { actor: 'Doctor', permission: 'Reports.Doctor.ViewOwn' },
+        canActivate: [permissionGuard],
+        loadComponent: () =>
+          import(
+            './features/doctor-reports/pages/doctor-report-viewer/doctor-report-viewer.component'
+          ).then((m) => m.DoctorReportViewerComponent),
+      },
+      {
         path: 'doctor/insights',
         data: { actor: 'Doctor', tab: 'insights', permission: 'Insights.Doctor.ViewOwn' },
         canActivate: [permissionGuard],
