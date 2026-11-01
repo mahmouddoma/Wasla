@@ -5,6 +5,8 @@ import { signal } from '@angular/core';
 import { DoctorDashboardComponent } from './doctor-dashboard.component';
 import { Phase18Api } from '../../../../domains/phase18';
 import { AuthSession } from '../../../../core/auth/auth-session';
+import { overviewFixture } from './overview-test-fixture';
+import { OVERVIEW_KPIS } from './overview-presentation';
 import { PortalNavigation } from '../../../../layout/navigation/portal-navigation';
 
 describe('Doctor dashboard', () => {
@@ -48,47 +50,89 @@ describe('Doctor dashboard', () => {
     expect(api.call).not.toHaveBeenCalled();
   });
 
-  it('renders Font Awesome icons and semantic colors without losing metric labels', async () => {
+  it('renders semantic KPIs and keeps all official metrics under secondary disclosure', async () => {
     const fixture = TestBed.createComponent(DoctorDashboardComponent);
     await fixture.whenStable();
-    fixture.componentInstance.model.set({
-      metrics: [
-        { metricCode: 'AppointmentsScheduled', nameEn: 'Appointments', value: 12 },
-        { metricCode: 'CheckIns', nameEn: 'Attendance', value: 8 },
-        { metricCode: 'ClinicalWorkflowCompleted', nameEn: 'Completed care', value: 6 },
-        { metricCode: 'NetCollected', nameEn: 'Collections', value: 120 },
-      ],
+    const component = fixture.componentInstance;
+    component.model.set(overviewFixture);
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelectorAll('.metric-strip .metric-item')).toHaveLength(6);
+    expect(component.highlights().map((metric) => metric.metricCode)).toEqual(OVERVIEW_KPIS);
+    expect(
+      element.querySelector('[data-metric="ReservationToTicketConversion"]')?.textContent,
+    ).toContain(component.formatNumber(57.89));
+    expect(element.querySelector('.metrics-details')).toBeTruthy();
+    expect(element.querySelector('app-report-data-sections')).toBeNull();
+    expect(element.querySelectorAll('.daily-table tbody tr')).toHaveLength(30);
+    expect(component.cohort().map((metric) => metric.value)).toEqual([144, 63, 63]);
+    expect(component.hourPatterns().find((point) => point.label === '16:00')?.metric?.value).toBe(
+      54,
+    );
+    expect(element.querySelector('.metric-ratio-badge')).toBeNull();
+    for (const lang of ['ar', 'en'] as const) {
+      component.language.setLanguage(lang);
+      await fixture.whenStable();
+      const operations = element.querySelector('.overview-detail[open] .summary-list');
+      expect(operations?.textContent).toContain(
+        component.language.t('doctorOverview.metric.WaitToServiceStart'),
+      );
+      expect(operations?.textContent).toContain(component.formatNumber(17));
+    }
+    component.selectedGroup.set('other');
+    component.model.set({
+      metrics: [{ metricCode: 'future', nameEn: 'Future measure', value: 0 }],
     });
     await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('.page-header__icon .fa-chart-line')).toBeTruthy();
-    expect(
-      element.querySelector('.metric-item[data-group="bookings"] .fa-calendar-check'),
-    ).toBeTruthy();
-    expect(element.querySelector('.metric-item[data-group="queue"] .fa-users-line')).toBeTruthy();
-    expect(element.querySelector('.metric-item[data-group="care"] .fa-stethoscope')).toBeTruthy();
-    expect(element.querySelector('.metric-item[data-group="finance"] .fa-wallet')).toBeTruthy();
-    expect(fixture.componentInstance.metricGroup('unknown')).toBe('other');
-    expect(element.querySelectorAll('.metric-item dt').length).toBe(4);
+    expect(element.querySelectorAll('.metric-directory .metric-row')).toHaveLength(1);
   });
 
-  it('shows a compact summary and a complete categorized directory without hiding metrics in a long accordion', async () => {
+  it('gates finance in KPIs, supporting summaries, directory and breakdowns', async () => {
+    TestBed.overrideProvider(AuthSession, {
+      useValue: { hasPermission: (permission: string) => permission !== 'DoctorRevenue.ViewOwn' },
+    });
     const fixture = TestBed.createComponent(DoctorDashboardComponent);
     await fixture.whenStable();
-    const metrics = Array.from({ length: 7 }, (_, index) => ({
-      metricCode: `metric-${index}`,
-      nameAr: `مؤشر ${index}`,
-      nameEn: `Metric ${index}`,
-      value: index,
-      unit: 'count',
-    }));
-    fixture.componentInstance.model.set({ metrics });
+    const component = fixture.componentInstance;
+    component.model.set(overviewFixture);
     await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelectorAll('.metric-strip .metric-item')).toHaveLength(4);
-    expect(element.querySelectorAll('.metric-directory .metric-row')).toHaveLength(7);
-    expect(element.querySelector('.metrics-details')).toBeNull();
-    expect(element.querySelectorAll('.metric-card')).toHaveLength(0);
+    expect(component.highlights()).toHaveLength(5);
+    expect(component.groups().some((group) => group.id === 'finance')).toBe(false);
+    expect(component.modules().some((module) => module.id === 'finance')).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('33,000');
+  });
+
+  it('offers an illustrated empty state and a retry for aggregate errors', async () => {
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    component.model.set({ metrics: [] });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.dashboard-state img')).toBeTruthy();
+    component.failed.set(true);
+    await fixture.whenStable();
+    const retry: HTMLButtonElement = fixture.nativeElement.querySelector('[role="alert"] button');
+    expect(retry).toBeTruthy();
+    api.call.mockReturnValue(of(overviewFixture));
+    retry.click();
+    await fixture.whenStable();
+    expect(component.failed()).toBe(false);
+    expect(component.model()?.reportCode).toBe('overview');
+  });
+
+  it('supports keyboard inspection of paired daily values without hiding the table alternative', async () => {
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.model.set(overviewFixture);
+    await fixture.whenStable();
+    const point: SVGGElement = fixture.nativeElement.querySelector('.chart-point');
+    point.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await fixture.whenStable();
+    expect(fixture.componentInstance.selectedDay()).toBe('2026-10-03');
+    expect(fixture.nativeElement.querySelector('.selected-day')?.textContent).toContain(
+      fixture.componentInstance.formatNumber(0),
+    );
+    expect(fixture.nativeElement.querySelectorAll('.daily-table tbody tr')).toHaveLength(30);
   });
 
   it('opens an allowed API action inside the drawer with its exact reporting snapshot and pagination', async () => {
@@ -200,9 +244,8 @@ describe('Doctor dashboard', () => {
         },
       ],
     });
-    expect(component.chartPoints()[0].value).toBe(7);
-    component.chartCode.set('AppointmentsScheduled');
-    expect(component.chartPoints()[0].value).toBe(12);
+    expect(component.chartPoints()[0].checkIns?.value).toBe(7);
+    expect(component.chartPoints()[0].scheduled?.value).toBe(12);
     const metric = {
       metricCode: 'CheckIns',
       availableActions: [
@@ -259,27 +302,74 @@ describe('Doctor dashboard', () => {
       element
         .querySelector('.quick-actions')!
         .compareDocumentPosition(element.querySelector('.filters-form')!) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+        Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
   });
-  it('ignores the old scope when filter responses arrive out of order', async () => {
-    const component = TestBed.createComponent(DoctorDashboardComponent).componentInstance;
+  it('ignores reports from old practice filters and closes their drilldowns', async () => {
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
     const old = new Subject<object>();
     api.call.mockReturnValueOnce(old).mockReturnValueOnce(of({ reportCode: 'latest' }));
+    component.filters.practiceId = 'old-clinic';
+    component.drillMetric.set({ metricCode: 'CheckIns' });
     const first = component.refresh();
+    expect(component.drillMetric()).toBeNull();
+    component.filters.practiceId = 'new-clinic';
     await component.refresh();
     old.next({ reportCode: 'old' });
     old.complete();
     await first;
     expect(component.model()?.reportCode).toBe('latest');
+    expect(component.filters.practiceId).toBe('new-clinic');
   });
-  it('does not repeat server feedback in page content', async () => {
+
+  it('reloads the selected practice and clears dependent inspection state immediately', async () => {
     const fixture = TestBed.createComponent(DoctorDashboardComponent);
     await fixture.whenStable();
-    fixture.componentInstance.messages.set(['Server-only feedback']);
+    const component = fixture.componentInstance;
+    const pending = new Subject<object>();
+    api.call.mockReturnValue(pending);
+    component.drillMetric.set({ metricCode: 'CheckIns' });
+    component.selectedDay.set('2026-10-03');
+    component.changePractice('clinic-a');
+    expect(component.drillMetric()).toBeNull();
+    expect(component.selectedDay()).toBe('');
+    expect(api.call).toHaveBeenLastCalledWith(
+      'P18-026',
+      expect.objectContaining({ query: expect.objectContaining({ practiceId: 'clinic-a' }) }),
+    );
+    pending.next(overviewFixture);
+    pending.complete();
     await fixture.whenStable();
-    expect(fixture.nativeElement.textContent).not.toContain('Server-only feedback');
   });
+
+  it('prefers a validated reservation route to the patient fallback and denies untrusted routes', async () => {
+    const component = TestBed.createComponent(DoctorDashboardComponent).componentInstance;
+    const row = {
+      patientId: 'patient-a',
+      resourceType: 'Reservation',
+      availableActions: [{ allowed: true }],
+      detailRoute: '/api/v1/doctors/me/practices/clinic-a/reservations/booking-a',
+    };
+    expect(component.sourceLink(row)).toEqual({
+      route: '/doctor/reservations',
+      query: { practiceId: 'clinic-a', reservationId: 'booking-a' },
+    });
+    expect(
+      component.sourceLink({ ...row, patientId: null, detailRoute: 'https://evil.example' }),
+    ).toBeNull();
+    expect(component.sourceLink({ ...row, availableActions: [{ allowed: false }] })).toBeNull();
+  });
+
+  it('uses the reporting zone for instants and preserves independent business dates', () => {
+    const component = TestBed.createComponent(DoctorDashboardComponent).componentInstance;
+    component.language.setLanguage('en');
+    component.model.set({ window: { reportTimeZoneId: 'Africa/Cairo' } });
+    expect(component.formatRecordTime('2026-11-01T23:30:00Z')).toBe('01:30 am');
+    expect(component.formatRecordDate('2026-11-01')).toBe('1 Nov 2026');
+  });
+
   it('keeps useful report warnings translated in both languages', async () => {
     const fixture = TestBed.createComponent(DoctorDashboardComponent);
     await fixture.whenStable();

@@ -1,4 +1,7 @@
-<main class="directory-workspace doctor-dashboard">
+<main class="container-fluid doctor-dashboard directory-workspace">
+  <!-- ======================================== -->
+  <!-- 1. PAGE HEADER                           -->
+  <!-- ======================================== -->
   <app-page-header
     [heading]="'doctorRemediation.dashboard' | t"
     [description]="'doctorRemediation.dashboardHelp' | t"
@@ -7,20 +10,843 @@
     actionIcon="refresh"
     [actionLoading]="loading()"
     (actionClicked)="refresh()"
-    ><i pageHeaderIcon class="fa-solid fa-chart-line dashboard-header-icon" aria-hidden="true"></i
-  ></app-page-header>
+  />
 
-  <!-- Quick actions -->
-  @if (actions().length) {
-    <section class="dashboard-section" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
-      <div class="section-heading">
-        <div class="section-heading__content">
-          <i class="fa-solid fa-bolt section-title-icon" aria-hidden="true"></i>
-          <h2>{{ 'doctorRemediation.dailyActions' | t }}</h2>
-        </div>
+  @if (canView()) {
+    <!-- ======================================== -->
+    <!-- 2. FILTERS CARD                          -->
+    <!-- ======================================== -->
+    <section class="filter-panel" [attr.aria-label]="'common.search' | t">
+      <div class="dashboard-filters-card">
+        <form class="filters-form" (ngSubmit)="refresh()">
+          <!-- Practice Filter -->
+          <div class="filter-field filter-field--practice">
+            <label for="dashboard-practice">
+              <i class="fa-solid fa-hospital field-icon" aria-hidden="true"></i>
+              <span>{{ 'finance.practice' | t }}</span>
+            </label>
+
+            <div class="select-control">
+              <select
+                id="dashboard-practice"
+                class="field-input"
+                name="practice"
+                [ngModel]="filters.practiceId"
+                (ngModelChange)="changePractice($event)"
+                [disabled]="loading()"
+              >
+                <option value="">
+                  {{ 'doctorPatients.filter.allPractices' | t }}
+                </option>
+
+                @for (practice of options()?.practices; track practice.id) {
+                  <option [value]="practice.id">
+                    {{ text(practice.nameAr, practice.nameEn) }}
+                  </option>
+                }
+              </select>
+
+              <svg
+                class="select-chevron"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="m4 6 4 4 4-4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <!-- From Date -->
+          <div class="filter-field">
+            <label for="dashboard-from">
+              <i class="fa-regular fa-calendar field-icon" aria-hidden="true"></i>
+              <span>{{ 'doctorRemediation.fromDate' | t }}</span>
+            </label>
+
+            <input
+              id="dashboard-from"
+              type="date"
+              class="field-input date-input ltr-text"
+              name="from"
+              dir="ltr"
+              [(ngModel)]="filters.fromDate"
+              (ngModelChange)="onDateChange()"
+              [max]="filters.toDate || null"
+              [disabled]="loading()"
+            />
+          </div>
+
+          <!-- To Date -->
+          <div class="filter-field">
+            <label for="dashboard-to">
+              <i class="fa-regular fa-calendar-days field-icon" aria-hidden="true"></i>
+              <span>{{ 'doctorRemediation.toDate' | t }}</span>
+            </label>
+
+            <input
+              id="dashboard-to"
+              type="date"
+              class="field-input date-input ltr-text"
+              name="to"
+              dir="ltr"
+              [(ngModel)]="filters.toDate"
+              (ngModelChange)="onDateChange()"
+              [min]="filters.fromDate || null"
+              [disabled]="loading()"
+            />
+          </div>
+
+          <!-- Filter Actions (Presets + Search) -->
+          <div class="filter-actions">
+            <div class="filter-presets" role="group" [attr.aria-label]="'doctorDashboard.period' | t">
+              <button
+                type="button"
+                class="btn-preset"
+                [class.is-active]="activePreset() === 'today'"
+                [disabled]="loading()"
+                (click)="setPreset('today')"
+              >
+                <i class="fa-regular fa-sun" aria-hidden="true"></i>
+                <span>{{ 'doctorDashboard.filter.today' | t }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-preset"
+                [class.is-active]="activePreset() === 'last7'"
+                [disabled]="loading()"
+                (click)="setPreset('last7')"
+              >
+                <i class="fa-solid fa-calendar-week" aria-hidden="true"></i>
+                <span>{{ 'doctorDashboard.filter.last7Days' | t }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-preset"
+                [class.is-active]="activePreset() === 'month'"
+                [disabled]="loading()"
+                (click)="setPreset('month')"
+              >
+                <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                <span>{{ 'doctorDashboard.filter.thisMonth' | t }}</span>
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary filter-submit"
+              [disabled]="loading() || !validDateRange()"
+            >
+              @if (loading()) {
+                <span class="button-spinner" aria-hidden="true"></span>
+              } @else {
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              }
+
+              <span>{{ 'common.search' | t }}</span>
+            </button>
+          </div>
+        </form>
       </div>
+    </section>
 
-      <nav class="quick-actions" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
+    <!-- ======================================== -->
+    <!-- 3. OVERVIEW SECTION                      -->
+    <!-- ======================================== -->
+    <section class="overview-section" [attr.aria-busy]="loading()">
+      @if (loading() && !model()) {
+        <div class="metric-strip" role="status">
+          <div class="loading-state-wrapper">
+            <span class="button-spinner button-spinner--teal" aria-hidden="true"></span>
+            <span>{{ 'common.loading' | t }}</span>
+          </div>
+        </div>
+      } @else if (failed()) {
+        <div class="dashboard-state" role="alert">
+          <div class="dashboard-state__symbol">
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+          </div>
+          <h2>{{ 'common.retryGuidance' | t }}</h2>
+          <button type="button" class="btn btn-primary" (click)="retry()">
+            {{ 'common.retry' | t }}
+          </button>
+        </div>
+      } @else if (model(); as report) {
+        @if (report.metrics?.length) {
+          <!-- Window Metadata Chips Bar -->
+          <div class="overview-window window-info-bar">
+            <div class="info-pill info-pill--period">
+              <i class="fa-regular fa-calendar-check pill-icon" aria-hidden="true"></i>
+              <strong>
+                {{ 'doctorDashboard.period' | t }}:
+                {{ formatRecordDate(report.window?.fromDate || report.appliedFilters?.fromDate) }}
+                &ndash;
+                {{ formatRecordDate(report.window?.toDate || report.appliedFilters?.toDate) }}
+              </strong>
+            </div>
+
+            <div class="info-pill info-pill--meta">
+              <i class="fa-regular fa-clock pill-icon" aria-hidden="true"></i>
+              <span>
+                {{ 'doctorRemediation.lastUpdated' | t }}:
+                <bdi>{{
+                  formatUpdated(report.dataFreshnessUtc || report.window?.generatedAtUtc)
+                }}</bdi>
+              </span>
+            </div>
+
+            <div class="info-pill info-pill--tz">
+              <i class="fa-solid fa-globe pill-icon" aria-hidden="true"></i>
+              <span>
+                {{ 'doctorOverview.snapshot' | t }}:
+                <bdi>{{ formatUpdated(report.window?.asOfUtc) }}</bdi> &middot;
+                <bdi>{{ timeZone() }}</bdi>
+              </span>
+            </div>
+          </div>
+
+          <!-- Data Quality Warning Banner -->
+          @if (report.dataStatus === 'Partial' || warnings().length) {
+            <details class="data-quality warning-alert-surface">
+              <summary class="warning-alert-summary">
+                <span class="warning-title-wrap">
+                  <i class="fa-solid fa-triangle-exclamation warning-icon" aria-hidden="true"></i>
+                  <strong>{{ 'doctorOverview.quality' | t }}</strong>
+                </span>
+                <span class="warning-expand-hint">
+                  <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                  <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+                </span>
+              </summary>
+              <div class="warning-alert-body">
+                @for (warning of warnings(); track warning) {
+                  <p class="report-warning">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    {{ warningLabel(warning) }}
+                  </p>
+                }
+                @if (!warnings().length) {
+                  <p class="report-warning">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    {{ 'doctorOverview.partial' | t }}
+                  </p>
+                }
+              </div>
+            </details>
+          }
+
+          <!-- ======================================== -->
+          <!-- 4. KEY METRICS STRIP (HIGH IMPACT CARDS)  -->
+          <!-- ======================================== -->
+          <dl class="metric-strip">
+            @for (metric of highlights(); track metric.metricCode) {
+              <div
+                class="metric-item"
+                [attr.data-metric]="metric.metricCode"
+                [class]="metricColorClass(metric.metricCode)"
+              >
+                <div class="metric-item-top">
+                  <div class="kpi-icon-bubble" aria-hidden="true">
+                    <i [class]="metricIcon(metric.metricCode)"></i>
+                  </div>
+                  @if (metricStatus(metric)) {
+                    <span class="metric-status-badge">{{ metricStatus(metric) }}</span>
+                  }
+                </div>
+
+                <dt class="metric-title">{{ metricLabel(metric) }}</dt>
+
+                <dd class="metric-value-wrap">
+                  <strong class="metric-number">{{ format(metric) }}</strong>
+                  @if (measuredValue(metric) !== null && metric.unit && metric.unit !== 'count') {
+                    <span class="metric-unit-text">{{ metricUnit(metric.unit) }}</span>
+                  }
+                </dd>
+
+                <small class="metric-help-text">{{ 'doctorOverview.help.' + metric.metricCode | t }}</small>
+
+                @if (canDrilldown(metric)) {
+                  <button type="button" class="metric-link" (click)="openDrilldown(metric)">
+                    <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                    <i class="fa-solid fa-arrow-left metric-link-icon" aria-hidden="true"></i>
+                  </button>
+                }
+              </div>
+            }
+          </dl>
+
+          <!-- ======================================== -->
+          <!-- 5. ACTIVITY TREND & DAILY VALUES CHART    -->
+          <!-- ======================================== -->
+          <section class="activity-surface" aria-labelledby="overview-trend-title">
+            <div class="surface-header">
+              <div class="surface-header-text">
+                <div class="surface-title-row">
+                  <span class="surface-icon-bubble">
+                    <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                  </span>
+                  <h2 id="overview-trend-title">{{ 'doctorOverview.trend' | t }}</h2>
+                </div>
+                <p>{{ 'doctorOverview.trendHelp' | t }}</p>
+              </div>
+
+              <div class="chart-legend">
+                <span class="legend-chip legend-chip--scheduled">
+                  <i class="legend-scheduled" aria-hidden="true"></i>
+                  {{ 'doctorOverview.metric.AppointmentsScheduled' | t }}
+                </span>
+                <span class="legend-chip legend-chip--checkins">
+                  <i class="legend-checkins" aria-hidden="true"></i>
+                  {{ 'doctorOverview.metric.CheckIns' | t }}
+                </span>
+              </div>
+            </div>
+
+            @if (chartPoints().length) {
+              <div class="chart-scroll" tabindex="0" [attr.aria-label]="'doctorOverview.trend' | t">
+                <svg
+                  class="activity-chart"
+                  [style.min-width.px]="chartPoints().length * 40 + 40"
+                  [attr.viewBox]="'0 0 ' + (chartPoints().length * 40 + 40) + ' 250'"
+                  role="group"
+                  aria-labelledby="overview-trend-title overview-trend-desc"
+                >
+                  <desc id="overview-trend-desc">{{ 'doctorOverview.trendHelp' | t }}</desc>
+                  <text x="0" y="24" class="chart-label-axis">{{ formatNumber(chartMaximum()) }}</text>
+                  <text x="0" y="114" class="chart-label-axis">{{ formatNumber(chartMaximum() / 2) }}</text>
+                  <text x="0" y="200" class="chart-label-axis">{{ formatNumber(0) }}</text>
+                  <line
+                    x1="20"
+                    y1="20"
+                    [attr.x2]="chartPoints().length * 40 + 20"
+                    y2="20"
+                    class="chart-axis"
+                  />
+                  <line
+                    x1="20"
+                    y1="110"
+                    [attr.x2]="chartPoints().length * 40 + 20"
+                    y2="110"
+                    class="chart-axis"
+                  />
+                  <line
+                    x1="20"
+                    y1="200"
+                    [attr.x2]="chartPoints().length * 40 + 20"
+                    y2="200"
+                    class="chart-axis"
+                  />
+                  @for (point of chartPoints(); track point.key; let index = $index) {
+                    <g
+                      tabindex="0"
+                      role="button"
+                      (click)="selectedDay.set(point.key)"
+                      (keydown.enter)="selectedDay.set(point.key)"
+                      (keydown.space)="$event.preventDefault(); selectedDay.set(point.key)"
+                      [attr.aria-pressed]="selectedDay() === point.key"
+                      class="chart-point"
+                      [attr.aria-label]="pointLabel(point)"
+                    >
+                      <title>{{ pointLabel(point) }}</title>
+                      @if (measuredValue(point.scheduled) !== null) {
+                        <rect
+                          class="series-scheduled"
+                          [attr.x]="index * 40 + 22"
+                          [attr.y]="200 - point.scheduledHeight"
+                          width="12"
+                          [attr.height]="point.scheduledHeight"
+                          rx="4"
+                        />
+                      }
+                      @if (measuredValue(point.checkIns) !== null) {
+                        <rect
+                          class="series-checkins"
+                          [attr.x]="index * 40 + 36"
+                          [attr.y]="200 - point.checkInsHeight"
+                          width="12"
+                          [attr.height]="point.checkInsHeight"
+                          rx="4"
+                        />
+                      }
+                      <text [attr.x]="index * 40 + 34" y="222" text-anchor="middle" class="chart-day-label">
+                        {{ point.key.slice(8) }}
+                      </text>
+                      <text
+                        class="chart-tooltip"
+                        [attr.x]="index * 40 + 34"
+                        y="14"
+                        text-anchor="middle"
+                      >
+                        {{ format(point.scheduled) }} / {{ format(point.checkIns) }}
+                      </text>
+                    </g>
+                  }
+                </svg>
+              </div>
+
+              @if (selectedPoint(); as point) {
+                <div class="selected-day-card">
+                  <i class="fa-solid fa-location-dot day-icon" aria-hidden="true"></i>
+                  <p class="selected-day" role="status">{{ pointLabel(point) }}</p>
+                </div>
+              }
+
+              <!-- Daily Values Detailed Table Accordion -->
+              <details class="daily-values">
+                <summary class="daily-values-summary">
+                  <span class="summary-title-wrap">
+                    <i class="fa-solid fa-table-list summary-icon" aria-hidden="true"></i>
+                    <span>{{ 'doctorDashboard.dailyValues' | t }}</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+                </summary>
+
+                <div class="daily-table">
+                  <table>
+                    <caption class="sr-only">
+                      {{ 'doctorOverview.trend' | t }}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ 'doctorDashboard.date' | t }}</th>
+                        <th scope="col">{{ 'doctorOverview.metric.AppointmentsScheduled' | t }}</th>
+                        <th scope="col">{{ 'doctorOverview.metric.CheckIns' | t }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (point of chartPoints(); track point.key) {
+                        <tr>
+                          <th scope="row" class="row-date-cell">{{ formatRecordDate(point.key) }}</th>
+                          <td>
+                            <strong class="table-metric-val">{{ format(point.scheduled) }}</strong>
+                            @if (point.scheduled && metricStatus(point.scheduled)) {
+                              <small class="table-metric-status">{{ metricStatus(point.scheduled) }}</small>
+                            }
+                          </td>
+                          <td>
+                            <strong class="table-metric-val table-metric-val--teal">{{ format(point.checkIns) }}</strong>
+                            @if (point.checkIns && metricStatus(point.checkIns)) {
+                              <small class="table-metric-status">{{ metricStatus(point.checkIns) }}</small>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            } @else {
+              <div class="dashboard-state">
+                <img
+                  class="state-empty-illustration"
+                  src="/SVG-AVATAR/Medical prescription-bro.svg"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+                <h3>{{ 'doctorOverview.noTrend' | t }}</h3>
+                <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+                <button type="button" class="btn btn-outline-secondary" (click)="refresh()">
+                  {{ 'common.refresh' | t }}
+                </button>
+              </div>
+            }
+          </section>
+
+          <!-- ======================================== -->
+          <!-- 6. SUPPORTING SECTIONS (COHORT & MODULES) -->
+          <!-- ======================================== -->
+          <div class="supporting-sections">
+            <!-- Patient Journey Cohort Funnel -->
+            @if (cohort().length) {
+              <details class="overview-detail cohort-card" open>
+                <summary class="overview-detail-summary">
+                  <span class="summary-title-wrap">
+                    <i class="fa-solid fa-diagram-project summary-icon" aria-hidden="true"></i>
+                    <span>{{ 'doctorOverview.cohort' | t }}</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+                </summary>
+
+                <p class="section-help-text">{{ 'doctorOverview.cohortHelp' | t }}</p>
+
+                <ol class="cohort-flow">
+                  @for (metric of cohort(); track metric.metricCode; let stepIdx = $index) {
+                    <li class="cohort-step">
+                      <div class="cohort-step-header">
+                        <span class="step-badge">{{ stepIdx + 1 }}</span>
+                        <span class="step-label">{{ 'doctorOverview.cohort.' + metric.metricCode | t }}</span>
+                      </div>
+                      <strong class="step-value">{{ format(metric) }}</strong>
+                      @if (measuredValue(metric) !== null) {
+                        <span class="cohort-track" aria-hidden="true">
+                          <span
+                            [style.width.%]="((measuredValue(metric) ?? 0) / cohortMaximum()) * 100"
+                          ></span>
+                        </span>
+                      }
+                      @if (metricStatus(metric)) {
+                        <small class="step-status">{{ metricStatus(metric) }}</small>
+                      }
+                    </li>
+                  }
+                </ol>
+              </details>
+            }
+
+            <!-- Domain Operational Modules -->
+            @for (module of modules(); track module.id) {
+              <details class="overview-detail module-card" [open]="module.id === 'operations'">
+                <summary class="overview-detail-summary">
+                  <span class="summary-title-wrap">
+                    <i [class]="moduleIcon(module.id)" class="summary-icon" aria-hidden="true"></i>
+                    <span>{{ 'doctorOverview.section.' + module.id | t }}</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+                </summary>
+
+                <p class="section-help-text">{{ 'doctorOverview.sectionHelp.' + module.id | t }}</p>
+
+                <dl class="summary-list">
+                  @for (metric of module.metrics; track metric.metricCode) {
+                    <div class="summary-row">
+                      <dt class="summary-label">
+                        <span class="summary-title">{{ metricLabel(metric) }}</span>
+                        @if (metric.denominator != null) {
+                          <small class="summary-subtext">
+                            {{ 'doctorOverview.ratioBasis' | t }}:
+                            {{
+                              metric.numerator == null
+                                ? ('doctorRemediation.unavailable' | t)
+                                : formatNumber(metric.numerator)
+                            }}
+                            / {{ formatNumber(metric.denominator) }}
+                          </small>
+                        }
+                      </dt>
+
+                      <dd class="summary-value-cell">
+                        <div class="value-cluster">
+                          <strong class="summary-number">{{ format(metric) }}</strong>
+                          @if (
+                            measuredValue(metric) !== null && metric.unit && metric.unit !== 'count'
+                          ) {
+                            <span class="summary-unit">{{ metricUnit(metric.unit) }}</span>
+                          }
+                        </div>
+
+                        @if (metricStatus(metric)) {
+                          <small class="summary-status-tag">{{ metricStatus(metric) }}</small>
+                        }
+
+                        @if (canDrilldown(metric)) {
+                          <button type="button" class="metric-link" (click)="openDrilldown(metric)">
+                            <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                            <i class="fa-solid fa-arrow-left metric-link-icon" aria-hidden="true"></i>
+                          </button>
+                        }
+                      </dd>
+                    </div>
+                  }
+                </dl>
+              </details>
+            }
+
+            <!-- Patterns (Weekday & Hourly) -->
+            @for (kind of ['weekday', 'hour']; track kind) {
+              @let patterns = kind === 'weekday' ? weekdayPatterns() : hourPatterns();
+              @if (patterns.length) {
+                <details class="overview-detail pattern-card">
+                  <summary class="overview-detail-summary">
+                    <span class="summary-title-wrap">
+                      <i [class]="moduleIcon(kind)" class="summary-icon" aria-hidden="true"></i>
+                      <span>{{ 'doctorOverview.pattern.' + kind | t }}</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+                  </summary>
+
+                  <p class="section-help-text">{{ 'doctorOverview.patternHelp' | t }}</p>
+
+                  <dl class="pattern-list">
+                    @for (point of patterns; track point.key) {
+                      <div class="pattern-row">
+                        <dt class="pattern-label">{{ kind === 'weekday' ? (point.label | t) : point.label }}</dt>
+                        <dd class="pattern-data">
+                          <span class="pattern-track" aria-hidden="true">
+                            <span [style.width.%]="point.width"></span>
+                          </span>
+                          <strong class="pattern-value">{{ format(point.metric) }}</strong>
+                          @if (point.metric && metricStatus(point.metric)) {
+                            <small class="pattern-status">{{ metricStatus(point.metric) }}</small>
+                          }
+                        </dd>
+                      </div>
+                    }
+                  </dl>
+                </details>
+              }
+            }
+          </div>
+
+          <!-- ======================================== -->
+          <!-- 7. METRIC DIRECTORY & BREAKDOWNS         -->
+          <!-- ======================================== -->
+          <details class="metrics-details">
+            <summary class="metrics-details-summary">
+              <span class="summary-title-wrap">
+                <i class="fa-solid fa-folder-tree summary-icon" aria-hidden="true"></i>
+                <span>{{ 'doctorWorkspace.moreMetrics' | t }}</span>
+              </span>
+              <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+            </summary>
+
+            <div class="metrics-details-body">
+              <!-- Group Navigation Tabs -->
+              <nav class="performance-nav" [attr.aria-label]="'doctorWorkspace.moreMetrics' | t">
+                @for (group of groups(); track group.id) {
+                  <button
+                    type="button"
+                    class="nav-group-btn"
+                    [attr.aria-pressed]="activeGroup()?.id === group.id"
+                    (click)="selectedGroup.set(group.id)"
+                  >
+                    <i [class]="groupIcon(group.id)" class="tab-icon" aria-hidden="true"></i>
+                    <span>{{ 'doctorDashboard.group.' + group.id | t }}</span>
+                    <span class="tab-count-badge">{{ group.metrics.length }}</span>
+                  </button>
+                }
+              </nav>
+
+              <!-- Metric Search Bar -->
+              <div class="metric-search-wrap">
+                <label class="metric-search" for="overview-metric-search">
+                  <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                  <input
+                    id="overview-metric-search"
+                    type="search"
+                    class="field-input search-input"
+                    [placeholder]="'doctorDashboard.searchMetrics' | t"
+                    [ngModel]="metricSearch()"
+                    (ngModelChange)="metricSearch.set($event)"
+                  />
+                </label>
+              </div>
+
+              <!-- Metrics Directory Multi-Column Grid -->
+              <div class="metric-directory">
+                @for (metric of displayedGroupMetrics(); track $index) {
+                  <article class="metric-row metric-card">
+                    <div class="metric-card__header">
+                      <div class="metric-card__title-group">
+                        <span class="kpi-icon-bubble-sm" [class]="metricColorClass(metric.metricCode)" aria-hidden="true">
+                          <i [class]="metricIcon(metric.metricCode)"></i>
+                        </span>
+                        <h3 class="metric-name">{{ metricLabel(metric) }}</h3>
+                      </div>
+                      @if (metricStatus(metric)) {
+                        <small class="metric-status-tag">{{ metricStatus(metric) }}</small>
+                      }
+                    </div>
+
+                    <div class="metric-card__value-box">
+                      <div class="metric-result metric-card__number-wrap">
+                        <strong class="result-number">{{ format(metric) }}</strong>
+                        @if (measuredValue(metric) !== null && metric.unit && metric.unit !== 'count') {
+                          <span class="result-unit">{{ metricUnit(metric.unit) }}</span>
+                        }
+                      </div>
+                      @if (metric.warningCode) {
+                        <p class="metric-warning-note">
+                          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                          <span>{{ warningLabel(metric.warningCode) }}</span>
+                        </p>
+                      }
+                    </div>
+
+                    <!-- Plain Language Doctor Explanation -->
+                    <p class="metric-card__explanation">
+                      {{ metricHelpText(metric) }}
+                    </p>
+
+                    <!-- Contextual Badges -->
+                    @if (metric.denominator != null || metric.eligibleSampleCount != null || metric.excludedSampleCount != null) {
+                      <div class="metric-card__context-chips">
+                        @if (metric.denominator != null) {
+                          <span class="context-chip" [title]="'doctorOverview.ratioBasis' | t">
+                            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                            <span>{{ metric.numerator == null ? ('doctorRemediation.unavailable' | t) : formatNumber(metric.numerator) }} من {{ formatNumber(metric.denominator) }}</span>
+                          </span>
+                        }
+                        @if (metric.eligibleSampleCount != null) {
+                          <span class="context-chip" [title]="'doctorRemediation.sample' | t">
+                            <i class="fa-solid fa-users" aria-hidden="true"></i>
+                            <span>{{ 'doctorRemediation.sample' | t }}: {{ formatNumber(metric.eligibleSampleCount) }}</span>
+                          </span>
+                        }
+                        @if (metric.excludedSampleCount != null) {
+                          <span class="context-chip context-chip--muted" [title]="'doctorOverview.excluded' | t">
+                            <span>{{ 'doctorOverview.excluded' | t }}: {{ formatNumber(metric.excludedSampleCount) }}</span>
+                          </span>
+                        }
+                      </div>
+                    }
+
+                    <!-- Calculation Details Accordion for Inspection -->
+                    <details class="metric-calc-details">
+                      <summary><i class="fa-solid fa-circle-question" aria-hidden="true"></i> {{ 'doctorOverview.calculation' | t }}</summary>
+                      <div class="calc-details-content">
+                        <p>{{ 'doctorRemediation.cohortHelp' | t }}</p>
+                        @if (metric.denominator != null) {
+                          <p>
+                            {{ 'doctorOverview.ratioBasis' | t }}:
+                            {{
+                              metric.numerator == null
+                                ? ('doctorRemediation.unavailable' | t)
+                                : formatNumber(metric.numerator)
+                            }}
+                            / {{ formatNumber(metric.denominator) }}
+                          </p>
+                        }
+                        @if (metric.eligibleSampleCount != null) {
+                          <p>
+                            {{ 'doctorRemediation.sample' | t }}:
+                            {{ formatNumber(metric.eligibleSampleCount) }}
+                          </p>
+                        }
+                        @if (metric.excludedSampleCount != null) {
+                          <p>
+                            {{ 'doctorOverview.excluded' | t }}:
+                            {{ formatNumber(metric.excludedSampleCount) }}
+                          </p>
+                        }
+                      </div>
+                    </details>
+
+                    <!-- Card Action Footer -->
+                    <div class="metric-card__footer">
+                      @if (canDrilldown(metric)) {
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary drilldown-btn"
+                          (click)="openDrilldown(metric)"
+                        >
+                          <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                          <i class="fa-solid fa-arrow-left drill-arrow-icon" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+
+              <!-- Breakdowns Details Section (Multi-Column Grid) -->
+              @if (report.breakdowns?.length) {
+                <details class="breakdown-details">
+                  <summary class="breakdown-summary">
+                    <span class="summary-title-wrap">
+                      <i class="fa-solid fa-layer-group summary-icon" aria-hidden="true"></i>
+                      <span>{{ 'doctorOverview.breakdowns' | t }}</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
+                  </summary>
+
+                  <div class="breakdown-body">
+                    @for (point of report.breakdowns; track $index) {
+                      <section class="breakdown-section">
+                        <div class="breakdown-header">
+                          <span class="breakdown-icon-bubble">
+                            <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+                          </span>
+                          <h3 class="breakdown-section-title">{{ breakdownTitle(point) }}</h3>
+                        </div>
+                        <dl class="summary-list breakdown-grid">
+                          @for (metric of point.metrics; track $index) {
+                            @if (
+                              canViewFinance() ||
+                              (!financeCodes.includes(metric.metricCode ?? '') &&
+                                metric.unit?.toLowerCase() !== 'egp')
+                            ) {
+                              <div class="summary-row breakdown-tile">
+                                <dt class="summary-label">
+                                  <span class="summary-title">{{ metricLabel(metric) }}</span>
+                                  @if (metricStatus(metric)) {
+                                    <small class="summary-status-tag">{{ metricStatus(metric) }}</small>
+                                  }
+                                  @if (metric.warningCode) {
+                                    <small class="summary-warning-tag">{{ warningLabel(metric.warningCode) }}</small>
+                                  }
+                                </dt>
+                                <dd class="summary-value-cell">
+                                  <div class="value-cluster">
+                                    <strong class="summary-number">{{ format(metric) }}</strong>
+                                    @if (
+                                      measuredValue(metric) !== null &&
+                                      metric.unit &&
+                                      metric.unit !== 'count'
+                                    ) {
+                                      <span class="summary-unit">{{ metricUnit(metric.unit) }}</span>
+                                    }
+                                  </div>
+                                  @if (canDrilldown(metric)) {
+                                    <button
+                                      type="button"
+                                      class="metric-link"
+                                      (click)="openDrilldown(metric)"
+                                    >
+                                      <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                                      <i class="fa-solid fa-arrow-left metric-link-icon" aria-hidden="true"></i>
+                                    </button>
+                                  }
+                                </dd>
+                              </div>
+                            }
+                          }
+                        </dl>
+                      </section>
+                    }
+                  </div>
+                </details>
+              }
+            </div>
+          </details>
+        } @else {
+          <!-- Illustrated Empty State -->
+          <div class="dashboard-state">
+            <img
+              class="state-empty-illustration"
+              src="/SVG-AVATAR/Doctors-bro.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <h2>{{ 'doctorRemediation.empty' | t }}</h2>
+            <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+            <button type="button" class="btn btn-primary" (click)="refresh()">
+              {{ 'common.refresh' | t }}
+            </button>
+          </div>
+        }
+      }
+    </section>
+  }
+
+  <!-- ======================================== -->
+  <!-- 8. QUICK ACTIONS BAR (DOCTOR WORKFLOW)   -->
+  <!-- ======================================== -->
+  @if (actions().length) {
+    <nav class="quick-actions" [attr.aria-label]="'doctorRemediation.dailyActions' | t">
+      <div class="quick-actions-label">
+        <i class="fa-solid fa-bolt action-label-icon" aria-hidden="true"></i>
+        <span>{{ 'doctorRemediation.dailyActions' | t }}:</span>
+      </div>
+      <div class="quick-actions-pills">
         @for (action of actions(); track action.id) {
           <a
             class="quick-action"
@@ -32,505 +858,17 @@
                 : {}
             "
           >
-            <span class="quick-action__icon" aria-hidden="true"
-              ><i
-                [class]="actionIcons[action.id] || 'fa-solid fa-arrow-up-right-from-square'"
-              ></i></span
-            ><span class="quick-action__content">
-              <span class="quick-action__label">
-                {{ action.labelKey | t }}
-              </span>
-              @if (action.id === 'queue' || action.id === 'encounters') {
-                <span class="quick-action__help">{{
-                  (action.id === 'queue'
-                    ? 'doctorWorkspace.queueHelp'
-                    : 'doctorWorkspace.encountersHelp'
-                  ) | t
-                }}</span>
-              }
-            </span>
-
-            <i class="fa-solid fa-arrow-right quick-action__arrow" aria-hidden="true"></i>
+            <i [class]="actionIcon(action.id)" class="action-icon" aria-hidden="true"></i>
+            <span>{{ action.labelKey | t }}</span>
           </a>
         }
-      </nav>
-    </section>
-  }
-
-  @if (canView()) {
-    <!-- Filters -->
-    <section class="dashboard-panel filter-panel" [attr.aria-label]="'common.search' | t">
-      <div class="section-heading">
-        <div class="section-heading__content">
-          <span class="section-heading__icon">
-            <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-          </span>
-          <h2>{{ 'common.search' | t }}</h2>
-        </div>
       </div>
-
-      <form class="filters-form" (ngSubmit)="refresh()">
-        <div class="filter-field filter-field--practice">
-          <label for="dashboard-practice">
-            {{ 'finance.practice' | t }}
-          </label>
-
-          <div class="select-control">
-            <select
-              id="dashboard-practice"
-              class="field-input"
-              name="practice"
-              [(ngModel)]="filters.practiceId"
-              [disabled]="loading()"
-            >
-              <option value="">
-                {{ 'doctorPatients.filter.allPractices' | t }}
-              </option>
-
-              @for (practice of options()?.practices; track practice.id) {
-                <option [value]="practice.id">
-                  {{ text(practice.nameAr, practice.nameEn) }}
-                </option>
-              }
-            </select>
-
-            <svg
-              class="select-chevron"
-              viewBox="0 0 16 16"
-              fill="none"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="m4 6 4 4 4-4"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-        </div>
-
-        <div class="filter-field">
-          <label for="dashboard-from">
-            {{ 'doctorRemediation.fromDate' | t }}
-          </label>
-
-          <input
-            id="dashboard-from"
-            type="date"
-            class="field-input date-input ltr-text"
-            name="from"
-            dir="ltr"
-            [(ngModel)]="filters.fromDate"
-            [max]="filters.toDate || null"
-            [disabled]="loading()"
-          />
-        </div>
-
-        <div class="filter-field">
-          <label for="dashboard-to">
-            {{ 'doctorRemediation.toDate' | t }}
-          </label>
-
-          <input
-            id="dashboard-to"
-            type="date"
-            class="field-input date-input ltr-text"
-            name="to"
-            dir="ltr"
-            [(ngModel)]="filters.toDate"
-            [min]="filters.fromDate || null"
-            [disabled]="loading()"
-          />
-        </div>
-
-        <div class="filter-actions">
-          <div class="filter-presets" role="group">
-            <button
-              type="button"
-              class="btn-preset"
-              [disabled]="loading()"
-              (click)="setPreset('today')"
-            >
-              {{ 'doctorDashboard.filter.today' | t }}
-            </button>
-            <button
-              type="button"
-              class="btn-preset"
-              [disabled]="loading()"
-              (click)="setPreset('last7')"
-            >
-              {{ 'doctorDashboard.filter.last7Days' | t }}
-            </button>
-            <button
-              type="button"
-              class="btn-preset"
-              [disabled]="loading()"
-              (click)="setPreset('month')"
-            >
-              {{ 'doctorDashboard.filter.thisMonth' | t }}
-            </button>
-          </div>
-          <button
-            type="submit"
-            class="btn btn-primary filter-submit"
-            [disabled]="loading() || !validDateRange()"
-          >
-            @if (loading()) {
-              <span class="button-spinner" aria-hidden="true"></span>
-            } @else {
-              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-            }
-
-            <span>{{ 'common.search' | t }}</span>
-          </button>
-        </div>
-      </form>
-    </section>
+    </nav>
   }
 
-  <!-- Overview -->
-  @if (canView()) {
-    <section
-      class="dashboard-section overview-section"
-      [attr.aria-label]="'doctorRemediation.overview' | t"
-      aria-live="polite"
-      aria-busy="{{ loading() }}"
-    >
-      <div class="section-heading overview-heading">
-        <div class="section-heading__content">
-          <i class="fa-solid fa-chart-pie section-title-icon" aria-hidden="true"></i>
-          <h2>{{ 'doctorRemediation.overview' | t }}</h2>
-        </div>
-
-        @if (model(); as report) {
-          <span class="overview-meta">
-            <i class="fa-regular fa-clock" aria-hidden="true"></i>
-            {{ 'doctorRemediation.lastUpdated' | t }}
-            <bdi>{{ formatUpdated(report.dataFreshnessUtc) }}</bdi>
-          </span>
-        }
-      </div>
-
-      @if (loading()) {
-        <div class="metric-strip" role="status">
-          <span class="sr-only">{{ 'common.loading' | t }}</span>
-
-          @for (item of skeletonItems; track item) {
-            <div class="metric-item metric-item--skeleton" aria-hidden="true">
-              <span class="skeleton skeleton--label"></span>
-              <span class="skeleton skeleton--value"></span>
-              <span class="skeleton skeleton--footer"></span>
-            </div>
-          }
-        </div>
-      } @else if (failed()) {
-        <div class="dashboard-state dashboard-state--error">
-          <div class="dashboard-state__symbol">
-            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-          </div>
-
-          <h3>{{ 'common.retryGuidance' | t }}</h3>
-
-          <button type="button" class="btn btn-primary" (click)="retry()">
-            {{ 'common.retry' | t }}
-          </button>
-        </div>
-      } @else if (model(); as report) {
-        @let metrics = report.metrics ?? [];
-        @if (metrics.length) {
-          <div class="overview-window">
-            <span class="window-badge"
-              ><i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-              {{ 'doctorDashboard.period' | t }}</span
-            >
-            <strong
-              >{{ formatDay(report.window?.fromDate) }} —
-              {{ formatDay(report.window?.toDate) }}</strong
-            >
-            <span class="window-note">{{ 'doctorDashboard.periodHelp' | t }}</span>
-          </div>
-          <dl class="metric-strip">
-            @for (metric of highlights(); track metric.metricCode) {
-              <div class="metric-item" [attr.data-group]="metricGroup(metric.metricCode)">
-                <dt>
-                  <span class="metric-icon" aria-hidden="true"
-                    ><i
-                      [class]="
-                        groupIcons[metricGroup(metric.metricCode)] || 'fa-solid fa-chart-simple'
-                      "
-                    ></i></span
-                  ><span class="metric-name">{{ text(metric.nameAr, metric.nameEn) }}</span>
-                </dt>
-                <dd>
-                  <strong dir="ltr">{{ format(metric) }}</strong>
-                  @if (metric.unit && metric.unit !== 'count') {
-                    <span class="metric-unit-badge">{{ metricUnit(metric.unit) }}</span>
-                  }
-                  @if (metric.metricCode === 'CheckIns' && attendanceRatio()) {
-                    <span class="metric-ratio-badge">{{ 'doctorDashboard.attendanceRate' | t }}: {{ attendanceRatio() }}</span>
-                  }
-                </dd>
-                @if (canDrilldown(metric)) {
-                  <button class="metric-link" type="button" (click)="openDrilldown(metric)">
-                    <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
-                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                  </button>
-                }
-              </div>
-            }
-          </dl>
-
-          @if (chartPoints().length) {
-            <section class="activity-surface" [attr.aria-label]="'doctorDashboard.activity' | t">
-              <div class="activity-heading">
-                <div>
-                  <h3>
-                    <i class="fa-solid fa-chart-column section-title-icon" aria-hidden="true"></i>
-                    {{ 'doctorDashboard.activity' | t }}
-                  </h3>
-                  <p>{{ 'doctorDashboard.activityHelp' | t }}</p>
-                </div>
-                <div
-                  class="chart-options"
-                  role="group"
-                  [attr.aria-label]="'doctorDashboard.activity' | t"
-                >
-                  @for (code of chartOptions; track code) {
-                    <button
-                      type="button"
-                      [class.active]="chartCode() === code"
-                      [attr.aria-pressed]="chartCode() === code"
-                      (click)="chartCode.set(code)"
-                    >
-                      {{ 'doctorDashboard.chart.' + code | t }}
-                    </button>
-                  }
-                </div>
-              </div>
-              <div
-                class="activity-plot"
-                role="img"
-                [attr.aria-label]="
-                  ('doctorDashboard.activity' | t) +
-                  ': ' +
-                  ('doctorDashboard.chart.' + chartCode() | t)
-                "
-              >
-                @for (point of chartPoints(); track $index) {
-                  <div
-                    class="activity-column"
-                    [title]="
-                      formatDay(point.key) +
-                      ': ' +
-                      (point.value == null
-                        ? ('doctorRemediation.unavailable' | t)
-                        : formatNumber(point.value))
-                    "
-                  >
-                    <div class="bar-track"><span [style.height.%]="point.height"></span></div>
-                    <span class="chart-date">
-                      @if ($first || $last || $index === 14) {
-                        {{ formatDay(point.key) }}
-                      }
-                    </span>
-                  </div>
-                }
-              </div>
-              <details class="daily-values">
-                <summary>
-                  <i class="fa-solid fa-table-list" aria-hidden="true"></i>
-                  {{ 'doctorDashboard.dailyValues' | t }}
-                </summary>
-                <div class="daily-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th scope="col">{{ 'doctorDashboard.date' | t }}</th>
-                        <th scope="col">{{ 'doctorDashboard.chart.' + chartCode() | t }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (point of chartPoints(); track $index) {
-                        <tr>
-                          <td>{{ formatDay(point.key) }}</td>
-                          <td>
-                            {{
-                              point.value == null
-                                ? ('doctorRemediation.unavailable' | t)
-                                : formatNumber(point.value)
-                            }}
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </details>
-            </section>
-          }
-
-          <section class="performance-workspace">
-            <div class="performance-heading">
-              <div class="performance-heading__content">
-                <i class="fa-solid fa-layer-group section-title-icon" aria-hidden="true"></i>
-                <div>
-                  <h3>{{ 'doctorWorkspace.moreMetrics' | t }}</h3>
-                  <p>{{ 'doctorDashboard.metricsHelp' | t }}</p>
-                </div>
-              </div>
-            </div>
-            <nav class="performance-nav" [attr.aria-label]="'doctorWorkspace.moreMetrics' | t">
-              @for (group of groups(); track group.id) {
-                <button
-                  type="button"
-                  [class.active]="activeGroup()?.id === group.id"
-                  [attr.aria-pressed]="activeGroup()?.id === group.id"
-                  (click)="selectedGroup.set(group.id)"
-                >
-                  <i
-                    [class]="groupIcons[group.id] || 'fa-solid fa-chart-simple'"
-                    aria-hidden="true"
-                  ></i>
-                  <span>{{ 'doctorDashboard.group.' + group.id | t }}</span>
-                  <span class="nav-count">{{ formatNumber(group.metrics.length) }}</span>
-                </button>
-              }
-            </nav>
-            @if (activeGroup(); as group) {
-              <div class="group-heading">
-                <h4>
-                  <i [class]="groupIcons[group.id]" aria-hidden="true"></i>
-                  {{ 'doctorDashboard.group.' + group.id | t }}
-                </h4>
-                <div class="group-heading__tools">
-                  <div class="search-input-wrap">
-                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
-                    <input
-                      type="search"
-                      class="field-input field-input--sm"
-                      [placeholder]="'doctorDashboard.searchMetrics' | t"
-                      [ngModel]="metricSearch()"
-                      (ngModelChange)="metricSearch.set($event)"
-                    />
-                  </div>
-                  <label class="compact-toggle">
-                    <input
-                      type="checkbox"
-                      [checked]="showOnlyActive()"
-                      (change)="showOnlyActive.set(!showOnlyActive())"
-                    />
-                    <span>{{ 'doctorDashboard.activeOnly' | t }}</span>
-                  </label>
-                </div>
-                <span
-                  ><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                  {{ 'doctorDashboard.clickDetails' | t }}</span
-                >
-              </div>
-              <div class="metric-directory" [attr.data-group]="group.id">
-                @for (metric of displayedGroupMetrics(); track metric.metricCode) {
-                  <article class="metric-row">
-                    <div class="metric-row-header">
-                      <span class="metric-row-icon" aria-hidden="true">
-                        <i
-                          [class]="
-                            metricIcons[metric.metricCode ?? ''] ||
-                            groupIcons[group.id] ||
-                            'fa-solid fa-chart-simple'
-                          "
-                        ></i>
-                      </span>
-                      <div class="metric-description">
-                        <h5>{{ text(metric.nameAr, metric.nameEn) }}</h5>
-                        @if (metric.denominator != null) {
-                          <small
-                            >{{ 'doctorRemediation.sample' | t }}:
-                            {{ formatNumber(metric.denominator) }}</small
-                          >
-                        }
-                        @if (metric.dataStatus === 'NotAvailable') {
-                          <small class="metric-unavailable-tag">{{
-                            'doctorDashboard.notEnoughData' | t
-                          }}</small>
-                        }
-                      </div>
-                    </div>
-                    <div class="metric-result">
-                      <strong dir="ltr">{{ format(metric) }}</strong>
-                      @if (metric.unit && metric.unit !== 'count') {
-                        <span class="metric-unit-badge">{{ metricUnit(metric.unit) }}</span>
-                      }
-                    </div>
-                    @if (canDrilldown(metric)) {
-                      <button
-                        type="button"
-                        class="detail-button"
-                        [attr.aria-label]="
-                          ('doctorDashboard.viewDetails' | t) +
-                          ': ' +
-                          text(metric.nameAr, metric.nameEn)
-                        "
-                        (click)="openDrilldown(metric)"
-                      >
-                        <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                      </button>
-                    } @else {
-                      <span class="detail-unavailable">{{
-                        'doctorDashboard.summaryOnly' | t
-                      }}</span>
-                    }
-                  </article>
-                }
-              </div>
-            }
-          </section>
-        } @else {
-          <div class="dashboard-state dashboard-state--empty">
-            <img
-              class="dashboard-state__illustration"
-              src="/SVG-AVATAR/Doctors-bro.svg"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-
-            <h3>{{ 'doctorRemediation.empty' | t }}</h3>
-            <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
-            <button type="button" class="btn btn-primary" (click)="refresh()">
-              {{ 'common.refresh' | t }}
-            </button>
-          </div>
-        }
-
-        @if (report.metrics?.length) {
-          <div class="report-warnings">
-            @for (warning of report.warnings; track warning) {
-              <div class="report-warning" role="status">
-                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-
-                <span>{{ warning | t }}</span>
-              </div>
-            }
-          </div>
-        }
-
-        <app-report-data-sections [report]="report" />
-        <div class="report-context">
-          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-
-          <p>{{ 'doctorRemediation.cohortHelp' | t }}</p>
-        </div>
-      } @else {
-        <div class="dashboard-state">
-          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
-        </div>
-      }
-    </section>
-  }
+  <!-- ======================================== -->
+  <!-- 9. DRILLDOWN SIDE DRAWER                 -->
+  <!-- ======================================== -->
   <app-side-drawer
     [opened]="drillMetric() !== null"
     [title]="text(drillMetric()?.nameAr, drillMetric()?.nameEn)"
@@ -552,9 +890,10 @@
           }
         </div>
       </div>
+
       @if (detailLoading()) {
         <div class="dashboard-state" role="status">
-          <span class="button-spinner" aria-hidden="true"></span>
+          <span class="button-spinner button-spinner--teal" aria-hidden="true"></span>
           <p>{{ 'common.loading' | t }}</p>
         </div>
       } @else if (detailFailed()) {
@@ -571,23 +910,18 @@
         <div class="records-heading">
           <h3>
             <i class="fa-solid fa-list-check section-title-icon" aria-hidden="true"></i>
-            {{ 'doctorDashboard.records' | t }}
+            <span>{{ 'doctorDashboard.records' | t }}</span>
           </h3>
           <span class="records-count-chip">
             {{ formatNumber(page.totalCount ?? 0) }} {{ 'doctorDashboard.recordCount' | t }}
           </span>
         </div>
+
         <div class="drill-records">
           @if (page.items?.length) {
             <table class="records-table" [class.records-table--with-links]="hasRecordLinks()">
               <caption class="sr-only">
-                {{
-                  text(metric.nameAr, metric.nameEn)
-                }}
-                —
-                {{
-                  'doctorDashboard.records' | t
-                }}
+                {{ text(metric.nameAr, metric.nameEn) }} — {{ 'doctorDashboard.records' | t }}
               </caption>
               <thead>
                 <tr>
@@ -608,16 +942,12 @@
                       <div class="record-ref-group">
                         <span class="record-ref-main">
                           @if (row.resourceType) {
-                            <small class="record-ref-type">{{
-                              recordTypeLabel(row.resourceType)
-                            }}</small>
+                            <small class="record-ref-type">{{ recordTypeLabel(row.resourceType) }}</small>
                           }
-                          <bdi class="record-ref-number">{{
-                            row.reference || ('doctorDashboard.record' | t)
-                          }}</bdi>
+                          <bdi>{{ row.reference || ('doctorDashboard.record' | t) }}</bdi>
                         </span>
                         @if (row.status) {
-                          <span class="record-status-pill" [attr.data-status]="row.status">
+                          <span class="record-status-pill" [class]="statusColorClass(row.status)">
                             <i [class]="statusIcon(row.status)" aria-hidden="true"></i>
                             <span>{{ recordStatusLabel(row.status) }}</span>
                           </span>
@@ -627,17 +957,17 @@
                     <td class="record-date">
                       <bdi>{{ formatRecordDate(row.businessDate) }}</bdi>
                       @if (formatRecordTime(row.recordedAtUtc); as time) {
-                        <span class="record-time"
-                          ><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ time }}</span
-                        >
+                        <span class="record-time" dir="ltr">{{ time }}</span>
                       }
                     </td>
                     <td class="record-value-cell">
-                      <strong class="record-value" dir="ltr">{{
-                        row.metricValue == null
-                          ? ('doctorRemediation.unavailable' | t)
-                          : formatNumber(row.metricValue)
-                      }}</strong>
+                      <strong class="record-value" dir="ltr">
+                        {{
+                          row.metricValue == null
+                            ? ('doctorRemediation.unavailable' | t)
+                            : formatNumber(row.metricValue)
+                        }}
+                      </strong>
                     </td>
                     @if (hasRecordLinks()) {
                       <td class="record-action-cell">
@@ -646,31 +976,12 @@
                             class="record-source-link"
                             [routerLink]="link.route"
                             [queryParams]="link.query"
-                            [attr.aria-label]="
-                              (row.patientId
-                                ? ('doctorPatients.action.viewPatient' | t)
-                                : ('doctorDashboard.openRecord' | t)) +
-                              ': ' +
-                              (row.reference || ('doctorDashboard.record' | t))
-                            "
                           >
-                            <span>{{
-                              (row.patientId
-                                ? 'doctorPatients.action.viewPatient'
-                                : 'doctorDashboard.openRecord'
-                              ) | t
-                            }}</span>
-                            <i
-                              class="fa-solid fa-arrow-up-right-from-square"
-                              aria-hidden="true"
-                            ></i>
+                            <span>{{ 'doctorDashboard.openRecord' | t }}</span>
+                            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                           </a>
                         } @else {
-                          <span
-                            class="record-no-source"
-                            [attr.aria-label]="'doctorRemediation.unavailable' | t"
-                            >—</span
-                          >
+                          <span class="text-muted">{{ 'doctorRemediation.unavailable' | t }}</span>
                         }
                       </td>
                     }
@@ -695,6 +1006,7 @@
             </div>
           }
         </div>
+
         @if ((page.totalCount ?? 0) > 20) {
           <nav class="drill-pagination" [attr.aria-label]="'doctorDashboard.records' | t">
             <button
