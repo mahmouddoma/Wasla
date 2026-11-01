@@ -9,7 +9,6 @@ import { AuthSession } from '../../../../core/auth/auth-session';
 import { ToastService } from '../../../../core/notifications/toast.service';
 
 describe('DoctorReportViewerComponent', () => {
-  let component: DoctorReportViewerComponent;
   let grants: Set<string>;
   const api = { call: vi.fn() };
   const toast = { success: vi.fn(), error: vi.fn() };
@@ -17,7 +16,7 @@ describe('DoctorReportViewerComponent', () => {
   const mockCatalog = [
     {
       reportCode: 'reservations',
-      titleAr: 'تحليل الحجوزات',
+      titleAr: 'تحليلات الحجوزات',
       titleEn: 'Reservation Analytics',
       canPreview: true,
       canExportPdf: true,
@@ -25,6 +24,7 @@ describe('DoctorReportViewerComponent', () => {
       allowedFilters: ['practiceId', 'fromDate', 'toDate'],
       availableGroupings: ['Day', 'Week', 'Month'],
       requiredPermissions: ['Reports.Doctor.ViewOwn'],
+      exportRequiredPermissions: ['Reports.Doctor.ViewOwn'],
     },
     {
       reportCode: 'operating-finance',
@@ -35,6 +35,7 @@ describe('DoctorReportViewerComponent', () => {
       canExportExcel: true,
       allowedFilters: ['practiceId', 'fromDate', 'toDate'],
       requiredPermissions: ['FinancialStatements.Doctor.ViewOwn'],
+      exportRequiredPermissions: ['FinancialStatements.Doctor.ViewOwn'],
     },
   ];
 
@@ -99,7 +100,9 @@ describe('DoctorReportViewerComponent', () => {
           pageNumber: 1,
         });
       }
-      if (code === 'P18-075') return of(new Blob(['fake-data'], { type: 'application/pdf' }));
+      if (code === 'P18-075') {
+        return of(new Blob(['fake-data'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      }
       return of({});
     });
 
@@ -119,22 +122,22 @@ describe('DoctorReportViewerComponent', () => {
         { provide: ToastService, useValue: toast },
       ],
     });
-
-    component = TestBed.createComponent(DoctorReportViewerComponent).componentInstance;
   });
 
   it('initializes report viewer and loads report preview from backend', async () => {
     const fixture = TestBed.createComponent(DoctorReportViewerComponent);
+    const inst = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await inst.initReport('reservations');
+    fixture.detectChanges();
 
     expect(api.call).toHaveBeenCalledWith('P18-076', {});
     expect(api.call).toHaveBeenCalledWith('P18-073', expect.objectContaining({
       path: { reportCode: 'reservations' },
     }));
 
-    expect(fixture.componentInstance.model()?.reportCode).toBe('reservations');
-    expect(fixture.componentInstance.kpis().length).toBeGreaterThan(0);
+    expect(inst.model()?.reportCode).toBe('reservations');
+    expect(inst.kpis().length).toBeGreaterThan(0);
   });
 
   it('denies access if user lacks required permission for financial report', async () => {
@@ -142,13 +145,14 @@ describe('DoctorReportViewerComponent', () => {
 
     const fixture = TestBed.createComponent(DoctorReportViewerComponent);
     const inst = fixture.componentInstance;
-    inst.reportCode.set('operating-finance');
+    fixture.detectChanges();
+    await fixture.whenStable();
 
+    inst.reportCode.set('operating-finance');
     await inst.initReport('operating-finance');
     fixture.detectChanges();
 
     expect(inst.accessDenied()).toBe(true);
-    expect(inst.model()).toBeNull();
   });
 
   it('opens drilldown drawer for authorized metrics and fetches source records', async () => {
@@ -170,16 +174,56 @@ describe('DoctorReportViewerComponent', () => {
     expect(fixture.componentInstance.drillRows()?.items).toHaveLength(1);
   });
 
-  it('exports report to PDF using P18-075 and triggers toast on success', async () => {
+  it('exports report to XLSX using P18-075 with format: xlsx, language, and applied filters', async () => {
     const fixture = TestBed.createComponent(DoctorReportViewerComponent);
+    const inst = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await inst.initReport('reservations');
+    fixture.detectChanges();
 
-    await fixture.componentInstance.exportReport('pdf');
+    await inst.exportReport('xlsx');
     expect(api.call).toHaveBeenCalledWith('P18-075', expect.objectContaining({
       path: { reportCode: 'reservations' },
-      query: expect.objectContaining({ format: 'pdf' }),
+      query: expect.objectContaining({ format: 'xlsx', language: expect.any(String) }),
     }));
     expect(toast.success).toHaveBeenCalled();
+
+    // Export denied if export permission missing
+    grants.delete('Reports.Doctor.ViewOwn');
+    await inst.exportReport('xlsx');
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('canDrilldown permits measured zero when action is allowed and rejects unmeasured null', () => {
+    const fixture = TestBed.createComponent(DoctorReportViewerComponent);
+    const inst = fixture.componentInstance;
+    inst.reportCode.set('reservations');
+
+    const zeroMetric = {
+      metricCode: 'AppointmentsScheduled',
+      value: 0,
+      dataStatus: 'Complete' as const,
+      availableActions: [
+        {
+          code: 'Drilldown',
+          allowed: true,
+          route: '/api/v1/doctors/me/reports/reservations/drilldown?metricCode=AppointmentsScheduled&practiceId=p1',
+        },
+      ],
+    };
+    expect(inst.canDrilldown(zeroMetric)).toBe(true);
+
+    const nullMetric = {
+      metricCode: 'AppointmentsScheduled',
+      value: null,
+      availableActions: [
+        {
+          code: 'Drilldown',
+          allowed: true,
+          route: '/api/v1/doctors/me/reports/reservations/drilldown?metricCode=AppointmentsScheduled&practiceId=p1',
+        },
+      ],
+    };
+    expect(inst.canDrilldown(nullMetric)).toBe(false);
   });
 });

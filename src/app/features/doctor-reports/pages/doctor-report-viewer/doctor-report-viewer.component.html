@@ -26,7 +26,7 @@
             type="button"
             class="btn btn-outline-secondary btn-export"
             [disabled]="exportingExcel() || loading()"
-            (click)="exportReport('excel')"
+            (click)="exportReport('xlsx')"
           >
             <i class="fa-regular fa-file-excel" aria-hidden="true"></i>
             <span>{{ 'doctorReports.exportExcel' | t }}</span>
@@ -320,7 +320,8 @@
       @if (
         config()?.primary === 'count-trend' ||
         config()?.primary === 'queue-trend' ||
-        config()?.primary === 'financial-flow-trend'
+        config()?.primary === 'financial-flow-trend' ||
+        config()?.supporting?.includes('financial-flow-trend')
       ) {
         @let trend = countTrend();
         @if (trend.points.length) {
@@ -336,37 +337,30 @@
 
               <div class="chart-legend">
                 <span class="legend-dot legend-dot--blue"></span>
-                <span class="legend-text">
-                  {{
-                    reportCode() === 'queue'
-                      ? ('doctorOverview.metric.CheckIns' | t)
-                      : reportCode() === 'operating-finance'
-                        ? ('doctorOverview.metric.NetCollected' | t)
-                        : ('doctorOverview.metric.BookingsCreated' | t)
-                  }}
-                </span>
-                <span class="legend-dot legend-dot--teal"></span>
-                <span class="legend-text">
-                  {{
-                    reportCode() === 'queue'
-                      ? ('doctorOverview.metric.TicketsCompleted' | t)
-                      : reportCode() === 'operating-finance'
-                        ? ('doctorOverview.metric.PaidOperatingExpenses' | t)
-                        : ('doctorOverview.metric.AppointmentsScheduled' | t)
-                  }}
-                </span>
+                <span class="legend-text">{{ trendLabelA() | t }}</span>
+                @if (trendLabelB()) {
+                  <span class="legend-dot legend-dot--teal"></span>
+                  <span class="legend-text">{{ trendLabelB() | t }}</span>
+                }
+                @if (trendLabelC()) {
+                  <span class="legend-dot legend-dot--purple"></span>
+                  <span class="legend-text">{{ trendLabelC() | t }}</span>
+                }
               </div>
             </div>
 
             <div class="trend-chart-scroll" tabindex="0">
               <svg
                 class="trend-svg"
-                [style.min-width.px]="trend.points.length * 44 + 40"
-                [attr.viewBox]="'0 0 ' + (trend.points.length * 44 + 40) + ' 220'"
+                [style.min-width.px]="trend.points.length * 48 + 40"
+                [attr.viewBox]="'0 0 ' + (trend.points.length * 48 + 40) + ' 220'"
               >
-                <line x1="20" y1="20" [attr.x2]="trend.points.length * 44 + 20" y2="20" class="svg-grid-line" />
-                <line x1="20" y1="100" [attr.x2]="trend.points.length * 44 + 20" y2="100" class="svg-grid-line" />
-                <line x1="20" y1="180" [attr.x2]="trend.points.length * 44 + 20" y2="180" class="svg-grid-line" />
+                <line x1="20" y1="20" [attr.x2]="trend.points.length * 48 + 20" y2="20" class="svg-grid-line" />
+                <line x1="20" y1="100" [attr.x2]="trend.points.length * 48 + 20" y2="100" class="svg-grid-line" />
+                <line x1="20" y1="180" [attr.x2]="trend.points.length * 48 + 20" y2="180" class="svg-grid-line" />
+                @if (trend.minimum < 0) {
+                  <line x1="20" [attr.y1]="trend.zeroY" [attr.x2]="trend.points.length * 48 + 20" [attr.y2]="trend.zeroY" class="svg-zero-line" />
+                }
 
                 @for (pt of trend.points; track pt.key; let idx = $index) {
                   <g class="chart-bar-group" tabindex="0">
@@ -374,25 +368,35 @@
                     @if (pt.valA !== null) {
                       <rect
                         class="svg-bar svg-bar--primary"
-                        [attr.x]="idx * 44 + 24"
-                        [attr.y]="180 - pt.heightA"
-                        width="12"
+                        [attr.x]="idx * 48 + 14"
+                        [attr.y]="pt.yA"
+                        width="9"
                         [attr.height]="pt.heightA"
-                        rx="3"
+                        rx="2"
                       />
                     }
                     @if (pt.valB !== null) {
                       <rect
                         class="svg-bar svg-bar--secondary"
-                        [attr.x]="idx * 44 + 38"
-                        [attr.y]="180 - pt.heightB"
-                        width="12"
+                        [attr.x]="idx * 48 + 25"
+                        [attr.y]="pt.yB"
+                        width="9"
                         [attr.height]="pt.heightB"
-                        rx="3"
+                        rx="2"
                       />
                     }
-                    <text [attr.x]="idx * 44 + 36" y="202" text-anchor="middle" class="svg-axis-label">
-                      {{ pt.key.slice(8) }}
+                    @if (pt.valC !== null) {
+                      <rect
+                        class="svg-bar svg-bar--tertiary"
+                        [attr.x]="idx * 48 + 36"
+                        [attr.y]="pt.yC"
+                        width="9"
+                        [attr.height]="pt.heightC"
+                        rx="2"
+                      />
+                    }
+                    <text [attr.x]="idx * 48 + 29" y="202" text-anchor="middle" class="svg-axis-label">
+                      {{ pt.label }}
                     </text>
                   </g>
                 }
@@ -404,6 +408,64 @@
             <p>{{ 'doctorReports.noChartData' | t }}</p>
           </div>
         }
+      }
+
+      <!-- 4.1.b Queue Duration Comparison (Supporting) -->
+      @if (config()?.supporting?.includes('duration-comparison') && queueDurations().length) {
+        <div class="visual-surface">
+          <div class="visual-surface__header">
+            <div class="visual-title-wrap">
+              <i class="fa-solid fa-stopwatch section-icon" aria-hidden="true"></i>
+              <div>
+                <h3 class="section-title">{{ 'doctorOverview.section.queue' | t }}</h3>
+                <p class="section-desc">{{ 'doctorOverview.sectionHelp.queue' | t }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="patient-cards-grid">
+            @for (d of queueDurations(); track d.metricCode) {
+              <div class="patient-stat-card">
+                <span class="patient-stat-label">{{ metricLabel(d) }}</span>
+                <strong class="patient-stat-number">{{ format(d) }}</strong>
+                @if (d.eligibleSampleCount != null) {
+                  <small class="patient-stat-sub">
+                    {{ 'doctorRemediation.sample' | t }}: {{ formatNumber(d.eligibleSampleCount) }}
+                  </small>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- 4.1.c Queue Priority Breakdown (Supporting) -->
+      @if (config()?.supporting?.includes('priority-breakdown') && priorityBreakdown().length) {
+        <div class="visual-surface">
+          <div class="visual-surface__header">
+            <div class="visual-title-wrap">
+              <i class="fa-solid fa-users-line section-icon" aria-hidden="true"></i>
+              <div>
+                <h3 class="section-title">{{ 'doctorDashboard.prioritySummary' | t }}</h3>
+                <p class="section-desc">{{ 'doctorRemediation.priority' | t }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="patterns-grid">
+            @for (p of priorityBreakdown(); track p.priority) {
+              <div class="pattern-row">
+                <span class="pattern-label">{{ p.name }}</span>
+                <div class="pattern-bar-track">
+                  <div class="pattern-bar-fill" [style.width.%]="p.checkIns !== null ? 100 : 0"></div>
+                </div>
+                <strong class="pattern-count">
+                  {{ p.checkIns !== null ? formatNumber(p.checkIns) : '—' }}
+                </strong>
+              </div>
+            }
+          </div>
+        </div>
       }
 
       <!-- 4.2 Patient Summary (New vs Returning) -->
@@ -462,33 +524,50 @@
 
           @let matrix = practiceMatrix();
           @if (matrix.practices.length) {
-            <div class="table-scroll-container">
-              <table class="practice-matrix-table">
-                <thead>
-                  <tr>
-                    <th scope="col" class="th-metric">{{ 'doctorDashboard.searchMetrics' | t }}</th>
-                    @for (p of matrix.practices; track p.id) {
-                      <th scope="col" class="th-practice">{{ text(p.nameAr, p.nameEn) }}</th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
+            @if (matrix.practices.length === 1) {
+              <div class="single-practice-card">
+                <h4 class="single-practice-title">{{ text(matrix.practices[0].nameAr, matrix.practices[0].nameEn) }}</h4>
+                <div class="patient-cards-grid">
                   @for (row of matrix.rows; track row.metricCode) {
+                    <div class="patient-stat-card">
+                      <span class="patient-stat-label">{{ row.metricLabelKey | t }}</span>
+                      <strong class="patient-stat-number">{{ row.practices[0].formatted }}</strong>
+                      @if (row.practices[0].denominator != null) {
+                        <small class="patient-stat-sub">({{ formatNumber(row.practices[0].numerator) }}/{{ formatNumber(row.practices[0].denominator) }})</small>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="table-scroll-container">
+                <table class="practice-matrix-table">
+                  <thead>
                     <tr>
-                      <th scope="row" class="td-metric-name">{{ row.metricLabelKey | t }}</th>
-                      @for (cell of row.practices; track cell.practiceId) {
-                        <td class="td-cell-val">
-                          <strong>{{ cell.formatted }}</strong>
-                          @if (cell.denominator != null) {
-                            <small class="cell-sub-sample">({{ formatNumber(cell.numerator) }}/{{ formatNumber(cell.denominator) }})</small>
-                          }
-                        </td>
+                      <th scope="col" class="th-metric">{{ 'doctorDashboard.searchMetrics' | t }}</th>
+                      @for (p of matrix.practices; track p.id) {
+                        <th scope="col" class="th-practice">{{ text(p.nameAr, p.nameEn) }}</th>
                       }
                     </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    @for (row of matrix.rows; track row.metricCode) {
+                      <tr>
+                        <th scope="row" class="td-metric-name">{{ row.metricLabelKey | t }}</th>
+                        @for (cell of row.practices; track cell.practiceId) {
+                          <td class="td-cell-val">
+                            <strong>{{ cell.formatted }}</strong>
+                            @if (cell.denominator != null) {
+                              <small class="cell-sub-sample">({{ formatNumber(cell.numerator) }}/{{ formatNumber(cell.denominator) }})</small>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
           } @else {
             <div class="no-matrix-state">
               <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
@@ -605,7 +684,7 @@
                 <div class="pattern-bar-track">
                   <div class="pattern-bar-fill" [style.width.%]="p.width"></div>
                 </div>
-                <strong class="pattern-count">{{ formatNumber(p.count) }}</strong>
+                <strong class="pattern-count">{{ p.count !== null ? formatNumber(p.count) : "—" }}</strong>
               </div>
             }
           </div>
@@ -616,72 +695,142 @@
     <!-- ======================================== -->
     <!-- 5. COMPLETE METRIC EXPLORER              -->
     <!-- ======================================== -->
-    <details class="metric-explorer-details">
+    <details class="metric-explorer-details" open>
       <summary class="metric-explorer-summary">
         <div class="summary-title-wrap">
           <i class="fa-solid fa-folder-tree summary-icon" aria-hidden="true"></i>
           <span>{{ 'doctorReports.allMetricsExplorer' | t }}</span>
-          <span class="metrics-count-badge">({{ allMetrics().length }})</span>
+          <span class="metrics-count-badge">({{ totalExplorerMetricsCount() }})</span>
         </div>
         <i class="fa-solid fa-chevron-down chevron-icon" aria-hidden="true"></i>
       </summary>
 
       <div class="metric-explorer-body">
-        <div class="explorer-search-bar">
-          <label class="explorer-search-label" for="metric-search-input">
-            <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
-            <input
-              id="metric-search-input"
-              type="search"
-              class="field-input search-input"
-              [placeholder]="'doctorDashboard.searchMetrics' | t"
-              [ngModel]="metricSearch()"
-              (ngModelChange)="metricSearch.set($event)"
-            />
-          </label>
-        </div>
-
-        <div class="all-metrics-grid">
-          @for (m of allMetrics(); track m.metricCode) {
-            <article class="metric-card-tile">
-              <div class="tile-header">
-                <div class="tile-title-group">
-                  <span class="tile-icon-bubble" [class]="metricColorClass(m.metricCode)" aria-hidden="true">
-                    <i [class]="metricIcon(m.metricCode)"></i>
-                  </span>
-                  <span class="tile-title">{{ metricLabel(m) }}</span>
-                </div>
-                @if (metricStatus(m)) {
-                  <small class="tile-status">{{ metricStatus(m) }}</small>
-                }
-              </div>
-
-              <div class="tile-value-wrap">
-                <strong class="tile-number">{{ format(m) }}</strong>
-                @if (measuredValue(m) !== null && m.unit && m.unit !== 'count') {
-                  <span class="tile-unit">{{ metricUnit(m.unit) }}</span>
-                }
-              </div>
-
-              @if (m.denominator != null) {
-                <small class="tile-sample-info">
-                  {{ 'doctorOverview.ratioBasis' | t }}: {{ formatNumber(m.numerator) }} / {{ formatNumber(m.denominator) }}
-                </small>
-              }
-
-              @if (canDrilldown(m)) {
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary btn-sm drilldown-action-btn"
-                  (click)="openDrilldown(m)"
-                >
-                  <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
-                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                </button>
-              }
-            </article>
+        <!-- Group Navigation Tabs -->
+        <nav class="explorer-nav-tabs" role="tablist" [attr.aria-label]="'doctorReports.allMetricsExplorer' | t">
+          @for (group of explorerGroups(); track group.id) {
+            <button
+              type="button"
+              class="nav-tab-btn"
+              [class.nav-tab-btn--active]="selectedExplorerGroup() === group.id"
+              (click)="selectedExplorerGroup.set(group.id)"
+            >
+              <i [class]="groupIcon(group.id)" class="tab-icon" aria-hidden="true"></i>
+              <span>{{ group.labelKey | t }}</span>
+              <span class="tab-count-badge">{{ group.totalCount }}</span>
+            </button>
           }
+        </nav>
+
+        <!-- Search & Filter Controls -->
+        <div class="explorer-filter-bar">
+          <div class="explorer-search-bar">
+            <label class="explorer-search-label" for="metric-search-input">
+              <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+              <input
+                id="metric-search-input"
+                type="search"
+                class="field-input search-input"
+                [placeholder]="'doctorDashboard.searchMetrics' | t"
+                [ngModel]="metricSearch()"
+                (ngModelChange)="metricSearch.set($event)"
+              />
+            </label>
+          </div>
+
+          <div class="explorer-toggle-switch">
+            <button
+              type="button"
+              class="btn-toggle-chip"
+              [class.btn-toggle-chip--active]="onlyActiveMetrics()"
+              (click)="onlyActiveMetrics.set(true)"
+            >
+              <i class="fa-solid fa-filter" aria-hidden="true"></i>
+              <span>{{ 'doctorDashboard.activeOnly' | t }}</span>
+              <span class="chip-count">({{ activeExplorerMetricsCount() }})</span>
+            </button>
+            <button
+              type="button"
+              class="btn-toggle-chip"
+              [class.btn-toggle-chip--active]="!onlyActiveMetrics()"
+              (click)="onlyActiveMetrics.set(false)"
+            >
+              <span>{{ 'doctorDashboard.allMetrics' | t }}</span>
+              <span class="chip-count">({{ totalExplorerMetricsCount() }})</span>
+            </button>
+          </div>
         </div>
+
+        <!-- Metrics Cards Grid -->
+        @if (displayedExplorerMetrics().length) {
+          <div class="all-metrics-grid">
+            @for (m of displayedExplorerMetrics(); track m.metricCode) {
+              <article class="metric-card-tile">
+                <div class="tile-header">
+                  <div class="tile-title-group">
+                    <span class="tile-icon-bubble" [class]="metricColorClass(m.metricCode)" aria-hidden="true">
+                      <i [class]="metricIcon(m.metricCode)"></i>
+                    </span>
+                    <h4 class="tile-title">{{ metricLabel(m) }}</h4>
+                  </div>
+                  @if (metricStatus(m)) {
+                    <small class="tile-status">{{ metricStatus(m) }}</small>
+                  }
+                </div>
+
+                <div class="tile-value-wrap">
+                  <strong class="tile-number">{{ format(m) }}</strong>
+                  @if (measuredValue(m) !== null && m.unit && m.unit !== 'count' && metricUnit(m.unit)) {
+                    <span class="tile-unit">{{ metricUnit(m.unit) }}</span>
+                  }
+                </div>
+
+                <p class="tile-clinical-desc">
+                  {{ metricHelpText(m) }}
+                </p>
+
+                @if (m.denominator != null || m.eligibleSampleCount != null) {
+                  <div class="tile-context-pills">
+                    @if (m.denominator != null) {
+                      <span class="context-pill" [title]="'doctorOverview.ratioBasis' | t">
+                        <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                        <span>{{ 'doctorOverview.ratioBasis' | t }}: {{ m.numerator == null ? ('doctorRemediation.unavailable' | t) : formatNumber(m.numerator) }} / {{ formatNumber(m.denominator) }}</span>
+                      </span>
+                    }
+                    @if (m.eligibleSampleCount != null) {
+                      <span class="context-pill" [title]="'doctorRemediation.sample' | t">
+                        <i class="fa-solid fa-users" aria-hidden="true"></i>
+                        <span>{{ 'doctorRemediation.sample' | t }}: {{ formatNumber(m.eligibleSampleCount) }}</span>
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (canDrilldown(m)) {
+                  <button
+                    type="button"
+                    class="btn-card-drilldown"
+                    (click)="openDrilldown(m)"
+                  >
+                    <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                    <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                    <i class="fa-solid fa-arrow-left arrow-icon" aria-hidden="true"></i>
+                  </button>
+                }
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="no-metrics-empty">
+            <i class="fa-solid fa-chart-line-down empty-icon" aria-hidden="true"></i>
+            <p>{{ 'doctorDashboard.notEnoughData' | t }}</p>
+            @if (onlyActiveMetrics()) {
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="onlyActiveMetrics.set(false)">
+                {{ 'doctorDashboard.allMetrics' | t }}
+              </button>
+            }
+          </div>
+        }
       </div>
     </details>
   }
@@ -693,21 +842,46 @@
     [opened]="drillMetric() !== null"
     [title]="text(drillMetric()?.nameAr, drillMetric()?.nameEn)"
     [description]="'doctorDashboard.recordsHelp' | t"
-    [width]="'760px'"
+    [width]="'780px'"
     [wide]="true"
     (closed)="closeDrilldown()"
   >
     @if (drillMetric(); as metric) {
-      <div class="drill-summary-card">
-        <div>
-          <span class="drill-metric-name">{{ metricLabel(metric) }}</span>
-          <p class="drill-metric-desc">{{ 'doctorDashboard.recordsHelp' | t }}</p>
+      <!-- Doctor-friendly Drawer Header Hero -->
+      <div class="drawer-hero-card">
+        <div class="drawer-hero-header">
+          <div class="drawer-hero-title-group">
+            <div class="hero-icon-bubble" [class]="metricColorClass(metric.metricCode)" aria-hidden="true">
+              <i [class]="metricIcon(metric.metricCode)"></i>
+            </div>
+            <div>
+              <h3 class="hero-metric-title">{{ metricLabel(metric) }}</h3>
+              <p class="hero-metric-desc">{{ metricHelpText(metric) }}</p>
+            </div>
+          </div>
         </div>
-        <div class="drill-value-wrap">
-          <strong class="drill-val-num">{{ format(metric) }}</strong>
-          @if (metric.unit && metric.unit !== 'count') {
-            <span class="drill-val-unit">{{ metricUnit(metric.unit) }}</span>
+
+        <div class="drawer-hero-stats">
+          <div class="hero-stat-pill">
+            <span class="stat-pill-label">{{ 'doctorDashboard.value' | t }}</span>
+            <strong class="stat-pill-val">{{ format(metric) }}</strong>
+            @if (metricUnit(metric.unit)) {
+              <span class="stat-pill-unit">{{ metricUnit(metric.unit) }}</span>
+            }
+          </div>
+
+          @if (drillRows(); as page) {
+            <div class="hero-stat-pill">
+              <span class="stat-pill-label">{{ 'doctorDashboard.records' | t }}</span>
+              <strong class="stat-pill-val">{{ formatNumber(page.totalCount) }}</strong>
+              <span class="stat-pill-unit">{{ 'doctorDashboard.recordCount' | t }}</span>
+            </div>
           }
+        </div>
+
+        <div class="drawer-guide-banner">
+          <i class="fa-solid fa-shield-halved guide-icon" aria-hidden="true"></i>
+          <span>{{ 'doctorDashboard.recordsHelp' | t }}</span>
         </div>
       </div>
 
@@ -727,8 +901,10 @@
       } @else if (drillRows(); as page) {
         @if (page.items?.length) {
           <div class="records-header">
-            <h4>{{ 'doctorDashboard.records' | t }}</h4>
-            <span class="records-total-badge">{{ formatNumber(page.totalCount) }} {{ 'doctorDashboard.recordCount' | t }}</span>
+            <div class="records-header-text">
+              <h4>{{ 'doctorDashboard.records' | t }}</h4>
+              <p class="records-sub">{{ 'doctorOverview.quality' | t }}: {{ formatNumber(page.totalCount) }} {{ 'doctorDashboard.recordCount' | t }}</p>
+            </div>
           </div>
 
           <div class="table-scroll-container">
@@ -742,18 +918,26 @@
               </thead>
               <tbody>
                 @for (row of page.items; track $index) {
+                  @let ref = friendlyReference(row);
                   <tr>
                     <th scope="row" class="td-ref">
-                      <bdi>{{ row.reference || ('doctorDashboard.record' | t) }}</bdi>
-                      @if (row.resourceType) {
-                        <small class="ref-type-tag">{{ row.resourceType }}</small>
-                      }
+                      <div class="record-ref-group">
+                        <span class="record-type-pill" [class]="ref.badgeClass">
+                          <i [class]="ref.typeIcon" aria-hidden="true"></i>
+                          <span>{{ ref.typeLabel }}</span>
+                        </span>
+                        <strong class="record-code" [title]="row.reference || ''">{{ ref.code }}</strong>
+                      </div>
+                      <small class="record-desc-sub">{{ ref.description }}</small>
                     </th>
                     <td class="td-date">
-                      <bdi>{{ formatRecordDate(row.businessDate) }}</bdi>
+                      <div class="date-cell-wrap">
+                        <i class="fa-regular fa-calendar-days date-icon" aria-hidden="true"></i>
+                        <bdi>{{ formatRecordDate(row.businessDate) }}</bdi>
+                      </div>
                     </td>
                     <td class="td-val">
-                      <strong>{{ formatNumber(row.metricValue) }}</strong>
+                      <span class="record-val-chip">{{ formatNumber(row.metricValue) }}</span>
                     </td>
                   </tr>
                 }
@@ -786,6 +970,7 @@
           }
         } @else {
           <div class="viewer-state">
+            <i class="fa-regular fa-folder-open empty-icon" aria-hidden="true"></i>
             <p>{{ 'doctorDashboard.emptyRecords' | t }}</p>
           </div>
         }

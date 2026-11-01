@@ -39,6 +39,8 @@ import {
   measuredValue,
   metricDrilldown,
   selectKpis,
+  getQueueDurations,
+  getPriorityBreakdown,
 } from '../../presentation/doctor-report-selectors';
 
 type Schema = components['schemas'];
@@ -85,20 +87,155 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
   readonly kpis = computed<ReportMetric[]>(() =>
     selectKpis(this.model(), this.config()?.kpiCodes ?? []),
   );
-  readonly allMetrics = computed<ReportMetric[]>(() => {
-    const list = this.model()?.metrics ?? [];
-    const query = this.metricSearch().trim().toLowerCase();
-    if (!query) return list;
-    return list.filter((m) => {
-      const code = (m.metricCode ?? '').toLowerCase();
-      const ar = (m.nameAr ?? '').toLowerCase();
-      const en = (m.nameEn ?? '').toLowerCase();
-      const label = this.metricLabel(m).toLowerCase();
-      return code.includes(query) || ar.includes(query) || en.includes(query) || label.includes(query);
-    });
-  });
   readonly metricSearch = signal('');
-  readonly activeExplorerGroup = signal('all');
+  readonly onlyActiveMetrics = signal(true);
+  readonly selectedExplorerGroup = signal('all');
+
+  readonly explorerGroups = computed(() => {
+    const metrics = this.model()?.metrics ?? [];
+    const groupDefs = [
+      { id: 'all', labelKey: 'doctorDashboard.allMetrics', codes: [] },
+      {
+        id: 'queue',
+        labelKey: 'doctorDashboard.group.queue',
+        codes: [
+          'CheckIns',
+          'WalkIns',
+          'WalkInShare',
+          'Waiting',
+          'Called',
+          'InProgress',
+          'TicketsCompleted',
+          'TicketsCancelled',
+          'TicketsNoShow',
+          'CallAttempts',
+          'Recalls',
+          'OperationalExceptions',
+        ],
+      },
+      {
+        id: 'bookings',
+        labelKey: 'doctorDashboard.group.bookings',
+        codes: [
+          'BookingsCreated',
+          'AppointmentsScheduled',
+          'CancellationsByEvent',
+          'CancellationRateScheduledCohort',
+          'ReservationNoShowRate',
+          'TicketNoShowRate',
+          'RescheduleEvents',
+          'RescheduledReservations',
+          'ReservationToTicketConversion',
+          'BookingLeadTimeMinutes',
+          'PunctualArrival',
+        ],
+      },
+      {
+        id: 'care',
+        labelKey: 'doctorDashboard.group.care',
+        codes: [
+          'UniqueDoctorPatients',
+          'NewToDoctorPatients',
+          'ReturningDoctorPatients',
+          'PatientRetention90d',
+          'FollowUpActivity',
+          'ClinicalWorkflowCompleted',
+        ],
+      },
+      {
+        id: 'capacity',
+        labelKey: 'doctorDashboard.group.capacity',
+        codes: [
+          'WaitToFirstCall',
+          'WaitToServiceStart',
+          'CallToStart',
+          'ServiceDuration',
+          'CapacityMinutes',
+          'UnusedCapacityMinutes',
+          'MaximumDailyPatientCapacity',
+          'BookedUtilization',
+          'ActualServiceUtilization',
+          'SegmentQuotaUtilization',
+        ],
+      },
+      {
+        id: 'finance',
+        labelKey: 'doctorDashboard.group.finance',
+        codes: [
+          'PaidOperatingExpenses',
+          'OutstandingDueInPeriod',
+          'AllOutstandingAsOf',
+          'OverdueAsOf',
+          'GrossCollected',
+          'Refunds',
+          'NetCollected',
+          'NetOperatingCashResult',
+          'ProjectedResultForPeriod',
+        ],
+      },
+    ];
+
+    return groupDefs
+      .map((def) => {
+        const groupMetrics =
+          def.id === 'all'
+            ? metrics
+            : metrics.filter((m) => (def.codes as string[]).includes(m.metricCode ?? ''));
+        const activeCount = groupMetrics.filter((m) => measuredValue(m) !== null).length;
+        return {
+          id: def.id,
+          labelKey: def.labelKey,
+          metrics: groupMetrics,
+          totalCount: groupMetrics.length,
+          activeCount,
+        };
+      })
+      .filter((g) => g.id === 'all' || g.totalCount > 0);
+  });
+
+  readonly displayedExplorerMetrics = computed<ReportMetric[]>(() => {
+    const groupId = this.selectedExplorerGroup();
+    const activeOnly = this.onlyActiveMetrics();
+    const query = this.metricSearch().trim().toLowerCase();
+
+    const group = this.explorerGroups().find((g) => g.id === groupId);
+    let list = group ? group.metrics : this.model()?.metrics ?? [];
+
+    if (activeOnly) {
+      list = list.filter((m) => measuredValue(m) !== null);
+    }
+
+    if (query) {
+      list = list.filter((m) => {
+        const code = (m.metricCode ?? '').toLowerCase();
+        const ar = (m.nameAr ?? '').toLowerCase();
+        const en = (m.nameEn ?? '').toLowerCase();
+        const label = this.metricLabel(m).toLowerCase();
+        const help = this.metricHelpText(m).toLowerCase();
+        return (
+          code.includes(query) ||
+          ar.includes(query) ||
+          en.includes(query) ||
+          label.includes(query) ||
+          help.includes(query)
+        );
+      });
+    }
+
+    return list;
+  });
+
+  readonly totalExplorerMetricsCount = computed(() => {
+    const groupId = this.selectedExplorerGroup();
+    const group = this.explorerGroups().find((g) => g.id === groupId);
+    return group?.totalCount ?? this.model()?.metrics?.length ?? 0;
+  });
+
+  readonly activeExplorerMetricsCount = computed(() => {
+    const groupId = this.selectedExplorerGroup();
+    const group = this.explorerGroups().find((g) => g.id === groupId);
+    return group?.activeCount ?? 0;
+  });
 
   // Filter form
   readonly activePreset = signal<'today' | 'last7' | 'month' | null>(null);
@@ -108,29 +245,68 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
     toDate: '',
     grouping: 'Day',
   };
+  private lastAppliedQuery: Record<string, string> = {};
 
   // Visualizations data
   readonly countTrend = computed(() => {
+    const m = this.model();
     const code = this.reportCode();
-    if (code === 'queue') {
-      return getSeriesPoints(this.model(), 'CheckIns', 'TicketsCompleted');
+    const kind = this.config()?.primary;
+    const grouping = m?.appliedFilters?.grouping || this.filters.grouping;
+
+    if (code === 'queue' || kind === 'queue-trend') {
+      return getSeriesPoints(m, 'CheckIns', 'TicketsCompleted', undefined, grouping);
     }
-    if (code === 'operating-finance') {
+    if (code === 'operating-finance' || kind === 'financial-flow-trend') {
       return getSeriesPoints(
-        this.model(),
+        m,
         'NetCollected',
         'PaidOperatingExpenses',
         'NetOperatingCashResult',
+        grouping,
       );
     }
-    return getSeriesPoints(this.model(), 'BookingsCreated', 'AppointmentsScheduled');
+    if (code === 'expenses') {
+      return getSeriesPoints(m, 'PaidOperatingExpenses', undefined, undefined, grouping);
+    }
+    if (kind === 'count-trend' || code === 'overview' || code === 'reservations') {
+      return getSeriesPoints(m, 'BookingsCreated', 'AppointmentsScheduled', undefined, grouping);
+    }
+    return { points: [], maximum: 1, minimum: 0, zeroY: 180 };
   });
+
+  readonly trendLabelA = computed(() => {
+    const code = this.reportCode();
+    if (code === 'expenses') return 'doctorOverview.metric.PaidOperatingExpenses';
+    if (code === 'operating-finance') return 'doctorOverview.metric.NetCollected';
+    if (code === 'queue') return 'doctorOverview.metric.CheckIns';
+    return 'doctorOverview.metric.BookingsCreated';
+  });
+
+  readonly trendLabelB = computed(() => {
+    const code = this.reportCode();
+    if (code === 'expenses') return '';
+    if (code === 'operating-finance') return 'doctorOverview.metric.PaidOperatingExpenses';
+    if (code === 'queue') return 'doctorOverview.metric.TicketsCompleted';
+    return 'doctorOverview.metric.AppointmentsScheduled';
+  });
+
+  readonly trendLabelC = computed(() => {
+    const code = this.reportCode();
+    if (code === 'operating-finance') return 'doctorOverview.metric.NetOperatingCashResult';
+    return '';
+  });
+
+  readonly queueDurations = computed(() => getQueueDurations(this.model()));
+  readonly priorityBreakdown = computed(() => getPriorityBreakdown(this.model()));
+  readonly practiceMatrix = computed(() =>
+    getPracticeComparisonMatrix(this.model(), this.language.isRtl() ? 'ar-EG' : 'en-US'),
+  );
 
   readonly cohortFunnel = computed(() => getCohortFunnel(this.model()));
   readonly weekdayPatterns = computed(() => getPatternPoints(this.model(), 'weekday'));
   readonly hourPatterns = computed(() => getPatternPoints(this.model(), 'hour'));
   readonly patternViewKind = signal<'weekday' | 'hour'>('weekday');
-  readonly practiceMatrix = computed(() => getPracticeComparisonMatrix(this.model()));
   readonly financialObligations = computed(() => getFinancialObligations(this.model()));
 
   readonly newPatientsMetric = computed(() => findMetric(this.model(), 'NewToDoctorPatients'));
@@ -158,6 +334,11 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
         this.loading.set(false);
         return;
       }
+      this.loadSequence++;
+      this.drillSequence++;
+      this.model.set(null);
+      this.catalogEntry.set(null);
+      this.closeDrilldown();
       this.reportCode.set(code);
 
       // Read query params
@@ -267,6 +448,7 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
 
       if (this.destroyed || seq !== this.loadSequence) return;
       this.model.set(result as ReportModel);
+      this.lastAppliedQuery = { ...query };
 
       // Update URL query params smoothly
       this.router.navigate([], {
@@ -300,7 +482,7 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
   // Drilldown
   canDrilldown(metric: ReportMetric): boolean {
     const val = measuredValue(metric);
-    if (val === null || val === 0) return false;
+    if (val === null) return false;
     const action = metricDrilldown(metric, this.reportCode() ?? '');
     return !!action && this.session.hasPermission('Reports.Doctor.ViewOwn');
   }
@@ -368,41 +550,76 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
     );
   }
 
-  async exportReport(format: 'pdf' | 'excel'): Promise<void> {
+  async exportReport(format: 'pdf' | 'xlsx'): Promise<void> {
     const code = this.reportCode();
-    if (!code || this.destroyed) return;
+    const entry = this.catalogEntry();
+    if (!code || !entry || this.destroyed) return;
 
-    if (format === 'pdf') this.exportingPdf.set(true);
+    const isPdf = format === 'pdf';
+    if (isPdf) {
+      if (entry.canExportPdf !== true) {
+        this.toast.error(this.language.t('common.unauthorized'));
+        return;
+      }
+    } else {
+      if (entry.canExportExcel !== true) {
+        this.toast.error(this.language.t('common.unauthorized'));
+        return;
+      }
+    }
+
+    const perms = entry.exportRequiredPermissions ?? entry.requiredPermissions ?? [];
+    if (perms.some((p) => !this.session.hasPermission(p))) {
+      this.toast.error(this.language.t('common.unauthorized'));
+      return;
+    }
+
+    if (isPdf) this.exportingPdf.set(true);
     else this.exportingExcel.set(true);
 
     try {
+      const exportQuery: Record<string, string> = {
+        format,
+        language: this.language.currentLang() || 'ar',
+        ...this.lastAppliedQuery,
+      };
+
       const blob = await firstValueFrom(
         this.api.call('P18-075', {
           path: { reportCode: code },
-          query: {
-            format,
-            ...(this.filters.practiceId ? { practiceId: this.filters.practiceId } : {}),
-            ...(this.filters.fromDate ? { fromDate: this.filters.fromDate } : {}),
-            ...(this.filters.toDate ? { toDate: this.filters.toDate } : {}),
-          },
+          query: exportQuery,
         }),
       );
 
-      if (blob instanceof Blob) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${code}-report.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      if (!(blob instanceof Blob) || blob.size === 0 || blob.type.includes('json')) {
+        this.toast.error(this.language.t('common.exportFailed'));
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = isPdf ? 'pdf' : 'xlsx';
+      const dateSuffix = this.lastAppliedQuery['fromDate'] ? `_${this.lastAppliedQuery['fromDate']}` : '';
+      a.download = `${code}${dateSuffix}.${ext}`;
+      document.body.appendChild(a);
+      try {
         a.click();
+      } finally {
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
 
       this.toast.success(this.language.t('common.exportSuccess'));
     } catch {
-      this.toast.error(this.language.t('common.exportFailed'));
+      if (!this.destroyed) {
+        this.toast.error(this.language.t('common.exportFailed'));
+      }
     } finally {
-      if (format === 'pdf') this.exportingPdf.set(false);
-      else this.exportingExcel.set(false);
+      if (!this.destroyed) {
+        this.exportingPdf.set(false);
+        this.exportingExcel.set(false);
+      }
     }
   }
 
@@ -545,12 +762,188 @@ export class DoctorReportViewerComponent implements OnInit, OnDestroy {
     }
   }
 
+  groupIcon(id: string): string {
+    switch (id) {
+      case 'all':
+        return 'fa-solid fa-layer-group';
+      case 'queue':
+        return 'fa-solid fa-users-line';
+      case 'bookings':
+        return 'fa-solid fa-calendar-check';
+      case 'care':
+        return 'fa-solid fa-hospital-user';
+      case 'capacity':
+        return 'fa-solid fa-stopwatch';
+      case 'finance':
+        return 'fa-solid fa-wallet';
+      default:
+        return 'fa-solid fa-folder-open';
+    }
+  }
+
+  metricHelpText(metric: ReportMetric): string {
+    const isAr = this.language.isRtl();
+    const code = metric.metricCode ?? '';
+    const arMap: Record<string, string> = {
+      AppointmentsScheduled: 'إجمالي المواعيد المؤكدة والمحجوزة مسبقاً بجدول العيادة خلال الفترة المحددة.',
+      BookingsCreated: 'كافة الحجوزات والمواعيد التي تم إنشاؤها عبر التطبيق أو الاستقبال.',
+      CheckIns: 'المرضى الذين وصلوا العيادة بالفعل وتم تسجيل حضورهم في مكتب الاستقبال.',
+      TicketsCompleted: 'الكشوفات الطبية التي أتمها الطبيب وتم إغلاق تذكرتها بنجاح.',
+      ReservationToTicketConversion: 'معدل نجاح تحويل الحجز المسبق إلى حضور فعلي وكشف طبي بالعيادة.',
+      CancellationRateScheduledCohort: 'نسبة المواعيد التي تم إلغاؤها من قبل المريض أو العيادة.',
+      ReservationNoShowRate: 'نسبة المرضى الذين تخلفوا عن الحضور دون إشعار مسبق بالإلغاء.',
+      PunctualArrival: 'نسبة المرضى الملتزمين بالحضور في موعدهم المحدد دون تأخير.',
+      BookingLeadTimeMinutes: 'متوسط الفترة الزمنية بالدقائق بين وقت إنشاء الحجز وتاريخ الكشف.',
+      WaitToFirstCall: 'متوسط زمن انتظار المريض بصالة الاستقبال حتى النداء الأول لدخوله.',
+      WaitToServiceStart: 'الوقت الإجمالي من لحظة تسجيل الحضور وحتى بدء الفحص الطبي الفعلي.',
+      ServiceDuration: 'متوسط زمن الكشف والفحص الطبي المستغرق داخل غرفة الطبيب لكل مريض.',
+      CallToStart: 'الوقت الفاصل بين نداء المريض ودخوله الفعلي للعيادة لبدء الفحص.',
+      GrossCollected: 'إجمالي المبالغ النقدية المحصلة بالعيادة قبل خصم أي مصروفات أو استردادات.',
+      NetCollected: 'صافي المقبوضات النقدية الفعلية بعد تسوية المبالغ المستردة للمرضى.',
+      PaidOperatingExpenses: 'إجمالي المصروفات التشغيلية التي تم سدادها خلال هذه الفترة.',
+      NetOperatingCashResult: 'صافي التدفق النقدي التشغيلي (المحصلات النقدية ناقص المصروفات).',
+      OutstandingDueInPeriod: 'مستحقات مالية واجبة التحصيل خلال الفترة ولم تُسدد بعد.',
+      AllOutstandingAsOf: 'إجمالي المبالغ المستحقة التراكمية على المرضى أو الجهات حتى تاريخه.',
+      OverdueAsOf: 'المستحقات المالية المتأخرة التي تجاوزت مواعيد سدادها المحددة.',
+      UniqueDoctorPatients: 'عدد المرضى الفريدين الذين زاروا عيادتك دون تكرار.',
+      NewToDoctorPatients: 'المرضى الذين يزورون عيادتك لأول مرة في تاريخهم الطبي.',
+      ReturningDoctorPatients: 'المرضى المراجعون الذين زاروا عيادتك سابقاً وعادوا لمتابعة حالتهم.',
+      PatientRetention90d: 'نسبة المرضى الذين عادوا لمراجعة العيادة واستكمال علاجهم خلال 90 يوماً.',
+      RescheduleEvents: 'إجمالي عمليات تعديل المواعيد ونقلها إلى أوقات أخرى.',
+      RescheduledReservations: 'عدد الحجوزات التي تم تغيير توقيتها أو تاريخها المحدد.',
+      WalkIns: 'المرضى الذين حضروا مباشرة للعيادة دون حجز موعد مسبق.',
+      WalkInShare: 'نسبة الزيارات المباشرة بدون حجز من إجمالي حضور العيادة.',
+      CallAttempts: 'إجمالي محاولات النداء على المرضى للدخول إلى العيادة.',
+      Recalls: 'مرات إعادة استدعاء المريض بعد عدم استجابته للنداء الأول.',
+      OperationalExceptions: 'ملاحظات وانحرافات تشغيلية استثنائية مسجلة أثناء ساعات العمل.',
+      Waiting: 'المرضى الموجودون حالياً في صالة الانتظار بانتظار دورهم.',
+      Called: 'المرضى الذين تم مناداتهم ويتوجهون حالياً لغرفة الكشف.',
+      InProgress: 'المرضى الذين يخضعون للفحص الطبي والاستشارة حالياً.',
+      TicketsCancelled: 'تذاكر صالة تم إلغاؤها بعد تسجيل حضور المريض.',
+      TicketsNoShow: 'مرضى سجلوا حضورهم بالاستقبال لكنهم غادروا قبل الكشف.',
+      FollowUpActivity: 'استشارات وزيارات المتابعة المسجلة مع المرضى.',
+      ClinicalWorkflowCompleted: 'الكشوفات المكتملة توثيقياً مع التشخيص وكتابة الوصفة الطبية.',
+    };
+    const enMap: Record<string, string> = {
+      AppointmentsScheduled: 'Total confirmed appointments in schedule for this period.',
+      BookingsCreated: 'All bookings created via app or reception.',
+      CheckIns: 'Patients who arrived and were checked in at reception.',
+      TicketsCompleted: 'Consultations completed and closed by doctor.',
+      ReservationToTicketConversion: 'Share of scheduled bookings that attended for consultation.',
+      CancellationRateScheduledCohort: 'Appointments cancelled by patient or clinic.',
+      ReservationNoShowRate: 'Patients who booked but did not attend without cancelling.',
+      PunctualArrival: 'Percentage of patients arriving exactly on time.',
+      BookingLeadTimeMinutes: 'Average time between booking creation and visit date.',
+      WaitToFirstCall: 'Average wait time in waiting area until first call.',
+      WaitToServiceStart: 'Total wait time from arrival until consultation start.',
+      ServiceDuration: 'Average clinical examination duration per patient.',
+      CallToStart: 'Time between calling patient and entering consultation.',
+      GrossCollected: 'Total collections received before any refunds.',
+      NetCollected: 'Net revenue collected after processing refunds.',
+      PaidOperatingExpenses: 'Operating expenses paid during this period.',
+      NetOperatingCashResult: 'Net cash flow: collections minus expenses.',
+      OutstandingDueInPeriod: 'Receivables due in period that remain uncollected.',
+      AllOutstandingAsOf: 'Total cumulative receivables as of today.',
+      OverdueAsOf: 'Receivables past their payment due date.',
+      UniqueDoctorPatients: 'Distinct individual patients seen.',
+      NewToDoctorPatients: 'First-time patients visiting this clinic.',
+      ReturningDoctorPatients: 'Returning patients visiting for follow-up care.',
+      PatientRetention90d: 'Patients returning to clinic within 90 days.',
+      RescheduleEvents: 'Number of times appointments were rescheduled.',
+      RescheduledReservations: 'Reservations that were moved to another date/time.',
+      WalkIns: 'Patients who visited directly without prior booking.',
+      WalkInShare: 'Share of direct walk-ins out of total attendance.',
+      CallAttempts: 'Number of times patients were called to enter.',
+      Recalls: 'Patient recall attempts after missing initial call.',
+      OperationalExceptions: 'Operational deviations recorded during clinic hours.',
+      Waiting: 'Patients currently waiting in waiting area.',
+      Called: 'Patients currently called to enter.',
+      InProgress: 'Consultations currently in progress.',
+      TicketsCancelled: 'Tickets cancelled after registration.',
+      TicketsNoShow: 'Patients registered who left before consultation.',
+      FollowUpActivity: 'Recorded clinical follow-up interactions.',
+      ClinicalWorkflowCompleted: 'Clinical encounters fully documented.',
+    };
+    return (isAr ? arMap[code] : enMap[code]) || this.metricLabel(metric);
+  }
+
+  friendlyReference(row: components['schemas']['ReportRecord']): {
+    code: string;
+    typeLabel: string;
+    typeIcon: string;
+    badgeClass: string;
+    description: string;
+  } {
+    const isAr = this.language.isRtl();
+    const type = (row.resourceType ?? '').toLowerCase();
+    const raw = row.reference ?? '';
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(raw);
+    const shortCode = isUuid ? '#' + raw.slice(0, 8).toUpperCase() : raw || '#—';
+
+    if (type.includes('reservation')) {
+      return {
+        code: shortCode,
+        typeLabel: isAr ? 'حجز موعد مسبق' : 'Reservation',
+        typeIcon: 'fa-regular fa-calendar-check',
+        badgeClass: 'badge-type--blue',
+        description: isAr ? 'موعد مسجل للمريض بجدول العيادة' : 'Scheduled clinic appointment',
+      };
+    }
+    if (type.includes('ticket')) {
+      return {
+        code: shortCode,
+        typeLabel: isAr ? 'تذكرة انتظار صالة' : 'Queue Ticket',
+        typeIcon: 'fa-solid fa-ticket',
+        badgeClass: 'badge-type--teal',
+        description: isAr ? 'تذكرة دور دخول لغرفة الكشف' : 'Queue waiting room ticket',
+      };
+    }
+    if (type.includes('encounter')) {
+      return {
+        code: shortCode,
+        typeLabel: isAr ? 'كشف وفحص طبي' : 'Consultation',
+        typeIcon: 'fa-solid fa-user-doctor',
+        badgeClass: 'badge-type--emerald',
+        description: isAr ? 'جلسة فحص سريري معتمدة' : 'Clinical consultation record',
+      };
+    }
+    if (
+      type.includes('financial') ||
+      type.includes('invoice') ||
+      type.includes('payment') ||
+      type.includes('collection')
+    ) {
+      return {
+        code: shortCode,
+        typeLabel: isAr ? 'سند تحصيل مالي' : 'Payment Receipt',
+        typeIcon: 'fa-solid fa-receipt',
+        badgeClass: 'badge-type--amber',
+        description: isAr ? 'معاملة مالية مقيدة بإيرادات العيادة' : 'Financial collection transaction',
+      };
+    }
+    return {
+      code: shortCode,
+      typeLabel: isAr ? 'سجل تشغيلي موثق' : 'Operational Record',
+      typeIcon: 'fa-solid fa-clipboard-check',
+      badgeClass: 'badge-type--slate',
+      description: isAr ? 'حالة مسجلة وموثقة في سجلات النظام' : 'Logged system record',
+    };
+  }
+
   format(metric: ReportMetric | undefined): string {
     const val = measuredValue(metric);
     if (val === null) return this.language.t('doctorRemediation.unavailable');
     const u = metric?.unit?.toLowerCase();
     if (u === 'percentage' || u === 'percent') {
       return `${this.formatNumber(val)}%`;
+    }
+    if (u === 'minutes' && val >= 60) {
+      const hours = val / 60;
+      if (hours >= 24) {
+        const days = (hours / 24).toFixed(1);
+        return `${this.formatNumber(Math.round(val))} دقيقة (~${days} يوم)`;
+      }
+      return `${this.formatNumber(Math.round(val))} دقيقة (~${hours.toFixed(1)} ساعة)`;
     }
     return this.formatNumber(val);
   }
