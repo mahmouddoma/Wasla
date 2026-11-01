@@ -934,6 +934,7 @@ Always follow these rules:
 21. **Bilingual Completeness (Arabic & English):** Always verify that every UI label, button, placeholder, title, and toast message is translated in both Arabic and English (`ar` & `en`) in `src/app/core/i18n/translations.ts` via `TranslatePipe` or `LanguageService`.
 22. **Target User Persona (Doctors & Clinic Assistants):** Wasla is built specifically for healthcare doctors and their assistants/secretaries. Clinic assistants often have limited educational backgrounds; interfaces must be radically simple, clear, intuitive, free of tech jargon, free of distracting animations or blinking indicators, with high-contrast Arabic labels and obvious action buttons.
 23. **Global Full-Width Pinned Footer:** The platform footer is shared across all pages at the application shell (`App`), spans 100% width edge-to-edge (never constrained to an 80% box), stays pinned to the bottom of the viewport, and contains NO blinking/pulsing indicators.
+24. **Lean & Token-Efficient Workflow (لا أوامر طرفية زائدة تستهلك التوكنز):** Strictly NO exploratory terminal loops or redundant status/file-counting commands. Read and edit target UI/UX/architecture files directly and keep interactions lean, focused, and fast.
 
 ---
 
@@ -1066,6 +1067,29 @@ Refer to the master document at `.agents/PATIENT_UX_GUIDELINES.md`.
 - Auto-select primary clinic.
 - Auto-select logged-in patient (`Self`).
 - Auto-select standard consultation fee.
+
+---
+
+# 34. LEAN & TOKEN-EFFICIENT WORKFLOW - NO REDUNDANT TERMINAL PROBING
+
+### 34.1 The Core Rule (ممنوع تشغيل أوامر استكشافية متتالية تستهلك التوكنز)
+- DO NOT run loops of exploratory terminal/shell commands (e.g., repeatedly running git status, git log, directory listings, file count scripts, or diagnostic dumps) unless explicitly requested by the user.
+- Terminal commands must be strictly reserved for essential actions:
+  - Running Angular build/tests (`npm run build`, `ng test`).
+  - Final atomic git commit when finishing a significant milestone.
+  - Operations that genuinely require shell execution.
+
+### 34.2 Direct Action on Frontend & Architecture (التركيز المباشر على كود الواجهة والـ Architecture)
+- When assigned a UI/UX, redesign, or architectural refactoring task:
+  1. Identify the target component / page directly.
+  2. Read the relevant component files (`.component.ts`, `.component.html`, `.component.scss`) directly with file reading tools.
+  3. Apply the refactoring decisively following the Wasla Design System (no colored borders, no carditis, slide-over drawers, clean typography, neutral borders).
+  4. Verify with build/test.
+- Never spam intermediate diagnostic commands that consume tokens and slow down the interaction without adding frontend value.
+
+### 34.3 Token Conservation First (أولوية الحفاظ على التوكنز والسرعة للمستخدم)
+- The user's priority is professional Front-End craftsmanship, polished UI/UX, and robust Angular architecture.
+- Keep tool interactions minimal, high-leverage, and focused 100% on delivering production-grade code and delightful user experience.
 
 ---
 
