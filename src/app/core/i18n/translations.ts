@@ -1109,7 +1109,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'diagnostics.historyAction.Submitted': { ar: 'تم تقديم الطلب', en: 'Request submitted' },
   'common.confirm': { ar: 'تأكيد', en: 'Confirm' },
 
-  'tickets.walkIn.chooseVisit': { ar: 'اختر الزيارة والسعر', en: 'Choose a visit and price' },
+  'tickets.walkIn.chooseVisit': { ar: 'اختر نوع الكشف والسعر', en: 'Choose visit type & price' },
   'tickets.walkIn.optionsFailed': {
     ar: 'تعذر تحميل الزيارات المتاحة',
     en: 'Could not load available visits',
@@ -1136,7 +1136,10 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'هذا الحساب يمكنه تسجيل الحضور الاستثنائي فقط. اذكر السبب قبل التأكيد.',
     en: 'This account can record exceptional arrival only. Enter a reason before confirming.',
   },
-  'reception.arrival.done': { ar: 'تم تسجيل الوصول بنجاح', en: 'Arrival recorded successfully' },
+  'reception.arrival.done': {
+    ar: 'تم تأكيد حضور المريض بنجاح',
+    en: 'Arrival recorded successfully',
+  },
   'reception.arrival.confirmedTitle': {
     ar: 'تم تأكيد الوصول وإصدار التذكرة',
     en: 'Arrival confirmed & ticket issued',
@@ -1160,10 +1163,10 @@ export const TRANSLATIONS: TranslationDictionary = {
   'reception.arrival.openQueue': { ar: 'فتح شاشة الطابور', en: 'Open queue screen' },
   'reception.arrival.closeDone': { ar: 'إتمام وإغلاق', en: 'Done & close' },
   'tickets.walkIn.patientWithoutAppointment': {
-    ar: 'مريض بدون موعد',
+    ar: 'حضور بدون موعد (قطع تذكرة)',
     en: 'Patient without appointment',
   },
-  'tickets.walkIn.visitAndPrice': { ar: 'نوع الزيارة والسعر', en: 'Visit type and price' },
+  'tickets.walkIn.visitAndPrice': { ar: 'نوع الكشف والسعر', en: 'Visit type and price' },
   'tickets.walkIn.addToWaiting': { ar: 'إضافة إلى الانتظار', en: 'Add to waiting' },
   'tickets.walkIn.done': { ar: 'تمت إضافة المريض إلى الانتظار', en: 'Patient added to waiting' },
   'tickets.walkIn.advanced': { ar: 'خيارات متقدمة', en: 'Advanced options' },
@@ -1186,6 +1189,14 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'تسجيل مريض جديد في العيادة',
     en: 'Register new patient in clinic',
   },
+  'tickets.walkIn.backToSearch': {
+    ar: 'الرجوع للبحث',
+    en: 'Back to search',
+  },
+  'tickets.walkIn.saveAndProceed': {
+    ar: 'حفظ ومتابعة قطع التذكرة',
+    en: 'Save and proceed to ticket',
+  },
   'tickets.waitingCount': { ar: 'في الانتظار', en: 'waiting' },
   'tickets.queue.now': { ar: 'غرفة الكشف (الآن)', en: 'Exam room (Now)' },
   'tickets.queue.noneNow': {
@@ -1205,7 +1216,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'tickets.queue.failed': { ar: 'تعذر تحميل الطابور', en: 'Could not load the queue' },
   'tickets.queue.empty': { ar: 'لا يوجد مرضى في الانتظار الآن', en: 'No patients are waiting now' },
   'tickets.queue.emptyHelp': {
-    ar: 'يمكنك تسجيل وصول مريض من المواعيد أو إضافة مريض بدون موعد.',
+    ar: 'يمكنك تأكيد حضور مريض من الحجوزات أو قطع تذكرة حضور بدون موعد.',
     en: 'Record an arrival from appointments or add a patient without an appointment.',
   },
   'tickets.queue.globalClinic': {
@@ -1224,14 +1235,49 @@ export const TRANSLATIONS: TranslationDictionary = {
   'tickets.queue.confirmCall': { ar: 'تأكيد النداء', en: 'Confirm call' },
   'tickets.queue.back': { ar: 'رجوع', en: 'Back' },
   'tickets.queue.noResponse': { ar: 'لم يرد', en: 'No response' },
-  'tickets.queue.restoreWaiting': { ar: 'إعادة إلى الانتظار', en: 'Return to waiting' },
+  'tickets.queue.restoreWaiting': { ar: 'إرجاع لطابور الانتظار', en: 'Return to waiting' },
   'tickets.queue.roomReady': {
-    ar: 'غرفة الكشف جاهزة ومتاحة لاستقبال المريض التالي',
+    ar: 'غرفة الكشف جاهزة لاستقبال المريض التالي',
     en: 'The exam room is ready to receive the next patient',
   },
   'tickets.queue.statNow': { ar: 'في العيادة الآن', en: 'In clinic now' },
   'tickets.queue.statWaiting': { ar: 'في الانتظار', en: 'In waiting' },
   'tickets.queue.statNoShow': { ar: 'لم يحضروا', en: 'No-show' },
+  'tickets.queue.statCompleted': { ar: 'تم الكشف', en: 'Completed' },
+  'tickets.queue.statTotal': { ar: 'إجمالي اليوم', en: 'Today Total' },
+  'tickets.queue.dailyProgress': { ar: 'تقدّم يوم العيادة', en: 'Daily Clinic Progress' },
+  'tickets.queue.liveExamTimer': { ar: 'مدة الكشف الحالية', en: 'Current Exam Time' },
+  'tickets.queue.nextPatient': { ar: 'المريض التالي', en: 'Next Patient' },
+  'tickets.queue.preparePatient': {
+    ar: 'يرجى التأكد من تواجد المريض والاستعداد',
+    en: 'Please verify presence and prepare patient',
+  },
+  'tickets.queue.activeRoomStation': {
+    ar: 'محطة الكشف الحالية',
+    en: 'Active Exam Station',
+  },
+  'tickets.queue.searchPlaceholder': {
+    ar: 'ابحث باسم المريض أو رقم التذكرة...',
+    en: 'Search patient name or ticket #...',
+  },
+  'tickets.queue.filterAll': { ar: 'الكل', en: 'All' },
+  'tickets.queue.filterWaiting': { ar: 'منتظر', en: 'Waiting' },
+  'tickets.queue.filterNoShow': { ar: 'غائب', en: 'No-show' },
+  'tickets.queue.quickCall': { ar: 'دخول الكشف', en: 'Start Exam' },
+  'tickets.queue.quickComplete': { ar: 'إنهاء الكشف', en: 'Finish Exam' },
+  'tickets.queue.finishAndCallNext': { ar: 'إنهاء ونداء التالي', en: 'Finish & Call Next' },
+  'tickets.queue.noSearchResults': {
+    ar: 'لا توجد نتائج تطابق بحثك',
+    en: 'No matching results found',
+  },
+  'tickets.queue.completedPatients': { ar: 'تم إنهاء كشفهم', en: 'Completed patients' },
+  'tickets.printTicket': { ar: 'طباعة التذكرة', en: 'Print Ticket' },
+  'tickets.tvMode': { ar: 'شاشة الانتظار (TV)', en: 'Waiting Room (TV)' },
+  'tickets.tvModeHelp': {
+    ar: 'عرض شاشة الانتظار لشاشات التلفزيون في صالة المرضى',
+    en: 'Display queue on waiting room TV screens',
+  },
+  'tickets.exitTvMode': { ar: 'إغلاق شاشة العرض', en: 'Exit TV Mode' },
   'tickets.queue.summary': { ar: 'ملخص الطابور', en: 'Queue summary' },
   'tickets.queue.roomEmpty': { ar: 'غرفة الكشف شاغرة', en: 'Exam room is vacant' },
   'tickets.queue.oneAhead': { ar: 'أمامه مريض واحد', en: '1 patient ahead' },
@@ -1246,7 +1292,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'tickets.source.Reservation': { ar: 'موعد محجوز', en: 'Scheduled appointment' },
   'tickets.source.WalkIn': { ar: 'حضور بدون موعد', en: 'Walk-in arrival' },
   'tickets.source.unknown': { ar: 'مصدر آخر', en: 'Other source' },
-  'tickets.outcome.NoResponse': { ar: 'لم يستجب للنداء', en: 'No response' },
+  'tickets.outcome.NoResponse': { ar: 'لم يحضر (غائب)', en: 'No response' },
   'tickets.outcome.Responded': { ar: 'استجاب للنداء', en: 'Responded to the call' },
   'tickets.outcome.Started': { ar: 'بدأ الكشف الطبي', en: 'Visit started' },
   'tickets.outcome.calledWaiting': {
@@ -1277,6 +1323,7 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Manage appointment time and details',
   },
   'reception.common.choose': { ar: 'اختر', en: 'Choose' },
+  'common.choose': { ar: 'اختر', en: 'Choose' },
   'reception.appointments.linkClinicUnavailable': {
     ar: 'العيادة الموجودة في الرابط غير متاحة. اختر عيادة مسموحة من القائمة أعلى الشاشة.',
     en: 'The clinic in this link is unavailable. Choose an accessible clinic at the top of the screen.',
@@ -1348,6 +1395,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'common.dismiss': { ar: 'إغلاق', en: 'Dismiss' },
   'reception.patients.selectAndBook': { ar: 'حجز موعد للمريض', en: 'Book for patient' },
   'reception.patients.nameAr': { ar: 'اسم المريض (بالعربية) *', en: 'Patient name (Arabic) *' },
+  'reception.patients.nameEn': { ar: 'الاسم بالإنجليزية', en: 'Name in English' },
   'reception.patients.clearSelection': { ar: 'إلغاء التحديد', en: 'Clear selection' },
   'reception.appointments.book': { ar: 'تأكيد حجز الموعد', en: 'Confirm appointment' },
   'reception.appointments.confirmBooking': { ar: 'تأكيد حجز الموعد', en: 'Confirm appointment' },
@@ -1721,6 +1769,20 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'total',
   },
   'prescriptions.empty': { ar: 'لا توجد روشتات للعرض', en: 'No prescriptions to show' },
+  'prescriptions.copyPrevious': { ar: 'نسخ أدوية آخر روشتة', en: 'Copy Previous Prescription' },
+  'prescriptions.copySuccess': {
+    ar: 'تم نسخ أدوية آخر روشتة بنجاح، يمكنك تعديلها الآن',
+    en: 'Medications copied from previous prescription successfully',
+  },
+  'prescriptions.copyFailed': {
+    ar: 'تعذر نسخ أدوية الروشتة السابقة',
+    en: 'Failed to copy previous prescription',
+  },
+  'prescriptions.noPreviousPrescription': {
+    ar: 'لا توجد روشتة سابقة لهذا المريض لنسخها',
+    en: 'No previous prescription found for this patient',
+  },
+  'encounters.autoSaved': { ar: 'تم الحفظ تلقائياً', en: 'Auto-saved' },
   'prescriptions.openFromVisit': {
     ar: 'افتح الزيارة للاطلاع على الروشتة أو تعديلها.',
     en: 'Open the visit to view or manage its prescription.',

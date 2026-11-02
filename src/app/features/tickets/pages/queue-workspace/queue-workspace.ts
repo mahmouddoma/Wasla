@@ -3,13 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  OnDestroy,
   computed,
   effect,
   untracked,
   inject,
   signal,
 } from '@angular/core';
-import { FormField, form, min, required, submit, validate, disabled } from '@angular/forms/signals';
+import { FormField, form, min, required, submit, validate, disabled, maxLength } from '@angular/forms/signals';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
@@ -80,7 +81,7 @@ type CompletionBlocker = {
   styleUrl: './queue-workspace.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class QueueWorkspace implements OnInit {
+export class QueueWorkspace implements OnInit, OnDestroy {
   private readonly api = inject(TicketsApi);
   private readonly encountersApi = inject(EncountersApi);
   private readonly patientsApi = inject(PatientsApi);
@@ -177,6 +178,9 @@ export class QueueWorkspace implements OnInit {
       this.activeEncounter()?.capabilities?.canCreateFollowUpEligibility === true &&
       this.session.hasPermission(PERMISSIONS.followUpEligibilityCreateOwn),
   );
+  protected readonly isDoctorClinical = computed(
+    () => this.isDoctor() && this.canOpenClinical() && !!this.queue().inProgress,
+  );
 
   protected readonly actor = signal<TicketActor>('Doctor');
   protected readonly practices = signal<
@@ -192,6 +196,89 @@ export class QueueWorkspace implements OnInit {
   protected readonly busy = signal(false);
   protected readonly messages = signal<readonly string[]>([]);
   protected readonly clinicalBlockers = signal<readonly string[]>([]);
+
+  // ── Daily Queue Progress & Live Exam Timer ──
+  protected readonly sessionCompletedCount = signal(0);
+  protected readonly completedCount = computed(
+    () => this.queue().completedCountToday ?? this.sessionCompletedCount(),
+  );
+  protected readonly totalToday = computed(
+    () =>
+      this.queue().totalTicketsToday ??
+      (this.completedCount() +
+        this.queue().waiting.length +
+        this.queue().noShow.length +
+        (this.queueOccupied() ? 1 : 0)),
+  );
+  protected readonly progressPercent = computed(() => {
+    const total = this.totalToday();
+    if (total <= 0) return 0;
+    return Math.min(100, Math.round((this.completedCount() / total) * 100));
+  });
+
+  protected readonly examElapsedSeconds = signal(0);
+  private examTimerHandle: ReturnType<typeof setInterval> | null = null;
+  protected readonly examElapsedFormatted = computed(() => {
+    const sec = this.examElapsedSeconds();
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  });
+
+  // ── Fast Queue Search & Filter ──
+  protected readonly searchQuery = signal('');
+  protected readonly activeFilter = signal<'all' | 'waiting' | 'noShow'>('all');
+  protected readonly tvModeOpen = signal(false);
+  protected readonly currentPracticeName = computed(() => {
+    const p = this.practices().find((item) => item.id === this.practiceId());
+    if (p) return this.label(p);
+    const q = this.queue();
+    if (q.inProgress?.practice) return this.label(q.inProgress.practice);
+    if (q.waiting[0]?.practice) return this.label(q.waiting[0].practice);
+    return '';
+  });
+
+  protected readonly filteredWaiting = computed(() => {
+    const list = this.queue().waiting;
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return list;
+    return list.filter((t) => {
+      const name = this.patientLabel(t).toLowerCase();
+      const num = String(t.ticketNumber).toLowerCase();
+      return name.includes(query) || num.includes(query);
+    });
+  });
+
+  protected readonly displayedTickets = computed(() => {
+    if (this.activeFilter() === 'noShow') {
+      return this.filteredNoShow();
+    }
+    return this.filteredWaiting();
+  });
+
+  protected readonly filteredNoShow = computed(() => {
+    const list = this.queue().noShow;
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return list;
+    return list.filter((t) => {
+      const name = this.patientLabel(t).toLowerCase();
+      const num = String(t.ticketNumber).toLowerCase();
+      return name.includes(query) || num.includes(query);
+    });
+  });
+
+  protected onSearchInput(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.searchQuery.set(target?.value ?? '');
+  }
+
+  protected clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
+  protected setFilter(filter: 'all' | 'waiting' | 'noShow'): void {
+    this.activeFilter.set(filter);
+  }
   protected readonly archiveOpen = signal(false);
   protected readonly archivedTickets = signal<readonly ArchivedTicketItem[]>([]);
   protected readonly archiveLoading = signal(false);
@@ -215,6 +302,28 @@ export class QueueWorkspace implements OnInit {
       this.segments().find((segment) => segment.segmentId === this.walkInModel().segmentId)
         ?.visitTypes ?? [],
   );
+  protected readonly walkInMode = signal<'search' | 'create'>('search');
+  protected readonly isCreatingPatient = signal(false);
+  protected readonly patientCreateModel = signal({
+    nameAr: '',
+    nameEn: '',
+    dateOfBirth: '',
+    gender: '' as 'Male' | 'Female' | '',
+    phoneNumber: '',
+  });
+  protected readonly patientCreateForm = form(this.patientCreateModel, (field) => {
+    required(field.nameAr, { message: 'validation.nameArRequired' });
+    maxLength(field.nameAr, 200, { message: 'validation.nameLength' });
+    maxLength(field.nameEn, 200, { message: 'validation.nameLength' });
+    required(field.dateOfBirth, { message: 'ui.full.757' });
+    validate(field.dateOfBirth, ({ value }) => {
+      if (!value()) return undefined;
+      return new Date(value() + 'T00:00:00') > new Date()
+        ? { kind: 'futureDate', message: 'validation.birthFuture' }
+        : undefined;
+    });
+    required(field.gender, { message: 'ui.full.758' });
+  });
   protected readonly reasonModel = signal({ reason: '' });
   protected readonly walkInModel = signal({
     patientId: '',
@@ -305,6 +414,11 @@ export class QueueWorkspace implements OnInit {
       this.session.hasPermission(PERMISSIONS.patientsSearchBasic) &&
       this.reception.allows(PERMISSIONS.patientsSearchBasic),
   );
+  protected readonly canRegisterPatient = computed(
+    () =>
+      this.canWalkIn() &&
+      this.session.hasPermission(PERMISSIONS.patientsRegister),
+  );
 
   private permitted(permission: string, doctorPermission: string): boolean {
     if (this.isDoctor()) return this.session.hasPermission(doctorPermission);
@@ -371,6 +485,17 @@ export class QueueWorkspace implements OnInit {
     });
 
     effect(() => {
+      const inProgTicket = this.queue().inProgress;
+      untracked(() => {
+        if (inProgTicket) {
+          this.startExamTimer(inProgTicket.startedOnUtc);
+        } else {
+          this.stopExamTimer();
+        }
+      });
+    });
+
+    effect(() => {
       const isDoc = this.isDoctor();
       const canClinical = this.canOpenClinical();
       const pracId = this.practiceId();
@@ -389,6 +514,106 @@ export class QueueWorkspace implements OnInit {
         }
       });
     });
+  }
+
+  private startExamTimer(startedOnUtc?: string | null): void {
+    this.stopExamTimer();
+    const startTime = startedOnUtc ? new Date(startedOnUtc).getTime() : Date.now();
+    const update = () => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+      this.examElapsedSeconds.set(elapsed);
+    };
+    update();
+    this.examTimerHandle = setInterval(update, 1000);
+  }
+
+  private stopExamTimer(): void {
+    if (this.examTimerHandle !== null) {
+      clearInterval(this.examTimerHandle);
+      this.examTimerHandle = null;
+    }
+    this.examElapsedSeconds.set(0);
+  }
+
+  ngOnDestroy(): void {
+    this.stopExamTimer();
+  }
+
+  openTvMode(): void {
+    this.tvModeOpen.set(true);
+  }
+
+  closeTvMode(): void {
+    this.tvModeOpen.set(false);
+  }
+
+  printWalkInTicket(ticket: PracticeTicket): void {
+    if (typeof window === 'undefined') return;
+    const practiceName =
+      this.practices().find((p) => p.id === this.practiceId())?.nameAr ||
+      this.label(ticket.practice);
+    const doctorName = this.label(ticket.doctor);
+    const patientName = ticket.patient
+      ? this.label(ticket.patient)
+      : this.acceptedWalkIn()?.patientName || '';
+    const ticketNum = ticket.ticketNumber;
+    const dateStr = new Date().toLocaleString(
+      this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US',
+      { dateStyle: 'medium', timeStyle: 'short' },
+    );
+    const ahead = ticket.patientsAheadNow ?? 0;
+    const aheadText =
+      ahead === 0
+        ? this.language.t('reception.arrival.nextInLine')
+        : this.language.t('reception.arrival.aheadCount', { count: ahead });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html dir="${this.language.dir()}">
+      <head>
+        <meta charset="utf-8">
+        <title>Ticket #${ticketNum}</title>
+        <style>
+          @page { size: 80mm auto; margin: 4mm; }
+          body { font-family: system-ui, -apple-system, sans-serif; text-align: center; color: #000; padding: 6px; }
+          .title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+          .sub { font-size: 13px; color: #444; margin-bottom: 12px; }
+          .ticket-box { border: 2px dashed #000; padding: 10px; margin: 10px 0; border-radius: 8px; }
+          .lbl { font-size: 12px; text-transform: uppercase; color: #555; }
+          .num { font-size: 38px; font-weight: 900; line-height: 1.1; margin: 4px 0; }
+          .patient { font-size: 15px; font-weight: bold; margin-top: 6px; }
+          .ahead { font-size: 13px; margin-top: 6px; background: #eee; padding: 4px; border-radius: 4px; }
+          .footer { font-size: 11px; color: #666; margin-top: 14px; border-top: 1px solid #ccc; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="title">${practiceName}</div>
+        <div class="sub">${doctorName}</div>
+        <div class="ticket-box">
+          <div class="lbl">${this.language.t('reception.arrival.ticketNumber')}</div>
+          <div class="num">#${ticketNum}</div>
+          <div class="patient">${patientName}</div>
+          <div class="ahead">${aheadText}</div>
+        </div>
+        <div class="footer">
+          <div>${dateStr}</div>
+          <div>وصلة - Wasla Health Platform</div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); window.close(); };
+        </script>
+      </body>
+      </html>
+    `;
+
+    const printWin = window.open('', '_blank', 'width=380,height=520');
+    if (printWin) {
+      printWin.document.open();
+      printWin.document.write(htmlContent);
+      printWin.document.close();
+    } else {
+      window.print();
+    }
   }
 
   async ngOnInit(): Promise<void> {
@@ -760,7 +985,10 @@ export class QueueWorkspace implements OnInit {
 
   protected canRecall(ticket: PracticeTicket | null = this.selected()): boolean {
     if (!ticket) return false;
-    return (ticket.callAttempts ?? []).at(-1)?.outcome === 'NoResponse';
+    const outcome =
+      ticket.latestAttemptOutcome ??
+      (ticket.callAttempts ?? []).at(-1)?.outcome;
+    return outcome === 'NoResponse';
   }
 
   protected async act(action: QueueAction, ticket = this.selected()): Promise<void> {
@@ -880,6 +1108,69 @@ export class QueueWorkspace implements OnInit {
     await this.refreshWalkInPatient();
   }
 
+  protected startPatientRegistration(criteria?: WalkInPatientSearch): void {
+    if (this.busy()) return;
+    this.patientCreateModel.set({
+      nameAr: criteria?.name || '',
+      nameEn: '',
+      dateOfBirth: criteria?.dateOfBirth || '',
+      gender: '',
+      phoneNumber: criteria?.phoneNumber || '',
+    });
+    this.walkInMode.set('create');
+  }
+
+  protected cancelPatientRegistration(): void {
+    if (this.busy() || this.isCreatingPatient()) return;
+    this.walkInMode.set('search');
+  }
+
+  protected async createWalkInPatient(event: Event): Promise<void> {
+    event.preventDefault();
+    if (this.busy() || this.isCreatingPatient() || !this.canRegisterPatient() || !this.practiceId()) return;
+    await submit(this.patientCreateForm, async () => {
+      this.isCreatingPatient.set(true);
+      try {
+        const value = this.patientCreateModel();
+        const res = await firstValueFrom(
+          this.patientsApi.create({
+            nameAr: value.nameAr.trim(),
+            nameEn: value.nameEn.trim(),
+            dateOfBirth: value.dateOfBirth,
+            gender: value.gender as 'Male' | 'Female',
+            phoneNumber: value.phoneNumber.trim(),
+            email: '',
+            primaryContactNameAr: '',
+            primaryContactPhoneNumber: '',
+            primaryContactRelationshipType: 'Guardian',
+            primaryContactLinkedPatientId: '',
+            primaryContactIsPrimary: true,
+            doctorPracticeId: this.practiceId(),
+          }),
+        );
+        this.toast.success(this.language.t('patient.registered'));
+        const newPatient: PatientSearchItem = {
+          patientId: res.patientId,
+          nameAr: value.nameAr.trim(),
+          nameEn: value.nameEn.trim() || value.nameAr.trim(),
+          dateOfBirth: value.dateOfBirth,
+          gender: value.gender as 'Male' | 'Female',
+          phoneNumber: value.phoneNumber.trim() || null,
+          hasContactPhone: false,
+        };
+        this.patientResults.set([newPatient]);
+        this.selectedPatient.set(newPatient);
+        this.walkInModel.update((model) => ({ ...model, patientId: res.patientId }));
+        this.walkInMode.set('search');
+        await this.refreshWalkInPatient();
+      } catch (error) {
+        await this.failure(error, this.practiceId(), this.generation);
+      } finally {
+        this.isCreatingPatient.set(false);
+      }
+    });
+  }
+
   protected changePatient(): void {
     if (this.busy()) return;
     this.optionsSequence++;
@@ -976,7 +1267,7 @@ export class QueueWorkspace implements OnInit {
     return this.language.t('tickets.source.unknown');
   }
   protected outcomeLabel(value?: string | null): string {
-    if (!value || value === 'Called') return this.language.t('tickets.outcome.calledWaiting');
+    if (!value || value === 'Called' || value === 'Pending') return this.language.t('tickets.outcome.calledWaiting');
     if (value === 'NoResponse') return this.language.t('tickets.outcome.NoResponse');
     if (value === 'Responded') return this.language.t('tickets.outcome.Responded');
     if (value === 'Started') return this.language.t('tickets.outcome.Started');
@@ -1190,6 +1481,7 @@ export class QueueWorkspace implements OnInit {
       if (this.current(practiceId, generation)) {
         this.applyActiveEncounter(updated, false);
         this.toast.success('encounters.saved');
+      this.sessionCompletedCount.update((c) => c + 1);
       }
     } catch (error) {
       await this.failure(error, practiceId, generation);
@@ -1707,6 +1999,15 @@ export class QueueWorkspace implements OnInit {
 
   private resetWalkIn(): void {
     this.patientSearchSequence++;
+    this.walkInMode.set('search');
+    this.isCreatingPatient.set(false);
+    this.patientCreateModel.set({
+      nameAr: '',
+      nameEn: '',
+      dateOfBirth: '',
+      gender: '',
+      phoneNumber: '',
+    });
     this.patientResults.set([]);
     this.selectedPatient.set(null);
     this.patientSearchLoading.set(false);

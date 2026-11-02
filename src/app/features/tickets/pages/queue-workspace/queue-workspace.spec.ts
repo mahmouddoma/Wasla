@@ -430,7 +430,7 @@ describe('P2 Queue request scope', () => {
     phoneNumber: '01012345678',
     hasContactPhone: true,
   };
-  const patientsApi = { search: vi.fn() };
+  const patientsApi = { search: vi.fn(), create: vi.fn() };
   const followUps = { reception: vi.fn() };
   const ticket = (id = 't1'): PracticeTicket => ({
     ticketId: id,
@@ -469,6 +469,7 @@ describe('P2 Queue request scope', () => {
     api.queue.mockReturnValue(of(empty));
     api.walkInOptions.mockReturnValue(of({ segments: [] }));
     patientsApi.search.mockReturnValue(of({ items: [patient], totalCount: 1 }));
+    patientsApi.create.mockReturnValue(of({ patientId: 'p-new' }));
     followUps.reception.mockReturnValue(of([]));
     TestBed.configureTestingModule({
       imports: [QueueWorkspace],
@@ -983,5 +984,53 @@ describe('P2 Queue request scope', () => {
     c['close']();
     expect(c['ticketDetailOpen']()).toBe(false);
     expect(c['selected']()).toBeNull();
+  });
+
+  it('registers a new patient inline during walk-in and transitions immediately to visit choices', async () => {
+    grants = [
+      'PracticeTickets.View',
+      'PracticeTickets.CreateWalkIn',
+      'PracticeTickets.RecordPayment',
+      'Patients.SearchBasic',
+      'Patients.Register',
+    ];
+    await walkIn();
+    const c = fixture.componentInstance;
+    expect(c['canRegisterPatient']()).toBe(true);
+
+    c['startPatientRegistration']({ name: 'محمود دومه', phoneNumber: '0102010111' });
+    expect(c['walkInMode']()).toBe('create');
+    expect(c['patientCreateModel']().nameAr).toBe('محمود دومه');
+    expect(c['patientCreateModel']().phoneNumber).toBe('0102010111');
+
+    c['patientCreateModel'].update((m) => ({
+      ...m,
+      dateOfBirth: '1992-05-15',
+      gender: 'Male',
+    }));
+    fixture.detectChanges();
+
+    const event = new Event('submit', { cancelable: true });
+    await c['createWalkInPatient'](event);
+
+    expect(patientsApi.create).toHaveBeenCalledWith({
+      nameAr: 'محمود دومه',
+      nameEn: '',
+      dateOfBirth: '1992-05-15',
+      gender: 'Male',
+      phoneNumber: '0102010111',
+      email: '',
+      primaryContactNameAr: '',
+      primaryContactPhoneNumber: '',
+      primaryContactRelationshipType: 'Guardian',
+      primaryContactLinkedPatientId: '',
+      primaryContactIsPrimary: true,
+      doctorPracticeId: 'a',
+    });
+
+    expect(c['walkInMode']()).toBe('search');
+    expect(c['walkInModel']().patientId).toBe('p-new');
+    expect(c['selectedPatient']()?.patientId).toBe('p-new');
+    expect(c['selectedPatient']()?.nameAr).toBe('محمود دومه');
   });
 });

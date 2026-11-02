@@ -79,6 +79,9 @@ export interface PracticeTicket {
   readonly patientsAheadNow: number;
   readonly fastTrack: boolean;
   readonly isFastTrack?: boolean;
+  readonly callCycle?: number;
+  readonly attemptsInCurrentCycle?: number;
+  readonly latestAttemptOutcome?: string | null;
   readonly callAttempts: readonly TicketCallAttempt[];
   readonly timeline?: readonly TicketTimelineItem[];
   readonly operationalCapabilities?: TicketOperationalCapabilities | null;
@@ -301,6 +304,13 @@ export function normalizeTicket(raw: unknown): PracticeTicket {
     currencyCode,
     fastTrack,
     isFastTrack: fastTrack,
+    callCycle: typeof r['callCycle'] === 'number' ? r['callCycle'] : undefined,
+    attemptsInCurrentCycle:
+      typeof r['attemptsInCurrentCycle'] === 'number' ? r['attemptsInCurrentCycle'] : undefined,
+    latestAttemptOutcome:
+      typeof r['latestAttemptOutcome'] === 'string'
+        ? r['latestAttemptOutcome']
+        : (r['latestAttemptOutcome'] as null | undefined) ?? null,
     callAttempts,
     timeline: Array.isArray(r['timeline'])
       ? (r['timeline'] as TicketTimelineItem[])
@@ -334,6 +344,8 @@ export interface PracticeQueue {
   readonly called: PracticeTicket | null;
   readonly waiting: readonly PracticeTicket[];
   readonly noShow: readonly PracticeTicket[];
+  readonly completedCountToday?: number;
+  readonly totalTicketsToday?: number;
 }
 
 export interface CheckInTicketRequest {

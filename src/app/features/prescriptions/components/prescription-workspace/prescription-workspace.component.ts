@@ -15,7 +15,9 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom, Observable, Subject, debounceTime, switchMap, catchError, of } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
+import { environment } from '../../../../../environments/environment';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { createIdempotencyKey } from '../../../../core/http/create-idempotency-key';
@@ -57,6 +59,10 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
   private readonly session = inject(AuthSession);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly doctorPatientsApi = inject(DoctorPatientsApi);
+  private readonly http = inject(HttpClient);
+  readonly patientId = input('');
+  readonly copyingPrevious = signal(false);
   readonly language = inject(LanguageService);
   readonly showTitle = input(true);
   readonly initial = input<PrescriptionState | null>(null);
@@ -336,6 +342,95 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
       if (generation === this.generation) this.busy.set(false);
     }
   }
+  async copyPreviousPrescription(): Promise<void> {
+    const patientId = this.patientId();
+    const practiceId = this.practiceId();
+    const encounterId = this.encounterId();
+    if (!patientId || !practiceId || !encounterId || this.copyingPrevious() || this.busy()) return;
+
+    this.copyingPrevious.set(true);
+    try {
+      // 1. Try dedicated copy-previous endpoint if backend added it
+      try {
+        const directResult = await firstValueFrom(
+          this.http.post<PrescriptionState>(
+            `${environment.apiBaseUrl}/api/v1/doctors/me/practices/${encodeURIComponent(practiceId)}/encounters/${encodeURIComponent(encounterId)}/prescription/copy-previous`,
+            {},
+            { headers: { 'Idempotency-Key': createIdempotencyKey() } },
+          ),
+        );
+        if (directResult) {
+          this.state.set(directResult);
+          this.changed.emit(directResult);
+          this.toast.success('prescriptions.copySuccess');
+          return;
+        }
+      } catch (endpointError: unknown) {
+        const status = (endpointError as HttpErrorResponse)?.status;
+        if (status !== 404 && status !== 405) {
+          throw endpointError;
+        }
+      }
+
+      // 2. Fallback: Orchestrate via doctor-patients and prescriptions API
+      const page = await firstValueFrom(
+        this.doctorPatientsApi.prescriptions(patientId, { pageNumber: 1, pageSize: 5 }),
+      );
+
+      const prev = page.items?.find(
+        (p) => p.prescriptionId !== this.state()?.prescriptionId && p.medicationCount > 0,
+      );
+
+      if (!prev) {
+        this.toast.error('prescriptions.noPreviousPrescription');
+        return;
+      }
+
+      const prevDetails = await firstValueFrom(
+        this.api.versionDetails(prev.prescriptionId, prev.currentVersionNumber),
+      );
+
+      const items = prevDetails.items;
+      if (!items || items.length === 0) {
+        this.toast.error('prescriptions.noPreviousPrescription');
+        return;
+      }
+
+      let currentState = this.state();
+      for (const item of items) {
+        const body: AddPrescriptionItem = {
+          ...(item.drugCatalogId
+            ? { drugCatalogId: item.drugCatalogId }
+            : { newMedication: { medicationName: item.medicationName || '' } }),
+          strength: item.strength || null,
+          dosageForm: item.dosageForm || null,
+          route: item.route || null,
+          dose: item.dose || null,
+          frequency: item.frequency || null,
+          duration: item.duration || null,
+          isPrn: !!item.isPrn,
+          quantity: item.quantity ?? null,
+          instructions: item.instructions || null,
+          prescriptionRowVersion: currentState?.rowVersion,
+        };
+
+        currentState = await firstValueFrom(
+          this.api.addItem(practiceId, encounterId, body, createIdempotencyKey()),
+        );
+      }
+
+      if (currentState) {
+        this.state.set(currentState);
+        this.changed.emit(currentState);
+        this.toast.success('prescriptions.copySuccess');
+      }
+    } catch {
+      this.toast.error('prescriptions.copyFailed');
+    } finally {
+      this.copyingPrevious.set(false);
+    }
+  }
+
   beginAdd() {
     if (!this.editable() || this.busy()) return;
     this.editingId.set('');

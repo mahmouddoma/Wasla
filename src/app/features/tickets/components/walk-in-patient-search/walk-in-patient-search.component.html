@@ -3,86 +3,116 @@
   [attr.aria-label]="'reception.patients.find' | t"
   [attr.aria-busy]="busy()"
 >
-  <div class="row g-3">
-    <label class="col-12 col-sm-6"
-      >{{ 'reception.patients.name' | t
-      }}<input
+  <div class="row g-3 search-fields-row">
+    <label class="col-12 col-sm-6 form-label-group">
+      <span class="field-label-text">{{ 'reception.patients.name' | t }}</span>
+      <input
         type="search"
+        class="form-control-custom"
         [formField]="fields.name"
+        [placeholder]="'reception.patients.name' | t"
         (keydown.enter)="$event.preventDefault(); find()"
-    /></label>
-    <label class="col-12 col-sm-6"
-      >{{ 'workspace.phone' | t
-      }}<input
+      />
+    </label>
+    <label class="col-12 col-sm-6 form-label-group">
+      <span class="field-label-text">{{ 'workspace.phone' | t }}</span>
+      <input
         type="tel"
-        class="ltr-text"
+        class="form-control-custom ltr-text"
         dir="ltr"
         [formField]="fields.phoneNumber"
+        [placeholder]="'reception.phoneExample' | t"
         (keydown.enter)="$event.preventDefault(); find()"
-    /></label>
+      />
+    </label>
     <div class="col-12">
-      <details>
-        <summary>{{ 'reception.patients.birth' | t }}</summary>
-        <label
-          >{{ 'reception.patients.birth' | t
-          }}<input
+      <details class="dob-disclosure">
+        <summary class="dob-summary">
+          <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+          <span>{{ 'reception.patients.birth' | t }}</span>
+        </summary>
+        <label class="dob-field">
+          <input
             type="date"
+            class="form-control-custom ltr-text"
             dir="ltr"
             [formField]="fields.dateOfBirth"
             (keydown.enter)="$event.preventDefault(); find()"
-        /></label>
+          />
+        </label>
       </details>
     </div>
   </div>
+
   <button
     type="button"
-    class="btn btn-outline-secondary"
+    class="btn btn-primary btn-search-patient"
     (click)="find()"
     [disabled]="
       busy() || (!model().name.trim() && !model().phoneNumber.trim() && !model().dateOfBirth)
     "
   >
-    {{ (busy() ? 'reservations.loading' : 'reception.patients.search') | t }}
+    @if (busy()) {
+      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+    } @else {
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    }
+    <span>{{ (busy() ? 'reservations.loading' : 'reception.patients.search') | t }}</span>
   </button>
+
   @if (failed()) {
-    <p role="alert">{{ 'common.retryGuidance' | t }}</p>
+    <p role="alert" class="search-alert-error">{{ 'common.retryGuidance' | t }}</p>
   } @else if (searched() && !busy() && !results().length) {
     <div class="empty-state">
-      <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" /><strong>{{
-        'reception.patients.noMatches' | t
-      }}</strong>
+      <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+      <strong>{{ 'reception.patients.noMatches' | t }}</strong>
       <p>{{ 'reception.patients.trySearch' | t }}</p>
-      <a
+      <button
+        type="button"
         class="btn btn-outline-secondary btn-register-new"
-        routerLink="/reception/patients"
-        [queryParams]="{ action: 'new' }"
+        (click)="registerNew.emit(model())"
       >
-        + {{ 'tickets.walkIn.registerNewPatient' | t }}
-      </a>
+        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+        <span>{{ 'tickets.walkIn.registerNewPatient' | t }}</span>
+      </button>
     </div>
   }
+
   <div class="search-results" aria-live="polite">
     @for (patient of results(); track patient.patientId) {
       <button
         type="button"
         class="patient-option"
+        [class.is-selected]="selectedId() === patient.patientId"
         [attr.aria-pressed]="selectedId() === patient.patientId"
         [disabled]="busy()"
         (click)="selected.emit(patient.patientId)"
       >
-        <strong>{{ name(patient) }}</strong
-        ><span
-          ><bdi>{{ patient.phoneNumber }}</bdi>
-          @if (!patient.phoneNumber) {
-            {{
-              (patient.hasContactPhone
-                ? 'reception.patients.contactPhone'
-                : 'reception.patients.noPhone'
-              ) | t
-            }}
-          }
-          · <bdi>{{ patient.dateOfBirth }}</bdi></span
-        >
+        <div class="patient-avatar-badge" aria-hidden="true">
+          <span>{{ name(patient).charAt(0) }}</span>
+        </div>
+        <div class="patient-info">
+          <strong class="patient-name">{{ name(patient) }}</strong>
+          <span class="patient-meta">
+            @if (patient.phoneNumber) {
+              <bdi class="ltr-text">{{ patient.phoneNumber }}</bdi>
+            } @else {
+              <span>{{
+                (patient.hasContactPhone
+                  ? 'reception.patients.contactPhone'
+                  : 'reception.patients.noPhone'
+                ) | t
+              }}</span>
+            }
+            @if (patient.dateOfBirth) {
+              <span class="meta-separator">·</span>
+              <bdi class="ltr-text">{{ patient.dateOfBirth }}</bdi>
+            }
+          </span>
+        </div>
+        <div class="patient-select-indicator">
+          <i class="fa-solid fa-check" aria-hidden="true"></i>
+        </div>
       </button>
     }
   </div>

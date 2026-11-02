@@ -61,6 +61,30 @@ export class EncounterWorkspaceComponent implements OnInit {
   readonly store = inject(EncounterWorkspaceStore);
   readonly language = inject(LanguageService);
   private readonly route = inject(ActivatedRoute);
+  readonly notesSaving = signal(false);
+  readonly notesSaved = signal(false);
+  private autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onNotesInput(notes: string): void {
+    if (!this.store.canEditNotes()) return;
+    if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
+    this.notesSaved.set(false);
+    this.autoSaveTimer = setTimeout(async () => {
+      const trimmed = notes.trim();
+      const current = (this.store.detail()?.clinicalNotes ?? '').trim();
+      if (trimmed && trimmed !== current) {
+        this.notesSaving.set(true);
+        try {
+          await this.store.saveNotes(notes);
+          this.notesSaved.set(true);
+          setTimeout(() => this.notesSaved.set(false), 2500);
+        } finally {
+          this.notesSaving.set(false);
+        }
+      }
+    }, 1000);
+  }
+
   readonly model = signal({
     clinicalNotes: '',
     diagnosisId: '',

@@ -171,8 +171,9 @@
     </section>
   }
 
-  @if (canSearch()) {
-    <section class="patient-panel" [attr.aria-label]="'reception.patients.find' | t">
+  <div class="patients-workspace-layout" [class.has-registration-open]="registrationOpen() && canRegister()">
+    @if (canSearch()) {
+      <section class="patient-panel patient-directory-column" [attr.aria-label]="'reception.patients.find' | t">
       @if (!selectedPracticeId()) {
         <div class="clinic-alert" role="status">
           <svg
@@ -211,8 +212,24 @@
 
       <div class="search-section-header">
         <div class="search-title-group">
-          <h2 class="search-heading">{{ 'reception.patients.find' | t }}</h2>
-          <p class="search-subheading">{{ 'reception.patients.searchHelp' | t }}</p>
+          <div class="search-title-left">
+            <div class="search-header-icon-box" aria-hidden="true">
+              <i class="fa-solid fa-users-viewfinder"></i>
+            </div>
+            <div class="search-header-text">
+              <h2 class="search-heading">{{ 'reception.patients.find' | t }}</h2>
+              @if (results(); as res) {
+                <span class="results-badge">
+                  <span class="badge-dot"></span>
+                  {{ 'reception.patients.resultsCount' | t: { count: res.totalCount } }}
+                </span>
+              }
+            </div>
+          </div>
+          <div class="search-rule-tag" role="note">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>{{ 'reception.patients.searchRuleHelp' | t }}</span>
+          </div>
         </div>
       </div>
 
@@ -225,19 +242,7 @@
         <div class="form-field field-name">
           <label for="searchPatientName">{{ 'reception.patients.name' | t }}</label>
           <div class="input-with-icon">
-            <svg
-              class="field-icon"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <i class="fa-solid fa-user field-icon" aria-hidden="true"></i>
             <input
               id="searchPatientName"
               type="search"
@@ -250,20 +255,7 @@
         <div class="form-field field-phone">
           <label for="searchPatientPhone">{{ 'workspace.phone' | t }}</label>
           <div class="input-with-icon">
-            <svg
-              class="field-icon"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path
-                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-              />
-            </svg>
+            <i class="fa-solid fa-phone field-icon" aria-hidden="true"></i>
             <input
               id="searchPatientPhone"
               type="tel"
@@ -286,96 +278,66 @@
           />
         </div>
 
-        <div class="search-criteria-hint-row">
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          <span>{{ 'reception.patients.searchRuleHelp' | t }}</span>
-        </div>
-
         <div class="search-actions-bar">
-          <div class="search-btns-group">
-            <button
-              type="submit"
-              class="btn btn-primary btn-search-submit"
-              [disabled]="
-                isSearching() ||
-                !selectedPracticeId() ||
-                !selectedPracticeAllows('Patients.SearchBasic')
-              "
-            >
-              @if (isSearching()) {
-                <span class="spinner-inline"></span>
-              } @else {
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              }
-              <span>{{
-                (isSearching() ? 'reservations.loading' : 'reception.patients.search') | t
-              }}</span>
-            </button>
-
-            @if (
-              searchModel().name ||
-              searchModel().phoneNumber ||
-              searchModel().dateOfBirth ||
-              results()
-            ) {
-              <button
-                type="button"
-                class="btn btn-outline-secondary btn-reset-search"
-                (click)="resetSearch()"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                  <path d="M3 3v5h5" />
-                </svg>
-                <span>{{ 'reception.patients.resetSearch' | t }}</span>
-              </button>
+          <button
+            type="submit"
+            class="btn btn-primary btn-search-submit"
+            [disabled]="
+              isSearching() ||
+              !selectedPracticeId() ||
+              !selectedPracticeAllows('Patients.SearchBasic')
+            "
+          >
+            @if (isSearching()) {
+              <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            } @else {
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             }
-          </div>
+            <span>{{
+              (isSearching() ? 'reservations.loading' : 'reception.patients.search') | t
+            }}</span>
+          </button>
 
-          @if (results(); as res) {
-            <span class="results-badge">
-              <span class="badge-dot"></span>
-              {{ 'reception.patients.resultsCount' | t: { count: res.totalCount } }}
-            </span>
+          @if (
+            searchModel().name ||
+            searchModel().phoneNumber ||
+            searchModel().dateOfBirth ||
+            results()
+          ) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-reset-search"
+              (click)="resetSearch()"
+              [title]="'reception.patients.resetSearch' | t"
+            >
+              <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+              <span>{{ 'reception.patients.resetSearch' | t }}</span>
+            </button>
           }
         </div>
       </form>
 
       @if (isSearching()) {
-        <div class="loading-state" role="status">
-          <span class="spinner-inline"></span>
-          <p>{{ 'reservations.loading' | t }}</p>
+        <!-- Skeleton Ghost Loader for smooth perceived performance -->
+        <div class="patients-skeleton-list" aria-busy="true" [attr.aria-label]="'reservations.loading' | t">
+          @for (s of [1, 2, 3, 4]; track s) {
+            <div class="patient-row-skeleton">
+              <div class="skeleton-main">
+                <div class="skeleton-circle shimmer"></div>
+                <div class="skeleton-info">
+                  <div class="skeleton-bar skeleton-title shimmer"></div>
+                  <div class="skeleton-meta-row">
+                    <div class="skeleton-pill shimmer"></div>
+                    <div class="skeleton-pill shimmer"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="skeleton-actions">
+                <div class="skeleton-btn shimmer"></div>
+                <div class="skeleton-btn shimmer"></div>
+              </div>
+            </div>
+          }
         </div>
       } @else if (results(); as page) {
         <div class="patients-directory-list" aria-live="polite">
@@ -504,21 +466,11 @@
                 loading="lazy"
                 decoding="async"
               />
-              <h2>{{ 'reception.patients.noMatches' | t }}</h2>
-              <p>{{ 'reception.patients.trySearch' | t }}</p>
+              <h2 class="empty-state-title">{{ 'reception.patients.noMatches' | t }}</h2>
+              <p class="empty-state-desc">{{ 'reception.patients.trySearch' | t }}</p>
               @if (canRegister()) {
-                <button class="btn btn-primary" type="button" (click)="registrationOpen.set(true)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
+                <button class="btn btn-primary btn-add-empty" type="button" (click)="registrationOpen.set(true)">
+                  <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
                   <span>{{ 'reception.patients.add' | t }}</span>
                 </button>
               }
@@ -622,25 +574,15 @@
             loading="lazy"
             decoding="async"
           />
-          <h2>{{ 'reception.patients.find' | t }}</h2>
-          <p>{{ 'reception.patients.searchHelp' | t }}</p>
+          <h2 class="empty-state-title">{{ 'reception.patients.find' | t }}</h2>
+          <p class="empty-state-desc">{{ 'reception.patients.initialPrompt' | t }}</p>
           @if (canRegister()) {
             <button
-              class="btn btn-outline-primary btn-add-empty"
+              class="btn btn-primary btn-add-empty"
               type="button"
               (click)="registrationOpen.set(true)"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
               <span>{{ 'reception.patients.add' | t }}</span>
             </button>
           }
@@ -651,16 +593,37 @@
     <section class="patient-panel"><ng-container [ngTemplateOutlet]="registration" /></section>
   }
 
-  @if (registrationOpen() && canRegister()) {
-    <app-side-drawer
-      [opened]="registrationOpen() && canRegister()"
-      [busy]="isCreating()"
-      [title]="'reception.patients.add' | t"
-      (closed)="registrationOpen.set(false)"
-    >
-      <ng-container [ngTemplateOutlet]="registration" />
-    </app-side-drawer>
-  }
+    @if (canSearch() && registrationOpen() && canRegister()) {
+      <aside
+        class="patient-inline-sidebar-block"
+        role="dialog"
+        aria-modal="false"
+        [attr.aria-label]="'reception.patients.add' | t"
+      >
+        <div class="sidebar-block-header">
+          <div class="sidebar-title-group">
+            <span class="sidebar-live-dot" aria-hidden="true"></span>
+            <h2 class="sidebar-heading">
+              <i class="fa-solid fa-user-plus text-teal" aria-hidden="true"></i>
+              <span>{{ 'reception.patients.add' | t }}</span>
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="sidebar-close-btn"
+            (click)="registrationOpen.set(false)"
+            [disabled]="isCreating()"
+            [attr.aria-label]="'common.close' | t"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="sidebar-block-body">
+          <ng-container [ngTemplateOutlet]="registration" />
+        </div>
+      </aside>
+    }
+  </div>
 
   @if (attestationDrawerOpen() && selectedPatient(); as patient) {
     <app-side-drawer

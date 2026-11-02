@@ -94,7 +94,9 @@
       }
     </div>
   </app-page-header>
-  <section class="queue-board" [attr.aria-busy]="loading()">
+  <div class="queue-workspace-layout" [class.has-walkin-open]="(walkInOpen() || !!walkInDone()) && canWalkIn()">
+    <div class="queue-board-column">
+      <section class="queue-board" [attr.aria-busy]="loading()">
     @if (!practiceId()) {
       <div class="state-block">
         <img
@@ -138,412 +140,638 @@
         </button>
       </div>
     } @else {
-      <!-- ═══ 1. Reception Quick Metrics Strip ═══ -->
-      <div class="queue-stats-strip" role="region" [attr.aria-label]="'tickets.queue.summary' | t">
-        <!-- Stat: الآن في العيادة -->
-        <div class="queue-stat-card" [class.is-active-room]="queueOccupied()">
-          <div class="stat-card-icon" [class.is-live]="queueOccupied()">
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+      <!-- ═══ 1. Queue Overview & Daily Clinic Progress ═══ -->
+      <div class="queue-overview-panel" role="region" [attr.aria-label]="'tickets.queue.summary' | t">
+        <!-- Daily Progress Bar Strip -->
+        <div class="queue-progress-strip">
+          <div class="queue-progress-info">
+            <div class="progress-title-group">
+              <span class="progress-indicator-dot" aria-hidden="true"></span>
+              <span class="progress-title">{{ 'tickets.queue.dailyProgress' | t }}</span>
+            </div>
+            <div class="progress-metrics-meta">
+              <span class="progress-ratio">
+                <strong>{{ completedCount() }}</strong>
+                <span class="ratio-separator">/</span>
+                <span>{{ totalToday() }}</span>
+                <span class="ratio-unit">{{ 'tickets.queue.completedPatients' | t }}</span>
+              </span>
+              <span class="progress-percentage-badge">{{ progressPercent() }}%</span>
+            </div>
           </div>
-          <div class="stat-card-content">
-            <span class="stat-card-label">{{ 'tickets.queue.statNow' | t }}</span>
-            @if (queue().inProgress; as t) {
-              <strong class="stat-card-value text-teal"
-                >{{ 'tickets.inProgress' | t }} (#{{ t.ticketNumber }})</strong
-              >
-              <span class="stat-card-hint">{{ patientLabel(t) }}</span>
-            } @else if (queue().called; as t) {
-              <strong class="stat-card-value text-amber"
-                >{{ 'tickets.called' | t }} (#{{ t.ticketNumber }})</strong
-              >
-              <span class="stat-card-hint">{{ patientLabel(t) }}</span>
-            } @else {
-              <strong class="stat-card-value text-muted">{{
-                'tickets.queue.roomEmpty' | t
-              }}</strong>
-              <span class="stat-card-hint">{{ 'tickets.queue.roomReady' | t }}</span>
-            }
+
+          <div
+            class="progress-track"
+            role="progressbar"
+            [attr.aria-valuenow]="progressPercent()"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-label]="'tickets.queue.dailyProgress' | t"
+          >
+            <div class="progress-bar-fill" [style.width.%]="progressPercent()"></div>
           </div>
         </div>
 
-        <!-- Stat: في الانتظار -->
-        <div class="queue-stat-card">
-          <div class="stat-card-icon stat-icon-waiting">
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </div>
-          <div class="stat-card-content">
-            <span class="stat-card-label">{{ 'tickets.queue.statWaiting' | t }}</span>
-            <strong class="stat-card-value"
-              >{{ queue().waiting.length }} <small>{{ 'tickets.waitingCount' | t }}</small></strong
-            >
-            <span class="stat-card-hint">
-              @if (queue().waiting.length > 0) {
-                {{ 'reception.arrival.nextInLine' | t }}:
-                <bdi class="badge-tag">#{{ queue().waiting[0].ticketNumber }}</bdi>
+        <!-- 4 Balanced Quick Metrics Cards -->
+        <div class="queue-stats-grid">
+          <!-- Stat 1: الآن في العيادة -->
+          <div class="queue-stat-card" [class.is-active-room]="queueOccupied()">
+            <div class="stat-card-icon" [class.is-live]="queueOccupied()">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-card-label">{{ 'tickets.queue.statNow' | t }}</span>
+              @if (queue().inProgress; as t) {
+                <strong class="stat-card-value text-teal">{{ 'tickets.inProgress' | t }} (#{{ t.ticketNumber }})</strong>
+                <span class="stat-card-hint">{{ patientLabel(t) }}</span>
+              } @else if (queue().called; as t) {
+                <strong class="stat-card-value text-amber">{{ 'tickets.called' | t }} (#{{ t.ticketNumber }})</strong>
+                <span class="stat-card-hint">{{ patientLabel(t) }}</span>
               } @else {
-                {{ 'tickets.queue.empty' | t }}
+                <strong class="stat-card-value text-muted">{{ 'tickets.queue.roomEmpty' | t }}</strong>
+                <span class="stat-card-hint">{{ 'tickets.queue.roomReady' | t }}</span>
               }
-            </span>
+            </div>
           </div>
-        </div>
 
-        <!-- Stat: لم يحضروا -->
-        <div class="queue-stat-card">
-          <div class="stat-card-icon stat-icon-noshow">
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
+          <!-- Stat 2: في الانتظار -->
+          <div class="queue-stat-card">
+            <div class="stat-card-icon stat-icon-waiting">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-card-label">{{ 'tickets.queue.statWaiting' | t }}</span>
+              <strong class="stat-card-value">
+                {{ queue().waiting.length }} <small>{{ 'tickets.waitingCount' | t }}</small>
+              </strong>
+              <span class="stat-card-hint">
+                @if (queue().waiting.length > 0) {
+                  {{ 'reception.arrival.nextInLine' | t }}:
+                  <bdi class="badge-tag">#{{ queue().waiting[0].ticketNumber }}</bdi>
+                } @else {
+                  {{ 'tickets.queue.empty' | t }}
+                }
+              </span>
+            </div>
           </div>
-          <div class="stat-card-content">
-            <span class="stat-card-label">{{ 'tickets.queue.statNoShow' | t }}</span>
-            <strong class="stat-card-value">{{ queue().noShow.length }}</strong>
-            <span class="stat-card-hint">{{ 'tickets.queue.exceptions' | t }}</span>
+
+          <!-- Stat 3: تم الكشف اليوم -->
+          <div class="queue-stat-card">
+            <div class="stat-card-icon stat-icon-completed">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-card-label">{{ 'tickets.queue.statCompleted' | t }}</span>
+              <strong class="stat-card-value text-teal">{{ completedCount() }}</strong>
+              <span class="stat-card-hint">{{ 'tickets.queue.completedPatients' | t }}</span>
+            </div>
+          </div>
+
+          <!-- Stat 4: لم يحضروا -->
+          <div class="queue-stat-card">
+            <div class="stat-card-icon stat-icon-noshow">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-card-label">{{ 'tickets.queue.statNoShow' | t }}</span>
+              <strong class="stat-card-value">{{ queue().noShow.length }}</strong>
+              <span class="stat-card-hint">{{ 'tickets.queue.exceptions' | t }}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ═══ 2. Section: الآن في العيادة ═══ -->
-      <section class="queue-now" aria-labelledby="queue-now-heading">
-        <div class="queue-section-header">
-          <div class="section-title-wrap">
-            <span
-              class="status-live-dot"
-              [class.is-live]="queueOccupied()"
-              aria-hidden="true"
-            ></span>
-            <h2 id="queue-now-heading">{{ 'tickets.queue.now' | t }}</h2>
-          </div>
-        </div>
-
-        @if (queue().inProgress; as ticket) {
-          <ng-container
-            [ngTemplateOutlet]="nowTicket"
-            [ngTemplateOutletContext]="{ $implicit: ticket, called: false }"
-          />
-        }
-        @if (queue().called; as ticket) {
-          <ng-container
-            [ngTemplateOutlet]="nowTicket"
-            [ngTemplateOutletContext]="{ $implicit: ticket, called: true }"
-          />
-        }
-        @if (!queueOccupied()) {
-          @if (queue().waiting.length > 0) {
-            <div class="room-ready-card">
-              <div class="room-ready-info">
-                <div class="ready-badge">
-                  <span class="ready-pulse-dot" aria-hidden="true"></span>
-                  <span>{{ 'tickets.queue.roomEmpty' | t }}</span>
+      <!-- ═══ Responsive 2-Column Workspace (قائمة الانتظار + محطة غرفة الكشف) ═══ -->
+      <div
+        class="queue-split-layout"
+        [class.is-full-workstation]="isDoctorClinical()"
+      >
+        <!-- ═══ Column 1: Main Primary Column (Waiting Queue & Exceptions) ═══ -->
+        <main class="queue-col-main">
+          <!-- When Doctor is in active Clinical Workstation, it renders at the top of the main area -->
+          @if (isDoctorClinical()) {
+            <section class="queue-now" aria-labelledby="queue-now-heading">
+              <div class="queue-section-header">
+                <div class="section-title-wrap">
+                  <span
+                    class="status-live-dot is-live"
+                    aria-hidden="true"
+                  ></span>
+                  <h2 id="queue-now-heading">{{ 'tickets.queue.now' | t }}</h2>
                 </div>
-                <h3 class="room-ready-title">{{ 'tickets.queue.roomReady' | t }}</h3>
-                <p class="room-ready-sub">
-                  {{ 'reception.arrival.nextInLine' | t }}:
-                  <strong
-                    >{{ patientLabel(queue().waiting[0]) }} (#{{
-                      queue().waiting[0].ticketNumber
-                    }})</strong
-                  >
-                </p>
               </div>
-              @if (canCallNext()) {
-                <button
-                  type="button"
-                  class="btn btn-primary btn-call-hero"
-                  (click)="callNext()"
-                  [disabled]="busy()"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    aria-hidden="true"
-                  >
-                    <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                  </svg>
-                  <span>{{ 'tickets.callNext' | t }} (#{{ queue().waiting[0].ticketNumber }})</span>
-                </button>
+              @if (queue().inProgress; as ticket) {
+                <ng-container
+                  [ngTemplateOutlet]="nowTicket"
+                  [ngTemplateOutletContext]="{ $implicit: ticket, called: false }"
+                />
               }
-            </div>
-          } @else {
-            <div class="room-idle-inline">
-              <span class="room-idle-dot" aria-hidden="true"></span>
-              <span class="room-idle-text"
-                >{{ 'tickets.queue.roomEmpty' | t }} — {{ 'tickets.queue.roomReady' | t }}</span
-              >
-            </div>
+            </section>
           }
-        }
-      </section>
 
-      <!-- ═══ 3. Section: قائمة الانتظار ═══ -->
-      <section class="queue-waiting" aria-labelledby="queue-waiting-heading">
-        <header class="section-heading">
-          <div class="waiting-title-wrap">
-            <h2 id="queue-waiting-heading">
-              {{ 'tickets.waiting' | t }}
-            </h2>
-            <span class="waiting-count-badge" aria-live="polite">
-              {{ queue().waiting.length }} {{ 'tickets.waitingCount' | t }}
-            </span>
-          </div>
-          @if (canCallNext() && !queueOccupied() && queue().waiting.length > 0) {
-            <button
-              type="button"
-              class="btn btn-primary call-next"
-              (click)="callNext()"
-              [disabled]="busy()"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-              </svg>
-              <span>{{ 'tickets.callNext' | t }} (#{{ queue().waiting[0].ticketNumber }})</span>
-            </button>
-          }
-        </header>
-
-        <div class="ticket-rows-list">
-          @for (ticket of queue().waiting; track ticket.ticketId; let position = $index) {
-            <div class="ticket-card-row">
-              <!-- Position & Ticket Token -->
-              <div class="ticket-cell-token">
-                <span class="position-order" title="{{ 'tickets.queue.position' | t }}"
-                  >#{{ position + 1 }}</span
-                >
-                <span class="ticket-token-badge">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 0 0-2 2v3a2 2 0 1 1 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 1 1 0-4V7a2 2 0 0 0-2-2H5z"
-                    />
-                  </svg>
-                  <bdi>#{{ ticket.ticketNumber }}</bdi>
+          <!-- Section: قائمة الانتظار -->
+          <section class="queue-waiting" aria-labelledby="queue-waiting-heading">
+            <header class="section-heading">
+              <div class="waiting-title-wrap">
+                <h2 id="queue-waiting-heading">
+                  {{ 'tickets.waiting' | t }}
+                </h2>
+                <span class="waiting-count-badge" aria-live="polite">
+                  {{ queue().waiting.length }} {{ 'tickets.waitingCount' | t }}
                 </span>
               </div>
+            </header>
 
-              <!-- Patient Name & Metadata -->
-              <div
-                class="ticket-cell-main"
-                role="button"
-                tabindex="0"
-                (click)="inspect(ticket)"
-                (keydown.enter)="inspect(ticket)"
-                (keydown.space)="inspect(ticket)"
-                [title]="'tickets.details' | t"
-              >
-                <div class="patient-line">
-                  <strong class="ticket-patient-name">{{ patientLabel(ticket) }}</strong>
-                  @if (isFastTrack(ticket)) {
-                    <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
-                  }
-                </div>
-                <div class="meta-line">
-                  @if (visitTypeLabel(ticket); as vLabel) {
-                    <span class="meta-pill meta-visit">{{ vLabel }}</span>
-                  }
-                  @if (ticket.patientsAheadNow === 0) {
-                    <span class="meta-pill meta-immediate">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.4"
-                        aria-hidden="true"
-                      >
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                      {{ 'reception.arrival.nextInLine' | t }}
-                    </span>
-                  } @else if (ticket.patientsAheadNow === 1) {
-                    <span class="meta-pill meta-ahead">{{ 'tickets.queue.oneAhead' | t }}</span>
-                  } @else {
-                    <span class="meta-pill meta-ahead">{{
-                      'tickets.queue.multipleAhead' | t: { count: ticket.patientsAheadNow }
-                    }}</span>
-                  }
-                </div>
-              </div>
-
-              <!-- Actions -->
-              <div class="ticket-cell-actions">
-                @if (position === 0 && canCallNext() && !queueOccupied()) {
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm btn-action-call"
-                    (click)="callNext()"
-                    [disabled]="busy()"
-                    [title]="'tickets.callNext' | t"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    </svg>
-                    <span>{{ 'tickets.callNext' | t }}</span>
-                  </button>
-                }
+            <!-- Modern Unified Toolbar -->
+            <div class="queue-toolbar">
+              <div class="queue-filter-tabs" role="tablist">
                 <button
                   type="button"
-                  class="btn btn-outline-secondary btn-sm btn-action-inspect"
-                  (click)="inspect(ticket)"
-                  [disabled]="busy()"
-                  [title]="'tickets.details' | t"
+                  role="tab"
+                  class="queue-tab-btn"
+                  [class.active]="activeFilter() === 'all'"
+                  (click)="setFilter('all')"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
+                  <span>{{ 'tickets.queue.filterAll' | t }}</span>
+                  <span class="tab-count-badge">{{ queue().waiting.length + queue().noShow.length }}</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="queue-tab-btn"
+                  [class.active]="activeFilter() === 'waiting'"
+                  (click)="setFilter('waiting')"
+                >
+                  <span>{{ 'tickets.queue.filterWaiting' | t }}</span>
+                  <span class="tab-count-badge">{{ queue().waiting.length }}</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="queue-tab-btn"
+                  [class.active]="activeFilter() === 'noShow'"
+                  (click)="setFilter('noShow')"
+                >
+                  <span>{{ 'tickets.queue.filterNoShow' | t }}</span>
+                  <span class="tab-count-badge">{{ queue().noShow.length }}</span>
+                </button>
+              </div>
+
+              <div class="queue-toolbar-end">
+                <div class="queue-search-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
-                  <span>{{ 'tickets.details' | t }}</span>
+                  <input
+                    type="search"
+                    class="queue-search-input"
+                    [placeholder]="'tickets.queue.searchPlaceholder' | t"
+                    [value]="searchQuery()"
+                    (input)="onSearchInput($event)"
+                    [attr.aria-label]="'tickets.queue.searchPlaceholder' | t"
+                  />
+                  @if (searchQuery()) {
+                    <button type="button" class="search-clear-btn" (click)="clearSearch()" aria-label="Clear">
+                      ✕
+                    </button>
+                  }
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-tv-mode"
+                  (click)="openTvMode()"
+                  [title]="'tickets.tvModeHelp' | t"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+                    <polyline points="17 2 12 7 7 2"></polyline>
+                  </svg>
+                  <span>{{ 'tickets.tvMode' | t }}</span>
                 </button>
               </div>
             </div>
-          } @empty {
-            <div class="state-block empty-waiting-block">
-              <img
-                class="state-empty-illustration"
-                src="/SVG-AVATAR/Medical prescription-bro.svg"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                width="120"
-                height="100"
-              />
-              <h3>{{ 'tickets.queue.empty' | t }}</h3>
-              <p>{{ 'tickets.queue.emptyHelp' | t }}</p>
-              @if (canWalkIn()) {
+
+            <div class="ticket-rows-list">
+              @for (ticket of displayedTickets(); track ticket.ticketId; let position = $index) {
+                <div class="ticket-card-row">
+                  <!-- Position & Ticket Token -->
+                  <div class="ticket-cell-token">
+                    <span class="position-order" title="{{ 'tickets.queue.position' | t }}"
+                      >#{{ position + 1 }}</span
+                    >
+                    <span class="ticket-token-badge">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 0 0-2 2v3a2 2 0 1 1 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 1 1 0-4V7a2 2 0 0 0-2-2H5z"
+                        />
+                      </svg>
+                      <bdi>#{{ ticket.ticketNumber }}</bdi>
+                    </span>
+                  </div>
+
+                  <!-- Patient Name & Metadata -->
+                  <div
+                    class="ticket-cell-main"
+                    role="button"
+                    tabindex="0"
+                    (click)="inspect(ticket)"
+                    (keydown.enter)="inspect(ticket)"
+                    (keydown.space)="inspect(ticket)"
+                    [title]="'tickets.details' | t"
+                  >
+                    <div class="patient-line">
+                      <strong class="ticket-patient-name">{{ patientLabel(ticket) }}</strong>
+                      @if (isFastTrack(ticket)) {
+                        <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
+                      }
+                    </div>
+                    <div class="meta-line">
+                      @if (segmentLabel(ticket); as sLabel) {
+                        <span class="meta-pill segment-pill">{{ sLabel }}</span>
+                      }
+                      @if (visitTypeLabel(ticket); as vLabel) {
+                        <span class="meta-pill meta-visit">{{ vLabel }}</span>
+                      }
+                      @if (ticket.patientsAheadNow === 0) {
+                        <span class="meta-pill meta-immediate">
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="12"
+                            height="12"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.4"
+                            aria-hidden="true"
+                          >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                          {{ 'reception.arrival.nextInLine' | t }}
+                        </span>
+                      } @else if (ticket.patientsAheadNow === 1) {
+                        <span class="meta-pill meta-ahead">{{ 'tickets.queue.oneAhead' | t }}</span>
+                      } @else {
+                        <span class="meta-pill meta-ahead">{{
+                          'tickets.queue.multipleAhead' | t: { count: ticket.patientsAheadNow }
+                        }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="ticket-cell-actions">
+                    @if (position === 0 && canCallNext() && !queueOccupied()) {
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm btn-action-call"
+                        (click)="callNext()"
+                        [disabled]="busy()"
+                        [title]="'tickets.callNext' | t"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                        <span>{{ 'tickets.callNext' | t }}</span>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm btn-action-inspect"
+                      (click)="inspect(ticket)"
+                      [disabled]="busy()"
+                      [title]="'tickets.details' | t"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <span>{{ 'tickets.details' | t }}</span>
+                    </button>
+                  </div>
+                </div>
+              } @empty {
+                <div class="state-block empty-waiting-block">
+                  <img
+                    class="state-empty-illustration"
+                    src="/SVG-AVATAR/Medical prescription-bro.svg"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    width="120"
+                    height="100"
+                  />
+                  <h3>{{ 'tickets.queue.empty' | t }}</h3>
+                  <p>{{ 'tickets.queue.emptyHelp' | t }}</p>
+                  @if (canWalkIn()) {
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-empty-walk-in"
+                      (click)="openWalkIn()"
+                      [disabled]="busy()"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        aria-hidden="true"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      <span>{{ 'tickets.walkIn.patientWithoutAppointment' | t }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- Section: غير الحاضرين -->
+          <details class="queue-exceptions">
+            <summary>
+              <div class="exceptions-summary-header">
+                <span class="exceptions-title">{{ 'tickets.queue.exceptions' | t }}</span>
+                <span class="exceptions-count-pill"
+                  ><bdi>{{ queue().noShow.length }}</bdi></span
+                >
+              </div>
+            </summary>
+            <div class="exceptions-list">
+              @for (ticket of queue().noShow; track ticket.ticketId) {
+                <div class="exception-card-row">
+                  <div class="exception-meta">
+                    <span class="ticket-token-badge">
+                      <bdi>#{{ ticket.ticketNumber }}</bdi>
+                    </span>
+                    <strong class="ticket-patient-name">{{ patientLabel(ticket) }}</strong>
+                    <span class="badge-noshow-tag">{{ 'tickets.status.NoShow' | t }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="inspect(ticket)"
+                    [disabled]="busy()"
+                  >
+                    <span>{{ 'tickets.details' | t }}</span>
+                  </button>
+                </div>
+              } @empty {
+                <p class="quiet-state">{{ 'tickets.noShowEmpty' | t }}</p>
+              }
+            </div>
+          </details>
+        </main>
+
+        <!-- ═══ Column 2: Station Sidebar (محطة غرفة الكشف والمريض التالي) ═══ -->
+        @if (!isDoctorClinical()) {
+          <aside class="queue-col-station" aria-label="{{ 'tickets.queue.activeRoomStation' | t }}">
+            <!-- 1. محطة غرفة الكشف (الآن) -->
+            <section class="queue-now queue-now-station" aria-labelledby="queue-now-heading">
+              <div class="queue-section-header">
+                <div class="section-title-wrap">
+                  <span
+                    class="status-live-dot"
+                    [class.is-live]="queueOccupied()"
+                    aria-hidden="true"
+                  ></span>
+                  <h2 id="queue-now-heading">{{ 'tickets.queue.now' | t }}</h2>
+                </div>
+              </div>
+
+              @if (queue().inProgress; as ticket) {
+                <ng-container
+                  [ngTemplateOutlet]="nowTicket"
+                  [ngTemplateOutletContext]="{ $implicit: ticket, called: false }"
+                />
+              }
+              @if (queue().called; as ticket) {
+                <ng-container
+                  [ngTemplateOutlet]="nowTicket"
+                  [ngTemplateOutletContext]="{ $implicit: ticket, called: true }"
+                />
+              }
+              @if (!queueOccupied()) {
+                <div class="room-station-vacant">
+                  <div class="station-vacant-start">
+                    <div class="station-vacant-icon-badge" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path>
+                        <path d="M9 12h6"></path>
+                        <path d="M12 9v6"></path>
+                      </svg>
+                      <span class="station-pulse-glow"></span>
+                    </div>
+                    <div class="station-vacant-text">
+                      <div class="station-status-pill">
+                        <span class="station-live-dot" aria-hidden="true"></span>
+                        <span>{{ 'tickets.queue.roomEmpty' | t }}</span>
+                      </div>
+                      <h3 class="station-vacant-heading">{{ 'tickets.queue.roomReady' | t }}</h3>
+                      <p class="station-vacant-hint">
+                        @if (queue().waiting.length > 0) {
+                          {{ 'reception.arrival.nextInLine' | t }}:
+                          <strong>{{ patientLabel(queue().waiting[0]) }} (#{{ queue().waiting[0].ticketNumber }})</strong>
+                        } @else {
+                          {{ 'tickets.queue.noneNow' | t }}
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  <div class="station-vacant-actions">
+                    @if (canCallNext() && queue().waiting.length > 0) {
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-call-hero"
+                        (click)="callNext()"
+                        [disabled]="busy()"
+                      >
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                          <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                        </svg>
+                        <span>{{ 'tickets.callNext' | t }} (#{{ queue().waiting[0].ticketNumber }})</span>
+                      </button>
+                    } @else if (canWalkIn()) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-station-walkin"
+                        (click)="openWalkIn()"
+                        [disabled]="busy()"
+                      >
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>{{ 'tickets.walkIn.patientWithoutAppointment' | t }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </section>
+
+            <!-- 2. بطاقة المريض التالي للتحضير -->
+            @if (queueOccupied() && queue().waiting.length > 0) {
+              <div class="station-next-card">
+                <div class="station-next-header">
+                  <div class="station-next-tag">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>{{ 'tickets.queue.nextPatient' | t }}</span>
+                  </div>
+                  <span class="next-pill-ready">{{ 'reception.arrival.nextInLine' | t }}</span>
+                </div>
+                <div class="station-next-body">
+                  <div class="station-next-token">
+                    <span class="token-hash">#</span>
+                    <bdi class="token-num">{{ queue().waiting[0].ticketNumber }}</bdi>
+                  </div>
+                  <div class="station-next-info">
+                    <strong class="station-next-name">{{ patientLabel(queue().waiting[0]) }}</strong>
+                    <div class="station-next-meta">
+                      @if (segmentLabel(queue().waiting[0]); as sLabel) {
+                        <span class="meta-pill segment-pill">{{ sLabel }}</span>
+                      }
+                      @if (visitTypeLabel(queue().waiting[0]); as vLabel) {
+                        <span class="meta-pill meta-visit">{{ vLabel }}</span>
+                      }
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm btn-next-inspect"
+                    (click)="inspect(queue().waiting[0])"
+                    [title]="'tickets.details' | t"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>{{ 'tickets.details' | t }}</span>
+                  </button>
+                </div>
+                <div class="station-next-footer">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>{{ 'tickets.queue.preparePatient' | t }}</span>
+                </div>
+              </div>
+            }
+
+            <!-- 3. زر الإجراء السريع للمكتب / الاستقبال -->
+            @if (canWalkIn()) {
+              <div class="station-quick-action-card">
                 <button
                   type="button"
-                  class="btn btn-primary btn-empty-walk-in"
+                  class="btn btn-outline-primary btn-quick-walkin"
                   (click)="openWalkIn()"
                   [disabled]="busy()"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    aria-hidden="true"
-                  >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                   </svg>
                   <span>{{ 'tickets.walkIn.patientWithoutAppointment' | t }}</span>
                 </button>
-              }
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- ═══ 4. Section: غير الحاضرين ═══ -->
-      <details class="queue-exceptions">
-        <summary>
-          <div class="exceptions-summary-header">
-            <span class="exceptions-title">{{ 'tickets.queue.exceptions' | t }}</span>
-            <span class="exceptions-count-pill"
-              ><bdi>{{ queue().noShow.length }}</bdi></span
-            >
-          </div>
-        </summary>
-        <div class="exceptions-list">
-          @for (ticket of queue().noShow; track ticket.ticketId) {
-            <div class="exception-card-row">
-              <div class="exception-meta">
-                <span class="ticket-token-badge">
-                  <bdi>#{{ ticket.ticketNumber }}</bdi>
-                </span>
-                <strong class="ticket-patient-name">{{ patientLabel(ticket) }}</strong>
-                <span class="badge-noshow-tag">{{ 'tickets.status.NoShow' | t }}</span>
               </div>
-              <button
-                type="button"
-                class="btn btn-outline-secondary btn-sm"
-                (click)="inspect(ticket)"
-                [disabled]="busy()"
-              >
-                <span>{{ 'tickets.details' | t }}</span>
-              </button>
-            </div>
-          } @empty {
-            <p class="quiet-state">{{ 'tickets.noShowEmpty' | t }}</p>
-          }
-        </div>
-      </details>
+            }
+          </aside>
+        }
+      </div>
     }
-  </section>
+      </section>
+    </div>
+
+    @if ((walkInOpen() || !!walkInDone()) && canWalkIn()) {
+      <aside
+        class="walkin-inline-sidebar-block"
+        role="dialog"
+        aria-modal="false"
+        [attr.aria-label]="
+          (walkInDone()
+            ? 'tickets.walkIn.done'
+            : 'tickets.walkIn.patientWithoutAppointment'
+          ) | t
+        "
+      >
+        <div class="sidebar-block-header">
+          <div class="sidebar-title-group">
+            <span class="sidebar-live-dot" aria-hidden="true"></span>
+            <h2 class="sidebar-heading">
+              <i class="fa-solid fa-ticket text-teal" aria-hidden="true"></i>
+              <span>{{
+                (walkInDone()
+                  ? 'tickets.walkIn.done'
+                  : 'tickets.walkIn.patientWithoutAppointment'
+                ) | t
+              }}</span>
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="sidebar-close-btn"
+            (click)="close()"
+            [disabled]="busy()"
+            [attr.aria-label]="'common.close' | t"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="sidebar-block-body">
+          <ng-container [ngTemplateOutlet]="walkInPanel" />
+        </div>
+      </aside>
+    }
+  </div>
 
   <!-- ═══ Now Ticket Template ═══ -->
   <ng-template #nowTicket let-ticket let-called="called">
@@ -575,6 +803,9 @@
                   (called ? 'tickets.queue.calledHelp' : 'tickets.queue.inProgressHelp') | t
                 }}</span>
               </span>
+              @if (segmentLabel(ticket); as sLabel) {
+                <span class="now-meta-pill segment-pill">{{ sLabel }}</span>
+              }
               @if (hasKnownSource(ticket)) {
                 <span class="now-meta-pill">{{ sourceLabel(ticket.source, ticket) }}</span>
               }
@@ -583,6 +814,13 @@
               }
               @if (isFastTrack(ticket)) {
                 <span class="priority-pill">{{ 'tickets.fastTrack' | t }}</span>
+              }
+            @if (!called) {
+                <span class="live-exam-timer-pill" [title]="'tickets.queue.liveExamTimer' | t">
+                  <span class="timer-live-dot" aria-hidden="true"></span>
+                  <span class="timer-label">{{ 'tickets.queue.liveExamTimer' | t }}:</span>
+                  <strong class="timer-digits">{{ examElapsedFormatted() }}</strong>
+                </span>
               }
             </div>
             <h3 class="now-patient-name">{{ patientLabel(ticket) }}</h3>
@@ -634,7 +872,7 @@
               <span>{{ 'tickets.queue.noResponse' | t }}</span>
             </button>
           }
-          @if (called && canStart() && called.operationalCapabilities?.canQueueMutate === true) {
+          @if (called && canStart() && (ticket.operationalCapabilities == null || ticket.operationalCapabilities.canQueueMutate)) {
             <button
               type="button"
               class="btn btn-primary btn-action-start"
@@ -1282,22 +1520,7 @@
       }
     </article>
   </ng-template>
-  <app-side-drawer
-    [opened]="
-      ticketDetailOpen() || walkInOpen() || !!walkInDone() || !!selected() || detailLoading()
-    "
-    [busy]="busy()"
-    [title]="
-      (walkInDone()
-        ? 'tickets.walkIn.done'
-        : walkInOpen()
-          ? 'tickets.walkIn.patientWithoutAppointment'
-          : 'tickets.details'
-      ) | t
-    "
-    width="640px"
-    (closed)="close()"
-  >
+  <ng-template #walkInPanel>
     @if (walkInDone(); as ticket) {
       <section class="ticket-done" role="status">
         <!-- ══ 1. Success Announcement ══ -->
@@ -1549,25 +1772,172 @@
         [attr.aria-busy]="busy()"
       >
         @if (walkInModel().patientId) {
-          <div class="selected-patient">
-            <span>{{ 'reception.patients.selected' | t }}</span>
-            <h3>
-              {{
-                selectedPatient() ? label(selectedPatient()!) : ('tickets.walkIn.knownRecord' | t)
-              }}
-            </h3>
+          <div class="selected-patient walkin-selected-patient-card">
+            <div class="patient-card-left">
+              <div class="patient-card-avatar" aria-hidden="true">
+                <span>{{ (selectedPatient() ? label(selectedPatient()!) : 'P').charAt(0) }}</span>
+              </div>
+              <div class="patient-card-info">
+                <div class="patient-card-badge-row">
+                  <span class="patient-card-status-pill">
+                    <span class="status-indicator-dot"></span>
+                    {{ 'reception.patients.selected' | t }}
+                  </span>
+                  @if (selectedPatient()?.gender; as g) {
+                    <span class="patient-card-gender-pill">
+                      {{ (g === 'Male' ? 'register.male' : 'register.female') | t }}
+                    </span>
+                  }
+                </div>
+                <h3 class="patient-card-name">
+                  {{
+                    selectedPatient() ? label(selectedPatient()!) : ('tickets.walkIn.knownRecord' | t)
+                  }}
+                </h3>
+                @if (selectedPatient()?.phoneNumber; as phone) {
+                  <span class="patient-card-phone">
+                    <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                    <bdi class="ltr-text" dir="ltr">{{ phone }}</bdi>
+                  </span>
+                }
+              </div>
+            </div>
             <button
               type="button"
-              class="btn btn-outline-secondary"
+              class="btn btn-outline-secondary btn-change-patient"
               (click)="changePatient()"
               [disabled]="busy()"
+              [title]="'tickets.walkIn.changePatient' | t"
             >
-              {{ 'tickets.walkIn.changePatient' | t }}
+              <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+              <span>{{ 'tickets.walkIn.changePatient' | t }}</span>
             </button>
           </div>
+        } @else if (walkInMode() === 'create' && canRegisterPatient()) {
+          <div class="walkin-create-patient-block">
+            <div class="walkin-substep-header">
+              <div class="substep-title">
+                <span class="substep-icon-badge" aria-hidden="true">
+                  <i class="fa-solid fa-user-plus"></i>
+                </span>
+                <div>
+                  <h3 class="substep-heading">{{ 'tickets.walkIn.registerNewPatient' | t }}</h3>
+                  <p class="substep-subheading">{{ 'reception.patients.registerHelp' | t }}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-back-to-search"
+                (click)="cancelPatientRegistration()"
+                [disabled]="busy() || isCreatingPatient()"
+              >
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                <span>{{ 'tickets.walkIn.backToSearch' | t }}</span>
+              </button>
+            </div>
+
+            <div class="walkin-quick-patient-form">
+              <div class="quick-form-field">
+                <label for="walkinPatientNameAr">
+                  {{ 'reception.patients.nameAr' | t }}
+                </label>
+                <input
+                  id="walkinPatientNameAr"
+                  type="text"
+                  class="field-input"
+                  [formField]="patientCreateForm.nameAr"
+                  [placeholder]="'reception.arabicNameExample' | t"
+                />
+              </div>
+
+              <div class="quick-form-field">
+                <label for="walkinPatientPhone">{{ 'workspace.phone' | t }}</label>
+                <input
+                  id="walkinPatientPhone"
+                  type="tel"
+                  dir="ltr"
+                  class="field-input ltr-text"
+                  [formField]="patientCreateForm.phoneNumber"
+                  [placeholder]="'reception.phoneExample' | t"
+                />
+              </div>
+
+              <div class="form-row-2col">
+                <div class="quick-form-field">
+                  <label for="walkinPatientDob">
+                    {{ 'reception.patients.birth' | t }} *
+                  </label>
+                  <input
+                    id="walkinPatientDob"
+                    type="date"
+                    dir="ltr"
+                    class="field-input ltr-text"
+                    [formField]="patientCreateForm.dateOfBirth"
+                  />
+                </div>
+
+                <div class="quick-form-field">
+                  <label for="walkinPatientGender">
+                    {{ 'register.gender' | t }} *
+                  </label>
+                  <select
+                    id="walkinPatientGender"
+                    class="field-select"
+                    [formField]="patientCreateForm.gender"
+                  >
+                    <option value="">{{ 'common.choose' | t }}</option>
+                    <option value="Male">{{ 'register.male' | t }}</option>
+                    <option value="Female">{{ 'register.female' | t }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="quick-form-field">
+                <label for="walkinPatientNameEn">{{ 'common.nameEn' | t }}</label>
+                <input
+                  id="walkinPatientNameEn"
+                  type="text"
+                  dir="ltr"
+                  class="field-input ltr-text"
+                  [formField]="patientCreateForm.nameEn"
+                  [placeholder]="'reception.englishNameExample' | t"
+                />
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary btn-save-quick-patient"
+                (click)="createWalkInPatient($event)"
+                [disabled]="busy() || isCreatingPatient() || patientCreateForm().invalid()"
+              >
+                @if (isCreatingPatient()) {
+                  <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                  <span>{{ 'reservations.loading' | t }}</span>
+                } @else {
+                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                  <span>{{ 'tickets.walkIn.saveAndProceed' | t }}</span>
+                }
+              </button>
+            </div>
+          </div>
         } @else if (canSearchPatient()) {
-          <h3>{{ 'reception.patients.find' | t }}</h3>
-          <p>{{ 'reception.patients.searchHelp' | t }}</p>
+          <div class="walkin-patient-search-header">
+            <div>
+              <h3>{{ 'reception.patients.find' | t }}</h3>
+              <p>{{ 'reception.patients.searchHelp' | t }}</p>
+            </div>
+            @if (canRegisterPatient()) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-quick-reg-toggle"
+                (click)="startPatientRegistration()"
+                [disabled]="busy()"
+              >
+                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                <span>{{ 'tickets.walkIn.registerNewPatient' | t }}</span>
+              </button>
+            }
+          </div>
           <app-walk-in-patient-search
             [results]="patientResults()"
             [busy]="patientSearchLoading() || busy()"
@@ -1575,6 +1945,7 @@
             [failed]="patientSearchFailed()"
             (search)="searchPatients($event)"
             (selected)="choosePatient($event)"
+            (registerNew)="startPatientRegistration($event)"
           />
         }
         @if (!canSearchPatient()) {
@@ -1723,10 +2094,21 @@
           class="btn btn-primary btn-submit-walk-in"
           [disabled]="busy() || optionsLoading() || walkInForm().invalid() || !canWalkIn()"
         >
-          {{ 'tickets.walkIn.addToWaiting' | t }}
+          <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+          <span>{{ 'tickets.walkIn.addToWaiting' | t }}</span>
         </button>
       </form>
-    } @else if (selected(); as ticket) {
+    }
+  </ng-template>
+
+  <app-side-drawer
+    [opened]="ticketDetailOpen() || !!selected() || detailLoading()"
+    [busy]="busy()"
+    [title]="'tickets.details' | t"
+    width="640px"
+    (closed)="close()"
+  >
+    @if (selected(); as ticket) {
       <div class="ticket-detail-flow">
         @if (detailLoading()) {
           <div class="drawer-sync-bar" role="progressbar" [attr.aria-label]="'tickets.loading' | t">
@@ -2338,4 +2720,176 @@
       </div>
     }
   </app-side-drawer>
+
+  <!-- ═══ Fullscreen TV / Waiting Room Screen Overlay ═══ -->
+  @if (tvModeOpen()) {
+    <div class="tv-mode-backdrop" role="dialog" aria-modal="true" [dir]="language.dir()">
+      <div class="tv-mode-container">
+        <!-- TV Header -->
+        <header class="tv-mode-header">
+          <div class="tv-brand-wrap">
+            <div class="tv-wasla-badge">
+              <i class="fa-solid fa-heart-pulse"></i>
+              <span>منصة وصلة</span>
+            </div>
+            <div class="tv-clinic-info">
+              <h1 class="tv-clinic-name">
+                <i class="fa-solid fa-hospital-user text-teal"></i>
+                <span>{{ currentPracticeName() || ('tickets.queue.title' | t) }}</span>
+              </h1>
+            </div>
+          </div>
+
+          <div class="tv-header-actions">
+            <div class="tv-live-pill">
+              <i class="fa-solid fa-circle fa-fade"></i>
+              <span>مباشر • LIVE</span>
+            </div>
+            <button
+              type="button"
+              class="tv-close-btn"
+              (click)="closeTvMode()"
+              [title]="'tickets.exitTvMode' | t"
+            >
+              <i class="fa-solid fa-xmark"></i>
+              <span>{{ 'tickets.exitTvMode' | t }}</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- TV Body (Grid: Now in Exam + Next Patient) -->
+        <div class="tv-mode-grid">
+          <!-- Card 1: الآن داخل الكشف -->
+          <div class="tv-hero-card is-now" [class.is-occupied]="queueOccupied()">
+            <div class="tv-card-header">
+              <div class="tv-card-tag">
+                <i class="fa-solid fa-door-open"></i>
+                <span>{{ 'tickets.queue.statNow' | t }}</span>
+              </div>
+              @if (queueOccupied()) {
+                <span class="tv-status-badge in-progress">
+                  <i class="fa-solid fa-stethoscope"></i>
+                  <span>{{ (queue().inProgress ? 'tickets.queue.inProgressHelp' : 'tickets.called') | t }}</span>
+                </span>
+              }
+            </div>
+
+            @if (queue().inProgress; as t) {
+              <div class="tv-active-patient-wrap">
+                <div class="tv-ticket-badge">
+                  <span class="tv-hash">#</span>
+                  <span class="tv-num">{{ t.ticketNumber }}</span>
+                </div>
+                <h2 class="tv-patient-name">{{ patientLabel(t) }}</h2>
+                <div class="tv-meta-row">
+                  <span class="tv-timer-pill">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>{{ examElapsedFormatted() }}</span>
+                  </span>
+                  @if (visitTypeLabel(t); as v) {
+                    <span class="tv-type-pill">{{ v }}</span>
+                  }
+                </div>
+              </div>
+            } @else if (queue().called; as t) {
+              <div class="tv-active-patient-wrap is-calling">
+                <div class="tv-ticket-badge is-called">
+                  <span class="tv-hash">#</span>
+                  <span class="tv-num">{{ t.ticketNumber }}</span>
+                </div>
+                <h2 class="tv-patient-name">{{ patientLabel(t) }}</h2>
+                <div class="tv-meta-row">
+                  <span class="tv-called-pill">
+                    <i class="fa-solid fa-bullhorn fa-bounce"></i>
+                    <span>{{ 'tickets.called' | t }} — تفضل بالدخول</span>
+                  </span>
+                </div>
+              </div>
+            } @else {
+              <div class="tv-empty-box">
+                <div class="tv-empty-icon-circle">
+                  <i class="fa-solid fa-door-open"></i>
+                </div>
+                <h3 class="tv-empty-title">{{ 'tickets.queue.roomEmpty' | t }}</h3>
+                <p class="tv-empty-desc">
+                  <i class="fa-solid fa-circle-check text-teal"></i>
+                  <span>{{ 'tickets.queue.roomReady' | t }}</span>
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Card 2: المريض التالي -->
+          <div class="tv-hero-card is-next" [class.has-next]="queue().waiting.length > 0">
+            <div class="tv-card-header">
+              <div class="tv-card-tag is-next-tag">
+                <i class="fa-solid fa-user-clock"></i>
+                <span>{{ 'tickets.queue.nextPatient' | t }}</span>
+              </div>
+              @if (queue().waiting.length > 0) {
+                <span class="tv-status-badge is-preparing">
+                  <i class="fa-solid fa-bell fa-shake"></i>
+                  <span>استعد للدخول</span>
+                </span>
+              }
+            </div>
+
+            @if (queue().waiting.length > 0) {
+              <div class="tv-active-patient-wrap is-waiting">
+                <div class="tv-ticket-badge is-waiting-num">
+                  <span class="tv-hash">#</span>
+                  <span class="tv-num">{{ queue().waiting[0].ticketNumber }}</span>
+                </div>
+                <h2 class="tv-patient-name">{{ patientLabel(queue().waiting[0]) }}</h2>
+                <div class="tv-meta-row">
+                  <span class="tv-next-instruction">
+                    <i class="fa-solid fa-angles-left"></i>
+                    <span>{{ 'reception.arrival.nextInLine' | t }} — يرجى التواجد أمام الغرفة</span>
+                  </span>
+                </div>
+              </div>
+            } @else {
+              <div class="tv-empty-box is-next-empty">
+                <div class="tv-empty-icon-circle is-next-circle">
+                  <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <h3 class="tv-empty-title">{{ 'tickets.queue.empty' | t }}</h3>
+                <p class="tv-empty-desc">
+                  <i class="fa-solid fa-circle-check text-emerald"></i>
+                  <span>لا يوجد مرضى بانتظار الكشف حالياً</span>
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- TV Footer: Upcoming Waiting List Tickets -->
+        <footer class="tv-mode-footer">
+          <div class="tv-upcoming-label">
+            <i class="fa-solid fa-users"></i>
+            <span>{{ 'tickets.waiting' | t }} ({{ queue().waiting.length }})</span>
+          </div>
+          <div class="tv-upcoming-pills">
+            @for (w of queue().waiting.slice(0, 8); track w.ticketId; let idx = $index) {
+              <div class="tv-pill-item" [class.is-first]="idx === 0">
+                <span class="tv-pill-order">#{{ idx + 1 }}</span>
+                <strong class="tv-pill-num">#{{ w.ticketNumber }}</strong>
+                <span class="tv-pill-name">
+                  <i class="fa-regular fa-user"></i>
+                  <span>{{ patientLabel(w) }}</span>
+                </span>
+              </div>
+            }
+            @if (queue().waiting.length === 0) {
+              <span class="tv-no-waiting">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>{{ 'tickets.queue.empty' | t }}</span>
+              </span>
+            }
+          </div>
+        </footer>
+      </div>
+    </div>
+  }
+
 </main>

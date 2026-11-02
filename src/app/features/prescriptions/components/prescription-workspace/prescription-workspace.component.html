@@ -225,16 +225,53 @@
             </div>
           </div>
           @if (editable()) {
-            <button
-              type="button"
-              class="btn btn-primary btn-sm ws-rx-add-btn"
-              [disabled]="busy() || disabled()"
-              (click)="beginAdd()"
-            >
-              <i class="fa-solid fa-plus" aria-hidden="true"></i>
-              <span>{{ 'prescriptions.add' | t }}</span>
-            </button>
+            <div class="rx-action-btns-group">
+              @if (patientId()) {
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm ws-rx-copy-btn"
+                  [disabled]="busy() || disabled() || copyingPrevious()"
+                  (click)="copyPreviousPrescription()"
+                  [title]="'prescriptions.copyPrevious' | t"
+                >
+                  @if (copyingPrevious()) {
+                    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                  } @else {
+                    <i class="fa-solid fa-clone" aria-hidden="true"></i>
+                  }
+                  <span>{{ 'prescriptions.copyPrevious' | t }}</span>
+                </button>
+              }
+              <button
+                type="button"
+                class="btn btn-primary btn-sm ws-rx-add-btn"
+                [disabled]="busy() || disabled() || copyingPrevious()"
+                (click)="beginAdd()"
+              >
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                <span>{{ 'prescriptions.add' | t }}</span>
+              </button>
+            </div>
           }
+        </div>
+      }
+
+      @if (editable() && patientId() && !editing() && (historical() || (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current))?.items?.length) {
+        <div class="rx-doctor-quick-actions">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm ws-rx-copy-btn"
+            [disabled]="busy() || disabled() || copyingPrevious()"
+            (click)="copyPreviousPrescription()"
+            [title]="'prescriptions.copyPrevious' | t"
+          >
+            @if (copyingPrevious()) {
+              <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            } @else {
+              <i class="fa-solid fa-clone" aria-hidden="true"></i>
+            }
+            <span>{{ 'prescriptions.copyPrevious' | t }}</span>
+          </button>
         </div>
       }
 

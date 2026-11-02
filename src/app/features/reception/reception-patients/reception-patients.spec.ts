@@ -96,12 +96,12 @@ describe('ReceptionPatients', () => {
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
 
-  it('keeps search primary and opens registration in a context-preserving drawer', () => {
+  it('keeps search primary and opens registration in an inline side block', () => {
     component['searchModel'].update((model) => ({ ...model, name: 'Ahmed' }));
     component['createModel'].update((model) => ({ ...model, nameEn: 'New patient' }));
     component['registrationOpen'].set(true);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('app-side-drawer [role="dialog"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.patient-inline-sidebar-block[role="dialog"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.patient-panel-switcher')).toBeNull();
     component['registrationOpen'].set(false);
     fixture.detectChanges();
