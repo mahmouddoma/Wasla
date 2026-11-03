@@ -109,19 +109,17 @@
 }
 
 .queue-board {
-  background: var(--wasla-surface, #fff);
-  border: 1px solid var(--wasla-border-subtle);
-  border-radius: var(--radius-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: transparent;
+  border: none;
   min-width: 0;
 }
 .queue-now,
 .queue-waiting,
 .queue-exceptions {
   padding: 24px;
-}
-.queue-now,
-.queue-waiting {
-  border-bottom: 1px solid var(--wasla-border-subtle);
 }
 h2,
 h3,
@@ -157,9 +155,12 @@ p,
 /* ═══ 1. Queue Overview & Daily Clinic Progress ══════════════════ */
 .queue-overview-panel {
   background: var(--wasla-surface, #ffffff);
-  border-bottom: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-card, 16px);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Progress Strip */
@@ -565,18 +566,34 @@ p,
   }
 }
 
-/* Sidebar Station adaptations */
+/* Sidebar Station & Queue Cards */
+.queue-waiting {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-card, 16px);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.queue-now-station {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-card, 16px);
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
 .queue-now-station .current-patient-card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 16px;
-  padding: 18px 20px;
-  border-radius: var(--radius-card, 14px);
-  border: 1px solid var(--wasla-border, #e2e8f0);
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
-  margin-top: 0;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  margin-top: 14px;
 }
 
 .queue-now-station .now-patient-top-bar {
@@ -645,11 +662,11 @@ p,
   flex-direction: column;
   align-items: stretch;
   gap: 16px;
-  padding: 20px;
-  border-radius: var(--radius-card, 14px);
-  border: 1px solid var(--wasla-border, #e2e8f0);
-  background: #ffffff;
-  margin-top: 0;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  margin-top: 14px;
 }
 
 .queue-now-station .station-vacant-start {
@@ -1344,10 +1361,18 @@ p,
 }
 
 /* ═══ 4. Exceptions Section (No-Show) ══════════════════════════════ */
+.queue-exceptions {
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-card, 14px);
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
 .queue-exceptions summary {
   cursor: pointer;
   user-select: none;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .exceptions-summary-header {
@@ -2754,53 +2779,49 @@ textarea:focus-visible {
   background: #ffffff;
 }
 
-/* ── Visual 4-Step Progress Strip ── */
-.ws-steps-bar {
+/* ── Clinical Cockpit: Side-by-Side Organized Blocks ── */
+.ws-blocks-layout {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 12px 24px;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px;
   background: #ffffff;
-  border-bottom: 1px solid var(--wasla-border-subtle, #edf1f5);
 }
 
-.ws-step-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--wasla-navy-800, #334155);
+.ws-top-row {
+  display: grid;
+  grid-template-columns: minmax(340px, 1fr) minmax(400px, 1.2fr);
+  gap: 22px;
+  align-items: start;
 }
 
-.ws-step-pill.is-done {
-  background: #f0fdfa;
-  color: var(--wasla-teal-700, #0f766e);
+.ws-block-card {
+  background: #ffffff;
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-card, 14px);
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
-.ws-step-pill.ws-step-finish {
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.ws-card-assessment {
+  min-width: 0;
 }
 
-.ws-step-pill.ws-step-finish:hover:not(:disabled) {
-  background: #f0fdfa;
+.ws-card-prescription {
+  min-width: 0;
 }
 
-.ws-step-pill.ws-step-finish.is-ready {
-  background: var(--wasla-teal, #0ba5a0);
-  color: #ffffff;
-  border-color: var(--wasla-teal, #0ba5a0);
+.ws-card-diagnostics {
+  width: 100%;
 }
 
-.ws-step-pill.ws-step-finish.is-ready:hover:not(:disabled) {
-  background: var(--wasla-teal-700, #097c78);
+.ws-section-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .ws-top-complete-btn,
@@ -2815,52 +2836,58 @@ textarea:focus-visible {
   border-radius: 8px;
 }
 
-.ws-step-icon {
+/* ── Doctor Queue Strip (Waiting queue summary during consultation) ── */
+.doctor-queue-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 18px;
+  background: #ffffff;
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-card, 12px);
+  margin-top: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.dqs-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--wasla-navy-800, #334155);
+}
+
+.dqs-icon {
+  font-size: 1.1rem;
+}
+
+.dqs-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
+  min-width: 22px;
   height: 22px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  color: var(--wasla-navy-900, #0f172a);
-  font-size: 0.75rem;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-.ws-step-pill.is-done .ws-step-icon {
-  background: var(--wasla-teal, #0ba5a0);
-  color: #ffffff;
-}
-
-.ws-step-pill.ws-step-finish.is-ready .ws-step-icon {
-  background: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
-}
-
-.ws-step-tag {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--wasla-slate, #64748b);
-  padding: 1px 6px;
-  background: #ffffff;
-  border-radius: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  font-weight: 800;
+  color: var(--wasla-navy-950, #0f172a);
 }
 
-.ws-step-arrow {
-  color: #94a3b8;
-  font-size: 0.9rem;
+.dqs-next {
+  font-size: 0.82rem;
+  color: var(--wasla-slate, #64748b);
+}
+
+.dqs-toggle-btn {
+  font-size: 0.8rem;
   font-weight: 700;
+  padding: 4px 12px;
 }
 
-:host-context([dir='ltr']) .ws-step-arrow,
-[dir='ltr'] .ws-step-arrow {
-  transform: scaleX(-1);
-}
-
-/* ── 2-Column Responsive Clinical Cockpit (No Eye Wandering) ── */
+/* ── 2-Column Responsive Clinical Cockpit (Backward compatibility) ── */
 .ws-cockpit-grid {
   display: grid;
   grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.25fr);
@@ -3399,42 +3426,25 @@ textarea:focus-visible {
 
 /* Responsive Media Queries */
 @container (max-width: 980px) {
-  .ws-cockpit-grid {
+  .ws-top-row {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+  .ws-blocks-layout {
     padding: 16px;
   }
 }
 
 @container (max-width: 680px) {
-  .current-patient-card.is-clinical-workstation .now-patient-top-bar,
-  .ws-steps-bar {
-    padding-inline: 16px;
+  .current-patient-card.is-clinical-workstation .now-patient-top-bar {
+    padding-inline: 14px;
   }
 
-  .ws-steps-bar {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+  .ws-blocks-layout {
+    padding: 14px 10px;
   }
 
-  .ws-step-pill {
-    width: 100%;
-    min-width: 0;
-    padding: 8px;
-  }
-
-  .ws-step-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ws-step-arrow {
-    display: none;
-  }
-
-  .ws-cockpit-grid {
+  .ws-block-card {
     padding: 16px;
   }
 

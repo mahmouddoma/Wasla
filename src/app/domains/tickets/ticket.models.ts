@@ -282,6 +282,29 @@ export function normalizeTicket(raw: unknown): PracticeTicket {
     null;
   const fastTrack = Boolean(r['fastTrack'] ?? r['isFastTrack']);
 
+  const rawCaps = r['operationalCapabilities'] as Record<string, unknown> | null | undefined;
+  const isArchived = Boolean(r['isArchived']);
+  const normalizedStatus = normalizeStatus(r['status']);
+  const operationalCapabilities: TicketOperationalCapabilities | undefined =
+    rawCaps && typeof rawCaps === 'object'
+      ? {
+          canCancel: Boolean(rawCaps['canCancel']),
+          canRestore: Boolean(rawCaps['canRestore']),
+          canQueueMutate: Boolean(rawCaps['canQueueMutate']),
+          canMutateOperationalRecord: Boolean(rawCaps['canMutateOperationalRecord']),
+          canCheckIn:
+            rawCaps['canCheckIn'] !== undefined ? Boolean(rawCaps['canCheckIn']) : undefined,
+        }
+      : rawCaps === undefined || rawCaps === null
+        ? {
+            canCancel: !isArchived,
+            canRestore: normalizedStatus === 'NoShow',
+            canQueueMutate:
+              !isArchived && (normalizedStatus === 'Waiting' || normalizedStatus === 'Called'),
+            canMutateOperationalRecord: !isArchived,
+          }
+        : undefined;
+
   return {
     ...(r as unknown as PracticeTicket),
     ticketId: (r['ticketId'] as string) || (r['id'] as string) || '',
@@ -315,6 +338,7 @@ export function normalizeTicket(raw: unknown): PracticeTicket {
     timeline: Array.isArray(r['timeline'])
       ? (r['timeline'] as TicketTimelineItem[])
       : undefined,
+    operationalCapabilities,
   };
 }
 
@@ -323,19 +347,31 @@ export function normalizeQueue(raw: unknown): PracticeQueue {
     return raw as PracticeQueue;
   }
   const r = raw as Record<string, unknown>;
+  const doctorPracticeId =
+    (r['doctorPracticeId'] as string) || (r['practiceId'] as string) || undefined;
+  const attachPractice = (item: unknown) => {
+    if (!item || typeof item !== 'object') return item;
+    return {
+      ...(doctorPracticeId ? { doctorPracticeId } : {}),
+      ...(item as Record<string, unknown>),
+    };
+  };
+
   return {
     ...(r as unknown as PracticeQueue),
-    inProgress: r['inProgress'] ? normalizeTicket(r['inProgress']) : null,
-    called: r['called'] ? normalizeTicket(r['called']) : null,
+    inProgress: r['inProgress'] ? normalizeTicket(attachPractice(r['inProgress'])) : null,
+    called: r['called'] ? normalizeTicket(attachPractice(r['called'])) : null,
     waiting: Array.isArray(r['waiting'])
       ? r['waiting'].map((item, idx) => {
-          const normalized = normalizeTicket(item);
+          const normalized = normalizeTicket(attachPractice(item));
           return typeof normalized.patientsAheadNow === 'number'
             ? normalized
             : { ...normalized, patientsAheadNow: idx };
         })
       : [],
-    noShow: Array.isArray(r['noShow']) ? r['noShow'].map(normalizeTicket) : [],
+    noShow: Array.isArray(r['noShow'])
+      ? r['noShow'].map((item) => normalizeTicket(attachPractice(item)))
+      : [],
   };
 }
 

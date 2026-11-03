@@ -1203,6 +1203,10 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'لا يوجد مريض عند الطبيب أو تم نداؤه الآن',
     en: 'No patient is being seen or called now',
   },
+  'tickets.queue.noneNowDoctor': {
+    ar: 'في انتظار تسجيل وحضور المرضى بالعيادة',
+    en: 'Awaiting patient arrival and check-in',
+  },
   'tickets.queue.calledHelp': {
     ar: 'تم النداء — في انتظار الدخول',
     en: 'Called — waiting to enter',
@@ -1218,6 +1222,10 @@ export const TRANSLATIONS: TranslationDictionary = {
   'tickets.queue.emptyHelp': {
     ar: 'يمكنك تأكيد حضور مريض من الحجوزات أو قطع تذكرة حضور بدون موعد.',
     en: 'Record an arrival from appointments or add a patient without an appointment.',
+  },
+  'tickets.queue.emptyHelpDoctor': {
+    ar: 'لا توجد حالات في قائمة الانتظار حالياً. سيظهر المرضى فور قيام الاستقبال بتأكيد حضورهم.',
+    en: 'No patients in queue right now. Patients will appear here once reception registers their arrival.',
   },
   'tickets.queue.globalClinic': {
     ar: 'اختر العيادة من أعلى الشاشة للمتابعة.',
@@ -8381,6 +8389,36 @@ export const TRANSLATIONS: TranslationDictionary = {
   'tickets.workstation.optionalBadge': { ar: 'اختياري', en: 'Optional' },
   'tickets.workstation.doneBadge': { ar: 'تم الإدخال', en: 'Entered' },
   'tickets.workstation.readyToComplete': { ar: 'جاهز لإنهاء الكشف', en: 'Ready to complete visit' },
+  'tickets.workstation.tabAssessment': { ar: 'الشكوى والتشخيص', en: 'Notes & Diagnosis' },
+  'tickets.workstation.tabPrescription': { ar: 'الروشتة والعلاج', en: 'Prescription & Rx' },
+  'tickets.workstation.tabDiagnostics': { ar: 'التحاليل والأشعة', en: 'Labs & Radiology' },
+  'tickets.workstation.tabAll': { ar: 'عرض شامل (الكل)', en: 'All-in-One View' },
+  'tickets.workstation.nextTabPrescription': {
+    ar: 'المتابعة إلى الروشتة والأدوية ←',
+    en: 'Proceed to Prescription →',
+  },
+  'tickets.workstation.nextTabDiagnostics': {
+    ar: 'المتابعة إلى التحاليل والأشعة ←',
+    en: 'Proceed to Labs & Radiology →',
+  },
+  'tickets.workstation.prevTabAssessment': {
+    ar: '→ العودة للشكوى والتشخيص',
+    en: '← Back to Notes & Diagnosis',
+  },
+  'tickets.workstation.prevTabPrescription': {
+    ar: '→ العودة للروشتة والأدوية',
+    en: '← Back to Prescription',
+  },
+  'tickets.workstation.medsCount': { ar: 'أدوية', en: 'Meds' },
+  'tickets.workstation.testsCount': { ar: 'فحوصات', en: 'Tests' },
+  'tickets.workstation.waitingQueueDoctor': {
+    ar: 'مرضى قائمة الانتظار بالخارج',
+    en: 'Waiting Patients Outside',
+  },
+  'tickets.workstation.showWaiting': { ar: 'عرض قائمة الانتظار', en: 'Show Waiting Queue' },
+  'tickets.workstation.hideWaiting': { ar: 'إخفاء قائمة الانتظار', en: 'Hide Waiting Queue' },
+  'tickets.workstation.diagnosisPrimary': { ar: 'تشخيص أساسي', en: 'Primary Diagnosis' },
+  'tickets.workstation.diagnosisSecondary': { ar: 'تشخيص إضافي', en: 'Secondary Diagnosis' },
   'tickets.workstation.blockerFixHint': {
     ar: 'يمكنك الضغط على زر "تعديل" بجانب كل دواء لتحديد الجرعة ومدة العلاج، أو الضغط على "حذف الدواء" لإزالته من الروشتة إذا تم إضافته بالخطأ.',
     en: 'You can click "Edit" next to each medication to specify dose and duration, or click "Delete medication" to remove it if added by mistake.',

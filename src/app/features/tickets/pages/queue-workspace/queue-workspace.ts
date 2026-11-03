@@ -120,6 +120,25 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     () => this.clinicalSaving() || this.prescriptionBusy() || this.diagnosticBusy(),
   );
   protected readonly removeDiagnosisId = signal('');
+  protected readonly clinicalTab = signal<'assessment' | 'prescription' | 'diagnostics' | 'all'>('assessment');
+  protected readonly doctorShowWaitingList = signal(false);
+
+  protected readonly prescriptionItemsCount = computed(() => {
+    const enc = this.activeEncounter();
+    return (
+      (enc?.prescription?.draft?.items?.length ?? 0) ||
+      (enc?.prescription?.current?.items?.length ?? 0)
+    );
+  });
+
+  protected readonly diagnosticsCount = computed(() => {
+    const enc = this.activeEncounter();
+    return (
+      (enc?.labRequestDraft?.items?.length ?? 0) +
+      (enc?.radiologyRequestDraft?.items?.length ?? 0)
+    );
+  });
+
   protected readonly clinicalModel = signal({
     clinicalNotes: '',
     diagnosisId: '',
@@ -1006,12 +1025,13 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     if (action === 'manual-call' && this.queueOccupied()) return;
     if (action === 'recall' && !this.canRecall(ticket)) return;
     if (action === 'restore' && ticket.isRefunded) return;
+    const ticketPracticeId = ticket.practice?.id || ticket.doctorPracticeId;
     if (
       action === 'start' &&
       (!this.canStart() ||
         ticket.isArchived ||
         ticket.operationalCapabilities?.canQueueMutate !== true ||
-        (ticket.practice.id || ticket.doctorPracticeId) !== this.practiceId())
+        (ticketPracticeId && ticketPracticeId !== this.practiceId()))
     )
       return;
     const allowed =
@@ -1368,6 +1388,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   private resetClinicalForm(): void {
     this.removeDiagnosisId.set('');
     this.completionIntent = null;
+    this.clinicalTab.set('assessment');
+    this.doctorShowWaitingList.set(false);
     this.clinicalModel.set({
       clinicalNotes: '',
       diagnosisId: '',
@@ -1376,6 +1398,14 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       notes: '',
       validUntil: '',
     });
+  }
+
+  protected setClinicalTab(tab: 'assessment' | 'prescription' | 'diagnostics' | 'all'): void {
+    this.clinicalTab.set(tab);
+  }
+
+  protected toggleDoctorWaitingList(): void {
+    this.doctorShowWaitingList.update((v) => !v);
   }
 
   protected updateClinicalText(
