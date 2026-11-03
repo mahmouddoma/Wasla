@@ -1,0 +1,455 @@
+<main class="subscription-shell" [dir]="language.dir()">
+  <app-page-header
+    [heading]="'subscriptions.admin' | t"
+    [description]="'subscriptions.manualOnly' | t"
+    icon="finance"
+    [actionLabel]="'subscriptions.retry' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  />
+  <form class="filters" (ngSubmit)="load(true)">
+    <label
+      >{{ 'subscriptions.search' | t
+      }}<input class="form-control" name="search" [(ngModel)]="query.search"
+    /></label>
+    <label
+      >{{ 'subscriptions.status' | t
+      }}<select class="form-select" name="status" [(ngModel)]="query.status">
+        <option value="">{{ 'subscriptions.all' | t }}</option>
+        @for (status of ['Pending', 'Active', 'Expired', 'Cancelled', 'Scheduled']; track status) {
+          <option [value]="status">{{ 'subscriptions.' + status | t }}</option>
+        }
+      </select></label
+    >
+    <label
+      >{{ 'subscriptions.product' | t
+      }}<select class="form-select" name="product" [(ngModel)]="query.productCode">
+        <option value="">{{ 'subscriptions.all' | t }}</option>
+        @for (product of catalog()?.products ?? []; track product.code) {
+          <option [value]="product.code">
+            {{ language.currentLang() === 'ar' ? product.nameAr : product.nameEn }}
+          </option>
+        }
+      </select></label
+    >
+    <label
+      >{{ 'subscriptions.plan' | t
+      }}<input class="form-control" name="plan" [(ngModel)]="query.planCode"
+    /></label>
+    <label
+      >{{ 'subscriptions.createdFrom' | t
+      }}<input
+        class="form-control ltr-text"
+        type="datetime-local"
+        name="createdFrom"
+        dir="ltr"
+        [ngModel]="query.createdFromUtc?.slice(0, 16)"
+        (ngModelChange)="query.createdFromUtc = $event ? $event + ':00Z' : undefined"
+    /></label>
+    <label
+      >{{ 'subscriptions.createdTo' | t
+      }}<input
+        class="form-control ltr-text"
+        type="datetime-local"
+        name="createdTo"
+        dir="ltr"
+        [ngModel]="query.createdToUtc?.slice(0, 16)"
+        (ngModelChange)="query.createdToUtc = $event ? $event + ':00Z' : undefined"
+    /></label>
+    <label
+      >{{ 'subscriptions.endsFrom' | t
+      }}<input
+        class="form-control ltr-text"
+        type="datetime-local"
+        name="endsFrom"
+        dir="ltr"
+        [ngModel]="query.endsFromUtc?.slice(0, 16)"
+        (ngModelChange)="query.endsFromUtc = $event ? $event + ':00Z' : undefined"
+    /></label>
+    <label
+      >{{ 'subscriptions.endsTo' | t
+      }}<input
+        class="form-control ltr-text"
+        type="datetime-local"
+        name="endsTo"
+        dir="ltr"
+        [ngModel]="query.endsToUtc?.slice(0, 16)"
+        (ngModelChange)="query.endsToUtc = $event ? $event + ':00Z' : undefined"
+    /></label>
+    <button class="btn btn-primary" type="submit" [disabled]="loading()">
+      {{ 'subscriptions.search' | t }}</button
+    ><button class="btn btn-outline-secondary" type="button" (click)="clearFilters()">
+      {{ 'subscriptions.clear' | t }}
+    </button>
+  </form>
+  @if (loading()) {
+    <p role="status">{{ 'subscriptions.loading' | t }}</p>
+  } @else if (error()) {
+    <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
+  } @else if (page(); as result) {
+    @if (result.items.length) {
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>{{ 'subscriptions.doctor' | t }}</th>
+              <th>{{ 'subscriptions.plan' | t }}</th>
+              <th>{{ 'subscriptions.status' | t }}</th>
+              <th>{{ 'subscriptions.price' | t }}</th>
+              <th>{{ 'subscriptions.period' | t }}</th>
+              <th>{{ 'subscriptions.details' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of result.items; track item.id) {
+              <tr>
+                <td>
+                  {{
+                    language.currentLang() === 'ar'
+                      ? item.doctorNameAr || item.doctorId
+                      : item.doctorNameEn || item.doctorNameAr || item.doctorId
+                  }}
+                </td>
+                <td>{{ item.planCode }}</td>
+                <td>{{ 'subscriptions.' + item.status | t }}</td>
+                <td>{{ item.priceAmount | currency: item.currency }}</td>
+                <td>
+                  <time dir="ltr">{{ item.endsAtUtc | date: 'mediumDate' }}</time>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    [disabled]="!session.hasPermission('Subscriptions.ViewDetails')"
+                    (click)="inspect(item.id)"
+                  >
+                    {{ 'subscriptions.details' | t }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <nav class="d-flex gap-3 align-items-center" [attr.aria-label]="'subscriptions.pages' | t">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="query.pageNumber <= 1"
+          (click)="next(-1)"
+        >
+          {{ 'subscriptions.previous' | t }}</button
+        ><span>{{ result.pageNumber }} · {{ result.totalCount }}</span
+        ><button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="result.pageNumber * result.pageSize >= result.totalCount"
+          (click)="next(1)"
+        >
+          {{ 'subscriptions.next' | t }}
+        </button>
+      </nav>
+    } @else {
+      <section class="empty-state">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Payment Information-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'subscriptions.none' | t }}</h2>
+        <p>{{ 'subscriptions.emptyHint' | t }}</p>
+        <button class="btn btn-primary" type="button" (click)="clearFilters()">
+          {{ 'subscriptions.clear' | t }}
+        </button>
+      </section>
+    }
+  }
+  @if (can('enroll')) {
+    <section class="subscription-section">
+      <h2>{{ 'subscriptions.legacy' | t }}</h2>
+      <p>{{ 'subscriptions.legacyExplanation' | t }}</p>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="busy()"
+        (click)="begin('enroll')"
+      >
+        {{ 'subscriptions.legacy' | t }}
+      </button>
+    </section>
+  }
+  @if (batch(); as currentBatch) {
+    <section class="subscription-section">
+      <h2>{{ 'subscriptions.legacy' | t }}</h2>
+      <p>
+        {{ currentBatch.id }} · {{ 'subscriptions.' + currentBatch.status | t }} ·
+        {{ currentBatch.durationDays }} {{ 'subscriptions.days' | t }}
+      </p>
+      <p>
+        <time dir="ltr"
+          >{{ currentBatch.startedAtUtc | date: 'medium' }} —
+          {{ currentBatch.endsAtUtc | date: 'medium' }}</time
+        >
+      </p>
+    </section>
+  }
+  @if (action() === 'enroll') {
+    <section class="subscription-section">
+      <p>{{ 'subscriptions.legacyExplanation' | t }}</p>
+      <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirm()">
+        {{ 'subscriptions.confirm' | t }}</button
+      ><button
+        type="button"
+        class="btn btn-outline-secondary"
+        [disabled]="busy()"
+        (click)="action.set(null)"
+      >
+        {{ 'subscriptions.back' | t }}
+      </button>
+    </section>
+  }
+  <app-side-drawer
+    [opened]="selectedId() !== null"
+    [busy]="busy()"
+    [title]="'subscriptions.details' | t"
+    (closed)="close()"
+  >
+    @if (detailLoading()) {
+      <p role="status">{{ 'subscriptions.loading' | t }}</p>
+    }
+    @if (detailError()) {
+      <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        [disabled]="busy()"
+        (click)="inspect(selectedId()!)"
+      >
+        {{ 'subscriptions.retry' | t }}
+      </button>
+    }
+    @if (details(); as detail) {
+      @if (detail.subscription; as current) {
+        <section class="subscription-section">
+          <h2>{{ detail.doctor?.nameAr }} · {{ current.planCode }}</h2>
+          <p>
+            {{ 'subscriptions.doctorApproval' | t }}:
+            {{ 'subscriptions.doctorStatus.' + detail.doctor?.approvalStatus | t }}
+          </p>
+          <p>
+            {{ 'subscriptions.' + current.status | t }} ·
+            {{ current.priceAmount | currency: current.currency }}
+          </p>
+          <p>
+            <time dir="ltr"
+              >{{ current.startsAtUtc | date: 'medium' }} —
+              {{ current.endsAtUtc | date: 'medium' }}</time
+            >
+          </p>
+          <p>
+            {{ 'subscriptions.practiceLimit' | t }}: {{ detail.usage.practiceCount }} /
+            {{ current.practiceLimit }} · {{ 'subscriptions.receptionLimit' | t }}:
+            {{ detail.usage.receptionCount }} / {{ current.receptionLimit }}
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            @for (operation of operations; track operation) {
+              @if (can(operation)) {
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  [disabled]="busy()"
+                  (click)="begin(operation)"
+                >
+                  {{ 'subscriptions.' + operation | t }}
+                </button>
+              }
+            }
+          </div>
+        </section>
+        @for (period of [detail.pendingSubscription, detail.nextPeriod]; track $index) {
+          @if (period) {
+            <section class="subscription-section">
+              <h2>
+                {{
+                  ($index === 0 ? 'subscriptions.pendingSelection' : 'subscriptions.nextPeriod') | t
+                }}
+              </h2>
+              <p>
+                {{ period.planCode }} · {{ 'subscriptions.' + period.status | t }} ·
+                <time dir="ltr">{{ period.startsAtUtc | date: 'medium' }}</time>
+              </p>
+            </section>
+          }
+        }
+        <section class="subscription-section">
+          <h2>{{ 'subscriptions.features' | t }}</h2>
+          @for (grant of detail.entitlements; track grant.featureCode) {
+            <p>
+              {{ 'subscriptions.feature.' + grant.featureCode | t }} ·
+              {{ 'subscriptions.' + grant.accessLevel | t }}
+            </p>
+          }
+        </section>
+        <section class="subscription-section">
+          <h2>{{ 'subscriptions.changes' | t }}</h2>
+          @for (change of detail.changeRequests; track change.id) {
+            <div class="change-row">
+              <strong
+                >{{ change.targetPlanCode }} · {{ 'subscriptions.' + change.status | t }}</strong
+              >
+              <p>
+                {{ 'subscriptions.difference' | t }}:
+                {{ change.differenceAmount | currency: current.currency }}
+              </p>
+              <p>{{ change.reason }} {{ change.rejectionReason }}</p>
+              <time dir="ltr">{{ change.effectiveAtUtc | date: 'medium' }}</time>
+              @if (change.status === 'Pending' && can('approve')) {
+                <div class="d-flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    [disabled]="busy()"
+                    (click)="begin('approve', change)"
+                  >
+                    {{ 'subscriptions.approve' | t }}</button
+                  ><button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [disabled]="busy()"
+                    (click)="begin('reject', change)"
+                  >
+                    {{ 'subscriptions.reject' | t }}
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </section>
+        @if (detail.payments; as payments) {
+          <section class="subscription-section">
+            <h2>{{ 'subscriptions.payments' | t }}</h2>
+            @for (payment of payments; track payment.id) {
+              <p>
+                {{ payment.amountReceived | currency: current.currency }} ·
+                <time dir="ltr">{{ payment.paidAtUtc | date: 'medium' }}</time> ·
+                {{ payment.reference }}
+              </p>
+            } @empty {
+              <p>{{ 'subscriptions.noPayments' | t }}</p>
+            }
+          </section>
+        }
+        @if (detail.history; as events) {
+          <section class="subscription-section">
+            <h2>{{ 'subscriptions.history' | t }}</h2>
+            @for (event of events; track event.id) {
+              <p>
+                {{ 'subscriptions.' + event.newStatus | t }} ?
+                <time dir="ltr">{{ event.occurredOnUtc | date: 'medium' }}</time>
+              </p>
+              <p>{{ event.reason }}</p>
+            } @empty {
+              <p>{{ 'subscriptions.noHistory' | t }}</p>
+            }
+          </section>
+        }
+        @if (action() && action() !== 'enroll') {
+          <form class="subscription-section" (ngSubmit)="confirm()">
+            <h2>{{ 'subscriptions.' + action() | t }}</h2>
+            @if (action() === 'renew' && catalog(); as availableCatalog) {
+              <app-plan-selector
+                [catalog]="availableCatalog"
+                [productCode]="current.productCode"
+                [selection]="renewalSelection()"
+                [disabled]="busy() || paymentUncertain()"
+                (selectionChange)="renewalSelection.set($event)"
+              />
+              <p>{{ 'subscriptions.renewalExplanation' | t }}</p>
+            }
+            @if (paymentUncertain()) {
+              <p role="alert">{{ 'subscriptions.paymentUncertain' | t }}</p>
+            }
+            @if (requiresPayment()) {
+              <p>{{ 'subscriptions.paymentExplanation' | t }}</p>
+              @if (!catalog()?.paymentMethods?.cash) {
+                <p role="alert">{{ 'subscriptions.paymentUnavailable' | t }}</p>
+              }
+              <label class="form-label" for="amount">{{ 'subscriptions.amountReceived' | t }}</label
+              ><input
+                id="amount"
+                class="form-control ltr-text"
+                dir="ltr"
+                name="amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                [(ngModel)]="amountReceived"
+                [readOnly]="busy() || paymentUncertain()"
+              />
+              <label class="form-label mt-3" for="reference">{{
+                'subscriptions.reference' | t
+              }}</label
+              ><input
+                id="reference"
+                class="form-control"
+                name="reference"
+                [(ngModel)]="reference"
+                [readOnly]="busy() || paymentUncertain()"
+              />
+              <label class="form-label mt-3" for="notes">{{ 'subscriptions.notes' | t }}</label
+              ><textarea
+                id="notes"
+                class="form-control"
+                name="notes"
+                [(ngModel)]="notes"
+                [readOnly]="busy() || paymentUncertain()"
+              ></textarea>
+            }
+            @if (action() === 'extend') {
+              <label class="form-label" for="days">{{ 'subscriptions.additionalDays' | t }}</label
+              ><input
+                id="days"
+                class="form-control ltr-text"
+                dir="ltr"
+                name="days"
+                type="number"
+                min="1"
+                step="1"
+                required
+                [(ngModel)]="additionalDays"
+              />
+            }
+            @if (action() === 'extend' || action() === 'reject') {
+              <label class="form-label mt-3" for="reason">{{ 'subscriptions.reason' | t }}</label
+              ><textarea
+                id="reason"
+                class="form-control"
+                name="reason"
+                required
+                maxlength="2000"
+                [(ngModel)]="reason"
+              ></textarea>
+            }
+            <p class="mt-3">{{ 'subscriptions.confirmExplanation' | t }}</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-primary" type="submit" [disabled]="busy() || !valid()">
+                {{ 'subscriptions.confirm' | t }}</button
+              ><button
+                class="btn btn-outline-secondary"
+                type="button"
+                [disabled]="busy()"
+                (click)="action.set(null)"
+              >
+                {{ 'subscriptions.back' | t }}
+              </button>
+            </div>
+          </form>
+        }
+      }
+    }
+  </app-side-drawer>
+</main>

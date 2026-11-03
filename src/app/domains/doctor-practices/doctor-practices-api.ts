@@ -240,6 +240,10 @@ export class DoctorPracticesApi {
     return this.http.get<DoctorPracticePrice[]>(`${this.practiceUrl(practiceId)}/prices`);
   }
 
+  updateBookingPrice(practiceId: string, request: { newConsultationPrice: number; rowVersion: string | null }): Observable<DoctorPracticePrice> {
+    return this.http.put<DoctorPracticePrice>(`${this.practiceUrl(practiceId)}/booking-presentation/price`, request);
+  }
+
   addPrice(
     practiceId: string,
     request: CreateDoctorPracticePriceRequest,

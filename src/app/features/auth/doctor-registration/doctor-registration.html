@@ -397,11 +397,20 @@
               [error]="serverError('SyndicateCardFrontImage')" (fileChange)="syndicateCardFrontImage.set($event)" />
           </div>
           <div class="upload-field-col">
-            <app-file-upload [label]="'ui.full.238' | t" [required]="true"
+            <app-file-upload [label]="'ui.full.238' | t"
               [error]="serverError('SyndicateCardBackImage')" (fileChange)="syndicateCardBackImage.set($event)" />
           </div>
         </div>
 
+        @if (catalogLoading()) {
+          <p role="status">{{ 'subscriptions.loading' | t }}</p>
+        } @else if (catalog(); as availableCatalog) {
+          <app-plan-selector [catalog]="availableCatalog" [allowTrial]="true" [selection]="selection()"
+            [disabled]="isSubmitting()" (selectionChange)="selection.set($event)" />
+        } @else {
+          <p role="alert">{{ 'subscriptions.catalogError' | t }}</p>
+          <button type="button" class="btn-step-prev" (click)="loadCatalog()">{{ 'subscriptions.retry' | t }}</button>
+        }
         @if (filesError()) {
         <p class="field-error files-error" role="alert">{{ filesError() }}</p>
         }
@@ -425,7 +434,7 @@
             <span>{{ 'register.prev' | t }}</span>
           </button>
 
-          <button class="auth-submit" type="submit" [disabled]="isSubmitting()">
+          <button class="auth-submit" type="submit" [disabled]="isSubmitting() || catalogLoading() || !catalog() || !selection()">
             @if (isSubmitting()) {
             <span>{{ 'requests.submitting' | t }}</span>
             } @else {

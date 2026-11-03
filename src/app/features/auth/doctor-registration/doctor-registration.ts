@@ -18,10 +18,12 @@ import { Gender } from '../../../core/auth/auth.models';
 import { NoFutureDate } from '../../../shared/no-future-date/no-future-date';
 import { FileUpload } from '../file-upload/file-upload';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { CommercialCatalog, isAvailableSelection, SubscriptionsApi, SubscriptionSelection } from '../../../domains/subscriptions';
+import { PlanSelectorComponent } from '../../subscriptions';
 
 @Component({
   selector: 'app-doctor-registration',
-  imports: [FormField, RouterLink, FileUpload, NoFutureDate, TranslatePipe],
+  imports: [FormField, RouterLink, FileUpload, NoFutureDate, TranslatePipe, PlanSelectorComponent],
   templateUrl: './doctor-registration.html',
   styleUrls: ['../registration.css', './doctor-registration.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +34,23 @@ export class DoctorRegistration {
 
   private readonly api = inject(AuthApi);
   private readonly router = inject(Router);
+  private readonly subscriptionsApi = inject(SubscriptionsApi);
+  readonly catalog = signal<CommercialCatalog | null>(null);
+  readonly catalogLoading = signal(false);
+  readonly selection = signal<SubscriptionSelection | null>(null);
+
+  constructor() { void this.loadCatalog(); }
+
+  async loadCatalog(): Promise<void> {
+    if (this.catalogLoading()) return;
+    this.catalogLoading.set(true);
+    this.catalog.set(null);
+    try {
+      this.catalog.set(await firstValueFrom(this.subscriptionsApi.catalog()));
+    } catch {
+      this.toast.error(this.uiLanguage.t('subscriptions.catalogError'));
+    } finally { this.catalogLoading.set(false); }
+  }
 
   readonly currentStep = signal<1 | 2 | 3>(1);
   readonly step1Attempted = signal(false);
@@ -197,6 +216,11 @@ export class DoctorRegistration {
         this.currentStep.set(3);
         return;
       }
+      if (!isAvailableSelection(this.catalog(), this.selection(), true)) {
+        this.filesError.set(this.uiLanguage.t('subscriptions.choosePlan'));
+        this.currentStep.set(3);
+        return;
+      }
       if (this.isSubmitting()) return;
       this.isSubmitting.set(true);
       this.apiMessages.set([]);
@@ -204,6 +228,7 @@ export class DoctorRegistration {
       try {
         await firstValueFrom(
           this.api.registerDoctor({
+            subscription: this.selection()!,
             ...this.model(),
             gender: this.model().gender as Gender,
             profileImage: this.profileImage(),
@@ -213,12 +238,16 @@ export class DoctorRegistration {
             syndicateCardBackImage: this.syndicateCardBackImage(),
           }),
         );
-        this.toast.success(this.uiLanguage.t('auth.doctorRegistered'));
+        this.toast.success(this.uiLanguage.t('subscriptions.registrationPending'));
         await this.router.navigate(['/login'], { queryParams: { status: 'doctor-registered' } });
       } catch (error) {
         const parsed = parseApiErrors(error);
         this.apiMessages.set(parsed.messages);
         this.fieldErrors.set(parsed.fields);
+        if (parsed.codes.some(code => /InvalidSelection|ProductNotAvailable|PlanNotAvailable|InvalidBillingCycle|TrialNotEligible|BookingOnlyNotConfigured/.test(code))) {
+          this.selection.set(null);
+          await this.loadCatalog();
+        }
 
         if (
           this.serverError('UserName') ||

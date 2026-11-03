@@ -1,4 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { detailsFixture, subscriptionStateStub } from '../../../../../testing/subscriptions';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TestBed } from '@angular/core/testing';
@@ -39,6 +41,7 @@ describe('PracticeEditor', () => {
     TestBed.configureTestingModule({
       imports: [PracticeEditor],
       providers: [
+        { provide: SubscriptionState, useValue: subscriptionStateStub() },
         { provide: DoctorPracticesApi, useValue: {} },
         { provide: DoctorProfileApi, useValue: locationApi },
       ],
@@ -86,6 +89,7 @@ describe('PracticeEditor', () => {
       TestBed.configureTestingModule({
         imports: [PracticeEditor],
         providers: [
+          { provide: SubscriptionState, useValue: subscriptionStateStub() },
           { provide: DoctorPracticesApi, useValue: api },
           { provide: ToastService, useValue: toast },
           {
@@ -132,6 +136,21 @@ describe('PracticeEditor', () => {
       expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ rowVersion: 'v2' }));
       expect(toast.success).toHaveBeenCalledTimes(1);
       expect(fixture.componentInstance['isSubmitting']()).toBe(false);
+    });
+    it('prevents duplicate creation while checking subscription capacity', async () => {
+      const fixture = await start(false);
+      const component = fixture.componentInstance;
+      component['model'].set({ nameAr: 'Clinic', nameEn: '', governorateId: '1', cityId: '2', areaId: '3', detailedAddress: 'Address', latitude: 30, longitude: 31 });
+      fixture.detectChanges();
+      let release!: (value: ReturnType<typeof detailsFixture>) => void;
+      const capacity = new Promise<ReturnType<typeof detailsFixture>>(resolve => { release = resolve; });
+      vi.spyOn(TestBed.inject(SubscriptionState), 'refresh').mockReturnValue(capacity);
+      api.create.mockReturnValue(of(practice));
+      const saving = component['save'](new Event('submit'));
+      await vi.waitFor(() => expect(component['isSubmitting']()).toBe(true));
+      await component['save'](new Event('submit'));
+      expect(api.create).not.toHaveBeenCalled(); release(detailsFixture()); await saving;
+      expect(api.create).toHaveBeenCalledOnce();
     });
     it('preserves input after a failed save and shows an error toast', async () => {
       const fixture = await start();

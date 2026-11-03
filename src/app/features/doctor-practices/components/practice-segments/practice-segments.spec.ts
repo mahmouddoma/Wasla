@@ -9,6 +9,8 @@ import {
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 
 describe('PracticeSegments', () => {
   let fixture: ComponentFixture<PracticeSegments>;
@@ -77,6 +79,7 @@ describe('PracticeSegments', () => {
     await TestBed.configureTestingModule({
       imports: [PracticeSegments],
       providers: [
+        { provide: SubscriptionState, useValue: subscriptionStateStub() },
         { provide: DoctorPracticesApi, useValue: mockApi },
         { provide: ToastService, useValue: mockToast },
         LanguageService,

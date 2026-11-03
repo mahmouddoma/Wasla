@@ -8,6 +8,8 @@ import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { DoctorPracticeResponse } from '../../../../domains/doctor-practices';
 import { DoctorPractices } from './doctor-practices';
 import { environment } from '../../../../../environments/environment';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 
 describe('DoctorPractices', () => {
   let fixture: ComponentFixture<DoctorPractices>;
@@ -67,7 +69,7 @@ describe('DoctorPractices', () => {
     sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [DoctorPractices],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: SubscriptionState, useValue: subscriptionStateStub() }],
     }).compileComponents();
 
     const session = TestBed.inject(AuthSession);

@@ -20,6 +20,7 @@ import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { DoctorProfileApi } from '../../../../domains/doctor-profile';
 import { EgyptLocationOption } from '../../../../domains/doctor-profile';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { SubscriptionState } from '../../../../domains/subscriptions';
 
 @Component({
   selector: 'app-practice-editor',
@@ -39,6 +40,7 @@ export class PracticeEditor implements OnInit {
   private readonly api = inject(DoctorPracticesApi);
   private readonly locationApi = inject(DoctorProfileApi);
   private readonly toast = inject(ToastService);
+  private readonly subscription = inject(SubscriptionState);
   private readonly sanitizer = inject(DomSanitizer);
 
   protected readonly isLocating = signal(false);
@@ -330,6 +332,13 @@ export class PracticeEditor implements OnInit {
 
       try {
         const current = this.practice();
+        if (!current) {
+          await this.subscription.refresh(true);
+          if (!this.subscription.canCreatePractice()) {
+            this.toast.error(this.uiLanguage.t('subscriptions.capacityFull'));
+            return;
+          }
+        }
         const response = current
           ? await firstValueFrom(
               this.api.update(current.id, {
@@ -339,11 +348,17 @@ export class PracticeEditor implements OnInit {
             )
           : await firstValueFrom(this.api.create(request));
         this.populate(response);
+        this.subscription.invalidate();
+        void this.subscription.refresh().catch(() => undefined);
         this.saved.emit(response);
         this.toast.success(
           current ? this.uiLanguage.t('ui.full.304') : this.uiLanguage.t('ui.full.305'),
         );
       } catch (error) {
+        if (parseApiErrors(error).status === 409) {
+          this.subscription.invalidate();
+          void this.subscription.refresh().catch(() => undefined);
+        }
         const messages = flattenErrors(error);
         this.messages.set(messages);
         this.toast.error(messages[0] || 'common.requestFailed');

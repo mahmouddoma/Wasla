@@ -9,6 +9,8 @@ import { DoctorSpecializationRequest } from '../../../../domains/doctor-profile'
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { DoctorProfile } from './doctor-profile';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 
 describe('DoctorProfile specialization mutations', () => {
   it('keeps legacy not-found handling independent of the selected UI language', () => {
@@ -35,6 +37,7 @@ describe('DoctorProfile specialization mutations', () => {
     vi.clearAllMocks();
     api.submitSpecializations.mockReturnValue(of(request));
     TestBed.configureTestingModule({ imports: [DoctorProfile], providers: [provideRouter([]),
+      { provide: SubscriptionState, useValue: subscriptionStateStub() },
       { provide: DoctorProfileApi, useValue: api }, { provide: ToastService, useValue: toast },
       { provide: AuthSession, useValue: { hasPermission: (permission: string) =>
         permission === PERMISSIONS.doctorSpecializationsSubmitOwn || permission === PERMISSIONS.doctorSpecializationsResubmitOwn } },

@@ -20,6 +20,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
+import { SubscriptionState } from '../../../../domains/subscriptions';
 
 @Component({
   selector: 'app-doctor-receptions',
@@ -29,6 +30,9 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorReceptions {
+  protected readonly subscription = inject(SubscriptionState);
+  protected readonly accountConfirmation = signal<DoctorReception | null>(null);
+  protected readonly canManageAccountState = computed(() => this.session.hasPermission('ReceptionUsers.ManageAccountStateOwn') && this.subscription.has('RECEPTION_MANAGEMENT', true));
   protected readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorReceptionsApi);
   private readonly practicesApi = inject(DoctorPracticesApi);
@@ -66,7 +70,7 @@ export class DoctorReceptions {
     this.receptions().reduce((sum, item) => sum + item.assignments.length, 0),
   );
   protected readonly activeReceptionsCount = computed(
-    () => this.receptions().filter((item) => item.assignments.some((a) => a.isActive)).length,
+    () => this.receptions().filter((item) => item.isActive).length,
   );
 
   protected readonly permissionOptions = computed(() =>
@@ -116,6 +120,7 @@ export class DoctorReceptions {
   });
 
   constructor() {
+    void this.subscription.refresh().catch(() => undefined);
     void this.load();
   }
 
@@ -134,6 +139,7 @@ export class DoctorReceptions {
   }
 
   protected openCreateDrawer(): void {
+    if (!this.subscription.canCreateReception()) return;
     this.formSubmitted.set(false);
     this.fieldErrors.set({});
     this.messages.set([]);
@@ -177,6 +183,11 @@ export class DoctorReceptions {
     this.messages.set([]);
 
     try {
+      await this.subscription.refresh(true);
+      if (!this.subscription.canCreateReception()) {
+        this.toast.error(this.langService.t('subscriptions.capacityFull'));
+        return;
+      }
       const value = this.userModel();
       const created = await firstValueFrom(
         this.api.create({
@@ -191,8 +202,14 @@ export class DoctorReceptions {
       this.isCreateDrawerOpen.set(false);
       this.formSubmitted.set(false);
       this.toast.success(this.langService.t('ui.full.597'));
+      this.subscription.invalidate();
+      void this.subscription.refresh().catch(() => undefined);
       await this.router.navigate(['/doctor/receptions', created.id]);
     } catch (error) {
+      if (parseApiErrors(error).status === 409) {
+        this.subscription.invalidate();
+        void this.subscription.refresh().catch(() => undefined);
+      }
       this.setErrors(error);
       const parsed = parseApiErrors(error);
       const firstErr = parsed.messages[0] || Object.values(parsed.fields).flat()[0];
@@ -210,6 +227,37 @@ export class DoctorReceptions {
     this.selectedPermissionIds.update((ids) =>
       checked ? [...new Set([...ids, id])] : ids.filter((value) => value !== id),
     );
+  }
+
+  protected async toggleAccount(): Promise<void> {
+    const current = this.accountConfirmation();
+    if (!current || !this.canManageAccountState() || this.isSubmitting()) return;
+    this.isSubmitting.set(true);
+    try {
+      if (!current.isActive) {
+        await this.subscription.refresh(true);
+        if (!this.subscription.canCreateReception()) {
+          this.toast.error(this.langService.t('subscriptions.capacityFull'));
+          return;
+        }
+      }
+      const updated = await firstValueFrom(this.api.updateAccountState(current.id, { isActive: !current.isActive, rowVersion: current.rowVersion }));
+      this.reception.set(updated);
+      this.receptions.update(items => items.map(item => item.id === updated.id ? updated : item));
+      this.accountConfirmation.set(null);
+      this.toast.success(this.langService.t('subscriptions.saved'));
+      this.subscription.invalidate();
+      void this.subscription.refresh().catch(() => undefined);
+    } catch (error) {
+      this.setErrors(error);
+      this.toast.error(this.langService.t(parseApiErrors(error).messages[0] ?? 'common.requestFailed'));
+      if (parseApiErrors(error).status === 409) {
+        await this.loadDetails(current.id).catch(() => undefined);
+        this.accountConfirmation.set(null);
+        this.subscription.invalidate();
+        void this.subscription.refresh().catch(() => undefined);
+      }
+    } finally { this.isSubmitting.set(false); }
   }
 
   protected editAssignment(assignment: DoctorReceptionAssignment): void {

@@ -7,6 +7,7 @@
       icon="practices"
       [actionLabel]="canManage ? ('practice.createClinic' | t) : null"
       actionIcon="add"
+      [actionDisabled]="!subscription.canCreatePractice()"
       (actionClicked)="openCreateDrawer()"
     >
       <div pageHeaderDeck class="practices-stats-deck">
@@ -29,6 +30,9 @@
   }
 
   <!-- Main Container -->
+  @if (subscription.usage(); as usage) {
+    <p>{{ 'subscriptions.practiceLimit' | t }}: {{ usage.practiceCount }} / {{ subscription.terms()?.practiceLimit }} · <a routerLink="/doctor/subscription">{{ 'subscriptions.manage' | t }}</a></p>
+  }
   <section class="practices-content" aria-live="polite">
     @if (isLoading()) {
       <div class="state-card loading-card">
@@ -356,7 +360,7 @@
       <div class="surface-panel practice-tab-content">
         @switch (activeSection()) {
           @case ('overview') {
-            @if (canManage) {
+            @if (canManage && subscription.has('PRACTICE_MANAGEMENT', true)) {
               <app-practice-editor [practice]="practice" (saved)="practiceSaved($event)" />
             } @else {
               <dl class="practice-data-grid">
@@ -382,26 +386,27 @@
             }
           }
           @case ('operations') {
+            @if (canManage) { <app-booking-price [practiceId]="practice.id" [canManage]="subscription.has('PRACTICE_MANAGEMENT', true)" /> }
             <app-practice-operations
               [practice]="practice"
-              [canActivate]="canActivate"
+              [canActivate]="canActivate && subscription.has('PRACTICE_MANAGEMENT', true)"
               [canViewConfiguration]="canViewConfiguration"
-              [canManageConfiguration]="canManageConfiguration"
+              [canManageConfiguration]="canManageConfiguration && subscription.has('PRACTICE_MANAGEMENT', true)"
               [canViewBranding]="canViewBranding"
-              [canManageBranding]="canManageBranding"
+              [canManageBranding]="canManageBranding && subscription.has('PRACTICE_BRANDING', true)"
               (practiceChanged)="practiceSaved($event)"
             />
           }
           @case ('schedule') {
-            <app-practice-schedule [practiceId]="practice.id" [canManage]="canManageSchedule" />
+            <app-practice-schedule [practiceId]="practice.id" [canManage]="canManageSchedule && subscription.has('SCHEDULE_AVAILABILITY', true)" />
           }
           @case ('segments') {
             <app-practice-segments
               [practiceId]="practice.id"
               [canViewSegments]="canViewSegments"
-              [canManageSegments]="canManageSegments"
+              [canManageSegments]="canManageSegments && subscription.has('BASIC_SEGMENTS_PRICING', true)"
               [canViewPricing]="canViewPricing"
-              [canManagePricing]="canManagePricing"
+              [canManagePricing]="canManagePricing && subscription.has('BASIC_SEGMENTS_PRICING', true)"
             />
           }
         }
@@ -543,7 +548,7 @@
               {{ 'ui.full.511' | t }}
             </p>
             @if (canManage) {
-              <button type="button" class="btn-create-practice" (click)="openCreateDrawer()">
+              <button type="button" class="btn-create-practice" [disabled]="!subscription.canCreatePractice()" (click)="openCreateDrawer()">
                 <svg
                   viewBox="0 0 24 24"
                   width="18"

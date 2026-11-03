@@ -17,6 +17,7 @@ export interface DoctorReceptionAssignment {
 }
 
 export interface DoctorReception {
+  isActive: boolean;
   id: string;
   applicationUserId: string;
   userName: string;

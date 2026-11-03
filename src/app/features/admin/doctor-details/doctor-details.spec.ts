@@ -6,6 +6,8 @@ import { AdminDoctorsApi, AdminDoctorDetails } from '../services/admin-doctors';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { PERMISSIONS } from '../../../core/auth/permissions';
+import { SubscriptionsApi, SubscriptionPage } from '../../../domains/subscriptions';
+import { detailsFixture } from '../../../../testing/subscriptions';
 
 describe('DoctorDetails', () => {
   let fixture: ComponentFixture<DoctorDetails>;
@@ -74,9 +76,13 @@ describe('DoctorDetails', () => {
         perm === PERMISSIONS.doctorsApprove ||
         perm === PERMISSIONS.doctorsReject ||
         perm === PERMISSIONS.doctorsSuspend ||
-        perm === PERMISSIONS.doctorsReactivate
+        perm === PERMISSIONS.doctorsReactivate || perm === 'Subscriptions.ViewAll' || perm === 'Subscriptions.ViewDetails'
       );
     }),
+  };
+  const subscriptionsApi = {
+    list: vi.fn(() => of<SubscriptionPage>({ items: [], pageNumber: 1, pageSize: 20, totalCount: 0 })),
+    details: vi.fn(() => of(detailsFixture())),
   };
 
   beforeEach(async () => {
@@ -98,6 +104,7 @@ describe('DoctorDetails', () => {
           },
         },
         { provide: AdminDoctorsApi, useValue: mockApi },
+        { provide: SubscriptionsApi, useValue: subscriptionsApi },
         { provide: AuthSession, useValue: mockSession },
         LanguageService,
       ],
@@ -186,5 +193,14 @@ describe('DoctorDetails', () => {
 
     const apiMessages = (component as unknown as { apiMessages: () => string[] }).apiMessages();
     expect(apiMessages.length).toBeGreaterThan(0);
+  });
+  it('refreshes subscription state after approval without activating a pending paid plan', async () => {
+    const subscription = detailsFixture(); subscription.subscription!.status = 'Pending';
+    subscriptionsApi.list.mockReturnValueOnce(of({ items: [{ ...subscription.subscription!, doctorId: validDoctorId }], pageNumber: 1, pageSize: 20, totalCount: 1 }));
+    subscriptionsApi.details.mockReturnValueOnce(of(subscription));
+    mockApi.details.mockReturnValueOnce(of({ ...mockDoctorDetails, approvalStatus: 'Approved' }));
+    await component['approve']('12345678901234');
+    expect(subscriptionsApi.list).toHaveBeenCalledWith(expect.objectContaining({ search: mockDoctorDetails.email }));
+    expect(component['subscriptionSummary']()?.subscription?.status).toBe('Pending');
   });
 });

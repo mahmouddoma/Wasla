@@ -6,6 +6,13 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'subscriptions',
+    canActivate: [permissionGuard],
+    data: { actor: 'SuperAdmin', permission: 'Subscriptions.ViewAll' },
+    loadChildren: () => import('../subscriptions').then(m => m.ADMIN_SUBSCRIPTION_ROUTES),
+    title: 'subscriptions.admin',
+  },
+  {
     path: 'medical-catalog-managers',
     canActivate: [permissionGuard],
     data: {

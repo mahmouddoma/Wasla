@@ -1,0 +1,2227 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Wasla API v1.0",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/v1/admin/subscriptions": {
+      "get": {
+        "description": "Policies: Permission:Subscriptions.ViewAll",
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ProductCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "PlanCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SubscriptionStatus"
+            }
+          },
+          {
+            "name": "CreatedFromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "CreatedToUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "EndsFromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "EndsToUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorSubscriptionPagedResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorSubscriptionPagedResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorSubscriptionPagedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/{subscriptionId}": {
+      "get": {
+        "description": "Policies: Permission:Subscriptions.ViewDetails",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/{subscriptionId}/activate": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.Activate",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/{subscriptionId}/trial-extend": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.ExtendTrial",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/{subscriptionId}/renew": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.Renew",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/{subscriptionId}/change-requests/{requestId}/approve": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.ReviewChangeRequests",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/{subscriptionId}/change-requests/{requestId}/reject": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.ReviewChangeRequests",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/legacy-transition/enroll": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.EnrollLegacyTransition",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyTransitionEnrollmentBatch"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyTransitionEnrollmentBatch"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyTransitionEnrollmentBatch"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/commercial/catalog": {
+      "get": {
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialCatalogResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialCatalogResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialCatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/doctors/me/subscription": {
+      "get": {
+        "description": "Policies: Permission:Subscriptions.ViewOwn",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/doctors/me/subscription/selection": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.RequestChangeOwn",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionSelection"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionSelection"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionSelection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/doctors/me/subscription/change-requests": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.RequestChangeOwn",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/doctors/me/subscription/cancel-at-period-end": {
+      "post": {
+        "description": "Policies: Permission:Subscriptions.CancelAtPeriodEndOwn",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred response language.",
+            "schema": {
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CommercialCatalogResponse": {
+        "type": "object",
+        "properties": {
+          "catalogVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommercialProductResponse"
+            },
+            "nullable": true
+          },
+          "trialOffer": {
+            "$ref": "#/components/schemas/TrialOfferOptions"
+          },
+          "bookingOnly": {
+            "$ref": "#/components/schemas/BookingOnlyOptions"
+          },
+          "paymentMethods": {
+            "$ref": "#/components/schemas/SubscriptionPaymentOptions"
+          },
+          "policies": {
+            "$ref": "#/components/schemas/SubscriptionPolicyOptions"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CommercialProductResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommercialPlanResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CommercialPlanResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/SubscriptionPlanOptions"
+          },
+          "billingCycles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingCycle"
+            },
+            "nullable": true
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommercialFeatureResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionPlanOptions": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "monthlyPrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "annualPrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "practiceLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "receptionLimit": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingCycle": {
+        "enum": [
+          "Monthly",
+          "Annual"
+        ],
+        "type": "string"
+      },
+      "CommercialFeatureResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "groupCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "implementationStatus": {
+            "$ref": "#/components/schemas/FeatureImplementationStatus"
+          },
+          "releaseReadiness": {
+            "$ref": "#/components/schemas/FeatureReleaseReadiness"
+          },
+          "accessLevel": {
+            "$ref": "#/components/schemas/FeatureAccessLevel"
+          },
+          "isReleaseReady": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FeatureImplementationStatus": {
+        "enum": [
+          "Planned",
+          "InProgress",
+          "Implemented",
+          "Deferred"
+        ],
+        "type": "string"
+      },
+      "FeatureReleaseReadiness": {
+        "enum": [
+          "NotReviewed",
+          "NeedsReview",
+          "Ready",
+          "Blocked"
+        ],
+        "type": "string"
+      },
+      "FeatureAccessLevel": {
+        "enum": [
+          "ReadOnly",
+          "Full"
+        ],
+        "type": "string"
+      },
+      "TrialOfferOptions": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "offerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startsOnDoctorApproval": {
+            "type": "boolean"
+          },
+          "maximumTrialsPerDoctor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "practiceLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "receptionLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reminderDaysBeforeEnd": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "manualExtensionEnabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BookingOnlyOptions": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "maximumSelectablePractices": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pricingTiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingPricingTier"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BookingPricingTier": {
+        "type": "object",
+        "properties": {
+          "minPracticeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxPracticeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyPrice": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionPaymentOptions": {
+        "type": "object",
+        "properties": {
+          "cash": {
+            "type": "boolean"
+          },
+          "card": {
+            "type": "boolean"
+          },
+          "eWallet": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionPolicyOptions": {
+        "type": "object",
+        "properties": {
+          "automaticRenewalEnabled": {
+            "type": "boolean"
+          },
+          "prorationEnabled": {
+            "type": "boolean"
+          },
+          "setupFeeEnabled": {
+            "type": "boolean"
+          },
+          "platformCommissionEnabled": {
+            "type": "boolean"
+          },
+          "taxCalculationEnabled": {
+            "type": "boolean"
+          },
+          "manualRenewalEnabled": {
+            "type": "boolean"
+          },
+          "cancellationAtPeriodEnd": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionDetails": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "$ref": "#/components/schemas/DoctorSubscription"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/SubscriptionUsage"
+          },
+          "entitlements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionFeatureSnapshot"
+            },
+            "nullable": true
+          },
+          "changeRequests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionChangeRequest"
+            },
+            "nullable": true
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionPayment"
+            },
+            "nullable": true
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionHistory"
+            },
+            "nullable": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "pendingSubscription": {
+            "$ref": "#/components/schemas/DoctorSubscription"
+          },
+          "nextPeriod": {
+            "$ref": "#/components/schemas/DoctorSubscription"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/SubscriptionDoctorInfo"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorSubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "doctorId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "subscriptionKind": {
+            "$ref": "#/components/schemas/SubscriptionKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "billingCycle": {
+            "$ref": "#/components/schemas/BillingCycle"
+          },
+          "selectedPracticeCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "readOnly": true
+          },
+          "priceAmount": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "practiceLimit": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "receptionLimit": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "startsAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "endsAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "trialStartedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "trialEndsAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "trialExtensionCount": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "catalogVersion": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "termsSnapshotJson": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "willNotRenew": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "cancellationRequestedOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "activatedByApplicationUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "readOnly": true
+          },
+          "createdOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "modifiedOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true,
+            "readOnly": true
+          },
+          "terms": {
+            "$ref": "#/components/schemas/SubscriptionTerms"
+          }
+        },
+        "additionalProperties": false
+      },
+      "IDomainEvent": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SubscriptionKind": {
+        "enum": [
+          "Paid",
+          "Trial",
+          "LegacyTransition"
+        ],
+        "type": "string"
+      },
+      "SubscriptionStatus": {
+        "enum": [
+          "Pending",
+          "Active",
+          "Expired",
+          "Cancelled",
+          "Superseded",
+          "Scheduled"
+        ],
+        "type": "string"
+      },
+      "SubscriptionTerms": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SubscriptionKind"
+          },
+          "billingCycle": {
+            "$ref": "#/components/schemas/BillingCycle"
+          },
+          "selectedPracticeCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "priceAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "practiceLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "receptionLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "catalogVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "reminderDaysBeforeEnd": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionFeatureTerms"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionFeatureTerms": {
+        "type": "object",
+        "properties": {
+          "featureId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "accessLevel": {
+            "$ref": "#/components/schemas/FeatureAccessLevel"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionUsage": {
+        "type": "object",
+        "properties": {
+          "practiceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "receptionCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionFeatureSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "featureId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "featureCodeSnapshot": {
+            "type": "string",
+            "nullable": true
+          },
+          "accessLevel": {
+            "$ref": "#/components/schemas/FeatureAccessLevel"
+          },
+          "createdOnUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionChangeRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByApplicationUserId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "changeType": {
+            "$ref": "#/components/schemas/SubscriptionChangeType"
+          },
+          "targetPlanCode": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "targetPracticeCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "readOnly": true
+          },
+          "targetBillingCycle": {
+            "$ref": "#/components/schemas/BillingCycle"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionChangeStatus"
+          },
+          "requestedOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "reviewedByApplicationUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "readOnly": true
+          },
+          "reviewedOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "targetPriceSnapshot": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "differenceAmount": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "effectiveAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "targetTermsSnapshotJson": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true,
+            "readOnly": true
+          },
+          "targetTerms": {
+            "$ref": "#/components/schemas/SubscriptionTerms"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionChangeType": {
+        "enum": [
+          "Upgrade",
+          "Downgrade",
+          "BillingCycle"
+        ],
+        "type": "string"
+      },
+      "SubscriptionChangeStatus": {
+        "enum": [
+          "Pending",
+          "Approved",
+          "Rejected",
+          "Cancelled",
+          "Scheduled",
+          "Applied"
+        ],
+        "type": "string"
+      },
+      "SubscriptionPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentType": {
+            "$ref": "#/components/schemas/SubscriptionPaymentType"
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/SubscriptionPaymentMethod"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "paidAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordedByApplicationUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdOnUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionPaymentType": {
+        "enum": [
+          "Initial",
+          "UpgradeDifference",
+          "Renewal"
+        ],
+        "type": "string"
+      },
+      "SubscriptionPaymentMethod": {
+        "enum": [
+          "Cash",
+          "Card",
+          "EWallet"
+        ],
+        "type": "string"
+      },
+      "SubscriptionHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventType": {
+            "type": "string",
+            "nullable": true
+          },
+          "previousStatus": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "newStatus": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "actorApplicationUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "occurredOnUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "previousTermsSnapshotJson": {
+            "type": "string",
+            "nullable": true
+          },
+          "newTermsSnapshotJson": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadataJson": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventIdempotencyKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdOnUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionDoctorInfo": {
+        "type": "object",
+        "properties": {
+          "doctorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvalStatus": {
+            "$ref": "#/components/schemas/DoctorApprovalStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorApprovalStatus": {
+        "enum": [
+          "Pending",
+          "Approved",
+          "Rejected",
+          "Suspended"
+        ],
+        "type": "string"
+      },
+      "DoctorSubscriptionPagedResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorSubscription"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionSelection": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "billingCycle": {
+            "$ref": "#/components/schemas/BillingCycle"
+          },
+          "offerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "selectedPracticeCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionMutationRequest": {
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/SubscriptionPaymentMethod"
+          },
+          "amountReceived": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "paidAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "additionalDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "selection": {
+            "$ref": "#/components/schemas/SubscriptionSelection"
+          },
+          "changeType": {
+            "$ref": "#/components/schemas/SubscriptionChangeType"
+          },
+          "changeRowVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPlanCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPracticeCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "targetBillingCycle": {
+            "$ref": "#/components/schemas/BillingCycle"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LegacyTransitionEnrollmentBatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "startedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "endsAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "durationDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "initiatedByApplicationUserId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "completedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true
+          },
+          "createdOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "JWT Authorization header using the Bearer scheme.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "AdminDoctors"
+    },
+    {
+      "name": "AdminFamilyMedicalAccessRequests"
+    },
+    {
+      "name": "AdminFamilyMedicalEligibilities"
+    },
+    {
+      "name": "AdminFamilyRelationshipRequests"
+    },
+    {
+      "name": "AdministrativeReservations"
+    },
+    {
+      "name": "AdminNotifications"
+    },
+    {
+      "name": "AdminSubscriptions"
+    },
+    {
+      "name": "AssistedFamilyRelationshipRequests"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "CommercialCatalog"
+    },
+    {
+      "name": "DependentMedicalRecord"
+    },
+    {
+      "name": "DoctorDrugCatalog"
+    },
+    {
+      "name": "DoctorEncounters"
+    },
+    {
+      "name": "DoctorFinanceRead"
+    },
+    {
+      "name": "DoctorHandovers"
+    },
+    {
+      "name": "DoctorInsights"
+    },
+    {
+      "name": "DoctorLab"
+    },
+    {
+      "name": "DoctorPatients"
+    },
+    {
+      "name": "DoctorPractices"
+    },
+    {
+      "name": "DoctorPrescriptionPdf"
+    },
+    {
+      "name": "DoctorPrescriptions"
+    },
+    {
+      "name": "DoctorRadiology"
+    },
+    {
+      "name": "DoctorReceptions"
+    },
+    {
+      "name": "DoctorReportExports"
+    },
+    {
+      "name": "DoctorReporting"
+    },
+    {
+      "name": "DoctorReservations"
+    },
+    {
+      "name": "DoctorSelf"
+    },
+    {
+      "name": "DoctorSpecializationOnboarding"
+    },
+    {
+      "name": "DoctorSpecializationRequests"
+    },
+    {
+      "name": "DoctorSubscriptions"
+    },
+    {
+      "name": "DrugCatalog"
+    },
+    {
+      "name": "DrugCatalogManagers"
+    },
+    {
+      "name": "DrugCatalogRequests"
+    },
+    {
+      "name": "EgyptLocations"
+    },
+    {
+      "name": "EncounterPrescriptionItems"
+    },
+    {
+      "name": "EncounterVisibility"
+    },
+    {
+      "name": "ExportRuntimeHealth"
+    },
+    {
+      "name": "Families"
+    },
+    {
+      "name": "FamilyMedicalAccessRequests"
+    },
+    {
+      "name": "FamilyMedicalStatus"
+    },
+    {
+      "name": "FamilyRelationshipRequests"
+    },
+    {
+      "name": "FinanceMutations"
+    },
+    {
+      "name": "FollowUpBooking"
+    },
+    {
+      "name": "IncomingMedicalRecordAccessRequests"
+    },
+    {
+      "name": "Investigations"
+    },
+    {
+      "name": "LabCatalog"
+    },
+    {
+      "name": "LabCatalogRequests"
+    },
+    {
+      "name": "MedicalCatalogManagers"
+    },
+    {
+      "name": "MedicalRecordDependents"
+    },
+    {
+      "name": "MedicalSpecializations"
+    },
+    {
+      "name": "MyEncounters"
+    },
+    {
+      "name": "MyFollowUpEligibilities"
+    },
+    {
+      "name": "MyPrescriptions"
+    },
+    {
+      "name": "MyTickets"
+    },
+    {
+      "name": "Notifications"
+    },
+    {
+      "name": "OperatingFinance"
+    },
+    {
+      "name": "PatientClaimsAdmin"
+    },
+    {
+      "name": "PatientDashboard"
+    },
+    {
+      "name": "PatientDuplicatesAdmin"
+    },
+    {
+      "name": "PatientFinanceRead"
+    },
+    {
+      "name": "PatientLab"
+    },
+    {
+      "name": "PatientMedicalRecord"
+    },
+    {
+      "name": "PatientOnboarding"
+    },
+    {
+      "name": "PatientRadiology"
+    },
+    {
+      "name": "Patients"
+    },
+    {
+      "name": "PatientsRegistration"
+    },
+    {
+      "name": "Phase18PartTwo"
+    },
+    {
+      "name": "PlatformReporting"
+    },
+    {
+      "name": "PlatformRevenueRead"
+    },
+    {
+      "name": "PracticeFinanceRead"
+    },
+    {
+      "name": "PracticeTickets"
+    },
+    {
+      "name": "PublicDiscovery"
+    },
+    {
+      "name": "RadiologyCatalog"
+    },
+    {
+      "name": "RadiologyCatalogRequests"
+    },
+    {
+      "name": "ReceptionFollowUpEligibilities"
+    },
+    {
+      "name": "ReceptionHandovers"
+    },
+    {
+      "name": "ReceptionPractices"
+    },
+    {
+      "name": "ReceptionPracticeTickets"
+    },
+    {
+      "name": "ReceptionReportExports"
+    },
+    {
+      "name": "ReceptionReporting"
+    },
+    {
+      "name": "ReceptionReservations"
+    },
+    {
+      "name": "ReservationMetadata"
+    },
+    {
+      "name": "Reservations"
+    },
+    {
+      "name": "SecurityGovernance"
+    },
+    {
+      "name": "SentMedicalRecordAccessRequests"
+    },
+    {
+      "name": "SuperAdminReportExports"
+    },
+    {
+      "name": "SuperAdmins"
+    },
+    {
+      "name": "TreatingMedicalRecord"
+    }
+  ]
+}

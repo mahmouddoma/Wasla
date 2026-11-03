@@ -10,6 +10,8 @@ import { DoctorReception } from '../../services';
 import { environment } from '../../../../../environments/environment';
 import { DoctorReceptions } from './doctor-receptions';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 
 describe('DoctorReceptions', () => {
   let fixture: ComponentFixture<DoctorReceptions>;
@@ -25,6 +27,7 @@ describe('DoctorReceptions', () => {
     roles: ['Doctor'],
     permissions: [
       PERMISSIONS.receptionUsersManageOwn,
+      'ReceptionUsers.ManageAccountStateOwn',
       PERMISSIONS.receptionAssignmentsManageOwn,
       PERMISSIONS.doctorPracticesManageOwn,
       PERMISSIONS.doctorPracticesViewOwn,
@@ -37,6 +40,7 @@ describe('DoctorReceptions', () => {
   const sampleReceptions: DoctorReception[] = [
     {
       id: 'rec-1',
+      isActive: true,
       applicationUserId: 'app-user-1',
       userName: 'ahmed_rec',
       email: 'ahmed@wasla.local',
@@ -61,6 +65,7 @@ describe('DoctorReceptions', () => {
     },
     {
       id: 'rec-2',
+      isActive: false,
       applicationUserId: 'app-user-2',
       userName: 'mona_rec',
       email: 'mona@wasla.local',
@@ -111,6 +116,7 @@ describe('DoctorReceptions', () => {
     await TestBed.configureTestingModule({
       imports: [DoctorReceptions],
       providers: [
+        { provide: SubscriptionState, useValue: subscriptionStateStub() },
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -245,6 +251,7 @@ describe('DoctorReceptions', () => {
 
     const event = new Event('submit');
     const creating = component['create'](event);
+    await Promise.resolve();
 
     const postReq = httpTesting.expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions`);
     expect(postReq.request.method).toBe('POST');
@@ -424,6 +431,23 @@ describe('DoctorReceptions', () => {
       id: 'legacy',
       code: 'PracticeReservations.Manage',
     });
+  });
+
+  it('updates account activity and its row version without changing practice assignments', async () => {
+    await createAndInitializeComponent();
+    component['reception'].set(sampleReceptions[0]); component['accountConfirmation'].set(sampleReceptions[0]);
+    const saving = component['toggleAccount']();
+    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`);
+    expect(request.request.method).toBe('PUT'); expect(request.request.body).toEqual({ isActive: false, rowVersion: 'ver-r1' });
+    expect(component['reception']()?.isActive).toBe(true);
+    request.flush({ ...sampleReceptions[0], isActive: false, rowVersion: 'new-reception-version' }); await saving;
+    expect(component['reception']()?.isActive).toBe(false); expect(component['reception']()?.rowVersion).toBe('new-reception-version'); expect(component['reception']()?.assignments).toEqual(sampleReceptions[0].assignments);
+  });
+
+  it('preserves account state when the server denies deactivation', async () => {
+    await createAndInitializeComponent(); component['reception'].set(sampleReceptions[0]); component['accountConfirmation'].set(sampleReceptions[0]);
+    const saving = component['toggleAccount'](); httpTesting.expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`).flush({}, { status: 403, statusText: 'Forbidden' }); await saving;
+    expect(component['reception']()?.isActive).toBe(true); expect(component['reception']()?.rowVersion).toBe('ver-r1');
   });
 
   it('requires selected IDs to exist in the displayed permission options', async () => {

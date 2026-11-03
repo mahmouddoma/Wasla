@@ -3,6 +3,7 @@ import { AuthSession } from '../../core/auth/auth-session';
 import { PERMISSIONS } from '../../core/auth/permissions';
 import { ReceptionPracticeContext } from '../../domains/reception-practices';
 import { NavigationItem } from './navigation-item';
+import { SubscriptionState, subscriptionFeatureForRoute } from '../../domains/subscriptions';
 
 export type NavigationGroup =
   'daily' | 'health' | 'management' | 'finance' | 'analytics' | 'account';
@@ -16,6 +17,7 @@ export interface NavigationSection {
 @Injectable({ providedIn: 'root' })
 export class PortalNavigation {
   private readonly session = inject(AuthSession);
+  private readonly subscription = inject(SubscriptionState);
   readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly user = this.session.user;
   private readonly isReception = computed(() => this.user()?.userType === 'Reception');
@@ -472,7 +474,12 @@ export class PortalNavigation {
   }
 
   readonly items = computed(() =>
-    this.permittedItems().map((item) => ({
+    [...this.permittedItems(), ...(this.user()?.userType === 'Doctor' && this.session.hasPermission('Subscriptions.ViewOwn') ? [{ id: 'subscription', labelKey: 'subscriptions.mine', route: '/doctor/subscription', icon: 'receipt' as const }] : [])]
+    .filter(item => {
+      if (this.user()?.userType !== 'Doctor') return true;
+      const feature = subscriptionFeatureForRoute(item.route);
+      return !feature || this.subscription.has(feature);
+    }).map((item) => ({
       ...item,
       labelKey:
         (
@@ -535,7 +542,7 @@ export class PortalNavigation {
       account:
         this.user()?.userType === 'Patient'
           ? ['profile', 'family', 'medical-access', 'finance']
-          : [],
+          : this.user()?.userType === 'Doctor' ? ['subscription'] : [],
     };
     return (Object.keys(groupIds) as NavigationGroup[])
       .map((id) => ({

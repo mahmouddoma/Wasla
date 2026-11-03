@@ -7,6 +7,7 @@ import { AuthSession } from '../../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { DoctorApi } from '../../../../domains/doctors';
 import { DoctorOnboardingStatus } from '../../../../domains/doctors';
+import { SubscriptionState } from '../../../../domains/subscriptions';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -20,6 +21,7 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorOnboarding {
+  protected readonly subscription = inject(SubscriptionState);
   readonly langService = inject(LanguageService);
   private readonly doctorApi = inject(DoctorApi);
   private readonly authApi = inject(AuthApi);
@@ -93,6 +95,7 @@ export class DoctorOnboarding {
   });
 
   constructor() {
+    void this.subscription.refresh().catch(() => undefined);
     void this.load();
   }
 
@@ -120,6 +123,7 @@ export class DoctorOnboarding {
   private async openDoctorArea(): Promise<void> {
     const user = await firstValueFrom(this.authApi.currentUser());
     this.session.complete(user);
-    await this.router.navigateByUrl('/workspace/doctor', { replaceUrl: true });
+    await this.subscription.refresh(true).catch(() => undefined);
+    await this.router.navigateByUrl(this.subscription.needsReview() ? '/doctor/subscription' : '/workspace/doctor', { replaceUrl: true });
   }
 }

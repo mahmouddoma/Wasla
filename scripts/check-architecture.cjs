@@ -73,7 +73,8 @@ for (const file of sourceFiles.filter(file => file.endsWith('.ts'))) {
       const target = path.resolve(path.dirname(file), specifier.text);
       const resolved = [target + '.ts', path.join(target, 'index.ts')].find(candidate => fs.existsSync(candidate));
       if (!resolved) errors.push(`${file}: unresolved local import ${specifier.text}`);
-      if (resolved) dependencies.push(resolved);
+      // Type-only imports have no runtime edge; still validate their public boundaries below.
+      if (resolved && !(ts.isImportDeclaration(node) && node.importClause?.isTypeOnly)) dependencies.push(resolved);
       const sourceFeature = path.relative(root, file).replaceAll(path.sep, '/').match(/^features\/([^/]+)/)?.[1];
       const targetFeature = path.relative(root, target).replaceAll(path.sep, '/').match(/^features\/([^/]+)/)?.[1];
       const publicFeatureEntry = resolved === path.join(root, 'features', targetFeature ?? '', 'index.ts');

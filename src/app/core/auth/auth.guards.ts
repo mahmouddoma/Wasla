@@ -4,6 +4,7 @@ import { AuthSession } from './auth-session';
 import { PERMISSIONS } from './permissions';
 import { DoctorApi } from '../../domains/doctors';
 import { firstValueFrom } from 'rxjs';
+import { SubscriptionState, subscriptionFeatureForRoute } from '../../domains/subscriptions';
 
 /** Approval is read from the account source, independently of role and grants. */
 export const doctorOperationalGuard: CanActivateFn = async (_route, state) => {
@@ -12,13 +13,17 @@ export const doctorOperationalGuard: CanActivateFn = async (_route, state) => {
   if (session.user()?.userType !== 'Doctor') return true;
   if (!/^\/(?:doctor|workspace\/doctor|diagnostics\/doctor)(?:\/|\?|$)/.test(state.url))
     return true;
-  if (/^\/doctor\/(?:onboarding|profile)(?:\/|\?|$)/.test(state.url)) return true;
+  if (/^\/doctor\/(?:onboarding|profile|subscription)(?:\/|\?|$)/.test(state.url)) return true;
   const api = inject(DoctorApi);
+  const subscription = inject(SubscriptionState);
   try {
     const status = await firstValueFrom(api.onboardingStatus());
-    return status.approvalStatus === 'Approved'
-      ? true
-      : router.createUrlTree(['/doctor/onboarding']);
+    if (status.approvalStatus !== 'Approved') return router.createUrlTree(['/doctor/onboarding']);
+    const feature = subscriptionFeatureForRoute(state.url);
+    if (!feature) return true;
+    try { await subscription.refresh(true); }
+    catch { return router.createUrlTree(['/doctor/subscription']); }
+    return subscription.has(feature) ? true : router.createUrlTree(['/doctor/subscription']);
   } catch {
     return router.createUrlTree(['/doctor/onboarding']);
   }

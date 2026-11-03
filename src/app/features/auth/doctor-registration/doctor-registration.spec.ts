@@ -6,6 +6,8 @@ import { AuthApi } from '../../../core/auth/auth-api';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { DoctorRegistration } from './doctor-registration';
+import { SubscriptionsApi } from '../../../domains/subscriptions';
+import { catalogFixture } from '../../../../testing/subscriptions';
 
 describe('DoctorRegistration', () => {
   let fixture: ComponentFixture<DoctorRegistration>;
@@ -26,6 +28,7 @@ describe('DoctorRegistration', () => {
         provideRouter([]),
         { provide: AuthApi, useValue: api },
         { provide: ToastService, useValue: toast },
+        { provide: SubscriptionsApi, useValue: { catalog: () => of(catalogFixture) } },
       ],
     });
     TestBed.inject(LanguageService).setLanguage('ar');
@@ -33,6 +36,7 @@ describe('DoctorRegistration', () => {
     fixture = TestBed.createComponent(DoctorRegistration);
     component = fixture.componentInstance;
     await fixture.whenStable();
+    component.selection.set({ productCode: 'FULL_PLATFORM', planCode: 'STARTER', billingCycle: 'Monthly' });
   });
 
   afterEach(() => localStorage.removeItem('wasla_lang'));

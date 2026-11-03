@@ -9,6 +9,8 @@ import { CurrentUser, LoginResponse } from '../../../core/auth/auth.models';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { Login } from './login';
+import { SubscriptionState } from '../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../testing/subscriptions';
 
 describe('Login', () => {
   let fixture: ComponentFixture<Login>;
@@ -60,6 +62,7 @@ describe('Login', () => {
     TestBed.configureTestingModule({
       imports: [Login],
       providers: [
+        { provide: SubscriptionState, useValue: subscriptionStateStub() },
         provideRouter([]),
         { provide: ActivatedRoute, useValue: route },
         { provide: AuthApi, useValue: api },
@@ -75,6 +78,12 @@ describe('Login', () => {
   });
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
+  it('sends an approved doctor with a pending subscription to subscription review', async () => {
+    vi.spyOn(TestBed.inject(SubscriptionState), 'needsReview').mockReturnValue(true);
+    fixture.componentInstance['model'].set({ identifier: 'doctor@example.com', password: 'Synthetic123!' });
+    await fixture.componentInstance['onSubmit'](new Event('submit'));
+    expect(navigate).toHaveBeenCalledWith(['/doctor/subscription']);
+  });
 
   it('renders login form and toggles password visibility', async () => {
     expect(fixture.componentInstance).toBeTruthy();

@@ -66,6 +66,13 @@ export const routes: Routes = [
     ],
     children: [
       {
+        path: 'doctor/subscription',
+        data: { actor: 'Doctor', permission: 'Subscriptions.ViewOwn' },
+        canActivate: [permissionGuard],
+        loadChildren: () => import('./features/subscriptions').then(m => m.DOCTOR_SUBSCRIPTION_ROUTES),
+        title: 'subscriptions.mine',
+      },
+      {
         path: 'medical-catalog',
         data: { catalogManagerArea: 'MedicalCatalogManager' },
         loadChildren: () =>

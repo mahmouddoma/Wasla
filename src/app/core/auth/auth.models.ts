@@ -1,3 +1,5 @@
+import type { SubscriptionSelection } from '../../domains/subscriptions';
+
 export type UserType =
   | 'SuperAdmin'
   | 'Doctor'
@@ -54,6 +56,7 @@ export interface PatientRegistrationResponse {
   applicationUserId: string;
 }
 export interface DoctorRegistrationRequest extends RegistrationFields {
+  subscription: SubscriptionSelection;
   profileImage?: File;
   personalIdFrontImage: File;
   personalIdBackImage: File;
@@ -64,6 +67,8 @@ export interface DoctorRegistrationResponse {
   doctorId: string;
   applicationUserId: string;
   approvalStatus: 'Pending';
+  subscriptionId: string;
+  subscriptionStatus: 'Pending';
 }
 export interface PasswordRecoveryRequest {
   email: string;

@@ -15,6 +15,8 @@ import { PracticeEditor } from '../../components/practice-editor/practice-editor
 import { PracticeOperations } from '../../components/practice-operations/practice-operations';
 import { PracticeSchedule } from '../../components/practice-schedule/practice-schedule';
 import { PracticeSegments } from '../../components/practice-segments/practice-segments';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { BookingPriceComponent } from '../../components/booking-price/booking-price.component';
 
 type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
 
@@ -29,12 +31,14 @@ type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
     SideDrawer,
     TranslatePipe,
     PageHeader,
+    BookingPriceComponent,
   ],
   templateUrl: './doctor-practices.html',
   styleUrl: './doctor-practices.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorPractices {
+  protected readonly subscription = inject(SubscriptionState);
   protected readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorPracticesApi);
   private readonly route = inject(ActivatedRoute);
@@ -96,6 +100,7 @@ export class DoctorPractices {
   );
 
   constructor() {
+    void this.subscription.refresh().catch(() => undefined);
     if (!this.isSectionAvailable(this.activeSection())) {
       this.activeSection.set('overview');
     }
@@ -105,6 +110,7 @@ export class DoctorPractices {
   }
 
   protected openCreateDrawer(): void {
+    if (!this.subscription.canCreatePractice()) return;
     this.isCreateDrawerOpen.set(true);
   }
 

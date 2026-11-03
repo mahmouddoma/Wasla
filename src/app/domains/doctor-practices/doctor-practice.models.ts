@@ -75,6 +75,8 @@ export interface DoctorPracticeConfiguration {
   maximumDailyPatients: number | null;
   maximumTicketCallAttempts: number;
   noShowAfterPassedPatientsCount: number;
+  checkInOpenBeforeMinutes: number;
+  ticketNoShowReturnFastTrackLimit: number;
   timeZoneId: string;
   rowVersion: string;
 }
@@ -181,9 +183,9 @@ export interface DoctorPracticeSegment {
 export interface WriteDoctorPracticeSegmentRequest {
   nameAr: string;
   nameEn: string | null;
-  priority: number;
-  reservedDailyQuota: number | null;
-  quotaReleaseBeforeMinutes: number | null;
+  priority?: number;
+  reservedDailyQuota?: number | null;
+  quotaReleaseBeforeMinutes?: number | null;
 }
 
 export interface UpdateDoctorPracticeSegmentRequest extends WriteDoctorPracticeSegmentRequest {

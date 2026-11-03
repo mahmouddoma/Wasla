@@ -29,6 +29,11 @@ describe('DoctorPracticesApi', () => {
   });
 
   afterEach(() => http.verify());
+  it('uses the narrow booking price endpoint with a nullable first-write row version', async () => {
+    const body = { newConsultationPrice: 150, rowVersion: null };
+    const result = firstValueFrom(api.updateBookingPrice('practice/1', body)); const request = http.expectOne(`${url}/practice%2F1/booking-presentation/price`);
+    expect(request.request.method).toBe('PUT'); expect(request.request.body).toEqual(body); request.flush({ id: 'price-1', price: 150, rowVersion: 'BAUG' }); expect((await result).rowVersion).toBe('BAUG');
+  });
 
   it('maps flat location identifiers and bilingual names from the details response', async () => {
     const result = firstValueFrom(api.details('practice-1'));
@@ -125,6 +130,8 @@ describe('DoctorPracticesApi', () => {
       maximumDailyPatients: null,
       maximumTicketCallAttempts: 3,
       noShowAfterPassedPatientsCount: 3,
+      checkInOpenBeforeMinutes: 30,
+      ticketNoShowReturnFastTrackLimit: 3,
       timeZoneId: 'Africa/Cairo',
       rowVersion: 'AQID',
     };

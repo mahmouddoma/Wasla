@@ -14,19 +14,22 @@ import { apiErrorToastInterceptor } from './core/notifications/api-error-toast.i
 import { AuthApi } from './core/auth/auth-api';
 import { AuthSession } from './core/auth/auth-session';
 import { firstValueFrom } from 'rxjs';
+import { SubscriptionState, subscriptionErrorInterceptor } from './domains/subscriptions';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(withInterceptors([authInterceptor, apiErrorToastInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, apiErrorToastInterceptor, subscriptionErrorInterceptor])),
     provideAppInitializer(async () => {
       const session = inject(AuthSession);
+      const subscription = inject(SubscriptionState);
       if (!session.token()) {
         session.clear();
         return;
       }
       try {
         session.complete(await firstValueFrom(inject(AuthApi).currentUser()));
+        if (session.user()?.userType === 'Doctor') await subscription.refresh().catch(() => undefined);
       } catch {
         session.clear();
       }

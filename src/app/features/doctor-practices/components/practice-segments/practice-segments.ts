@@ -28,6 +28,7 @@ import {
 } from '../../../../domains/doctor-practices';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { SubscriptionState } from '../../../../domains/subscriptions';
 
 @Component({
   selector: 'app-practice-segments',
@@ -37,6 +38,8 @@ import { ToastService } from '../../../../core/notifications/toast.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PracticeSegments implements OnInit {
+  protected readonly subscription = inject(SubscriptionState);
+  protected readonly canManageAdvanced = computed(() => this.subscription.has('ADVANCED_SEGMENTS_PRIORITY_QUOTA', true));
   protected readonly uiLanguage = inject(LanguageService);
 
   readonly practiceId = input.required<string>();
@@ -162,9 +165,7 @@ export class PracticeSegments implements OnInit {
         const request = {
           nameAr: value.nameAr.trim(),
           nameEn: value.nameEn.trim() || null,
-          priority: value.priority,
-          reservedDailyQuota: quota,
-          quotaReleaseBeforeMinutes: release,
+          ...(this.canManageAdvanced() ? { priority: value.priority, reservedDailyQuota: quota, quotaReleaseBeforeMinutes: release } : {}),
         };
         if (editing) {
           await firstValueFrom(

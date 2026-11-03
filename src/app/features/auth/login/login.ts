@@ -9,6 +9,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { DoctorApi } from '../../../domains/doctors';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { SubscriptionState } from '../../../domains/subscriptions';
 
 @Component({
   selector: 'app-login',
@@ -26,6 +27,7 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
+  private readonly subscription = inject(SubscriptionState);
   protected readonly model = signal({
     identifier: this.route.snapshot.queryParamMap.get('identifier') || '',
     password: '',
@@ -55,6 +57,7 @@ export class Login {
         }
         const user = await firstValueFrom(this.api.currentUser());
         this.session.complete(user);
+        if (user.userType === 'Doctor') await this.subscription.refresh(true).catch(() => undefined);
         let destination = this.session.requiresPasswordChange()
           ? '/change-password'
           : this.session.destinationFor(user);
@@ -62,7 +65,7 @@ export class Login {
           destination = '/doctor/onboarding';
           try {
             const status = await firstValueFrom(this.doctorApi.onboardingStatus());
-            if (status.approvalStatus === 'Approved') destination = '/workspace/doctor';
+            if (status.approvalStatus === 'Approved') destination = this.subscription.needsReview() ? '/doctor/subscription' : '/workspace/doctor';
           } catch {
             this.toast.error(this.uiLanguage.t('common.failedToLoad'));
           }
@@ -70,7 +73,7 @@ export class Login {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
         if (
           !this.session.requiresPasswordChange() &&
-          destination !== '/doctor/onboarding' &&
+          !['/doctor/onboarding', '/doctor/subscription'].includes(destination) &&
           returnUrl &&
           /^\/(patient|doctor|reception|admin)\/reservations(?:\?|$)/.test(returnUrl)
         )

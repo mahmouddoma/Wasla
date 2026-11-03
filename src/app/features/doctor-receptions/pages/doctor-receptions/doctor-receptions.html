@@ -30,6 +30,7 @@
       icon="reception"
       [actionLabel]="canManageUsers ? ('ui.full.566' | t) : null"
       actionIcon="add"
+      [actionDisabled]="!subscription.canCreateReception()"
       (actionClicked)="openCreateDrawer()"
     >
       <div pageHeaderDeck class="receptions-stats-deck">
@@ -52,6 +53,9 @@
   }
 
   <!-- Main Container -->
+  @if (subscription.usage(); as usage) {
+    <p>{{ 'subscriptions.receptionLimit' | t }}: {{ usage.receptionCount }} / {{ subscription.terms()?.receptionLimit }} · <a routerLink="/doctor/subscription">{{ 'subscriptions.manage' | t }}</a></p>
+  }
   <section class="receptions-content" aria-live="polite">
     @if (isLoading()) {
       <div class="state-card loading-card">
@@ -146,6 +150,10 @@
           </div>
 
           <div class="reception-hero-actions">
+            <span>{{ (item.isActive ? 'subscriptions.accountActive' : 'subscriptions.accountInactive') | t }}</span>
+            @if (canManageAccountState()) {
+              <button class="btn btn-outline-secondary" type="button" [disabled]="isSubmitting()" (click)="accountConfirmation.set(item)">{{ (item.isActive ? 'subscriptions.deactivate' : 'subscriptions.reactivate') | t }}</button>
+            }
             <a class="btn-hero-back" routerLink="/doctor/receptions">
               <svg
                 viewBox="0 0 24 24"
@@ -164,6 +172,12 @@
           </div>
         </div>
 
+        @if (accountConfirmation(); as account) {
+          <section class="p-3" role="region" [attr.aria-label]="'subscriptions.confirm' | t">
+            <p>{{ (account.isActive ? 'subscriptions.deactivateExplanation' : 'subscriptions.capacity') | t }}</p>
+            <div class="d-flex gap-2"><button class="btn btn-primary" type="button" [disabled]="isSubmitting()" (click)="toggleAccount()">{{ 'subscriptions.confirm' | t }}</button><button class="btn btn-outline-secondary" type="button" [disabled]="isSubmitting()" (click)="accountConfirmation.set(null)">{{ 'subscriptions.back' | t }}</button></div>
+          </section>
+        }
         <div class="reception-contact-strip">
           <div class="contact-pill">
             <svg

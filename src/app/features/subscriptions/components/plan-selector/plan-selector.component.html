@@ -1,0 +1,85 @@
+<fieldset [disabled]="disabled()">
+  <legend>{{ 'subscriptions.choosePlan' | t }}</legend>
+  <p>{{ 'subscriptions.manualOnly' | t }}</p>
+  @if (allowTrial() && catalog().trialOffer.enabled && trialPlan()) {
+    <label class="plan-option">
+      <input
+        type="radio"
+        name="subscription-plan"
+        [checked]="selection()?.offerCode === catalog().trialOffer.offerCode"
+        (change)="chooseTrial()"
+      />
+      <span
+        ><strong
+          >{{ 'subscriptions.trial' | t }} · {{ catalog().trialOffer.durationDays }}
+          {{ 'subscriptions.days' | t }}</strong
+        >
+        @if (catalog().trialOffer.startsOnDoctorApproval) {
+          <small>{{ 'subscriptions.trialApproval' | t }}</small>
+        }
+      </span>
+    </label>
+  }
+  @for (option of options(); track option.key) {
+    <label class="plan-option">
+      <input
+        type="radio"
+        name="subscription-plan"
+        [checked]="
+          !selection()?.offerCode &&
+          selection()?.productCode === option.product.code &&
+          selection()?.planCode === option.plan.code &&
+          selection()?.billingCycle === option.cycle
+        "
+        (change)="choose(option.product.code, option.plan.code, option.cycle)"
+      />
+      <span
+        ><strong>{{ name(option.plan) }} · {{ 'subscriptions.' + option.cycle | t }}</strong>
+        <small
+          ><bdi>{{ option.price | currency: catalog().currency }}</bdi> ·
+          {{ 'subscriptions.practiceAllowance' | t }}: {{ option.plan.pricing!.practiceLimit }} ·
+          {{ 'subscriptions.receptionAllowance' | t }}:
+          {{ option.plan.pricing!.receptionLimit }}</small
+        >
+        @if (readyFeatures(option.plan)) {
+          <small>{{ readyFeatures(option.plan) }}</small>
+        }
+      </span>
+    </label>
+  } @empty {
+    @if (!bookingProduct()) {
+      <p role="status">{{ 'subscriptions.catalogEmpty' | t }}</p>
+    }
+  }
+  @if (bookingProduct(); as product) {
+    <label class="plan-option"
+      ><input
+        type="radio"
+        name="subscription-plan"
+        [disabled]="!bookingTier()"
+        [checked]="selection()?.productCode === product.code"
+        (change)="chooseBooking()"
+      /><span
+        ><strong>{{ name(product) }}</strong>
+        @if (bookingTier(); as tier) {
+          <small
+            ><bdi>{{ tier.monthlyPrice | currency: catalog().currency }}</bdi> ·
+            {{ 'subscriptions.Monthly' | t }}</small
+          >
+        }
+      </span></label
+    >
+    <label class="booking-count"
+      >{{ 'subscriptions.practiceCount' | t
+      }}<input
+        class="form-control ltr-text"
+        dir="ltr"
+        type="number"
+        min="1"
+        [max]="catalog().bookingOnly.maximumSelectablePractices"
+        step="1"
+        [value]="count()"
+        (input)="setBookingCount($event)"
+    /></label>
+  }
+</fieldset>

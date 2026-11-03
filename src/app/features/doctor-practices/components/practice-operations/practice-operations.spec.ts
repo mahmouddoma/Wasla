@@ -5,6 +5,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DoctorPractice } from '../../../../domains/doctor-practices';
 import { environment } from '../../../../../environments/environment';
 import { PracticeOperations } from './practice-operations';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 
 describe('PracticeOperations', () => {
   let fixture: ComponentFixture<PracticeOperations>;
@@ -49,6 +51,8 @@ describe('PracticeOperations', () => {
     maximumDailyPatients: 30,
     maximumTicketCallAttempts: 3,
     noShowAfterPassedPatientsCount: 3,
+    checkInOpenBeforeMinutes: 30,
+    ticketNoShowReturnFastTrackLimit: 3,
     timeZoneId: 'Africa/Cairo',
     rowVersion: 'AQID',
   };
@@ -59,7 +63,7 @@ describe('PracticeOperations', () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [PracticeOperations],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SubscriptionState, useValue: subscriptionStateStub() }],
     }).compileComponents();
 
     httpTesting = TestBed.inject(HttpTestingController);

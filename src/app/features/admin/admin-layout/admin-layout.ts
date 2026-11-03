@@ -36,6 +36,7 @@ export class AdminLayout {
 
   protected readonly navItems = computed<NavigationItem[]>(() => {
     const definitions: (NavigationItem & { permission: string })[] = [
+      { id: 'subscriptions', labelKey: 'subscriptions.admin', route: '/admin/subscriptions', icon: 'receipt', permission: 'Subscriptions.ViewAll' },
       {
         id: 'medical-catalog-managers',
         labelKey: 'diagnostics.managers',

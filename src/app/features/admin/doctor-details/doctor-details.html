@@ -36,6 +36,17 @@
     </div>
 
   } @else if (details(); as doctor) {
+    @if (canViewSubscriptions()) {
+      <section class="py-3" aria-live="polite">
+        <a routerLink="/admin/subscriptions" [queryParams]="{search: doctor.email}">{{ 'subscriptions.manage' | t }}</a>
+        @if (subscriptionReadFailed()) { <p>{{ 'subscriptions.loadError' | t }}</p> }
+        @if (subscriptionSummary()?.subscription; as subscription) {
+          <p>{{ 'subscriptions.status' | t }}: {{ 'subscriptions.' + subscription.status | t }}</p>
+          @if (subscription.kind === 'Paid' && subscription.status === 'Pending') { <p>{{ 'subscriptions.paidAfterApproval' | t }}</p> }
+          @if (subscription.kind === 'Trial') { <p>{{ 'subscriptions.trial' | t }}: <time dir="ltr">{{ subscription.trialStartedAtUtc | date:'mediumDate' }} — {{ subscription.trialEndsAtUtc | date:'mediumDate' }}</time></p> }
+        }
+      </section>
+    }
     <!-- Profile Hero Banner -->
     <header class="profile-hero">
       <div class="hero-content">

@@ -29,6 +29,9 @@ export class DoctorReceptionsApi {
   create(request: CreateDoctorReceptionRequest): Observable<DoctorReception> {
     return this.http.post<DoctorReception>(this.url, request);
   }
+  updateAccountState(receptionId: string, request: { isActive: boolean; rowVersion: string }): Observable<DoctorReception> {
+    return this.http.put<DoctorReception>(`${this.receptionUrl(receptionId)}/account-state`, request);
+  }
   assign(
     receptionId: string,
     request: CreateReceptionAssignmentRequest,

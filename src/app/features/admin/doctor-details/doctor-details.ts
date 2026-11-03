@@ -1,4 +1,5 @@
 import { DoctorSuspensionImpact } from '../services/admin-doctors';
+import { DatePipe } from '@angular/common';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -28,6 +29,7 @@ import {
   DoctorMediaType,
 } from '../services/admin-doctors';
 import { DoctorApprovalStatus } from '../../../domains/doctors';
+import { SubscriptionsApi, SubscriptionDetails } from '../../../domains/subscriptions';
 import { isGuid } from '../../../core/validation/guid';
 import {
   DoctorDecisionAction,
@@ -58,7 +60,7 @@ interface MediaPreview {
 
 @Component({
   selector: 'app-doctor-details',
-  imports: [RouterLink, DoctorDecisionDialog, ConfirmationDialog, TranslatePipe],
+  imports: [RouterLink, DoctorDecisionDialog, ConfirmationDialog, TranslatePipe, DatePipe],
   templateUrl: './doctor-details.html',
   styleUrl: './doctor-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,6 +69,10 @@ export class DoctorDetails {
   protected readonly uiLanguage = inject(LanguageService);
 
   private readonly api = inject(AdminDoctorsApi);
+  private readonly subscriptionsApi = inject(SubscriptionsApi);
+  protected readonly subscriptionSummary = signal<SubscriptionDetails | null>(null);
+  protected readonly subscriptionReadFailed = signal(false);
+  protected readonly canViewSubscriptions = computed(() => this.session.hasPermission('Subscriptions.ViewAll'));
   private readonly toast = inject(ToastService);
   protected readonly suspensionImpact = signal<DoctorSuspensionImpact | null>(null);
   protected readonly impactLoading = signal(false);
@@ -383,6 +389,7 @@ export class DoctorDetails {
       this.isActionSubmitting.set(false);
       this.closeLifecycleDialog(action);
       await this.load();
+      if (action === 'approve' || action === 'reject') await this.refreshSubscription();
       this.reviewed.emit();
     } catch (error) {
       const parsed = parseApiErrors(error);
@@ -401,10 +408,23 @@ export class DoctorDetails {
           this.uiLanguage.t('doctor.conflict'),
         ]);
         await this.load();
+        if (action === 'approve' || action === 'reject') await this.refreshSubscription();
       }
     } finally {
       this.isActionSubmitting.set(false);
     }
+  }
+
+  private async refreshSubscription(): Promise<void> {
+    const doctor = this.details();
+    if (!doctor || !this.canViewSubscriptions() || !this.session.hasPermission('Subscriptions.ViewDetails')) return;
+    this.subscriptionSummary.set(null); this.subscriptionReadFailed.set(false);
+    try {
+      const page = await firstValueFrom(this.subscriptionsApi.list({ pageNumber: 1, pageSize: 20, search: doctor.email }));
+      const matching = page.items.filter(item => item.doctorId === doctor.doctorId);
+      const subscription = matching.find(item => item.status === 'Pending') ?? matching.find(item => item.status === 'Active') ?? matching[0];
+      if (subscription) this.subscriptionSummary.set(await firstValueFrom(this.subscriptionsApi.details(subscription.id)));
+    } catch { this.subscriptionReadFailed.set(true); }
   }
 
   private applyLifecycleResponse(

@@ -1,0 +1,33 @@
+<section class="booking-price">
+  <h3>{{ 'subscriptions.bookingPrice' | t }}</h3>
+  @if (loading()) {
+    <p role="status">{{ 'subscriptions.loading' | t }}</p>
+  } @else if (error()) {
+    <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
+    <button class="btn btn-outline-secondary" type="button" (click)="load()">
+      {{ 'subscriptions.retry' | t }}
+    </button>
+  } @else {
+    <form class="d-flex flex-wrap gap-3 align-items-end" (ngSubmit)="save()">
+      <label for="booking-price"
+        >{{ 'subscriptions.bookingPrice' | t
+        }}<input
+          class="form-control ltr-text"
+          id="booking-price"
+          name="price"
+          type="number"
+          dir="ltr"
+          min="0.01"
+          step="0.01"
+          required
+          [(ngModel)]="price"
+          [disabled]="busy() || !canManage()"
+      /></label>
+      @if (canManage()) {
+        <button class="btn btn-primary" type="submit" [disabled]="busy() || !valid()">
+          {{ 'subscriptions.savePrice' | t }}
+        </button>
+      }
+    </form>
+  }
+</section>

@@ -16,7 +16,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FormField, form, max, min, pattern, required, submit } from '@angular/forms/signals';
+import { disabled, FormField, form, max, min, pattern, required, submit } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import {
@@ -26,6 +26,7 @@ import {
 } from '../../../../domains/doctor-practices';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { SubscriptionState } from '../../../../domains/subscriptions';
 
 @Component({
   selector: 'app-practice-operations',
@@ -35,6 +36,7 @@ import { ToastService } from '../../../../core/notifications/toast.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PracticeOperations implements OnInit, OnDestroy {
+  protected readonly subscription = inject(SubscriptionState);
   protected readonly uiLanguage = inject(LanguageService);
 
   readonly practice = input.required<DoctorPractice>();
@@ -67,9 +69,15 @@ export class PracticeOperations implements OnInit, OnDestroy {
     maximumDailyPatients: '',
     maximumTicketCallAttempts: 0,
     noShowAfterPassedPatientsCount: 3,
+    checkInOpenBeforeMinutes: 30,
+    ticketNoShowReturnFastTrackLimit: 3,
     timeZoneId: '',
   });
   protected readonly configForm = form(this.configModel, (field) => {
+    disabled(field.allowWalkIn, () => !this.subscription.has('CHECKIN_WALKIN', true));
+    for (const control of [field.checkInGracePeriodMinutes, field.maximumTicketCallAttempts, field.noShowAfterPassedPatientsCount, field.checkInOpenBeforeMinutes, field.ticketNoShowReturnFastTrackLimit]) disabled(control, () => !this.subscription.has('CHECKIN_WALKIN', true));
+    min(field.checkInOpenBeforeMinutes, 0);
+    min(field.ticketNoShowReturnFastTrackLimit, 0);
     required(field.defaultSlotDurationMinutes, { message: 'ui.full.343' });
     min(field.defaultSlotDurationMinutes, 1, {
       message: 'ui.full.344',
@@ -206,15 +214,17 @@ export class PracticeOperations implements OnInit, OnDestroy {
         const response = await firstValueFrom(
           this.api.updateConfiguration(this.practice().id, {
             allowOnlineBooking: value.allowOnlineBooking,
-            allowWalkIn: value.allowWalkIn,
+            allowWalkIn: this.subscription.has('CHECKIN_WALKIN', true) ? value.allowWalkIn : current.allowWalkIn,
             defaultSlotDurationMinutes: value.defaultSlotDurationMinutes,
-            checkInGracePeriodMinutes: value.checkInGracePeriodMinutes,
+            checkInGracePeriodMinutes: this.subscription.has('CHECKIN_WALKIN', true) ? value.checkInGracePeriodMinutes : current.checkInGracePeriodMinutes,
             patientSelfCancellationCutoffMinutes: value.patientSelfCancellationCutoffMinutes,
             maximumDailyPatients: value.maximumDailyPatients.trim()
               ? Number(value.maximumDailyPatients)
               : null,
-            maximumTicketCallAttempts: value.maximumTicketCallAttempts,
-            noShowAfterPassedPatientsCount: value.noShowAfterPassedPatientsCount,
+            maximumTicketCallAttempts: this.subscription.has('CHECKIN_WALKIN', true) ? value.maximumTicketCallAttempts : current.maximumTicketCallAttempts,
+            noShowAfterPassedPatientsCount: this.subscription.has('CHECKIN_WALKIN', true) ? value.noShowAfterPassedPatientsCount : current.noShowAfterPassedPatientsCount,
+            checkInOpenBeforeMinutes: this.subscription.has('CHECKIN_WALKIN', true) ? value.checkInOpenBeforeMinutes : current.checkInOpenBeforeMinutes,
+            ticketNoShowReturnFastTrackLimit: this.subscription.has('CHECKIN_WALKIN', true) ? value.ticketNoShowReturnFastTrackLimit : current.ticketNoShowReturnFastTrackLimit,
             timeZoneId: value.timeZoneId.trim(),
             rowVersion: current.rowVersion,
           }),
@@ -440,6 +450,8 @@ export class PracticeOperations implements OnInit, OnDestroy {
       maximumDailyPatients: configuration.maximumDailyPatients?.toString() ?? '',
       maximumTicketCallAttempts: configuration.maximumTicketCallAttempts,
       noShowAfterPassedPatientsCount: configuration.noShowAfterPassedPatientsCount,
+      checkInOpenBeforeMinutes: configuration.checkInOpenBeforeMinutes,
+      ticketNoShowReturnFastTrackLimit: configuration.ticketNoShowReturnFastTrackLimit,
       timeZoneId: configuration.timeZoneId,
     });
     this.configForm().reset();

@@ -24,6 +24,7 @@ import { TRANSLATIONS } from '../../../../core/i18n/translations';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PublicProfileManager } from '../../components/public-profile-manager/public-profile-manager';
+import { SubscriptionState } from '../../../../domains/subscriptions';
 
 @Component({
   selector: 'app-doctor-profile',
@@ -33,6 +34,7 @@ import { PublicProfileManager } from '../../components/public-profile-manager/pu
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DoctorProfile {
+  protected readonly subscription = inject(SubscriptionState);
   readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorProfileApi);
   private readonly session = inject(AuthSession);
@@ -107,6 +109,7 @@ export class DoctorProfile {
   );
 
   constructor() {
+    void this.subscription.refresh().catch(() => undefined);
     void this.load();
   }
 
@@ -197,6 +200,8 @@ export class DoctorProfile {
           }),
         );
         this.location.set(response);
+        this.subscription.invalidate();
+        void this.subscription.refresh().catch(() => undefined);
         this.populateLocation(response);
         this.toast.success(
           isUpdate ? this.langService.t('ui.full.541') : this.langService.t('ui.full.542'),
@@ -204,7 +209,11 @@ export class DoctorProfile {
       } catch (error) {
         this.handleError(error);
         if (error instanceof HttpErrorResponse && error.status === 409) {
+          const draft = this.locationModel();
           await this.loadLocation();
+          this.locationModel.set(draft);
+          this.subscription.invalidate();
+          void this.subscription.refresh().catch(() => undefined);
           this.toast.error(this.langService.t('ui.full.543'));
         }
       } finally {

@@ -7,6 +7,8 @@ import { AuthApi } from '../../../../core/auth/auth-api';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { CurrentUser } from '../../../../core/auth/auth.models';
+import { SubscriptionState } from '../../../../domains/subscriptions';
+import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 
 describe('DoctorOnboarding', () => {
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -77,6 +79,7 @@ describe('DoctorOnboarding', () => {
     await TestBed.configureTestingModule({
       imports: [DoctorOnboarding],
       providers: [
+        { provide: SubscriptionState, useValue: subscriptionStateStub() },
         provideRouter([]),
         { provide: DoctorApi, useValue: mockDoctorApi },
         { provide: AuthApi, useValue: mockAuthApi },
