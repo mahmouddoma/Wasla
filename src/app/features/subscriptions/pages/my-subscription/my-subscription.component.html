@@ -3,147 +3,287 @@
     [heading]="'subscriptions.mine' | t"
     [description]="'subscriptions.manualOnly' | t"
     icon="finance"
-    [actionLabel]="'subscriptions.retry' | t"
+    [actionLabel]="error() ? ('subscriptions.retry' | t) : ('common.refresh' | t)"
     actionIcon="refresh"
     [actionLoading]="loading()"
     (actionClicked)="load()"
   />
+
   @if (loading()) {
-    <p role="status">{{ 'subscriptions.loading' | t }}</p>
+    <div class="loading-state-card" role="status">
+      <div class="spinner-border text-teal" role="status"></div>
+      <span>{{ 'subscriptions.loading' | t }}</span>
+    </div>
   }
+
   @if (error()) {
-    <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
+    <div class="error-state-card" role="alert">
+      <svg
+        viewBox="0 0 24 24"
+        width="28"
+        height="28"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p class="error-msg">{{ 'subscriptions.loadError' | t }}</p>
+      <button type="button" class="btn btn-outline error-retry-btn" (click)="load()">
+        {{ 'subscriptions.retry' | t }}
+      </button>
+    </div>
   }
+
   @if (!loading()) {
     @if (noSubscription() && session.hasPermission('Subscriptions.RequestChangeOwn')) {
-      <section class="subscription-section">
-        <img
-          class="state-empty-illustration"
-          src="/SVG-AVATAR/Payment Information-bro.svg"
-          alt=""
-          loading="lazy"
-          decoding="async"
-        />
-        <h2>{{ 'subscriptions.none' | t }}</h2>
-        <p>{{ 'subscriptions.choosePlan' | t }}</p>
-        @if (catalog(); as available) {
+      @if (catalog(); as available) {
+        <div class="plan-selection-wrapper">
           <app-plan-selector
             [catalog]="available"
             [selection]="selection()"
             [disabled]="busy()"
             (selectionChange)="selection.set($event)"
           />
-          <button
-            class="btn btn-primary mt-3"
-            type="button"
-            [disabled]="busy() || !selection()"
-            (click)="confirmation.set('selection')"
-          >
-            {{ 'subscriptions.sendSelection' | t }}
-          </button>
-        }
-      </section>
+
+          <div class="plan-action-bar" [class.has-selection]="selection() !== null">
+            <div class="selection-summary">
+              <span class="summary-prefix">{{ 'subscriptions.selectedPlan' | t }}:</span>
+              @if (selection(); as sel) {
+                <strong class="summary-code"
+                  >{{ getSelectedPlanName() }} ·
+                  {{ 'subscriptions.' + sel.billingCycle | t }}</strong
+                >
+              } @else {
+                <span class="summary-placeholder">{{ 'subscriptions.noPlanSelected' | t }}</span>
+              }
+            </div>
+
+            <button
+              class="btn btn-primary submit-action-btn"
+              type="button"
+              [disabled]="busy() || !selection()"
+              (click)="confirmation.set('selection')"
+            >
+              <i class="fa-solid fa-paper-plane me-2" aria-hidden="true"></i>
+              <span>{{ 'subscriptions.sendSelection' | t }}</span>
+            </button>
+          </div>
+        </div>
+      }
     }
+
     @if (state.details(); as details) {
       @if (details.subscription; as current) {
-        <section class="subscription-section">
-          <h2>{{ 'subscriptions.current' | t }}</h2>
-          <dl class="terms-grid">
-            <div>
-              <dt>{{ 'subscriptions.plan' | t }}</dt>
-              <dd>{{ current.planCode }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'subscriptions.status' | t }}</dt>
-              <dd>{{ 'subscriptions.' + current.status | t }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'subscriptions.price' | t }}</dt>
-              <dd>{{ current.priceAmount | currency: current.currency }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'subscriptions.period' | t }}</dt>
-              <dd>
-                <time dir="ltr"
-                  >{{ current.startsAtUtc | date: 'mediumDate' }} —
-                  {{ current.endsAtUtc | date: 'mediumDate' }}</time
+        <section class="active-subscription-card">
+          <div class="subscription-header-row">
+            <div class="subscription-identity">
+              <div class="plan-emblem-badge">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
                 >
-              </dd>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </div>
+              <div>
+                <span class="plan-label-eyebrow">{{ 'subscriptions.current' | t }}</span>
+                <h2 class="current-plan-title">{{ current.planCode }}</h2>
+              </div>
             </div>
-            <div>
-              <dt>{{ 'subscriptions.practiceLimit' | t }}</dt>
-              <dd>{{ details.usage.practiceCount }} / {{ current.practiceLimit }}</dd>
+
+            <div class="subscription-pills">
+              <span class="badge-status-pill" [class]="'status-' + current.status.toLowerCase()">
+                <span class="status-dot"></span>
+                {{ 'subscriptions.' + current.status | t }}
+              </span>
+              <span class="badge-cycle-tag">{{ 'subscriptions.' + current.billingCycle | t }}</span>
             </div>
-            <div>
-              <dt>{{ 'subscriptions.receptionLimit' | t }}</dt>
-              <dd>{{ details.usage.receptionCount }} / {{ current.receptionLimit }}</dd>
+          </div>
+
+          <div class="subscription-metrics-grid">
+            <div class="metric-card-cell">
+              <span class="cell-label">{{ 'subscriptions.price' | t }}</span>
+              <strong class="cell-primary-value"
+                ><bdi>{{ current.priceAmount | currency: current.currency }}</bdi></strong
+              >
             </div>
-          </dl>
+
+            <div class="metric-card-cell">
+              <span class="cell-label">{{ 'subscriptions.period' | t }}</span>
+              <time class="cell-time" dir="ltr">
+                {{ current.startsAtUtc | date: 'mediumDate' }} —
+                {{ current.endsAtUtc | date: 'mediumDate' }}
+              </time>
+            </div>
+
+            <div class="metric-card-cell">
+              <span class="cell-label">{{ 'subscriptions.practiceLimit' | t }}</span>
+              <strong class="cell-primary-value"
+                >{{ details.usage.practiceCount }} / {{ current.practiceLimit }}</strong
+              >
+            </div>
+
+            <div class="metric-card-cell">
+              <span class="cell-label">{{ 'subscriptions.receptionLimit' | t }}</span>
+              <strong class="cell-primary-value"
+                >{{ details.usage.receptionCount }} / {{ current.receptionLimit }}</strong
+              >
+            </div>
+          </div>
+
           @if (current.willNotRenew) {
-            <p>{{ 'subscriptions.cancelledEnd' | t }}</p>
+            <div class="notice-callout-warning">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{{ 'subscriptions.cancelledEnd' | t }}</span>
+            </div>
           }
+
           @if (
             current.status === 'Active' &&
             current.kind === 'Paid' &&
             !current.willNotRenew &&
             session.hasPermission('Subscriptions.CancelAtPeriodEndOwn')
           ) {
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              [disabled]="busy()"
-              (click)="confirmation.set('cancel')"
-            >
-              {{ 'subscriptions.cancel' | t }}
-            </button>
+            <div class="subscription-footer-bar">
+              <button
+                class="btn btn-outline-danger cancel-plan-btn"
+                type="button"
+                [disabled]="busy()"
+                (click)="confirmation.set('cancel')"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                <span>{{ 'subscriptions.cancel' | t }}</span>
+              </button>
+            </div>
           }
         </section>
       } @else {
-        <section class="subscription-section">
-          <img
-            class="state-empty-illustration"
-            src="/SVG-AVATAR/Payment Information-bro.svg"
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-          <h2>{{ 'subscriptions.none' | t }}</h2>
-          <p>{{ 'subscriptions.choosePlan' | t }}</p>
-        </section>
+        <div class="welcome-onboarding-hero">
+          <div class="hero-text-pane">
+            <div class="hero-status-pill">
+              <span class="status-indicator-dot"></span>
+              {{ 'subscriptions.none' | t }}
+            </div>
+            <h2 class="hero-headline">{{ 'subscriptions.welcomeHeading' | t }}</h2>
+            <p class="hero-subtext">{{ 'subscriptions.welcomeDescription' | t }}</p>
+          </div>
+          <div class="hero-image-pane">
+            <img
+              class="state-empty-illustration"
+              src="/SVG-AVATAR/Payment Information-bro.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
       }
+
       @for (period of [details.pendingSubscription, details.nextPeriod]; track $index) {
         @if (period) {
-          <section class="subscription-section">
-            <h2>
-              {{
-                ($index === 0 ? 'subscriptions.pendingSelection' : 'subscriptions.nextPeriod') | t
-              }}
-            </h2>
-            <p>
-              {{ period.planCode }} · {{ 'subscriptions.' + period.status | t }} ·
-              <time dir="ltr"
-                >{{ period.startsAtUtc | date: 'mediumDate' }} —
-                {{ period.endsAtUtc | date: 'mediumDate' }}</time
+          <section class="period-info-card">
+            <div class="period-icon-wrap">
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
               >
-            </p>
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <div class="period-text-meta">
+              <h3 class="period-card-title">
+                {{
+                  ($index === 0 ? 'subscriptions.pendingSelection' : 'subscriptions.nextPeriod') | t
+                }}
+              </h3>
+              <p class="period-card-subtitle">
+                <strong>{{ period.planCode }}</strong> ·
+                {{ 'subscriptions.' + period.status | t }} ·
+                <time dir="ltr"
+                  >{{ period.startsAtUtc | date: 'mediumDate' }} —
+                  {{ period.endsAtUtc | date: 'mediumDate' }}</time
+                >
+              </p>
+            </div>
           </section>
         }
       }
+
       @if (details.entitlements.length) {
-        <section class="subscription-section">
-          <h2>{{ 'subscriptions.features' | t }}</h2>
-          <dl class="terms-grid">
+        <section class="entitlements-panel-card">
+          <h3 class="panel-card-title">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            <span>{{ 'subscriptions.features' | t }}</span>
+          </h3>
+
+          <div class="entitlements-grid-list">
             @for (grant of details.entitlements; track grant.featureCode) {
-              <div>
-                <dt>{{ 'subscriptions.feature.' + grant.featureCode | t }}</dt>
-                <dd>{{ 'subscriptions.' + grant.accessLevel | t }}</dd>
+              <div class="entitlement-item-cell">
+                <span class="feature-label">{{
+                  'subscriptions.feature.' + grant.featureCode | t
+                }}</span>
+                <span class="access-level-tag" [class.is-full]="grant.accessLevel === 'Full'">
+                  {{ 'subscriptions.' + grant.accessLevel | t }}
+                </span>
               </div>
             }
-          </dl>
+          </div>
         </section>
       }
+
       @if (session.hasPermission('Subscriptions.RequestChangeOwn') && catalog(); as available) {
-        <section class="subscription-section">
+        <section class="change-plan-container">
           <app-plan-selector
             [catalog]="available"
             [productCode]="details.subscription?.productCode ?? null"
@@ -151,90 +291,193 @@
             [disabled]="busy()"
             (selectionChange)="selection.set($event)"
           />
+
           @if (details.subscription?.status === 'Active') {
-            <label class="form-label" for="change-type">{{ 'subscriptions.changeType' | t }}</label>
-            <select id="change-type" class="form-select" [(ngModel)]="changeType">
-              <option value="UpgradePlan">{{ 'subscriptions.UpgradePlan' | t }}</option>
-              <option value="DowngradePlan">{{ 'subscriptions.DowngradePlan' | t }}</option>
-              <option value="ChangeBillingCycle">
-                {{ 'subscriptions.ChangeBillingCycle' | t }}
-              </option>
-            </select>
-            <label class="form-label mt-3" for="change-reason">{{
-              'subscriptions.reason' | t
-            }}</label
-            ><textarea
-              id="change-reason"
-              class="form-control"
-              [(ngModel)]="reason"
-              maxlength="2000"
-            ></textarea>
-            <button
-              type="button"
-              class="btn btn-primary mt-3"
-              [disabled]="busy() || !selection() || !reason.trim() || confirmation() !== null"
-              (click)="confirmation.set('change')"
-            >
-              {{ 'subscriptions.requestChange' | t }}
-            </button>
-          } @else {
-            <button
-              type="button"
-              class="btn btn-primary mt-3"
-              [disabled]="busy() || !selection() || confirmation() !== null"
-              (click)="confirmation.set('selection')"
-            >
-              {{ 'subscriptions.sendSelection' | t }}
-            </button>
-          }
-        </section>
-      }
-      @if (details.changeRequests.length) {
-        <section class="subscription-section">
-          <h2>{{ 'subscriptions.changes' | t }}</h2>
-          @for (change of details.changeRequests; track change.id) {
-            <div class="change-row">
-              <strong
-                >{{ change.targetPlanCode }} · {{ 'subscriptions.' + change.status | t }}</strong
+            <div class="change-request-form">
+              <h3 class="form-section-title">{{ 'subscriptions.requestChange' | t }}</h3>
+
+              <div class="form-field-group">
+                <label class="field-label" for="change-type">{{
+                  'subscriptions.changeType' | t
+                }}</label>
+                <div class="select-wrapper">
+                  <select
+                    id="change-type"
+                    class="form-select custom-select-input"
+                    [(ngModel)]="changeType"
+                  >
+                    <option value="UpgradePlan">{{ 'subscriptions.UpgradePlan' | t }}</option>
+                    <option value="DowngradePlan">{{ 'subscriptions.DowngradePlan' | t }}</option>
+                    <option value="ChangeBillingCycle">
+                      {{ 'subscriptions.ChangeBillingCycle' | t }}
+                    </option>
+                  </select>
+                  <svg class="custom-select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="form-field-group">
+                <label class="field-label" for="change-reason">{{
+                  'subscriptions.reason' | t
+                }}</label>
+                <textarea
+                  id="change-reason"
+                  class="form-control custom-textarea-input"
+                  [(ngModel)]="reason"
+                  maxlength="2000"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary submit-change-btn"
+                [disabled]="busy() || !selection() || !reason.trim() || confirmation() !== null"
+                (click)="confirmation.set('change')"
               >
-              <p>{{ change.reason }} {{ change.rejectionReason }}</p>
-              <time dir="ltr">{{ change.effectiveAtUtc | date: 'medium' }}</time>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>{{ 'subscriptions.requestChange' | t }}</span>
+              </button>
+            </div>
+          } @else {
+            <div class="plan-action-bar">
+              <button
+                type="button"
+                class="btn btn-primary submit-action-btn"
+                [disabled]="busy() || !selection() || confirmation() !== null"
+                (click)="confirmation.set('selection')"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="m22 2-7 20-4-9-9-4Z" />
+                  <path d="M22 2 11 13" />
+                </svg>
+                <span>{{ 'subscriptions.sendSelection' | t }}</span>
+              </button>
             </div>
           }
         </section>
       }
+
+      @if (details.changeRequests.length) {
+        <section class="change-requests-card">
+          <h3 class="panel-card-title">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{{ 'subscriptions.changes' | t }}</span>
+          </h3>
+
+          <div class="change-requests-list">
+            @for (change of details.changeRequests; track change.id) {
+              <div class="change-request-item">
+                <div class="request-main-meta">
+                  <strong class="target-plan">{{ change.targetPlanCode }}</strong>
+                  <span class="status-pill status-pill-sm">{{
+                    'subscriptions.' + change.status | t
+                  }}</span>
+                </div>
+                <p class="request-reason">{{ change.reason }} {{ change.rejectionReason }}</p>
+                <time class="request-time" dir="ltr">{{
+                  change.effectiveAtUtc | date: 'medium'
+                }}</time>
+              </div>
+            }
+          </div>
+        </section>
+      }
     }
+
     @if (confirmation()) {
-      <section
-        class="subscription-section"
-        role="region"
-        [attr.aria-label]="'subscriptions.confirm' | t"
-      >
-        <h2>{{ 'subscriptions.confirm' | t }}</h2>
-        <p>
-          {{
-            (confirmation() === 'cancel'
-              ? 'subscriptions.cancelExplanation'
-              : 'subscriptions.pendingExplanation'
-            ) | t
-          }}
-        </p>
-        @if (selection(); as chosen) {
-          <p>{{ chosen.planCode }} · {{ 'subscriptions.' + chosen.billingCycle | t }}</p>
-        }
-        <div class="d-flex flex-wrap gap-2">
-          <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirm()">
-            {{ 'subscriptions.confirm' | t }}</button
-          ><button
-            type="button"
-            class="btn btn-outline-secondary"
-            [disabled]="busy()"
-            (click)="confirmation.set(null)"
-          >
-            {{ 'subscriptions.back' | t }}
-          </button>
-        </div>
-      </section>
+      <div class="confirmation-backdrop">
+        <section
+          class="confirmation-dialog"
+          role="region"
+          [attr.aria-label]="'subscriptions.confirm' | t"
+        >
+          <div class="dialog-icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              width="30"
+              height="30"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+
+          <h3 class="dialog-title">{{ 'subscriptions.confirm' | t }}</h3>
+          <p class="dialog-explanation">
+            {{
+              (confirmation() === 'cancel'
+                ? 'subscriptions.cancelExplanation'
+                : 'subscriptions.pendingExplanation'
+              ) | t
+            }}
+          </p>
+
+          @if (selection(); as chosen) {
+            <div class="chosen-summary-pill">
+              <strong>{{ chosen.planCode }}</strong>
+              <span class="sep-dot">•</span>
+              <span>{{ 'subscriptions.' + chosen.billingCycle | t }}</span>
+            </div>
+          }
+
+          <div class="dialog-btn-group">
+            <button
+              type="button"
+              class="btn btn-primary dialog-action-btn"
+              [disabled]="busy()"
+              (click)="confirm()"
+            >
+              {{ 'subscriptions.confirm' | t }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline dialog-action-btn"
+              [disabled]="busy()"
+              (click)="confirmation.set(null)"
+            >
+              {{ 'subscriptions.back' | t }}
+            </button>
+          </div>
+        </section>
+      </div>
     }
   }
 </main>

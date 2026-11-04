@@ -40,6 +40,24 @@ export class MySubscriptionComponent {
   readonly confirmation = signal<'selection' | 'change' | 'cancel' | null>(null);
   changeType: SubscriptionChangeType = 'UpgradePlan';
   reason = '';
+
+  getSelectedPlanName(): string {
+    const sel = this.selection();
+    if (!sel) return '';
+    const cat = this.catalog();
+    if (cat) {
+      for (const prod of cat.products) {
+        const p = prod.plans.find((x) => x.code === sel.planCode);
+        if (p) {
+          return this.language.currentLang() === 'ar'
+            ? p.nameAr || p.nameEn || p.code
+            : p.nameEn || p.nameAr || p.code;
+        }
+      }
+    }
+    return sel.planCode;
+  }
+
   constructor() {
     void this.load();
   }

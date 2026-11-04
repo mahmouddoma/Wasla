@@ -82,4 +82,9 @@ describe('Patient diagnostic history', () => {
     expect(fixture.componentInstance.error()).toBe(true);
     expect(fixture.componentInstance.results()).toEqual([]);
   });
+  it('reloads diagnostics with the new patient context', async () => {
+    const fixture = create(); await fixture.whenStable();
+    fixture.componentRef.setInput('patientId', 'patient-2'); await fixture.whenStable();
+    expect(api.requests).toHaveBeenLastCalledWith('lab', 'Doctor', expect.objectContaining({ PatientId: 'patient-2', PageNumber: 1 }));
+  });
 });

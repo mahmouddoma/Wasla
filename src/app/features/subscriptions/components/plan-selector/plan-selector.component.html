@@ -1,85 +1,321 @@
-<fieldset [disabled]="disabled()">
-  <legend>{{ 'subscriptions.choosePlan' | t }}</legend>
-  <p>{{ 'subscriptions.manualOnly' | t }}</p>
+<fieldset [disabled]="disabled()" class="feedhive-pricing-container">
+  <!-- Top Center Header -->
+  <div class="pricing-header-center">
+    <legend class="pricing-main-title">{{ 'subscriptions.choosePlan' | t }}</legend>
+    <p class="pricing-subtitle">{{ 'subscriptions.manualOnly' | t }}</p>
+
+    <!-- Monthly / Annual Toggle Switch -->
+    @if (availableCycles().length > 1) {
+      <div class="billing-toggle-row">
+        <span
+          class="cycle-toggle-label"
+          [class.active]="cycle() === 'Monthly'"
+          (click)="setCycle('Monthly')"
+        >
+          {{ 'subscriptions.Monthly' | t }}
+        </span>
+
+        <button
+          type="button"
+          class="feedhive-switch"
+          [class.is-annual]="cycle() === 'Annual'"
+          role="switch"
+          [attr.aria-checked]="cycle() === 'Annual'"
+          (click)="toggleCycle()"
+        >
+          <span class="switch-bullet"></span>
+        </button>
+
+        <span
+          class="cycle-toggle-label"
+          [class.active]="cycle() === 'Annual'"
+          (click)="setCycle('Annual')"
+        >
+          {{ 'subscriptions.Annual' | t }}
+          <span class="savings-tag">{{ 'subscriptions.annualSavingBadge' | t }}</span>
+        </span>
+      </div>
+    }
+  </div>
+
+  <!-- Trial Banner (if allowed) -->
   @if (allowTrial() && catalog().trialOffer.enabled && trialPlan()) {
-    <label class="plan-option">
+    <label class="trial-option-banner" [class.is-selected]="selection()?.offerCode === catalog().trialOffer.offerCode">
       <input
         type="radio"
+        class="hidden-accessible-radio"
         name="subscription-plan"
         [checked]="selection()?.offerCode === catalog().trialOffer.offerCode"
         (change)="chooseTrial()"
       />
-      <span
-        ><strong
-          >{{ 'subscriptions.trial' | t }} · {{ catalog().trialOffer.durationDays }}
-          {{ 'subscriptions.days' | t }}</strong
-        >
-        @if (catalog().trialOffer.startsOnDoctorApproval) {
-          <small>{{ 'subscriptions.trialApproval' | t }}</small>
-        }
-      </span>
+      <div class="trial-banner-inner">
+        <div class="trial-icon-box">
+          <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+        </div>
+        <div class="trial-details">
+          <div class="trial-badge-row">
+            <span class="trial-badge">{{ 'subscriptions.trial' | t }}</span>
+            <strong class="trial-days-count">{{ catalog().trialOffer.durationDays }} {{ 'subscriptions.days' | t }}</strong>
+          </div>
+          @if (catalog().trialOffer.startsOnDoctorApproval) {
+            <small class="trial-note">{{ 'subscriptions.trialApproval' | t }}</small>
+          }
+        </div>
+        <div class="trial-cta">
+          <span class="trial-select-pill">
+            @if (language.isRtl()) {
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            } @else {
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            }
+          </span>
+        </div>
+      </div>
     </label>
   }
-  @for (option of options(); track option.key) {
-    <label class="plan-option">
-      <input
-        type="radio"
-        name="subscription-plan"
-        [checked]="
-          !selection()?.offerCode &&
-          selection()?.productCode === option.product.code &&
-          selection()?.planCode === option.plan.code &&
-          selection()?.billingCycle === option.cycle
-        "
-        (change)="choose(option.product.code, option.plan.code, option.cycle)"
-      />
-      <span
-        ><strong>{{ name(option.plan) }} · {{ 'subscriptions.' + option.cycle | t }}</strong>
-        <small
-          ><bdi>{{ option.price | currency: catalog().currency }}</bdi> ·
-          {{ 'subscriptions.practiceAllowance' | t }}: {{ option.plan.pricing!.practiceLimit }} ·
-          {{ 'subscriptions.receptionAllowance' | t }}:
-          {{ option.plan.pricing!.receptionLimit }}</small
-        >
-        @if (readyFeatures(option.plan)) {
-          <small>{{ readyFeatures(option.plan) }}</small>
+
+  <!-- Pricing Cards Grid (FeedHive Style across full width) -->
+  <div class="pricing-cards-grid">
+    @for (option of displayedOptions(); track option.key) {
+      <label
+        class="feedhive-card"
+        [attr.data-plan]="option.plan.code"
+        [class.is-selected]="isSelected(option)"
+        [class.is-featured]="option.plan.code === 'PROFESSIONAL'"
+      >
+        <input
+          type="radio"
+          class="hidden-accessible-radio"
+          name="subscription-plan"
+          [checked]="isSelected(option)"
+          (change)="choose(option.product.code, option.plan.code, option.cycle)"
+        />
+
+        <!-- Popular Badge -->
+        @if (option.plan.code === 'PROFESSIONAL') {
+          <div class="popular-pill-badge">
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            {{ 'subscriptions.popularBadge' | t }}
+          </div>
         }
-      </span>
-    </label>
-  } @empty {
-    @if (!bookingProduct()) {
-      <p role="status">{{ 'subscriptions.catalogEmpty' | t }}</p>
-    }
-  }
-  @if (bookingProduct(); as product) {
-    <label class="plan-option"
-      ><input
-        type="radio"
-        name="subscription-plan"
-        [disabled]="!bookingTier()"
-        [checked]="selection()?.productCode === product.code"
-        (change)="chooseBooking()"
-      /><span
-        ><strong>{{ name(product) }}</strong>
-        @if (bookingTier(); as tier) {
-          <small
-            ><bdi>{{ tier.monthlyPrice | currency: catalog().currency }}</bdi> ·
-            {{ 'subscriptions.Monthly' | t }}</small
+
+        <!-- Card Header: Icon & Plan Name -->
+        <div class="card-plan-header">
+          <div class="card-icon-container" [attr.data-plan]="option.plan.code">
+            <i [class]="getPlanIcon(option.plan.code)" aria-hidden="true"></i>
+          </div>
+          <div class="card-title-group">
+            <h3 class="plan-display-name">{{ name(option.plan) }}</h3>
+            <span class="plan-cycle-subtitle">{{ 'subscriptions.' + option.cycle | t }}</span>
+          </div>
+        </div>
+
+        <!-- Price Display -->
+        <div class="card-pricing-block">
+          <span class="price-amount"><bdi>{{ option.price | currency: catalog().currency }}</bdi></span>
+          <span class="price-tenure">/ {{ ('subscriptions.' + option.cycle) | t }}</span>
+        </div>
+
+        <!-- Short Target Audience Description -->
+        <p class="plan-audience-desc">
+          {{ getPlanDesc(option.plan.code) }}
+        </p>
+
+        <!-- Divider -->
+        <hr class="card-separator" />
+
+        <!-- Features Checklist with FontAwesome Icons -->
+        <div class="card-checklist">
+          <!-- Allowances -->
+          <div class="feature-item">
+            <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+            <span class="feature-label">
+              <strong>{{ option.plan.pricing!.practiceLimit }}</strong> {{ 'subscriptions.practiceAllowance' | t }}
+            </span>
+          </div>
+
+          <div class="feature-item">
+            <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+            <span class="feature-label">
+              <strong>{{ option.plan.pricing!.receptionLimit }}</strong> {{ 'subscriptions.receptionAllowance' | t }}
+            </span>
+          </div>
+
+          <!-- Key Features -->
+          @for (featureText of getPlanFeatures(option.plan); track $index) {
+            <div class="feature-item">
+              <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+              <span class="feature-label">{{ featureText }}</span>
+            </div>
+          }
+
+          <!-- Release-Ready Dynamic Features -->
+          @if (readyFeatures(option.plan)) {
+            <div class="feature-item ready-summary">
+              <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+              <span class="feature-label">{{ readyFeatures(option.plan) }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Action CTA Button -->
+        <div class="card-bottom-action">
+          <button
+            type="button"
+            class="feedhive-btn"
+            [class.btn-selected]="isSelected(option)"
+            [disabled]="disabled()"
+            (click)="choose(option.product.code, option.plan.code, option.cycle)"
           >
+            @if (isSelected(option)) {
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+              <span>{{ 'subscriptions.selected' | t }}</span>
+            } @else {
+              <span>{{ 'subscriptions.selectPlan' | t }}</span>
+              @if (language.isRtl()) {
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              } @else {
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              }
+            }
+          </button>
+          <span class="cta-subnote">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            {{ 'subscriptions.directActivation' | t }}
+          </span>
+        </div>
+      </label>
+    }
+
+    <!-- Card 4: Online Booking Only Plan (الحجز الإلكتروني فقط) -->
+    @if (bookingProduct(); as bProduct) {
+      <label
+        class="feedhive-card booking-only-card"
+        [attr.data-plan]="'BOOKING_ONLY'"
+        [class.is-selected]="selection()?.productCode === bProduct.code"
+        [class.is-disabled-card]="!isBookingEnabled()"
+      >
+        @if (isBookingEnabled()) {
+          <input
+            type="radio"
+            class="hidden-accessible-radio"
+            name="subscription-plan"
+            [disabled]="!bookingTier() || disabled()"
+            [checked]="selection()?.productCode === bProduct.code"
+            (change)="chooseBooking()"
+          />
         }
-      </span></label
-    >
-    <label class="booking-count"
-      >{{ 'subscriptions.practiceCount' | t
-      }}<input
-        class="form-control ltr-text"
-        dir="ltr"
-        type="number"
-        min="1"
-        [max]="catalog().bookingOnly.maximumSelectablePractices"
-        step="1"
-        [value]="count()"
-        (input)="setBookingCount($event)"
-    /></label>
-  }
+
+        <!-- Badge -->
+        @if (!isBookingEnabled()) {
+          <div class="coming-soon-pill-badge">
+            <i class="fa-solid fa-clock" aria-hidden="true"></i>
+            {{ 'subscriptions.comingSoon' | t }}
+          </div>
+        } @else {
+          <div class="addon-pill-badge">
+            {{ 'subscriptions.standaloneAddon' | t }}
+          </div>
+        }
+
+        <!-- Card Header: Icon & Plan Name -->
+        <div class="card-plan-header">
+          <div class="card-icon-container" data-plan="BOOKING_ONLY">
+            <i [class]="getPlanIcon('BOOKING_ONLY')" aria-hidden="true"></i>
+          </div>
+          <div class="card-title-group">
+            <h3 class="plan-display-name">{{ name(bProduct) }}</h3>
+            <span class="plan-cycle-subtitle">{{ 'subscriptions.Monthly' | t }}</span>
+          </div>
+        </div>
+
+        <!-- Price Display -->
+        <div class="card-pricing-block">
+          @if (isBookingEnabled() && bookingTier(); as tier) {
+            <span class="price-amount"><bdi>{{ tier.monthlyPrice | currency: catalog().currency }}</bdi></span>
+            <span class="price-tenure">/ {{ 'subscriptions.Monthly' | t }}</span>
+          } @else {
+            <span class="price-amount price-coming-soon">{{ 'subscriptions.comingSoon' | t }}</span>
+            <span class="price-tenure">· وصلة</span>
+          }
+        </div>
+
+        <!-- Target Audience Description -->
+        <p class="plan-audience-desc">
+          {{ getPlanDesc('BOOKING_ONLY') }}
+        </p>
+
+        <!-- Divider -->
+        <hr class="card-separator" />
+
+        <!-- Practice Stepper when Enabled -->
+        @if (isBookingEnabled()) {
+          <div class="booking-practices-stepper">
+            <label class="stepper-label" for="booking-practices-count">
+              <span>{{ 'subscriptions.practiceCount' | t }}:</span>
+              <input
+                id="booking-practices-count"
+                class="form-control ltr-text booking-stepper-input"
+                dir="ltr"
+                type="number"
+                min="1"
+                [max]="catalog().bookingOnly.maximumSelectablePractices"
+                step="1"
+                [value]="count()"
+                (input)="setBookingCount($event)"
+              />
+            </label>
+          </div>
+        }
+
+        <!-- Features Checklist with FontAwesome Icons -->
+        <div class="card-checklist">
+          @for (featureText of getBookingFeatures(); track $index) {
+            <div class="feature-item">
+              <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+              <span class="feature-label">{{ featureText }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Action CTA Button -->
+        <div class="card-bottom-action">
+          @if (isBookingEnabled()) {
+            <button
+              type="button"
+              class="feedhive-btn"
+              [class.btn-selected]="selection()?.productCode === bProduct.code"
+              [disabled]="disabled() || !bookingTier()"
+              (click)="chooseBooking()"
+            >
+              @if (selection()?.productCode === bProduct.code) {
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span>{{ 'subscriptions.selected' | t }}</span>
+              } @else {
+                <span>{{ 'subscriptions.selectPlan' | t }}</span>
+                @if (language.isRtl()) {
+                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                } @else {
+                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                }
+              }
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="feedhive-btn btn-coming-soon"
+              disabled
+            >
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              <span>{{ 'subscriptions.comingSoonNote' | t }}</span>
+            </button>
+          }
+          <span class="cta-subnote">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            {{ 'subscriptions.directActivation' | t }}
+          </span>
+        </div>
+      </label>
+    }
+  </div>
 </fieldset>

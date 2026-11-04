@@ -56,4 +56,11 @@ describe('PatientFollowUpsListComponent', () => {
     expect(component.error()).toBe(true);
     expect(component.loading()).toBe(false);
   });
+
+  it('reloads the source and resets pagination when the patient changes', () => {
+    component.pageNumber.set(3);
+    fixture.componentRef.setInput('patientId', 'pat-2');
+    fixture.detectChanges();
+    expect(doctorPatientsApi.followUps).toHaveBeenLastCalledWith('pat-2', expect.objectContaining({ pageNumber: 1 }));
+  });
 });

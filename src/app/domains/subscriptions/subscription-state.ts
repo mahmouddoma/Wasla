@@ -29,7 +29,9 @@ export class SubscriptionState {
   readonly terms = computed(
     () => this.details()?.subscription ?? this.details()?.pendingSubscription ?? null,
   );
-  readonly needsReview = computed(() => !['Active', 'Expired'].includes(this.details()?.subscription?.status ?? ''));
+  readonly needsReview = computed(
+    () => !['Active', 'Expired'].includes(this.details()?.subscription?.status ?? ''),
+  );
   readonly canCreatePractice = computed(
     () =>
       this.details()?.subscription?.status === 'Active' &&
@@ -95,6 +97,7 @@ export function subscriptionFeatureForRoute(url: string): string | null {
     [/^\/doctor\/queue(?:\/|$)/, 'TICKET_QUEUE'],
     [/^\/doctor\/encounters(?:\/|$)/, 'MEDICAL_ENCOUNTER'],
     [/^\/doctor\/prescriptions(?:\/|$)/, 'PRESCRIPTION'],
+    [/^\/doctor\/patients(?:\/|$)/, 'PATIENT_MANAGEMENT'],
     [/^\/doctor\/revenue(?:\/|$)/, 'DOCTOR_REVENUE_DASHBOARD'],
     [/^\/doctor\/finance(?:\/|$)/, 'PAYMENT_COLLECTION'],
     [/^\/doctor\/expenses(?:\/|$)/, 'OPERATING_EXPENSES'],

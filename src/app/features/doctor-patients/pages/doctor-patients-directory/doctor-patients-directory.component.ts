@@ -17,6 +17,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import {
   DoctorPatientsApi,
   DoctorPatientListItem,
@@ -54,6 +55,10 @@ export class DoctorPatientsDirectoryComponent implements OnInit, OnDestroy {
   private readonly doctorPracticesApi = inject(DoctorPracticesApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly session = inject(AuthSession);
+  readonly canFilterUpcoming = computed(() =>
+    this.session.hasPermission('DoctorPracticeReservations.ViewOwn'),
+  );
   protected readonly language = inject(LanguageService);
 
   // Directory Data
@@ -125,12 +130,15 @@ export class DoctorPatientsDirectoryComponent implements OnInit, OnDestroy {
   }
 
   loadPractices(): void {
-    this.doctorPracticesApi.list().subscribe({
-      next: (data) => this.practices.set(data),
-      error: () => {
-        // Soft fail for practice dropdown
-      },
-    });
+    this.doctorPracticesApi
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => this.practices.set(data),
+        error: () => {
+          // Soft fail for practice dropdown
+        },
+      });
   }
 
   loadPatients(resetPagination = false): void {
@@ -155,7 +163,8 @@ export class DoctorPatientsDirectoryComponent implements OnInit, OnDestroy {
       lastAttendanceTo: this.toDate() || undefined,
       minAttendanceCount:
         this.minAttendance() && this.minAttendance()! > 0 ? this.minAttendance()! : undefined,
-      hasUpcomingAppointment: this.hasUpcoming() !== null ? this.hasUpcoming()! : undefined,
+      hasUpcomingAppointment:
+        this.canFilterUpcoming() && this.hasUpcoming() !== null ? this.hasUpcoming()! : undefined,
       pageNumber: this.pageNumber(),
       pageSize: this.pageSize,
       asOfUtc: this.asOfUtc() || undefined,
@@ -179,6 +188,7 @@ export class DoctorPatientsDirectoryComponent implements OnInit, OnDestroy {
         this.totalCount.set(0);
         this.loading.set(false);
         this.error.set(true);
+        if ([401, 403, 404].includes(err.status)) this.closeDrawer();
         if (err.status === 403) {
           this.errorKey.set('doctorPatients.toasts.noDirectoryPermission');
         } else if (err.status === 429) {
@@ -205,6 +215,10 @@ export class DoctorPatientsDirectoryComponent implements OnInit, OnDestroy {
   }
 
   toggleUpcoming(event: Event): void {
+    if (!this.canFilterUpcoming()) {
+      this.hasUpcoming.set(null);
+      return;
+    }
     const target = event.target as HTMLInputElement | null;
     this.hasUpcoming.set(target?.checked ? true : null);
     this.onSearch();

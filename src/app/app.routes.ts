@@ -34,6 +34,20 @@ export const routes: Routes = [
       ),
     title: 'routes.doctorDetails',
   },
+  // Public Pricing & Subscription Landing Page
+  {
+    path: 'pricing',
+    loadComponent: () =>
+      import('./features/pricing-landing/pages/pricing-landing/pricing-landing.component').then(
+        (m) => m.PricingLandingComponent,
+      ),
+    title: 'pricing.pageTitle',
+  },
+  {
+    path: 'plans',
+    redirectTo: 'pricing',
+    pathMatch: 'full',
+  },
 
   // Public Legal & Support Pages
   {

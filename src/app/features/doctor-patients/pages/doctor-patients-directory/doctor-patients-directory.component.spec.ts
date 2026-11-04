@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { Router, provideRouter } from '@angular/router';
 import { DoctorPatientsDirectoryComponent } from './doctor-patients-directory.component';
 import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
@@ -8,6 +10,7 @@ import { of, throwError } from 'rxjs';
 import { LanguageService } from '../../../../core/i18n/language.service';
 
 describe('DoctorPatientsDirectoryComponent', () => {
+  const appointmentAccess = signal(true);
   let component: DoctorPatientsDirectoryComponent;
   let fixture: ComponentFixture<DoctorPatientsDirectoryComponent>;
   let doctorPatientsApi: { list: ReturnType<typeof vi.fn>; overview: ReturnType<typeof vi.fn> };
@@ -68,6 +71,7 @@ describe('DoctorPatientsDirectoryComponent', () => {
   };
 
   beforeEach(async () => {
+    appointmentAccess.set(true);
     doctorPatientsApi = {
       list: vi.fn().mockReturnValue(of(mockResponse)),
       overview: vi.fn().mockReturnValue(
@@ -99,6 +103,7 @@ describe('DoctorPatientsDirectoryComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DoctorPatientsDirectoryComponent],
       providers: [
+        { provide: AuthSession, useValue: { hasPermission: () => appointmentAccess() } },
         provideRouter([]),
         { provide: DoctorPatientsApi, useValue: doctorPatientsApi },
         { provide: DoctorPracticesApi, useValue: doctorPracticesApi },
@@ -202,6 +207,29 @@ describe('DoctorPatientsDirectoryComponent', () => {
     expect(component.drawerOpened()).toBe(false);
     expect(component.inspectedPatientId()).toBeNull();
   });
+
+  it('omits the protected upcoming-appointment filter when its permission is absent', () => {
+    appointmentAccess.set(false);
+    component.hasUpcoming.set(true);
+    component.loadPatients();
+    expect(doctorPatientsApi.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ hasUpcomingAppointment: undefined }),
+    );
+    component.toggleUpcoming(new Event('change'));
+    expect(component.hasUpcoming()).toBeNull();
+  });
+
+  it.each([401, 403, 404])(
+    'clears the inspected patient when directory access fails with %s',
+    (status) => {
+      component.openPatient('pat-1');
+      doctorPatientsApi.list.mockReturnValue(throwError(() => ({ status })));
+      component.loadPatients();
+      expect(component.drawerOpened()).toBe(false);
+      expect(component.inspectedPatientId()).toBeNull();
+      expect(component.patients()).toEqual([]);
+    },
+  );
 
   it('keeps advanced filters collapsed until needed and opens patient records using a labeled button', async () => {
     await fixture.whenStable();

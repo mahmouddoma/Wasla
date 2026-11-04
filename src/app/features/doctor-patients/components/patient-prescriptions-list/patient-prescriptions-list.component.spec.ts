@@ -4,7 +4,8 @@ import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
 import { PrescriptionsApi } from '../../../../domains/prescriptions';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { AuthSession } from '../../../../core/auth/auth-session';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
+import { PrescriptionVersion } from '../../../../domains/prescriptions';
 import { provideRouter } from '@angular/router';
 
 describe('PatientPrescriptionsListComponent', () => {
@@ -113,5 +114,19 @@ describe('PatientPrescriptionsListComponent', () => {
     component.loadPrescriptions();
     expect(component.error()).toBe(true);
     expect(component.loading()).toBe(false);
+  });
+  it('clears private PDF and versions while loading a different patient', () => {
+    const oldPdf = new Subject<Blob>();
+    const oldVersions = new Subject<readonly PrescriptionVersion[]>();
+    doctorPatientsApi.prescriptionPdf.mockReturnValue(oldPdf);
+    component.viewPdf(mockPrescription);
+    fixture.componentRef.setInput('patientId', 'pat-2'); fixture.detectChanges();
+    oldPdf.next(new Blob(['%PDF-old'], { type: 'application/pdf' }));
+    expect(component.pdfBlob()).toBeNull(); expect(component.pdfLoading()).toBe(false);
+    prescriptionsApi.versions.mockReturnValue(oldVersions); component.viewVersions(mockPrescription);
+    fixture.componentRef.setInput('patientId', 'pat-3'); fixture.detectChanges();
+    oldVersions.next([]);
+    expect(component.selectedVersions()).toBeNull(); expect(component.versionsLoading()).toBe(false);
+    expect(doctorPatientsApi.prescriptions).toHaveBeenLastCalledWith('pat-3', expect.objectContaining({ pageNumber: 1 }));
   });
 });

@@ -109,6 +109,9 @@ describe('SubscriptionState', () => {
     expect(subscriptionFeatureForRoute('/admin/doctors')).toBeNull();
     expect(subscriptionFeatureForRoute('/doctor/onboarding')).toBeNull();
     expect(subscriptionFeatureForRoute('/doctor/subscription')).toBeNull();
+    expect(subscriptionFeatureForRoute('/doctor/patients?patientId=test')).toBe(
+      'PATIENT_MANAGEMENT',
+    );
   });
   it('does not unlock future selections or allow new capacity after expiry even when snapshots exist', async () => {
     const state = TestBed.inject(SubscriptionState);

@@ -40,7 +40,10 @@ export class PatientDiagnosisTimelineComponent implements OnInit, OnChanges, OnD
 
   readonly filters = input<Partial<ClinicalFilterQuery>>({});
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['filters'] && !changes['filters'].firstChange) {
+    if (
+      (changes['patientId'] && !changes['patientId'].firstChange) ||
+      (changes['filters'] && !changes['filters'].firstChange)
+    ) {
       this.pageNumber.set(1);
       this.loadDiagnoses();
     }

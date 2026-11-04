@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { AuthSession } from '../../../../core/auth/auth-session';
+import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { PdfViewerComponent } from '../../../../shared/components/pdf-viewer/pdf-viewer.component';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -41,6 +42,8 @@ import { ToastService } from '../../../../core/notifications/toast.service';
 })
 export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnDestroy {
   private historyRequest: Subscription | undefined;
+  private versionsRequest: Subscription | undefined;
+  private inspectionSequence = 0;
   private readonly doctorPatientsApi = inject(DoctorPatientsApi);
   private readonly prescriptionsApi = inject(PrescriptionsApi);
   private readonly toast = inject(ToastService);
@@ -48,7 +51,10 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
 
   readonly filters = input<Partial<ClinicalFilterQuery>>({});
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['filters'] && !changes['filters'].firstChange) {
+    if (
+      (changes['patientId'] && !changes['patientId'].firstChange) ||
+      (changes['filters'] && !changes['filters'].firstChange)
+    ) {
       this.pageNumber.set(1);
       this.loadPrescriptions();
     }
@@ -76,11 +82,8 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
   private destroyed = false;
   constructor() {
     effect(() => {
-      if (!this.session.hasPermission('Prescriptions.ExportOwn')) {
-        this.pdfRequest?.unsubscribe();
-        this.pdfBlob.set(null);
-        this.pdfLoading.set(false);
-      }
+      if (!this.session.hasPermission('Prescriptions.ViewOwn')) this.clearInspection();
+      else if (!this.session.hasPermission('Prescriptions.ExportOwn')) this.closePdf();
     });
   }
   canExport(rx: DoctorPatientPrescription): boolean {
@@ -100,8 +103,7 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
   ngOnDestroy(): void {
     this.historyRequest?.unsubscribe();
     this.destroyed = true;
-    this.pdfRequest?.unsubscribe();
-    this.pdfBlob.set(null);
+    this.clearInspection();
   }
 
   loadPrescriptions(): void {
@@ -109,7 +111,9 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
     if (!pid) return;
 
     this.historyRequest?.unsubscribe();
+    this.clearInspection();
     this.prescriptions.set([]);
+    this.totalCount.set(0);
     this.loading.set(true);
     this.error.set(false);
 
@@ -152,10 +156,13 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
       return;
     this.pdfBlob.set(null);
     this.pdfLoading.set(true);
+    const patientId = this.patientId();
+    const sequence = this.inspectionSequence;
     this.pdfRequest = this.doctorPatientsApi
       .prescriptionPdf(rx.prescriptionId, version, disposition)
       .subscribe({
         next: (blob) => {
+          if (sequence !== this.inspectionSequence || patientId !== this.patientId()) return;
           this.pdfLoading.set(false);
           if (this.destroyed || !this.canExport(rx)) return;
           if (!blob.size || !blob.type.includes('application/pdf')) {
@@ -175,25 +182,45 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
             }
           }
         },
-        error: () => {
+        error: (error: unknown) => {
+          if (sequence !== this.inspectionSequence || patientId !== this.patientId()) return;
           this.pdfLoading.set(false);
           this.pdfBlob.set(null);
           this.toast.error(this.language.t('doctorPatients.pdf.failed'));
+          const status = parseApiErrors(error).status;
+          if (status === 409) this.loadPrescriptions();
+          if ([401, 403, 404].includes(status)) {
+            this.clearInspection();
+            this.prescriptions.set([]);
+            this.totalCount.set(0);
+            this.error.set(true);
+          }
         },
       });
   }
 
   viewVersions(rx: DoctorPatientPrescription): void {
     if (!rx.canView || !this.session.hasPermission('Prescriptions.ViewOwn')) return;
+    this.clearInspection();
+    const patientId = this.patientId();
+    const sequence = this.inspectionSequence;
     this.selectedPrescriptionId.set(rx.prescriptionId);
     this.versionsLoading.set(true);
 
-    this.prescriptionsApi.versions(rx.prescriptionId).subscribe({
+    this.versionsRequest = this.prescriptionsApi.versions(rx.prescriptionId).subscribe({
       next: (versions) => {
+        if (
+          sequence !== this.inspectionSequence ||
+          patientId !== this.patientId() ||
+          !this.session.hasPermission('Prescriptions.ViewOwn')
+        )
+          return;
         this.selectedVersions.set(versions);
         this.versionsLoading.set(false);
       },
       error: () => {
+        if (sequence !== this.inspectionSequence || patientId !== this.patientId()) return;
+        this.selectedVersions.set(null);
         this.toast.error(this.language.t('doctorPatients.toasts.versionsLoadFailed'));
         this.versionsLoading.set(false);
       },
@@ -201,8 +228,22 @@ export class PatientPrescriptionsListComponent implements OnInit, OnChanges, OnD
   }
 
   closeVersionsModal(): void {
+    this.versionsRequest?.unsubscribe();
+    this.versionsLoading.set(false);
     this.selectedVersions.set(null);
     this.selectedPrescriptionId.set(null);
+  }
+
+  closePdf(): void {
+    this.pdfRequest?.unsubscribe();
+    this.pdfBlob.set(null);
+    this.pdfLoading.set(false);
+  }
+
+  private clearInspection(): void {
+    ++this.inspectionSequence;
+    this.closePdf();
+    this.closeVersionsModal();
   }
 
   canExportVersion(version: PrescriptionVersion): boolean {

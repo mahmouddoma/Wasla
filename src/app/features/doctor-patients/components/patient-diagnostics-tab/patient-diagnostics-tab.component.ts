@@ -39,7 +39,11 @@ export class PatientDiagnosticsTabComponent implements OnInit, OnChanges, OnDest
   readonly language = inject(LanguageService);
   readonly filters = input<Partial<ClinicalFilterQuery>>({});
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['filters'] && !changes['filters'].firstChange) void this.loadData();
+    if (
+      (changes['patientId'] && !changes['patientId'].firstChange) ||
+      (changes['filters'] && !changes['filters'].firstChange)
+    )
+      void this.loadData();
   }
   readonly patientId = input.required<string>();
   readonly isHistoricalOnly = input(false);
