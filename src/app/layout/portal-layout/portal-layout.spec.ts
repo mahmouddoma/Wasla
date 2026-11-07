@@ -1,6 +1,7 @@
 import { PortalNavigation } from '../navigation/portal-navigation';
 import { EMPTY } from 'rxjs';
 import { DoctorRouteAccess } from '../../domains/doctors/doctor-route-access';
+import { ReceptionRouteAccess } from '../../domains/reception-practices';
 import { ReceptionPracticeContext } from '../../domains/reception-practices';
 import { SubscriptionState } from '../../domains/subscriptions';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -74,6 +75,7 @@ describe('PortalLayout', () => {
       providers: [
         provideRouter([]),
         { provide: DoctorRouteAccess, useValue: { watch: () => EMPTY } },
+        { provide: ReceptionRouteAccess, useValue: { watch: () => EMPTY } },
         { provide: AuthSession, useValue: mockSession },
         {
           provide: ReceptionPracticeContext,

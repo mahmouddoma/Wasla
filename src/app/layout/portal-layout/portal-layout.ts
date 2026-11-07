@@ -16,6 +16,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DoctorRouteAccess } from '../../domains/doctors';
+import { ReceptionRouteAccess } from '../../domains/reception-practices';
 import { AuthSession } from '../../core/auth/auth-session';
 import { LanguageService } from '../../core/i18n/language.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
@@ -50,6 +51,7 @@ export class PortalLayout {
 
   constructor() {
     inject(DoctorRouteAccess).watch().pipe(takeUntilDestroyed()).subscribe();
+    inject(ReceptionRouteAccess).watch().pipe(takeUntilDestroyed()).subscribe();
     if (this.isReception()) {
       void this.practiceContext.ensureLoaded?.();
     }

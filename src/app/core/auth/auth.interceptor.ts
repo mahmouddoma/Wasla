@@ -29,6 +29,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         isWaslaApi &&
         !isAnonymousOnboarding &&
         (token !== null || hadSession) &&
+        session.token() === token &&
         !request.url.endsWith('/login')
       ) {
         session.clear();

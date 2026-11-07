@@ -22,6 +22,40 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('renders the shell and opens a route while restored account data is pending', async () => {
+    const session = TestBed.inject(AuthSession);
+    session.begin({
+      accessToken: 'restored-token',
+      expiresOnUtc: new Date(Date.now() + 60_000).toISOString(),
+      passwordChangeRequired: false,
+    });
+    session.complete({
+      applicationUserId: 'patient-1',
+      userName: 'patient',
+      email: '',
+      phoneNumber: '',
+      userType: 'Patient',
+      roles: ['Patient'],
+      permissions: [],
+      isFirstLogin: false,
+      doctorId: null,
+      patientId: 'patient-1',
+    });
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: 'workspace/patient', component: PortalLayout }]);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    const request = http.expectOne(`${environment.apiBaseUrl}/api/v1/auth/me`);
+    expect(await router.navigateByUrl('/workspace/patient')).toBe(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.portal-shell')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-platform-footer')).not.toBeNull();
+    expect(router.url).toBe('/workspace/patient');
+    request.flush(session.user());
+    http.verify();
+  });
+
   it('loads practices after the reception user is established and preserves the token on selection', async () => {
     const router = TestBed.inject(Router);
     router.resetConfig([{ path: 'reception', component: PortalLayout }]);

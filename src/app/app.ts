@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, effect, inject, untracked } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  effect,
+  inject,
+  untracked,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SessionRevalidation } from './core/auth/session-revalidation';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainer } from './shared/toast/toast-container';
 import { AuthSession } from './core/auth/auth-session';
@@ -19,6 +29,9 @@ export class App {
   protected readonly practiceContext = inject(ReceptionPracticeContext);
 
   constructor() {
+    const revalidation = inject(SessionRevalidation);
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => revalidation.refresh().pipe(takeUntilDestroyed(destroyRef)).subscribe());
     let owner: string | null = null;
     effect(() => {
       const user = this.session.user();
