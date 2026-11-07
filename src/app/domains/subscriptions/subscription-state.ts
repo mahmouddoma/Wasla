@@ -34,15 +34,40 @@ export class SubscriptionState {
     });
   }
   private readonly identity = computed(() => {
-    const session = this.session.session();
+    const session = this.session.session?.() ?? null;
     return session?.user?.userType === 'Doctor'
       ? session.user.applicationUserId + ':' + session.accessToken
       : null;
   });
   readonly selectedContractId = signal('');
+  readonly deniedRoute = signal<string | null>(null);
+  readonly hasLoaded = computed(() => this.snapshot()?.identity === this.identity());
   readonly contracts = computed(() =>
     this.snapshot()?.identity === this.identity() ? this.snapshot()!.contracts : [],
   );
+  readonly hasActiveSubscription = computed(() =>
+    this.contracts().some((c) => !!this.currentDetails(c)),
+  );
+  readonly hasPendingSubscription = computed(
+    () =>
+      !this.hasActiveSubscription() &&
+      this.contracts().some((c) =>
+        c.periods.some((p) =>
+          ['PendingApproval', 'PendingPayment', 'Pending'].includes(
+            p.subscription?.status ?? p.pendingSubscription?.status ?? '',
+          ),
+        ),
+      ),
+  );
+  markRouteDenied(url: string): void {
+    const clean = url.split(/[?#]/)[0] || '';
+    if (clean && isDoctorSubscriptionGatedRoute(clean)) {
+      this.deniedRoute.set(clean);
+    }
+  }
+  clearRouteDenied(): void {
+    this.deniedRoute.set(null);
+  }
   readonly selectedContract = computed(
     () =>
       this.contracts().find((c) => c.subscriptionContractId === this.selectedContractId()) ?? null,
@@ -122,6 +147,7 @@ export class SubscriptionState {
     ++this.revision;
     this.snapshot.set(null);
     this.allocations.set({});
+    this.deniedRoute.set(null);
     this.practiceReads.clear();
     if (this.boundaryTimer) clearTimeout(this.boundaryTimer);
   }
@@ -221,4 +247,12 @@ export function subscriptionFeatureForRoute(url: string): string | null {
     [/^\/diagnostics\/doctor(?:\/|$)/, 'LAB_RADIOLOGY'],
   ];
   return entries.find(([pattern]) => pattern.test(path))?.[1] ?? null;
+}
+
+export function isDoctorSubscriptionGatedRoute(url: string): boolean {
+  const path = url.split(/[?#]/)[0];
+  if (/^\/doctor\/(?:onboarding|profile|subscription|practices)(?:\/|$)/.test(path)) {
+    return false;
+  }
+  return /^\/(?:doctor|workspace\/doctor|diagnostics\/doctor)(?:\/|$)/.test(path);
 }

@@ -65,4 +65,10 @@ export class ToastService {
     this.timers.delete(id);
     this.state.update((messages) => messages.filter((message) => message.id !== id));
   }
+
+  clearErrors(): void {
+    for (const toast of this.state().filter((item) => item.kind === 'error')) {
+      this.dismiss(toast.id);
+    }
+  }
 }

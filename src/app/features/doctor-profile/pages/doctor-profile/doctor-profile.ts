@@ -23,12 +23,23 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TRANSLATIONS } from '../../../../core/i18n/translations';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
+import {
+  LocationMapPicker,
+  MapCoordinates,
+} from '../../../../shared/components/location-map-picker/location-map-picker';
 import { PublicProfileManager } from '../../components/public-profile-manager/public-profile-manager';
 import { SubscriptionState } from '../../../../domains/subscriptions';
 
 @Component({
   selector: 'app-doctor-profile',
-  imports: [FormField, SpecializationSelector, TranslatePipe, PageHeader, PublicProfileManager],
+  imports: [
+    FormField,
+    SpecializationSelector,
+    TranslatePipe,
+    PageHeader,
+    LocationMapPicker,
+    PublicProfileManager,
+  ],
   templateUrl: './doctor-profile.html',
   styleUrl: './doctor-profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -237,6 +248,16 @@ export class DoctorProfile {
     } finally {
       this.isLocating.set(false);
     }
+  }
+
+  protected onMapCoordinatesPicked(coords: MapCoordinates): void {
+    if (!this.canManageLocation) return;
+    this.locationModel.update((value) => ({
+      ...value,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    }));
+    void this.reverseGeocodeAndPopulate(coords.latitude, coords.longitude).catch(() => undefined);
   }
 
   protected useCurrentLocation(): void {

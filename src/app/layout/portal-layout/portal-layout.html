@@ -216,7 +216,166 @@
 
     <!-- Page Content Area -->
     <main class="portal-content-body">
-      <router-outlet />
+      @if (isSubscriptionGateActive()) {
+        <section class="doctor-subscription-gate" aria-labelledby="subscription-gate-title">
+          <!-- Contextual Page Banner -->
+          <header class="gate-page-banner">
+            <div class="gate-page-banner__title-group">
+              <span class="gate-page-banner__icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path [attr.d]="navigationIcons[currentPageIcon()]" />
+                </svg>
+              </span>
+              <div>
+                <h1 class="gate-page-banner__heading">{{ currentPageLabelKey() | t }}</h1>
+                <p class="gate-page-banner__sub">
+                  {{
+                    (subscriptionGateMode() === 'pending'
+                      ? 'doctorSubscriptionGate.badgePending'
+                      : subscriptionGateMode() === 'upgrade'
+                        ? 'doctorSubscriptionGate.badgeUpgrade'
+                        : 'doctorSubscriptionGate.badge'
+                    ) | t
+                  }}
+                </p>
+              </div>
+            </div>
+
+            <a routerLink="/doctor/subscription" class="gate-banner-pill">
+              <i class="fa-solid fa-crown" aria-hidden="true"></i>
+              <span>{{ 'subscriptions.mine' | t }}</span>
+            </a>
+          </header>
+
+          <!-- Main Bespoke Subscription Showcase Card -->
+          <div class="gate-showcase-card">
+            <div class="gate-showcase-card__visual">
+              <img
+                class="gate-showcase-card__illustration"
+                src="/SVG-AVATAR/Payment Information-bro.svg"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="gate-showcase-card__body">
+              <span class="gate-status-badge">
+                <i class="fa-solid fa-crown" aria-hidden="true"></i>
+                <span>
+                  {{
+                    (subscriptionGateMode() === 'pending'
+                      ? 'doctorSubscriptionGate.badgePending'
+                      : subscriptionGateMode() === 'upgrade'
+                        ? 'doctorSubscriptionGate.badgeUpgrade'
+                        : 'doctorSubscriptionGate.badge'
+                    ) | t
+                  }}
+                </span>
+              </span>
+
+              <h2 id="subscription-gate-title" class="gate-showcase-card__title">
+                {{
+                  (subscriptionGateMode() === 'pending'
+                    ? 'doctorSubscriptionGate.titlePendingPrefix'
+                    : subscriptionGateMode() === 'upgrade'
+                      ? 'doctorSubscriptionGate.titleUpgradePrefix'
+                      : 'doctorSubscriptionGate.titlePrefix'
+                  ) | t
+                }}
+                <span class="gate-highlight-page">«{{ currentPageLabelKey() | t }}»</span>
+              </h2>
+
+              <p class="gate-showcase-card__desc">
+                {{
+                  (subscriptionGateMode() === 'pending'
+                    ? 'doctorSubscriptionGate.descriptionPending'
+                    : subscriptionGateMode() === 'upgrade'
+                      ? 'doctorSubscriptionGate.descriptionUpgrade'
+                      : 'doctorSubscriptionGate.description'
+                  ) | t
+                }}
+              </p>
+
+              <!-- 3 Key Value Highlights -->
+              <div class="gate-benefits-grid">
+                <div class="gate-benefit-item">
+                  <span class="gate-benefit-item__icon" aria-hidden="true">
+                    <i class="fa-solid fa-bolt"></i>
+                  </span>
+                  <div class="gate-benefit-item__text">
+                    <strong>{{ 'doctorSubscriptionGate.benefitTrialTitle' | t }}</strong>
+                    <span>{{ 'doctorSubscriptionGate.benefitTrialDesc' | t }}</span>
+                  </div>
+                </div>
+
+                <div class="gate-benefit-item">
+                  <span class="gate-benefit-item__icon" aria-hidden="true">
+                    <i class="fa-solid fa-stethoscope"></i>
+                  </span>
+                  <div class="gate-benefit-item__text">
+                    <strong>{{ 'doctorSubscriptionGate.benefitClinicTitle' | t }}</strong>
+                    <span>{{ 'doctorSubscriptionGate.benefitClinicDesc' | t }}</span>
+                  </div>
+                </div>
+
+                <div class="gate-benefit-item">
+                  <span class="gate-benefit-item__icon" aria-hidden="true">
+                    <i class="fa-solid fa-layer-group"></i>
+                  </span>
+                  <div class="gate-benefit-item__text">
+                    <strong>{{ 'doctorSubscriptionGate.benefitFlexibleTitle' | t }}</strong>
+                    <span>{{ 'doctorSubscriptionGate.benefitFlexibleDesc' | t }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="gate-actions">
+                <a routerLink="/doctor/subscription" class="gate-btn gate-btn--primary">
+                  <i class="fa-solid fa-crown" aria-hidden="true"></i>
+                  <span>
+                    {{
+                      (subscriptionGateMode() === 'none'
+                        ? 'doctorSubscriptionGate.ctaPrimary'
+                        : 'doctorSubscriptionGate.ctaManage'
+                      ) | t
+                    }}
+                  </span>
+                </a>
+
+                @if (subscriptionGateMode() === 'upgrade') {
+                  <a routerLink="/doctor/practices" class="gate-btn gate-btn--secondary">
+                    <i class="fa-solid fa-hospital" aria-hidden="true"></i>
+                    <span>{{ 'doctorSubscriptionGate.ctaPractices' | t }}</span>
+                  </a>
+                }
+
+                <button
+                  type="button"
+                  class="gate-btn gate-btn--secondary"
+                  [disabled]="gateRefreshing()"
+                  (click)="refreshSubscriptionGate()"
+                >
+                  <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                  <span>{{ 'doctorSubscriptionGate.ctaRefresh' | t }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      } @else {
+        <router-outlet />
+      }
     </main>
     <app-mobile-navigation
       [items]="mobileNavItems()"

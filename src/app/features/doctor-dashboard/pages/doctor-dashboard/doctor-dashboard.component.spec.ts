@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { DoctorDashboardComponent } from './doctor-dashboard.component';
 import { Phase18Api } from '../../../../domains/phase18';
@@ -386,5 +387,41 @@ describe('Doctor dashboard', () => {
       expect(text).toContain(component.language.t(warning));
       expect(text).not.toContain(warning);
     }
+  });
+
+  it('shows subscription required state with CTA to /doctor/subscription when filter-options returns 403 Report.AccessDenied', async () => {
+    api.call.mockImplementation(() =>
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: {
+              type: 'about:blank#security',
+              title: 'Security Error',
+              status: 403,
+              detail: 'ليس لديك صلاحية لتنفيذ العملية في النطاق المطلوب.',
+              instance: '/api/v1/doctors/me/dashboard/filter-options',
+              errors: [
+                {
+                  code: 'Report.AccessDenied',
+                  message: 'ليس لديك صلاحية لتنفيذ العملية في النطاق المطلوب.',
+                  type: 'Security',
+                },
+              ],
+            },
+          }),
+      ),
+    );
+    const fixture = TestBed.createComponent(DoctorDashboardComponent);
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    expect(component.subscriptionRequired()).toBe(true);
+    expect(component.failed()).toBe(false);
+    const element: HTMLElement = fixture.nativeElement;
+    const subscribeLink = element.querySelector('.dashboard-subscribe-btn');
+    expect(subscribeLink?.getAttribute('href')).toBe('/doctor/subscription');
+    expect(element.querySelector('.dashboard-state--subscription')?.textContent).toContain(
+      component.language.t('doctorDashboard.subscriptionRequired.title'),
+    );
   });
 });

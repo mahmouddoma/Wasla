@@ -3793,15 +3793,16 @@ textarea:focus-visible {
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   z-index: 99999;
   background: var(--color-background, #f5f8fa);
   color: var(--color-text-primary, #0c2742);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Strictly no scrollbar on TV screen */
-  padding: clamp(14px, 1.8vh, 22px) clamp(16px, 2.5vw, 36px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(12px, 1.8vh, 22px) clamp(12px, 2.5vw, 36px);
   box-sizing: border-box;
   font-family: inherit;
 }
@@ -3809,13 +3810,11 @@ textarea:focus-visible {
 .tv-mode-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-height: 100%;
+  min-height: 100%;
   max-width: 1680px;
   margin: 0 auto;
   width: 100%;
   gap: clamp(12px, 1.8vh, 20px);
-  min-height: 0; /* Prevents overflow in flex children */
 }
 
 /* ── TV Mode Header ── */
@@ -3823,19 +3822,22 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #e3eaf0);
   border-radius: 16px;
-  padding: 12px 24px;
+  padding: 14px 20px;
   box-shadow: 0 1px 3px rgba(12, 39, 66, 0.04);
-  gap: 16px;
+  gap: 12px 16px;
   flex-shrink: 0;
 }
 
 .tv-brand-wrap {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .tv-wasla-badge {
@@ -3843,40 +3845,52 @@ textarea:focus-visible {
   align-items: center;
   gap: 8px;
   background: var(--color-teal-50, #f0fbfa);
-  border: 1px solid rgba(11, 165, 160, 0.25);
+  border: 1px solid var(--color-border, #e2e8f0);
   color: var(--color-teal-700, #047c79);
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tv-clinic-info {
   display: flex;
   align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .tv-clinic-name {
-  font-size: clamp(1.3rem, 1.8vw, 1.75rem);
+  font-size: clamp(1.1rem, 1.8vw, 1.65rem);
   font-weight: 900;
   color: var(--color-text-primary, #0c2742);
   margin: 0;
   letter-spacing: -0.02em;
+  line-height: 1.35;
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.tv-clinic-name span {
+  overflow-wrap: anywhere;
 }
 
 .tv-clinic-name i {
   color: var(--color-teal-600, #078c88);
-  font-size: 1.4rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .tv-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .tv-live-pill {
@@ -3886,16 +3900,19 @@ textarea:focus-visible {
   background: var(--color-success-bg, #eaf8f1);
   color: var(--color-success, #20865a);
   font-weight: 800;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   padding: 6px 14px;
   border-radius: 100px;
-  border: 1px solid rgba(32, 134, 90, 0.25);
-  letter-spacing: 0.5px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tv-live-pill i {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--color-success, #20865a);
+  flex-shrink: 0;
 }
 
 .tv-close-btn {
@@ -3906,50 +3923,44 @@ textarea:focus-visible {
   border: 1px solid var(--color-border, #e3eaf0);
   color: var(--color-text-secondary, #66788a);
   font-weight: 700;
-  font-size: 0.88rem;
-  padding: 7px 16px;
+  font-size: 0.85rem;
+  padding: 7px 14px;
   border-radius: 10px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
 .tv-close-btn:hover {
   background: var(--color-danger-bg, #fff0f1);
-  border-color: #fca5a5;
+  border-color: var(--color-border, #cbd5e1);
   color: var(--color-danger, #d95057);
 }
 
 /* ── TV Mode Main Grid ── */
 .tv-mode-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(16px, 2vw, 24px);
-  flex: 1 1 0;
-  min-height: 0; /* Prevents overflow scrollbar */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(14px, 2vw, 24px);
+  flex: 1 1 auto;
   align-items: stretch;
-}
-
-@media (max-width: 900px) {
-  .tv-mode-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .tv-hero-card {
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #e3eaf0);
   border-radius: 20px;
-  padding: clamp(20px, 3vh, 32px) clamp(20px, 2.5vw, 36px);
+  padding: clamp(18px, 2.8vh, 30px) clamp(16px, 2.4vw, 34px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   text-align: center;
-  gap: 18px;
+  gap: 16px;
   box-shadow: 0 4px 20px rgba(12, 39, 66, 0.05);
   position: relative;
-  overflow: hidden;
-  min-height: 0;
+  min-height: 260px;
 }
 
 /* Card 1: الآن داخل الكشف */
@@ -3975,7 +3986,9 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--color-border-soft, #edf1f5);
   flex-shrink: 0;
 }
@@ -3984,24 +3997,25 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.15rem;
+  font-size: clamp(0.95rem, 1.3vw, 1.15rem);
   font-weight: 800;
   color: var(--color-teal-700, #047c79);
   background: var(--color-teal-50, #f0fbfa);
-  border: 1px solid rgba(11, 165, 160, 0.18);
+  border: 1px solid var(--color-border, #e2e8f0);
   padding: 5px 14px;
   border-radius: 999px;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .tv-card-tag i {
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .tv-card-tag.is-next-tag {
   color: #b45309;
   background: var(--color-warning-bg, #fff7e5);
-  border-color: rgba(217, 155, 37, 0.3);
+  border-color: var(--color-border, #e2e8f0);
 }
 
 .tv-status-badge {
@@ -4010,29 +4024,32 @@ textarea:focus-visible {
   gap: 6px;
   padding: 4px 12px;
   border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .tv-status-badge.in-progress {
   background: var(--color-success-bg, #eaf8f1);
   color: var(--color-success, #20865a);
-  border: 1px solid rgba(32, 134, 90, 0.25);
+  border: 1px solid var(--color-border, #e2e8f0);
 }
 
 .tv-status-badge.is-preparing {
   background: var(--color-warning-bg, #fff7e5);
   color: #b45309;
-  border: 1px solid rgba(217, 155, 37, 0.3);
+  border: 1px solid var(--color-border, #e2e8f0);
 }
 
 .tv-active-patient-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
-  margin: auto 0;
+  flex: 1 1 auto;
+  padding: 8px 0;
 }
 
 .tv-ticket-badge {
@@ -4043,16 +4060,16 @@ textarea:focus-visible {
 }
 
 .tv-hash {
-  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-size: clamp(2rem, 3.8vw, 3.5rem);
   font-weight: 900;
   color: var(--color-teal-600, #078c88);
   opacity: 0.75;
 }
 
 .tv-num {
-  font-size: clamp(5rem, 8vw, 7.5rem);
+  font-size: clamp(3.6rem, 7.5vw, 7.5rem);
   font-weight: 900;
-  line-height: 1;
+  line-height: 1.05;
   color: var(--color-navy-950, #071c30);
   font-variant-numeric: tabular-nums;
   letter-spacing: -2px;
@@ -4067,14 +4084,13 @@ textarea:focus-visible {
 }
 
 .tv-patient-name {
-  font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+  font-size: clamp(1.35rem, 2.4vw, 2.35rem);
   font-weight: 900;
   color: var(--color-text-primary, #0c2742);
   margin: 0;
-  max-width: 95%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
   letter-spacing: -0.02em;
 }
 
@@ -4090,12 +4106,12 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.15rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.15rem);
   font-weight: 800;
   color: var(--color-teal-700, #047c79);
   background: var(--color-teal-50, #f0fbfa);
-  border: 1px solid rgba(11, 165, 160, 0.25);
-  padding: 6px 18px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  padding: 6px 16px;
   border-radius: 100px;
   font-variant-numeric: tabular-nums;
 }
@@ -4103,7 +4119,7 @@ textarea:focus-visible {
 .tv-type-pill {
   display: inline-flex;
   align-items: center;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--color-text-secondary, #66788a);
   background: #f1f5f9;
@@ -4116,12 +4132,12 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.2rem;
+  font-size: clamp(0.95rem, 1.3vw, 1.18rem);
   font-weight: 800;
   color: #92400e;
   background: #fef3c7;
-  border: 1px solid #fde68a;
-  padding: 8px 22px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  padding: 8px 18px;
   border-radius: 100px;
 }
 
@@ -4129,12 +4145,12 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.05rem;
+  font-size: clamp(0.9rem, 1.15vw, 1.05rem);
   font-weight: 700;
   color: #92400e;
   background: #fef3c7;
-  border: 1px solid #fde68a;
-  padding: 7px 18px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  padding: 7px 16px;
   border-radius: 100px;
 }
 
@@ -4145,22 +4161,24 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 20px 10px;
-  margin: auto 0;
+  padding: 12px 8px;
+  flex: 1 1 auto;
+  width: 100%;
 }
 
 .tv-empty-icon-circle {
-  width: 76px;
-  height: 76px;
+  width: clamp(58px, 7vw, 76px);
+  height: clamp(58px, 7vw, 76px);
   border-radius: 50%;
   background: var(--color-teal-50, #f0fbfa);
-  border: 1px solid rgba(11, 165, 160, 0.2);
+  border: 1px solid var(--color-border, #e2e8f0);
   color: var(--color-teal-600, #078c88);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  margin-bottom: 6px;
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .tv-empty-icon-circle.is-next-circle {
@@ -4171,19 +4189,23 @@ textarea:focus-visible {
 
 .tv-empty-title {
   margin: 0;
-  font-size: clamp(1.4rem, 2vw, 1.85rem);
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
   font-weight: 900;
+  line-height: 1.4;
   color: var(--color-text-primary, #0c2742);
   letter-spacing: -0.01em;
 }
 
 .tv-empty-desc {
   margin: 0;
-  font-size: 1rem;
+  font-size: clamp(0.88rem, 1.15vw, 1rem);
+  line-height: 1.5;
   color: var(--color-text-secondary, #66788a);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-weight: 600;
 }
 
@@ -4200,11 +4222,11 @@ textarea:focus-visible {
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #e3eaf0);
   border-radius: 16px;
-  padding: 12px 24px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  gap: 12px 18px;
   box-shadow: 0 1px 3px rgba(12, 39, 66, 0.04);
   flex-shrink: 0;
 }
@@ -4213,7 +4235,7 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: var(--color-text-primary, #0c2742);
   white-space: nowrap;
@@ -4227,7 +4249,9 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  min-width: 0;
 }
 
 .tv-pill-item {
@@ -4244,7 +4268,7 @@ textarea:focus-visible {
 
 .tv-pill-item.is-first {
   background: #fffbeb;
-  border-color: #fde68a;
+  border-color: var(--color-border, #e2e8f0);
 }
 
 .tv-pill-order {
@@ -4272,11 +4296,87 @@ textarea:focus-visible {
 }
 
 .tv-no-waiting {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
   color: var(--color-text-muted, #91a0ae);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ── Responsive Breakpoints for TV / Waiting Screen ── */
+@media (max-width: 900px) {
+  .tv-mode-grid {
+    grid-template-columns: 1fr;
+    flex: none;
+  }
+
+  .tv-hero-card {
+    min-height: 220px;
+    padding: 18px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tv-mode-backdrop {
+    padding: 12px;
+  }
+
+  .tv-mode-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .tv-brand-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .tv-clinic-info {
+    width: 100%;
+  }
+
+  .tv-clinic-name {
+    font-size: 1.15rem;
+    width: 100%;
+  }
+
+  .tv-header-actions {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border-soft, #edf1f5);
+  }
+
+  .tv-card-header {
+    justify-content: center;
+  }
+
+  .tv-hero-card {
+    min-height: 200px;
+    padding: 16px 14px;
+    gap: 12px;
+  }
+
+  .tv-empty-box {
+    padding: 8px 4px;
+    gap: 8px;
+  }
+
+  .tv-mode-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .tv-upcoming-pills {
+    width: 100%;
+  }
 }
 
 

@@ -5,7 +5,6 @@ import {
   anonymousOnlyMatchGuard,
   authenticatedGuard,
   permissionGuard,
-  doctorOperationalGuard,
   catalogManagerAreaGuard,
 } from './core/auth/auth.guards';
 
@@ -76,7 +75,6 @@ export const routes: Routes = [
       authenticatedGuard,
       accountActorGuard,
       catalogManagerAreaGuard,
-      doctorOperationalGuard,
     ],
     children: [
       {

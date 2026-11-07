@@ -192,5 +192,16 @@ describe('PracticeEditor', () => {
       expect(toast.success).toHaveBeenCalled();
       vi.unstubAllGlobals();
     });
+
+    it('updates coordinates when picking a location from the interactive map', async () => {
+      const fixture = await start(false);
+      fixture.componentInstance['onMapCoordinatesPicked']({
+        latitude: 30.560456,
+        longitude: 31.01026,
+      });
+      expect(fixture.componentInstance['model']().latitude).toBe(30.560456);
+      expect(fixture.componentInstance['model']().longitude).toBe(31.01026);
+      expect(fixture.componentInstance['hasValidCoordinates']()).toBe(true);
+    });
   });
 });

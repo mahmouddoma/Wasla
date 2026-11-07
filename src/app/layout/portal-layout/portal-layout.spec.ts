@@ -1,5 +1,8 @@
 import { PortalNavigation } from '../navigation/portal-navigation';
+import { EMPTY } from 'rxjs';
+import { DoctorRouteAccess } from '../../domains/doctors/doctor-route-access';
 import { ReceptionPracticeContext } from '../../domains/reception-practices';
+import { SubscriptionState } from '../../domains/subscriptions';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
@@ -70,6 +73,7 @@ describe('PortalLayout', () => {
       imports: [PortalLayout],
       providers: [
         provideRouter([]),
+        { provide: DoctorRouteAccess, useValue: { watch: () => EMPTY } },
         { provide: AuthSession, useValue: mockSession },
         {
           provide: ReceptionPracticeContext,
@@ -223,5 +227,18 @@ describe('PortalLayout', () => {
       .click();
     expect(mockSession.clear).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('displays the contextual subscription required gate when a doctor route is denied due to missing subscription', () => {
+    const subState = TestBed.inject(SubscriptionState);
+    component['currentUrl'].set('/doctor/reservations');
+    subState.markRouteDenied('/doctor/reservations');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const gate = root.querySelector('.doctor-subscription-gate');
+    expect(gate).not.toBeNull();
+    const ctaLink = gate!.querySelector('.gate-btn--primary');
+    expect(ctaLink?.getAttribute('href')).toBe('/doctor/subscription');
   });
 });

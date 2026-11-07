@@ -63,6 +63,7 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
   readonly activeTab = signal<'insights' | 'reports'>('insights');
   readonly loading = signal(false);
   readonly failed = signal(false);
+  readonly subscriptionRequired = signal(false);
   readonly exporting = signal(false);
   readonly submitting = signal(false);
   readonly detailLoading = signal(false);
@@ -173,6 +174,7 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
 
     this.loading.set(true);
     this.failed.set(false);
+    this.subscriptionRequired.set(false);
     this.messages.set([]);
 
     this.insights.set([]);
@@ -608,10 +610,17 @@ export class DoctorReportsComponent implements OnInit, OnDestroy {
     }
 
     const parsed = parseApiErrors(error);
+    const isSubDenied = parsed.status === 403 || parsed.codes.includes('Report.AccessDenied');
 
-    this.messages.set(parsed.status === 409 ? ['doctorRemediation.conflict'] : parsed.messages);
-
-    this.toast.error(this.language.t(this.messages()[0] || 'common.requestFailed'));
+    if (isSubDenied) {
+      this.subscriptionRequired.set(true);
+      this.failed.set(false);
+      this.messages.set(['Report.AccessDenied']);
+      this.toast.error(this.language.t('Report.AccessDenied'));
+    } else {
+      this.messages.set(parsed.status === 409 ? ['doctorRemediation.conflict'] : parsed.messages);
+      this.toast.error(this.language.t(this.messages()[0] || 'common.requestFailed'));
+    }
 
     if ([401, 403].includes(parsed.status)) {
       this.sequence++;

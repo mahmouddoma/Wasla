@@ -2,32 +2,6 @@ import { inject } from '@angular/core';
 import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 import { AuthSession } from './auth-session';
 import { PERMISSIONS } from './permissions';
-import { DoctorApi } from '../../domains/doctors';
-import { firstValueFrom } from 'rxjs';
-import { SubscriptionState, subscriptionFeatureForRoute } from '../../domains/subscriptions';
-
-/** Approval is read from the account source, independently of role and grants. */
-export const doctorOperationalGuard: CanActivateFn = async (_route, state) => {
-  const session = inject(AuthSession);
-  const router = inject(Router);
-  if (session.user()?.userType !== 'Doctor') return true;
-  if (!/^\/(?:doctor|workspace\/doctor|diagnostics\/doctor)(?:\/|\?|$)/.test(state.url))
-    return true;
-  if (/^\/doctor\/(?:onboarding|profile|subscription)(?:\/|\?|$)/.test(state.url)) return true;
-  const api = inject(DoctorApi);
-  const subscription = inject(SubscriptionState);
-  try {
-    const status = await firstValueFrom(api.onboardingStatus());
-    if (status.approvalStatus !== 'Approved') return router.createUrlTree(['/doctor/onboarding']);
-    const feature = subscriptionFeatureForRoute(state.url);
-    if (!feature) return true;
-    try { await subscription.refresh(true); }
-    catch { /* Historical resource access remains server-authorized independently of current coverage. */ }
-    return true;
-  } catch {
-    return router.createUrlTree(['/doctor/onboarding']);
-  }
-};
 
 export const anonymousOnlyMatchGuard: CanMatchFn = () => {
   const session = inject(AuthSession);

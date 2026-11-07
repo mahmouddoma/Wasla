@@ -1,0 +1,222 @@
+<div
+  class="map-picker-shell"
+  [class.is-readonly]="readonly()"
+  [class.is-disabled]="disabled()"
+>
+  @if (!readonly()) {
+    <div class="map-picker-header">
+      <div class="map-picker-instruction">
+        <span class="map-picker-icon" aria-hidden="true">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </span>
+        <span>{{ 'mapPicker.instruction' | t }}</span>
+      </div>
+
+      <button
+        type="button"
+        class="map-pin-center-btn"
+        [disabled]="disabled()"
+        (click)="pinAtMapCenter()"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>{{ 'mapPicker.pinHere' | t }}</span>
+      </button>
+    </div>
+  }
+
+  <div
+    #mapViewport
+    class="map-viewport"
+    dir="ltr"
+    tabindex="0"
+    role="application"
+    [class.is-dragging]="isDragging()"
+    [attr.aria-label]="'mapPicker.clinicOnMap' | t"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointercancel)="onPointerCancel()"
+    (keydown)="onKeyDown($event)"
+  >
+    <div class="map-tiles-layer" aria-hidden="true">
+      @for (tile of tiles(); track tile.key) {
+        <img
+          class="map-tile"
+          [src]="tile.url"
+          alt=""
+          draggable="false"
+          [style.left]="'calc(50% + ' + tile.leftPx + 'px)'"
+          [style.top]="'calc(50% + ' + tile.topPx + 'px)'"
+        />
+      }
+    </div>
+
+    @if (!readonly()) {
+      <div class="map-center-reticle" aria-hidden="true">
+        <span class="reticle-ring"></span>
+        <span class="reticle-dot"></span>
+      </div>
+    }
+
+    @if (pinPixelOffset(); as pin) {
+      <div
+        class="map-pin-marker"
+        [style.left]="'calc(50% + ' + pin.x + 'px)'"
+        [style.top]="'calc(50% + ' + pin.y + 'px)'"
+        aria-hidden="true"
+      >
+        <svg width="34" height="42" viewBox="0 0 34 42" fill="none">
+          <path
+            d="M17 1C8.163 1 1 8.163 1 17c0 11.25 14.25 22.75 15.12 23.44a1.4 1.4 0 0 0 1.76 0C18.75 39.75 33 28.25 33 17 33 8.163 25.837 1 17 1Z"
+            fill="#0d9488"
+            stroke="#ffffff"
+            stroke-width="2"
+          />
+          <circle cx="17" cy="16.5" r="6" fill="#ffffff" />
+        </svg>
+        <span class="map-pin-shadow"></span>
+      </div>
+    }
+
+    <div
+      class="map-controls-overlay"
+      (pointerdown)="$event.stopPropagation()"
+      (pointerup)="$event.stopPropagation()"
+    >
+      <button
+        type="button"
+        class="map-ctrl-btn"
+        [disabled]="disabled()"
+        [attr.aria-label]="'mapPicker.zoomIn' | t"
+        [attr.title]="'mapPicker.zoomIn' | t"
+        (click)="zoomIn()"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="map-ctrl-btn"
+        [disabled]="disabled()"
+        [attr.aria-label]="'mapPicker.zoomOut' | t"
+        [attr.title]="'mapPicker.zoomOut' | t"
+        (click)="zoomOut()"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+      @if (hasValidCoordinates()) {
+        <button
+          type="button"
+          class="map-ctrl-btn"
+          [disabled]="disabled()"
+          [attr.aria-label]="'mapPicker.recenterPin' | t"
+          [attr.title]="'mapPicker.recenterPin' | t"
+          (click)="recenterOnPin()"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
+          </svg>
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="map-picker-footer">
+    <div class="map-status-pill" [class.is-pinned]="hasValidCoordinates()">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>
+        {{
+          (hasValidCoordinates() ? 'mapPicker.selectedBadge' : 'mapPicker.notSelectedBadge') | t
+        }}
+      </span>
+    </div>
+
+    @if (hasValidCoordinates()) {
+      <a
+        class="map-external-link"
+        [href]="googleMapsUrl()"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span>{{ 'ui.full.576' | t }}</span>
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      </a>
+    }
+  </div>
+</div>

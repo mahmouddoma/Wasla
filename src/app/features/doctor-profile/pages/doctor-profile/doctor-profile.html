@@ -384,100 +384,26 @@
                     </div>
                   }
 
-                  <!-- Interactive Live Map Container -->
-                  <div class="map-card-wrapper">
-                    <div class="map-toolbar">
-                      <div class="coords-tag">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          class="map-pin-icon"
-                          aria-hidden="true"
-                        >
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        @if (hasValidCoordinates()) {
-                          <span class="coords-val"
-                            >{{ locationModel().latitude }}, {{ locationModel().longitude }}</span
-                          >
-                        } @else {
-                          <span class="coords-val">{{ 'ui.full.527' | t }}</span>
-                        }
-                      </div>
-                      @if (hasValidCoordinates()) {
-                        <div class="map-actions-group">
-                          @if (canManageLocation) {
-                            <button
-                              type="button"
-                              class="btn-text-action"
-                              [disabled]="isLocating()"
-                              (click)="resolveAddressFromCoordinates()"
-                              [title]="'ui.full.529' | t"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                width="13"
-                                height="13"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                              >
-                                <circle cx="12" cy="12" r="3" />
-                                <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
-                              </svg>
-                              <span>{{ 'ui.full.528' | t }}</span>
-                            </button>
-                          }
-                          <a
-                            [href]="googleMapsDirectUrl()"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="map-link"
-                          >
-                            <span>{{ 'ui.full.530' | t }}</span>
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="12"
-                              height="12"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              aria-hidden="true"
-                            >
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" />
-                              <line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                          </a>
-                        </div>
-                      }
-                    </div>
-
-                    <!-- Map iframe element -->
-                    <div class="map-frame-box">
-                      @if (mapEmbedUrl(); as url) {
-                        <iframe
-                          [src]="url"
-                          class="live-map-iframe"
-                          loading="lazy"
-                          [title]="'ui.full.531' | t"
-                          [attr.aria-label]="'ui.full.532' | t"
-                        ></iframe>
-                      }
-                    </div>
-                  </div>
+                  <!-- Interactive Map Picker -->
+                  <app-location-map-picker
+                    [latitude]="locationModel().latitude"
+                    [longitude]="locationModel().longitude"
+                    [readonly]="!canManageLocation"
+                    [disabled]="isLocationSubmitting() || isLocating()"
+                    (coordinatesChange)="onMapCoordinatesPicked($event)"
+                  ></app-location-map-picker>
                 </div>
 
                 <!-- Sub-column 2: Address & Coordinates Form -->
                 <div class="location-form-col">
                   <form (submit)="saveLocation($event)" class="location-form">
-                    <p class="field-full">{{ 'subscriptions.draft' | t }} @if (subscription.usage(); as usage) { {{ 'subscriptions.practiceLimit' | t }}: {{ usage.practiceCount }} / {{ subscription.terms()?.practiceLimit }} }</p>
+                    <p class="field-full">
+                      {{ 'subscriptions.draft' | t }}
+                      @if (subscription.usage(); as usage) {
+                        {{ 'subscriptions.practiceLimit' | t }}: {{ usage.practiceCount }} /
+                        {{ subscription.terms()?.practiceLimit }}
+                      }
+                    </p>
                     <div class="form-grid-compact">
                       <label class="form-field">
                         <span class="field-label">{{ 'discovery.governorate' | t }}</span>
@@ -541,28 +467,6 @@
                           [formField]="locationForm.detailedAddress"
                           [placeholder]="'ui.full.534' | t"
                           class="field-input"
-                        />
-                      </label>
-
-                      <label class="form-field">
-                        <span class="field-label">{{ 'ui.full.535' | t }}</span>
-                        <input
-                          type="number"
-                          step="any"
-                          [formField]="locationForm.latitude"
-                          class="field-input ltr-input"
-                          [placeholder]="'ui.full.536' | t"
-                        />
-                      </label>
-
-                      <label class="form-field">
-                        <span class="field-label">{{ 'ui.full.537' | t }}</span>
-                        <input
-                          type="number"
-                          step="any"
-                          [formField]="locationForm.longitude"
-                          class="field-input ltr-input"
-                          [placeholder]="'ui.full.538' | t"
                         />
                       </label>
                     </div>

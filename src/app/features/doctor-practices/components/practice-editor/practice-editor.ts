@@ -21,10 +21,14 @@ import { DoctorProfileApi } from '../../../../domains/doctor-profile';
 import { EgyptLocationOption } from '../../../../domains/doctor-profile';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SubscriptionState } from '../../../../domains/subscriptions';
+import {
+  LocationMapPicker,
+  MapCoordinates,
+} from '../../../../shared/components/location-map-picker/location-map-picker';
 
 @Component({
   selector: 'app-practice-editor',
-  imports: [FormField, TranslatePipe],
+  imports: [FormField, TranslatePipe, LocationMapPicker],
   templateUrl: './practice-editor.html',
   styleUrl: './practice-editor.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -145,6 +149,17 @@ export class PracticeEditor implements OnInit {
     this.model.update((value) => ({ ...value, cityId, areaId: '' }));
     this.areas.set([]);
     if (cityId) await this.loadAreas(Number(cityId));
+  }
+
+  protected onMapCoordinatesPicked(coords: MapCoordinates): void {
+    this.model.update((value) => ({
+      ...value,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    }));
+    void this.autoFillLocationFromCoordinates(coords.latitude, coords.longitude).catch(
+      () => undefined,
+    );
   }
 
   protected useCurrentLocation(): void {

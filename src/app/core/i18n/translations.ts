@@ -1914,6 +1914,82 @@ export const TRANSLATIONS: TranslationDictionary = {
   'workspace.activePractice': { ar: 'العيادة الحالية', en: 'Current clinic' },
   'workspace.home.reception': { ar: 'يومك في العيادة', en: 'Your clinic day' },
   'workspace.home.doctor': { ar: 'يومك مع المرضى', en: 'Your day with patients' },
+  'doctorSubscriptionGate.badge': {
+    ar: 'ميزة ضمن باقات الاشتراك',
+    en: 'Subscription Plan Feature',
+  },
+  'doctorSubscriptionGate.badgePending': {
+    ar: 'طلب اشتراكك قيد المراجعة',
+    en: 'Subscription Request Under Review',
+  },
+  'doctorSubscriptionGate.badgeUpgrade': {
+    ar: 'متاحة في الباقات الأعلى',
+    en: 'Available in Higher Plans',
+  },
+  'doctorSubscriptionGate.titlePrefix': {
+    ar: 'اشترك الآن للاستفادة من',
+    en: 'Subscribe now to unlock',
+  },
+  'doctorSubscriptionGate.titlePendingPrefix': {
+    ar: 'بانتظار تفعيل اشتراكك لفتح',
+    en: 'Awaiting subscription activation for',
+  },
+  'doctorSubscriptionGate.titleUpgradePrefix': {
+    ar: 'رقِّ باقتك الحالية للاستفادة من',
+    en: 'Upgrade your current plan to unlock',
+  },
+  'doctorSubscriptionGate.description': {
+    ar: 'هذه الصفحة مخصصة للأطباء المشتركين في منصة وصلة. يمكنك تفعيل التجربة المجانية فوراً أو اختيار الباقة الأنسب لعيادتك للاستفادة الكاملة من إدارة الحجوزات، قائمة الانتظار، الكشوفات، والتقارير.',
+    en: 'This page is available to subscribed doctors on Wasla. Activate your free trial right away or choose the plan that fits your clinic to unlock appointments, queue management, consultations, and reports.',
+  },
+  'doctorSubscriptionGate.descriptionPending': {
+    ar: 'تم استلام طلب اشتراكك وجارٍ مراجعته وتفعيله بواسطة الإدارة. يمكنك متابعة حالة عقدك أو بدء التجربة المجانية إن كانت متاحة لحسابك.',
+    en: 'Your subscription request has been received and is being reviewed by administration. You can check your contract status or start a free trial if eligible.',
+  },
+  'doctorSubscriptionGate.descriptionUpgrade': {
+    ar: 'باقة اشتراكك الحالية لا تشمل هذه الميزة، أو لم يتم ربط عيادتك بالعقد بعد. يمكنك مراجعة باقاتك أو ترقية الاشتراك من صفحة اشتراكي.',
+    en: 'Your current subscription plan does not include this feature, or your clinic is not yet linked to the contract. Review or upgrade your plan on the My Subscription page.',
+  },
+  'doctorSubscriptionGate.benefitTrialTitle': {
+    ar: 'تجربة مجانية سريعة',
+    en: 'Instant Free Trial',
+  },
+  'doctorSubscriptionGate.benefitTrialDesc': {
+    ar: 'ابدأ تجربة المنصة مجاناً لمدة ٢٠ يوماً بضغطة زر وبدون أي خصم مالي.',
+    en: 'Try the platform free for 20 days with one click and no upfront charge.',
+  },
+  'doctorSubscriptionGate.benefitClinicTitle': {
+    ar: 'إدارة متكاملة للعيادة',
+    en: 'Complete Clinic Management',
+  },
+  'doctorSubscriptionGate.benefitClinicDesc': {
+    ar: 'تنظيم الحجوزات، شاشة الانتظار اللحظية، الكشوفات، والروشتات الإلكترونية.',
+    en: 'Appointments, live waiting queue, clinical visits, and electronic prescriptions.',
+  },
+  'doctorSubscriptionGate.benefitFlexibleTitle': {
+    ar: 'باقات مرنة تناسبك',
+    en: 'Flexible Plans for Every Clinic',
+  },
+  'doctorSubscriptionGate.benefitFlexibleDesc': {
+    ar: 'خيارات شهرية وسنوية مصممة للعيادات الفردية والمراكز الطبية المتعددة.',
+    en: 'Monthly and annual options tailored for solo practices and multi-branch centers.',
+  },
+  'doctorSubscriptionGate.ctaPrimary': {
+    ar: 'استعراض الباقات وبدء التجربة المجانية',
+    en: 'Explore Plans & Start Free Trial',
+  },
+  'doctorSubscriptionGate.ctaManage': {
+    ar: 'مراجعة اشتراكي والباقات المتاحة',
+    en: 'Review My Subscription & Plans',
+  },
+  'doctorSubscriptionGate.ctaRefresh': {
+    ar: 'تحديث حالة الاشتراك',
+    en: 'Refresh Subscription Status',
+  },
+  'doctorSubscriptionGate.ctaPractices': {
+    ar: 'ربط العيادة بالاشتراك',
+    en: 'Link Clinic to Subscription',
+  },
   'workspace.home.patient': { ar: 'مواعيدك ورعايتك', en: 'Your appointments and care' },
   'workspace.home.other': { ar: 'الرئيسية', en: 'Home' },
   'workspace.intro.reception': {
@@ -9286,4 +9362,40 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorPatients.bookingSource.FamilyMember': { ar: 'أحد أفراد الأسرة', en: 'Family member' },
   'doctorPatients.bookingSource.Reception': { ar: 'الاستقبال', en: 'Reception' },
   'doctorPatients.prescription.visitDate': { ar: 'تاريخ الكشف', en: 'Consultation date' },
+  'mapPicker.instruction': {
+    ar: 'اضغط على الخريطة أو اسحبها لتحديد موقع العيادة بدقة',
+    en: 'Tap or drag the map to pin the exact clinic location',
+  },
+  'mapPicker.pinHere': {
+    ar: 'تثبيت الدبوس في منتصف الخريطة',
+    en: 'Pin at map center',
+  },
+  'mapPicker.selectedBadge': {
+    ar: 'تم تحديد الموقع على الخريطة',
+    en: 'Location pinned on map',
+  },
+  'mapPicker.notSelectedBadge': {
+    ar: 'اضغط على الخريطة لتحديد موقع العيادة',
+    en: 'Tap on the map to pin the clinic location',
+  },
+  'mapPicker.zoomIn': { ar: 'تكبير الخريطة', en: 'Zoom in' },
+  'mapPicker.zoomOut': { ar: 'تصغير الخريطة', en: 'Zoom out' },
+  'mapPicker.recenterPin': { ar: 'الانتقال إلى الدبوس', en: 'Center on pin' },
+  'mapPicker.clinicOnMap': { ar: 'موقع العيادة على الخريطة', en: 'Clinic location on map' },
+  'Report.AccessDenied': {
+    ar: 'يلزم تفعيل اشتراك الباقة أولاً لعرض الإحصائيات والتقارير',
+    en: 'Please activate a subscription plan first to view analytics and reports',
+  },
+  'doctorDashboard.subscriptionRequired.title': {
+    ar: 'يلزم الاشتراك في باقة مفعّلة لعرض لوحة المتابعة والإحصائيات',
+    en: 'Active Subscription Required to View Dashboard & Analytics',
+  },
+  'doctorDashboard.subscriptionRequired.description': {
+    ar: 'إحصائيات العيادة ومؤشرات الأداء متاحة بعد اختيار باقة اشتراك وتفعيلها وربط عيادتك بها. انتقل إلى صفحة اشتراكي لإتمام التفعيل.',
+    en: 'Clinic metrics and performance analytics are available after activating a subscription plan and allocating your practice. Go to My Subscription to get started.',
+  },
+  'doctorDashboard.subscriptionRequired.cta': {
+    ar: 'الذهاب إلى اشتراكي وتفعيل الباقة',
+    en: 'Go to My Subscription & Activate Plan',
+  },
 };

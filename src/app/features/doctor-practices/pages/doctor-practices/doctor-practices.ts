@@ -11,6 +11,7 @@ import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
+import { LocationMapPicker } from '../../../../shared/components/location-map-picker/location-map-picker';
 import { PracticeEditor } from '../../components/practice-editor/practice-editor';
 import { PracticeOperations } from '../../components/practice-operations/practice-operations';
 import { PracticeSchedule } from '../../components/practice-schedule/practice-schedule';
@@ -32,6 +33,7 @@ type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
     SideDrawer,
     TranslatePipe,
     PageHeader,
+    LocationMapPicker,
     BookingPriceComponent,
     PracticeAllocationComponent,
   ],

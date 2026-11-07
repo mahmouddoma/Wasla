@@ -4,8 +4,15 @@ import { signal } from '@angular/core';
 /** Existing feature unit tests exercise their workflow with commercial access granted. */
 export function subscriptionStateStub() {
   const details = signal(detailsFixture());
+  const deniedRoute = signal<string | null>(null);
   return {
     details,
+    deniedRoute,
+    hasLoaded: () => true,
+    hasActiveSubscription: () => true,
+    hasPendingSubscription: () => false,
+    markRouteDenied: (url: string) => deniedRoute.set(url),
+    clearRouteDenied: () => deniedRoute.set(null),
     usage: () => details().usage,
     terms: () => details().subscription,
     has: () => true,

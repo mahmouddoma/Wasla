@@ -34,7 +34,8 @@ export const subscriptionErrorInterceptor: HttpInterceptorFn = (request, next) =
             session.user()?.userType === 'Doctor' &&
             !/\/subscriptions?(?:\/|\?|$)/.test(request.url) &&
             !request.url.includes('/subscription-allocation')
-          )
+          ) {
+            state.markRouteDenied?.(typeof window !== 'undefined' ? window.location.pathname : '');
             void state
               .refresh()
               .then(() => {
@@ -42,6 +43,7 @@ export const subscriptionErrorInterceptor: HttpInterceptorFn = (request, next) =
                 return practiceId ? state.refreshPractice(decodeURIComponent(practiceId)) : null;
               })
               .catch(() => undefined);
+          }
           if (!request.context.get(SKIP_ERROR_TOAST)) {
             request.context.set(SKIP_ERROR_TOAST, true);
             const key = parsed.codes.some((code) => code.endsWith('AccessLevelInsufficient'))
@@ -63,6 +65,16 @@ export const subscriptionErrorInterceptor: HttpInterceptorFn = (request, next) =
               ),
             );
           }
+        } else if (
+          error.status === 403 &&
+          request.method === 'GET' &&
+          session.user()?.userType === 'Doctor' &&
+          /\/doctors\/me\//.test(request.url) &&
+          !/\/(?:subscriptions?|onboarding|profile)(?:\/|\?|$)/.test(request.url)
+        ) {
+          request.context.set(SKIP_ERROR_TOAST, true);
+          state.markRouteDenied?.(typeof window !== 'undefined' ? window.location.pathname : '');
+          setTimeout(() => toast.clearErrors?.(), 0);
         }
       }
       return throwError(() => error);

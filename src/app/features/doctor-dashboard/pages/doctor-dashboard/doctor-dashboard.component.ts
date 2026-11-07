@@ -8,10 +8,12 @@ import {
   signal,
 } from '@angular/core';
 
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
+import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -79,6 +81,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   readonly loading = signal(false);
 
   readonly failed = signal(false);
+
+  readonly subscriptionRequired = signal(false);
 
   readonly activePreset = signal<'today' | 'last7' | 'month' | null>(null);
 
@@ -765,6 +769,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
     this.loading.set(true);
     this.failed.set(false);
+    this.subscriptionRequired.set(false);
 
     try {
       const result = await firstValueFrom(this.api.call('P18-025', {}));
@@ -776,8 +781,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       this.options.set(result);
 
       await this.loadReport(seq);
-    } catch {
-      this.handleError(seq);
+    } catch (error) {
+      this.handleError(seq, error);
     } finally {
       if (this.isCurrentRequest(seq)) {
         this.loading.set(false);
@@ -803,11 +808,12 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
     this.loading.set(true);
     this.failed.set(false);
+    this.subscriptionRequired.set(false);
 
     try {
       await this.loadReport(seq);
-    } catch {
-      this.handleError(seq);
+    } catch (error) {
+      this.handleError(seq, error);
     } finally {
       if (this.isCurrentRequest(seq)) {
         this.loading.set(false);
@@ -854,6 +860,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
     this.model.set(result);
     this.failed.set(false);
+    this.subscriptionRequired.set(false);
     // Surface the server's default reporting window instead of displaying blank dates.
     this.filters = {
       ...requestedFilters,
@@ -899,13 +906,45 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // Error handling
   // ========================================
 
-  private handleError(seq: number): void {
+  private handleError(seq: number, error?: unknown): void {
     if (!this.isCurrentRequest(seq)) {
       return;
     }
 
     this.model.set(null);
+    if (this.isSubscriptionAccessDenied(error)) {
+      this.subscriptionRequired.set(true);
+      this.failed.set(false);
+      return;
+    }
+    this.subscriptionRequired.set(false);
     this.failed.set(true);
+  }
+
+  private isSubscriptionAccessDenied(error: unknown): boolean {
+    if (error instanceof HttpErrorResponse && error.status === 403) {
+      return true;
+    }
+    const parsed = parseApiErrors(error);
+    if (parsed.status === 403 || parsed.codes.includes('Report.AccessDenied')) {
+      return true;
+    }
+    if (error && typeof error === 'object') {
+      const record = error as Record<string, unknown>;
+      if (record['status'] === 403) {
+        return true;
+      }
+      const errors = record['errors'];
+      if (Array.isArray(errors)) {
+        return errors.some(
+          (item) =>
+            Boolean(item) &&
+            typeof item === 'object' &&
+            (item as Record<string, unknown>)['code'] === 'Report.AccessDenied',
+        );
+      }
+    }
+    return false;
   }
 
   private isCurrentRequest(seq: number): boolean {
