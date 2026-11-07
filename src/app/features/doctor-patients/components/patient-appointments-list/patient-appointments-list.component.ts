@@ -12,7 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
@@ -22,7 +22,7 @@ import { DoctorPatientsApi, DoctorPatientAppointment } from '../../../../domains
 @Component({
   selector: 'app-patient-appointments-list',
   standalone: true,
-  imports: [CommonModule, TranslatePipe, LocalizedDatePipe],
+  imports: [CommonModule, TranslatePipe, LocalizedDatePipe, RouterLink],
   templateUrl: './patient-appointments-list.component.html',
   styleUrl: './patient-appointments-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,6 +50,10 @@ export class PatientAppointmentsListComponent implements OnInit, OnChanges, OnDe
   readonly patientId = input.required<string>();
   readonly practiceNames = input<Readonly<Record<string, string>>>({});
   readonly isHistoricalOnly = input<boolean>(false);
+  canViewTicket(): boolean {
+    return this.session.hasPermission('DoctorPracticeTickets.ViewOwn') &&
+      (!this.isHistoricalOnly() || this.session.hasPermission('DoctorPatients.ViewHistoricalOwn'));
+  }
 
   readonly appointments = signal<readonly DoctorPatientAppointment[]>([]);
   readonly loading = signal<boolean>(true);

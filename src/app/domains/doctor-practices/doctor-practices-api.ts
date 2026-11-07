@@ -1,6 +1,6 @@
 import { HttpClient, HttpContext, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   CreateDoctorPracticePriceRequest,
@@ -16,6 +16,7 @@ import {
   DoctorPracticeSegment,
   DoctorPracticeVisitType,
   DoctorPracticeWriteRequest,
+  CreateDoctorPracticeRequest,
   EffectiveSchedulePeriod,
   RowVersionRequest,
   UpdateDoctorPracticeBrandingRequest,
@@ -50,7 +51,7 @@ export class DoctorPracticesApi {
       .pipe(map(normalizePractice));
   }
 
-  create(request: DoctorPracticeWriteRequest): Observable<DoctorPractice> {
+  create(request: CreateDoctorPracticeRequest): Observable<DoctorPractice> {
     return this.http.post<DoctorPracticeResponse>(this.url, request).pipe(map(normalizePractice));
   }
 
@@ -62,14 +63,14 @@ export class DoctorPracticesApi {
 
   activate(practiceId: string, request: RowVersionRequest): Observable<DoctorPractice> {
     return this.http
-      .post<DoctorPracticeResponse>(`${this.practiceUrl(practiceId)}/activate`, request)
-      .pipe(map(normalizePractice));
+      .post<void>(`${this.practiceUrl(practiceId)}/activate`, request)
+      .pipe(switchMap(() => this.details(practiceId)));
   }
 
   deactivate(practiceId: string, request: RowVersionRequest): Observable<DoctorPractice> {
     return this.http
-      .post<DoctorPracticeResponse>(`${this.practiceUrl(practiceId)}/deactivate`, request)
-      .pipe(map(normalizePractice));
+      .post<void>(`${this.practiceUrl(practiceId)}/deactivate`, request)
+      .pipe(switchMap(() => this.details(practiceId)));
   }
 
   configuration(practiceId: string): Observable<DoctorPracticeConfiguration> {
@@ -319,6 +320,7 @@ function normalizePractice(item: DoctorPracticeResponse): DoctorPractice {
     isActive: item.isActive,
     hasLogo: item.hasLogo,
     rowVersion: item.rowVersion,
+    commercial: item.commercial ?? null,
   };
 }
 

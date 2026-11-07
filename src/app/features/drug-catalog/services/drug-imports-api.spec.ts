@@ -12,6 +12,48 @@ describe('Medication import contracts', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('maps backend counters and timestamps for import preview', () => {
+    let result: unknown;
+    api.preview(new File(['[]'], 'drugs.json'), '', '').subscribe((value) => (result = value));
+    http
+      .expectOne((req) => req.url.endsWith('/imports/preview'))
+      .flush({
+        batchId: 'b',
+        createdAtUtc: '2026-11-07T10:00:00Z',
+        totalRecords: 12,
+        newRecords: 4,
+        unchangedRecords: 3,
+        priceChanges: 5,
+      });
+    expect(result).toMatchObject({
+      createdOnUtc: '2026-11-07T10:00:00Z',
+      counts: { Total: 12, New: 4, Unchanged: 3, PriceChange: 5 },
+    });
+  });
+  it('maps source data and record IDs for import changes', () => {
+    let result: unknown;
+    api.changes('b', undefined, 1).subscribe((value) => (result = value.items[0]));
+    http
+      .expectOne((req) => req.url.endsWith('/imports/b/changes'))
+      .flush({
+        items: [
+          {
+            id: 'record',
+            data: { commercialNameEn: 'Drug' },
+            matchedDrugCatalogId: 'drug',
+            changeType: 'PriceChange',
+          },
+        ],
+        totalCount: 1,
+        pageNumber: 1,
+        pageSize: 20,
+      });
+    expect(result).toMatchObject({
+      recordId: 'record',
+      sourceRow: { commercialNameEn: 'Drug' },
+      drugCatalogId: 'drug',
+    });
+  });
   it('previews multipart data without forcing a JSON content type', () => {
     const file = new File(['[]'], 'drugs.json', { type: 'application/json' });
     api.preview(file, 'v1', 'commit').subscribe();

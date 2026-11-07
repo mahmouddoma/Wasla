@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ActivatePatientAccountRequest,
@@ -10,6 +10,7 @@ import {
   ApprovePatientClaimRequest,
   ApprovePatientClaimResponse,
   ClaimHistoryItem,
+  ClaimHistoryResponseItem,
   PatientDuplicateDetails,
   PatientDuplicatesPage,
   RegisterVerifiedPatientAccountRequest,
@@ -170,7 +171,9 @@ export class PatientIdentityApi {
     );
   }
 
-  activateAccount(request: ActivatePatientAccountRequest): Observable<ActivatePatientAccountResponse> {
+  activateAccount(
+    request: ActivatePatientAccountRequest,
+  ): Observable<ActivatePatientAccountResponse> {
     return this.http.post<ActivatePatientAccountResponse>(
       `${this.onboardingUrl}/activate`,
       request,
@@ -258,7 +261,23 @@ export class PatientIdentityApi {
   }
 
   claimHistory(claimId: string): Observable<readonly ClaimHistoryItem[]> {
-    return this.http.get<readonly ClaimHistoryItem[]>(`${this.adminClaimsUrl}/${claimId}/history`);
+    return this.http
+      .get<{ items: readonly ClaimHistoryResponseItem[] } | readonly ClaimHistoryItem[]>(
+        `${this.adminClaimsUrl}/${encodeURIComponent(claimId)}/history`,
+      )
+      .pipe(
+        map((response) => {
+          if ('items' in response)
+            return response.items.map((item) => ({
+              id: item.eventId,
+              action: item.action,
+              actorName: '',
+              timestampUtc: item.occurredOnUtc,
+              note: item.reason ?? undefined,
+            }));
+          return response;
+        }),
+      );
   }
 
   // === SuperAdmin Patient Duplicates (WAS-628 .. WAS-630) ===
@@ -277,10 +296,12 @@ export class PatientIdentityApi {
   resolveDuplicate(
     duplicateId: string,
     request: ResolvePatientDuplicateRequest,
+    idempotencyKey: string,
   ): Observable<ResolvePatientDuplicateResponse> {
     return this.http.post<ResolvePatientDuplicateResponse>(
-      `${this.adminDuplicatesUrl}/${duplicateId}/resolve`,
+      `${this.adminDuplicatesUrl}/${encodeURIComponent(duplicateId)}/resolve`,
       request,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 }

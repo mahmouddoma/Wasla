@@ -7,6 +7,7 @@ import { ToastService } from '../../../../core/notifications/toast.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { DrugCatalogApi, DrugCatalogItem } from '../../../../domains/drug-catalog';
 import { PrescriptionsApi, PrescriptionState } from '../../../../domains/prescriptions';
+import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
 import { PrescriptionWorkspaceComponent } from './prescription-workspace.component';
 const drug: DrugCatalogItem = {
   drugCatalogId: 'd1',
@@ -81,6 +82,7 @@ describe('Prescription editing, correction and privacy', () => {
       pdf: vi.fn(),
     },
     toast = { success: vi.fn(), error: vi.fn() };
+  const patientApi = { prescriptions: vi.fn() };
   beforeEach(async () => {
     vi.resetAllMocks();
     actor = 'Doctor';
@@ -88,6 +90,7 @@ describe('Prescription editing, correction and privacy', () => {
       imports: [PrescriptionWorkspaceComponent],
       providers: [
         { provide: PrescriptionsApi, useValue: api },
+        { provide: DoctorPatientsApi, useValue: patientApi },
         {
           provide: DrugCatalogApi,
           useValue: {
@@ -125,9 +128,123 @@ describe('Prescription editing, correction and privacy', () => {
     expect(component.pdfBlob()?.type).toBe('application/pdf');
     expect(print).not.toHaveBeenCalled();
   });
+  it('copies previous medicines through supported APIs and advances the row version per item', async () => {
+    fixture.componentRef.setInput('patientId', 'patient1');
+    await fixture.whenStable();
+    patientApi.prescriptions.mockReturnValue(
+      of({ items: [{ prescriptionId: 'old', currentVersionNumber: 2, medicationCount: 2 }] }),
+    );
+    api.versionDetails.mockReturnValue(
+      of({
+        items: [
+          {
+            ...item,
+            drugCatalogId: 'd1',
+            clinical: {
+              dose: 'two',
+              frequencyCode: 'TwiceDaily',
+              durationType: 'Fixed',
+              durationValue: 7,
+              durationUnit: 'Days',
+              quantityValue: 14,
+              asNeeded: true,
+            },
+          },
+          { ...item, drugCatalogId: 'd2' },
+        ],
+      }),
+    );
+    api.addItem
+      .mockReturnValueOnce(of({ ...state, rowVersion: 'v2' }))
+      .mockReturnValueOnce(of({ ...state, rowVersion: 'v3' }));
+    await component.copyPreviousPrescription();
+    expect(patientApi.prescriptions).toHaveBeenCalledWith('patient1', {
+      pageNumber: 1,
+      pageSize: 5,
+    });
+    expect(api.versionDetails).toHaveBeenCalledWith('old', 2);
+    expect(api.addItem.mock.calls[0][2].prescriptionRowVersion).toBe('v1');
+    expect(api.addItem.mock.calls[0][2]).toMatchObject({
+      dose: 'two',
+      frequencyCode: 'TwiceDaily',
+      durationValue: 7,
+      quantityValue: 14,
+      asNeeded: true,
+    });
+    expect(api.addItem.mock.calls[1][2].prescriptionRowVersion).toBe('v2');
+    expect(component.state()?.rowVersion).toBe('v3');
+    expect(toast.success).toHaveBeenCalledWith('prescriptions.copySuccess');
+  });
+  it('preserves successful copy mutations when a later medicine fails', async () => {
+    fixture.componentRef.setInput('patientId', 'patient1');
+    await fixture.whenStable();
+    patientApi.prescriptions.mockReturnValue(
+      of({ items: [{ prescriptionId: 'old', currentVersionNumber: 2, medicationCount: 2 }] }),
+    );
+    api.versionDetails.mockReturnValue(of({ items: [item, item] }));
+    api.addItem
+      .mockReturnValueOnce(of({ ...state, rowVersion: 'v2' }))
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 409 })));
+    await component.copyPreviousPrescription();
+    expect(component.state()?.rowVersion).toBe('v2');
+    expect(toast.error).toHaveBeenCalledWith('prescriptions.copyFailed');
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(component.copyingPrevious()).toBe(false);
+  });
+  it('blocks copying into a disabled encounter', async () => {
+    fixture.componentRef.setInput('patientId', 'patient1');
+    fixture.componentRef.setInput('disabled', true);
+    await fixture.whenStable();
+    await component.copyPreviousPrescription();
+    expect(patientApi.prescriptions).not.toHaveBeenCalled();
+    expect(api.addItem).not.toHaveBeenCalled();
+  });
   it('does not export a draft', async () => {
     await component.printPrescription();
     expect(api.pdf).not.toHaveBeenCalled();
+  });
+  it('requires a quantity unit and sends both backend quantity fields', async () => {
+    component.beginAdd();
+    component.choose(drug);
+    component.clinical.controls.dose.setValue('one');
+    component.clinical.controls.quantity.setValue(10);
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelector('select[formControlName="quantityUnit"]'),
+    ).toBeTruthy();
+    await component.saveItem();
+    expect(api.addItem).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('prescriptions.quantityUnitRequired');
+    component.clinical.controls.quantityUnit.setValue('Tablet');
+    api.addItem.mockReturnValue(of(state));
+    await component.saveItem();
+    expect(api.addItem.mock.calls[0][2]).toMatchObject({
+      quantityValue: 10,
+      quantityUnit: 'Tablet',
+    });
+  });
+  it('blocks ambiguous duration text and preserves as-needed instructions', async () => {
+    component.beginAdd();
+    component.choose(drug);
+    component.clinical.controls.duration.setValue('until review');
+    await component.saveItem();
+    expect(api.addItem).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('prescriptions.durationInvalid');
+    component.clinical.patchValue({
+      duration: 'مستمر',
+      isPrn: true,
+      prnReason: 'Pain',
+      minimumIntervalText: '6 hours',
+    });
+    api.addItem.mockReturnValue(of(state));
+    await component.saveItem();
+    expect(api.addItem.mock.calls[0][2]).toMatchObject({
+      durationType: 'Ongoing',
+      durationValue: null,
+      asNeeded: true,
+      prnReason: 'Pain',
+      minimumIntervalText: '6 hours',
+    });
   });
   it('adds exactly one catalog source with the current root token and a stable retry intent', async () => {
     expect(component).toBeTruthy();

@@ -174,7 +174,7 @@ export interface AdminClaimDetails {
   readonly patientReference?: string;
   readonly candidatePatients: readonly AdminCandidatePatient[];
   readonly evidence: readonly AdminClaimEvidenceItem[];
-  readonly historySummary?: string;
+  readonly historySummary?: readonly ClaimHistoryResponseItem[];
   readonly submittedOnUtc: string;
   readonly lastActivityOnUtc: string;
   readonly rowVersion: string;
@@ -234,14 +234,21 @@ export interface ClaimHistoryItem {
   readonly note?: string;
 }
 
+export interface ClaimHistoryResponseItem {
+  readonly eventId: string;
+  readonly revisionNumber: number;
+  readonly action: string;
+  readonly actorId: string | null;
+  readonly occurredOnUtc: string;
+  readonly reason: string | null;
+}
+
 export interface PatientDuplicateQueueItem {
-  readonly id: string;
-  readonly primaryPatientId: string;
-  readonly duplicatePatientId: string;
-  readonly confidenceScore: number;
-  readonly status: 'PendingReview' | 'Resolved' | 'Dismissed';
-  readonly matchedCriteria: readonly string[];
-  readonly detectedOnUtc: string;
+  readonly caseId: string;
+  readonly firstPatientId: string;
+  readonly secondPatientId: string;
+  readonly status: PatientDuplicateStatus;
+  readonly createdOnUtc: string;
   readonly rowVersion: string;
 }
 
@@ -253,26 +260,33 @@ export interface PatientDuplicatesPage {
 }
 
 export interface PatientDuplicateDetails {
-  readonly id: string;
-  readonly primaryPatient: AdminCandidatePatient;
-  readonly duplicatePatient: AdminCandidatePatient;
-  readonly confidenceScore: number;
-  readonly status: string;
-  readonly matchedCriteria: readonly string[];
-  readonly detectedOnUtc: string;
+  readonly caseId: string;
+  readonly patientA: PatientDuplicateCandidate;
+  readonly patientB: PatientDuplicateCandidate;
+  readonly status: PatientDuplicateStatus;
+  readonly matchIndicators: string;
+  readonly createdOnUtc: string;
   readonly rowVersion: string;
 }
 
 export interface ResolvePatientDuplicateRequest {
-  readonly resolutionAction: 'Merge' | 'KeepSeparate';
-  readonly targetPatientId: string;
+  readonly resolution: PatientDuplicateStatus;
   readonly reason: string;
   readonly rowVersion: string;
 }
 
 export interface ResolvePatientDuplicateResponse {
-  readonly id: string;
-  readonly status: string;
-  readonly resolvedAtUtc: string;
+  readonly caseId: string;
+  readonly status: PatientDuplicateStatus;
   readonly rowVersion: string;
+}
+
+export type PatientDuplicateStatus =
+  'NeedsMoreEvidence' | 'ConfirmedDuplicate' | 'DistinctPatients';
+export interface PatientDuplicateCandidate {
+  readonly id: string;
+  readonly nameAr: string;
+  readonly dateOfBirth: string;
+  readonly gender: 'Male' | 'Female';
+  readonly emailMasked: string | null;
 }

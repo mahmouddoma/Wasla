@@ -18,6 +18,28 @@ export interface FollowUpPage {
   readonly pageNumber: number;
   readonly pageSize: number;
 }
+export interface FollowUpEligibilityResponse extends Omit<
+  FollowUpEligibility,
+  'patientId' | 'doctorId' | 'practiceId'
+> {
+  readonly patient: { readonly id: string };
+  readonly doctor: { readonly id: string };
+  readonly practice: { readonly id: string };
+}
+
+export function normalizeFollowUp(
+  response: FollowUpEligibilityResponse | FollowUpEligibility,
+): FollowUpEligibility {
+  if ('patient' in response) {
+    return {
+      ...response,
+      patientId: response.patient.id,
+      doctorId: response.doctor.id,
+      practiceId: response.practice.id,
+    };
+  }
+  return response;
+}
 export interface FollowUpQuery {
   patientId?: string;
   status?: FollowUpStatus;

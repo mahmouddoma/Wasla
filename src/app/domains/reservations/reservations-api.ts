@@ -53,7 +53,24 @@ export class ReservationsApi {
   filterOptions(scope: ReservationScope): Observable<ReservationFilterOptions> {
     if (scope.actor !== 'Doctor' && scope.actor !== 'Reception')
       throw new Error('Scoped operational filter options required');
-    return this.http.get<ReservationFilterOptions>(`${this.scopeUrl(scope)}/filter-options`);
+    return this.http
+      .get<
+        Omit<ReservationFilterOptions, 'segments'> & {
+          segments: (Omit<ReservationFilterOptions['segments'][number], 'id'> & {
+            id?: string;
+            code?: string;
+          })[];
+        }
+      >(`${this.scopeUrl(scope)}/filter-options`)
+      .pipe(
+        map((options) => ({
+          ...options,
+          segments: (options.segments ?? []).map((segment) => ({
+            ...segment,
+            id: segment.id || segment.code || '',
+          })),
+        })),
+      );
   }
   createPatient(body: CreatePatientReservationRequest, intentKey: string): Observable<Reservation> {
     return this.http

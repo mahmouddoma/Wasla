@@ -41,11 +41,13 @@ export class AuthApi {
   }
   registerDoctor(request: DoctorRegistrationRequest): Observable<DoctorRegistrationResponse> {
     const body = this.registrationFormData(request);
+    if (request.subscription) {
     body.append('Subscription.ProductCode', request.subscription.productCode);
     body.append('Subscription.PlanCode', request.subscription.planCode);
     if (request.subscription.billingCycle) body.append('Subscription.BillingCycle', request.subscription.billingCycle);
     if (request.subscription.offerCode) body.append('Subscription.OfferCode', request.subscription.offerCode);
     if (request.subscription.selectedPracticeCount != null) body.append('Subscription.SelectedPracticeCount', String(request.subscription.selectedPracticeCount));
+    }
     this.appendOptionalFile(body, 'ProfileImage', request.profileImage);
     body.append('PersonalIdFrontImage', request.personalIdFrontImage);
     body.append('PersonalIdBackImage', request.personalIdBackImage);

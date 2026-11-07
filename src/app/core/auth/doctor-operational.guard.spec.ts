@@ -9,6 +9,7 @@ import { of, throwError } from 'rxjs';
 import { doctorOperationalGuard } from './auth.guards';
 import { AuthSession } from './auth-session';
 import { DoctorApi } from '../../domains/doctors';
+import { SubscriptionState } from '../../domains/subscriptions';
 describe('Doctor operational approval gate', () => {
   const api = { onboardingStatus: vi.fn() };
   let actor = 'Doctor';
@@ -21,6 +22,7 @@ describe('Doctor operational approval gate', () => {
         provideRouter([]),
         { provide: AuthSession, useValue: { user: () => ({ userType: actor }) } },
         { provide: DoctorApi, useValue: api },
+        { provide: SubscriptionState, useValue: { refresh: vi.fn(async () => null), has: () => false } },
       ],
     });
   });
@@ -42,6 +44,10 @@ describe('Doctor operational approval gate', () => {
   it('blocks access when approval cannot be confirmed', async () => {
     api.onboardingStatus.mockReturnValue(throwError(() => new Error('offline')));
     expect(await check('/diagnostics/doctor/lab')).toBeInstanceOf(UrlTree);
+  });
+  it('keeps historical routes accessible to approved doctors without borrowing another current contract', async () => {
+    expect(await check('/doctor/reservations?practiceId=expired-clinic')).toBe(true);
+    expect(await check('/doctor/encounters?practiceId=historical-clinic')).toBe(true);
   });
   it('leaves onboarding and other actors accessible', async () => {
     expect(await check('/doctor/onboarding')).toBe(true);

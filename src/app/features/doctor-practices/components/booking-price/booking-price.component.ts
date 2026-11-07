@@ -7,6 +7,8 @@ import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { AuthSession } from '../../../../core/auth/auth-session';
+import { PublicDiscoveryApi } from '../../../../domains/public-discovery';
 
 @Component({
   selector: 'app-booking-price',
@@ -22,6 +24,8 @@ export class BookingPriceComponent implements OnInit {
   private readonly subscription = inject(SubscriptionState);
   private readonly language = inject(LanguageService);
   private readonly toast = inject(ToastService);
+  private readonly session = inject(AuthSession);
+  private readonly publicApi = inject(PublicDiscoveryApi);
   readonly current = signal<DoctorPracticePrice | null>(null);
   readonly loading = signal(false);
   readonly busy = signal(false);
@@ -34,6 +38,18 @@ export class BookingPriceComponent implements OnInit {
     this.loading.set(true);
     this.error.set(false);
     try {
+      if (!this.subscription.hasForPractice(this.practiceId(), 'BASIC_SEGMENTS_PRICING')) {
+        // Booking Only can update its default fee without reading the full pricing catalog.
+        const doctorId = this.session.user()?.doctorId;
+        if (doctorId) {
+          try {
+            const profile = await firstValueFrom(this.publicApi.doctor(doctorId));
+            const practice = profile.practices.find(item => item.id === this.practiceId());
+            if (!preserveInput) this.price = practice?.publicSearchPrice ?? null;
+          } catch { /* An unpublished practice still supports a permitted first narrow write. */ }
+        }
+        return;
+      }
       const [prices, segments, visitTypes] = await Promise.all([
         firstValueFrom(this.api.prices(this.practiceId())),
         firstValueFrom(this.api.segments(this.practiceId())),
@@ -72,7 +88,7 @@ export class BookingPriceComponent implements OnInit {
       this.loading() ||
       this.busy() ||
       this.error() ||
-      !this.subscription.has('PRACTICE_MANAGEMENT', true)
+      !this.subscription.hasForPractice(this.practiceId(), 'PRACTICE_MANAGEMENT', true)
     )
       return;
     this.busy.set(true);

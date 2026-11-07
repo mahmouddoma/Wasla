@@ -16,6 +16,7 @@ import { PracticeOperations } from '../../components/practice-operations/practic
 import { PracticeSchedule } from '../../components/practice-schedule/practice-schedule';
 import { PracticeSegments } from '../../components/practice-segments/practice-segments';
 import { SubscriptionState } from '../../../../domains/subscriptions';
+import { PracticeAllocationComponent } from '../../../subscriptions';
 import { BookingPriceComponent } from '../../components/booking-price/booking-price.component';
 
 type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
@@ -32,6 +33,7 @@ type PracticeSection = 'overview' | 'operations' | 'schedule' | 'segments';
     TranslatePipe,
     PageHeader,
     BookingPriceComponent,
+    PracticeAllocationComponent,
   ],
   templateUrl: './doctor-practices.html',
   styleUrl: './doctor-practices.css',
@@ -164,6 +166,8 @@ export class DoctorPractices {
     this.resetRequestState();
     try {
       this.selectedPractice.set(await firstValueFrom(this.api.details(this.practiceId)));
+      await this.subscription.refresh(true);
+      await this.subscription.refreshPractice(this.practiceId);
     } catch (error) {
       this.handleLoadError(error);
     } finally {
@@ -186,6 +190,7 @@ export class DoctorPractices {
       return;
     }
     this.selectedPractice.set(practice);
+    void this.subscription.refresh(true).then(() => this.subscription.refreshPractice(practice.id)).catch(() => undefined);
   }
 
   protected locationLabel(practice: DoctorPractice): string {

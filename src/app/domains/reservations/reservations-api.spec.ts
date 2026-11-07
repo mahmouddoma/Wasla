@@ -250,6 +250,89 @@ describe('ReservationsApi', () => {
     request.flush({ practiceId: 'c1', date, time, visitTypes: null });
     await expect(result).resolves.toEqual({ practiceId: 'c1', date, time, visitTypes: [] });
   });
+  it('uses segment metadata codes as filter IDs without consulting the public catalog', () => {
+    let segmentId: string | undefined;
+    api.filterOptions({ actor: 'Doctor', practiceId: 'c1' }).subscribe((options) => {
+      segmentId = options.segments[0].id;
+    });
+    http
+      .expectOne((r) => r.url.endsWith('/c1/reservations/filter-options'))
+      .flush({
+        statuses: [],
+        bookingSources: [],
+        segments: [{ code: 'historical-segment', nameAr: 'Test', nameEn: 'Test' }],
+      });
+    expect(segmentId).toBe('historical-segment');
+  });
+  it.each(['details', 'create', 'cancel'] as const)(
+    'maps backend nested appointment and immutable snapshot from %s responses',
+    (operation) => {
+      const response =
+        operation === 'details'
+          ? api.details({ actor: 'Patient' }, 'r1')
+          : operation === 'create'
+            ? api.createPatient({ ...create, doctorPracticeId: 'c1' }, 'intent')
+            : api.cancel({ actor: 'Patient' }, 'r1', cancel, 'intent');
+      let result: import('./reservation.models').Reservation | undefined;
+      response.subscribe((value) => {
+        result = value;
+      });
+      http
+        .expectOne(() => true)
+        .flush({
+          reservationId: 'r1',
+          reservationReference: 'RES-1',
+          status: 'Active',
+          patient: { id: 'p1', nameAr: 'Patient', nameEn: 'Patient' },
+          doctor: { id: 'd1', nameAr: 'Doctor', nameEn: 'Doctor' },
+          practice: { id: 'c1', nameAr: 'Practice', nameEn: 'Practice' },
+          appointment: {
+            businessDate: date,
+            localTime: time,
+            startUtc: '2026-09-20T14:00:00Z',
+            durationMinutes: 20,
+            timeZoneId: 'Africa/Cairo',
+            graceEndsAtUtc: '2026-09-20T14:15:00Z',
+          },
+          snapshot: {
+            segmentId: 's1',
+            segmentNameAr: 'Standard',
+            segmentNameEn: 'Standard',
+            visitTypeId: 'v1',
+            visitTypeNameAr: 'Consultation',
+            visitTypeNameEn: 'Consultation',
+            price: 0,
+          },
+          capabilities: {
+            canCancel: true,
+            canReschedule: false,
+            canRestoreFromNoShow: false,
+            cancellationAllowedUntilUtc: '2026-09-20T13:00:00Z',
+            patientReschedulesRemaining: 0,
+          },
+          rowVersion: 'latest',
+          linkedTicketId: 'ticket-without-grant',
+        });
+      expect(result).toMatchObject({
+        reference: 'RES-1',
+        doctorPracticeId: 'c1',
+        price: 0,
+        rowVersion: 'latest',
+        appointment: {
+          slotStartTime: time,
+          appointmentStartUtc: '2026-09-20T14:00:00Z',
+          graceEndsAtUtc: '2026-09-20T14:15:00Z',
+        },
+        segment: { id: 's1', nameEn: 'Standard' },
+        visitType: { id: 'v1' },
+        capabilities: {
+          remainingPatientReschedules: 0,
+          patientCancellationCutoffUtc: '2026-09-20T13:00:00Z',
+        },
+        canViewLinkedTicket: false,
+      });
+    },
+  );
   it('normalizes segment-owned Reception visit types into selectable visit type and price options', async () => {
     const options = api.receptionOptions('c1', date, time);
     const result = new Promise<unknown>((resolve) => options.subscribe(resolve));

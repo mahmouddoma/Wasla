@@ -16,6 +16,62 @@ describe('Phase 13 clinical API contracts', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('maps flat encounter summaries into the identities rendered by the directory', () => {
+    let result: unknown;
+    api.list('p', { pageNumber: 1, pageSize: 20 }).subscribe((page) => (result = page.items[0]));
+    http
+      .expectOne((r) => r.url === root + '/doctors/me/practices/p/encounters')
+      .flush({
+        items: [
+          {
+            encounterId: 'e',
+            patientId: 'u',
+            patientNameAr: 'مريض',
+            patientNameEn: 'Patient',
+            doctorPracticeId: 'p',
+            practiceNameAr: 'عيادة',
+            practiceNameEn: 'Clinic',
+            visitTypeCode: 'FollowUp',
+            visitTypeNameAr: 'متابعة',
+            visitTypeNameEn: 'Follow up',
+          },
+        ],
+        totalCount: 1,
+        pageNumber: 1,
+        pageSize: 20,
+      });
+    expect(result).toMatchObject({
+      patient: { id: 'u', nameEn: 'Patient' },
+      practice: { id: 'p', nameEn: 'Clinic' },
+      visitType: { id: 'FollowUp' },
+    });
+  });
+  it('maps amendment sequence, timestamp and immutable snapshots', () => {
+    let result: unknown;
+    api.amendments('p', 'e').subscribe((value) => (result = value[0]));
+    http
+      .expectOne(root + encounter + '/amendments')
+      .flush([
+        {
+          sequenceNumber: 3,
+          createdAtUtc: '2026-11-07T10:00:00Z',
+          reason: 'Correction',
+          changes: [
+            {
+              target: 'ClinicalNotes',
+              changeType: 'Update',
+              beforeSnapshot: 'before',
+              afterSnapshot: 'after',
+            },
+          ],
+        },
+      ]);
+    expect(result).toMatchObject({
+      sequence: 3,
+      createdOnUtc: '2026-11-07T10:00:00Z',
+      changes: [{ type: 'ClinicalNotes', before: 'before', after: 'after' }],
+    });
+  });
   it('WAS-195 sends all server pagination and filters', () => {
     api
       .list('p', {
@@ -94,7 +150,14 @@ describe('Phase 13 clinical API contracts', () => {
     api.createAmendment('p', 'e', reqBody).subscribe();
     const req = http.expectOne(root + encounter + '/amendments');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(reqBody);
+    expect(req.request.body).toEqual({
+      ...reqBody,
+      changes: [
+        { target: 'ClinicalNotes', changeType: 'Updated', clinicalNotes: 'Updated findings' },
+        { target: 'Diagnosis', changeType: 'Added', type: 'Secondary', displayText: 'Asthma' },
+        { target: 'Diagnosis', changeType: 'Removed', diagnosisId: 'd1' },
+      ],
+    });
     req.flush({ rowVersion: 'rv4' });
   });
   it('WAS-203 reads immutable history and WAS-204 sends only validity date', () => {

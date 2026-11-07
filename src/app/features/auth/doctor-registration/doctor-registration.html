@@ -405,8 +405,10 @@
         @if (catalogLoading()) {
           <p role="status">{{ 'subscriptions.loading' | t }}</p>
         } @else if (catalog(); as availableCatalog) {
-          <app-plan-selector [catalog]="availableCatalog" [allowTrial]="true" [selection]="selection()"
+          <p>{{ 'subscriptions.registrationOptional' | t }}</p>
+          <app-plan-selector [catalog]="availableCatalog" [allowTrial]="false" [selection]="selection()"
             [disabled]="isSubmitting()" (selectionChange)="selection.set($event)" />
+          @if (selection()) { <button type="button" class="btn-step-prev" [disabled]="isSubmitting()" (click)="selection.set(null)">{{ 'subscriptions.skipSelection' | t }}</button> }
         } @else {
           <p role="alert">{{ 'subscriptions.catalogError' | t }}</p>
           <button type="button" class="btn-step-prev" (click)="loadCatalog()">{{ 'subscriptions.retry' | t }}</button>
@@ -434,7 +436,7 @@
             <span>{{ 'register.prev' | t }}</span>
           </button>
 
-          <button class="auth-submit" type="submit" [disabled]="isSubmitting() || catalogLoading() || !catalog() || !selection()">
+          <button class="auth-submit" type="submit" [disabled]="isSubmitting()">
             @if (isSubmitting()) {
             <span>{{ 'requests.submitting' | t }}</span>
             } @else {

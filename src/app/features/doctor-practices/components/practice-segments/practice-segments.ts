@@ -39,7 +39,7 @@ import { SubscriptionState } from '../../../../domains/subscriptions';
 })
 export class PracticeSegments implements OnInit {
   protected readonly subscription = inject(SubscriptionState);
-  protected readonly canManageAdvanced = computed(() => this.subscription.has('ADVANCED_SEGMENTS_PRIORITY_QUOTA', true));
+  protected readonly canManageAdvanced = computed(() => this.subscription.hasForPractice(this.practiceId(), 'ADVANCED_SEGMENTS_PRIORITY_QUOTA', true));
   protected readonly uiLanguage = inject(LanguageService);
 
   readonly practiceId = input.required<string>();

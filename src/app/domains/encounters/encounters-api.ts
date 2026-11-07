@@ -1,10 +1,17 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { map } from 'rxjs';
+import {
+  EncounterSummaryResponse,
+  EncounterAmendmentResponse,
+  mapEncounterPage,
+  mapEncounterAmendment,
+  mapAmendmentChange,
+} from './encounter-mappers';
 import {
   CreateEncounterAmendmentRequest,
   DiagnosisDraft,
-  EncounterAmendment,
   EncounterDetails,
   EncounterPage,
   EncounterQuery,
@@ -16,9 +23,14 @@ export class EncountersApi {
   private readonly http = inject(HttpClient);
   private readonly root = `${environment.apiBaseUrl}/api/v1`;
   list(practiceId: string, query: EncounterQuery) {
-    return this.http.get<EncounterPage>(this.practiceUrl(practiceId), {
-      params: this.params(query),
-    });
+    return this.http
+      .get<Omit<EncounterPage, 'items'> & { items: EncounterSummaryResponse[] }>(
+        this.practiceUrl(practiceId),
+        {
+          params: this.params(query),
+        },
+      )
+      .pipe(map(mapEncounterPage));
   }
   details(practiceId: string, encounterId: string) {
     return this.http.get<EncounterDetails>(this.url(practiceId, encounterId));
@@ -69,19 +81,19 @@ export class EncountersApi {
     );
   }
   amendments(practiceId: string, encounterId: string) {
-    return this.http.get<readonly EncounterAmendment[]>(
-      `${this.url(practiceId, encounterId)}/amendments`,
-    );
+    return this.http
+      .get<readonly EncounterAmendmentResponse[]>(`${this.url(practiceId, encounterId)}/amendments`)
+      .pipe(map((items) => items.map(mapEncounterAmendment)));
   }
   createAmendment(
     practiceId: string,
     encounterId: string,
     request: CreateEncounterAmendmentRequest,
   ) {
-    return this.http.post<EncounterDetails>(
-      `${this.url(practiceId, encounterId)}/amendments`,
-      request,
-    );
+    return this.http.post<EncounterDetails>(`${this.url(practiceId, encounterId)}/amendments`, {
+      ...request,
+      changes: request.changes.map(mapAmendmentChange),
+    });
   }
   createFollowUp(practiceId: string, encounterId: string, validUntil: string) {
     return this.http.post<{
@@ -91,9 +103,14 @@ export class EncountersApi {
     }>(`${this.url(practiceId, encounterId)}/follow-up-eligibility`, { validUntil });
   }
   mine(pageNumber: number, pageSize: number) {
-    return this.http.get<EncounterPage>(`${this.root}/encounters/mine`, {
-      params: { pageNumber, pageSize },
-    });
+    return this.http
+      .get<Omit<EncounterPage, 'items'> & { items: EncounterSummaryResponse[] }>(
+        `${this.root}/encounters/mine`,
+        {
+          params: { pageNumber, pageSize },
+        },
+      )
+      .pipe(map(mapEncounterPage));
   }
   myDetails(encounterId: string) {
     return this.http.get<PatientEncounterDetails>(

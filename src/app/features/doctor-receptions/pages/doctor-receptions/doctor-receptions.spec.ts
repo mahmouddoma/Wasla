@@ -85,6 +85,7 @@ describe('DoctorReceptions', () => {
       isActive: true,
       hasLogo: false,
       rowVersion: 'ver-p1',
+      commercial: null,
       location: {
         governorate: null,
         city: null,

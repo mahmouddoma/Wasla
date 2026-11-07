@@ -140,6 +140,7 @@ describe('PracticeEditor', () => {
     it('prevents duplicate creation while checking subscription capacity', async () => {
       const fixture = await start(false);
       const component = fixture.componentInstance;
+      component['contractId'].set('contract-1');
       component['model'].set({ nameAr: 'Clinic', nameEn: '', governorateId: '1', cityId: '2', areaId: '3', detailedAddress: 'Address', latitude: 30, longitude: 31 });
       fixture.detectChanges();
       let release!: (value: ReturnType<typeof detailsFixture>) => void;
@@ -151,6 +152,7 @@ describe('PracticeEditor', () => {
       await component['save'](new Event('submit'));
       expect(api.create).not.toHaveBeenCalled(); release(detailsFixture()); await saving;
       expect(api.create).toHaveBeenCalledOnce();
+      expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ subscriptionContractId: 'contract-1' }));
     });
     it('preserves input after a failed save and shows an error toast', async () => {
       const fixture = await start();

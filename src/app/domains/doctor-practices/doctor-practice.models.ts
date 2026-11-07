@@ -1,4 +1,5 @@
 import { EgyptLocationOption } from '../doctor-profile';
+import type { PracticeCommercial } from '../subscriptions';
 
 export interface DoctorPracticeLocationSummary {
   governorate: EgyptLocationOption | null;
@@ -17,6 +18,7 @@ export interface DoctorPractice {
   isActive: boolean;
   hasLogo: boolean;
   rowVersion: string;
+  commercial?: PracticeCommercial | null;
 }
 
 export interface DoctorPracticeLocationResponse extends Partial<DoctorPracticeLocationSummary> {
@@ -45,9 +47,11 @@ export interface DoctorPracticeResponse {
   isActive: boolean;
   hasLogo: boolean;
   rowVersion: string;
+  commercial?: PracticeCommercial | null;
 }
 
 export interface DoctorPracticeWriteRequest {
+  subscriptionContractId?: string;
   nameAr: string;
   nameEn: string | null;
   governorateId: number;
@@ -60,6 +64,9 @@ export interface DoctorPracticeWriteRequest {
 
 export interface UpdateDoctorPracticeRequest extends DoctorPracticeWriteRequest {
   rowVersion: string;
+}
+export interface CreateDoctorPracticeRequest extends DoctorPracticeWriteRequest {
+  subscriptionContractId: string;
 }
 
 export interface RowVersionRequest {

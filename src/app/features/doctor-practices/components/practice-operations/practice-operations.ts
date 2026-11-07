@@ -74,8 +74,8 @@ export class PracticeOperations implements OnInit, OnDestroy {
     timeZoneId: '',
   });
   protected readonly configForm = form(this.configModel, (field) => {
-    disabled(field.allowWalkIn, () => !this.subscription.has('CHECKIN_WALKIN', true));
-    for (const control of [field.checkInGracePeriodMinutes, field.maximumTicketCallAttempts, field.noShowAfterPassedPatientsCount, field.checkInOpenBeforeMinutes, field.ticketNoShowReturnFastTrackLimit]) disabled(control, () => !this.subscription.has('CHECKIN_WALKIN', true));
+    disabled(field.allowWalkIn, () => !this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true));
+    for (const control of [field.checkInGracePeriodMinutes, field.maximumTicketCallAttempts, field.noShowAfterPassedPatientsCount, field.checkInOpenBeforeMinutes, field.ticketNoShowReturnFastTrackLimit]) disabled(control, () => !this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true));
     min(field.checkInOpenBeforeMinutes, 0);
     min(field.ticketNoShowReturnFastTrackLimit, 0);
     required(field.defaultSlotDurationMinutes, { message: 'ui.full.343' });
@@ -214,17 +214,17 @@ export class PracticeOperations implements OnInit, OnDestroy {
         const response = await firstValueFrom(
           this.api.updateConfiguration(this.practice().id, {
             allowOnlineBooking: value.allowOnlineBooking,
-            allowWalkIn: this.subscription.has('CHECKIN_WALKIN', true) ? value.allowWalkIn : current.allowWalkIn,
+            allowWalkIn: this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true) ? value.allowWalkIn : current.allowWalkIn,
             defaultSlotDurationMinutes: value.defaultSlotDurationMinutes,
-            checkInGracePeriodMinutes: this.subscription.has('CHECKIN_WALKIN', true) ? value.checkInGracePeriodMinutes : current.checkInGracePeriodMinutes,
+            checkInGracePeriodMinutes: this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true) ? value.checkInGracePeriodMinutes : current.checkInGracePeriodMinutes,
             patientSelfCancellationCutoffMinutes: value.patientSelfCancellationCutoffMinutes,
             maximumDailyPatients: value.maximumDailyPatients.trim()
               ? Number(value.maximumDailyPatients)
               : null,
-            maximumTicketCallAttempts: this.subscription.has('CHECKIN_WALKIN', true) ? value.maximumTicketCallAttempts : current.maximumTicketCallAttempts,
-            noShowAfterPassedPatientsCount: this.subscription.has('CHECKIN_WALKIN', true) ? value.noShowAfterPassedPatientsCount : current.noShowAfterPassedPatientsCount,
-            checkInOpenBeforeMinutes: this.subscription.has('CHECKIN_WALKIN', true) ? value.checkInOpenBeforeMinutes : current.checkInOpenBeforeMinutes,
-            ticketNoShowReturnFastTrackLimit: this.subscription.has('CHECKIN_WALKIN', true) ? value.ticketNoShowReturnFastTrackLimit : current.ticketNoShowReturnFastTrackLimit,
+            maximumTicketCallAttempts: this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true) ? value.maximumTicketCallAttempts : current.maximumTicketCallAttempts,
+            noShowAfterPassedPatientsCount: this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true) ? value.noShowAfterPassedPatientsCount : current.noShowAfterPassedPatientsCount,
+            checkInOpenBeforeMinutes: this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true) ? value.checkInOpenBeforeMinutes : current.checkInOpenBeforeMinutes,
+            ticketNoShowReturnFastTrackLimit: this.subscription.hasForPractice(this.practice().id, 'CHECKIN_WALKIN', true) ? value.ticketNoShowReturnFastTrackLimit : current.ticketNoShowReturnFastTrackLimit,
             timeZoneId: value.timeZoneId.trim(),
             rowVersion: current.rowVersion,
           }),

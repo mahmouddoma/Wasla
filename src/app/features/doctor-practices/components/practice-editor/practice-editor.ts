@@ -40,7 +40,11 @@ export class PracticeEditor implements OnInit {
   private readonly api = inject(DoctorPracticesApi);
   private readonly locationApi = inject(DoctorProfileApi);
   private readonly toast = inject(ToastService);
-  private readonly subscription = inject(SubscriptionState);
+  protected readonly subscription = inject(SubscriptionState);
+  protected readonly contractId = signal('');
+  protected selectContract(event: Event): void {
+    this.contractId.set((event.target as HTMLSelectElement).value);
+  }
   private readonly sanitizer = inject(DomSanitizer);
 
   protected readonly isLocating = signal(false);
@@ -110,6 +114,7 @@ export class PracticeEditor implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    void this.subscription.refresh(true).catch(() => undefined);
     const practice = this.practice();
     if (practice) this.populate(practice);
     await this.loadGovernorates();
@@ -314,6 +319,10 @@ export class PracticeEditor implements OnInit {
   protected async save(event: Event): Promise<void> {
     event.preventDefault();
     if (this.isSubmitting() || this.isLoadingLocations()) return;
+    if (!this.practice() && !this.subscription.availableContracts().some(c => c.subscriptionContractId === this.contractId())) {
+      this.toast.error('subscriptions.chooseContract');
+      return;
+    }
     await submit(this.editorForm, async () => {
       if (this.isSubmitting()) return;
       this.isSubmitting.set(true);
@@ -334,7 +343,7 @@ export class PracticeEditor implements OnInit {
         const current = this.practice();
         if (!current) {
           await this.subscription.refresh(true);
-          if (!this.subscription.canCreatePractice()) {
+          if (!this.subscription.availableContracts().some(contract => contract.subscriptionContractId === this.contractId())) {
             this.toast.error(this.uiLanguage.t('subscriptions.capacityFull'));
             return;
           }
@@ -346,7 +355,7 @@ export class PracticeEditor implements OnInit {
                 rowVersion: this.rowVersion ?? current.rowVersion,
               }),
             )
-          : await firstValueFrom(this.api.create(request));
+          : await firstValueFrom(this.api.create({ ...request, subscriptionContractId: this.contractId() }));
         this.populate(response);
         this.subscription.invalidate();
         void this.subscription.refresh().catch(() => undefined);

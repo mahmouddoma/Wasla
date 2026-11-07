@@ -56,7 +56,7 @@ export interface PatientRegistrationResponse {
   applicationUserId: string;
 }
 export interface DoctorRegistrationRequest extends RegistrationFields {
-  subscription: SubscriptionSelection;
+  subscription?: SubscriptionSelection | null;
   profileImage?: File;
   personalIdFrontImage: File;
   personalIdBackImage: File;

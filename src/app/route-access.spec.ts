@@ -8,6 +8,8 @@ import { AuthSession } from './core/auth/auth-session';
 import { PERMISSIONS } from './core/auth/permissions';
 import { ReceptionPracticeContext } from './domains/reception-practices';
 import { PortalNavigation } from './layout/navigation/portal-navigation';
+import { SubscriptionState } from './domains/subscriptions';
+import { subscriptionStateStub } from '../testing/subscriptions';
 
 interface Entry {
   url: string;
@@ -123,6 +125,7 @@ describe('Complete route authorization matrix', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(configuration),
+        { provide: SubscriptionState, useValue: subscriptionStateStub() },
         {
           provide: DoctorApi,
           useValue: { onboardingStatus: () => of({ approvalStatus: 'Approved' }) },

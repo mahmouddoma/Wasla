@@ -1,35 +1,62 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import {
-  SubscriptionDetails,
   SubscriptionsApi,
   SubscriptionState,
+  TrialEligibility,
 } from '../../../../domains/subscriptions';
-import { catalogFixture, detailsFixture } from '../../../../../testing/subscriptions';
+import { catalogFixture, contractFixture } from '../../../../../testing/subscriptions';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { MySubscriptionComponent } from './my-subscription.component';
-
-describe('MySubscriptionComponent', () => {
-  const details = signal<SubscriptionDetails | null>(detailsFixture());
+describe('contract-scoped MySubscriptionComponent', () => {
+  const contracts = signal([contractFixture('a'), contractFixture('b')]),
+    selected = signal('');
+  const trial: TrialEligibility = {
+    status: 'TrialAvailable',
+    canActivate: true,
+    durationDays: 20,
+    practiceLimit: 1,
+    receptionLimit: 1,
+    trial: null,
+  };
   const api = {
     catalog: vi.fn(() => of(catalogFixture)),
-    select: vi.fn(() => of(detailsFixture())),
-    cancelAtPeriodEnd: vi.fn(() => of(detailsFixture())),
-    requestChange: vi.fn(() => of(detailsFixture())),
+    trialEligibility: vi.fn(() => of(trial)),
+    selectContract: vi.fn(),
+    cancelContract: vi.fn(),
+    changeContract: vi.fn(),
+    activateTrial: vi.fn(),
+    renewalPreview: vi.fn(),
+    saveRenewal: vi.fn(),
   };
-  const state = { details, invalidate: vi.fn(), refresh: vi.fn(async () => details()) };
+  const state = {
+    contracts,
+    selectedContractId: selected,
+    selectedContract: () =>
+      contracts().find((c) => c.subscriptionContractId === selected()) ?? null,
+    details: () => state.selectedContract()?.periods[0] ?? null,
+    terms: () => state.details()?.subscription ?? null,
+    currentDetails: (c: ReturnType<typeof contractFixture>) => c.periods[0],
+    selectContract: (id: string) => selected.set(id),
+    invalidate: vi.fn(),
+    refresh: vi.fn(async () => null),
+  };
   const toast = { success: vi.fn(), error: vi.fn() };
   beforeEach(() => {
     vi.clearAllMocks();
-    details.set(detailsFixture());
-    api.catalog.mockReturnValue(of(catalogFixture));
-    api.select.mockReturnValue(of(detailsFixture()));
+    contracts.set([contractFixture('a'), contractFixture('b')]);
+    selected.set('');
+    api.selectContract.mockReturnValue(of({}));
+    api.cancelContract.mockReturnValue(of({}));
+    api.activateTrial.mockReturnValue(of({}));
     TestBed.configureTestingModule({
       imports: [MySubscriptionComponent],
       providers: [
+        provideRouter([]),
         { provide: SubscriptionsApi, useValue: api },
         { provide: SubscriptionState, useValue: state },
         { provide: AuthSession, useValue: { hasPermission: () => true } },
@@ -37,83 +64,85 @@ describe('MySubscriptionComponent', () => {
       ],
     });
   });
-  it('renders current and scheduled periods separately, without admin payment history', async () => {
-    const value = detailsFixture();
-    value.nextPeriod = { ...value.subscription!, status: 'Scheduled', planCode: 'PREMIUM' };
-    details.set(value);
-    const fixture = TestBed.createComponent(MySubscriptionComponent);
-    await fixture.whenStable();
-    expect(fixture.nativeElement.textContent).toContain('PREMIUM');
-    expect(fixture.nativeElement.textContent).toContain('STARTER');
-    expect(fixture.nativeElement.querySelector('app-page-header')).not.toBeNull();
+  it('renders independent contracts without automatically selecting one', async () => {
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    expect(f.nativeElement.querySelectorAll('.contract-row')).toHaveLength(2);
+    expect(selected()).toBe('');
+    expect(f.nativeElement.querySelector('.contract-detail')).toBeNull();
   });
-  it('requires confirmation, sends only selected codes and refreshes after success', async () => {
-    const fixture = TestBed.createComponent(MySubscriptionComponent);
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
-    component.selection.set({
-      productCode: 'FULL_PLATFORM',
-      planCode: 'STARTER',
-      billingCycle: 'Monthly',
-    });
-    await component.confirm();
-    expect(api.select).not.toHaveBeenCalled();
-    component.confirmation.set('selection');
-    await component.confirm();
-    expect(api.select).toHaveBeenCalledWith({
-      productCode: 'FULL_PLATFORM',
-      planCode: 'STARTER',
-      billingCycle: 'Monthly',
-    });
-    expect(toast.success).toHaveBeenCalledOnce();
-    expect(state.refresh).toHaveBeenCalledTimes(2);
-  });
-  it('keeps selected values on server failure and never claims activation or payment', async () => {
-    const fixture = TestBed.createComponent(MySubscriptionComponent);
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
-    const selected = {
-      productCode: 'FULL_PLATFORM',
-      planCode: 'STARTER',
-      billingCycle: 'Monthly' as const,
-    };
-    component.selection.set(selected);
-    component.confirmation.set('selection');
-    api.select.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
-    await component.confirm();
-    expect(component.selection()).toEqual(selected);
+  it('requires confirmation and sends a stable key for a new independent contract', async () => {
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    const c = f.componentInstance;
+    c.selection.set({ productCode: 'FULL_PLATFORM', planCode: 'STARTER', billingCycle: 'Monthly' });
+    await c.confirm();
+    expect(api.selectContract).not.toHaveBeenCalled();
+    c.confirmation.set('selection');
+    api.selectContract.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    await c.confirm();
+    await c.confirm();
+    expect(api.selectContract.mock.calls[0][1]).toBe(api.selectContract.mock.calls[1][1]);
     expect(toast.success).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalled();
   });
-  it('sends the current version when confirming period-end cancellation', async () => {
-    const fixture = TestBed.createComponent(MySubscriptionComponent);
-    await fixture.whenStable();
-    fixture.componentInstance.confirmation.set('cancel');
-    await fixture.componentInstance.confirm();
-    expect(api.cancelAtPeriodEnd).toHaveBeenCalledWith('AQID');
+  it('cancels only the explicitly selected contract with its current revision', async () => {
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    const c = f.componentInstance;
+    c.confirmation.set('cancel');
+    await c.confirm();
+    expect(api.cancelContract).not.toHaveBeenCalled();
+    c.selectContract('b');
+    c.confirmation.set('cancel');
+    await c.confirm();
+    expect(api.cancelContract).toHaveBeenCalledWith('b', 'AQID', '', expect.any(String));
+    expect(contracts()[0].periods[0].subscription?.willNotRenew).toBe(false);
   });
-  it('offers a paid selection for an explicit no-subscription response without manufacturing current terms', async () => {
-    details.set(null);
-    state.refresh.mockRejectedValueOnce(
-      new HttpErrorResponse({
-        status: 404,
-        error: { errors: [{ code: 'Subscription.NotFound' }] },
-      }),
-    );
-    const fixture = TestBed.createComponent(MySubscriptionComponent);
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
-    expect(component.noSubscription()).toBe(true);
-    expect(component.error()).toBe(false);
-    expect(fixture.nativeElement.querySelector('app-plan-selector')).not.toBeNull();
-    component.selection.set({
-      productCode: 'FULL_PLATFORM',
-      planCode: 'STARTER',
-      billingCycle: 'Monthly',
+  it('starts a trial only after an explicit confirmed action', async () => {
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    expect(api.activateTrial).not.toHaveBeenCalled();
+    f.componentInstance.confirmation.set('trial');
+    await f.componentInstance.confirm();
+    expect(api.activateTrial).toHaveBeenCalledWith(expect.any(String));
+    expect(toast.success).toHaveBeenCalledWith('subscriptions.trialActivated');
+  });
+  it('renders an empty contracts illustration and allows adding a contract', async () => {
+    contracts.set([]);
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('.empty-contracts img')).not.toBeNull();
+    expect(f.nativeElement.querySelector('app-plan-selector')).not.toBeNull();
+  });
+  it('renders an illustrated error state panel with retry action when loading fails', async () => {
+    api.catalog.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    f.detectChanges();
+    const errorPanel = f.nativeElement.querySelector('.subscription-state-panel--error');
+    expect(errorPanel).not.toBeNull();
+    expect(errorPanel.querySelector('img.state-empty-illustration')).not.toBeNull();
+    expect(errorPanel.querySelector('button.state-action-btn')).not.toBeNull();
+  });
+  it('rejects a retained allocation selection exceeding quoted capacity', async () => {
+    const f = TestBed.createComponent(MySubscriptionComponent);
+    await f.whenStable();
+    const c = f.componentInstance;
+    c.renewal.set({
+      terms: {
+        productCode: 'FULL_PLATFORM',
+        planCode: 'STARTER',
+        priceAmount: 100,
+        currency: 'EGP',
+        practiceLimit: 0,
+        receptionLimit: 0,
+        features: [],
+      },
+      allocations: [],
+      activeReceptionIds: [],
+      periodRowVersion: 'fresh',
     });
-    component.confirmation.set('selection');
-    await component.confirm();
-    expect(api.select).toHaveBeenCalledOnce();
-    expect(toast.success).toHaveBeenCalledOnce();
+    c.retained.set([{ practiceId: 'p1', allocationId: 'allocation', receptionIds: [] }]);
+    expect(c.renewalValid()).toBe(false);
   });
 });

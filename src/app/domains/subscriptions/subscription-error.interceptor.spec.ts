@@ -56,6 +56,25 @@ describe('subscriptionErrorInterceptor', () => {
     expect(state.invalidate).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });
+  it('explains practice availability to patients without asking them to buy a subscription', async () => {
+    vi.spyOn(TestBed.inject(AuthSession), 'user').mockReturnValue({
+      userType: 'Patient',
+    } as ReturnType<AuthSession['user']>);
+    const result = firstValueFrom(
+      TestBed.inject(HttpClient).post(`${environment.apiBaseUrl}/api/v1/reservations`, {}),
+    ).catch((error) => error.status);
+    TestBed.inject(HttpTestingController)
+      .expectOne((req) => req.url.endsWith('/reservations'))
+      .flush(
+        { errors: [{ code: 'Subscription.Expired' }] },
+        { status: 403, statusText: 'Forbidden' },
+      );
+    expect(await result).toBe(403);
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining('not accepting online bookings'),
+    );
+    expect(state.refresh).not.toHaveBeenCalled();
+  });
   it('avoids recursively refreshing a failed own-subscription read', async () => {
     const result = firstValueFrom(
       TestBed.inject(HttpClient).get(`${environment.apiBaseUrl}/api/v1/doctors/me/subscription`),

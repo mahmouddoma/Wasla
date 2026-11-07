@@ -26,9 +26,11 @@ describe('PatientIdentityApi', () => {
 
   // WAS-613
   it('WAS-613: startEmailVerification posts request', () => {
-    api.startEmailVerification({ email: 'test@example.com', purpose: 'Register' }).subscribe((res) => {
-      expect(res.requestId).toBe('req1');
-    });
+    api
+      .startEmailVerification({ email: 'test@example.com', purpose: 'Register' })
+      .subscribe((res) => {
+        expect(res.requestId).toBe('req1');
+      });
     const req = http.expectOne(`${onboardingUrl}/start`);
     expect(req.request.method).toBe('POST');
     req.flush({ requestId: 'req1', message: 'OTP sent' }, { status: 202, statusText: 'Accepted' });
@@ -46,38 +48,53 @@ describe('PatientIdentityApi', () => {
 
   // WAS-615
   it('WAS-615: registerVerifiedAccount posts multipart registration', () => {
-    api.registerVerifiedAccount({
-      emailVerificationToken: 'tok1',
-      userName: 'patient1',
-      email: 'p@test.com',
-      phoneNumber: '01000000000',
-      password: 'Pass',
-      confirmPassword: 'Pass',
-      nameAr: 'مريض',
-      dateOfBirth: '1990-01-01',
-      gender: 'Male',
-    }).subscribe((res) => {
-      expect(res.patientId).toBe('pt1');
-    });
+    api
+      .registerVerifiedAccount({
+        emailVerificationToken: 'tok1',
+        userName: 'patient1',
+        email: 'p@test.com',
+        phoneNumber: '01000000000',
+        password: 'Pass',
+        confirmPassword: 'Pass',
+        nameAr: 'مريض',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+      })
+      .subscribe((res) => {
+        expect(res.patientId).toBe('pt1');
+      });
     const req = http.expectOne(`${onboardingUrl}/register`);
     expect(req.request.method).toBe('POST');
-    req.flush({ patientId: 'pt1', applicationUserId: 'u1', accountStatus: 'Active' }, { status: 201, statusText: 'Created' });
+    req.flush(
+      { patientId: 'pt1', applicationUserId: 'u1', accountStatus: 'Active' },
+      { status: 201, statusText: 'Created' },
+    );
   });
 
   // WAS-616
   it('WAS-616: submitClaim posts multipart claim', () => {
-    api.submitClaim({
-      emailVerificationToken: 'tok1',
-      nameAr: 'مريض',
-      dateOfBirth: '1990-01-01',
-      gender: 'Male',
-      evidenceType: ['GovernmentIdFront'],
-    }).subscribe((res) => {
-      expect(res.claimRequestId).toBe('cl1');
-    });
+    api
+      .submitClaim({
+        emailVerificationToken: 'tok1',
+        nameAr: 'مريض',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        evidenceType: ['GovernmentIdFront'],
+      })
+      .subscribe((res) => {
+        expect(res.claimRequestId).toBe('cl1');
+      });
     const req = http.expectOne(`${onboardingUrl}/claims`);
     expect(req.request.method).toBe('POST');
-    req.flush({ claimRequestId: 'cl1', status: 'PendingReview', submittedOnUtc: '2026-10-01', canAccessMedicalRecord: false }, { status: 201, statusText: 'Created' });
+    req.flush(
+      {
+        claimRequestId: 'cl1',
+        status: 'PendingReview',
+        submittedOnUtc: '2026-10-01',
+        canAccessMedicalRecord: false,
+      },
+      { status: 201, statusText: 'Created' },
+    );
   });
 
   // WAS-617
@@ -88,28 +105,55 @@ describe('PatientIdentityApi', () => {
     const req = http.expectOne(`${onboardingUrl}/claims/cl1`);
     expect(req.request.method).toBe('GET');
     expect(req.request.headers.get('X-Onboarding-Token')).toBe('token123');
-    req.flush({ claimRequestId: 'cl1', status: 'PendingReview', submittedOnUtc: '2026-10-01', lastActivityOnUtc: '2026-10-01', canResubmit: false, canActivate: false, activationInvitationSent: false, rowVersion: 'v1' });
+    req.flush({
+      claimRequestId: 'cl1',
+      status: 'PendingReview',
+      submittedOnUtc: '2026-10-01',
+      lastActivityOnUtc: '2026-10-01',
+      canResubmit: false,
+      canActivate: false,
+      activationInvitationSent: false,
+      rowVersion: 'v1',
+    });
   });
 
   // WAS-618
   it('WAS-618: resubmitClaim posts updated evidence', () => {
-    api.resubmitClaim('cl1', { rowVersion: 'v1', reasonResponse: 'Updated ID', evidenceType: ['GovernmentIdFront'] }, 'tok1').subscribe((res) => {
-      expect(res.revisionNumber).toBe(2);
-    });
+    api
+      .resubmitClaim(
+        'cl1',
+        { rowVersion: 'v1', reasonResponse: 'Updated ID', evidenceType: ['GovernmentIdFront'] },
+        'tok1',
+      )
+      .subscribe((res) => {
+        expect(res.revisionNumber).toBe(2);
+      });
     const req = http.expectOne(`${onboardingUrl}/claims/cl1/resubmit`);
     expect(req.request.method).toBe('POST');
     expect(req.request.headers.get('X-Onboarding-Token')).toBe('tok1');
-    req.flush({ claimRequestId: 'cl1', status: 'PendingReview', revisionNumber: 2, rowVersion: 'v2' });
+    req.flush({
+      claimRequestId: 'cl1',
+      status: 'PendingReview',
+      revisionNumber: 2,
+      rowVersion: 'v2',
+    });
   });
 
   // WAS-619
   it('WAS-619: activateAccount posts activation token and password', () => {
-    api.activateAccount({ invitationToken: 'inv1', password: 'Pass', confirmPassword: 'Pass' }).subscribe((res) => {
-      expect(res.accountStatus).toBe('Active');
-    });
+    api
+      .activateAccount({ invitationToken: 'inv1', password: 'Pass', confirmPassword: 'Pass' })
+      .subscribe((res) => {
+        expect(res.accountStatus).toBe('Active');
+      });
     const req = http.expectOne(`${onboardingUrl}/activate`);
     expect(req.request.method).toBe('POST');
-    req.flush({ patientId: 'pt1', applicationUserId: 'u1', accountStatus: 'Active', requiresLogin: true });
+    req.flush({
+      patientId: 'pt1',
+      applicationUserId: 'u1',
+      accountStatus: 'Active',
+      requiresLogin: true,
+    });
   });
 
   // WAS-620
@@ -134,7 +178,22 @@ describe('PatientIdentityApi', () => {
         r.params.get('pageNumber') === '1',
     );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ id: 'cl1', status: 'PendingReview', claimantEmailMasked: 't***@test.com', submittedOnUtc: '2026-10-01', lastActivityOnUtc: '2026-10-01', evidenceCount: 1, rowVersion: 'v1' }], pageNumber: 1, pageSize: 20, totalCount: 1 });
+    req.flush({
+      items: [
+        {
+          id: 'cl1',
+          status: 'PendingReview',
+          claimantEmailMasked: 't***@test.com',
+          submittedOnUtc: '2026-10-01',
+          lastActivityOnUtc: '2026-10-01',
+          evidenceCount: 1,
+          rowVersion: 'v1',
+        },
+      ],
+      pageNumber: 1,
+      pageSize: 20,
+      totalCount: 1,
+    });
   });
 
   // WAS-622
@@ -147,7 +206,13 @@ describe('PatientIdentityApi', () => {
     req.flush({
       claimRequestId: 'cl1',
       status: 'PendingReview',
-      claimant: { nameAr: 'مريض', dateOfBirth: '1990-01-01', gender: 'Male', email: 'p@test.com', phoneMasked: '010***' },
+      claimant: {
+        nameAr: 'مريض',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        email: 'p@test.com',
+        phoneMasked: '010***',
+      },
       candidatePatients: [],
       evidence: [],
       submittedOnUtc: '2026-10-01',
@@ -176,7 +241,13 @@ describe('PatientIdentityApi', () => {
     const req = http.expectOne(`${adminClaimsUrl}/cl1/approve`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ claimRequestId: 'cl1', status: 'ApprovedPendingActivation', targetPatientId: 'pt1', rowVersion: 'v2', invitationExpiresOnUtc: '2026-10-27' });
+    req.flush({
+      claimRequestId: 'cl1',
+      status: 'ApprovedPendingActivation',
+      targetPatientId: 'pt1',
+      rowVersion: 'v2',
+      invitationExpiresOnUtc: '2026-10-27',
+    });
   });
 
   // WAS-625
@@ -188,7 +259,13 @@ describe('PatientIdentityApi', () => {
     const req = http.expectOne(`${adminClaimsUrl}/cl1/reject`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ claimRequestId: 'cl1', status: 'Rejected', closedOnUtc: '2026-10-01', rowVersion: 'v2', canResubmit: false });
+    req.flush({
+      claimRequestId: 'cl1',
+      status: 'Rejected',
+      closedOnUtc: '2026-10-01',
+      rowVersion: 'v2',
+      canResubmit: false,
+    });
   });
 
   // WAS-626
@@ -200,17 +277,39 @@ describe('PatientIdentityApi', () => {
     const req = http.expectOne(`${adminClaimsUrl}/cl1/request-modification`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ claimRequestId: 'cl1', status: 'ModificationRequested', rowVersion: 'v2', canResubmit: true, closedOnUtc: null });
+    req.flush({
+      claimRequestId: 'cl1',
+      status: 'ModificationRequested',
+      rowVersion: 'v2',
+      canResubmit: true,
+      closedOnUtc: null,
+    });
   });
 
   // WAS-627
   it('WAS-627: claimHistory gets history list', () => {
     api.claimHistory('cl1').subscribe((res) => {
       expect(res.length).toBe(1);
+      expect(res[0]).toMatchObject({
+        id: 'h1',
+        timestampUtc: '2026-10-01',
+        note: 'Approved after review',
+      });
     });
     const req = http.expectOne(`${adminClaimsUrl}/cl1/history`);
     expect(req.request.method).toBe('GET');
-    req.flush([{ id: 'h1', action: 'Approved', actorName: 'Admin', timestampUtc: '2026-10-01' }]);
+    req.flush({
+      items: [
+        {
+          eventId: 'h1',
+          revisionNumber: 1,
+          action: 'Approved',
+          actorId: 'admin',
+          occurredOnUtc: '2026-10-01',
+          reason: 'Approved after review',
+        },
+      ],
+    });
   });
 
   // WAS-628
@@ -225,37 +324,67 @@ describe('PatientIdentityApi', () => {
         r.params.get('pageSize') === '20',
     );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ id: 'dp1', primaryPatientId: 'pt1', duplicatePatientId: 'pt2', confidenceScore: 0.95, status: 'PendingReview', matchedCriteria: ['Phone', 'DOB'], detectedOnUtc: '2026-10-01', rowVersion: 'v1' }], pageNumber: 1, pageSize: 20, totalCount: 1 });
+    req.flush({
+      items: [
+        {
+          caseId: 'dp1',
+          firstPatientId: 'pt1',
+          secondPatientId: 'pt2',
+          status: 'NeedsMoreEvidence',
+          createdOnUtc: '2026-10-01',
+          rowVersion: 'v1',
+        },
+      ],
+      pageNumber: 1,
+      pageSize: 20,
+      totalCount: 1,
+    });
   });
 
   // WAS-629
   it('WAS-629: adminDuplicateDetails gets duplicate case detail', () => {
     api.adminDuplicateDetails('dp1').subscribe((res) => {
-      expect(res.id).toBe('dp1');
+      expect(res.caseId).toBe('dp1');
     });
     const req = http.expectOne(`${adminDuplicatesUrl}/dp1`);
     expect(req.request.method).toBe('GET');
     req.flush({
-      id: 'dp1',
-      primaryPatient: { patientId: 'pt1', nameAr: 'مريض 1', dateOfBirth: '1990-01-01', gender: 'Male', emailMasked: 'p1@test.com' },
-      duplicatePatient: { patientId: 'pt2', nameAr: 'مريض 2', dateOfBirth: '1990-01-01', gender: 'Male', emailMasked: 'p2@test.com' },
-      confidenceScore: 0.95,
-      status: 'PendingReview',
-      matchedCriteria: ['Phone', 'DOB'],
-      detectedOnUtc: '2026-10-01',
+      caseId: 'dp1',
+      patientA: {
+        id: 'pt1',
+        nameAr: 'مريض 1',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        emailMasked: 'p1@test.com',
+      },
+      patientB: {
+        id: 'pt2',
+        nameAr: 'مريض 2',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        emailMasked: 'p2@test.com',
+      },
+      status: 'NeedsMoreEvidence',
+      matchIndicators: 'Phone,DOB',
+      createdOnUtc: '2026-10-01',
       rowVersion: 'v1',
     });
   });
 
   // WAS-630
   it('WAS-630: resolveDuplicate resolves case', () => {
-    const payload = { resolutionAction: 'Merge' as const, targetPatientId: 'pt1', reason: 'Confirmed duplicate', rowVersion: 'v1' };
-    api.resolveDuplicate('dp1', payload).subscribe((res) => {
-      expect(res.status).toBe('Resolved');
+    const payload = {
+      resolution: 'ConfirmedDuplicate' as const,
+      reason: 'Confirmed duplicate',
+      rowVersion: 'v1',
+    };
+    api.resolveDuplicate('dp1', payload, 'resolve-intent').subscribe((res) => {
+      expect(res.status).toBe('ConfirmedDuplicate');
     });
     const req = http.expectOne(`${adminDuplicatesUrl}/dp1/resolve`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ id: 'dp1', status: 'Resolved', resolvedAtUtc: '2026-10-01', rowVersion: 'v2' });
+    expect(req.request.headers.get('Idempotency-Key')).toBe('resolve-intent');
+    req.flush({ caseId: 'dp1', status: 'ConfirmedDuplicate', rowVersion: 'v2' });
   });
 });

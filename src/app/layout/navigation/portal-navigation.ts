@@ -475,11 +475,7 @@ export class PortalNavigation {
 
   readonly items = computed(() =>
     [...this.permittedItems(), ...(this.user()?.userType === 'Doctor' && this.session.hasPermission('Subscriptions.ViewOwn') ? [{ id: 'subscription', labelKey: 'subscriptions.mine', route: '/doctor/subscription', icon: 'receipt' as const }] : [])]
-    .filter(item => {
-      if (this.user()?.userType !== 'Doctor') return true;
-      const feature = subscriptionFeatureForRoute(item.route);
-      return !feature || this.subscription.has(feature);
-    }).map((item) => ({
+    .map((item) => ({
       ...item,
       labelKey:
         (

@@ -768,7 +768,13 @@ export class ReservationWorkspaceStore {
         return;
       }
       await this.failure(error);
-      if (error instanceof HttpErrorResponse && error.status === 409) {
+      const commercialDenial = this.isCommercialDenial(error);
+      if (commercialDenial) {
+        this.editor.set(null);
+        this.pendingAttestation.set(null);
+        this.resetAvailability();
+      }
+      if (error instanceof HttpErrorResponse && (error.status === 409 || commercialDenial)) {
         const date = this.date(),
           time = this.time();
         if (current) {
@@ -779,7 +785,11 @@ export class ReservationWorkspaceStore {
           }
         }
         this.busy.set(false);
-        if (this.actionAllowed(mode) && (mode === 'create' || mode === 'reschedule')) {
+        if (
+          !commercialDenial &&
+          this.actionAllowed(mode) &&
+          (mode === 'create' || mode === 'reschedule')
+        ) {
           const messages = this.messages();
           await this.refreshAvailability(mode, date, time);
           this.messages.set(messages);
@@ -965,7 +975,16 @@ export class ReservationWorkspaceStore {
     } catch (error) {
       if (!current()) return;
       await this.failure(error);
-      if (current() && error instanceof HttpErrorResponse && error.status === 409) {
+      const commercialDenial = this.isCommercialDenial(error);
+      if (commercialDenial) {
+        this.arrival.set(false);
+        this.detail.set(null);
+      }
+      if (
+        current() &&
+        error instanceof HttpErrorResponse &&
+        (error.status === 409 || commercialDenial)
+      ) {
         // Keep the mounted arrival form and its draft while revalidating the reservation.
         const sequence = ++this.detailSequence;
         try {
@@ -974,7 +993,8 @@ export class ReservationWorkspaceStore {
           );
           if (current() && sequence === this.detailSequence) {
             this.detail.set(fresh);
-            if (!this.canArrive(fresh)) this.arrival.set(false);
+            // Preserve permitted history; commercial rights belong to this reservation.
+            if (commercialDenial || !this.canArrive(fresh)) this.arrival.set(false);
           }
         } catch (refreshError) {
           if (current() && sequence === this.detailSequence) await this.failure(refreshError);
@@ -1193,6 +1213,13 @@ export class ReservationWorkspaceStore {
       pageSize: q.pageSize,
     };
   }
+  private isCommercialDenial(error: unknown): boolean {
+    return (
+      error instanceof HttpErrorResponse &&
+      [403, 409].includes(error.status) &&
+      parseApiErrors(error).codes.some((code) => code.startsWith('Subscription.'))
+    );
+  }
   private async failure(error: unknown): Promise<void> {
     const parsed = parseApiErrors(error);
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];
@@ -1201,6 +1228,7 @@ export class ReservationWorkspaceStore {
     if (
       error instanceof HttpErrorResponse &&
       error.status === 403 &&
+      !this.isCommercialDenial(error) &&
       this.actor() === 'Reception'
     ) {
       this.checkedInTicket.set(null);

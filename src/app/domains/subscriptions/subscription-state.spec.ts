@@ -4,36 +4,35 @@ import { of, Subject } from 'rxjs';
 import { AuthSession } from '../../core/auth/auth-session';
 import { AuthSessionState } from '../../core/auth/auth.models';
 import { SubscriptionsApi } from './subscriptions-api';
-import { SubscriptionState, subscriptionFeatureForRoute } from './subscription-state';
-import { SubscriptionDetails } from './subscription.models';
-import { detailsFixture } from '../../../testing/subscriptions';
-
-describe('SubscriptionState', () => {
+import { SubscriptionState } from './subscription-state';
+import { SubscriptionContract, PracticeAllocationDetails } from './subscription.models';
+import { contractFixture, detailsFixture } from '../../../testing/subscriptions';
+describe('practice-scoped SubscriptionState', () => {
   const session = signal<AuthSessionState | null>(null);
-  const api = { mine: vi.fn(() => of(detailsFixture())) };
-  function doctor(id = 'doctor-1'): AuthSessionState {
-    return {
+  const api = { contracts: vi.fn(), allocation: vi.fn() };
+  function login(id = 'doctor-1', userType = 'Doctor'): void {
+    session.set({
       accessToken: 'synthetic-' + id,
       expiresOnUtc: '2099-01-01',
       passwordChangeRequired: false,
       user: {
         applicationUserId: id,
-        userType: 'Doctor',
-        doctorId: id,
-        patientId: null,
+        userType,
         userName: id,
         email: '',
         phoneNumber: '',
         roles: [],
         permissions: [],
         isFirstLogin: false,
+        doctorId: id,
+        patientId: null,
       },
-    };
+    } as AuthSessionState);
   }
   beforeEach(() => {
-    api.mine.mockReset();
-    api.mine.mockReturnValue(of(detailsFixture()));
-    session.set(doctor());
+    vi.resetAllMocks();
+    login();
+    api.contracts.mockReturnValue(of([contractFixture()]));
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthSession, useValue: { session } },
@@ -41,88 +40,117 @@ describe('SubscriptionState', () => {
       ],
     });
   });
-  it('uses grants instead of Starter/Professional/Premium plan names', async () => {
-    const state = TestBed.inject(SubscriptionState);
-    for (const plan of ['STARTER', 'PROFESSIONAL', 'PREMIUM']) {
-      const details = detailsFixture();
-      details.subscription!.planCode = plan;
-      details.entitlements = [{ featureCode: 'reservation_management', accessLevel: 'ReadOnly' }];
-      api.mine.mockReturnValue(of(details));
-      await state.refresh(true);
-      expect(state.has('RESERVATION_MANAGEMENT')).toBe(true);
-      expect(state.has('RESERVATION_MANAGEMENT', true)).toBe(false);
-      expect(state.has('PRACTICE_MANAGEMENT')).toBe(false);
-    }
-  });
-  it('counts all persisted practices and active reception identities using server usage', async () => {
+  function allocation(
+    contract: SubscriptionContract,
+    practiceId: string,
+  ): PracticeAllocationDetails {
+    return {
+      practiceId,
+      allocation: {
+        id: 'allocation-' + practiceId,
+        doctorPracticeId: practiceId,
+        subscriptionContractId: contract.subscriptionContractId,
+        rowVersion: 'AQID',
+        allocatedFromUtc: '2026-01-01',
+        releasedAtUtc: null,
+      },
+      effectivePeriod: contract.periods[0].subscription,
+      contractUsage: contract.usage,
+      activeReceptionIds: [],
+    };
+  }
+  it('keeps two contracts independent and never auto-selects one', async () => {
+    api.contracts.mockReturnValue(of([contractFixture('a'), contractFixture('b')]));
     const state = TestBed.inject(SubscriptionState);
     await state.refresh();
-    expect(state.canCreatePractice()).toBe(true);
-    expect(state.canCreateReception()).toBe(true);
-    const full = detailsFixture();
-    full.usage = { practiceCount: 2, receptionCount: 3 };
-    api.mine.mockReturnValue(of(full));
-    await state.refresh(true);
-    expect(state.canCreatePractice()).toBe(false);
-    expect(state.canCreateReception()).toBe(false);
-  });
-  it('does not manufacture grants from Trial, Pending, Expired or a scheduled period', async () => {
-    const state = TestBed.inject(SubscriptionState);
-    for (const status of ['Pending', 'Expired', 'Active'] as const) {
-      const details = detailsFixture();
-      details.subscription!.status = status;
-      details.subscription!.kind = 'Trial';
-      details.entitlements = [];
-      details.nextPeriod = { ...details.subscription!, status: 'Scheduled' };
-      api.mine.mockReturnValue(of(details));
-      await state.refresh(true);
-      expect(state.has('PRACTICE_MANAGEMENT')).toBe(false);
-    }
-  });
-  it('deduplicates in-flight reads and discards responses from a previous login', async () => {
-    const pending = new Subject<SubscriptionDetails>();
-    api.mine.mockReturnValue(pending);
-    const state = TestBed.inject(SubscriptionState);
-    const first = state.refresh();
-    const second = state.refresh();
-    expect(api.mine).toHaveBeenCalledOnce();
-    session.set(doctor('doctor-2'));
-    pending.next(detailsFixture());
-    pending.complete();
-    await Promise.all([first, second]);
+    expect(state.contracts()).toHaveLength(2);
+    expect(state.details()).toBeNull();
+    state.selectContract('b');
+    expect(state.details()?.subscription?.subscriptionContractId).toBe('b');
+    state.selectContract('missing');
     expect(state.details()).toBeNull();
   });
-  it('never fetches doctor financial data for patient, reception, admin or signed-out sessions', async () => {
-    const state = TestBed.inject(SubscriptionState);
-    for (const userType of ['Patient', 'Reception', 'SuperAdmin'] as const) {
-      const other = doctor();
-      other.user!.userType = userType;
-      session.set(other);
-      await state.refresh();
-      expect(state.details()).toBeNull();
-    }
-    session.set(null);
-    await state.refresh();
-    expect(api.mine).not.toHaveBeenCalled();
-    expect(subscriptionFeatureForRoute('/patient/records')).toBeNull();
-    expect(subscriptionFeatureForRoute('/patient/family')).toBeNull();
-    expect(subscriptionFeatureForRoute('/admin/doctors')).toBeNull();
-    expect(subscriptionFeatureForRoute('/doctor/onboarding')).toBeNull();
-    expect(subscriptionFeatureForRoute('/doctor/subscription')).toBeNull();
-    expect(subscriptionFeatureForRoute('/doctor/patients?patientId=test')).toBe(
-      'PATIENT_MANAGEMENT',
+  it('never borrows a Full entitlement from a sibling practice', async () => {
+    const premium = contractFixture('premium');
+    premium.periods[0].entitlements = [{ featureCode: 'TICKET_QUEUE', accessLevel: 'Full' }];
+    const booking = contractFixture('booking');
+    booking.periods[0].entitlements = [{ featureCode: 'ONLINE_BOOKING', accessLevel: 'Full' }];
+    api.contracts.mockReturnValue(of([premium, booking]));
+    api.allocation.mockImplementation((id: string) =>
+      of(allocation(id === 'a' ? premium : booking, id)),
     );
-  });
-  it('does not unlock future selections or allow new capacity after expiry even when snapshots exist', async () => {
     const state = TestBed.inject(SubscriptionState);
-    for (const status of ['Pending', 'Scheduled', 'Expired'] as const) {
-      const details = detailsFixture();
-      details.subscription!.status = status;
-      api.mine.mockReturnValue(of(details));
-      await state.refresh(true);
-      expect(state.canCreatePractice()).toBe(false);
-      expect(state.canCreateReception()).toBe(false);
-      if (status !== 'Expired') expect(state.has('PRACTICE_MANAGEMENT')).toBe(false);
+    await state.refresh();
+    await state.refreshPractice('a');
+    await state.refreshPractice('b');
+    expect(state.hasForPractice('a', 'TICKET_QUEUE', true)).toBe(true);
+    expect(state.hasForPractice('b', 'TICKET_QUEUE', true)).toBe(false);
+    expect(state.hasForPractice('b', 'ONLINE_BOOKING', true)).toBe(true);
+    expect(state.hasForPractice('unallocated', 'ONLINE_BOOKING')).toBe(false);
+  });
+  it('does not use ReadOnly for writes, Pending or an expired effective interval', async () => {
+    const contract = contractFixture();
+    contract.periods[0].entitlements = [
+      { featureCode: 'PRACTICE_MANAGEMENT', accessLevel: 'ReadOnly' },
+    ];
+    api.contracts.mockReturnValue(of([contract]));
+    api.allocation.mockReturnValue(of(allocation(contract, 'a')));
+    const state = TestBed.inject(SubscriptionState);
+    await state.refresh();
+    await state.refreshPractice('a');
+    expect(state.hasForPractice('a', 'PRACTICE_MANAGEMENT')).toBe(true);
+    expect(state.hasForPractice('a', 'PRACTICE_MANAGEMENT', true)).toBe(false);
+    contract.periods[0].subscription!.endsAtUtc = '2020-01-01';
+    await state.refresh(true);
+    await state.refreshPractice('a');
+    expect(state.hasForPractice('a', 'PRACTICE_MANAGEMENT')).toBe(false);
+  });
+  it('counts seats per contract and does not merge capacity', async () => {
+    const full = contractFixture('full');
+    full.availablePracticeSeats = 0;
+    full.availableReceptionSeats = 0;
+    const pending = contractFixture('pending');
+    pending.periods[0].subscription!.status = 'Pending';
+    api.contracts.mockReturnValue(of([full, pending]));
+    const state = TestBed.inject(SubscriptionState);
+    await state.refresh();
+    expect(state.canCreatePractice()).toBe(false);
+    expect(state.canCreateReception()).toBe(true);
+  });
+  it('deduplicates reads and ignores results from an earlier account', async () => {
+    const pending = new Subject<SubscriptionContract[]>();
+    api.contracts.mockReturnValue(pending);
+    const state = TestBed.inject(SubscriptionState),
+      first = state.refresh(),
+      second = state.refresh();
+    expect(api.contracts).toHaveBeenCalledOnce();
+    login('other');
+    pending.next([contractFixture()]);
+    pending.complete();
+    await Promise.all([first, second]);
+    expect(state.contracts()).toEqual([]);
+  });
+  it('discards allocations invalidated during a transfer', async () => {
+    const contract = contractFixture();
+    api.contracts.mockReturnValue(of([contract]));
+    const pending = new Subject<PracticeAllocationDetails>();
+    api.allocation.mockReturnValue(pending);
+    const state = TestBed.inject(SubscriptionState);
+    await state.refresh();
+    const read = state.refreshPractice('a');
+    state.invalidate();
+    pending.next(allocation(contract, 'a'));
+    pending.complete();
+    await read;
+    expect(state.allocationFor('a')).toBeNull();
+  });
+  it('does not request doctor contracts for patients, reception or admin', async () => {
+    const state = TestBed.inject(SubscriptionState);
+    for (const actor of ['Patient', 'Reception', 'SuperAdmin']) {
+      login('other', actor);
+      await state.refresh();
+      expect(state.contracts()).toEqual([]);
     }
+    expect(api.contracts).not.toHaveBeenCalled();
   });
 });

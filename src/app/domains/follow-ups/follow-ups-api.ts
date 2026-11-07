@@ -9,7 +9,13 @@ import {
   normalizeBookingOptions,
 } from '../public-discovery';
 import { map } from 'rxjs';
-import { FollowUpEligibility, FollowUpPage, FollowUpQuery } from './follow-up.models';
+import {
+  FollowUpEligibility,
+  FollowUpEligibilityResponse,
+  FollowUpPage,
+  FollowUpQuery,
+  normalizeFollowUp,
+} from './follow-up.models';
 
 @Injectable({ providedIn: 'root' })
 export class FollowUpsApi {
@@ -19,12 +25,17 @@ export class FollowUpsApi {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(query))
       if (value !== undefined && value !== '') params = params.set(key, String(value));
-    return this.http.get<FollowUpPage>(`${this.root}/follow-up-eligibilities/mine`, { params });
+    return this.http
+      .get<Omit<FollowUpPage, 'items'> & { items: FollowUpEligibilityResponse[] }>(
+        `${this.root}/follow-up-eligibilities/mine`,
+        { params },
+      )
+      .pipe(map((page) => ({ ...page, items: (page.items ?? []).map(normalizeFollowUp) })));
   }
   details(id: string) {
-    return this.http.get<FollowUpEligibility>(
-      `${this.root}/follow-up-eligibilities/mine/${this.id(id)}`,
-    );
+    return this.http
+      .get<FollowUpEligibilityResponse>(`${this.root}/follow-up-eligibilities/mine/${this.id(id)}`)
+      .pipe(map(normalizeFollowUp));
   }
   reception(practiceId: string, patientId: string) {
     return this.http.get<readonly FollowUpEligibility[]>(

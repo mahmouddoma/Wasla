@@ -1,4 +1,4 @@
-import type { CommercialCatalog, SubscriptionDetails } from '../app/domains/subscriptions';
+import type { CommercialCatalog, SubscriptionDetails, SubscriptionContract } from '../app/domains/subscriptions';
 import { signal } from '@angular/core';
 
 /** Existing feature unit tests exercise their workflow with commercial access granted. */
@@ -9,12 +9,23 @@ export function subscriptionStateStub() {
     usage: () => details().usage,
     terms: () => details().subscription,
     has: () => true,
+    hasForPractice: () => true,
+    contracts: () => [contractFixture()],
+    availableContracts: () => [contractFixture()],
+    currentDetails: () => details(),
+    refreshPractice: async () => null,
     canCreatePractice: () => true,
     canCreateReception: () => true,
     needsReview: () => false,
     invalidate: () => undefined,
     refresh: async () => details(),
   };
+}
+
+export function contractFixture(id = 'contract-1', value = detailsFixture()): SubscriptionContract {
+  if (value.subscription) value.subscription.subscriptionContractId = id;
+  return { subscriptionContractId: id, periods: [value], practices: [], usage: value.usage,
+    availablePracticeSeats: 1, availableReceptionSeats: 2, renewalPreview: null, upcomingStatus: 'Active' };
 }
 
 export const catalogFixture: CommercialCatalog = {

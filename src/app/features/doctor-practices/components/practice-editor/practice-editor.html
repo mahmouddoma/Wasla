@@ -41,6 +41,19 @@
   }
 
   <form class="compact-editor-form" (submit)="save($event)" novalidate>
+    @if (!practice()) {
+      <label class="contract-field" for="practice-contract">{{ 'subscriptions.contract' | t }}
+        <span class="contract-select-wrap">
+          <select id="practice-contract" class="field-input" [value]="contractId()" (change)="selectContract($event)" [disabled]="isSubmitting()">
+            <option value="">{{ 'subscriptions.chooseContract' | t }}</option>
+            @for (contract of subscription.availableContracts(); track contract.subscriptionContractId) {
+              <option [value]="contract.subscriptionContractId">{{ subscription.currentDetails(contract)?.subscription?.planCode }} · {{ contract.availablePracticeSeats }} {{ 'subscriptions.availablePracticeSeats' | t }} · {{ contract.subscriptionContractId.slice(0, 8) }}</option>
+            }
+          </select>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </span>
+      </label>
+    }
     <!-- 2-Column Balanced Dashboard Grid -->
     <div class="editor-grid-columns">
       <!-- Column 1: Clinic Identity -->

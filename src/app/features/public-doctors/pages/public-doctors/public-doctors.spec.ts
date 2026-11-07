@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { DoctorProfileApi } from '../../../../domains/doctor-profile';
 import {
   PublicDiscoveryApi,
@@ -299,5 +299,64 @@ describe('PublicDoctors', () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('.booking-success-receipt')).not.toBeNull();
     expect(element.textContent).toContain('RES-84920');
+  });
+  function prepareBooking() {
+    const component = fixture.componentInstance;
+    vi.spyOn(TestBed.inject(AuthSession), 'isAuthenticated').mockReturnValue(true);
+    component['drawerOpened'].set(true);
+    component['drawerSelectedPractice'].set(mockDoctorDetails.practices[0]);
+    component['drawerSelectedDate'].set('2026-10-06');
+    component['drawerSelectedTime'].set('06:00:00');
+    component['selectedPatientId'].set('p-1');
+    return component;
+  }
+  const segment = { segmentId: 's1', nameAr: 'Standard', price: 300 };
+  const visitType = { visitTypeId: 'v1', nameAr: 'Consultation' };
+  it('reuses the intent key after a network error and changes it when the booking changes', async () => {
+    const component = prepareBooking();
+    reservationsApi.createPatient.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 })),
+    );
+    await component['confirmBooking'](segment, visitType);
+    await component['confirmBooking'](segment, visitType);
+    const calls = reservationsApi.createPatient.mock.calls as unknown as [unknown, string][];
+    expect(calls[0][1]).toBe(calls[1][1]);
+    component['bookingNote'].set('Different intent');
+    await component['confirmBooking'](segment, visitType);
+    expect(calls[2][1]).not.toBe(calls[0][1]);
+  });
+  it('clears stale online booking choices on entitlement denial while preserving the patient and note', async () => {
+    const component = prepareBooking();
+    component['bookingNote'].set('Keep this note');
+    component['selectedSegment'].set(segment);
+    component['selectedVisitType'].set(visitType);
+    reservationsApi.createPatient.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: { errors: [{ code: 'Subscription.FeatureNotEntitled' }] },
+          }),
+      ),
+    );
+    await component['confirmBooking'](segment, visitType);
+    expect(component['drawerSelectedTime']()).toBe('');
+    expect(component['drawerOptions']()).toBeNull();
+    expect(component['selectedSegment']()).toBeNull();
+    expect(component['selectedPatientId']()).toBe('p-1');
+    expect(component['bookingNote']()).toBe('Keep this note');
+    expect(component['drawerMessages']()).toEqual(['booking.practiceUnavailable']);
+    await component['confirmBooking'](segment, visitType);
+    expect(reservationsApi.createPatient).toHaveBeenCalledTimes(1);
+  });
+  it('does not send a second booking while confirmation is pending', async () => {
+    const component = prepareBooking();
+    const pending = new Subject<never>();
+    reservationsApi.createPatient.mockReturnValue(pending);
+    const first = component['confirmBooking'](segment, visitType);
+    await component['confirmBooking'](segment, visitType);
+    expect(reservationsApi.createPatient).toHaveBeenCalledTimes(1);
+    pending.error(new HttpErrorResponse({ status: 0 }));
+    await first;
   });
 });

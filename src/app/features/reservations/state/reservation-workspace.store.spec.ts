@@ -14,6 +14,50 @@ import { Phase18Part2Api } from '../../../domains/phase18';
 import { ReservationWorkspaceStore, ReservationDraft } from './reservation-workspace.store';
 import { reservationFixture, metadataFixture } from '../reservation-test-fixtures';
 describe('ReservationWorkspaceStore', () => {
+  it.each([false, true])(
+    'refreshes a commercial check-in denial (force=%s) without erasing history or retrying payment',
+    async (force) => {
+      store.actor.set('Reception');
+      store.practiceId.set('clinic');
+      const active = { ...reservationFixture, status: 'Active', price: 250 };
+      store.detail.set(active);
+      store.arrival.set(true);
+      grants.set([
+        'PracticeReservations.View',
+        'PracticeTickets.CheckIn',
+        'PracticeTickets.ForceCheckIn',
+        'PracticeTickets.RecordPayment',
+      ]);
+      TestBed.tick();
+      const denied = throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: { errors: [{ code: 'Subscription.FeatureNotEntitled' }] },
+          }),
+      );
+      ticketsApi.checkIn.mockReturnValue(denied);
+      ticketsApi.forceCheckIn.mockReturnValue(denied);
+      api.details.mockReturnValue(of({ ...active, rowVersion: 'fresh' }));
+      api.list.mockReturnValue(of({ items: [active], totalCount: 1, pageNumber: 1, pageSize: 20 }));
+      await store.checkIn({
+        paidAmount: 250,
+        paymentMethod: 'Cash',
+        referenceNumber: null,
+        notes: null,
+        force,
+        reason: 'Patient arrived early',
+      });
+      expect(api.details).toHaveBeenCalledWith({ actor: 'Reception', practiceId: 'clinic' }, 'r1');
+      expect(store.detail()?.rowVersion).toBe('fresh');
+      expect(store.page().items).toHaveLength(1);
+      expect(store.arrival()).toBe(false);
+      expect(store.checkedInTicket()).toBeNull();
+      expect(store.acceptedArrival()).toBeNull();
+      expect(reception.refresh).not.toHaveBeenCalled();
+      expect(force ? ticketsApi.forceCheckIn : ticketsApi.checkIn).toHaveBeenCalledTimes(1);
+    },
+  );
   it('retains focused arrival and submitted context after a conflict while refreshing details', async () => {
     store.actor.set('Reception');
     store.practiceId.set('clinic');
@@ -910,5 +954,3 @@ describe('ReservationWorkspaceStore', () => {
     expect(store.pendingAttestation()).toBeNull();
   });
 });
-
-

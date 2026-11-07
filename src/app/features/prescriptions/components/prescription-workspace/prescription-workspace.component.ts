@@ -15,9 +15,8 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom, Observable, Subject, debounceTime, switchMap, catchError, of } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
-import { environment } from '../../../../../environments/environment';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { createIdempotencyKey } from '../../../../core/http/create-idempotency-key';
@@ -29,10 +28,12 @@ import {
   AddPrescriptionItem,
   PatientPrescription,
   PrescriptionClinicalFields,
+  PrescriptionClinicalData,
   PrescriptionItem,
   PrescriptionsApi,
   PrescriptionState,
   PrescriptionVersion,
+  parsePrescriptionDuration,
 } from '../../../../domains/prescriptions';
 
 type Action = 'remove' | 'startCorrection' | 'finalize' | 'discard' | 'void';
@@ -60,7 +61,6 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly doctorPatientsApi = inject(DoctorPatientsApi);
-  private readonly http = inject(HttpClient);
   readonly patientId = input('');
   readonly copyingPrevious = signal(false);
   readonly language = inject(LanguageService);
@@ -128,8 +128,23 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
     duration: [''],
     instructions: [''],
     isPrn: [false],
-    quantity: this.fb.control<number | null>(null, Validators.min(0)),
+    prnReason: [''],
+    minimumIntervalText: [''],
+    quantity: this.fb.control<number | null>(null, Validators.min(0.01)),
+    quantityUnit: this.fb.control<NonNullable<PrescriptionClinicalData['quantityUnit']> | ''>(''),
   });
+  readonly quantityUnits = [
+    'Tablet',
+    'Capsule',
+    'Bottle',
+    'Ampoule',
+    'Vial',
+    'Tube',
+    'Inhaler',
+    'Patch',
+    'Suppository',
+    'Other',
+  ] as const;
   readonly medication = this.fb.group({
     medicationName: ['', Validators.required],
     scientificName: [''],
@@ -245,7 +260,8 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
           this.correctionMode() ? 'Prescriptions.CorrectOwn' : 'Prescriptions.ManageOwnDraft',
         )) &&
       (this.correctionMode()
-        ? !!state?.draft && state.capabilities.canCorrect !== false
+        ? !!state?.draft &&
+          (state.capabilities.canStartCorrection ?? state.capabilities.canCorrect) !== false
         : this.canManage() &&
           (!state || !!state.draft) &&
           state?.capabilities.canManageDraft !== false)
@@ -346,33 +362,20 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
     const patientId = this.patientId();
     const practiceId = this.practiceId();
     const encounterId = this.encounterId();
-    if (!patientId || !practiceId || !encounterId || this.copyingPrevious() || this.busy()) return;
+    if (
+      !patientId ||
+      !practiceId ||
+      !encounterId ||
+      !this.editable() ||
+      this.correctionMode() ||
+      this.copyingPrevious() ||
+      this.busy()
+    )
+      return;
 
     this.copyingPrevious.set(true);
     try {
-      // 1. Try dedicated copy-previous endpoint if backend added it
-      try {
-        const directResult = await firstValueFrom(
-          this.http.post<PrescriptionState>(
-            `${environment.apiBaseUrl}/api/v1/doctors/me/practices/${encodeURIComponent(practiceId)}/encounters/${encodeURIComponent(encounterId)}/prescription/copy-previous`,
-            {},
-            { headers: { 'Idempotency-Key': createIdempotencyKey() } },
-          ),
-        );
-        if (directResult) {
-          this.state.set(directResult);
-          this.changed.emit(directResult);
-          this.toast.success('prescriptions.copySuccess');
-          return;
-        }
-      } catch (endpointError: unknown) {
-        const status = (endpointError as HttpErrorResponse)?.status;
-        if (status !== 404 && status !== 405) {
-          throw endpointError;
-        }
-      }
-
-      // 2. Fallback: Orchestrate via doctor-patients and prescriptions API
+      // The backend exposes history and draft item endpoints, with no bulk copy route.
       const page = await firstValueFrom(
         this.doctorPatientsApi.prescriptions(patientId, { pageNumber: 1, pageSize: 5 }),
       );
@@ -411,17 +414,20 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
           isPrn: !!item.isPrn,
           quantity: item.quantity ?? null,
           instructions: item.instructions || null,
+          // Backend responses nest clinical data; keep the exact frequency/duration/PRN fields.
+          ...(item.clinical ?? {}),
           prescriptionRowVersion: currentState?.rowVersion,
         };
 
         currentState = await firstValueFrom(
           this.api.addItem(practiceId, encounterId, body, createIdempotencyKey()),
         );
+        // Preserve the server row version even if a later item fails.
+        this.state.set(currentState);
+        this.changed.emit(currentState);
       }
 
       if (currentState) {
-        this.state.set(currentState);
-        this.changed.emit(currentState);
         this.toast.success('prescriptions.copySuccess');
       }
     } catch {
@@ -457,9 +463,11 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
       '';
     const duration =
       clinical.duration ??
-      (clinical.durationValue
-        ? `${clinical.durationValue} ${clinical.durationUnit ?? ''}`.trim()
-        : ((item as any).duration ?? ''));
+      (clinical.durationType === 'Ongoing'
+        ? this.language.t('prescriptions.ongoing')
+        : clinical.durationValue
+          ? `${clinical.durationValue} ${clinical.durationUnit ?? ''}`.trim()
+          : ((item as any).duration ?? ''));
     this.clinical.reset({
       strength: clinical.strength ?? item.strength ?? '',
       dosageForm: clinical.dosageForm ?? item.dosageForm ?? '',
@@ -469,7 +477,10 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
       duration,
       instructions: clinical.instructions ?? item.instructions ?? '',
       isPrn: clinical.isPrn ?? clinical.asNeeded ?? item.isPrn ?? false,
+      prnReason: item.clinical?.prnReason ?? '',
+      minimumIntervalText: item.clinical?.minimumIntervalText ?? '',
       quantity: clinical.quantity ?? clinical.quantityValue ?? item.quantity ?? null,
+      quantityUnit: item.clinical?.quantityUnit ?? '',
     });
   }
   search(search: string, pageNumber = 1) {
@@ -500,27 +511,12 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
     this.missing.set(true);
     this.medication.controls.medicationName.setValue(this.searchText());
   }
-  private clinicalData(): any {
+  private clinicalData(): PrescriptionClinicalFields & PrescriptionClinicalData {
     const value = this.clinical.getRawValue();
     const freq = value.frequency.trim();
     const dur = value.duration.trim();
 
-    let durationValue: number | null = null;
-    let durationUnit: 'Days' | 'Weeks' | 'Months' | null = null;
-    let durationType: 'Fixed' | 'Ongoing' | null = null;
-
-    if (dur) {
-      const match = dur.match(/\d+/);
-      durationValue = match ? parseInt(match[0], 10) : 1;
-      durationType = 'Fixed';
-      if (/week|أسبوع|اسبوع/i.test(dur)) {
-        durationUnit = 'Weeks';
-      } else if (/month|شهر/i.test(dur)) {
-        durationUnit = 'Months';
-      } else {
-        durationUnit = 'Days';
-      }
-    }
+    const duration = parsePrescriptionDuration(dur)!;
 
     return {
       ...value,
@@ -532,15 +528,31 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
       frequencyText: freq || null,
       frequencyCode: freq ? 'Custom' : null,
       duration: dur || null,
-      durationType,
-      durationValue,
-      durationUnit,
+      ...duration,
       asNeeded: !!value.isPrn,
+      prnReason: value.isPrn ? value.prnReason.trim() || null : null,
+      minimumIntervalText: value.isPrn ? value.minimumIntervalText.trim() || null : null,
+      quantityValue: value.quantity,
+      quantityUnit: value.quantity === null ? null : value.quantityUnit || null,
       instructions: value.instructions.trim() || null,
     };
   }
   async saveItem() {
-    if (!this.editable() || this.busy() || this.disabled() || this.clinical.invalid) return;
+    if (!this.editable() || this.busy() || this.disabled()) return;
+    if (!parsePrescriptionDuration(this.clinical.controls.duration.value)) {
+      this.messages.set(['prescriptions.durationInvalid']);
+      this.toast.error('prescriptions.durationInvalid');
+      return;
+    }
+    if (
+      this.clinical.controls.quantity.value !== null &&
+      !this.clinical.controls.quantityUnit.value
+    ) {
+      this.messages.set(['prescriptions.quantityUnitRequired']);
+      this.toast.error('prescriptions.quantityUnitRequired');
+      return;
+    }
+    if (this.clinical.invalid) return;
     const state = this.state(),
       fields = this.clinicalData(),
       itemId = this.editingId();
@@ -625,7 +637,7 @@ export class PrescriptionWorkspaceComponent implements OnDestroy {
     if (
       action === 'startCorrection' &&
       state.current?.status === 'Finalized' &&
-      state.capabilities.canCorrect &&
+      (state.capabilities.canStartCorrection ?? state.capabilities.canCorrect) &&
       this.allowed('Prescriptions.CorrectOwn') &&
       this.reason().trim()
     ) {

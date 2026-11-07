@@ -99,6 +99,7 @@ export class PublicDoctors {
   protected readonly drawerDoctorImageBroken = signal(false);
   protected readonly drawerBrokenLogos = signal<string[]>([]);
   private drawerBookingRequest = 0;
+  private bookingIntent: { signature: string; key: string } | null = null;
 
   // Direct In-Place Booking State
   protected readonly isPatient = computed(
@@ -303,7 +304,7 @@ export class PublicDoctors {
     const date = this.drawerSelectedDate();
     const time = this.drawerSelectedTime();
 
-    if (!practice || !date || !time) return;
+    if (!practice || !date || !time || this.bookingSubmitting()) return;
 
     if (!this.authSession.isAuthenticated()) {
       void this.router.navigate(['/login'], {
@@ -338,6 +339,7 @@ export class PublicDoctors {
       return;
     }
 
+    if (this.bookingSubmitting()) return;
     this.bookingSubmitting.set(true);
     this.drawerMessages.set([]);
 
@@ -352,18 +354,42 @@ export class PublicDoctors {
         bookingNote: this.bookingNote().trim() || null,
       };
 
-      const idempotencyKey = createIdempotencyKey();
+      const signature = JSON.stringify(request);
+      if (this.bookingIntent?.signature !== signature)
+        this.bookingIntent = { signature, key: createIdempotencyKey() };
+      const idempotencyKey = this.bookingIntent.key;
       const reservation = await firstValueFrom(
         this.reservationsApi.createPatient(request, idempotencyKey),
       );
 
       this.toastService.success('booking.successToast');
+      this.bookingIntent = null;
       this.bookingConfirmedReservation.set(reservation);
     } catch (error) {
-      const errMsgs = this.mapDrawerError(error);
+      const parsed = parseApiErrors(error);
+      const unavailable =
+        error instanceof HttpErrorResponse &&
+        error.status === 403 &&
+        parsed.codes.some((code) => code.startsWith('Subscription.'));
+      if (unavailable) {
+        ++this.drawerBookingRequest;
+        this.drawerDates.set([]);
+        this.drawerSlots.set([]);
+        this.drawerOptions.set(null);
+        this.drawerSelectedDate.set('');
+        this.drawerSelectedTime.set('');
+        this.selectedSegment.set(null);
+        this.selectedVisitType.set(null);
+      }
+      const errMsgs = unavailable ? ['booking.practiceUnavailable'] : this.mapDrawerError(error);
       this.drawerMessages.set(errMsgs);
       if (errMsgs.length > 0) {
         this.toastService.error(errMsgs[0]);
+      }
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        // Refresh choices without replaying a mutation or losing the patient's selection.
+        await this.chooseDrawerDate(date);
+        this.drawerMessages.set(errMsgs);
       }
     } finally {
       this.bookingSubmitting.set(false);

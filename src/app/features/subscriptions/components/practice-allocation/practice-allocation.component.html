@@ -1,0 +1,130 @@
+@if (session.hasPermission('Subscriptions.ViewOwn')) {
+  <section class="allocation-panel" aria-labelledby="allocation-title">
+    <h3 id="allocation-title">{{ 'subscriptions.practiceCoverage' | t }}</h3>
+    @if (loading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    } @else if (error()) {
+      <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
+      <button class="btn btn-outline" type="button" (click)="load()">
+        {{ 'common.retry' | t }}
+      </button>
+    } @else {
+      <p>
+        {{
+          'subscriptions.coverage.' + (practice().commercial?.effectiveState || 'Unallocated') | t
+        }}
+      </p>
+      @if (value(); as details) {
+        <p>
+          {{ details.effectivePeriod?.planCode }}
+          @if (details.contractUsage) {
+            ? {{ details.contractUsage.practiceCount }} {{ 'subscriptions.practice' | t }}
+          }
+        </p>
+      }
+      @if (session.hasPermission('Subscriptions.AllocationsManageOwn')) {
+        <div class="actions">
+          <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="open('move')">
+            {{ 'subscriptions.allocateOrMove' | t }}
+          </button>
+          @if (value()?.allocation) {
+            <button
+              class="btn btn-outline"
+              type="button"
+              [disabled]="busy()"
+              (click)="open('release')"
+            >
+              {{ 'subscriptions.releaseAllocation' | t }}
+            </button>
+          }
+        </div>
+      }
+    }
+  </section>
+  <app-side-drawer
+    [opened]="!!action()"
+    [title]="
+      (action() === 'release' ? 'subscriptions.releaseAllocation' : 'subscriptions.allocateOrMove')
+        | t
+    "
+    (closed)="!busy() && action.set(null)"
+  >
+    @if (action() === 'move') {
+      @if (step() === 1) {
+        <label for="allocation-target">{{ 'subscriptions.chooseContract' | t }}</label
+        ><span class="select-wrap"
+          ><select
+            id="allocation-target"
+            class="field-input"
+            [value]="targetId()"
+            (change)="chooseTarget($event)"
+          >
+            <option value="">{{ 'subscriptions.chooseContract' | t }}</option>
+            @for (contract of state.availableContracts(); track contract.subscriptionContractId) {
+              @if (
+                contract.subscriptionContractId !== value()?.allocation?.subscriptionContractId
+              ) {
+                <option [value]="contract.subscriptionContractId">
+                  {{ state.currentDetails(contract)?.subscription?.planCode }} ·
+                  {{ contract.availablePracticeSeats }}
+                  {{ 'subscriptions.availablePracticeSeats' | t }} ·
+                  {{ contract.subscriptionContractId.slice(0, 8) }}
+                </option>
+              }
+            }</select
+          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
+        ></span>
+        <button type="button" class="btn btn-primary" [disabled]="!canMove()" (click)="step.set(2)">
+          {{ 'common.next' | t }}
+        </button>
+      } @else {
+        <p>{{ 'subscriptions.transferExplanation' | t }}</p>
+        <p>
+          {{ 'subscriptions.targetContract' | t }}:
+          {{ state.currentDetails(target()!)?.subscription?.planCode }} ·
+          {{ target()?.availableReceptionSeats }} {{ 'subscriptions.availableReceptionSeats' | t }}
+        </p>
+        @if (targetAllowsStaff()) {
+          <p>{{ 'subscriptions.keepStaff' | t }}</p>
+          @for (member of staff(); track member.id) {
+            <label class="check-row"
+              ><input
+                class="sr-only-chk"
+                type="checkbox"
+                [checked]="selectedStaff().includes(member.id)"
+                (change)="toggleStaff(member.id, $event)"
+              /><span class="check-box" aria-hidden="true"></span
+              >{{ language.isRtl() ? member.nameAr : member.nameEn || member.nameAr }}</label
+            >
+          }
+        } @else {
+          <p>{{ 'subscriptions.noReceptionInContract' | t }}</p>
+        }
+        <div class="actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="busy() || !canMove()"
+            (click)="confirm()"
+          >
+            {{ 'subscriptions.confirm' | t }}</button
+          ><button class="btn btn-outline" type="button" [disabled]="busy()" (click)="step.set(1)">
+            {{ 'subscriptions.back' | t }}
+          </button>
+        </div>
+      }
+    } @else if (action() === 'release') {
+      <p>{{ 'subscriptions.releaseExplanation' | t }}</p>
+      <label for="release-reason">{{ 'subscriptions.reason' | t }}</label
+      ><textarea
+        id="release-reason"
+        class="field-input"
+        [(ngModel)]="reason"
+        [disabled]="busy()"
+      ></textarea
+      ><button class="btn btn-primary" type="button" [disabled]="busy()" (click)="confirm()">
+        {{ 'subscriptions.confirm' | t }}
+      </button>
+    }
+  </app-side-drawer>
+}

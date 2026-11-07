@@ -27,6 +27,29 @@ describe('Phase 14 drug catalog HTTP contracts', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('unwraps details and maps backend strength, price and history timestamp', () => {
+    let result: unknown;
+    api.details('drug').subscribe((value) => (result = value));
+    http
+      .expectOne(root + '/admin/drug-catalog/drug')
+      .flush({
+        drug: {
+          commercialNameEn: 'Drug',
+          drugCatalogId: 'drug',
+          strength: '500mg',
+          referencePriceEgp: 40,
+          status: 'Active',
+          rowVersion: 'v1',
+        },
+        history: [{ id: 'h', action: 'Created', occurredAtUtc: '2026-11-07T10:00:00Z' }],
+      });
+    expect(result).toMatchObject({
+      drugCatalogId: 'drug',
+      strengthText: '500mg',
+      priceEgp: 40,
+      history: [{ createdOnUtc: '2026-11-07T10:00:00Z' }],
+    });
+  });
   it('sends server paging, trimmed search and manager status filter', () => {
     api
       .list({ search: '  synthetic ', status: 'NeedsReview', pageNumber: 2, pageSize: 20 })

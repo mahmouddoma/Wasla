@@ -360,7 +360,7 @@
       <div class="surface-panel practice-tab-content">
         @switch (activeSection()) {
           @case ('overview') {
-            @if (canManage && subscription.has('PRACTICE_MANAGEMENT', true)) {
+            @if (canManage && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)) {
               <app-practice-editor [practice]="practice" (saved)="practiceSaved($event)" />
             } @else {
               <dl class="practice-data-grid">
@@ -386,27 +386,28 @@
             }
           }
           @case ('operations') {
-            @if (canManage) { <app-booking-price [practiceId]="practice.id" [canManage]="subscription.has('PRACTICE_MANAGEMENT', true)" /> }
+              <app-practice-allocation [practice]="practice" (changed)="reload()" />
+            @if (canManage) { <app-booking-price [practiceId]="practice.id" [canManage]="subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)" /> }
             <app-practice-operations
               [practice]="practice"
-              [canActivate]="canActivate && subscription.has('PRACTICE_MANAGEMENT', true)"
+              [canActivate]="canActivate && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)"
               [canViewConfiguration]="canViewConfiguration"
-              [canManageConfiguration]="canManageConfiguration && subscription.has('PRACTICE_MANAGEMENT', true)"
+              [canManageConfiguration]="canManageConfiguration && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)"
               [canViewBranding]="canViewBranding"
-              [canManageBranding]="canManageBranding && subscription.has('PRACTICE_BRANDING', true)"
+              [canManageBranding]="canManageBranding && subscription.hasForPractice(practice.id, 'PRACTICE_BRANDING', true)"
               (practiceChanged)="practiceSaved($event)"
             />
           }
           @case ('schedule') {
-            <app-practice-schedule [practiceId]="practice.id" [canManage]="canManageSchedule && subscription.has('SCHEDULE_AVAILABILITY', true)" />
+            <app-practice-schedule [practiceId]="practice.id" [canManage]="canManageSchedule && subscription.hasForPractice(practice.id, 'SCHEDULE_AVAILABILITY', true)" />
           }
           @case ('segments') {
             <app-practice-segments
               [practiceId]="practice.id"
               [canViewSegments]="canViewSegments"
-              [canManageSegments]="canManageSegments && subscription.has('BASIC_SEGMENTS_PRICING', true)"
+              [canManageSegments]="canManageSegments && subscription.hasForPractice(practice.id, 'BASIC_SEGMENTS_PRICING', true)"
               [canViewPricing]="canViewPricing"
-              [canManagePricing]="canManagePricing && subscription.has('BASIC_SEGMENTS_PRICING', true)"
+              [canManagePricing]="canManagePricing && subscription.hasForPractice(practice.id, 'BASIC_SEGMENTS_PRICING', true)"
             />
           }
         }

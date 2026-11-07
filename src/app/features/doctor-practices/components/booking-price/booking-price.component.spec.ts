@@ -5,6 +5,8 @@ import { DoctorPracticePrice, DoctorPracticesApi } from '../../../../domains/doc
 import { SubscriptionState } from '../../../../domains/subscriptions';
 import { subscriptionStateStub } from '../../../../../testing/subscriptions';
 import { ToastService } from '../../../../core/notifications/toast.service';
+import { AuthSession } from '../../../../core/auth/auth-session';
+import { PublicDiscoveryApi } from '../../../../domains/public-discovery';
 
 describe('BookingPriceComponent', () => {
   const price: DoctorPracticePrice = {
@@ -30,6 +32,8 @@ describe('BookingPriceComponent', () => {
         { provide: DoctorPracticesApi, useValue: api },
         { provide: SubscriptionState, useValue: subscriptionStateStub() },
         { provide: ToastService, useValue: toast },
+        { provide: AuthSession, useValue: { user: () => ({ doctorId: 'doctor' }) } },
+        { provide: PublicDiscoveryApi, useValue: { doctor: () => of({ practices: [{ id: 'practice-1', publicSearchPrice: 200 }] }) } },
       ],
     });
   });
@@ -63,5 +67,14 @@ describe('BookingPriceComponent', () => {
       newConsultationPrice: 150,
       rowVersion: null,
     });
+  });
+  it('does not read the full pricing catalog for a Booking Only practice', async () => {
+    vi.spyOn(TestBed.inject(SubscriptionState), 'hasForPractice').mockImplementation((_practice, feature) => feature !== 'BASIC_SEGMENTS_PRICING');
+    const fixture = TestBed.createComponent(BookingPriceComponent);
+    fixture.componentRef.setInput('practiceId', 'practice-1');
+    fixture.componentRef.setInput('canManage', true);
+    await fixture.whenStable();
+    expect(api.prices).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.price).toBe(200);
   });
 });

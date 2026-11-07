@@ -216,7 +216,7 @@ export class DoctorRegistration {
         this.currentStep.set(3);
         return;
       }
-      if (!isAvailableSelection(this.catalog(), this.selection(), true)) {
+      if (this.selection() && !isAvailableSelection(this.catalog(), this.selection())) {
         this.filesError.set(this.uiLanguage.t('subscriptions.choosePlan'));
         this.currentStep.set(3);
         return;
@@ -228,7 +228,7 @@ export class DoctorRegistration {
       try {
         await firstValueFrom(
           this.api.registerDoctor({
-            subscription: this.selection()!,
+            subscription: this.selection(),
             ...this.model(),
             gender: this.model().gender as Gender,
             profileImage: this.profileImage(),

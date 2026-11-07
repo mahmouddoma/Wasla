@@ -69,32 +69,12 @@ export class PlanSelectorComponent implements OnChanges {
     ),
   );
 
-  readonly isBookingEnabled = computed(() =>
-    Boolean(
-      this.catalog().bookingOnly.enabled &&
-        this.bookingProduct()?.enabled &&
-        (this.catalog().bookingOnly.pricingTiers?.length ?? 0) > 0,
-    ),
-  );
-
-  readonly count = computed(
-    () =>
-      this.bookingCount() ??
-      this.selection()?.selectedPracticeCount ??
-      this.catalog().bookingOnly.pricingTiers[0]?.minPracticeCount ??
-      null,
-  );
+  readonly isBookingEnabled = computed(() => Boolean(this.catalog().bookingOnly.enabled && this.bookingProduct()?.enabled && typeof this.catalog().bookingOnly.monthlyUnitPrice === 'number'));
+  readonly count = computed(() => this.bookingCount() ?? this.selection()?.selectedPracticeCount ?? this.catalog().bookingOnly.minimumSelectedPractices ?? 1);
   readonly bookingTier = computed(() => {
-    if (!this.isBookingEnabled()) return undefined;
     const count = this.count();
-    return count !== null &&
-      Number.isInteger(count) &&
-      count > 0 &&
-      count <= this.catalog().bookingOnly.maximumSelectablePractices
-      ? this.catalog().bookingOnly.pricingTiers.find(
-          (tier) => count >= tier.minPracticeCount && count <= tier.maxPracticeCount,
-        )
-      : undefined;
+    return this.isBookingEnabled() && Number.isInteger(count) && count >= (this.catalog().bookingOnly.minimumSelectedPractices ?? 1) && count <= 2147483647
+      ? { monthlyPrice: count * this.catalog().bookingOnly.monthlyUnitPrice! } : undefined;
   });
 
   readonly options = computed(() =>

@@ -45,6 +45,7 @@ export interface ReservationAppointment {
   appointmentEndUtc?: string;
   durationMinutes?: number;
   timeZoneId?: string;
+  graceEndsAtUtc?: string;
 }
 export interface ReservationCapabilities {
   canCancel: boolean;
@@ -210,6 +211,7 @@ export function normalizeReservation(raw: unknown): Reservation {
   const businessDate = (apptRaw?.['businessDate'] as string) || (r['businessDate'] as string) || '';
   const slotStartTime =
     (apptRaw?.['slotStartTime'] as string) ||
+    (apptRaw?.['localTime'] as string) ||
     (r['localTime'] as string) ||
     (r['slotStartTime'] as string) ||
     '';
@@ -222,6 +224,7 @@ export function normalizeReservation(raw: unknown): Reservation {
     scheduledTime,
     appointmentStartUtc:
       (apptRaw?.['appointmentStartUtc'] as string) ||
+      (apptRaw?.['startUtc'] as string) ||
       (r['appointmentStartUtc'] as string) ||
       undefined,
     appointmentEndUtc:
@@ -229,8 +232,13 @@ export function normalizeReservation(raw: unknown): Reservation {
     durationMinutes:
       (apptRaw?.['durationMinutes'] as number) || (r['durationMinutes'] as number) || undefined,
     timeZoneId: (apptRaw?.['timeZoneId'] as string) || (r['timeZoneId'] as string) || undefined,
+    graceEndsAtUtc: (apptRaw?.['graceEndsAtUtc'] as string) || undefined,
   };
 
+  // Detail/mutation responses carry immutable booking terms inside snapshot;
+  // list responses carry the same display fields at the top level.
+  const snapshot = r['snapshot'] as Record<string, unknown> | undefined;
+  const terms = snapshot ?? r;
   const segRaw = r['segment'] as Record<string, unknown> | undefined;
   const segment: ReservationIdentity | undefined = segRaw
     ? {
@@ -238,11 +246,11 @@ export function normalizeReservation(raw: unknown): Reservation {
         nameAr: (segRaw['nameAr'] as string) || '',
         nameEn: (segRaw['nameEn'] as string) || null,
       }
-    : r['segmentNameAr']
+    : terms['segmentNameAr']
       ? {
-          id: (r['segmentId'] as string) || undefined,
-          nameAr: (r['segmentNameAr'] as string) || '',
-          nameEn: (r['segmentNameEn'] as string) || null,
+          id: (terms['segmentId'] as string) || undefined,
+          nameAr: (terms['segmentNameAr'] as string) || '',
+          nameEn: (terms['segmentNameEn'] as string) || null,
         }
       : undefined;
 
@@ -253,11 +261,11 @@ export function normalizeReservation(raw: unknown): Reservation {
         nameAr: (vtRaw['nameAr'] as string) || '',
         nameEn: (vtRaw['nameEn'] as string) || null,
       }
-    : r['visitTypeNameAr']
+    : terms['visitTypeNameAr']
       ? {
-          id: (r['visitTypeId'] as string) || undefined,
-          nameAr: (r['visitTypeNameAr'] as string) || '',
-          nameEn: (r['visitTypeNameEn'] as string) || null,
+          id: (terms['visitTypeId'] as string) || undefined,
+          nameAr: (terms['visitTypeNameAr'] as string) || '',
+          nameEn: (terms['visitTypeNameEn'] as string) || null,
         }
       : undefined;
 
@@ -270,11 +278,16 @@ export function normalizeReservation(raw: unknown): Reservation {
         cancelBlockedReason: (capRaw['cancelBlockedReason'] as string) || null,
         rescheduleBlockedReason: (capRaw['rescheduleBlockedReason'] as string) || null,
         restoreBlockedReason: (capRaw['restoreBlockedReason'] as string) || null,
-        patientCancellationCutoffUtc: (capRaw['patientCancellationCutoffUtc'] as string) || null,
+        patientCancellationCutoffUtc:
+          (capRaw['cancellationAllowedUntilUtc'] as string) ||
+          (capRaw['patientCancellationCutoffUtc'] as string) ||
+          null,
         remainingPatientReschedules:
-          typeof capRaw['remainingPatientReschedules'] === 'number'
-            ? capRaw['remainingPatientReschedules']
-            : undefined,
+          typeof capRaw['patientReschedulesRemaining'] === 'number'
+            ? capRaw['patientReschedulesRemaining']
+            : typeof capRaw['remainingPatientReschedules'] === 'number'
+              ? capRaw['remainingPatientReschedules']
+              : undefined,
       }
     : {
         canCancel: Boolean(r['canCancel']),
@@ -294,13 +307,14 @@ export function normalizeReservation(raw: unknown): Reservation {
     appointment,
     segment,
     visitType,
-    price: typeof r['price'] === 'number' ? r['price'] : undefined,
+    price: typeof terms['price'] === 'number' ? terms['price'] : undefined,
     currency: (r['currency'] as string) || undefined,
     bookingSource: (r['bookingSource'] as string) || undefined,
     bookingNote: (r['bookingNote'] as string) || null,
     createdOnUtc: (r['createdOnUtc'] as string) || undefined,
     cancelledOnUtc: (r['cancelledOnUtc'] as string) || null,
-    cancellationReason: (r['cancellationReason'] as string) || null,
+    cancellationReason:
+      (r['cancellationComment'] as string) || (r['cancellationReason'] as string) || null,
     capabilities,
     timeline: Array.isArray(r['timeline']) ? (r['timeline'] as ReservationTimelineEvent[]) : [],
     rowVersion: (r['rowVersion'] as string) || '',
@@ -311,8 +325,6 @@ export function normalizeReservation(raw: unknown): Reservation {
     archivedAtUtc: (r['archivedAtUtc'] as string) || undefined,
     linkedTicketId: (r['linkedTicketId'] as string) || undefined,
     canViewLinkedTicket:
-      typeof r['canViewLinkedTicket'] === 'boolean'
-        ? r['canViewLinkedTicket']
-        : !!r['linkedTicketId'],
+      typeof r['canViewLinkedTicket'] === 'boolean' ? r['canViewLinkedTicket'] : false,
   };
 }

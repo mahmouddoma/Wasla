@@ -29,6 +29,12 @@ describe('DoctorPracticesApi', () => {
   });
 
   afterEach(() => http.verify());
+  it('preserves exact commercial contract/allocation state from the practice projection', async () => {
+    const result = firstValueFrom(api.details('practice-1'));
+    const commercial = { subscriptionContractId: 'contract-2', periodId: 'period-2', allocationId: 'allocation-2', planCode: 'BOOKING_ONLY', effectiveState: 'Covered', nextAction: 'ManagePractice', allocationRowVersion: 'fresh' };
+    http.expectOne(`${url}/practice-1`).flush({ ...practice, commercial });
+    expect((await result).commercial).toEqual(commercial);
+  });
   it('uses the narrow booking price endpoint with a nullable first-write row version', async () => {
     const body = { newConsultationPrice: 150, rowVersion: null };
     const result = firstValueFrom(api.updateBookingPrice('practice/1', body)); const request = http.expectOne(`${url}/practice%2F1/booking-presentation/price`);
@@ -88,10 +94,11 @@ describe('DoctorPracticesApi', () => {
       latitude: 30,
       longitude: 31,
     };
-    const createResult = firstValueFrom(api.create(writeRequest));
+    const createRequest = { ...writeRequest, subscriptionContractId: 'contract-1' };
+    const createResult = firstValueFrom(api.create(createRequest));
     const create = http.expectOne(url);
     expect(create.request.method).toBe('POST');
-    expect(create.request.body).toEqual(writeRequest);
+    expect(create.request.body).toEqual(createRequest);
     create.flush(practice, { status: 201, statusText: 'Created' });
     await createResult;
 
@@ -109,14 +116,16 @@ describe('DoctorPracticesApi', () => {
     const activate = http.expectOne(`${url}/practice-1/activate`);
     expect(activate.request.method).toBe('POST');
     expect(activate.request.body).toEqual({ rowVersion: 'AQID' });
-    activate.flush({ ...practice, isActive: true, rowVersion: 'BAUG' });
+    activate.flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne(`${url}/practice-1`).flush({ ...practice, isActive: true, rowVersion: 'BAUG' });
     await activateResult;
 
     const deactivateResult = firstValueFrom(api.deactivate('practice-1', { rowVersion: 'BAUG' }));
     const deactivate = http.expectOne(`${url}/practice-1/deactivate`);
     expect(deactivate.request.method).toBe('POST');
     expect(deactivate.request.body).toEqual({ rowVersion: 'BAUG' });
-    deactivate.flush({ ...practice, isActive: false, rowVersion: 'CAkK' });
+    deactivate.flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne(`${url}/practice-1`).flush({ ...practice, isActive: false, rowVersion: 'CAkK' });
     await deactivateResult;
   });
 

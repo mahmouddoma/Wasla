@@ -28,11 +28,10 @@ export function isAvailableSelection(
       selection.billingCycle === 'Monthly' &&
       typeof count === 'number' &&
       Number.isInteger(count) &&
-      count > 0 &&
-      count <= catalog.bookingOnly.maximumSelectablePractices &&
-      catalog.bookingOnly.pricingTiers.some(
-        (tier) => count >= tier.minPracticeCount && count <= tier.maxPracticeCount,
-      )
+      count >= (catalog.bookingOnly.minimumSelectedPractices ?? 1) &&
+      count <= 2147483647 &&
+      typeof catalog.bookingOnly.monthlyUnitPrice === 'number' &&
+      Number.isFinite(catalog.bookingOnly.monthlyUnitPrice)
     );
   }
   if (

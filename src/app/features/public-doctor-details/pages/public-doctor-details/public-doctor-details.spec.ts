@@ -192,4 +192,47 @@ describe('PublicDoctorDetailsPage', () => {
     expect(page['selectedSegment']()?.segmentId).toBe('seg-1');
     expect(page['selectedVisitType']()?.visitTypeId).toBe('vt-1');
   });
+  async function bookingPage() {
+    vi.spyOn(TestBed.inject(AuthSession), 'isAuthenticated').mockReturnValue(true);
+    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
+    await fixture.whenStable();
+    const page = fixture.componentInstance;
+    page['selectedPractice'].set(practice);
+    page['selectedDate'].set('2026-11-10');
+    page['selectedTime'].set('10:00');
+    page['selectedPatientId'].set('patient-1');
+    return page;
+  }
+  const segment = { segmentId: 'segment', nameAr: 'Standard', price: 300 };
+  const visit = { visitTypeId: 'visit', nameAr: 'Consultation' };
+  it('retains the intent key on network retry and changes it only when the booking changes', async () => {
+    const page = await bookingPage();
+    const create = vi.spyOn(TestBed.inject(ReservationsApi), 'createPatient').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    await page['confirmBooking'](segment, visit);
+    await page['confirmBooking'](segment, visit);
+    expect(create.mock.calls[0][1]).toBe(create.mock.calls[1][1]);
+    page['bookingNote'].set('Changed booking');
+    await page['confirmBooking'](segment, visit);
+    expect(create.mock.calls[2][1]).not.toBe(create.mock.calls[0][1]);
+    expect(page['bookingConfirmedReservation']()).toBeNull();
+  });
+  it('refreshes the exact practice/date after conflict without replaying the booking', async () => {
+    const page = await bookingPage();
+    const create = vi.spyOn(TestBed.inject(ReservationsApi), 'createPatient').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    await page['confirmBooking'](segment, visit);
+    expect(api.availableSlots).toHaveBeenCalledWith('branch-1', '2026-11-10');
+    expect(page['selectedTime']()).toBe('');
+    expect(create).toHaveBeenCalledOnce();
+  });
+  it('removes stale booking choices on expiry and preserves patient selection and note', async () => {
+    const page = await bookingPage();
+    page['bookingNote'].set('Keep this');
+    vi.spyOn(TestBed.inject(ReservationsApi), 'createPatient').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403, error: { errors: [{ code: 'Subscription.Expired' }] } })));
+    await page['confirmBooking'](segment, visit);
+    expect(page['selectedTime']()).toBe('');
+    expect(page['options']()).toBeNull();
+    expect(page['selectedPatientId']()).toBe('patient-1');
+    expect(page['bookingNote']()).toBe('Keep this');
+    expect(page['messages']()).toEqual(['booking.practiceUnavailable']);
+  });
 });

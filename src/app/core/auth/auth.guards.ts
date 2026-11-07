@@ -22,8 +22,8 @@ export const doctorOperationalGuard: CanActivateFn = async (_route, state) => {
     const feature = subscriptionFeatureForRoute(state.url);
     if (!feature) return true;
     try { await subscription.refresh(true); }
-    catch { return router.createUrlTree(['/doctor/subscription']); }
-    return subscription.has(feature) ? true : router.createUrlTree(['/doctor/subscription']);
+    catch { /* Historical resource access remains server-authorized independently of current coverage. */ }
+    return true;
   } catch {
     return router.createUrlTree(['/doctor/onboarding']);
   }

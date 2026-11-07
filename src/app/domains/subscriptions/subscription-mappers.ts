@@ -46,6 +46,7 @@ export function mapSubscription(
   return {
     ...raw,
     kind: raw.subscriptionKind,
+    featureGrants: raw.terms?.features ?? [],
     productCode: raw.terms?.productCode ?? '',
     planCode: raw.terms?.planCode ?? '',
     currency: raw.currency ?? '',

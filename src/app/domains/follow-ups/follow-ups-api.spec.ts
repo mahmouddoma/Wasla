@@ -15,6 +15,33 @@ describe('Phase 13 booking eligibility API', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('maps nested patient, doctor and practice identities used by patient booking', () => {
+    let result: unknown;
+    api.mine({ pageNumber: 1, pageSize: 20 }).subscribe((value) => (result = value.items[0]));
+    http
+      .expectOne((r) => r.url === root + '/follow-up-eligibilities/mine')
+      .flush({
+        items: [
+          {
+            eligibilityId: 'e',
+            patient: { id: 'child' },
+            doctor: { id: 'doctor' },
+            practice: { id: 'practice' },
+            status: 'Available',
+            canBook: true,
+          },
+        ],
+        pageNumber: 1,
+        pageSize: 20,
+        totalCount: 1,
+      });
+    expect(result).toMatchObject({
+      patientId: 'child',
+      doctorId: 'doctor',
+      practiceId: 'practice',
+      canBook: true,
+    });
+  });
   it('WAS-207 paginates and scopes dependent booking without requesting clinical records', () => {
     api.mine({ patientId: 'child', status: 'Available', pageNumber: 2, pageSize: 20 }).subscribe();
     const req = http.expectOne((r) => r.url === root + '/follow-up-eligibilities/mine');

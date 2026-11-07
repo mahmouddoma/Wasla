@@ -18,17 +18,27 @@ describe('AuthApi password recovery', () => {
   });
 
   afterEach(() => http.verify());
+  it('registers without a paid selection or implicit trial activation', async () => {
+    const file = new File(['synthetic'], 'proof.png', { type: 'image/png' });
+    const result = firstValueFrom(api.registerDoctor({ userName: 'synthetic', email: 'test@example.invalid', phoneNumber: '01000000000', password: 'Synthetic123!', confirmPassword: 'Synthetic123!', nameAr: 'Doctor', nameEn: '', dateOfBirth: '1980-01-01', gender: 'Male', personalIdFrontImage: file, personalIdBackImage: file, syndicateCardFrontImage: file }));
+    const request = http.expectOne(`${environment.apiBaseUrl}/api/v1/auth/doctors/register`);
+    const body: FormData = request.request.body;
+    expect(body.has('Subscription.ProductCode')).toBe(false);
+    expect(body.has('Subscription.OfferCode')).toBe(false);
+    request.flush({ doctorId: 'doctor-1', approvalStatus: 'Pending' });
+    await result;
+  });
 
   it('registers a doctor with subscription codes in multipart data and no client prices', async () => {
     const file = new File(['test'], 'id.png', { type: 'image/png' });
-    const result = firstValueFrom(api.registerDoctor({ userName: 'synthetic', email: 'test@example.invalid', phoneNumber: '01000000000', password: 'Synthetic123!', confirmPassword: 'Synthetic123!', nameAr: 'طبيب', nameEn: '', dateOfBirth: '1980-01-01', gender: 'Male', personalIdFrontImage: file, personalIdBackImage: file, syndicateCardFrontImage: file, subscription: { productCode: 'FULL_PLATFORM', planCode: 'STARTER', offerCode: 'STARTER_FREE_TRIAL_20D' } }));
+    const result = firstValueFrom(api.registerDoctor({ userName: 'synthetic', email: 'test@example.invalid', phoneNumber: '01000000000', password: 'Synthetic123!', confirmPassword: 'Synthetic123!', nameAr: 'طبيب', nameEn: '', dateOfBirth: '1980-01-01', gender: 'Male', personalIdFrontImage: file, personalIdBackImage: file, syndicateCardFrontImage: file, subscription: { productCode: 'FULL_PLATFORM', planCode: 'STARTER', billingCycle: 'Monthly' } }));
     const request = http.expectOne(`${environment.apiBaseUrl}/api/v1/auth/doctors/register`);
     const body: FormData = request.request.body;
     expect(request.request.method).toBe('POST');
     expect(body.get('Subscription.ProductCode')).toBe('FULL_PLATFORM');
     expect(body.get('Subscription.PlanCode')).toBe('STARTER');
-    expect(body.get('Subscription.OfferCode')).toBe('STARTER_FREE_TRIAL_20D');
-    expect(body.has('Subscription.BillingCycle')).toBe(false);
+    expect(body.has('Subscription.OfferCode')).toBe(false);
+    expect(body.get('Subscription.BillingCycle')).toBe('Monthly');
     expect(body.has('Subscription.Price')).toBe(false);
     expect(body.has('NationalId')).toBe(false);
     expect(body.get('SyndicateCardFrontImage')).toBeInstanceOf(File);

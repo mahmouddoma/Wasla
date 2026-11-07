@@ -56,6 +56,8 @@ export type TrialOfferOptions = {
   readonly manualExtensionEnabled: boolean;
 };
 export type BookingOnlyOptions = {
+  readonly monthlyUnitPrice?: number;
+  readonly minimumSelectedPractices?: number;
   readonly enabled: boolean;
   readonly planCode: string | null;
   readonly maximumSelectablePractices: number;
@@ -94,6 +96,7 @@ export type SubscriptionDetails = {
 };
 export type DoctorSubscription = {
   readonly id: string;
+  readonly subscriptionContractId?: string;
   readonly domainEvents: readonly IDomainEvent[] | null;
   readonly doctorId: string;
   readonly productId: string;

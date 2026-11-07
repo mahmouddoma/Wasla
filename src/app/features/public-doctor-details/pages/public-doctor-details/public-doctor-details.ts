@@ -42,6 +42,7 @@ export class PublicDoctorDetailsPage {
   private readonly doctorId = inject(ActivatedRoute).snapshot.paramMap.get('doctorId') ?? '';
 
   private bookingRequest = 0;
+  private bookingIntent: { signature: string; key: string } | null = null;
   protected readonly doctor = signal<PublicDoctorDetails | null>(null);
   protected readonly selectedPractice = signal<PublicPracticeSummary | null>(null);
   protected readonly dates = signal<AvailableDate[]>([]);
@@ -240,7 +241,7 @@ export class PublicDoctorDetailsPage {
     const date = this.selectedDate();
     const time = this.selectedTime();
 
-    if (!practice || !date || !time) return;
+    if (!practice || !date || !time || this.bookingSubmitting()) return;
 
     if (!this.authSession.isAuthenticated()) {
       void this.router.navigate(['/login'], {
@@ -275,6 +276,7 @@ export class PublicDoctorDetailsPage {
       return;
     }
 
+    if (this.bookingSubmitting()) return;
     this.bookingSubmitting.set(true);
     this.messages.set([]);
 
@@ -289,19 +291,41 @@ export class PublicDoctorDetailsPage {
         bookingNote: this.bookingNote().trim() || null,
       };
 
-      const idempotencyKey = createIdempotencyKey();
+      const signature = JSON.stringify(request);
+      if (this.bookingIntent?.signature !== signature)
+        this.bookingIntent = { signature, key: createIdempotencyKey() };
+      const idempotencyKey = this.bookingIntent.key;
       const reservation = await firstValueFrom(
         this.reservationsApi.createPatient(request, idempotencyKey),
       );
 
       this.toastService.success('booking.successToast');
+      this.bookingIntent = null;
       this.bookingConfirmedReservation.set(reservation);
     } catch (error) {
-      this.setErrors(error);
       const parsed = parseApiErrors(error);
-      if (parsed.messages.length > 0) {
-        this.toastService.error(parsed.messages[0]);
+      const unavailable = error instanceof HttpErrorResponse &&
+        (error.status === 404 || (error.status === 403 &&
+          parsed.codes.some((code) => code.startsWith('Subscription.'))));
+      if (unavailable) {
+        ++this.bookingRequest;
+        this.dates.set([]);
+        this.slots.set([]);
+        this.options.set(null);
+        this.selectedDate.set('');
+        this.selectedTime.set('');
+        this.selectedSegment.set(null);
+        this.selectedVisitType.set(null);
+        this.messages.set(['booking.practiceUnavailable']);
+      } else {
+        this.setErrors(error);
+        const messages = this.messages();
+        if (error instanceof HttpErrorResponse && error.status === 409) {
+          await this.chooseDate(date, false);
+          this.messages.set(messages);
+        }
       }
+      this.toastService.error(this.messages()[0] ?? 'common.requestFailed');
     } finally {
       this.bookingSubmitting.set(false);
     }

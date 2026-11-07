@@ -56,11 +56,15 @@ export interface CommercialCatalog {
       maxPracticeCount: number;
       monthlyPrice: number;
     }[];
+    monthlyUnitPrice?: number;
+    minimumSelectedPractices?: number;
   };
   paymentMethods: { cash: boolean; card: boolean; eWallet: boolean };
 }
 export interface Subscription {
   id: string;
+  subscriptionContractId?: string;
+  featureGrants?: readonly { code: string | null; accessLevel: AccessLevel }[];
   productCode: string;
   planCode: string;
   kind: string;
@@ -185,4 +189,74 @@ export interface LegacyTransitionBatch {
   status: string;
   completedOnUtc: string | null;
   rowVersion: string;
+}
+
+/** Stable contracts contain independent accepted periods; all capacities come from the API. */
+export interface SubscriptionContract {
+  subscriptionContractId: string;
+  periods: SubscriptionDetails[];
+  practices: {
+    practiceId: string;
+    nameAr: string;
+    isActive: boolean;
+    allocationId: string;
+    rowVersion: string;
+  }[];
+  usage: { practiceCount: number; receptionCount: number };
+  availablePracticeSeats: number;
+  availableReceptionSeats: number;
+  renewalPreview: SubscriptionTerms | null;
+  upcomingStatus: string;
+}
+export interface SubscriptionTerms {
+  productCode: string | null;
+  planCode: string | null;
+  priceAmount: number;
+  currency: string | null;
+  practiceLimit: number;
+  receptionLimit: number;
+  features: readonly { code: string | null; accessLevel: AccessLevel }[] | null;
+}
+export interface TrialEligibility {
+  status: string;
+  canActivate: boolean;
+  durationDays: number;
+  practiceLimit: number;
+  receptionLimit: number;
+  trial: Subscription | null;
+}
+export interface PracticeCommercial {
+  subscriptionContractId: string | null;
+  periodId: string | null;
+  allocationId: string | null;
+  planCode: string | null;
+  effectiveState: 'Unallocated' | 'CommerciallyUncovered' | 'Covered' | 'InactiveManual';
+  nextAction: 'Allocate' | 'RenewOrTransfer' | 'ManagePractice' | 'CompleteReadinessAndActivate';
+  allocationRowVersion: string | null;
+}
+export interface PracticeAllocation {
+  id: string;
+  doctorPracticeId: string;
+  subscriptionContractId: string;
+  rowVersion: string;
+  allocatedFromUtc: string;
+  releasedAtUtc: string | null;
+}
+export interface PracticeAllocationDetails {
+  practiceId: string;
+  allocation: PracticeAllocation | null;
+  effectivePeriod: Subscription | null;
+  contractUsage: { practiceCount: number; receptionCount: number } | null;
+  activeReceptionIds: string[];
+}
+export interface RenewalPreview {
+  terms: SubscriptionTerms;
+  allocations: PracticeAllocation[];
+  activeReceptionIds: string[];
+  periodRowVersion: string;
+}
+export interface RetainedAllocation {
+  practiceId: string;
+  allocationId: string;
+  receptionIds: string[];
 }

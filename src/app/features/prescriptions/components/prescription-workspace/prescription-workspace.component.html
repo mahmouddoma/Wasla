@@ -256,7 +256,15 @@
         </div>
       }
 
-      @if (editable() && patientId() && !editing() && (historical() || (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current))?.items?.length) {
+      @if (
+        editable() &&
+        patientId() &&
+        !editing() &&
+        (
+          historical() ||
+          (correctionMode() || (canManage() && state()?.draft) ? state()?.draft : state()?.current)
+        )?.items?.length
+      ) {
         <div class="rx-doctor-quick-actions">
           <button
             type="button"
@@ -376,7 +384,7 @@
           @if (state(); as state) {
             @if (
               state.current?.status === 'Finalized' &&
-              state.capabilities.canCorrect &&
+              (state.capabilities.canStartCorrection ?? state.capabilities.canCorrect) &&
               allowed('Prescriptions.CorrectOwn') &&
               !state.draft
             ) {
@@ -629,12 +637,40 @@
                 <input
                   class="field-input ltr-text"
                   type="number"
-                  min="0"
+                  min="0.01"
                   formControlName="quantity"
                   dir="ltr"
                   [readonly]="busy() || disabled()"
                 />
               </label>
+              @if (clinical.controls.quantity.value !== null) {
+                <label class="rx-field">
+                  <span>{{ 'prescriptions.quantityUnit' | t }}</span>
+                  <span class="rx-select-wrap">
+                    <select
+                      class="field-input rx-unit-select"
+                      formControlName="quantityUnit"
+                      [attr.disabled]="busy() || disabled() ? true : null"
+                      required
+                    >
+                      <option value="">{{ 'prescriptions.chooseQuantityUnit' | t }}</option>
+                      @for (unit of quantityUnits; track unit) {
+                        <option [value]="unit">{{ 'prescriptions.unit.' + unit | t }}</option>
+                      }
+                    </select>
+                    <svg class="rx-select-arrow" viewBox="0 0 20 20" aria-hidden="true">
+                      <path
+                        d="m5 7 5 5 5-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </label>
+              }
               <label class="prn-toggle">
                 <input
                   class="sr-only-chk"
@@ -645,6 +681,20 @@
                 <span class="toggle-track" aria-hidden="true"></span>
                 <span>{{ 'prescriptions.isPrn' | t }}</span>
               </label>
+              @if (clinical.controls.isPrn.value) {
+                @for (field of ['prnReason', 'minimumIntervalText']; track field) {
+                  <label class="rx-field">
+                    <span>{{ 'prescriptions.' + field | t }}</span>
+                    <input
+                      class="field-input"
+                      [formControlName]="field"
+                      [readonly]="busy() || disabled()"
+                      [placeholder]="field === 'duration' ? ('prescriptions.durationHint' | t) : ''"
+                      maxlength="200"
+                    />
+                  </label>
+                }
+              }
             </div>
             <p class="rx-draft-note">{{ 'prescriptions.draftHelp' | t }}</p>
             <div class="actions rx-editor-footer">

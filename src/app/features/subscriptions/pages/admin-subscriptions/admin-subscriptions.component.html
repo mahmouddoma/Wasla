@@ -84,9 +84,36 @@
     </button>
   </form>
   @if (loading()) {
-    <p role="status">{{ 'subscriptions.loading' | t }}</p>
+    <section class="subscription-state-panel" role="status" aria-live="polite">
+      <div class="state-spinner" aria-hidden="true"></div>
+      <h2 class="subscription-state-title">{{ 'subscriptions.loading' | t }}</h2>
+      <p class="subscription-state-subtitle">{{ 'subscriptions.manualOnly' | t }}</p>
+    </section>
   } @else if (error()) {
-    <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
+    <section class="subscription-state-panel subscription-state-panel--error" role="alert">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Payment Information-bro.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <span class="subscription-state-badge subscription-state-badge--error">
+        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+        <span>{{ 'common.error' | t }}</span>
+      </span>
+      <h2 class="subscription-state-title">{{ 'common.failedToLoad' | t }}</h2>
+      <p class="subscription-state-subtitle">{{ 'subscriptions.loadError' | t }}</p>
+      <button
+        type="button"
+        class="btn btn-primary state-action-btn"
+        [disabled]="loading()"
+        (click)="load()"
+      >
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+        <span>{{ 'subscriptions.retry' | t }}</span>
+      </button>
+    </section>
   } @else if (page(); as result) {
     @if (result.items.length) {
       <div class="table-responsive">
@@ -151,7 +178,7 @@
         </button>
       </nav>
     } @else {
-      <section class="empty-state">
+      <section class="empty-state subscription-state-panel">
         <img
           class="state-empty-illustration"
           src="/SVG-AVATAR/Payment Information-bro.svg"
@@ -159,10 +186,11 @@
           loading="lazy"
           decoding="async"
         />
-        <h2>{{ 'subscriptions.none' | t }}</h2>
-        <p>{{ 'subscriptions.emptyHint' | t }}</p>
-        <button class="btn btn-primary" type="button" (click)="clearFilters()">
-          {{ 'subscriptions.clear' | t }}
+        <h2 class="subscription-state-title">{{ 'subscriptions.none' | t }}</h2>
+        <p class="subscription-state-subtitle">{{ 'subscriptions.emptyHint' | t }}</p>
+        <button class="btn btn-primary state-action-btn" type="button" (click)="clearFilters()">
+          <i class="fa-solid fa-filter-circle-xmark" aria-hidden="true"></i>
+          <span>{{ 'subscriptions.clear' | t }}</span>
         </button>
       </section>
     }

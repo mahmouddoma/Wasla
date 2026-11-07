@@ -86,6 +86,14 @@ describe('PatientAppointmentsListComponent', () => {
     expect(component.error()).toBe(true);
     expect(component.loading()).toBe(false);
   });
+  it('renders linked admission and follow-up without inventing either relationship', async () => {
+    component.appointments.set([{ ...mockAppointment, linkedTicketId: 'ticket-12345678', followUpEligibilityId: 'eligibility-12345678' }]);
+    await fixture.whenStable();
+    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector('a[href*="ticketId=ticket-12345678"]');
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toContain('practiceId=prac-1');
+    expect(fixture.nativeElement.textContent).toContain('eligibil');
+  });
 
   it('reloads the source and resets pagination when the patient changes', () => {
     component.pageNumber.set(3);

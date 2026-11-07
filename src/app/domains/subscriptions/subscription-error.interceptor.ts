@@ -32,9 +32,16 @@ export const subscriptionErrorInterceptor: HttpInterceptorFn = (request, next) =
           state.invalidate();
           if (
             session.user()?.userType === 'Doctor' &&
-            !/\/subscription(?:\/|\?|$)/.test(request.url)
+            !/\/subscriptions?(?:\/|\?|$)/.test(request.url) &&
+            !request.url.includes('/subscription-allocation')
           )
-            void state.refresh().catch(() => undefined);
+            void state
+              .refresh()
+              .then(() => {
+                const practiceId = request.url.match(/\/doctors\/me\/practices\/([^/?]+)/)?.[1];
+                return practiceId ? state.refreshPractice(decodeURIComponent(practiceId)) : null;
+              })
+              .catch(() => undefined);
           if (!request.context.get(SKIP_ERROR_TOAST)) {
             request.context.set(SKIP_ERROR_TOAST, true);
             const key = parsed.codes.some((code) => code.endsWith('AccessLevelInsufficient'))
@@ -48,9 +55,11 @@ export const subscriptionErrorInterceptor: HttpInterceptorFn = (request, next) =
                     : (parsed.messages[0] ?? 'common.requestFailed');
             toast.error(
               language.t(
-                error.status === 403 && session.user()?.userType === 'Reception'
-                  ? 'subscriptions.staffFeatureDenied'
-                  : key,
+                error.status === 403 && session.user()?.userType === 'Patient'
+                  ? 'booking.practiceUnavailable'
+                  : error.status === 403 && session.user()?.userType === 'Reception'
+                    ? 'subscriptions.staffFeatureDenied'
+                    : key,
               ),
             );
           }

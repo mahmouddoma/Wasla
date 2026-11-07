@@ -18,7 +18,7 @@ export interface EncounterSummary {
   readonly encounterId: string;
   readonly ticketId: string;
   readonly patient: ClinicalIdentity;
-  readonly doctor: ClinicalIdentity;
+  readonly doctor?: ClinicalIdentity;
   readonly practice: ClinicalIdentity;
   readonly visitType?: ClinicalIdentity;
   readonly status: EncounterStatus;
@@ -43,6 +43,7 @@ export interface PatientEncounterDetails {
   } | null;
 }
 export interface EncounterDetails extends EncounterSummary {
+  readonly doctor: ClinicalIdentity;
   readonly labRequestDraft?: DiagnosticRequestStateResponse | null;
   readonly radiologyRequestDraft?: DiagnosticRequestStateResponse | null;
   readonly labRequestsSummary?: readonly DiagnosticRequestSummary[];

@@ -56,6 +56,12 @@ describe('PatientFollowUpsListComponent', () => {
     expect(component.error()).toBe(true);
     expect(component.loading()).toBe(false);
   });
+  it('renders the consumed encounter linkage even when source inspection is not permitted', async () => {
+    component.followUps.set([{ ...mockFollowUp, consumedEncounterId: 'consumed-12345', status: 'Consumed' }]);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('consumed');
+    expect(fixture.nativeElement.querySelector('a[href*="encounterId=consumed-12345"]')).toBeNull();
+  });
 
   it('reloads the source and resets pagination when the patient changes', () => {
     component.pageNumber.set(3);

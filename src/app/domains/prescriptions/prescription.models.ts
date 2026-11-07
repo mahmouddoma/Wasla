@@ -24,12 +24,57 @@ export interface PrescriptionClinicalFields {
   quantity: number | null;
   instructions: string | null;
 }
+/** Structured clinical fields used by the backend PrescriptionItemData contract. */
+export interface PrescriptionClinicalData {
+  readonly strength?: string | null;
+  readonly dosageForm?: string | null;
+  readonly route?: string | null;
+  readonly dose?: string | null;
+  readonly frequencyCode?:
+    | 'OnceDaily'
+    | 'TwiceDaily'
+    | 'ThreeTimesDaily'
+    | 'FourTimesDaily'
+    | 'Every4Hours'
+    | 'Every6Hours'
+    | 'Every8Hours'
+    | 'Every12Hours'
+    | 'Morning'
+    | 'Bedtime'
+    | 'OnceOnly'
+    | 'Custom'
+    | null;
+  readonly frequencyText?: string | null;
+  readonly durationType?: 'Fixed' | 'Ongoing' | null;
+  readonly durationValue?: number | null;
+  readonly durationUnit?: 'Days' | 'Weeks' | 'Months' | null;
+  readonly asNeeded?: boolean;
+  readonly prnReason?: string | null;
+  readonly minimumIntervalText?: string | null;
+  readonly maxPer24HoursText?: string | null;
+  readonly quantityValue?: number | null;
+  readonly quantityUnit?:
+    | 'Tablet'
+    | 'Capsule'
+    | 'Bottle'
+    | 'Ampoule'
+    | 'Vial'
+    | 'Tube'
+    | 'Inhaler'
+    | 'Patch'
+    | 'Suppository'
+    | 'Other'
+    | null;
+  readonly instructions?: string | null;
+}
 export type PrescriptionItemSource =
   | { drugCatalogId: string; newMedication?: never }
   | { newMedication: MedicationSubmission; drugCatalogId?: never };
 export type AddPrescriptionItem = PrescriptionItemSource &
-  PrescriptionClinicalFields & { prescriptionRowVersion?: string };
+  PrescriptionClinicalFields &
+  PrescriptionClinicalData & { prescriptionRowVersion?: string };
 export interface PrescriptionItem extends PrescriptionClinicalFields {
+  readonly clinical?: PrescriptionClinicalData;
   readonly itemId: string;
   readonly medicationName?: string;
   readonly commercialNameEn?: string;
@@ -58,6 +103,7 @@ export interface PrescriptionState {
   readonly capabilities: {
     readonly canManageDraft?: boolean;
     readonly canCorrect?: boolean;
+    readonly canStartCorrection?: boolean;
     readonly canVoid?: boolean;
     readonly canFinalizeCorrection?: boolean;
     readonly canDiscardCorrection?: boolean;
