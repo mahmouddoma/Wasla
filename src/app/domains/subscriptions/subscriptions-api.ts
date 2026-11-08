@@ -178,9 +178,9 @@ export class SubscriptionsApi {
   mine(): Observable<SubscriptionDetails> {
     return this.http.get<Wire.SubscriptionDetails>(this.own).pipe(map(mapDetails));
   }
-  select(selection: SubscriptionSelection): Observable<SubscriptionDetails> {
+  select(selection: SubscriptionSelection, intentKey: string): Observable<SubscriptionDetails> {
     return this.http
-      .post<Wire.SubscriptionDetails>(`${this.own}/selection`, selection)
+      .post<Wire.SubscriptionDetails>(`${this.own}/selection`, selection, this.intent(intentKey))
       .pipe(map(mapDetails));
   }
   requestChange(request: RequestSubscriptionChange): Observable<SubscriptionDetails> {

@@ -153,4 +153,30 @@ describe('practice-scoped SubscriptionState', () => {
     }
     expect(api.contracts).not.toHaveBeenCalled();
   });
+  it('revalidates the explicitly selected contract without replacing sibling contracts', async () => {
+    const a = contractFixture('a'),
+      b = contractFixture('b');
+    api.contracts.mockReturnValue(of([a, b]));
+    const state = TestBed.inject(SubscriptionState);
+    await state.refresh();
+    state.selectContract('b');
+    api.contracts.mockReturnValue(of([{ ...b, availablePracticeSeats: 7 }]));
+    await state.refreshContract('b');
+    expect(api.contracts).toHaveBeenLastCalledWith('b');
+    expect(state.contracts()[0]).toEqual(a);
+    expect(state.selectedContract()?.availablePracticeSeats).toBe(7);
+  });
+  it('discards a selected-contract response after account switching', async () => {
+    const state = TestBed.inject(SubscriptionState);
+    await state.refresh();
+    const id = state.contracts()[0].subscriptionContractId;
+    const response = new Subject<SubscriptionContract[]>();
+    api.contracts.mockReturnValue(response);
+    const read = state.refreshContract(id);
+    login('other');
+    response.next([contractFixture()]);
+    response.complete();
+    await read;
+    expect(state.contracts()).toEqual([]);
+  });
 });

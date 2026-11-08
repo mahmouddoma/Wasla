@@ -59,6 +59,12 @@ describe('FamiliesApi', () => {
   });
 
   afterEach(() => http.verify());
+  it('preserves an unresolved child identity instead of inventing a target patient', async () => {
+    const result = firstValueFrom(api.details('request'));
+    const request = http.expectOne(`${requestsUrl}/request`);
+    request.flush({ ...familyDetailsResponse(), target: null });
+    expect(await result).toMatchObject({ targetPatientId: null, targetNameAr: null });
+  });
 
   it('loads the current family without sending a patient id', async () => {
     const result = firstValueFrom(api.mine());
@@ -299,7 +305,12 @@ describe('FamiliesApi', () => {
   it('wires own medical access list, details, history, document and mutation routes', async () => {
     const baseUrl = `${familiesUrl}/mine/medical-access-requests`;
     const listResult = firstValueFrom(
-      api.myMedicalAccessRequests({ requestType: 'Restriction', status: 'Pending', pageNumber: 1, pageSize: 20 }),
+      api.myMedicalAccessRequests({
+        requestType: 'Restriction',
+        status: 'Pending',
+        pageNumber: 1,
+        pageSize: 20,
+      }),
     );
     const list = http.expectOne((candidate) => candidate.url === `${baseUrl}/mine`);
     expect(list.request.params.get('requestType')).toBe('Restriction');
@@ -318,16 +329,24 @@ describe('FamiliesApi', () => {
     http.expectOne(`${baseUrl}/case/documents/document/content`).flush(new Blob());
     await documentResult;
 
-    const withdrawal = firstValueFrom(api.withdrawMedicalAccessRequest('case', 'version', 'withdraw-key'));
+    const withdrawal = firstValueFrom(
+      api.withdrawMedicalAccessRequest('case', 'version', 'withdraw-key'),
+    );
     const withdrawalRequest = http.expectOne(`${baseUrl}/case/withdraw`);
     expect(withdrawalRequest.request.headers.get('Idempotency-Key')).toBe('withdraw-key');
     expect(withdrawalRequest.request.body).toEqual({ rowVersion: 'version' });
     withdrawalRequest.flush({ requestId: 'case' });
     await withdrawal;
 
-    const resubmission = firstValueFrom(api.resubmitMedicalAccessRequest('case', {
-      rowVersion: 'version', reason: 'Updated proof', evidenceFiles: [], documentTypes: [], idempotencyKey: 'resubmit-key',
-    }));
+    const resubmission = firstValueFrom(
+      api.resubmitMedicalAccessRequest('case', {
+        rowVersion: 'version',
+        reason: 'Updated proof',
+        evidenceFiles: [],
+        documentTypes: [],
+        idempotencyKey: 'resubmit-key',
+      }),
+    );
     const resubmitRequest = http.expectOne(`${baseUrl}/case/resubmit`);
     expect(resubmitRequest.request.headers.get('Idempotency-Key')).toBe('resubmit-key');
     expect((resubmitRequest.request.body as FormData).get('RowVersion')).toBe('version');
@@ -342,31 +361,49 @@ describe('FamiliesApi', () => {
     await statusResult;
 
     const dependentsResult = firstValueFrom(api.medicalRecordDependents());
-    http.expectOne(`${familiesUrl}/mine/medical-record-dependents`).flush({ items: [], nextCursor: null, hasMore: false });
+    http
+      .expectOne(`${familiesUrl}/mine/medical-record-dependents`)
+      .flush({ items: [], nextCursor: null, hasMore: false });
     await dependentsResult;
 
-    const overviewResult = firstValueFrom(api.dependentMedicalRecordOverview('child', { pageSize: 20, types: ['prescription'] }));
-    const overview = http.expectOne((candidate) => candidate.url === `${dependentUrl}/medical-record/overview`);
-    expect(overview.request.params.getAll('types')).toEqual(['prescription']);
+    const overviewResult = firstValueFrom(
+      api.dependentMedicalRecordOverview('child', { pageSize: 20, types: ['prescriptions'] }),
+    );
+    const overview = http.expectOne(
+      (candidate) => candidate.url === `${dependentUrl}/medical-record/overview`,
+    );
+    expect(overview.request.params.getAll('types')).toEqual(['prescriptions']);
     overview.flush({});
     await overviewResult;
 
-    const timelineResult = firstValueFrom(api.dependentMedicalRecordTimeline('child', { cursor: 'safe-cursor' }));
-    const timeline = http.expectOne((candidate) => candidate.url === `${dependentUrl}/medical-record/timeline`);
+    const timelineResult = firstValueFrom(
+      api.dependentMedicalRecordTimeline('child', { cursor: 'safe-cursor' }),
+    );
+    const timeline = http.expectOne(
+      (candidate) => candidate.url === `${dependentUrl}/medical-record/timeline`,
+    );
     expect(timeline.request.params.get('cursor')).toBe('safe-cursor');
     timeline.flush({ items: [], nextCursor: null, hasMore: false });
     await timelineResult;
 
-    const encounterResult = firstValueFrom(api.dependentMedicalRecordEncounter('child', 'encounter'));
+    const encounterResult = firstValueFrom(
+      api.dependentMedicalRecordEncounter('child', 'encounter'),
+    );
     http.expectOne(`${dependentUrl}/medical-record/encounters/encounter`).flush({});
     await encounterResult;
 
-    const itemResult = firstValueFrom(api.dependentMedicalRecordItem('child', 'prescription', 'item'));
+    const itemResult = firstValueFrom(
+      api.dependentMedicalRecordItem('child', 'prescription', 'item'),
+    );
     http.expectOne(`${dependentUrl}/medical-record/items/prescription/item`).flush({});
     await itemResult;
 
-    const attachmentResult = firstValueFrom(api.dependentMedicalRecordAttachment('child', 'prescription', 'item', 'attachment'));
-    const attachment = http.expectOne(`${dependentUrl}/medical-record/items/prescription/item/attachments/attachment/content`);
+    const attachmentResult = firstValueFrom(
+      api.dependentMedicalRecordAttachment('child', 'prescription', 'item', 'attachment'),
+    );
+    const attachment = http.expectOne(
+      `${dependentUrl}/medical-record/items/prescription/item/attachments/attachment/content`,
+    );
     expect(attachment.request.responseType).toBe('blob');
     attachment.flush(new Blob());
     await attachmentResult;
@@ -380,7 +417,9 @@ describe('FamiliesApi', () => {
     http.expectOne(`${medicalAccessAdminUrl}/summary`).flush({});
     await summaryResult;
 
-    const queueResult = firstValueFrom(api.adminMedicalAccessRequests({ pageNumber: 1, pageSize: 20 }));
+    const queueResult = firstValueFrom(
+      api.adminMedicalAccessRequests({ pageNumber: 1, pageSize: 20 }),
+    );
     http.expectOne(`${medicalAccessAdminUrl}?pageNumber=1&pageSize=20`).flush({ items: [] });
     await queueResult;
 
@@ -393,15 +432,21 @@ describe('FamiliesApi', () => {
     await documentResult;
 
     const historyResult = firstValueFrom(api.adminMedicalAccessHistory('case'));
-    http.expectOne(`${medicalAccessAdminUrl}/case/history?pageNumber=1&pageSize=20`).flush({ items: [] });
+    http
+      .expectOne(`${medicalAccessAdminUrl}/case/history?pageNumber=1&pageSize=20`)
+      .flush({ items: [] });
     await historyResult;
 
     for (const action of ['approve', 'reject', 'request-modification'] as const) {
-      const decision = action === 'approve'
-        ? api.approveMedicalAccessRequest('case', { rowVersion: 'version' })
-        : action === 'reject'
-          ? api.rejectMedicalAccessRequest('case', { rowVersion: 'version', reason: 'Reason' })
-          : api.requestMedicalAccessModification('case', { rowVersion: 'version', message: 'Message' });
+      const decision =
+        action === 'approve'
+          ? api.approveMedicalAccessRequest('case', { rowVersion: 'version' })
+          : action === 'reject'
+            ? api.rejectMedicalAccessRequest('case', { rowVersion: 'version', reason: 'Reason' })
+            : api.requestMedicalAccessModification('case', {
+                rowVersion: 'version',
+                message: 'Message',
+              });
       const result = firstValueFrom(decision);
       const request = http.expectOne(`${medicalAccessAdminUrl}/case/${action}`);
       expect(request.request.body).toHaveProperty('rowVersion', 'version');
@@ -409,7 +454,9 @@ describe('FamiliesApi', () => {
       await result;
     }
 
-    const eligibilityList = firstValueFrom(api.medicalEligibilityReviews({ pageNumber: 1, pageSize: 20 }));
+    const eligibilityList = firstValueFrom(
+      api.medicalEligibilityReviews({ pageNumber: 1, pageSize: 20 }),
+    );
     http.expectOne(`${eligibilityReviewsUrl}?pageNumber=1&pageSize=20`).flush({ items: [] });
     await eligibilityList;
 
@@ -418,11 +465,12 @@ describe('FamiliesApi', () => {
     await eligibilityDetails;
 
     for (const action of ['approve', 'reject', 'revoke'] as const) {
-      const decision = action === 'approve'
-        ? api.approveMedicalEligibility('review', { rowVersion: 'version' })
-        : action === 'reject'
-          ? api.rejectMedicalEligibility('review', { rowVersion: 'version', reason: 'Reason' })
-          : api.revokeMedicalEligibility('review', { rowVersion: 'version' });
+      const decision =
+        action === 'approve'
+          ? api.approveMedicalEligibility('review', { rowVersion: 'version' })
+          : action === 'reject'
+            ? api.rejectMedicalEligibility('review', { rowVersion: 'version', reason: 'Reason' })
+            : api.revokeMedicalEligibility('review', { rowVersion: 'version' });
       const result = firstValueFrom(decision);
       http.expectOne(`${eligibilityUrl}/review/${action}`).flush({ reviewId: 'review' });
       await result;

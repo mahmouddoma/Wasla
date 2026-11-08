@@ -1,397 +1,242 @@
-import { ToastService } from '../../../core/notifications/toast.service';
+import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { NgClass } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormField, form, required, submit } from '@angular/forms/signals';
-import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { parseApiErrors } from '../../../core/auth/api-errors';
-import { AuthSession } from '../../../core/auth/auth-session';
-import { PERMISSIONS } from '../../../core/auth/permissions';
-import { FamiliesApi } from '../../../domains/families';
-import { openPrivateMedia } from '../../../core/media/private-media';
+import { ToastService } from '../../../core/notifications/toast.service';
 import {
-  EVIDENCE_FILE_ACCEPT,
-  getEvidenceFileValidationError,
-} from '../../../core/validation/evidence-files';
-import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
-import {
-  Family,
+  FamiliesApi,
+  ChildOnboardingReview,
+  FamilyGovernanceDetails,
   FamilyRequestDetails,
   FamilyRequestPage,
-  FamilyRequestStatus,
   FamilyRequestType,
-  FamilyRole,
+  FamilyRequestStatus,
+  FamilyPendingWorkflow,
+  FamilyWorkspace,
+  FamilyWorkspaceApi,
+  FamilyWorkspaceChild,
 } from '../../../domains/families';
-
 import { PageHeader } from '../../../shared/components/page-header/page-header';
+import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import { FamilyIntakeComponent, FamilyIntakeMode } from '../family-intake/family-intake.component';
+import { DependentDetailsComponent } from '../dependent-details/dependent-details.component';
 
 @Component({
   selector: 'app-patient-family',
-  imports: [FormField, NgClass, SideDrawer, TranslatePipe, PageHeader],
+  imports: [
+    DatePipe,
+    FormsModule,
+    RouterLink,
+    TranslatePipe,
+    PageHeader,
+    SideDrawer,
+    FamilyIntakeComponent,
+    DependentDetailsComponent,
+  ],
   templateUrl: './patient-family.html',
   styleUrl: './patient-family.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PatientFamily {
+export class PatientFamily implements OnDestroy {
+  readonly language = inject(LanguageService);
+  readonly session = inject(AuthSession);
+  private readonly api = inject(FamilyWorkspaceApi);
+  private readonly relationships = inject(FamiliesApi);
   private readonly toast = inject(ToastService);
-
-  protected readonly uiLanguage = inject(LanguageService);
-
-  private readonly api = inject(FamiliesApi);
-  private readonly session = inject(AuthSession);
-  private readonly router = inject(Router);
-
-  protected readonly copiedId = signal(false);
-  protected readonly evidenceFileAccept = EVIDENCE_FILE_ACCEPT;
-
-  protected readonly family = signal<Family | null>(null);
-  protected readonly requests = signal<FamilyRequestPage | null>(null);
-  protected readonly selectedRequest = signal<FamilyRequestDetails | null>(null);
-  protected readonly filterModel = signal({
-    status: '' as FamilyRequestStatus | '',
-    requestType: '' as FamilyRequestType | '',
-    pageSize: 20,
-  });
-  protected readonly filterForm = form(this.filterModel);
-  protected readonly requestModel = signal({
-    requestType: 'CreateFamily' as FamilyRequestType,
-    familyId: '',
-    targetPatientId: '',
-    requesterClaimedRole: 'Father' as Exclude<FamilyRole, 'Child'>,
-    targetClaimedRole: 'Child' as FamilyRole,
-    documentTypes: '',
-  });
-  protected readonly requestForm = form(this.requestModel, (field) => {
-    required(field.targetPatientId, { message: 'ui.full.661' });
-    required(field.familyId, {
-      message: 'family.idRequired',
-      when: ({ valueOf }) => valueOf(field.requestType) === 'AddFamilyMember',
-    });
-    required(field.documentTypes, { message: 'ui.full.662' });
-  });
-  protected readonly evidenceFiles = signal<File[]>([]);
-  protected readonly resubmitFiles = signal<File[]>([]);
-  protected readonly resubmitDocumentTypes = signal('');
-  protected readonly loading = signal(true);
-  protected readonly submitting = signal(false);
-  protected readonly messages = signal<string[]>([]);
-  protected readonly successMessage = signal('');
-  protected readonly pageNumber = signal(1);
-  protected readonly canViewFamily = this.session.hasPermission(PERMISSIONS.familiesViewOwn);
-  protected readonly canCreateRequest = this.session.hasPermission(
-    PERMISSIONS.familyRelationshipRequestsCreate,
-  );
-  protected readonly canViewRequests = this.session.hasPermission(
-    PERMISSIONS.familyRelationshipRequestsViewOwn,
-  );
-  protected readonly canResubmit = this.session.hasPermission(
-    PERMISSIONS.familyRelationshipRequestsResubmitOwn,
-  );
-
+  readonly workspace = signal<FamilyWorkspace | null>(null);
+  readonly loading = signal(true);
+  readonly failed = signal(false);
+  readonly busy = signal(false);
+  readonly intakeMode = signal<FamilyIntakeMode | null>(null);
+  readonly selectedChild = signal<FamilyWorkspaceChild | null>(null);
+  readonly detailTab = signal<'profile' | 'tickets' | 'transactions' | 'documents'>('profile');
+  readonly onboarding = signal<ChildOnboardingReview[]>([]);
+  readonly governance = signal<FamilyGovernanceDetails[]>([]);
+  readonly selectedOnboarding = signal<ChildOnboardingReview | null>(null);
+  readonly selectedGovernance = signal<FamilyGovernanceDetails | null>(null);
+  readonly selectedRelationship = signal<FamilyRequestDetails | null>(null);
+  readonly requestPage = signal(1);
+  readonly governanceTotal = signal(0);
+  readonly requestLoading = signal(false);
+  readonly showingHistory = signal(false);
+  readonly relationshipHistory = signal<FamilyRequestPage | null>(null);
+  readonly relationshipLoading = signal(false);
+  readonly relationshipTypes: readonly FamilyRequestType[] = [
+    'CreateFamily',
+    'AddFamilyMember',
+    'VerifyParentChild',
+    'VerifyGuardianChild',
+    'VerifyOperationalParentChild',
+    'JoinFamilyAsParent',
+  ];
+  requestStatus: FamilyRequestStatus | '' = '';
+  requestType: FamilyRequestType | '' = '';
+  requestSearch = '';
+  private sequence = 0;
+  private detailSequence = 0;
   constructor() {
     void this.load();
   }
-
-  protected async load(): Promise<void> {
+  ngOnDestroy(): void {
+    this.sequence++;
+    this.close();
+  }
+  async load(): Promise<void> {
+    const sequence = ++this.sequence;
     this.loading.set(true);
-    this.messages.set([]);
-    await Promise.all([
-      this.loadFamily(),
-      this.canViewRequests ? this.loadRequests(1) : Promise.resolve(),
-    ]);
-    this.loading.set(false);
-  }
-
-  protected async loadRequests(pageNumber = 1, event?: Event): Promise<void> {
-    event?.preventDefault();
+    this.failed.set(false);
+    this.requestLoading.set(false);
+    this.relationshipLoading.set(false);
+    this.workspace.set(null);
+    this.showingHistory.set(false);
+    this.relationshipHistory.set(null);
+    this.onboarding.set([]);
+    this.governance.set([]);
+    this.close();
     try {
-      this.pageNumber.set(pageNumber);
-      this.requests.set(
-        await firstValueFrom(this.api.requests({ ...this.filterModel(), pageNumber })),
-      );
+      const workspace = await firstValueFrom(this.api.workspace());
+      if (sequence === this.sequence) this.workspace.set(workspace);
     } catch (error) {
-      this.messages.set(flattenErrors(error));
-    }
-  }
-
-  protected async openRequest(requestId: string): Promise<void> {
-    this.messages.set([]);
-    try {
-      this.selectedRequest.set(await firstValueFrom(this.api.details(requestId)));
-    } catch (error) {
-      this.messages.set(flattenErrors(error));
-    }
-  }
-
-  protected async submitRequest(event: Event): Promise<void> {
-    event.preventDefault();
-    await submit(this.requestForm, async () => {
-      if (this.submitting() || !this.evidenceFiles().length) {
-        if (!this.evidenceFiles().length) this.messages.set([this.uiLanguage.t('ui.full.663')]);
-        return;
-      }
-      const fileError = getEvidenceFileValidationError(
-        this.evidenceFiles(),
-        this.uiLanguage.currentLang(),
-      );
-      if (fileError) {
-        this.messages.set([fileError]);
-        return;
-      }
-      const documentTypes = splitTypes(this.requestModel().documentTypes);
-      if (documentTypes.length !== this.evidenceFiles().length) {
-        this.messages.set([this.uiLanguage.t('ui.full.664')]);
-        return;
-      }
-      this.submitting.set(true);
-      this.resetFeedback();
-      try {
-        const details = await firstValueFrom(
-          this.api.submit({
-            ...this.requestModel(),
-            evidenceFiles: this.evidenceFiles(),
-            documentTypes,
-          }),
-        );
-        this.selectedRequest.set(details);
-        this.successMessage.set(this.uiLanguage.t('family.submitted'));
-        this.toast.success(this.successMessage());
-        await this.loadRequests(1);
-      } catch (error) {
-        this.messages.set(flattenErrors(error));
-      } finally {
-        this.submitting.set(false);
-      }
-    });
-  }
-
-  protected async resubmit(): Promise<void> {
-    const request = this.selectedRequest();
-    if (!request || request.status !== 'ModificationRequested' || !this.canResubmit) return;
-    const documentTypes = splitTypes(this.resubmitDocumentTypes());
-    const fileError = getEvidenceFileValidationError(
-      this.resubmitFiles(),
-      this.uiLanguage.currentLang(),
-    );
-    if (fileError) {
-      this.messages.set([fileError]);
-      return;
-    }
-    if (!this.resubmitFiles().length || documentTypes.length !== this.resubmitFiles().length) {
-      this.messages.set([this.uiLanguage.t('ui.full.665')]);
-      return;
-    }
-    this.submitting.set(true);
-    this.resetFeedback();
-    try {
-      const updated = await firstValueFrom(
-        this.api.resubmit(request.requestId, {
-          evidenceFiles: this.resubmitFiles(),
-          documentTypes,
-          rowVersion: request.rowVersion,
-        }),
-      );
-      this.selectedRequest.set(updated);
-      this.resubmitFiles.set([]);
-      this.resubmitDocumentTypes.set('');
-      this.successMessage.set(this.uiLanguage.t('family.resubmitted'));
-      this.toast.success(this.successMessage());
-      await this.loadRequests(this.pageNumber());
-    } catch (error) {
-      this.messages.set(flattenErrors(error));
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        await this.openRequest(request.requestId);
-        this.messages.update((items) => [...items, this.uiLanguage.t('ui.full.666')]);
+      if (sequence === this.sequence) {
+        this.failed.set(true);
+        this.handleError(error);
       }
     } finally {
-      this.submitting.set(false);
+      if (sequence === this.sequence) this.loading.set(false);
     }
   }
-
-  protected async openDocument(documentId: string): Promise<void> {
-    const request = this.selectedRequest();
-    if (!request) return;
-    try {
-      const response = await firstValueFrom(this.api.document(request.requestId, documentId));
-      openPrivateMedia(response);
-    } catch (error) {
-      this.messages.set(flattenErrors(error));
-    }
-  }
-
-  protected evidenceChanged(event: Event, resubmit = false): void {
-    const input = event.currentTarget as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    const fileError = getEvidenceFileValidationError(files, this.uiLanguage.currentLang());
-    this.resetFeedback();
-    if (fileError) {
-      input.value = '';
-      if (resubmit) this.resubmitFiles.set([]);
-      else this.evidenceFiles.set([]);
-      this.messages.set([fileError]);
+  start(mode: FamilyIntakeMode, child?: FamilyWorkspaceChild): void {
+    const workspace = this.workspace();
+    if (!workspace) return;
+    if (
+      (mode === 'search' && !workspace.canStartExistingChildLink) ||
+      (mode === 'onboard' && !workspace.canStartChildOnboarding) ||
+      (mode === 'redeem' && !this.session.hasPermission('FamilyJoinInvitations.RedeemOwn')) ||
+      (mode === 'identity' && !child?.canRequestIdentityCorrection) ||
+      (mode === 'invite' &&
+        (!child || !this.session.hasPermission('FamilyJoinInvitations.CreateOwn')))
+    )
       return;
-    }
-    if (resubmit) this.resubmitFiles.set(files);
-    else this.evidenceFiles.set(files);
+    this.close();
+    this.selectedChild.set(child ?? null);
+    this.intakeMode.set(mode);
   }
-
-  protected copyFamilyId(id: string): void {
-    if (!id) return;
-    navigator.clipboard.writeText(id);
-    this.copiedId.set(true);
-    setTimeout(() => this.copiedId.set(false), 2000);
+  inspectChild(
+    child: FamilyWorkspaceChild,
+    tab: 'profile' | 'tickets' | 'transactions' | 'documents',
+  ): void {
+    this.close();
+    this.detailTab.set(tab);
+    this.selectedChild.set(child);
   }
-
-  protected clearEvidenceFiles(input: HTMLInputElement): void {
-    input.value = '';
-    this.evidenceFiles.set([]);
+  async loadRequests(page = 1): Promise<void> {
+    this.showingHistory.set(true);
+    if (page === 1) void this.loadRelationshipRequests();
+    const sequence = this.sequence;
+    this.requestLoading.set(true);
+    this.onboarding.set([]);
+    this.governance.set([]);
+    const results = await Promise.allSettled([
+      this.session.hasPermission('ChildOnboarding.ViewOwn')
+        ? firstValueFrom(this.api.onboardingRequests(page))
+        : Promise.resolve([]),
+      firstValueFrom(this.api.governanceCases(page)),
+    ]);
+    if (sequence !== this.sequence) return;
+    if (results[0].status === 'fulfilled') this.onboarding.set(results[0].value);
+    else this.handleError(results[0].reason);
+    if (results[1].status === 'fulfilled') {
+      this.governance.set(results[1].value.items);
+      this.governanceTotal.set(results[1].value.totalCount);
+    } else this.handleError(results[1].reason);
+    this.requestPage.set(page);
+    this.requestLoading.set(false);
   }
-
-  protected clearResubmitFiles(input: HTMLInputElement): void {
-    input.value = '';
-    this.resubmitFiles.set([]);
+  async openWorkflow(item: FamilyPendingWorkflow): Promise<void> {
+    if (item.kind === 'ChildOnboarding') await this.openOnboarding(item.reference);
+    else if (item.kind === 'IdentityCorrection' || item.kind === 'MembershipConflict')
+      await this.openGovernance(item.reference);
+    else if (item.kind === 'SecondParentInvitation')
+      this.toast.success(this.language.t('familyFlow.invitationPending'));
   }
-
-  protected resubmitTypesChanged(event: Event): void {
-    this.resubmitDocumentTypes.set((event.currentTarget as HTMLInputElement).value);
-  }
-
-  protected getStatusLabel(status: string): string {
-    const map: Record<string, string> = {
-      Pending: this.uiLanguage.t('common.pendingReview'),
-      ModificationRequested: this.uiLanguage.t('common.modificationRequested'),
-      Approved: this.uiLanguage.t('common.approved'),
-      Rejected: this.uiLanguage.t('common.rejected'),
-    };
-    return map[status] || status;
-  }
-
-  protected getStatusClass(status: string): string {
-    switch (status) {
-      case 'Approved':
-        return 'status-approved';
-      case 'ModificationRequested':
-        return 'status-action';
-      case 'Pending':
-        return 'status-pending';
-      case 'Rejected':
-        return 'status-rejected';
-      default:
-        return '';
-    }
-  }
-
-  protected getRequestTypeLabel(type: string): string {
-    const map: Record<string, string> = {
-      CreateFamily: this.uiLanguage.t('family.create'),
-      AddFamilyMember: this.uiLanguage.t('family.addMember'),
-    };
-    return map[type] || type;
-  }
-
-  protected getRoleLabel(role: string): string {
-    const map: Record<string, string> = {
-      Father: this.uiLanguage.t('family.father'),
-      Mother: this.uiLanguage.t('family.mother'),
-      Child: this.uiLanguage.t('family.child'),
-      Guardian: this.uiLanguage.t('family.guardian'),
-      LegalGuardian: this.uiLanguage.t('family.legalGuardian'),
-      Other: this.uiLanguage.t('common.other'),
-    };
-    return map[role] || role;
-  }
-
-  protected readonly copiedText = signal<string | null>(null);
-
-  protected async copyText(val: string, key = 'id'): Promise<void> {
+  async loadRelationshipRequests(pageNumber = 1): Promise<void> {
+    if (!this.session.hasPermission('FamilyRelationshipRequests.ViewOwn')) return;
+    const sequence = this.sequence;
+    this.relationshipLoading.set(true);
+    this.relationshipHistory.set(null);
     try {
-      await navigator.clipboard.writeText(val);
-      this.copiedText.set(key);
-      setTimeout(() => {
-        if (this.copiedText() === key) this.copiedText.set(null);
-      }, 2000);
-    } catch {
-      // ignore clipboard error
-    }
-  }
-
-  protected getDrawerTitle(request: FamilyRequestDetails | null): string {
-    if (!request) return this.uiLanguage.t('common.requestDetails');
-    return request.requestType === 'CreateFamily'
-      ? this.uiLanguage.t('ui.full.667')
-      : this.uiLanguage.t('ui.full.668');
-  }
-
-  protected getDrawerDescription(request: FamilyRequestDetails | null): string {
-    if (!request) return '';
-    const name = request.targetNameAr || request.requesterNameAr || '';
-    return `${this.uiLanguage.t('patient.requestVersion', { version: request.currentRevisionNumber })}${name ? ' · ' + name : ''}`;
-  }
-
-  protected getActionLabel(action: string): string {
-    const map: Record<string, string> = {
-      Submitted: this.uiLanguage.t('requests.submittedStatus'),
-      Resubmitted: this.uiLanguage.t('requests.resubmittedStatus'),
-      ModificationRequested: this.uiLanguage.t('requests.adminChangesStatus'),
-      Approved: this.uiLanguage.t('requests.approvedStatus'),
-      Rejected: this.uiLanguage.t('requests.rejectedStatus'),
-    };
-    return map[action] || action;
-  }
-
-  protected formatDate(dateStr?: string | null): string {
-    if (!dateStr) return '—';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return new Intl.DateTimeFormat(this.uiLanguage.currentLang() === 'en' ? 'en' : 'ar-EG', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(d);
-    } catch {
-      return dateStr;
-    }
-  }
-
-  protected closeDetails(): void {
-    this.selectedRequest.set(null);
-  }
-
-  protected logout(): void {
-    this.session.clear();
-    void this.router.navigate(['/login']);
-  }
-
-  private async loadFamily(): Promise<void> {
-    if (!this.canViewFamily) return;
-    try {
-      this.family.set(await firstValueFrom(this.api.mine()));
+      const result = await firstValueFrom(
+        this.relationships.requests({
+          pageNumber,
+          pageSize: 20,
+          status: this.requestStatus,
+          requestType: this.requestType,
+          search: this.requestSearch.trim(),
+        }),
+      );
+      if (sequence === this.sequence) this.relationshipHistory.set(result);
     } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 404) this.family.set(null);
-      else this.messages.set(flattenErrors(error));
+      if (sequence === this.sequence) this.handleError(error);
+    } finally {
+      if (sequence === this.sequence) this.relationshipLoading.set(false);
     }
   }
-
-  private resetFeedback(): void {
-    this.messages.set([]);
-    this.successMessage.set('');
+  async openOnboarding(id: string): Promise<void> {
+    this.close();
+    const sequence = this.detailSequence;
+    try {
+      const reviews = await firstValueFrom(this.api.onboardingDetails(id));
+      if (sequence === this.detailSequence) this.selectedOnboarding.set(reviews[0] ?? null);
+    } catch (error) {
+      if (sequence === this.detailSequence) this.handleError(error);
+    }
   }
-}
-
-function splitTypes(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function flattenErrors(error: unknown): string[] {
-  const parsed = parseApiErrors(error);
-  return [...parsed.messages, ...Object.values(parsed.fields).flat()];
+  async openGovernance(id: string): Promise<void> {
+    this.close();
+    const sequence = this.detailSequence;
+    try {
+      const result = await firstValueFrom(this.api.governanceDetails(id));
+      if (sequence === this.detailSequence) this.selectedGovernance.set(result.items[0] ?? null);
+    } catch (error) {
+      if (sequence === this.detailSequence) this.handleError(error);
+    }
+  }
+  async openRelationship(id: string): Promise<void> {
+    this.close();
+    const sequence = this.detailSequence;
+    try {
+      const result = await firstValueFrom(this.relationships.details(id));
+      if (sequence === this.detailSequence) this.selectedRelationship.set(result);
+    } catch (error) {
+      if (sequence === this.detailSequence) this.handleError(error);
+    }
+  }
+  close(): void {
+    this.detailSequence++;
+    this.busy.set(false);
+    this.intakeMode.set(null);
+    this.selectedChild.set(null);
+    this.selectedOnboarding.set(null);
+    this.selectedGovernance.set(null);
+    this.selectedRelationship.set(null);
+  }
+  refreshScope(): void {
+    this.close();
+    void this.load();
+  }
+  private handleError(error: unknown): void {
+    this.toast.error(this.language.t('familyFlow.failed'));
+    if (error instanceof HttpErrorResponse && [401, 403, 404].includes(error.status)) {
+      this.workspace.set(null);
+      this.onboarding.set([]);
+      this.governance.set([]);
+      this.relationshipHistory.set(null);
+      this.close();
+    }
+  }
 }

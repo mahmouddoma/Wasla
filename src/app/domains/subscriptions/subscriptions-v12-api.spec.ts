@@ -15,31 +15,49 @@ describe('v1.2 contract/allocation wire integration', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('WAS-686 reads the explicitly selected owned contract as a one-element array', () => {
+    api.contracts('selected-contract').subscribe((value) => {
+      expect(value).toHaveLength(1);
+      expect(value[0].subscriptionContractId).toBe('selected-contract');
+    });
+    const request = http.expectOne(base + '/doctors/me/subscriptions/selected-contract');
+    expect(request.request.method).toBe('GET');
+    request.flush([
+      {
+        subscriptionContractId: 'selected-contract',
+        periods: [wireDetailsFixture()],
+        practices: [],
+        usage: { practiceCount: 0, receptionCount: 0 },
+        availablePracticeSeats: 1,
+        availableReceptionSeats: 0,
+        renewalPreview: null,
+        upcomingStatus: 'Active',
+      },
+    ]);
+  });
   it('reads plural contracts preserving period ID separately from stable contract ID', () => {
     let value: unknown;
     api.contracts().subscribe((v) => (value = v));
-    http
-      .expectOne(base + '/doctors/me/subscriptions')
-      .flush([
-        {
-          subscriptionContractId: 'contract',
-          periods: [
-            {
-              ...wireDetailsFixture(),
-              subscription: {
-                ...wireDetailsFixture().subscription,
-                subscriptionContractId: 'contract',
-              },
+    http.expectOne(base + '/doctors/me/subscriptions').flush([
+      {
+        subscriptionContractId: 'contract',
+        periods: [
+          {
+            ...wireDetailsFixture(),
+            subscription: {
+              ...wireDetailsFixture().subscription,
+              subscriptionContractId: 'contract',
             },
-          ],
-          practices: [],
-          usage: { practiceCount: 0, receptionCount: 0 },
-          availablePracticeSeats: 2,
-          availableReceptionSeats: 3,
-          renewalPreview: null,
-          upcomingStatus: 'Active',
-        },
-      ]);
+          },
+        ],
+        practices: [],
+        usage: { practiceCount: 0, receptionCount: 0 },
+        availablePracticeSeats: 2,
+        availableReceptionSeats: 3,
+        renewalPreview: null,
+        upcomingStatus: 'Active',
+      },
+    ]);
     expect(value).toMatchObject([
       {
         subscriptionContractId: 'contract',
@@ -111,22 +129,20 @@ describe('v1.2 contract/allocation wire integration', () => {
   it('reads and maps a practice allocation without using the Doctor-wide subscription', () => {
     let value: unknown;
     api.allocation('clinic').subscribe((v) => (value = v));
-    http
-      .expectOne(base + '/doctors/me/practices/clinic/subscription-allocation')
-      .flush({
-        practiceId: 'clinic',
-        allocation: {
-          id: 'allocation',
-          rowVersion: 'allocation-version',
-          subscriptionContractId: 'contract',
-        },
-        effectivePeriod: {
-          ...wireDetailsFixture().subscription,
-          subscriptionContractId: 'contract',
-        },
-        contractUsage: { practiceCount: 1, receptionCount: 0 },
-        activeReceptionIds: ['profile'],
-      });
+    http.expectOne(base + '/doctors/me/practices/clinic/subscription-allocation').flush({
+      practiceId: 'clinic',
+      allocation: {
+        id: 'allocation',
+        rowVersion: 'allocation-version',
+        subscriptionContractId: 'contract',
+      },
+      effectivePeriod: {
+        ...wireDetailsFixture().subscription,
+        subscriptionContractId: 'contract',
+      },
+      contractUsage: { practiceCount: 1, receptionCount: 0 },
+      activeReceptionIds: ['profile'],
+    });
     expect(value).toMatchObject({
       practiceId: 'clinic',
       allocation: { rowVersion: 'allocation-version' },

@@ -35,7 +35,6 @@ export function mapCatalog(raw: Wire.CommercialCatalogResponse): CommercialCatal
     bookingOnly: {
       ...raw.bookingOnly,
       planCode: raw.bookingOnly?.planCode ?? '',
-      pricingTiers: raw.bookingOnly?.pricingTiers ?? [],
     },
   };
 }

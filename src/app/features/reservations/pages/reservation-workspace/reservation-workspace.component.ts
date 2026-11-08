@@ -251,11 +251,16 @@ export class ReservationWorkspaceComponent implements OnInit {
   }
   async ngOnInit(): Promise<void> {
     const p = this.route.snapshot.queryParamMap;
-    await this.store.initialize(
-      (this.route.snapshot.data['reservationActor'] ??
-        this.route.snapshot.data['actor']) as ReservationActor,
-      p.get('practiceId') || '',
-    );
+    const actor = (this.route.snapshot.data['reservationActor'] ??
+      this.route.snapshot.data['actor']) as ReservationActor;
+    if (actor === 'Patient' && p.get('patientId') && !p.get('eligibilityId')) {
+      this.store.query.update((query) => ({
+        ...query,
+        patientId: p.get('patientId')!,
+        pageNumber: 1,
+      }));
+    }
+    await this.store.initialize(actor, p.get('practiceId') || '');
     const initialPractice = this.store.practiceId();
     const validReceptionScope =
       this.store.actor() !== 'Reception' ||

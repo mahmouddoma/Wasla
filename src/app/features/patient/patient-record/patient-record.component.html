@@ -1,0 +1,104 @@
+<main class="record-page" [attr.dir]="language.dir()">
+  <app-page-header
+    [heading]="'familyFlow.medicalRecord' | t"
+    [description]="'patientRecord.description' | t"
+    icon="requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  >
+    <nav pageHeaderActions class="d-flex gap-2">
+      <button
+        class="btn btn-outline-secondary"
+        [attr.aria-pressed]="!showDocuments()"
+        (click)="showDocuments.set(false)"
+      >
+        {{ 'patientRecord.timeline' | t }}
+      </button>
+      @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
+        <button
+          class="btn btn-outline-secondary"
+          [attr.aria-pressed]="showDocuments()"
+          (click)="documentId.set(null); showDocuments.set(true)"
+        >
+          {{ 'historical.title' | t }}
+        </button>
+      }
+    </nav>
+  </app-page-header>
+  <section class="record-surface">
+    @if (showDocuments()) {
+      <app-historical-documents
+        [documentId]="documentId()"
+        [canView]="session.hasPermission('MedicalDocuments.ViewOwn')"
+        [canCreate]="session.hasPermission('MedicalDocuments.CreateOwn')"
+      />
+    } @else {
+      <nav class="d-flex gap-2 flex-wrap mb-4">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="timeline('all')"
+          [attr.aria-pressed]="filter() === 'all'"
+        >
+          {{ 'patientRecord.all' | t }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="timeline('historical-documents')"
+          [attr.aria-pressed]="filter() === 'historical-documents'"
+        >
+          {{ 'historical.title' | t }}
+        </button>
+      </nav>
+      @if (loading()) {
+        <p role="status">{{ 'common.loading' | t }}</p>
+      } @else if (failed()) {
+        <p role="alert">{{ 'familyFlow.failed' | t }}</p>
+        <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
+      } @else if (!entries().length) {
+        <div class="empty-state">
+          <img
+            src="/SVG-AVATAR/Medical prescription-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h2>{{ 'patientRecord.empty' | t }}</h2>
+          <p>{{ 'patientRecord.emptyHint' | t }}</p>
+          <button class="btn btn-outline-secondary" (click)="timeline('all')">
+            {{ 'patientRecord.all' | t }}
+          </button>
+        </div>
+      } @else {
+        @for (entry of entries(); track entry.entryId) {
+          <article class="timeline-row">
+            @if (isHistorical(entry)) {
+              <div>
+                <h3>{{ 'historical.category.' + entry.category | t }}</h3>
+                <p>{{ 'historical.unverified' | t }}</p>
+                <time>{{ entry.occurredAtUtc | date: 'mediumDate' }}</time>
+              </div>
+              @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
+                <button class="btn btn-outline-secondary" (click)="openDocument(entry.documentId)">
+                  {{ 'common.view' | t }}
+                </button>
+              }
+            } @else if (isClinical(entry)) {
+              <div>
+                <h3>{{ entry.title }}</h3>
+                <time>{{ entry.occurredAtUtc | date: 'mediumDate' }}</time>
+              </div>
+            } @else {
+              <p>{{ 'patientRecord.hidden' | t }}</p>
+            }
+          </article>
+        }
+        @if (hasMore()) {
+          <button class="btn btn-outline-secondary mt-3" (click)="timeline(filter(), true)">
+            {{ 'patientRecord.more' | t }}
+          </button>
+        }
+      }
+    }
+  </section>
+</main>

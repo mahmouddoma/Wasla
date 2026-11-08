@@ -190,17 +190,15 @@ export class FamilyRequestDetailsPage {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         this.closeAction();
         await this.load();
-        this.messages.update((items) => [
-          ...items,
-          this.uiLanguage.t('review.concurrencyHelp'),
-        ]);
+        this.messages.update((items) => [...items, this.uiLanguage.t('review.concurrencyHelp')]);
       }
     } finally {
       this.submitting.set(false);
     }
   }
 
-  protected async copyText(val: string, key = 'id'): Promise<void> {
+  protected async copyText(val: string | null, key = 'id'): Promise<void> {
+    if (!val) return;
     try {
       await navigator.clipboard.writeText(val);
       this.copiedText.set(key);
@@ -227,11 +225,7 @@ export class FamilyRequestDetailsPage {
 
   protected getRequestTypeLabel(type?: string | null): string {
     if (!type) return this.uiLanguage.t('review.relationshipRequest');
-    const map: Record<string, string> = {
-      CreateFamily: this.uiLanguage.t('family.create'),
-      AddFamilyMember: this.uiLanguage.t('family.addMember'),
-    };
-    return map[type] || type;
+    return this.uiLanguage.t('familyFlow.requestType.' + type);
   }
 
   protected getStatusLabel(status?: string | null): string {

@@ -1,4 +1,8 @@
-import type { CommercialCatalog, SubscriptionDetails, SubscriptionContract } from '../app/domains/subscriptions';
+import type {
+  CommercialCatalog,
+  SubscriptionDetails,
+  SubscriptionContract,
+} from '../app/domains/subscriptions';
 import { signal } from '@angular/core';
 
 /** Existing feature unit tests exercise their workflow with commercial access granted. */
@@ -31,8 +35,16 @@ export function subscriptionStateStub() {
 
 export function contractFixture(id = 'contract-1', value = detailsFixture()): SubscriptionContract {
   if (value.subscription) value.subscription.subscriptionContractId = id;
-  return { subscriptionContractId: id, periods: [value], practices: [], usage: value.usage,
-    availablePracticeSeats: 1, availableReceptionSeats: 2, renewalPreview: null, upcomingStatus: 'Active' };
+  return {
+    subscriptionContractId: id,
+    periods: [value],
+    practices: [],
+    usage: value.usage,
+    availablePracticeSeats: 1,
+    availableReceptionSeats: 2,
+    renewalPreview: null,
+    upcomingStatus: 'Active',
+  };
 }
 
 export const catalogFixture: CommercialCatalog = {
@@ -65,8 +77,6 @@ export const catalogFixture: CommercialCatalog = {
   bookingOnly: {
     enabled: false,
     planCode: 'BOOKING_ONLY',
-    maximumSelectablePractices: 0,
-    pricingTiers: [],
   },
   paymentMethods: { cash: true, card: false, eWallet: false },
 };

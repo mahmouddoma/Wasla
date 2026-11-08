@@ -1,994 +1,351 @@
-<main class="patient-family-shell" [dir]="uiLanguage.dir()">
-  <!-- Standardized Enterprise Page Header -->
+<main class="family-workspace" [attr.dir]="language.dir()">
   <app-page-header
-    [heading]="'ui.full.610' | t"
-    [description]="'ui.full.611' | t"
+    [heading]="'familyFlow.title' | t"
+    [description]="'familyFlow.description' | t"
     icon="family-requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
   >
-    <div pageHeaderDeck class="family-header-deck">
-      @if (family(); as f) {
-        <div class="stat-pill">
-          <span class="stat-num">{{ f.members.length }}</span>
-          <span class="stat-lbl">{{ 'family.members' | t }}</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-num text-teal">{{ getStatusLabel(f.status) }}</span>
-          <span class="stat-lbl">{{ 'common.status' | t }}</span>
-        </div>
+    <div pageHeaderActions class="d-flex flex-wrap gap-2">
+      @if (workspace()?.canStartExistingChildLink) {
+        <button class="btn btn-primary" (click)="start('search')">
+          {{ 'familyFlow.linkChild' | t }}
+        </button>
       }
-      @if (requests(); as r) {
-        <div class="stat-pill">
-          <span class="stat-num">{{ r.totalCount }}</span>
-          <span class="stat-lbl">{{ 'family.requestsCount' | t }}</span>
-        </div>
+      @if (workspace()?.canStartChildOnboarding) {
+        <button class="btn btn-outline-secondary" (click)="start('onboard')">
+          {{ 'familyFlow.addChild' | t }}
+        </button>
       }
-    </div>
-
-    <div pageHeaderActions class="family-header-actions">
-      <button
-        type="button"
-        class="btn-action-refresh"
-        (click)="load()"
-        [disabled]="loading()"
-        [title]="'common.refresh' | t"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          [class.spin]="loading()"
-          aria-hidden="true"
-        >
-          <path d="M23 4v6h-6"></path>
-          <path d="M1 20v-6h6"></path>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-        <span>{{ 'common.refresh' | t }}</span>
-      </button>
+      @if (session.hasPermission('FamilyJoinInvitations.RedeemOwn')) {
+        <button class="btn btn-outline-secondary" (click)="start('redeem')">
+          {{ 'familyFlow.redeem' | t }}
+        </button>
+      }
     </div>
   </app-page-header>
-
-  <!-- Notice / Feedback Banners -->
-  @if (successMessage()) {
-    <div class="notice-card notice-success" role="status">
-      <svg
-        class="notice-icon"
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-      <div class="notice-content">
-        <p>{{ successMessage() }}</p>
-      </div>
-    </div>
-  }
-
-  <!-- Loading State -->
   @if (loading()) {
-    <div class="loading-panel">
-      <div class="loading-ring"></div>
-      <span>{{ 'ui.full.612' | t }}</span>
+    <p class="state" role="status">{{ 'common.loading' | t }}</p>
+  } @else if (failed()) {
+    <div class="state" role="alert">
+      <h2>{{ 'familyFlow.failed' | t }}</h2>
+      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
     </div>
-  }
-
-  <!-- Loaded Content -->
-  @if (!loading()) {
-    <div class="content-container family-dashboard-grid">
-      <!-- ═══ Side Column: 4/5 Cols (Block 01: My Family + Block 03: My Requests) ═══ -->
-      <aside class="family-col-side">
-        <!-- ═══ Section 01: My Family ═══ -->
-        <section class="panel family-panel">
-          <div class="section-heading">
-            <div class="heading-title-row">
-              <span class="step-pill">01</span>
-              <div>
-                <h2>{{ 'ui.full.613' | t }}</h2>
-                <p>{{ 'ui.full.614' | t }}</p>
-              </div>
-            </div>
-          </div>
-
-          @if (family(); as item) {
-            <div class="family-meta-card">
-              <div
-                class="family-id-chip"
-                (click)="copyFamilyId(item.familyId)"
-                [title]="'ui.full.615' | t"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="13"
-                  height="13"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span dir="ltr">{{ 'common.familyIdPrefix' | t }} {{ item.familyId }}</span>
-                @if (copiedId()) {
-                  <small style="color: var(--wasla-teal-700)">{{ 'common.copied' | t }}</small>
-                }
-              </div>
-              <span class="status-badge" [ngClass]="getStatusClass(item.status)">{{
-                getStatusLabel(item.status)
-              }}</span>
-            </div>
-
-            <div class="members-deck">
-              @for (member of item.members; track member.patientId) {
-                <div class="member-row-card">
-                  <div class="member-info">
-                    <div class="member-avatar">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="16"
-                        height="16"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 class="member-name">
-                        {{ uiLanguage.isRtl() ? member.nameAr : member.nameEn || member.nameAr }}
-                      </h4>
-                    </div>
-                  </div>
-                  <div class="member-badges">
-                    <span class="role-pill">{{ getRoleLabel(member.role) }}</span>
-                    <span class="gender-pill">{{
-                      member.gender === 'Male'
-                        ? uiLanguage.t('register.male')
-                        : uiLanguage.t('register.female')
-                    }}</span>
-                  </div>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="empty-state-box">
-              <div class="empty-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="26"
-                  height="26"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-              </div>
-              <h4>{{ 'ui.full.616' | t }}</h4>
-              <p>{{ 'ui.full.617' | t }}</p>
-            </div>
-          }
-        </section>
-
-        <!-- ═══ Section 03: My Requests ═══ -->
-        @if (canViewRequests) {
-          <section class="panel requests-panel">
-            <div class="section-heading">
-              <div class="heading-title-row">
-                <span class="step-pill">03</span>
-                <div>
-                  <h2>{{ 'ui.full.629' | t }}</h2>
-                  <p>{{ 'ui.full.630' | t }}</p>
-                </div>
-              </div>
-            </div>
-
-            <form class="filter-form-bar" (submit)="loadRequests(1, $event)">
-              <label class="input-field">
-                <span class="field-title">{{ 'common.status' | t }}</span>
-                <div class="select-box">
-                  <select [formField]="filterForm.status">
-                    <option value="">{{ 'common.all' | t }}</option>
-                    <option value="Pending">{{ 'ui.full.631' | t }}</option>
-                    <option value="ModificationRequested">
-                      {{ 'ui.full.632' | t }}
-                    </option>
-                    <option value="Approved">{{ 'ui.full.633' | t }}</option>
-                    <option value="Rejected">{{ 'ui.full.634' | t }}</option>
-                  </select>
-                  <svg
-                    class="select-arrow"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </label>
-
-              <label class="input-field">
-                <span class="field-title">{{ 'common.requestType' | t }}</span>
-                <div class="select-box">
-                  <select [formField]="filterForm.requestType">
-                    <option value="">{{ 'common.all' | t }}</option>
-                    <option value="CreateFamily">{{ 'family.create' | t }}</option>
-                    <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
-                  </select>
-                  <svg
-                    class="select-arrow"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </label>
-
-              <button class="btn-filter-apply" type="submit">{{ 'ui.full.635' | t }}</button>
-            </form>
-
-            @if (requests(); as page) {
-              <div class="requests-deck">
-                @for (request of page.items; track request.requestId) {
-                  <div class="request-entry-card" (click)="openRequest(request.requestId)">
-                    <div class="req-main-info">
-                      <div class="req-icon-box">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="18"
-                          height="18"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <path
-                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                          ></path>
-                          <polyline points="14 2 14 8 20 8"></polyline>
-                          <line x1="16" y1="13" x2="8" y2="13"></line>
-                          <line x1="16" y1="17" x2="8" y2="17"></line>
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 class="req-target-name">{{ request.targetNameAr }}</h4>
-                        <span class="req-meta-sub">
-                          {{ getRequestTypeLabel(request.requestType) }} {{ 'ui.full.636' | t }}
-                          {{ request.currentRevisionNumber }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="req-status-cluster">
-                      <span class="status-badge" [ngClass]="getStatusClass(request.status)">
-                        {{ getStatusLabel(request.status) }}
-                      </span>
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="16"
-                        height="16"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        style="color: var(--wasla-slate)"
-                      >
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                      </svg>
-                    </div>
-                  </div>
-                } @empty {
-                  <div class="empty-state-box">
-                    <div class="empty-icon">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="24"
-                        height="24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                      </svg>
-                    </div>
-                    <h4>{{ 'requests.noMatches' | t }}</h4>
-                    <p>{{ 'ui.full.637' | t }}</p>
-                  </div>
-                }
-              </div>
-
-              <nav class="pager-bar">
-                <button
-                  class="pager-btn"
-                  type="button"
-                  [disabled]="pageNumber() <= 1"
-                  (click)="loadRequests(pageNumber() - 1)"
-                >
-                  {{ 'discovery.previous' | t }}
-                </button>
-                <span class="page-indicator">{{ 'discovery.page' | t }} {{ page.pageNumber }}</span>
-                <button
-                  class="pager-btn"
-                  type="button"
-                  [disabled]="page.items.length < page.pageSize"
-                  (click)="loadRequests(pageNumber() + 1)"
-                >
-                  {{ 'discovery.next' | t }}
-                </button>
-              </nav>
-            }
-          </section>
-        }
-      </aside>
-
-      <!-- ═══ Main Column: 7/8 Cols (Block 02: Family Request Form) ═══ -->
-      @if (canCreateRequest) {
-        <main class="family-col-main">
-          <!-- ═══ Section 02: Family Request Form ═══ -->
-          <section class="panel request-panel">
-            <div class="section-heading">
-              <div class="heading-title-row">
-                <span class="step-pill">02</span>
-                <div>
-                  <h2>{{ 'family.relationshipRequest' | t }}</h2>
-                  <p>{{ 'ui.full.618' | t }}</p>
-                </div>
-              </div>
-            </div>
-
-            <form class="detail-form-grid" (submit)="submitRequest($event)" novalidate>
-              <label class="input-field">
-                <span class="field-title">{{ 'common.requestType' | t }}</span>
-                <div class="select-box">
-                  <select [formField]="requestForm.requestType">
-                    <option value="CreateFamily">{{ 'family.create' | t }}</option>
-                    <option value="AddFamilyMember">{{ 'family.addMember' | t }}</option>
-                  </select>
-                  <svg
-                    class="select-arrow"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </label>
-
-              @if (requestModel().requestType === 'AddFamilyMember') {
-                <label class="input-field">
-                  <span class="field-title"
-                    >{{ 'ui.full.619' | t }} <span class="required-star">*</span></span
-                  >
-                  <input
-                    class="field-input ltr-text"
-                    dir="ltr"
-                    [formField]="requestForm.familyId"
-                    [placeholder]="'family.idPlaceholder' | t"
-                  />
-                </label>
-              }
-
-              <label class="input-field">
-                <span class="field-title"
-                  >{{ 'family.targetPatientPlaceholder' | t }}
-                  <span class="required-star">*</span></span
-                >
-                <input
-                  class="field-input ltr-text"
-                  dir="ltr"
-                  [formField]="requestForm.targetPatientId"
-                  [placeholder]="'ui.full.620' | t"
-                />
-              </label>
-
-              <label class="input-field">
-                <span class="field-title">{{ 'family.requesterRole' | t }}</span>
-                <div class="select-box">
-                  <select [formField]="requestForm.requesterClaimedRole">
-                    <option value="Father">{{ 'family.father' | t }}</option>
-                    <option value="Mother">{{ 'family.mother' | t }}</option>
-                    <option value="Guardian">{{ 'family.guardian' | t }}</option>
-                    <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
-                  </select>
-                  <svg
-                    class="select-arrow"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </label>
-
-              <label class="input-field">
-                <span class="field-title">{{ 'family.targetRole' | t }}</span>
-                <div class="select-box">
-                  <select [formField]="requestForm.targetClaimedRole">
-                    <option value="Father">{{ 'family.father' | t }}</option>
-                    <option value="Mother">{{ 'family.mother' | t }}</option>
-                    <option value="Child">{{ 'family.child' | t }}</option>
-                    <option value="Guardian">{{ 'family.guardian' | t }}</option>
-                    <option value="LegalGuardian">{{ 'family.legalGuardian' | t }}</option>
-                  </select>
-                  <svg
-                    class="select-arrow"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </label>
-
-              <label class="input-field full-width">
-                <span class="field-title"
-                  >{{ 'family.documentTypes' | t }} <span class="required-star">*</span></span
-                >
-                <input
-                  class="field-input"
-                  [placeholder]="'family.documentTypesExample' | t"
-                  [formField]="requestForm.documentTypes"
-                />
-                <span class="field-hint">{{ 'ui.full.621' | t }}</span>
-              </label>
-
-              <!-- Custom Multi-File Dropzone -->
-              <div class="photo-upload-field full-width">
-                <span class="field-title"
-                  >{{ 'ui.full.622' | t }} <span class="required-star">*</span></span
-                >
-                <input
-                  #evidenceInput
-                  type="file"
-                  multiple
-                  [accept]="evidenceFileAccept"
-                  class="hidden-file-input"
-                  (change)="evidenceChanged($event)"
-                />
-
-                <div class="upload-dropzone" (click)="evidenceInput.click()">
-                  @if (evidenceFiles().length > 0) {
-                    <div class="selected-files-list">
-                      <div class="selected-files-header">
-                        <span class="files-count-tag"
-                          >{{ 'ui.full.623' | t }} {{ evidenceFiles().length }}
-                          {{ 'ui.full.624' | t }}</span
-                        >
-                        <button
-                          type="button"
-                          class="btn-clear-files"
-                          (click)="$event.stopPropagation(); clearEvidenceFiles(evidenceInput)"
-                        >
-                          {{ 'common.clearSelection' | t }}
-                        </button>
-                      </div>
-                      @for (file of evidenceFiles(); track file.name) {
-                        <div class="file-chip">
-                          <span class="file-chip-name">{{ file.name }}</span>
-                          <span class="file-chip-size"
-                            >{{ (file.size / 1024).toFixed(1) }} {{ 'ui.full.680' | t }}</span
-                          >
-                        </div>
-                      }
-                    </div>
-                  } @else {
-                    <div class="upload-prompt">
-                      <div class="upload-icon-circle">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="20"
-                          height="20"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                          <polyline points="17 8 12 3 7 8"></polyline>
-                          <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                      </div>
-                      <div class="upload-text">
-                        <strong>{{ 'ui.full.625' | t }}</strong>
-                        <small>{{ 'ui.full.626' | t }}</small>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <div
-                class="full-width"
-                style="display: flex; justify-content: flex-end; margin-top: 6px"
-              >
-                <button class="btn-primary-medical" type="submit" [disabled]="submitting()">
-                  @if (submitting()) {
-                    <span class="btn-spinner"></span>
-                    <span>{{ 'ui.full.627' | t }}</span>
-                  } @else {
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <line x1="22" y1="2" x2="11" y2="13"></line>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                    <span>{{ 'ui.full.628' | t }}</span>
-                  }
-                </button>
-              </div>
-            </form>
-          </section>
-        </main>
-      }
-    </div>
-  }
-
-  <!-- ═══ Side Drawer: Request Details ═══ -->
-  <app-side-drawer
-    [opened]="selectedRequest() !== null"
-    [title]="getDrawerTitle(selectedRequest())"
-    [description]="getDrawerDescription(selectedRequest())"
-    width="640px"
-    (closed)="closeDetails()"
-  >
-    @if (selectedRequest(); as request) {
-      <div class="drawer-content-flow">
-        <!-- 1. Request Identity & Status Banner -->
-        <div class="req-hero-card">
-          <div class="req-hero-avatar">
-            <svg
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </div>
-          <div class="req-hero-body">
-            <div class="req-hero-eyebrow">
-              <span class="req-type-pill">{{ getRequestTypeLabel(request.requestType) }}</span>
-              <span class="sep-dot">·</span>
-              <span class="req-rev-tag"
-                >{{ 'ui.full.638' | t }} {{ request.currentRevisionNumber }}</span
-              >
-            </div>
-            <h3 class="req-hero-name">
-              {{
-                request.targetNameAr ||
-                  request.requesterNameAr ||
-                  uiLanguage.t('ui.expressions.206')
-              }}
-            </h3>
-            <p class="req-hero-relation">
-              <span
-                >{{ 'ui.full.639' | t }}
-                <strong>{{ request.requesterNameAr || uiLanguage.t('ui.expressions.207') }}</strong>
-                ({{ getRoleLabel(request.requesterClaimedRole) }})</span
-              >
-              <span class="arrow-sep">←</span>
-              <span
-                >{{ 'ui.full.640' | t }} <strong>{{ request.targetNameAr || '—' }}</strong> ({{
-                  getRoleLabel(request.targetClaimedRole)
-                }})</span
-              >
-            </p>
-          </div>
-          <div class="req-hero-status">
-            <span class="status-badge" [ngClass]="getStatusClass(request.status)">
-              @if (request.status === 'Pending') {
-                <span class="pulse-ring-dot" aria-hidden="true"></span>
-              }
-              {{ getStatusLabel(request.status) }}
-            </span>
-          </div>
-        </div>
-
-        <!-- 2. Rejection or Modification Alert Banner if applicable -->
-        @if (request.status === 'ModificationRequested' && request.modificationMessage) {
-          <div class="drawer-notice drawer-notice-warning">
-            <div class="notice-icon-box">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-                ></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </div>
-            <div class="notice-text-content">
-              <h4 class="notice-title">{{ 'ui.full.641' | t }}</h4>
-              <p class="notice-desc">{{ request.modificationMessage }}</p>
-            </div>
-          </div>
-        }
-
-        @if (request.status === 'Rejected' && request.rejectionReason) {
-          <div class="drawer-notice drawer-notice-danger">
-            <div class="notice-icon-box">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="15" y1="9" x2="9" y2="15"></line>
-                <line x1="9" y1="9" x2="15" y2="15"></line>
-              </svg>
-            </div>
-            <div class="notice-text-content">
-              <h4 class="notice-title">{{ 'ui.full.642' | t }}</h4>
-              <p class="notice-desc">{{ request.rejectionReason }}</p>
-            </div>
-          </div>
-        }
-
-        <!-- 3. Key Details Info Grid -->
-        <div class="drawer-section">
-          <h4 class="section-sub-title">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            {{ 'ui.full.643' | t }}
-          </h4>
-          <div class="info-metric-grid">
-            <div class="info-metric-card">
-              <span class="metric-label">{{ 'ui.full.644' | t }}</span>
-              <div class="metric-value-row">
-                <code dir="ltr">{{ request.requestId }}</code>
-                <button
-                  type="button"
-                  class="copy-tiny-btn"
-                  (click)="copyText(request.requestId, 'reqId')"
-                  [title]="'common.copyId' | t"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="12"
-                    height="12"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                  @if (copiedText() === 'reqId') {
-                    <span class="copied-tooltip">{{ 'common.copied' | t }}</span>
-                  }
-                </button>
-              </div>
-            </div>
-
-            @if (request.familyId) {
-              <div class="info-metric-card">
-                <span class="metric-label">{{ 'ui.full.645' | t }}</span>
-                <div class="metric-value-row">
-                  <code dir="ltr">{{ request.familyId }}</code>
-                  <button
-                    type="button"
-                    class="copy-tiny-btn"
-                    (click)="copyText(request.familyId, 'famId')"
-                    [title]="'common.copyId' | t"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                    @if (copiedText() === 'famId') {
-                      <span class="copied-tooltip">{{ 'common.copied' | t }}</span>
-                    }
-                  </button>
-                </div>
-              </div>
-            }
-
-            <div class="info-metric-card">
-              <span class="metric-label">{{ 'ui.full.646' | t }}</span>
-              <span class="metric-text-val">{{ formatDate(request.submittedOnUtc) }}</span>
-            </div>
-
-            <div class="info-metric-card">
-              <span class="metric-label">{{ 'ui.full.647' | t }}</span>
-              <div class="metric-value-row">
-                <code dir="ltr">{{ request.targetPatientId }}</code>
-                <button
-                  type="button"
-                  class="copy-tiny-btn"
-                  (click)="copyText(request.targetPatientId, 'tarId')"
-                  [title]="'common.copyId' | t"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="12"
-                    height="12"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                  @if (copiedText() === 'tarId') {
-                    <span class="copied-tooltip">{{ 'common.copied' | t }}</span>
-                  }
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Attached Evidence Documents -->
-        <div class="drawer-section">
-          <div class="section-title-between">
-            <h4 class="section-sub-title">
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-              {{ 'ui.full.648' | t }}
-            </h4>
-            <span class="items-count-tag"
-              >{{ request.documents.length }} {{ 'common.document' | t }}</span
-            >
-          </div>
-
-          <div class="drawer-docs-list">
-            @for (document of request.documents; track document.documentId) {
-              <div class="doc-card-rich">
-                <div class="doc-card-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                  </svg>
-                </div>
-                <div class="doc-card-meta">
-                  <div class="doc-name-row">
-                    <span class="doc-title-text">{{ document.fileName }}</span>
-                    <span class="doc-rev-badge"
-                      >{{ 'common.revisionPrefix' | t }}{{ document.revisionNumber }}</span
-                    >
-                  </div>
-                  <span class="doc-type-sub">{{
-                    uiLanguage.label('documentType', document.documentType)
-                  }}</span>
-                </div>
-                <button
-                  type="button"
-                  class="btn-view-doc"
-                  (click)="openDocument(document.documentId)"
-                  [title]="'ui.full.650' | t"
-                >
-                  <span>{{ 'ui.full.649' | t }}</span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <line x1="10" y1="14" x2="21" y2="3"></line>
-                  </svg>
-                </button>
-              </div>
-            } @empty {
-              <div class="drawer-empty-box">
-                <p>{{ 'ui.full.651' | t }}</p>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- 5. Audit History Timeline -->
-        <div class="drawer-section">
-          <h4 class="section-sub-title">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            {{ 'ui.full.652' | t }}
-          </h4>
-
-          <div class="audit-trail-stream">
-            @for (item of request.history; track item.occurredOnUtc + item.action) {
-              <div class="audit-step-node">
-                <div class="audit-pin">
-                  <span class="audit-dot"></span>
-                </div>
-                <div class="audit-payload">
-                  <div class="audit-header-line">
-                    <span class="audit-action-name">{{ getActionLabel(item.action) }}</span>
-                    <span class="audit-rev-chip"
-                      >{{ 'common.revisionPrefix' | t }}{{ item.revisionNumber }}</span
-                    >
-                    <time class="audit-timestamp" dir="ltr">{{
-                      formatDate(item.occurredOnUtc)
-                    }}</time>
-                  </div>
-                  @if (item.message) {
-                    <div class="audit-bubble-msg">
-                      <p>{{ item.message | t }}</p>
-                    </div>
-                  }
-                </div>
-              </div>
-            } @empty {
-              <div class="drawer-empty-box">
-                <p>{{ 'ui.full.653' | t }}</p>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- 6. Resubmit Action Section (ModificationRequested) -->
-        @if (request.status === 'ModificationRequested' && canResubmit) {
-          <div class="drawer-resubmit-card">
-            <div class="resubmit-card-header">
-              <div class="resubmit-badge-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-                </svg>
-              </div>
-              <div>
-                <h4>{{ 'ui.full.654' | t }}</h4>
-                <p>{{ 'ui.full.655' | t }}</p>
-              </div>
-            </div>
-
-            <div class="resubmit-fields-stack">
-              <div class="input-field">
-                <span class="field-title">{{ 'ui.full.656' | t }}</span>
-                <input
-                  #resubmitFileInput
-                  type="file"
-                  multiple
-                  [accept]="evidenceFileAccept"
-                  class="field-input"
-                  style="padding: 8px 12px; height: auto"
-                  (change)="evidenceChanged($event, true)"
-                />
-                <span class="field-hint">{{ 'ui.full.657' | t }}</span>
-              </div>
-
-              <div class="input-field">
-                <span class="field-title">{{ 'ui.full.658' | t }}</span>
-                <input
-                  class="field-input"
-                  [placeholder]="'family.documentTypesExample' | t"
-                  [value]="resubmitDocumentTypes()"
-                  (input)="resubmitTypesChanged($event)"
-                />
-              </div>
-
-              <button
-                class="btn-primary-medical"
-                type="button"
-                style="width: 100%; margin-top: 6px; justify-content: center"
-                [disabled]="submitting() || !resubmitFiles().length"
-                (click)="resubmit()"
-              >
-                @if (submitting()) {
-                  <span class="btn-spinner"></span>
-                  <span>{{ 'ui.full.659' | t }}</span>
-                } @else {
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                  </svg>
-                  <span>{{ 'ui.full.660' | t }}</span>
-                }
-              </button>
-            </div>
-          </div>
+  } @else if (workspace(); as value) {
+    @if (!value.hasFamily) {
+      <div class="state">
+        <img src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
+        <h2>{{ 'familyFlow.empty' | t }}</h2>
+        <p>{{ 'familyFlow.emptyHint' | t }}</p>
+        @if (value.canStartChildOnboarding) {
+          <button class="btn btn-primary" (click)="start('onboard')">
+            {{ 'familyFlow.addChild' | t }}
+          </button>
         }
       </div>
     }
-  </app-side-drawer>
+    @if (value.dependents.length) {
+      <section class="workspace-surface">
+        <h2>{{ 'familyFlow.children' | t }}</h2>
+        @for (child of value.dependents; track child.patientId) {
+          <article class="dependent-row">
+            <h3>{{ child.nameAr }}</h3>
+            <div class="d-flex flex-wrap gap-2">
+              @if (child.canViewProfile) {
+                <button class="btn btn-outline-secondary" (click)="inspectChild(child, 'profile')">
+                  {{ 'familyFlow.profile' | t }}
+                </button>
+              }
+              @if (child.canViewTicket) {
+                <button class="btn btn-outline-secondary" (click)="inspectChild(child, 'tickets')">
+                  {{ 'familyFlow.tickets' | t }}
+                </button>
+              }
+              @if (child.canViewTransactions) {
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="inspectChild(child, 'transactions')"
+                >
+                  {{ 'familyFlow.transactions' | t }}
+                </button>
+              }
+              @if (child.canViewHistoricalDocuments || child.canUploadHistoricalDocument) {
+                <button
+                  class="btn btn-outline-secondary"
+                  (click)="inspectChild(child, 'documents')"
+                >
+                  {{ 'historical.title' | t }}
+                </button>
+              }
+              @if (child.canBook) {
+                <a
+                  class="btn btn-primary"
+                  routerLink="/doctors"
+                  [queryParams]="{ patientId: child.patientId }"
+                  >{{ 'familyFlow.book' | t }}</a
+                >
+              }
+              @if (child.canViewReservations) {
+                <a
+                  class="btn btn-outline-secondary"
+                  routerLink="/patient/reservations"
+                  [queryParams]="{ patientId: child.patientId }"
+                  >{{ 'familyFlow.reservations' | t }}</a
+                >
+              }
+              @if (child.canViewMedicalRecord) {
+                <a
+                  class="btn btn-outline-secondary"
+                  routerLink="/patient/dependent-records"
+                  [queryParams]="{ patientId: child.patientId }"
+                  >{{ 'familyFlow.medicalRecord' | t }}</a
+                >
+              }
+              @if (child.canRequestIdentityCorrection) {
+                <button class="btn btn-outline-secondary" (click)="start('identity', child)">
+                  {{ 'familyFlow.correctIdentity' | t }}
+                </button>
+              }
+              @if (session.hasPermission('FamilyJoinInvitations.CreateOwn')) {
+                <button class="btn btn-outline-secondary" (click)="start('invite', child)">
+                  {{ 'familyFlow.inviteParent' | t }}
+                </button>
+              }
+            </div>
+            @if (!child.canViewMedicalRecord && child.medicalReasonCode) {
+              <p class="scope-note">{{ 'familyFlow.medicalUnavailable' | t }}</p>
+            }
+            @if (!child.canBook && child.operationalReasonCode) {
+              <p class="scope-note">{{ 'familyFlow.operationalUnavailable' | t }}</p>
+            }
+          </article>
+        }
+      </section>
+    }
+    <section class="workspace-surface">
+      <div class="section-heading">
+        <h2>{{ 'familyFlow.requests' | t }}</h2>
+        <button
+          class="btn btn-outline-secondary"
+          (click)="loadRequests()"
+          [disabled]="requestLoading()"
+        >
+          {{ 'familyFlow.allRequests' | t }}
+        </button>
+      </div>
+      @if (!showingHistory()) {
+        @for (item of value.pendingWorkflows; track item.reference) {
+          <button class="request-row" (click)="openWorkflow(item)">
+            <span>{{ 'familyFlow.kind.' + item.kind | t }}</span
+            ><span>{{ 'familyFlow.status.' + item.status | t }}</span
+            ><span>{{ 'common.view' | t }}</span>
+          </button>
+        }
+        @if (!relationshipHistory()) {
+          @for (item of value.pendingRequests; track item.requestId) {
+            <button class="request-row" (click)="openRelationship(item.requestId)">
+              <span>{{ item.targetNameAr }}</span
+              ><span>{{ 'familyFlow.status.' + item.status | t }}</span
+              ><span>{{ 'common.view' | t }}</span>
+            </button>
+          }
+        }
+      }
+      @if (requestLoading()) {
+        <p role="status">{{ 'common.loading' | t }}</p>
+      }
+      @if (
+        !requestLoading() &&
+        !value.pendingWorkflows?.length &&
+        !value.pendingRequests.length &&
+        !onboarding().length &&
+        !governance().length
+      ) {
+        <div class="state">
+          <img src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
+          <h3>{{ 'familyFlow.noRequests' | t }}</h3>
+          <p>{{ 'familyFlow.noRequestsHint' | t }}</p>
+        </div>
+      }
+      @for (item of onboarding(); track item.request.requestId) {
+        <button class="request-row" (click)="openOnboarding(item.request.requestId)">
+          <span>{{ item.intake.nameAr }}</span
+          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
+          ><span>{{ 'common.view' | t }}</span>
+        </button>
+      }
+      @for (item of governance(); track item.request.caseId) {
+        <button class="request-row" (click)="openGovernance(item.request.caseId)">
+          <span>{{ 'familyFlow.kind.' + item.request.kind | t }}</span
+          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
+          ><span>{{ 'common.view' | t }}</span>
+        </button>
+      }
+      @if (onboarding().length || governance().length) {
+        <nav class="d-flex gap-2 mt-3">
+          <button
+            class="btn btn-outline-secondary"
+            [disabled]="requestPage() === 1"
+            (click)="loadRequests(requestPage() - 1)"
+          >
+            {{ 'common.previous' | t }}</button
+          ><button
+            class="btn btn-outline-secondary"
+            [disabled]="onboarding().length < 20 && requestPage() * 20 >= governanceTotal()"
+            (click)="loadRequests(requestPage() + 1)"
+          >
+            {{ 'common.next' | t }}
+          </button>
+        </nav>
+      }
+      @if (relationshipLoading()) {
+        <p role="status">{{ 'common.loading' | t }}</p>
+      }
+      @if (relationshipHistory(); as history) {
+        <h3 class="mt-4">{{ 'familyFlow.relationshipRequests' | t }}</h3>
+        <form class="row g-3 mb-3" (ngSubmit)="loadRelationshipRequests()">
+          <label class="col-sm-4"
+            >{{ 'common.status' | t
+            }}<select class="form-select" name="requestStatus" [(ngModel)]="requestStatus">
+              <option value="">{{ 'common.all' | t }}</option>
+              <option value="Pending">{{ 'familyFlow.status.Pending' | t }}</option>
+              <option value="ModificationRequested">
+                {{ 'familyFlow.status.ModificationRequested' | t }}
+              </option>
+              <option value="Approved">{{ 'familyFlow.status.Approved' | t }}</option>
+              <option value="Rejected">{{ 'familyFlow.status.Rejected' | t }}</option>
+            </select></label
+          >
+          <label class="col-sm-4"
+            >{{ 'common.type' | t
+            }}<select class="form-select" name="requestType" [(ngModel)]="requestType">
+              <option value="">{{ 'common.all' | t }}</option>
+              @for (type of relationshipTypes; track type) {
+                <option [value]="type">{{ 'familyFlow.requestType.' + type | t }}</option>
+              }
+            </select></label
+          >
+          <label class="col-sm-4"
+            >{{ 'familyFlow.searchRequests' | t
+            }}<input class="form-control" name="requestSearch" [(ngModel)]="requestSearch"
+          /></label>
+          <div>
+            <button type="submit" class="btn btn-outline-secondary">
+              {{ 'familyFlow.search' | t }}
+            </button>
+          </div>
+        </form>
+        @for (item of history.items; track item.requestId) {
+          <button class="request-row" (click)="openRelationship(item.requestId)">
+            <span>{{ item.targetNameAr || ('familyFlow.awaitIdentity' | t) }}</span
+            ><span>{{ 'familyFlow.requestType.' + item.requestType | t }}</span
+            ><span>{{ 'familyFlow.status.' + item.status | t }}</span>
+          </button>
+        }
+        @if (history.totalCount > 20) {
+          <nav class="d-flex gap-2 mt-3">
+            <button
+              class="btn btn-outline-secondary"
+              [disabled]="history.pageNumber === 1"
+              (click)="loadRelationshipRequests(history.pageNumber - 1)"
+            >
+              {{ 'common.previous' | t }}</button
+            ><button
+              class="btn btn-outline-secondary"
+              [disabled]="history.pageNumber * 20 >= history.totalCount"
+              (click)="loadRelationshipRequests(history.pageNumber + 1)"
+            >
+              {{ 'common.next' | t }}
+            </button>
+          </nav>
+        }
+      }
+    </section>
+  }
 </main>
+<app-side-drawer
+  [opened]="
+    !!intakeMode() ||
+    !!selectedChild() ||
+    !!selectedOnboarding() ||
+    !!selectedGovernance() ||
+    !!selectedRelationship()
+  "
+  [busy]="busy()"
+  [title]="selectedChild()?.nameAr || ('familyFlow.requests' | t)"
+  (closed)="close()"
+  width="760px"
+>
+  @if (intakeMode(); as mode) {
+    <app-family-intake
+      [mode]="mode"
+      [childId]="selectedChild()?.patientId || ''"
+      [revision]="selectedOnboarding()"
+      [conflict]="selectedGovernance()"
+      [relationship]="selectedRelationship()"
+      (saved)="refreshScope()"
+      (invalidated)="refreshScope()"
+      (busyChanged)="busy.set($event)"
+    />
+  } @else if (selectedChild(); as child) {
+    <app-dependent-details
+      [child]="child"
+      [initialTab]="detailTab()"
+      (invalidated)="refreshScope()"
+      (busyChanged)="busy.set($event)"
+    />
+  } @else if (selectedOnboarding(); as item) {
+    <section class="request-details">
+      <h2>{{ item.intake.nameAr }}</h2>
+      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
+      <p>{{ item.request.reviewMessage }}</p>
+      <p>{{ 'familyFlow.reviewNotice' | t }}</p>
+      @if (item.request.canResubmit) {
+        <button class="btn btn-primary" (click)="intakeMode.set('resubmit')">
+          {{ 'familyFlow.resubmit' | t }}
+        </button>
+      }
+      @if (item.request.conflictCaseId; as id) {
+        <button class="btn btn-outline-secondary" (click)="openGovernance(id)">
+          {{ 'familyFlow.reviewStatus' | t }}
+        </button>
+      }
+    </section>
+  } @else if (selectedGovernance(); as item) {
+    <section class="request-details">
+      <h2>{{ 'familyFlow.kind.' + item.request.kind | t }}</h2>
+      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
+      <p>{{ item.feedback }}</p>
+      @if (
+        item.request.kind === 'MembershipConflict' &&
+        item.request.status === 'ModificationRequested'
+      ) {
+        <button class="btn btn-primary" (click)="intakeMode.set('conflict')">
+          {{ 'familyFlow.resubmit' | t }}
+        </button>
+      }
+    </section>
+  } @else if (selectedRelationship(); as item) {
+    <section class="request-details">
+      <h2>{{ item.targetNameAr }}</h2>
+      <p>{{ 'familyFlow.status.' + item.status | t }}</p>
+      <p>{{ item.modificationMessage || item.rejectionReason }}</p>
+      @if (
+        item.status === 'ModificationRequested' &&
+        session.hasPermission('FamilyRelationshipRequests.ResubmitOwn')
+      ) {
+        <button class="btn btn-primary" (click)="intakeMode.set('relationship')">
+          {{ 'familyFlow.resubmit' | t }}
+        </button>
+      }
+      @for (event of item.history; track $index) {
+        <p>
+          {{ 'familyFlow.status.' + event.action | t }} ·
+          {{ event.occurredOnUtc | date: 'mediumDate' }}
+        </p>
+      }
+    </section>
+  }
+</app-side-drawer>

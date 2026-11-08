@@ -42,6 +42,7 @@ describe('contract-scoped MySubscriptionComponent', () => {
     terms: () => state.details()?.subscription ?? null,
     currentDetails: (c: ReturnType<typeof contractFixture>) => c.periods[0],
     selectContract: (id: string) => selected.set(id),
+    refreshContract: vi.fn(async () => undefined),
     invalidate: vi.fn(),
     refresh: vi.fn(async () => null),
   };
@@ -92,7 +93,7 @@ describe('contract-scoped MySubscriptionComponent', () => {
     c.confirmation.set('cancel');
     await c.confirm();
     expect(api.cancelContract).not.toHaveBeenCalled();
-    c.selectContract('b');
+    await c.selectContract('b');
     c.confirmation.set('cancel');
     await c.confirm();
     expect(api.cancelContract).toHaveBeenCalledWith('b', 'AQID', '', expect.any(String));

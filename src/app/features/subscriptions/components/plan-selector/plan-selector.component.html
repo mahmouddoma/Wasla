@@ -42,7 +42,10 @@
 
   <!-- Trial Banner (if allowed) -->
   @if (allowTrial() && catalog().trialOffer.enabled && trialPlan()) {
-    <label class="trial-option-banner" [class.is-selected]="selection()?.offerCode === catalog().trialOffer.offerCode">
+    <label
+      class="trial-option-banner"
+      [class.is-selected]="selection()?.offerCode === catalog().trialOffer.offerCode"
+    >
       <input
         type="radio"
         class="hidden-accessible-radio"
@@ -57,7 +60,9 @@
         <div class="trial-details">
           <div class="trial-badge-row">
             <span class="trial-badge">{{ 'subscriptions.trial' | t }}</span>
-            <strong class="trial-days-count">{{ catalog().trialOffer.durationDays }} {{ 'subscriptions.days' | t }}</strong>
+            <strong class="trial-days-count"
+              >{{ catalog().trialOffer.durationDays }} {{ 'subscriptions.days' | t }}</strong
+            >
           </div>
           @if (catalog().trialOffer.startsOnDoctorApproval) {
             <small class="trial-note">{{ 'subscriptions.trialApproval' | t }}</small>
@@ -114,13 +119,15 @@
 
         <!-- Price Display -->
         <div class="card-pricing-block">
-          <span class="price-amount"><bdi>{{ option.price | currency: catalog().currency }}</bdi></span>
-          <span class="price-tenure">/ {{ ('subscriptions.' + option.cycle) | t }}</span>
+          <span class="price-amount"
+            ><bdi>{{ option.price | currency: catalog().currency }}</bdi></span
+          >
+          <span class="price-tenure">/ {{ 'subscriptions.' + option.cycle | t }}</span>
         </div>
 
         <!-- Short Target Audience Description -->
         <p class="plan-audience-desc">
-          {{ getPlanDesc(option.plan.code) }}
+          {{ 'subscriptions.catalogDescription' | t }}
         </p>
 
         <!-- Divider -->
@@ -132,14 +139,16 @@
           <div class="feature-item">
             <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
             <span class="feature-label">
-              <strong>{{ option.plan.pricing!.practiceLimit }}</strong> {{ 'subscriptions.practiceAllowance' | t }}
+              <strong>{{ option.plan.pricing!.practiceLimit }}</strong>
+              {{ 'subscriptions.practiceAllowance' | t }}
             </span>
           </div>
 
           <div class="feature-item">
             <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
             <span class="feature-label">
-              <strong>{{ option.plan.pricing!.receptionLimit }}</strong> {{ 'subscriptions.receptionAllowance' | t }}
+              <strong>{{ option.plan.pricing!.receptionLimit }}</strong>
+              {{ 'subscriptions.receptionAllowance' | t }}
             </span>
           </div>
 
@@ -148,14 +157,6 @@
             <div class="feature-item">
               <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
               <span class="feature-label">{{ featureText }}</span>
-            </div>
-          }
-
-          <!-- Release-Ready Dynamic Features -->
-          @if (readyFeatures(option.plan)) {
-            <div class="feature-item ready-summary">
-              <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
-              <span class="feature-label">{{ readyFeatures(option.plan) }}</span>
             </div>
           }
         </div>
@@ -202,7 +203,7 @@
             type="radio"
             class="hidden-accessible-radio"
             name="subscription-plan"
-            [disabled]="!bookingTier() || disabled()"
+            [disabled]="!bookingQuote() || disabled()"
             [checked]="selection()?.productCode === bProduct.code"
             (change)="chooseBooking()"
           />
@@ -233,18 +234,19 @@
 
         <!-- Price Display -->
         <div class="card-pricing-block">
-          @if (isBookingEnabled() && bookingTier(); as tier) {
-            <span class="price-amount"><bdi>{{ tier.monthlyPrice | currency: catalog().currency }}</bdi></span>
+          @if (isBookingEnabled() && bookingQuote(); as tier) {
+            <span class="price-amount"
+              ><bdi>{{ tier.monthlyPrice | currency: catalog().currency }}</bdi></span
+            >
             <span class="price-tenure">/ {{ 'subscriptions.Monthly' | t }}</span>
           } @else {
             <span class="price-amount price-coming-soon">{{ 'subscriptions.comingSoon' | t }}</span>
-            <span class="price-tenure">· وصلة</span>
           }
         </div>
 
         <!-- Target Audience Description -->
         <p class="plan-audience-desc">
-          {{ getPlanDesc('BOOKING_ONLY') }}
+          {{ 'subscriptions.catalogDescription' | t }}
         </p>
 
         <!-- Divider -->
@@ -287,7 +289,7 @@
               type="button"
               class="feedhive-btn"
               [class.btn-selected]="selection()?.productCode === bProduct.code"
-              [disabled]="disabled() || !bookingTier()"
+              [disabled]="disabled() || !bookingQuote()"
               (click)="chooseBooking()"
             >
               @if (selection()?.productCode === bProduct.code) {
@@ -303,11 +305,7 @@
               }
             </button>
           } @else {
-            <button
-              type="button"
-              class="feedhive-btn btn-coming-soon"
-              disabled
-            >
+            <button type="button" class="feedhive-btn btn-coming-soon" disabled>
               <i class="fa-solid fa-clock" aria-hidden="true"></i>
               <span>{{ 'subscriptions.comingSoonNote' | t }}</span>
             </button>

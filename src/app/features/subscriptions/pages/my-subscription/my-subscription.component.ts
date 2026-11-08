@@ -79,12 +79,20 @@ export class MySubscriptionComponent {
     this.noSubscription.set(this.state.contracts().length === 0);
     this.loading.set(false);
   }
-  selectContract(id: string): void {
+  async selectContract(id: string): Promise<void> {
     if (this.busy()) return;
     this.state.selectContract(id);
     this.confirmation.set(null);
     this.renewal.set(null);
     this.retained.set([]);
+    this.busy.set(true);
+    try {
+      await this.state.refreshContract(id);
+    } catch {
+      this.toast.error(this.language.t('subscriptions.loadError'));
+    } finally {
+      this.busy.set(false);
+    }
   }
   getSelectedPlanName(): string {
     const selected = this.selection();

@@ -36,7 +36,22 @@ export class AdminLayout {
 
   protected readonly navItems = computed<NavigationItem[]>(() => {
     const definitions: (NavigationItem & { permission: string })[] = [
-      { id: 'subscriptions', labelKey: 'subscriptions.admin', route: '/admin/subscriptions', icon: 'receipt', permission: 'Subscriptions.ViewAll' },
+      {
+        id: 'family-review',
+        labelKey: 'familyReview.title',
+        route: '/admin/family-review',
+        icon: 'users',
+        permission: this.session.hasPermission('ChildOnboarding.ViewAll')
+          ? 'ChildOnboarding.ViewAll'
+          : 'FamilyRelationshipRequests.ViewAll',
+      },
+      {
+        id: 'subscriptions',
+        labelKey: 'subscriptions.admin',
+        route: '/admin/subscriptions',
+        icon: 'receipt',
+        permission: 'Subscriptions.ViewAll',
+      },
       {
         id: 'medical-catalog-managers',
         labelKey: 'diagnostics.managers',

@@ -51,6 +51,7 @@ describe('PublicDoctors', () => {
     qualifications: [],
   };
   const api = {
+    practiceLogoUrl: vi.fn((id: string) => '/api/v1/public/practices/' + id + '/logo'),
     doctors: vi.fn(() => of(empty)),
     specializations: vi.fn(() => of([])),
     doctor: vi.fn(() => of(mockDoctorDetails)),
@@ -112,6 +113,15 @@ describe('PublicDoctors', () => {
   it('requests availability using the selected clinic ID', async () => {
     await fixture.componentInstance['openDoctorDrawer'](mockDoctorDetails, 'practice-1');
     expect(api.availableDates).toHaveBeenCalledWith('practice-1');
+    fixture.detectChanges();
+    const image = fixture.nativeElement.querySelector(
+      '.practice-name-cluster img',
+    ) as HTMLImageElement;
+    expect(image.getAttribute('src')).toBe('/api/v1/public/practices/practice-1/logo');
+    image.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.practice-name-cluster img')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.practice-name-cluster svg')).not.toBeNull();
   });
 
   it('shows a loading error without claiming that the clinic has no booking days', async () => {

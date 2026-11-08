@@ -1,10 +1,12 @@
 import { HttpResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { provideRouter } from '@angular/router';
 import { ToastService } from '../../../core/notifications/toast.service';
 import {
   FamiliesApi,
+  FamilyWorkspaceApi,
   FamilyMedicalDependent,
   FamilyMedicalRecordEncounter,
   FamilyMedicalRecordItem,
@@ -78,9 +80,7 @@ describe('DependentMedicalRecordComponent', () => {
     visitDate: '2026-10-10',
     doctor: { name: 'د. لؤي' },
     practice: { name: 'عيادة الأمل' },
-    diagnoses: [
-      { diagnosisId: 'diag-1', type: 'Primary', displayText: 'التهاب الحلق الحاد' },
-    ],
+    diagnoses: [{ diagnosisId: 'diag-1', type: 'Primary', displayText: 'التهاب الحلق الحاد' }],
     outputs: {
       items: [mockTimelineEntry],
       nextCursor: null,
@@ -148,6 +148,8 @@ describe('DependentMedicalRecordComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DependentMedicalRecordComponent],
       providers: [
+        provideRouter([]),
+        { provide: FamilyWorkspaceApi, useValue: { workspace: () => of({ dependents: [] }) } },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: FamiliesApi, useValue: mockApi },
@@ -170,19 +172,25 @@ describe('DependentMedicalRecordComponent', () => {
     expect(mockApi.medicalRecordDependents).toHaveBeenCalled();
     expect(component['dependents']().length).toBe(1);
     expect(component['selectedDependentId']()).toBe('child-1');
-    expect(mockApi.dependentMedicalRecordOverview).toHaveBeenCalledWith('child-1', expect.anything());
-    expect(mockApi.dependentMedicalRecordTimeline).toHaveBeenCalledWith('child-1', expect.anything());
+    expect(mockApi.dependentMedicalRecordOverview).toHaveBeenCalledWith(
+      'child-1',
+      expect.anything(),
+    );
+    expect(mockApi.dependentMedicalRecordTimeline).toHaveBeenCalledWith(
+      'child-1',
+      expect.anything(),
+    );
   });
 
   it('should filter timeline events by resource type', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    component['onFilterChange']('prescription');
+    component['onFilterChange']('prescriptions');
 
-    expect(component['filterType']()).toBe('prescription');
+    expect(component['filterType']()).toBe('prescriptions');
     expect(mockApi.dependentMedicalRecordTimeline).toHaveBeenCalledWith('child-1', {
-      types: ['prescription'],
+      types: ['prescriptions'],
       fromDate: undefined,
       toDate: undefined,
       pageSize: 20,
@@ -241,11 +249,18 @@ describe('DependentMedicalRecordComponent', () => {
     await component['openItemDrawer'](mockTimelineEntry);
 
     expect(component['itemDrawerOpen']()).toBe(true);
-    expect(mockApi.dependentMedicalRecordItem).toHaveBeenCalledWith('child-1', 'prescription', 'rx-1');
+    expect(mockApi.dependentMedicalRecordItem).toHaveBeenCalledWith(
+      'child-1',
+      'prescription',
+      'rx-1',
+    );
     expect(component['selectedItem']()?.sourceId).toBe('rx-1');
   });
 
   it('should download attachment and notify with toast', async () => {
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -259,5 +274,19 @@ describe('DependentMedicalRecordComponent', () => {
       'att-1',
     );
     expect(mockToast.success).toHaveBeenCalled();
+    click.mockRestore();
+  });
+  it('does not populate a closed detail drawer from a delayed private response', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const response = new Subject<FamilyMedicalRecordItem>();
+    mockApi.dependentMedicalRecordItem.mockReturnValue(response);
+    const opening = component['openItemDrawer'](mockTimelineEntry);
+    component['closeItemDrawer']();
+    response.next(mockItem);
+    response.complete();
+    await opening;
+    expect(component['selectedItem']()).toBeNull();
+    expect(component['itemDrawerOpen']()).toBe(false);
   });
 });

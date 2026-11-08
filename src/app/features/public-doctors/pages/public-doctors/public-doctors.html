@@ -1078,8 +1078,17 @@
               class="btn-receipt-ticket"
               (click)="closeDrawer()"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"
+                />
                 <path d="M13 5v2M13 17v2M13 11v2" />
               </svg>
               <span>{{ 'sidebar.tickets' | t }}</span>
@@ -1186,20 +1195,33 @@
             >
               <div class="practice-card-top">
                 <div class="practice-name-cluster">
-                  <svg
-                    class="practice-card-icon"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                  @if (!failedPracticeLogos().has(practice.id)) {
+                    <img
+                      class="practice-card-icon"
+                      [src]="practiceLogoUrl(practice.id)"
+                      width="32"
+                      height="32"
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      (error)="markPracticeLogoFailed(practice.id)"
                     />
-                  </svg>
+                  } @else {
+                    <svg
+                      class="practice-card-icon"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
+                      />
+                    </svg>
+                  }
                   <span class="practice-card-name">
                     {{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}
                   </span>
@@ -1331,158 +1353,165 @@
                     }
                   }
                 </div>
-                     <!-- 3. Visit Types & Instant 1-Click Confirmation -->
-            @if (drawerOptions(); as booking) {
-              <div class="booking-drawer-step">
-                <span class="step-label">{{ 'booking.visitAndPrice' | t }}</span>
+                <!-- 3. Visit Types & Instant 1-Click Confirmation -->
+                @if (drawerOptions(); as booking) {
+                  <div class="booking-drawer-step">
+                    <span class="step-label">{{ 'booking.visitAndPrice' | t }}</span>
 
-                <!-- Segment / Price Category Selector Pills -->
-                <div class="segment-chips-grid">
-                  @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
-                    @if (visitType.type !== 'FollowUp') {
-                      @for (segment of visitType.segments; track segment.segmentId) {
+                    <!-- Segment / Price Category Selector Pills -->
+                    <div class="segment-chips-grid">
+                      @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
+                        @if (visitType.type !== 'FollowUp') {
+                          @for (segment of visitType.segments; track segment.segmentId) {
+                            <button
+                              type="button"
+                              class="btn-segment-chip"
+                              [class.active]="selectedSegment()?.segmentId === segment.segmentId"
+                              (click)="selectSegment(segment, visitType)"
+                            >
+                              <span class="chip-segment-name">
+                                {{
+                                  language.isRtl()
+                                    ? segment.nameAr
+                                    : segment.nameEn || segment.nameAr
+                                }}
+                              </span>
+                              <strong class="chip-segment-price">
+                                {{ segment.price }} {{ 'discovery.currency' | t }}
+                              </strong>
+                            </button>
+                          }
+                        }
+                      }
+                    </div>
+
+                    <!-- Patient Profile Selector (if authenticated as Patient) -->
+                    @if (isPatient()) {
+                      <div class="patient-selector-block">
+                        <span class="step-label">{{ 'booking.selectPatientLabel' | t }}</span>
+                        @if (bookablePatients().length > 1) {
+                          <div class="patient-select-wrapper">
+                            <select
+                              class="patient-custom-select"
+                              [value]="selectedPatientId()"
+                              (change)="selectPatient($any($event.target).value)"
+                              id="bookablePatientSelect"
+                            >
+                              @for (p of bookablePatients(); track p.patientId) {
+                                <option [value]="p.patientId">
+                                  {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
+                                  {{ p.isSelf ? ' (' + ('booking.myself' | t) + ')' : '' }}
+                                </option>
+                              }
+                            </select>
+                          </div>
+                        } @else {
+                          <div class="patient-single-info">
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="15"
+                              height="15"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>
+                              {{
+                                bookablePatients().length === 1
+                                  ? language.isRtl()
+                                    ? bookablePatients()[0].nameAr
+                                    : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr
+                                  : authSession.user()?.userName || ''
+                              }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <!-- Optional Notes for Doctor -->
+                    <div class="booking-note-field">
+                      <label class="step-label" for="drawerBookingNotes">{{
+                        'booking.bookingNotes' | t
+                      }}</label>
+                      <input
+                        id="drawerBookingNotes"
+                        type="text"
+                        class="booking-notes-input"
+                        [value]="bookingNote()"
+                        (input)="updateBookingNote($event)"
+                        [placeholder]="'booking.bookingNotesPlaceholder' | t"
+                      />
+                    </div>
+
+                    <!-- Compact Confirmation Summary Card -->
+                    <div class="booking-summary-banner">
+                      <div class="summary-line">
+                        <span class="summary-label">{{ 'booking.appointmentTime' | t }}:</span>
+                        <strong class="summary-value" dir="ltr">{{
+                          formatSlot(drawerSelectedDate(), drawerSelectedTime())
+                        }}</strong>
+                      </div>
+                      @if (selectedSegment(); as seg) {
+                        <div class="summary-line">
+                          <span class="summary-label">{{ 'booking.consultationFee' | t }}:</span>
+                          <strong class="summary-price"
+                            >{{ seg.price }} {{ 'discovery.currency' | t }}</strong
+                          >
+                        </div>
+                      }
+                      <p class="summary-clinic-note">{{ 'booking.payAtClinic' | t }}</p>
+                    </div>
+
+                    <!-- Primary Action Button (Click 3: Confirm Now) -->
+                    <div class="booking-primary-action-wrap">
+                      @if (authSession.isAuthenticated()) {
                         <button
                           type="button"
-                          class="btn-segment-chip"
-                          [class.active]="selectedSegment()?.segmentId === segment.segmentId"
-                          (click)="selectSegment(segment, visitType)"
+                          class="btn-primary-confirm-booking"
+                          [disabled]="bookingSubmitting() || !selectedSegment()"
+                          (click)="confirmQuickBooking()"
                         >
-                          <span class="chip-segment-name">
-                            {{ language.isRtl() ? segment.nameAr : segment.nameEn || segment.nameAr }}
-                          </span>
-                          <strong class="chip-segment-price">
-                            {{ segment.price }} {{ 'discovery.currency' | t }}
-                          </strong>
-                        </button>
-                      }
-                    }
-                  }
-                </div>
-
-                <!-- Patient Profile Selector (if authenticated as Patient) -->
-                @if (isPatient()) {
-                  <div class="patient-selector-block">
-                    <span class="step-label">{{ 'booking.selectPatientLabel' | t }}</span>
-                    @if (bookablePatients().length > 1) {
-                      <div class="patient-select-wrapper">
-                        <select
-                          class="patient-custom-select"
-                          [value]="selectedPatientId()"
-                          (change)="selectPatient($any($event.target).value)"
-                          id="bookablePatientSelect"
-                        >
-                          @for (p of bookablePatients(); track p.patientId) {
-                            <option [value]="p.patientId">
-                              {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
-                              {{ p.isSelf ? ' (' + ('booking.myself' | t) + ')' : '' }}
-                            </option>
+                          @if (bookingSubmitting()) {
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                            <span>{{ 'booking.bookingInProgress' | t }}</span>
+                          } @else {
+                            <span>{{ 'booking.confirmBookingBtn' | t }}</span>
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="16"
+                              height="16"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.2"
+                              aria-hidden="true"
+                            >
+                              <path
+                                [attr.d]="
+                                  language.isRtl()
+                                    ? 'M19 12H5M12 19l-7-7 7-7'
+                                    : 'M5 12h14M12 5l7 7-7 7'
+                                "
+                              />
+                            </svg>
                           }
-                        </select>
-                      </div>
-                    } @else {
-                      <div class="patient-single-info">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="15"
-                          height="15"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
+                        </button>
+                      } @else {
+                        <a
+                          class="btn-primary-confirm-booking is-login-prompt"
+                          [routerLink]="['/login']"
+                          [queryParams]="{ returnUrl: currentUrl() }"
                         >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                          <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        <span>
-                          {{
-                            bookablePatients().length === 1
-                              ? language.isRtl()
-                                ? bookablePatients()[0].nameAr
-                                : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr
-                              : authSession.user()?.userName || ''
-                          }}
-                        </span>
-                      </div>
-                    }
+                          <span>{{ 'booking.loginToBook' | t }}</span>
+                        </a>
+                      }
+                    </div>
                   </div>
                 }
-
-                <!-- Optional Notes for Doctor -->
-                <div class="booking-note-field">
-                  <label class="step-label" for="drawerBookingNotes">{{
-                    'booking.bookingNotes' | t
-                  }}</label>
-                  <input
-                    id="drawerBookingNotes"
-                    type="text"
-                    class="booking-notes-input"
-                    [value]="bookingNote()"
-                    (input)="updateBookingNote($event)"
-                    [placeholder]="'booking.bookingNotesPlaceholder' | t"
-                  />
-                </div>
-
-                <!-- Compact Confirmation Summary Card -->
-                <div class="booking-summary-banner">
-                  <div class="summary-line">
-                    <span class="summary-label">{{ 'booking.appointmentTime' | t }}:</span>
-                    <strong class="summary-value" dir="ltr">{{
-                      formatSlot(drawerSelectedDate(), drawerSelectedTime())
-                    }}</strong>
-                  </div>
-                  @if (selectedSegment(); as seg) {
-                    <div class="summary-line">
-                      <span class="summary-label">{{ 'booking.consultationFee' | t }}:</span>
-                      <strong class="summary-price">{{ seg.price }} {{ 'discovery.currency' | t }}</strong>
-                    </div>
-                  }
-                  <p class="summary-clinic-note">{{ 'booking.payAtClinic' | t }}</p>
-                </div>
-
-                <!-- Primary Action Button (Click 3: Confirm Now) -->
-                <div class="booking-primary-action-wrap">
-                  @if (authSession.isAuthenticated()) {
-                    <button
-                      type="button"
-                      class="btn-primary-confirm-booking"
-                      [disabled]="bookingSubmitting() || !selectedSegment()"
-                      (click)="confirmQuickBooking()"
-                    >
-                      @if (bookingSubmitting()) {
-                        <span class="btn-spinner" aria-hidden="true"></span>
-                        <span>{{ 'booking.bookingInProgress' | t }}</span>
-                      } @else {
-                        <span>{{ 'booking.confirmBookingBtn' | t }}</span>
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="16"
-                          height="16"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2.2"
-                          aria-hidden="true"
-                        >
-                          <path
-                            [attr.d]="
-                              language.isRtl()
-                                ? 'M19 12H5M12 19l-7-7 7-7'
-                                : 'M5 12h14M12 5l7 7-7 7'
-                            "
-                          />
-                        </svg>
-                      }
-                    </button>
-                  } @else {
-                    <a
-                      class="btn-primary-confirm-booking is-login-prompt"
-                      [routerLink]="['/login']"
-                      [queryParams]="{ returnUrl: currentUrl() }"
-                    >
-                      <span>{{ 'booking.loginToBook' | t }}</span>
-                    </a>
-                  }
-                </div>
               </div>
-            }       </div>
             }
           } @else {
             <!-- Direct Walk-in / In-Clinic Consultation Guidance -->
@@ -1564,9 +1593,7 @@
                         <strong class="fee-num">{{ activePractice.publicSearchPrice }}</strong>
                         <span class="fee-curr">{{ 'discovery.currency' | t }}</span>
                       } @else {
-                        <span class="fee-muted">{{
-                          'discovery.feeDeterminedAtClinic' | t
-                        }}</span>
+                        <span class="fee-muted">{{ 'discovery.feeDeterminedAtClinic' | t }}</span>
                       }
                     </div>
                   </div>

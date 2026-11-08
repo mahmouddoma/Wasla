@@ -25,6 +25,9 @@ export class PublicDiscoveryApi {
   specializations(): Observable<PublicSpecialization[]> {
     return this.http.get<PublicSpecialization[]>(`${this.url}/specializations`);
   }
+  practiceLogoUrl(practiceId: string): string {
+    return `${this.url}/practices/${encodeURIComponent(this.practiceId(practiceId))}/logo`;
+  }
   doctors(query: PublicDoctorSearchQuery): Observable<PublicDoctorSearchResponse> {
     let params = new HttpParams()
       .set('pageNumber', query.pageNumber)

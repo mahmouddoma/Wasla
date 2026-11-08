@@ -9,6 +9,20 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const FEATURE_ROUTES: Routes = [
   {
+    path: 'medical-record',
+    canActivate: [authenticatedGuard, permissionGuard],
+    data: {
+      permission: [
+        'MedicalRecords.ViewOwn',
+        'MedicalDocuments.ViewOwn',
+        'MedicalDocuments.CreateOwn',
+      ],
+    },
+    loadComponent: () =>
+      import('./patient-record/patient-record.component').then((m) => m.PatientRecordComponent),
+    title: 'familyFlow.medicalRecord',
+  },
+  {
     path: 'profile',
     canActivate: [authenticatedGuard, permissionGuard],
     data: {
@@ -28,6 +42,7 @@ export const FEATURE_ROUTES: Routes = [
     data: {
       permission: [
         PERMISSIONS.familiesViewOwn,
+        'FamilyWorkspace.ViewOwn',
         PERMISSIONS.familyRelationshipRequestsCreate,
         PERMISSIONS.familyRelationshipRequestsViewOwn,
         PERMISSIONS.familyRelationshipRequestsResubmitOwn,
@@ -61,5 +76,3 @@ export const FEATURE_ROUTES: Routes = [
     title: 'routes.patientDependentRecords',
   },
 ];
-
-

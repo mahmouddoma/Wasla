@@ -32,7 +32,9 @@ import { SubscriptionState } from '../../../../domains/subscriptions';
 export class DoctorReceptions {
   protected readonly subscription = inject(SubscriptionState);
   protected readonly accountConfirmation = signal<DoctorReception | null>(null);
-  protected readonly canManageAccountState = computed(() => this.session.hasPermission('ReceptionUsers.ManageAccountStateOwn') && this.subscription.has('RECEPTION_MANAGEMENT', true));
+  protected readonly canManageAccountState = computed(() =>
+    this.session.hasPermission('ReceptionUsers.ManageAccountStateOwn'),
+  );
   protected readonly langService = inject(LanguageService);
   private readonly api = inject(DoctorReceptionsApi);
   private readonly practicesApi = inject(DoctorPracticesApi);
@@ -234,30 +236,34 @@ export class DoctorReceptions {
     if (!current || !this.canManageAccountState() || this.isSubmitting()) return;
     this.isSubmitting.set(true);
     try {
-      if (!current.isActive) {
-        await this.subscription.refresh(true);
-        if (!this.subscription.canCreateReception()) {
-          this.toast.error(this.langService.t('subscriptions.capacityFull'));
-          return;
-        }
-      }
-      const updated = await firstValueFrom(this.api.updateAccountState(current.id, { isActive: !current.isActive, rowVersion: current.rowVersion }));
+      const updated = await firstValueFrom(
+        this.api.updateAccountState(current.id, {
+          isActive: !current.isActive,
+          rowVersion: current.rowVersion,
+        }),
+      );
       this.reception.set(updated);
-      this.receptions.update(items => items.map(item => item.id === updated.id ? updated : item));
+      this.receptions.update((items) =>
+        items.map((item) => (item.id === updated.id ? updated : item)),
+      );
       this.accountConfirmation.set(null);
       this.toast.success(this.langService.t('subscriptions.saved'));
       this.subscription.invalidate();
       void this.subscription.refresh().catch(() => undefined);
     } catch (error) {
       this.setErrors(error);
-      this.toast.error(this.langService.t(parseApiErrors(error).messages[0] ?? 'common.requestFailed'));
+      this.toast.error(
+        this.langService.t(parseApiErrors(error).messages[0] ?? 'common.requestFailed'),
+      );
       if (parseApiErrors(error).status === 409) {
         await this.loadDetails(current.id).catch(() => undefined);
         this.accountConfirmation.set(null);
         this.subscription.invalidate();
         void this.subscription.refresh().catch(() => undefined);
       }
-    } finally { this.isSubmitting.set(false); }
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 
   protected editAssignment(assignment: DoctorReceptionAssignment): void {
@@ -399,7 +405,9 @@ export class DoctorReceptions {
   protected getPracticeName(practiceId: string): string {
     const practice = this.practices().find((item) => item.id === practiceId);
     if (!practice) return '';
-    return this.langService.currentLang() === 'ar' ? practice.nameAr : (practice.nameEn || practice.nameAr);
+    return this.langService.currentLang() === 'ar'
+      ? practice.nameAr
+      : practice.nameEn || practice.nameAr;
   }
 
   protected logout(): void {

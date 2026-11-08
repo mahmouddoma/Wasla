@@ -6,10 +6,21 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'family-review',
+    canActivate: [permissionGuard],
+    data: {
+      actor: 'SuperAdmin',
+      permission: ['ChildOnboarding.ViewAll', 'FamilyRelationshipRequests.ViewAll'],
+    },
+    loadComponent: () =>
+      import('./family-review/family-review.component').then((m) => m.FamilyReviewComponent),
+    title: 'familyReview.title',
+  },
+  {
     path: 'subscriptions',
     canActivate: [permissionGuard],
     data: { actor: 'SuperAdmin', permission: 'Subscriptions.ViewAll' },
-    loadChildren: () => import('../subscriptions').then(m => m.ADMIN_SUBSCRIPTION_ROUTES),
+    loadChildren: () => import('../subscriptions').then((m) => m.ADMIN_SUBSCRIPTION_ROUTES),
     title: 'subscriptions.admin',
   },
   {

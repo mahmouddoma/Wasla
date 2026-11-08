@@ -397,6 +397,12 @@ export class PortalNavigation {
         icon: 'clipboard-list',
       },
       { id: 'finance', labelKey: 'sidebar.finance', route: '/patient/finance', icon: 'receipt' },
+      {
+        id: 'medical-record',
+        labelKey: 'familyFlow.medicalRecord',
+        route: '/patient/medical-record',
+        icon: 'clipboard-list',
+      },
     ];
     return items.filter((item) => this.canAccessPatientItem(item.id));
   });
@@ -459,6 +465,7 @@ export class PortalNavigation {
         PERMISSIONS.patientContactsManageOwn,
       ],
       family: [
+        'FamilyWorkspace.ViewOwn',
         PERMISSIONS.familiesViewOwn,
         PERMISSIONS.familyRelationshipRequestsCreate,
         PERMISSIONS.familyRelationshipRequestsViewOwn,
@@ -467,6 +474,11 @@ export class PortalNavigation {
       'medical-access': [PERMISSIONS.familiesViewOwn],
       'dependent-records': [PERMISSIONS.familiesViewOwn],
       finance: [PERMISSIONS.paymentsViewOwn],
+      'medical-record': [
+        'MedicalRecords.ViewOwn',
+        'MedicalDocuments.ViewOwn',
+        'MedicalDocuments.CreateOwn',
+      ],
     };
     return (
       !required[id] || required[id].some((permission) => this.session.hasPermission(permission))
@@ -474,8 +486,19 @@ export class PortalNavigation {
   }
 
   readonly items = computed(() =>
-    [...this.permittedItems(), ...(this.user()?.userType === 'Doctor' && this.session.hasPermission('Subscriptions.ViewOwn') ? [{ id: 'subscription', labelKey: 'subscriptions.mine', route: '/doctor/subscription', icon: 'receipt' as const }] : [])]
-    .map((item) => ({
+    [
+      ...this.permittedItems(),
+      ...(this.user()?.userType === 'Doctor' && this.session.hasPermission('Subscriptions.ViewOwn')
+        ? [
+            {
+              id: 'subscription',
+              labelKey: 'subscriptions.mine',
+              route: '/doctor/subscription',
+              icon: 'receipt' as const,
+            },
+          ]
+        : []),
+    ].map((item) => ({
       ...item,
       labelKey:
         (
@@ -538,7 +561,9 @@ export class PortalNavigation {
       account:
         this.user()?.userType === 'Patient'
           ? ['profile', 'family', 'medical-access', 'finance']
-          : this.user()?.userType === 'Doctor' ? ['subscription'] : [],
+          : this.user()?.userType === 'Doctor'
+            ? ['subscription']
+            : [],
     };
     return (Object.keys(groupIds) as NavigationGroup[])
       .map((id) => ({

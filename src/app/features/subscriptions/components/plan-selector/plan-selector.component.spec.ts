@@ -50,12 +50,32 @@ describe('PlanSelectorComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('input[type=radio]')).toBeNull();
     expect(
-      fixture.componentInstance.readyFeatures({
+      fixture.componentInstance.getPlanFeatures({
         ...catalogFixture.products[0].plans[0],
         features: [
           { code: 'HIDDEN', nameEn: 'Not ready', isReleaseReady: false, accessLevel: 'Full' },
         ],
       }),
-    ).toBe('');
+    ).toEqual([]);
+  });
+  it('renders only catalog-approved features instead of inferring benefits from plan codes', () => {
+    const fixture = TestBed.createComponent(PlanSelectorComponent);
+    fixture.componentRef.setInput('catalog', catalogFixture);
+    TestBed.inject(LanguageService).setLanguage('en');
+    const features = fixture.componentInstance.getPlanFeatures({
+      ...catalogFixture.products[0].plans[0],
+      code: 'PREMIUM',
+      features: [
+        {
+          code: 'MEDICAL_ENCOUNTER',
+          nameEn: 'Server-approved visit',
+          isReleaseReady: true,
+          accessLevel: 'Full',
+        },
+        { code: 'UNREADY', nameEn: 'Not launched', isReleaseReady: false, accessLevel: 'Full' },
+      ],
+    });
+    expect(features).toEqual(['Server-approved visit']);
+    expect(features.join(' ')).not.toContain('Enterprise');
   });
 });

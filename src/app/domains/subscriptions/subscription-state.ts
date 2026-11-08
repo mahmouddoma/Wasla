@@ -105,6 +105,55 @@ export class SubscriptionState {
       this.contracts().some((c) => c.subscriptionContractId === id) ? id : '',
     );
   }
+  async refreshContract(id: string): Promise<void> {
+    const identity = this.identity(),
+      revision = this.revision;
+    if (!identity || !this.contracts().some((contract) => contract.subscriptionContractId === id))
+      return;
+    try {
+      const returned = await firstValueFrom(this.api.contracts(id));
+      if (identity !== this.identity() || revision !== this.revision) return;
+      const contract = returned.find((contract) => contract.subscriptionContractId === id);
+      if (!contract) {
+        this.snapshot.update((snapshot) =>
+          snapshot
+            ? {
+                ...snapshot,
+                contracts: snapshot.contracts.filter(
+                  (contract) => contract.subscriptionContractId !== id,
+                ),
+              }
+            : null,
+        );
+        this.selectContract('');
+        this.allocations.set({});
+        return;
+      }
+      const contracts = this.contracts().map((current) =>
+        current.subscriptionContractId === id ? contract : current,
+      );
+      this.snapshot.set({ identity, contracts });
+      this.allocations.set({});
+      this.now.set(Date.now());
+      this.scheduleBoundary(contracts);
+    } catch (error) {
+      if (identity === this.identity() && revision === this.revision) {
+        this.snapshot.update((snapshot) =>
+          snapshot
+            ? {
+                ...snapshot,
+                contracts: snapshot.contracts.filter(
+                  (contract) => contract.subscriptionContractId !== id,
+                ),
+              }
+            : null,
+        );
+        if (this.selectedContractId() === id) this.selectedContractId.set('');
+        this.allocations.set({});
+      }
+      throw error;
+    }
+  }
   currentDetails(contract: SubscriptionContract): SubscriptionDetails | null {
     return contract.periods.find((p) => this.effective(p.subscription)) ?? null;
   }

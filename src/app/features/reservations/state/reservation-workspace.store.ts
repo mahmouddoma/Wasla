@@ -1226,6 +1226,23 @@ export class ReservationWorkspaceStore {
     this.messages.set(messages);
     this.toast.error(messages.join(' ') || this.language.t('common.requestFailed'));
     if (
+      this.actor() === 'Patient' &&
+      error instanceof HttpErrorResponse &&
+      [403, 404].includes(error.status) &&
+      !this.isCommercialDenial(error)
+    ) {
+      this.listSequence++;
+      this.resetDrawer();
+      this.patients.set([]);
+      this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+      this.loading.set(false);
+      try {
+        this.patients.set(await firstValueFrom(this.api.bookablePatients()));
+      } catch {
+        // View and booking permissions are independent; denied booking stays empty.
+      }
+    }
+    if (
       error instanceof HttpErrorResponse &&
       error.status === 403 &&
       !this.isCommercialDenial(error) &&

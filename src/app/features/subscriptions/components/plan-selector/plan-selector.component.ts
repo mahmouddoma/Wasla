@@ -9,7 +9,7 @@ import {
   signal,
   SimpleChanges,
 } from '@angular/core';
-import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import {
   CommercialCatalog,
   CommercialPlan,
@@ -69,12 +69,28 @@ export class PlanSelectorComponent implements OnChanges {
     ),
   );
 
-  readonly isBookingEnabled = computed(() => Boolean(this.catalog().bookingOnly.enabled && this.bookingProduct()?.enabled && typeof this.catalog().bookingOnly.monthlyUnitPrice === 'number'));
-  readonly count = computed(() => this.bookingCount() ?? this.selection()?.selectedPracticeCount ?? this.catalog().bookingOnly.minimumSelectedPractices ?? 1);
-  readonly bookingTier = computed(() => {
+  readonly isBookingEnabled = computed(() =>
+    Boolean(
+      this.catalog().bookingOnly.enabled &&
+      this.bookingProduct()?.enabled &&
+      typeof this.catalog().bookingOnly.monthlyUnitPrice === 'number',
+    ),
+  );
+  readonly count = computed(
+    () =>
+      this.bookingCount() ??
+      this.selection()?.selectedPracticeCount ??
+      this.catalog().bookingOnly.minimumSelectedPractices ??
+      1,
+  );
+  readonly bookingQuote = computed(() => {
     const count = this.count();
-    return this.isBookingEnabled() && Number.isInteger(count) && count >= (this.catalog().bookingOnly.minimumSelectedPractices ?? 1) && count <= 2147483647
-      ? { monthlyPrice: count * this.catalog().bookingOnly.monthlyUnitPrice! } : undefined;
+    return this.isBookingEnabled() &&
+      Number.isInteger(count) &&
+      count >= (this.catalog().bookingOnly.minimumSelectedPractices ?? 1) &&
+      count <= 2147483647
+      ? { monthlyPrice: count * this.catalog().bookingOnly.monthlyUnitPrice! }
+      : undefined;
   });
 
   readonly options = computed(() =>
@@ -140,119 +156,37 @@ export class PlanSelectorComponent implements OnChanges {
     }
   }
 
-  getPlanDesc(planCode: string): string {
-    const isEn = this.language.currentLang() === 'en';
-    switch (planCode) {
-      case 'STARTER':
-        return isEn
-          ? 'Best for individual doctors and solo private practices.'
-          : 'مثالية للأطباء والعيادات الفردية المستقلة.';
-      case 'PROFESSIONAL':
-        return isEn
-          ? 'Best for growing clinics needing financial insights and report exports.'
-          : 'الأفضل للعيادات المتنامية التي تحتاج إدارة المصروفات والتقارير المتقدمة.';
-      case 'PREMIUM':
-        return isEn
-          ? 'Best for medical centers and multi-branch polyclinics.'
-          : 'للمراكز الطبية والمجمعات والعيادات المتعددة ذات الفروع.';
-      case 'ONLINE_BOOKING_ONLY':
-      case 'BOOKING_ONLY':
-        return isEn
-          ? 'Dedicated for online appointments and public doctor discovery.'
-          : 'مخصصة لإدارة الحجوزات والظهور الرقمي لصفحة العيادة.';
-      default:
-        return isEn
-          ? 'Full comprehensive healthcare platform management.'
-          : 'إدارة شاملة ومتكاملة لكافة أعمال العيادة والمنظومة الطبية.';
-    }
+  getPlanFeatures(plan: CommercialPlan): string[] {
+    return plan.features
+      .filter(
+        (feature) => feature.isReleaseReady && ['Full', 'ReadOnly'].includes(feature.accessLevel),
+      )
+      .map((feature) => {
+        const translated = this.language.t('subscriptions.feature.' + feature.code);
+        const name = this.language.currentLang() === 'ar' ? feature.nameAr : feature.nameEn;
+        const label =
+          name ||
+          (translated.startsWith('subscriptions.feature.')
+            ? this.language.t('subscriptions.catalogFeature')
+            : translated);
+        return feature.accessLevel === 'ReadOnly'
+          ? label + ' · ' + this.language.t('subscriptions.readOnlyFeature')
+          : label;
+      });
   }
 
   getBookingFeatures(): string[] {
-    const isEn = this.language.currentLang() === 'en';
-    return isEn
-      ? [
-          'Public Doctor Profile & Web Discovery',
-          'Online Patient Reservation Booking',
-          'Practice Schedule & Working Hours Availability',
-          'Appointment Notifications & Management',
-          'Practice Branding & Clinic Information',
-          'Dedicated Online Booking Dashboard',
-        ]
-      : [
-          'ظهور صفحة الطبيب والحجز الإلكتروني',
-          'استقبال وتأكيد حجوزات المرضى أونلاين',
-          'تنظيم مواعيد العيادة وساعات العمل',
-          'إدارة الحجوزات وإشعارات الحجز المباشرة',
-          'هوية العيادة وبيانات التواصل والعنوان',
-          'لوحة تحكم مخصصة للحجوزات الإلكترونية',
-        ];
+    const plan = this.bookingProduct()?.plans.find(
+      (plan) => plan.code === this.catalog().bookingOnly.planCode,
+    );
+    return plan ? this.getPlanFeatures(plan) : [];
   }
 
-  getPlanFeatures(plan: CommercialPlan): string[] {
-    const isEn = this.language.currentLang() === 'en';
-    if (plan.code === 'STARTER') {
-      return isEn
-        ? [
-            'Full Clinical Visit & Medical Encounter',
-            'Electronic Prescriptions & Diagnoses',
-            'Patient Medical Records, Labs & Radiology',
-            'Queue Management, Check-in & Walk-in',
-            'Online Booking & Doctor Discovery',
-            'Payment Collection & Financial Summary',
-          ]
-        : [
-            'الزيارة الطبية والكشف السريري المتكامل',
-            'الروشتات الإلكترونية والتشخيص الطبي',
-            'سجلات المرضى الكاملة، التحاليل والأشعة',
-            'التذاكر والطابور والحضور المباشر',
-            'الحجز الإلكتروني وظهور الطبيب',
-            'تحصيل المدفوعات وإيرادات العيادة',
-          ];
-    }
-    if (plan.code === 'PROFESSIONAL') {
-      return isEn
-        ? [
-            'All Starter features included',
-            'Operating Expenses & Salaries Management',
-            'Reception Shift Handover',
-            'Advanced Operational Reports',
-            'Export Reports (PDF / Excel)',
-            'Segment Priority & Custom Quotas',
-          ]
-        : [
-            'جميع مميزات الباقة الأساسية',
-            'إدارة مصروفات التشغيل ومسير الرواتب',
-            'تسليم نوبتجيات الاستقبال (Handover)',
-            'تقارير الأداء والتشغيل المتقدمة',
-            'تصدير التقارير (PDF و Excel)',
-            'أولوية الدخول وحصص الشرائح المتقدمة',
-          ];
-    }
-    if (plan.code === 'PREMIUM') {
-      return isEn
-        ? [
-            'All Professional features included',
-            'Cross-Practice & Multi-Branch Comparison',
-            'Advanced Rule-Based Operational Insights',
-            'Priority Quotas & High-Capacity Workflows',
-            'Multi-Doctor & Complex Clinic Governance',
-            'Full Enterprise Financial & Operational Analytics',
-          ]
-        : [
-            'جميع مميزات الباقة الاحترافية',
-            'مقارنة أداء العيادات والفروع المتعددة',
-            'مؤشرات تشغيل متقدمة وقواعد ذكية',
-            'أعلى سعة للعيادات وموظفي الاستقبال',
-            'حوكمة وإدارة متعددة للأطباء والمراكز',
-            'تحليلات تشغيلية ومالية متقدمة وشاملة',
-          ];
-    }
-    return plan.features
-      .slice(0, 6)
-      .map((f) => (isEn ? f.nameEn || f.nameAr || f.code : f.nameAr || f.nameEn || f.code));
-  }
-
-  isSelected(option: { product: { code: string }; plan: { code: string }; cycle: string }): boolean {
+  isSelected(option: {
+    product: { code: string };
+    plan: { code: string };
+    cycle: string;
+  }): boolean {
     const sel = this.selection();
     return (
       !sel?.offerCode &&
@@ -288,26 +222,12 @@ export class PlanSelectorComponent implements OnChanges {
   }
 
   chooseBooking(): void {
-    if (!this.disabled() && this.isBookingEnabled() && this.bookingProduct() && this.bookingTier())
+    if (!this.disabled() && this.isBookingEnabled() && this.bookingProduct() && this.bookingQuote())
       this.selectionChange.emit({
         productCode: 'ONLINE_BOOKING_ONLY',
         planCode: this.catalog().bookingOnly.planCode,
         billingCycle: 'Monthly',
         selectedPracticeCount: this.count(),
       });
-  }
-
-  readyFeatures(plan: CommercialPlan): string {
-    const names = plan.features
-      .filter((feature) => feature.isReleaseReady)
-      .map((feature) =>
-        this.language.currentLang() === 'ar'
-          ? feature.nameAr || feature.nameEn || feature.code
-          : feature.nameEn || feature.nameAr || feature.code,
-      );
-    return new Intl.ListFormat(this.language.currentLang(), {
-      style: 'short',
-      type: 'conjunction',
-    }).format(names);
   }
 }

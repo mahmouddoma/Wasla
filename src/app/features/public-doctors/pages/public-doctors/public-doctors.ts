@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
@@ -39,10 +39,18 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicDoctors {
+  protected readonly failedPracticeLogos = signal<ReadonlySet<string>>(new Set());
+  protected practiceLogoUrl(id: string): string {
+    return this.api.practiceLogoUrl(id);
+  }
+  protected markPracticeLogoFailed(id: string): void {
+    this.failedPracticeLogos.update((ids) => new Set([...ids, id]));
+  }
   protected readonly language = inject(LanguageService);
   protected readonly authSession = inject(AuthSession);
   private readonly location = inject(Location);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(PublicDiscoveryApi);
   private readonly locationsApi = inject(DoctorProfileApi);
   private readonly reservationsApi = inject(ReservationsApi);
@@ -230,8 +238,12 @@ export class PublicDoctors {
       try {
         const patients = await firstValueFrom(this.reservationsApi.bookablePatients());
         this.bookablePatients.set(patients);
-        const self = patients.find((p) => p.isSelf) || patients[0];
-        if (self) this.selectedPatientId.set(self.patientId);
+        const requested = this.route.snapshot.queryParamMap.get('patientId');
+        const patient =
+          patients.find((p) => p.patientId === requested) ||
+          patients.find((p) => p.isSelf) ||
+          patients[0];
+        if (patient) this.selectedPatientId.set(patient.patientId);
       } catch {
         // Patient list optional or loaded on confirm
       }
@@ -323,9 +335,13 @@ export class PublicDoctors {
       try {
         const patients = await firstValueFrom(this.reservationsApi.bookablePatients());
         this.bookablePatients.set(patients);
-        const self = patients.find((p) => p.isSelf) || patients[0];
-        if (self) {
-          patientId = self.patientId;
+        const requested = this.route.snapshot.queryParamMap.get('patientId');
+        const patient =
+          patients.find((p) => p.patientId === requested) ||
+          patients.find((p) => p.isSelf) ||
+          patients[0];
+        if (patient) {
+          patientId = patient.patientId;
           this.selectedPatientId.set(patientId);
         }
       } catch (err) {
@@ -389,6 +405,25 @@ export class PublicDoctors {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         // Refresh choices without replaying a mutation or losing the patient's selection.
         await this.chooseDrawerDate(date);
+        this.drawerMessages.set(errMsgs);
+      }
+      if (error instanceof HttpErrorResponse && [403, 404].includes(error.status) && !unavailable) {
+        this.bookablePatients.set([]);
+        this.selectedPatientId.set('');
+        try {
+          const patients = await firstValueFrom(this.reservationsApi.bookablePatients());
+          this.bookablePatients.set(patients);
+          this.selectedPatientId.set(
+            patients.find((patient) => patient.patientId === patientId)?.patientId ??
+              patients.find((patient) => patient.isSelf)?.patientId ??
+              '',
+          );
+          await this.chooseDrawerDate(date);
+        } catch {
+          this.drawerOptions.set(null);
+          this.drawerSlots.set([]);
+          this.drawerSelectedTime.set('');
+        }
         this.drawerMessages.set(errMsgs);
       }
     } finally {

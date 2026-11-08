@@ -425,7 +425,7 @@ interface FamilyRequestDetailsResponse {
     rowVersion: string;
   };
   requester: FamilyRequestPartyResponse;
-  target: FamilyRequestPartyResponse;
+  target: FamilyRequestPartyResponse | null;
   requesterClaimedRole: Exclude<FamilyRole, 'Child'>;
   targetClaimedRole: FamilyRole;
   modificationMessage: string | null;
@@ -481,8 +481,8 @@ function normalizeFamilyRequestDetails(
     status: response.request.status,
     requesterPatientId: response.requester.patientId,
     requesterNameAr: response.requester.nameAr,
-    targetPatientId: response.target.patientId,
-    targetNameAr: response.target.nameAr,
+    targetPatientId: response.target?.patientId ?? null,
+    targetNameAr: response.target?.nameAr ?? null,
     requesterClaimedRole: response.requesterClaimedRole,
     targetClaimedRole: response.targetClaimedRole,
     currentRevisionNumber: response.request.currentRevisionNumber,

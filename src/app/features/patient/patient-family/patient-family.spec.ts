@@ -1,136 +1,101 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
 import { AuthSession } from '../../../core/auth/auth-session';
-import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
-import {
-  Family,
-  FamilyRequestDetails,
-  FamilyRequestPage,
-} from '../../../domains/families';
-import { FamiliesApi } from '../../../domains/families';
+import { FamiliesApi, FamilyWorkspaceApi } from '../../../domains/families';
+import { childFixture, workspaceFixture } from '../../../../testing/family-workspace';
 import { PatientFamily } from './patient-family';
 
-describe('PatientFamily', () => {
-  let fixture: ComponentFixture<PatientFamily>;
-  let component: PatientFamily;
-
-  const sampleFamily: Family = {
-    familyId: 'fam-1',
-    status: 'Active',
-    members: [
-      {
-        patientId: 'pat-1',
-        nameAr: 'أحمد محمود',
-        nameEn: 'Ahmed Mahmoud',
-        role: 'Father',
-        gender: 'Male',
-      },
-    ],
-  };
-
-  const samplePage: FamilyRequestPage = {
-    items: [],
-    pageNumber: 1,
-    pageSize: 20,
-    totalCount: 0,
-    totalPages: 0,
-  };
-
-  const sampleDetails: FamilyRequestDetails = {
-    requestId: 'req-1',
-    familyId: 'fam-1',
-    requesterPatientId: 'pat-1',
-    requesterNameAr: 'أحمد محمود',
-    targetPatientId: 'pat-2',
-    targetNameAr: 'علي أحمد',
-    requestType: 'CreateFamily',
-    status: 'Pending',
-    requesterClaimedRole: 'Father',
-    targetClaimedRole: 'Child',
-    currentRevisionNumber: 1,
-    submittedOnUtc: '2026-01-01T00:00:00Z',
-    modificationMessage: null,
-    rejectionReason: null,
-    currentFamilyMembers: [],
-    documents: [],
-    history: [],
-    rowVersion: 'ver-1',
-  };
-
+describe('PatientFamily workspace', () => {
   const api = {
-    mine: vi.fn(() => of(sampleFamily)),
-    requests: vi.fn(() => of(samplePage)),
-    details: vi.fn(() => of(sampleDetails)),
-    submit: vi.fn(() => of(sampleDetails)),
-    resubmit: vi.fn(() => of(sampleDetails)),
+    workspace: vi.fn(),
+    onboardingRequests: vi.fn(),
+    governanceCases: vi.fn(),
+    onboardingDetails: vi.fn(),
   };
-
-  const session = {
-    hasPermission: vi.fn(() => true),
-  };
-
-  const toast = {
-    success: vi.fn(),
-    error: vi.fn(),
-  };
-
-  beforeEach(async () => {
+  const session = { hasPermission: vi.fn(() => false) };
+  const relationships = { requests: vi.fn() };
+  beforeEach(() => {
     vi.clearAllMocks();
-    api.mine.mockReturnValue(of(sampleFamily));
-    api.requests.mockReturnValue(of(samplePage));
-    api.details.mockReturnValue(of(sampleDetails));
-    api.submit.mockReturnValue(of(sampleDetails));
-    session.hasPermission.mockReturnValue(true);
-
+    api.workspace.mockReturnValue(of(workspaceFixture()));
     TestBed.configureTestingModule({
       imports: [PatientFamily],
       providers: [
         provideRouter([]),
-        { provide: FamiliesApi, useValue: api },
+        { provide: FamilyWorkspaceApi, useValue: api },
+        { provide: FamiliesApi, useValue: relationships },
         { provide: AuthSession, useValue: session },
-        { provide: ToastService, useValue: toast },
+        { provide: ToastService, useValue: { error: vi.fn(), success: vi.fn() } },
       ],
     });
-    TestBed.inject(LanguageService).setLanguage('ar');
-    fixture = TestBed.createComponent(PatientFamily);
-    component = fixture.componentInstance;
-    await fixture.whenStable();
   });
-
-  afterEach(() => localStorage.removeItem('wasla_lang'));
-
-  it('loads family data and relationship requests on creation', async () => {
-    expect(component).toBeTruthy();
-    expect(api.mine).toHaveBeenCalled();
-    expect(api.requests).toHaveBeenCalled();
-    expect(component['family']()).toEqual(sampleFamily);
-    expect(component['loading']()).toBe(false);
-  });
-
-  it('selects request and loads full request details', async () => {
-    await component['openRequest']('req-1');
-    expect(api.details).toHaveBeenCalledWith('req-1');
-    expect(component['selectedRequest']()).toEqual(sampleDetails);
-  });
-
-  it('submits relationship request with valid files and displays feedback', async () => {
-    const dummyFile = new File(['proof'], 'birth_cert.pdf', { type: 'application/pdf' });
-    component['requestModel'].set({
-      requestType: 'CreateFamily',
-      familyId: '',
-      targetPatientId: '00000000-0000-0000-0000-000000000002',
-      requesterClaimedRole: 'Father',
-      targetClaimedRole: 'Child',
-      documentTypes: 'BirthCertificate',
-    });
-    component['evidenceFiles'].set([dummyFile]);
+  it('renders the no-family workspace directly from a successful response', async () => {
+    const fixture = TestBed.createComponent(PatientFamily);
     fixture.detectChanges();
-
-    await component['submitRequest'](new Event('submit', { cancelable: true }));
-
-    expect(api.submit).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalled();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.componentInstance).toBeTruthy();
+    expect(api.workspace).toHaveBeenCalledOnce();
+    expect(fixture.nativeElement.querySelector('.state img')).not.toBeNull();
+  });
+  it('gates medical and operational actions independently', async () => {
+    api.workspace.mockReturnValue(
+      of(workspaceFixture({ hasFamily: true, dependents: [childFixture({ canBook: true })] })),
+    );
+    const fixture = TestBed.createComponent(PatientFamily);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const links = [...fixture.nativeElement.querySelectorAll('.dependent-row a')].map(
+      (a: HTMLAnchorElement) => a.getAttribute('href'),
+    );
+    expect(links).toEqual(['/doctors?patientId=child']);
+  });
+  it('routes pending workflows by their returned reference', async () => {
+    api.onboardingDetails.mockReturnValue(of([]));
+    const component = TestBed.createComponent(PatientFamily).componentInstance;
+    await component.openWorkflow({
+      kind: 'ChildOnboarding',
+      reference: 'opaque-request',
+      status: 'PendingReview',
+      nextAction: 'WaitForReview',
+      createdAtUtc: '',
+    });
+    expect(api.onboardingDetails).toHaveBeenCalledWith('opaque-request');
+  });
+  it('clears a previously loaded workspace when access is revoked', async () => {
+    const component = TestBed.createComponent(PatientFamily).componentInstance;
+    await Promise.resolve();
+    api.workspace.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+    await component.load();
+    expect(component.workspace()).toBeNull();
+    expect(component.failed()).toBe(true);
+  });
+  it('preserves the paginated relationship history and its server filters', async () => {
+    session.hasPermission.mockReturnValue(true);
+    relationships.requests.mockReturnValue(
+      of({ items: [], pageNumber: 2, pageSize: 20, totalCount: 25 }),
+    );
+    const component = TestBed.createComponent(PatientFamily).componentInstance;
+    component.requestType = 'VerifyOperationalParentChild';
+    component.requestStatus = 'ModificationRequested';
+    component.requestSearch = '  test  ';
+    await component.loadRelationshipRequests(2);
+    expect(relationships.requests).toHaveBeenCalledWith({
+      pageNumber: 2,
+      pageSize: 20,
+      status: 'ModificationRequested',
+      requestType: 'VerifyOperationalParentChild',
+      search: 'test',
+    });
+    expect(component.relationshipHistory()?.totalCount).toBe(25);
+  });
+  it('releases the drawer busy state after a completed mutation refresh', () => {
+    const component = TestBed.createComponent(PatientFamily).componentInstance;
+    component.busy.set(true);
+    component.close();
+    expect(component.busy()).toBe(false);
   });
 });

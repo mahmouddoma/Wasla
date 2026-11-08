@@ -60,13 +60,6 @@ export type BookingOnlyOptions = {
   readonly minimumSelectedPractices?: number;
   readonly enabled: boolean;
   readonly planCode: string | null;
-  readonly maximumSelectablePractices: number;
-  readonly pricingTiers: readonly BookingPricingTier[] | null;
-};
-export type BookingPricingTier = {
-  readonly minPracticeCount: number;
-  readonly maxPracticeCount: number;
-  readonly monthlyPrice: number;
 };
 export type SubscriptionPaymentOptions = {
   readonly cash: boolean;

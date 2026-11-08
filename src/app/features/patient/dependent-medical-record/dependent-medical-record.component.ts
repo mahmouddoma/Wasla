@@ -4,12 +4,14 @@ import {
   computed,
   inject,
   signal,
+  OnDestroy,
 } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { openPrivateMedia } from '../../../core/media/private-media';
 import { ToastService } from '../../../core/notifications/toast.service';
 import {
   FamiliesApi,
@@ -17,23 +19,59 @@ import {
   FamilyMedicalRecordEncounter,
   FamilyMedicalRecordItem,
   FamilyMedicalRecordOverview,
-  MedicalRecordResourceType,
+  MedicalRecordFilterType,
+  FamilyWorkspaceApi,
+  FamilyWorkspaceChild,
   MedicalRecordTimelineEntry,
 } from '../../../domains/families';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
+import { HistoricalDocumentsComponent } from '../historical-documents/historical-documents.component';
+import { DependentDiagnosticsComponent } from '../dependent-diagnostics/dependent-diagnostics.component';
+import {
+  ClinicalRecordEntry,
+  isClinicalRecordEntry,
+  isHistoricalRecordEntry,
+} from '../../../domains/medical-records/patient-record.models';
 
 @Component({
   selector: 'app-dependent-medical-record',
-  imports: [PageHeader, SideDrawer, TranslatePipe],
+  imports: [
+    PageHeader,
+    SideDrawer,
+    TranslatePipe,
+    HistoricalDocumentsComponent,
+    DependentDiagnosticsComponent,
+  ],
   templateUrl: './dependent-medical-record.component.html',
   styleUrls: ['./dependent-medical-record.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DependentMedicalRecordComponent {
+export class DependentMedicalRecordComponent implements OnDestroy {
   protected readonly uiLanguage = inject(LanguageService);
   private readonly api = inject(FamiliesApi);
   private readonly toast = inject(ToastService);
+  private readonly workspaceApi = inject(FamilyWorkspaceApi);
+  private readonly route = inject(ActivatedRoute);
+  readonly isClinical = isClinicalRecordEntry;
+  readonly isHistorical = isHistoricalRecordEntry;
+  readonly workspaceChildren = signal<FamilyWorkspaceChild[]>([]);
+  readonly documentId = signal<string | null>(null);
+  readonly showDocuments = signal(false);
+  readonly selectedCapabilities = computed(() =>
+    this.workspaceChildren().find((child) => child.patientId === this.selectedDependentId()),
+  );
+  private sequence = 0;
+  private encounterRequest = 0;
+  private itemRequest = 0;
+  private readonly mediaUrls = new Set<string>();
+  private destroyed = false;
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    this.sequence++;
+    this.closeEncounterDrawer();
+    this.closeItemDrawer();
+  }
 
   // Dependents List
   protected readonly dependents = signal<FamilyMedicalDependent[]>([]);
@@ -50,7 +88,7 @@ export class DependentMedicalRecordComponent {
   protected readonly messages = signal<string[]>([]);
 
   // Filter
-  protected readonly filterType = signal<MedicalRecordResourceType | ''>('');
+  protected readonly filterType = signal<MedicalRecordFilterType | ''>('');
   protected readonly fromDate = signal<string>('');
   protected readonly toDate = signal<string>('');
 
@@ -65,12 +103,19 @@ export class DependentMedicalRecordComponent {
   protected readonly loadingItem = signal<boolean>(false);
   protected readonly downloadingAttachmentId = signal<string>('');
 
-  protected readonly selectedDependent = computed(() =>
-    this.dependents().find((d) => d.patientId === this.selectedDependentId()) ?? null,
+  protected readonly selectedDependent = computed(
+    () => this.dependents().find((d) => d.patientId === this.selectedDependentId()) ?? null,
   );
 
   constructor() {
     void this.loadDependents();
+    void firstValueFrom(this.workspaceApi.workspace())
+      .then((value) => {
+        if (!this.destroyed) this.workspaceChildren.set(value.dependents);
+      })
+      .catch(() => {
+        if (!this.destroyed) this.workspaceChildren.set([]);
+      });
   }
 
   protected async loadDependents(): Promise<void> {
@@ -81,7 +126,10 @@ export class DependentMedicalRecordComponent {
       const items = res.items ?? [];
       this.dependents.set(items);
       if (items.length > 0) {
-        this.selectDependent(items[0].patientId);
+        const requested = this.route.snapshot.queryParamMap.get('patientId');
+        this.selectDependent(
+          items.find((item) => item.patientId === requested)?.patientId ?? items[0].patientId,
+        );
       }
     } catch (error) {
       this.messages.set(parseApiErrors(error).messages);
@@ -93,6 +141,10 @@ export class DependentMedicalRecordComponent {
   protected selectDependent(dependentId: string): void {
     if (this.selectedDependentId() === dependentId && this.overview()) return;
     this.selectedDependentId.set(dependentId);
+    this.closeEncounterDrawer();
+    this.closeItemDrawer();
+    this.showDocuments.set(false);
+    this.documentId.set(null);
     void this.loadMedicalRecord(dependentId);
   }
 
@@ -100,8 +152,14 @@ export class DependentMedicalRecordComponent {
     if (!dependentId) return;
     this.loadingRecord.set(true);
     this.messages.set([]);
+    const sequence = ++this.sequence;
+    this.loadingMore.set(false);
+    this.overview.set(null);
+    this.timelineEntries.set([]);
+    this.nextCursor.set(null);
+    this.hasMore.set(false);
     try {
-      const types = this.filterType() ? [this.filterType() as MedicalRecordResourceType] : undefined;
+      const types = this.filterType() ? [this.filterType() as MedicalRecordFilterType] : undefined;
       const [overviewData, timelineData] = await Promise.all([
         firstValueFrom(
           this.api.dependentMedicalRecordOverview(dependentId, {
@@ -120,16 +178,18 @@ export class DependentMedicalRecordComponent {
         ),
       ]);
 
+      if (sequence !== this.sequence) return;
       this.overview.set(overviewData);
       this.timelineEntries.set(timelineData.items ?? []);
       this.nextCursor.set(timelineData.nextCursor ?? null);
       this.hasMore.set(timelineData.hasMore ?? false);
     } catch (error) {
+      if (sequence !== this.sequence) return;
       this.messages.set(parseApiErrors(error).messages);
       this.overview.set(null);
       this.timelineEntries.set([]);
     } finally {
-      this.loadingRecord.set(false);
+      if (sequence === this.sequence) this.loadingRecord.set(false);
     }
   }
 
@@ -139,8 +199,9 @@ export class DependentMedicalRecordComponent {
     if (!dependentId || !cursor || this.loadingMore()) return;
 
     this.loadingMore.set(true);
+    const sequence = this.sequence;
     try {
-      const types = this.filterType() ? [this.filterType() as MedicalRecordResourceType] : undefined;
+      const types = this.filterType() ? [this.filterType() as MedicalRecordFilterType] : undefined;
       const timelineData = await firstValueFrom(
         this.api.dependentMedicalRecordTimeline(dependentId, {
           types,
@@ -151,17 +212,32 @@ export class DependentMedicalRecordComponent {
         }),
       );
 
+      if (sequence !== this.sequence || this.destroyed) return;
       this.timelineEntries.update((prev) => [...prev, ...(timelineData.items ?? [])]);
       this.nextCursor.set(timelineData.nextCursor ?? null);
       this.hasMore.set(timelineData.hasMore ?? false);
-    } catch {
+    } catch (error) {
+      if (sequence !== this.sequence || this.destroyed) return;
+      this.nextCursor.set(null);
+      this.hasMore.set(false);
+      if (error instanceof HttpErrorResponse && [400, 409].includes(error.status)) {
+        await this.loadMedicalRecord(dependentId);
+        return;
+      }
+      if (error instanceof HttpErrorResponse && [401, 403, 404].includes(error.status)) {
+        this.overview.set(null);
+        this.timelineEntries.set([]);
+        this.closeEncounterDrawer();
+        this.closeItemDrawer();
+        this.showDocuments.set(false);
+      }
       this.toast.error(this.uiLanguage.t('common.failedToLoad'));
     } finally {
-      this.loadingMore.set(false);
+      if (sequence === this.sequence) this.loadingMore.set(false);
     }
   }
 
-  protected onFilterChange(type: MedicalRecordResourceType | ''): void {
+  protected onFilterChange(type: MedicalRecordFilterType | ''): void {
     this.filterType.set(type);
     void this.loadMedicalRecord(this.selectedDependentId());
   }
@@ -180,48 +256,68 @@ export class DependentMedicalRecordComponent {
     this.loadingEncounter.set(true);
     this.selectedEncounter.set(null);
     this.encounterDrawerOpen.set(true);
+    const request = ++this.encounterRequest;
 
     try {
       const enc = await firstValueFrom(
         this.api.dependentMedicalRecordEncounter(dependentId, encounterId),
       );
+      if (
+        request !== this.encounterRequest ||
+        dependentId !== this.selectedDependentId() ||
+        this.destroyed
+      )
+        return;
       this.selectedEncounter.set(enc);
     } catch {
       this.toast.error(this.uiLanguage.t('common.failedToLoad'));
-      this.encounterDrawerOpen.set(false);
+      if (request === this.encounterRequest) this.encounterDrawerOpen.set(false);
     } finally {
-      this.loadingEncounter.set(false);
+      if (request === this.encounterRequest) this.loadingEncounter.set(false);
     }
   }
 
   protected closeEncounterDrawer(): void {
+    this.encounterRequest++;
+    this.loadingEncounter.set(false);
     this.encounterDrawerOpen.set(false);
     this.selectedEncounter.set(null);
   }
 
   // Medical Item inspection drawer (WAS-401)
-  protected async openItemDrawer(entry: MedicalRecordTimelineEntry): Promise<void> {
+  protected async openItemDrawer(entry: ClinicalRecordEntry): Promise<void> {
     const dependentId = this.selectedDependentId();
     if (!dependentId || !entry.resourceType || !entry.sourceId) return;
 
     this.loadingItem.set(true);
     this.selectedItem.set(null);
     this.itemDrawerOpen.set(true);
+    const request = ++this.itemRequest;
 
     try {
       const item = await firstValueFrom(
         this.api.dependentMedicalRecordItem(dependentId, entry.resourceType, entry.sourceId),
       );
+      if (
+        request !== this.itemRequest ||
+        dependentId !== this.selectedDependentId() ||
+        this.destroyed
+      )
+        return;
       this.selectedItem.set(item);
     } catch {
       this.toast.error(this.uiLanguage.t('common.failedToLoad'));
-      this.itemDrawerOpen.set(false);
+      if (request === this.itemRequest) this.itemDrawerOpen.set(false);
     } finally {
-      this.loadingItem.set(false);
+      if (request === this.itemRequest) this.loadingItem.set(false);
     }
   }
 
   protected closeItemDrawer(): void {
+    this.itemRequest++;
+    this.loadingItem.set(false);
+    this.mediaUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.mediaUrls.clear();
     this.itemDrawerOpen.set(false);
     this.selectedItem.set(null);
   }
@@ -233,6 +329,7 @@ export class DependentMedicalRecordComponent {
     if (!dependentId || !item || !attachmentId) return;
 
     this.downloadingAttachmentId.set(attachmentId);
+    const request = this.itemRequest;
     try {
       const res = await firstValueFrom(
         this.api.dependentMedicalRecordAttachment(
@@ -242,8 +339,24 @@ export class DependentMedicalRecordComponent {
           attachmentId,
         ),
       );
-      if (res.body) {
-        openPrivateMedia(res);
+      if (
+        res.body &&
+        request === this.itemRequest &&
+        dependentId === this.selectedDependentId() &&
+        !this.destroyed
+      ) {
+        const url = URL.createObjectURL(res.body);
+        this.mediaUrls.add(url);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download =
+          item.attachments.find((attachment) => attachment.attachmentId === attachmentId)
+            ?.fileName ?? 'document';
+        anchor.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          this.mediaUrls.delete(url);
+        }, 1000);
         this.toast.success(this.uiLanguage.t('common.downloadSuccess'));
       }
     } catch {

@@ -26,11 +26,16 @@ describe('MedicalRecordsApi', () => {
   // WAS-588
   it('WAS-588: patientOverview fetches overview', () => {
     api.patientOverview().subscribe((res) => {
-      expect(res.patientId).toBe('p1');
+      expect(res.patient.patientId).toBe('p1');
     });
     const req = http.expectOne(`${patientUrl}/overview`);
     expect(req.request.method).toBe('GET');
-    req.flush({ patientId: 'p1', name: 'Patient One', visitsCount: 2, diagnosesCount: 1, prescriptionsCount: 1, labOrdersCount: 0, radiologyOrdersCount: 0, availableFilters: [], safeMode: true });
+    req.flush({
+      patient: { patientId: 'p1', nameAr: 'Patient One' },
+      summary: { completedVisitCount: 2 },
+      timeline: { items: [], hasMore: false, nextCursor: null },
+      availableFilters: [],
+    });
   });
 
   // WAS-589
@@ -46,7 +51,10 @@ describe('MedicalRecordsApi', () => {
         r.params.get('pageSize') === '10',
     );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ id: 'e1', itemType: 'Encounter', title: 'Visit', isHidden: false }], hasMore: false });
+    req.flush({
+      items: [{ id: 'e1', itemType: 'Encounter', title: 'Visit', isHidden: false }],
+      hasMore: false,
+    });
   });
 
   // WAS-590
@@ -56,7 +64,18 @@ describe('MedicalRecordsApi', () => {
     });
     const req = http.expectOne(`${patientUrl}/encounters/e1`);
     expect(req.request.method).toBe('GET');
-    req.flush({ encounterId: 'e1', dateUtc: '2026-10-01', doctorName: 'Dr A', practiceName: 'Clinic A', diagnoses: [], prescriptions: [], labOrders: [], radiologyOrders: [], visibility: 'Visible', rowVersion: 'v1' });
+    req.flush({
+      encounterId: 'e1',
+      dateUtc: '2026-10-01',
+      doctorName: 'Dr A',
+      practiceName: 'Clinic A',
+      diagnoses: [],
+      prescriptions: [],
+      labOrders: [],
+      radiologyOrders: [],
+      visibility: 'Visible',
+      rowVersion: 'v1',
+    });
   });
 
   // WAS-591
@@ -66,7 +85,16 @@ describe('MedicalRecordsApi', () => {
     });
     const req = http.expectOne(`${patientUrl}/items/prescriptions/item1`);
     expect(req.request.method).toBe('GET');
-    req.flush({ resourceType: 'prescriptions', sourceId: 'item1', title: 'Med', dateUtc: '2026-10-01', status: 'Active', doctorName: 'Dr A', details: {}, attachments: [] });
+    req.flush({
+      resourceType: 'prescriptions',
+      sourceId: 'item1',
+      title: 'Med',
+      dateUtc: '2026-10-01',
+      status: 'Active',
+      doctorName: 'Dr A',
+      details: {},
+      attachments: [],
+    });
   });
 
   // WAS-592
@@ -86,7 +114,19 @@ describe('MedicalRecordsApi', () => {
     });
     const req = http.expectOne((r) => r.url === `${patientUrl}/access-log`);
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ id: 'l1', actorName: 'Dr A', actorRole: 'Doctor', action: 'View', resource: 'Record', timestampUtc: '2026-10-01' }], hasMore: false });
+    req.flush({
+      items: [
+        {
+          id: 'l1',
+          actorName: 'Dr A',
+          actorRole: 'Doctor',
+          action: 'View',
+          resource: 'Record',
+          timestampUtc: '2026-10-01',
+        },
+      ],
+      hasMore: false,
+    });
   });
 
   // WAS-594
@@ -96,7 +136,18 @@ describe('MedicalRecordsApi', () => {
     });
     const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/overview`);
     expect(req.request.method).toBe('GET');
-    req.flush({ patientId: 'p1', patientName: 'P1', ticketId: 'tk1', encounterId: 'e1', visitsCount: 1, diagnosesCount: 0, prescriptionsCount: 0, labOrdersCount: 0, radiologyOrdersCount: 0, hiddenEncountersCount: 0 });
+    req.flush({
+      patientId: 'p1',
+      patientName: 'P1',
+      ticketId: 'tk1',
+      encounterId: 'e1',
+      visitsCount: 1,
+      diagnosesCount: 0,
+      prescriptionsCount: 0,
+      labOrdersCount: 0,
+      radiologyOrdersCount: 0,
+      hiddenEncountersCount: 0,
+    });
   });
 
   // WAS-595
@@ -104,9 +155,14 @@ describe('MedicalRecordsApi', () => {
     api.doctorTreatingTimeline('pr1', 'tk1').subscribe((res) => {
       expect(res.items.length).toBe(1);
     });
-    const req = http.expectOne((r) => r.url === `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/timeline`);
+    const req = http.expectOne(
+      (r) => r.url === `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/timeline`,
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ id: 'e1', itemType: 'Encounter', title: 'Visit', isHidden: false }], hasMore: false });
+    req.flush({
+      items: [{ id: 'e1', itemType: 'Encounter', title: 'Visit', isHidden: false }],
+      hasMore: false,
+    });
   });
 
   // WAS-596
@@ -114,9 +170,22 @@ describe('MedicalRecordsApi', () => {
     api.doctorTreatingEncounter('pr1', 'tk1', 'e1').subscribe((res) => {
       expect(res.encounterId).toBe('e1');
     });
-    const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/encounters/e1`);
+    const req = http.expectOne(
+      `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/encounters/e1`,
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ encounterId: 'e1', dateUtc: '2026-10-01', doctorName: 'Dr A', practiceName: 'Clinic A', diagnoses: [], prescriptions: [], labOrders: [], radiologyOrders: [], visibility: 'Visible', rowVersion: 'v1' });
+    req.flush({
+      encounterId: 'e1',
+      dateUtc: '2026-10-01',
+      doctorName: 'Dr A',
+      practiceName: 'Clinic A',
+      diagnoses: [],
+      prescriptions: [],
+      labOrders: [],
+      radiologyOrders: [],
+      visibility: 'Visible',
+      rowVersion: 'v1',
+    });
   });
 
   // WAS-597
@@ -124,9 +193,20 @@ describe('MedicalRecordsApi', () => {
     api.doctorTreatingItem('pr1', 'tk1', 'prescriptions', 'i1').subscribe((res) => {
       expect(res.sourceId).toBe('i1');
     });
-    const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/items/prescriptions/i1`);
+    const req = http.expectOne(
+      `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/items/prescriptions/i1`,
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ resourceType: 'prescriptions', sourceId: 'i1', title: 'Item', dateUtc: '2026-10-01', status: 'Active', doctorName: 'Dr A', details: {}, attachments: [] });
+    req.flush({
+      resourceType: 'prescriptions',
+      sourceId: 'i1',
+      title: 'Item',
+      dateUtc: '2026-10-01',
+      status: 'Active',
+      doctorName: 'Dr A',
+      details: {},
+      attachments: [],
+    });
   });
 
   // WAS-598
@@ -134,7 +214,9 @@ describe('MedicalRecordsApi', () => {
     api.doctorTreatingAttachment('pr1', 'tk1', 'prescriptions', 'i1', 'att1').subscribe((res) => {
       expect(res.status).toBe(200);
     });
-    const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/items/prescriptions/i1/attachments/att1/content`);
+    const req = http.expectOne(
+      `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/items/prescriptions/i1/attachments/att1/content`,
+    );
     expect(req.request.method).toBe('GET');
     req.flush(new Blob(['data']), { status: 200, statusText: 'OK' });
   });
@@ -144,9 +226,22 @@ describe('MedicalRecordsApi', () => {
     api.doctorTreatingAccessRequests('pr1', 'tk1').subscribe((res) => {
       expect(res.items.length).toBe(1);
     });
-    const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests`);
+    const req = http.expectOne(
+      `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests`,
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ requestId: 'rq1', sourceEncounterId: 'e2', visitDateUtc: '2026-09-01', status: 'Pending', requestedAtUtc: '2026-10-01', rowVersion: 'v1' }] });
+    req.flush({
+      items: [
+        {
+          requestId: 'rq1',
+          sourceEncounterId: 'e2',
+          visitDateUtc: '2026-09-01',
+          status: 'Pending',
+          requestedAtUtc: '2026-10-01',
+          rowVersion: 'v1',
+        },
+      ],
+    });
   });
 
   // WAS-600
@@ -154,9 +249,18 @@ describe('MedicalRecordsApi', () => {
     api.doctorTreatingAccessRequestDetails('pr1', 'tk1', 'rq1').subscribe((res) => {
       expect(res.requestId).toBe('rq1');
     });
-    const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests/rq1`);
+    const req = http.expectOne(
+      `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests/rq1`,
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ requestId: 'rq1', sourceEncounterId: 'e2', visitDateUtc: '2026-09-01', status: 'Pending', requestedAtUtc: '2026-10-01', rowVersion: 'v1' });
+    req.flush({
+      requestId: 'rq1',
+      sourceEncounterId: 'e2',
+      visitDateUtc: '2026-09-01',
+      status: 'Pending',
+      requestedAtUtc: '2026-10-01',
+      rowVersion: 'v1',
+    });
   });
 
   // WAS-601
@@ -165,10 +269,22 @@ describe('MedicalRecordsApi', () => {
     api.doctorCreateAccessRequest('pr1', 'tk1', payload).subscribe((res) => {
       expect(res.requestId).toBe('rq1');
     });
-    const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests`);
+    const req = http.expectOne(
+      `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests`,
+    );
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ requestId: 'rq1', sourceEncounterId: 'e2', visitDateUtc: '2026-09-01', status: 'Pending', requestedAtUtc: '2026-10-01', rowVersion: 'v1' }, { status: 201, statusText: 'Created' });
+    req.flush(
+      {
+        requestId: 'rq1',
+        sourceEncounterId: 'e2',
+        visitDateUtc: '2026-09-01',
+        status: 'Pending',
+        requestedAtUtc: '2026-10-01',
+        rowVersion: 'v1',
+      },
+      { status: 201, statusText: 'Created' },
+    );
   });
 
   // WAS-602
@@ -186,9 +302,27 @@ describe('MedicalRecordsApi', () => {
     api.doctorAccessInbox('Pending', 1, 10).subscribe((res) => {
       expect(res.items.length).toBe(1);
     });
-    const req = http.expectOne((r) => r.url === `${doctorUrl}/medical-record-access-requests/inbox` && r.params.get('status') === 'Pending');
+    const req = http.expectOne(
+      (r) =>
+        r.url === `${doctorUrl}/medical-record-access-requests/inbox` &&
+        r.params.get('status') === 'Pending',
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [{ requestId: 'rq1', status: 'Pending', canApprove: true, canReject: true, canRevoke: false, rowVersion: 'v1' }], pageNumber: 1, pageSize: 10, totalCount: 1 });
+    req.flush({
+      items: [
+        {
+          requestId: 'rq1',
+          status: 'Pending',
+          canApprove: true,
+          canReject: true,
+          canRevoke: false,
+          rowVersion: 'v1',
+        },
+      ],
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 1,
+    });
   });
 
   // WAS-604
@@ -198,7 +332,14 @@ describe('MedicalRecordsApi', () => {
     });
     const req = http.expectOne(`${doctorUrl}/medical-record-access-requests/rq1`);
     expect(req.request.method).toBe('GET');
-    req.flush({ requestId: 'rq1', status: 'Pending', canApprove: true, canReject: true, canRevoke: false, rowVersion: 'v1' });
+    req.flush({
+      requestId: 'rq1',
+      status: 'Pending',
+      canApprove: true,
+      canReject: true,
+      canRevoke: false,
+      rowVersion: 'v1',
+    });
   });
 
   // WAS-605
@@ -266,6 +407,15 @@ describe('MedicalRecordsApi', () => {
     });
     const req = http.expectOne(`${doctorUrl}/practices/pr1/encounters/e1/visibility/history`);
     expect(req.request.method).toBe('GET');
-    req.flush([{ id: 'vh1', previousVisibility: 'Visible', newVisibility: 'Hidden', changedByDoctorName: 'Dr A', changedAtUtc: '2026-10-01', reason: 'Sensitive' }]);
+    req.flush([
+      {
+        id: 'vh1',
+        previousVisibility: 'Visible',
+        newVisibility: 'Hidden',
+        changedByDoctorName: 'Dr A',
+        changedAtUtc: '2026-10-01',
+        reason: 'Sensitive',
+      },
+    ]);
   });
 });

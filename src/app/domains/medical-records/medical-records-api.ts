@@ -2,6 +2,7 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SafeRecordOverview, SafeRecordPage } from './patient-record.models';
 import {
   AccessInboxSummaryResponse,
   AccessRequestHistoryItem,
@@ -15,7 +16,6 @@ import {
   MedicalRecordTimelinePage,
   OwnerAccessRequestItem,
   OwnerAccessRequestPage,
-  PatientMedicalRecordOverview,
   RejectHiddenAccessRequest,
   RevokeHiddenAccessRequest,
   TreatingDoctorMedicalOverview,
@@ -33,8 +33,8 @@ export class MedicalRecordsApi {
 
   // === Patient Self Endpoints (WAS-588 .. WAS-593) ===
 
-  patientOverview(): Observable<PatientMedicalRecordOverview> {
-    return this.http.get<PatientMedicalRecordOverview>(`${this.patientRecordUrl}/overview`);
+  patientOverview(): Observable<SafeRecordOverview> {
+    return this.http.get<SafeRecordOverview>(`${this.patientRecordUrl}/overview`);
   }
 
   patientTimeline(
@@ -43,14 +43,14 @@ export class MedicalRecordsApi {
     toDate?: string,
     cursor?: string,
     pageSize = 20,
-  ): Observable<MedicalRecordTimelinePage> {
+  ): Observable<SafeRecordPage> {
     let params = new HttpParams().set('pageSize', pageSize.toString());
     if (types) params = params.set('types', types);
     if (fromDate) params = params.set('fromDate', fromDate);
     if (toDate) params = params.set('toDate', toDate);
     if (cursor) params = params.set('cursor', cursor);
 
-    return this.http.get<MedicalRecordTimelinePage>(`${this.patientRecordUrl}/timeline`, { params });
+    return this.http.get<SafeRecordPage>(`${this.patientRecordUrl}/timeline`, { params });
   }
 
   patientEncounter(encounterId: string): Observable<MedicalRecordEncounterDetail> {
@@ -87,7 +87,9 @@ export class MedicalRecordsApi {
     if (toDate) params = params.set('toDate', toDate);
     if (cursor) params = params.set('cursor', cursor);
 
-    return this.http.get<MedicalRecordAccessLogPage>(`${this.patientRecordUrl}/access-log`, { params });
+    return this.http.get<MedicalRecordAccessLogPage>(`${this.patientRecordUrl}/access-log`, {
+      params,
+    });
   }
 
   // === Treating Doctor Endpoints (WAS-594 .. WAS-601) ===

@@ -1,0 +1,273 @@
+<div class="dependent-details" [attr.dir]="language.dir()">
+  <nav class="d-flex flex-wrap gap-2 mb-4" [attr.aria-label]="'familyFlow.childActions' | t">
+    @if (child().canViewProfile) {
+      <button
+        class="btn btn-outline-secondary"
+        [attr.aria-pressed]="tab() === 'profile'"
+        (click)="selectTab('profile')"
+      >
+        {{ 'familyFlow.profile' | t }}
+      </button>
+    }
+    @if (child().canViewTicket) {
+      <button
+        class="btn btn-outline-secondary"
+        [attr.aria-pressed]="tab() === 'tickets'"
+        (click)="selectTab('tickets')"
+      >
+        {{ 'familyFlow.tickets' | t }}
+      </button>
+    }
+    @if (child().canViewTransactions) {
+      <button
+        class="btn btn-outline-secondary"
+        [attr.aria-pressed]="tab() === 'transactions'"
+        (click)="selectTab('transactions')"
+      >
+        {{ 'familyFlow.transactions' | t }}
+      </button>
+    }
+    @if (child().canViewHistoricalDocuments || child().canUploadHistoricalDocument) {
+      <button
+        class="btn btn-outline-secondary"
+        [attr.aria-pressed]="tab() === 'documents'"
+        (click)="selectTab('documents')"
+      >
+        {{ 'historical.title' | t }}
+      </button>
+    }
+  </nav>
+  @if (loading()) {
+    <p role="status">{{ 'common.loading' | t }}</p>
+  } @else if (failed()) {
+    <div role="alert">
+      <p>{{ 'familyFlow.failed' | t }}</p>
+      <button class="btn btn-outline-secondary" (click)="selectTab(tab())">
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else {
+    @if (tab() === 'profile') {
+      @if (profile(); as value) {
+        @if (photoUrl(); as url) {
+          <img class="profile-photo" [src]="url" alt="" />
+        }
+        <h3>{{ value.nameAr }}</h3>
+        <p>{{ value.nameEn }}</p>
+        <p>{{ value.dateOfBirth }}</p>
+        @if (child().canManagePhoto) {
+          <div>
+            <input
+              #profilePhoto
+              class="visually-hidden"
+              [attr.aria-label]="'familyFlow.photo' | t"
+              type="file"
+              accept="image/jpeg,image/png"
+              (change)="updatePhoto($event)"
+              [disabled]="busy()"
+            />
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              (click)="profilePhoto.click()"
+              [disabled]="busy()"
+            >
+              {{ 'familyFlow.photo' | t }}
+            </button>
+          </div>
+        }
+        @if (child().canManageContacts) {
+          <form (ngSubmit)="savePhone()" class="edit-form mt-3">
+            <label
+              >{{ 'familyFlow.childPhone' | t
+              }}<input
+                type="tel"
+                class="ltr-text"
+                dir="ltr"
+                name="phone"
+                [(ngModel)]="phoneNumber" /></label
+            ><button class="btn btn-primary" type="submit" [disabled]="busy()">
+              {{ 'common.save' | t }}
+            </button>
+          </form>
+        } @else {
+          <p dir="ltr">{{ value.phoneNumber }}</p>
+        }
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+          <h3>{{ 'familyFlow.contacts' | t }}</h3>
+          <button class="btn btn-outline-secondary" (click)="refreshContacts()">
+            {{ 'common.refresh' | t }}
+          </button>
+          @if (child().canManageContacts) {
+            <button class="btn btn-primary" (click)="editContact()">
+              {{ 'familyFlow.addContact' | t }}
+            </button>
+          }
+        </div>
+        @for (contact of value.contacts; track contact.contactId) {
+          <div class="list-row">
+            <div>
+              <strong>{{ contact.nameAr }}</strong>
+              <p class="mb-0 ltr-text" dir="ltr">{{ contact.phoneNumber }}</p>
+            </div>
+            @if (child().canManageContacts) {
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" (click)="editContact(contact)">
+                  {{ 'common.edit' | t }}</button
+                ><button class="btn btn-outline-danger" (click)="deleting.set(contact)">
+                  {{ 'common.delete' | t }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+        @if (deleting(); as contact) {
+          <div class="confirmation" role="alert">
+            <p>{{ 'familyFlow.deleteContact' | t }} {{ contact.nameAr }}</p>
+            <button class="btn btn-danger" [disabled]="busy()" (click)="deleteContact()">
+              {{ 'common.delete' | t }}</button
+            ><button class="btn btn-outline-secondary" (click)="deleting.set(null)">
+              {{ 'common.cancel' | t }}
+            </button>
+          </div>
+        }
+        @if (editing()) {
+          <form class="edit-form" (ngSubmit)="saveContact()">
+            <label
+              >{{ 'familyFlow.contactName' | t
+              }}<input name="contactName" [(ngModel)]="contact.nameAr" required /></label
+            ><label
+              >{{ 'familyFlow.contactPhone' | t
+              }}<input
+                type="tel"
+                class="ltr-text"
+                dir="ltr"
+                name="contactPhone"
+                [(ngModel)]="contact.phoneNumber"
+                required /></label
+            ><label
+              >{{ 'familyFlow.relation' | t
+              }}<select name="relation" [(ngModel)]="contact.relationshipType">
+                <option value="Father">{{ 'familyFlow.father' | t }}</option>
+                <option value="Mother">{{ 'familyFlow.mother' | t }}</option>
+                <option value="Guardian">{{ 'familyFlow.guardian' | t }}</option>
+                <option value="Other">{{ 'familyFlow.other' | t }}</option>
+              </select></label
+            ><label class="d-flex gap-2"
+              ><input type="checkbox" name="primary" [(ngModel)]="contact.isPrimary" />{{
+                'familyFlow.primaryContact' | t
+              }}</label
+            >
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" type="submit" [disabled]="busy()">
+                {{ 'common.save' | t }}</button
+              ><button class="btn btn-outline-secondary" type="button" (click)="editing.set(false)">
+                {{ 'common.cancel' | t }}
+              </button>
+            </div>
+          </form>
+        }
+      }
+    }
+    @if (tab() === 'tickets') {
+      @for (item of tickets(); track item.ticketId) {
+        <button class="list-row ticket-row" (click)="inspectTicket(item.ticketId)">
+          <span>{{ item.practiceNameAr }}</span
+          ><strong>{{ 'familyFlow.ticketNumber' | t }} {{ item.ticketNumber }}</strong
+          ><span>{{ 'familyFlow.ahead' | t }} {{ item.patientsAheadNow }}</span>
+        </button>
+      } @empty {
+        <div class="empty-state">
+          <img
+            src="/SVG-AVATAR/Medical prescription-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>{{ 'familyFlow.noTickets' | t }}</h3>
+          <p>{{ 'familyFlow.noTicketsHint' | t }}</p>
+          <button class="btn btn-outline-secondary" (click)="selectTab('tickets')">
+            {{ 'common.refresh' | t }}
+          </button>
+        </div>
+      }
+      @if (ticket(); as item) {
+        <section class="ticket-detail">
+          <h3>{{ item.practiceNameAr }} · {{ item.ticketNumber }}</h3>
+          <p>{{ item.doctorNameAr }}</p>
+          <p>{{ item.businessDate }}</p>
+          @if (item.patientsAheadNowIsCurrent) {
+            <p>{{ 'familyFlow.ahead' | t }} {{ item.patientsAheadNow }}</p>
+          }
+          @if (item.isArchived) {
+            <p>{{ 'familyFlow.archived' | t }}</p>
+          }
+        </section>
+      }
+    }
+    @if (tab() === 'transactions') {
+      @for (item of transactions(); track item.transactionId) {
+        <div class="list-row">
+          <div>
+            <strong>{{ item.transactionNumber }}</strong>
+            <p>{{ item.practiceNameAr }} · {{ item.occurredOnUtc | date: 'mediumDate' }}</p>
+            <span>{{ item.amount | currency: item.currencyCode }}</span>
+          </div>
+          @if (child().canViewReceipts) {
+            <button class="btn btn-outline-secondary" (click)="openReceipt(item)">
+              {{ 'familyFlow.receipt' | t }}
+            </button>
+          }
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <img
+            src="/SVG-AVATAR/Payment Information-bro.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+          <h3>{{ 'familyFlow.noTransactions' | t }}</h3>
+          <p>{{ 'familyFlow.noTransactionsHint' | t }}</p>
+          <button class="btn btn-outline-secondary" (click)="loadTransactions(1)">
+            {{ 'common.refresh' | t }}
+          </button>
+        </div>
+      }
+      @if (receipt(); as value) {
+        <section class="receipt">
+          <h3>{{ 'familyFlow.receipt' | t }}</h3>
+          <p>{{ value.patientNameAr }}</p>
+          <p>{{ value.doctorNameAr }} · {{ value.practiceNameAr }}</p>
+          <p>{{ value.businessDate }}</p>
+          <strong>{{ value.amount | currency: value.currencyCode }}</strong>
+        </section>
+      }
+      <nav class="d-flex gap-2 mt-3">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page() === 1"
+          (click)="loadTransactions(page() - 1)"
+        >
+          {{ 'common.previous' | t }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="page() * 20 >= total()"
+          (click)="loadTransactions(page() + 1)"
+        >
+          {{ 'common.next' | t }}
+        </button>
+      </nav>
+    }
+    @if (
+      tab() === 'documents' &&
+      (child().canViewHistoricalDocuments || child().canUploadHistoricalDocument)
+    ) {
+      <app-historical-documents
+        [subject]="{ kind: 'dependent', patientId: child().patientId }"
+        [canView]="child().canViewHistoricalDocuments"
+        [canCreate]="child().canUploadHistoricalDocument"
+      />
+    }
+  }
+</div>

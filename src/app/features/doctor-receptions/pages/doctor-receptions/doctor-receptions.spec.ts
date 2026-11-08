@@ -436,19 +436,33 @@ describe('DoctorReceptions', () => {
 
   it('updates account activity and its row version without changing practice assignments', async () => {
     await createAndInitializeComponent();
-    component['reception'].set(sampleReceptions[0]); component['accountConfirmation'].set(sampleReceptions[0]);
+    component['reception'].set(sampleReceptions[0]);
+    component['accountConfirmation'].set(sampleReceptions[0]);
     const saving = component['toggleAccount']();
-    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`);
-    expect(request.request.method).toBe('PUT'); expect(request.request.body).toEqual({ isActive: false, rowVersion: 'ver-r1' });
+    const request = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`,
+    );
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ isActive: false, rowVersion: 'ver-r1' });
     expect(component['reception']()?.isActive).toBe(true);
-    request.flush({ ...sampleReceptions[0], isActive: false, rowVersion: 'new-reception-version' }); await saving;
-    expect(component['reception']()?.isActive).toBe(false); expect(component['reception']()?.rowVersion).toBe('new-reception-version'); expect(component['reception']()?.assignments).toEqual(sampleReceptions[0].assignments);
+    request.flush({ ...sampleReceptions[0], isActive: false, rowVersion: 'new-reception-version' });
+    await saving;
+    expect(component['reception']()?.isActive).toBe(false);
+    expect(component['reception']()?.rowVersion).toBe('new-reception-version');
+    expect(component['reception']()?.assignments).toEqual(sampleReceptions[0].assignments);
   });
 
   it('preserves account state when the server denies deactivation', async () => {
-    await createAndInitializeComponent(); component['reception'].set(sampleReceptions[0]); component['accountConfirmation'].set(sampleReceptions[0]);
-    const saving = component['toggleAccount'](); httpTesting.expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`).flush({}, { status: 403, statusText: 'Forbidden' }); await saving;
-    expect(component['reception']()?.isActive).toBe(true); expect(component['reception']()?.rowVersion).toBe('ver-r1');
+    await createAndInitializeComponent();
+    component['reception'].set(sampleReceptions[0]);
+    component['accountConfirmation'].set(sampleReceptions[0]);
+    const saving = component['toggleAccount']();
+    httpTesting
+      .expectOne(`${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`)
+      .flush({}, { status: 403, statusText: 'Forbidden' });
+    await saving;
+    expect(component['reception']()?.isActive).toBe(true);
+    expect(component['reception']()?.rowVersion).toBe('ver-r1');
   });
 
   it('requires selected IDs to exist in the displayed permission options', async () => {
@@ -608,5 +622,33 @@ describe('DoctorReceptions', () => {
     ]);
     expect(component['getPracticeName']('practice-custom')).toBe('فرع الدقي');
     expect(component['getPracticeName']('non-existent')).toBe('');
+  });
+  it('allows authorized deactivation without borrowing any contract entitlement', async () => {
+    await createAndInitializeComponent();
+    const subscription = TestBed.inject(SubscriptionState);
+    vi.spyOn(subscription, 'has').mockReturnValue(false);
+    vi.spyOn(subscription, 'canCreateReception').mockReturnValue(false);
+    component['accountConfirmation'].set(sampleReceptions[0]);
+    const saving = component['toggleAccount']();
+    const request = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-1/account-state`,
+    );
+    expect(request.request.body).toEqual({ isActive: false, rowVersion: 'ver-r1' });
+    request.flush({ ...sampleReceptions[0], isActive: false });
+    await saving;
+  });
+  it('lets the server validate reactivation against the exact assignments instead of a sibling contract', async () => {
+    await createAndInitializeComponent();
+    const subscription = TestBed.inject(SubscriptionState);
+    vi.spyOn(subscription, 'has').mockReturnValue(false);
+    vi.spyOn(subscription, 'canCreateReception').mockReturnValue(false);
+    component['accountConfirmation'].set(sampleReceptions[1]);
+    const saving = component['toggleAccount']();
+    const request = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/api/v1/doctors/me/receptions/rec-2/account-state`,
+    );
+    expect(request.request.body).toEqual({ isActive: true, rowVersion: 'ver-r2' });
+    request.flush({ ...sampleReceptions[1], isActive: true });
+    await saving;
   });
 });

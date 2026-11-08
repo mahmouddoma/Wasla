@@ -1,0 +1,252 @@
+<main class="review-page" [attr.dir]="language.dir()">
+  <app-page-header
+    [heading]="'familyReview.title' | t"
+    [description]="'familyReview.description' | t"
+    icon="family-requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  >
+    <nav pageHeaderActions class="d-flex gap-2">
+      @if (session.hasPermission('ChildOnboarding.ViewAll')) {
+        <button
+          class="btn btn-outline-secondary"
+          [attr.aria-pressed]="queue() === 'onboarding'"
+          (click)="selectQueue('onboarding')"
+        >
+          {{ 'familyReview.onboarding' | t }}
+        </button>
+      }
+      @if (session.hasPermission('FamilyRelationshipRequests.ViewAll')) {
+        <button
+          class="btn btn-outline-secondary"
+          [attr.aria-pressed]="queue() === 'governance'"
+          (click)="selectQueue('governance')"
+        >
+          {{ 'familyReview.governance' | t }}
+        </button>
+      }
+    </nav>
+  </app-page-header>
+  <section class="review-surface">
+    @if (loading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    } @else if (failed()) {
+      <p role="alert">{{ 'familyFlow.failed' | t }}</p>
+      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
+    } @else if (!onboarding().length && !governance().length) {
+      <div class="empty-state">
+        <img src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
+        <h2>{{ 'familyReview.empty' | t }}</h2>
+        <p>{{ 'familyReview.emptyHint' | t }}</p>
+        <button class="btn btn-outline-secondary" (click)="load(1)">
+          {{ 'common.refresh' | t }}
+        </button>
+      </div>
+    } @else {
+      @for (item of onboarding(); track item.request.requestId) {
+        <button class="review-row" (click)="inspectChild(item.request.requestId)">
+          <strong>{{ item.intake.nameAr }}</strong
+          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
+          ><span>{{ item.request.createdAtUtc | date: 'mediumDate' }}</span
+          ><span>{{ 'common.view' | t }}</span>
+        </button>
+      }
+      @for (item of governance(); track item.request.caseId) {
+        <button class="review-row" (click)="inspectGovernance(item.request.caseId)">
+          <strong>{{ 'familyFlow.kind.' + item.request.kind | t }}</strong
+          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
+          ><span>{{ item.createdAtUtc | date: 'mediumDate' }}</span
+          ><span>{{ 'common.view' | t }}</span>
+        </button>
+      }
+      <nav class="d-flex gap-2 mt-3">
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="page() === 1"
+          (click)="load(page() - 1)"
+        >
+          {{ 'common.previous' | t }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          [disabled]="queue() === 'onboarding' ? onboarding().length < 20 : page() * 20 >= total()"
+          (click)="load(page() + 1)"
+        >
+          {{ 'common.next' | t }}
+        </button>
+      </nav>
+    }
+  </section>
+</main>
+<app-side-drawer
+  [opened]="detailLoading() || !!childReview() || !!governanceReview()"
+  [busy]="busy()"
+  [title]="'familyReview.title' | t"
+  width="760px"
+  (closed)="close()"
+>
+  <div class="review-details">
+    @if (detailLoading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    }
+    @if (childReview(); as item) {
+      <h2>{{ item.intake.nameAr }}</h2>
+      <p>{{ item.intake.nameEn }}</p>
+      <p>{{ item.intake.dateOfBirth }}</p>
+      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
+      <p>{{ item.request.reviewMessage }}</p>
+      @if (item.possibleMatches.length) {
+        <fieldset>
+          <legend>{{ 'familyReview.matches' | t }}</legend>
+          <p>{{ 'familyReview.matchHint' | t }}</p>
+          @for (match of item.possibleMatches; track match.patientId) {
+            <label class="match-row"
+              ><input
+                type="radio"
+                name="identity"
+                [value]="match.patientId"
+                [(ngModel)]="confirmedExistingPatientId"
+              /><span>{{ match.nameAr }} · {{ match.dateOfBirth }}</span></label
+            >
+          }
+        </fieldset>
+      }
+      @if (item.possibleMatchPageNumber > 1 || item.hasMorePossibleMatches) {
+        <div class="d-flex gap-2 my-3">
+          <button
+            class="btn btn-outline-secondary"
+            [disabled]="item.possibleMatchPageNumber === 1"
+            (click)="inspectChild(item.request.requestId, item.possibleMatchPageNumber - 1)"
+          >
+            {{ 'common.previous' | t }}</button
+          ><button
+            class="btn btn-outline-secondary"
+            [disabled]="!item.hasMorePossibleMatches"
+            (click)="inspectChild(item.request.requestId, item.possibleMatchPageNumber + 1)"
+          >
+            {{ 'common.next' | t }}
+          </button>
+        </div>
+      }
+      @for (document of item.evidence; track document.documentId) {
+        @if (session.hasPermission('ChildOnboarding.ViewEvidence')) {
+          <button class="evidence-row" (click)="evidence(document.documentId)">
+            {{ document.originalFileName }} · {{ 'common.download' | t }}
+          </button>
+        }
+      }
+      @if (
+        item.request.familyRelationshipRequestId &&
+        session.hasPermission('FamilyOperationalProofRequests.Revoke')
+      ) {
+        <button class="btn btn-outline-secondary my-3" (click)="loadAuthorities()">
+          {{ 'familyReview.authorities' | t }}
+        </button>
+      }
+    }
+    @if (governanceReview(); as item) {
+      <h2>{{ 'familyFlow.kind.' + item.request.kind | t }}</h2>
+      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
+      <p>{{ item.feedback }}</p>
+      @for (document of item.evidence; track document.documentId) {
+        <button class="evidence-row" (click)="evidence(document.documentId)">
+          {{ document.originalFileName }} · {{ 'common.download' | t }}
+        </button>
+      }
+      @for (revision of item.revisions; track revision.revision) {
+        <section class="revision">
+          <h3>{{ 'historical.version' | t }} {{ revision.revision }}</h3>
+          <p>{{ revision.reason }}</p>
+          <p>{{ revision.createdAtUtc | date: 'mediumDate' }}</p>
+          @if (item.request.kind === 'IdentityCorrection') {
+            @if (identitySnapshot(revision.beforeSnapshot); as before) {
+              <h4>{{ 'familyReview.before' | t }}</h4>
+              <p>{{ before.nameAr }} · {{ before.nameEn }}</p>
+              <p>{{ before.dateOfBirth }}</p>
+              @if (before.gender) {
+                <p>{{ (before.gender === 'Male' ? 'common.male' : 'common.female') | t }}</p>
+              }
+            }
+            @if (identitySnapshot(revision.afterSnapshot); as after) {
+              <h4>{{ 'familyReview.after' | t }}</h4>
+              <p>{{ after.nameAr }} · {{ after.nameEn }}</p>
+              <p>{{ after.dateOfBirth }}</p>
+              @if (after.gender) {
+                <p>{{ (after.gender === 'Male' ? 'common.male' : 'common.female') | t }}</p>
+              }
+            }
+          }
+        </section>
+      }
+    }
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      @if (canDecide('approve')) {
+        <button class="btn btn-primary" (click)="ask('approve')">
+          {{ 'familyReview.approve' | t }}
+        </button>
+      }
+      @if (canDecide('request-modification')) {
+        <button class="btn btn-outline-secondary" (click)="ask('request-modification')">
+          {{ 'familyReview.modify' | t }}
+        </button>
+      }
+      @if (canDecide('reject')) {
+        <button class="btn btn-outline-danger" (click)="ask('reject')">
+          {{ 'familyReview.reject' | t }}
+        </button>
+      }
+      @if (canDecide('refer-governance')) {
+        <button class="btn btn-outline-secondary" (click)="ask('refer-governance')">
+          {{ 'familyReview.refer' | t }}
+        </button>
+      }
+    </div>
+    @if (confirming(); as action) {
+      <form class="decision-form" (ngSubmit)="decide()">
+        <p>{{ 'familyReview.confirm' | t }}</p>
+        <label
+          >{{ 'familyReview.reason' | t
+          }}<textarea
+            name="reason"
+            [(ngModel)]="reason"
+            [required]="action !== 'approve' || !!governanceReview()"
+            maxlength="1000"
+          ></textarea></label
+        ><button class="btn btn-primary" type="submit" [disabled]="busy()">
+          {{ 'familyReview.confirmAction' | t }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="busy()"
+          (click)="confirming.set(null)"
+        >
+          {{ 'common.cancel' | t }}
+        </button>
+      </form>
+    }
+    @for (authority of authorities(); track authority.authorityId) {
+      <div class="authority-row">
+        <span>{{ 'familyReview.authority' | t }}</span>
+        @if (authority.isActive) {
+          <button class="btn btn-outline-danger" (click)="revoking.set(authority); reason = ''">
+            {{ 'familyReview.revoke' | t }}
+          </button>
+        } @else {
+          <span>{{ 'familyReview.inactive' | t }}</span>
+        }
+      </div>
+    }
+    @if (revoking()) {
+      <form class="decision-form" (ngSubmit)="revoke()">
+        <p>{{ 'familyReview.revokeHint' | t }}</p>
+        <label
+          >{{ 'familyReview.reason' | t
+          }}<textarea name="revokeReason" [(ngModel)]="reason" required></textarea></label
+        ><button class="btn btn-danger" [disabled]="busy() || !reason.trim()">
+          {{ 'familyReview.confirmAction' | t }}
+        </button>
+      </form>
+    }
+  </div>
+</app-side-drawer>

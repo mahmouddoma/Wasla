@@ -48,7 +48,7 @@ describe('SubscriptionsApi deployed contracts', () => {
       planCode: 'STARTER',
       billingCycle: 'Monthly' as const,
     };
-    const result = firstValueFrom(api.select(selected));
+    const result = firstValueFrom(api.select(selected, 'selection-intent'));
     const request = http.expectOne(`${base}/doctors/me/subscription/selection`);
     expect(request.request.body).toEqual(selected);
     request.flush(wireDetailsFixture());
@@ -90,13 +90,11 @@ describe('SubscriptionsApi deployed contracts', () => {
   });
   it('loads admin details and maps payment amounts and audit history', async () => {
     const result = firstValueFrom(api.details('sub/1'));
-    http
-      .expectOne(`${base}/admin/subscriptions/sub%2F1`)
-      .flush({
-        ...wireDetailsFixture(),
-        payments: [{ id: 'payment-1', amount: 123, paidAtUtc: '2026-01-01T00:00:00Z' }],
-        history: [{ id: 'event-1', eventType: 'Activated' }],
-      });
+    http.expectOne(`${base}/admin/subscriptions/sub%2F1`).flush({
+      ...wireDetailsFixture(),
+      payments: [{ id: 'payment-1', amount: 123, paidAtUtc: '2026-01-01T00:00:00Z' }],
+      history: [{ id: 'event-1', eventType: 'Activated' }],
+    });
     expect((await result).payments?.[0].amountReceived).toBe(123);
   });
   it('keeps payment intent keys on activation, renewal and upgrade approval', async () => {

@@ -1,0 +1,91 @@
+<section class="diagnostic-submissions">
+  <h3>{{ 'dependentDiagnostics.title' | t }}</h3>
+  <p>{{ 'dependentDiagnostics.notice' | t }}</p>
+  @if (loading()) {
+    <p role="status">{{ 'common.loading' | t }}</p>
+  }
+  @if (canView() && !loading() && !failed() && !submissions().length) {
+    <div class="empty-state">
+      <img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
+      <h3>{{ 'dependentDiagnostics.empty' | t }}</h3>
+      <p>{{ 'dependentDiagnostics.emptyHint' | t }}</p>
+      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.refresh' | t }}</button>
+    </div>
+  }
+  @if (failed()) {
+    <p role="alert">{{ 'familyFlow.failed' | t }}</p>
+    @if (canView()) {
+      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
+    }
+  }
+  @if (canView()) {
+    @for (item of submissions(); track item.submissionId) {
+      <div class="submission-row">
+        <span>{{ item.submittedAtUtc }}</span
+        ><span>{{ 'dependentDiagnostics.status.' + item.status | t }}</span>
+      </div>
+    }
+    <nav class="d-flex gap-2 my-3">
+      <button
+        class="btn btn-outline-secondary"
+        [disabled]="page() === 1 || loading()"
+        (click)="load(page() - 1)"
+      >
+        {{ 'common.previous' | t }}</button
+      ><button
+        class="btn btn-outline-secondary"
+        [disabled]="page() * 20 >= total() || loading()"
+        (click)="load(page() + 1)"
+      >
+        {{ 'common.next' | t }}
+      </button>
+    </nav>
+  }
+  @if (canSubmit()) {
+    <form (ngSubmit)="submit()" class="submission-form">
+      <label
+        >{{ 'historical.provider' | t
+        }}<input name="provider" [(ngModel)]="externalProviderName" maxlength="200" /></label
+      ><label
+        >{{ 'historical.date' | t
+        }}<input type="date" name="reportDate" [(ngModel)]="externalReportDate" /></label
+      ><label
+        >{{ 'historical.note' | t
+        }}<textarea name="note" [(ngModel)]="patientNote" maxlength="2000"></textarea>
+      </label>
+      <div class="d-grid gap-2">
+        <input
+          #diagnosticFiles
+          class="visually-hidden"
+          [attr.aria-label]="'historical.files' | t"
+          type="file"
+          accept="application/pdf,image/jpeg,image/png"
+          multiple
+          (change)="chooseFiles($event)"
+        /><button class="btn btn-outline-secondary" type="button" (click)="diagnosticFiles.click()">
+          {{ 'familyFlow.chooseFiles' | t }}</button
+        ><small>{{ 'historical.fileHint' | t }}</small>
+        @for (file of files; track $index) {
+          <span>{{ file.name }}</span>
+        }
+      </div>
+      <button class="btn btn-primary" type="submit" [disabled]="busy()">
+        {{ 'familyFlow.submit' | t }}
+      </button>
+    </form>
+  }
+  @if (receipt()?.status === 'PendingReview' && canWithdraw()) {
+    @if (!confirming()) {
+      <button class="btn btn-outline-danger mt-3" (click)="confirming.set(true)">
+        {{ 'dependentDiagnostics.withdraw' | t }}
+      </button>
+    } @else {
+      <p>{{ 'dependentDiagnostics.confirmWithdraw' | t }}</p>
+      <button class="btn btn-danger" [disabled]="busy()" (click)="withdraw()">
+        {{ 'historical.confirmWithdraw' | t }}</button
+      ><button class="btn btn-outline-secondary" (click)="confirming.set(false)">
+        {{ 'common.cancel' | t }}
+      </button>
+    }
+  }
+</section>

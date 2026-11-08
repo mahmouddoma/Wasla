@@ -47,10 +47,17 @@ export class FinanceApi {
   }
 
   paymentDetail(practiceId: string, paymentId: string): Observable<PaymentDetail> {
-    return this.http.get<PaymentDetailResponse>(`${this.practice(practiceId)}/payments/${this.id(paymentId)}`).pipe(map(toPaymentDetail));
+    return this.http
+      .get<PaymentDetailResponse>(`${this.practice(practiceId)}/payments/${this.id(paymentId)}`)
+      .pipe(map(toPaymentDetail));
   }
 
-  refundPayment(practiceId: string, paymentId: string, body: RefundPaymentRequest, intentKey: string) {
+  refundPayment(
+    practiceId: string,
+    paymentId: string,
+    body: RefundPaymentRequest,
+    intentKey: string,
+  ) {
     return this.http.post<RefundPaymentResponse>(
       `${this.practice(practiceId)}/payments/${this.id(paymentId)}/refund`,
       body,
@@ -58,32 +65,80 @@ export class FinanceApi {
     );
   }
 
-  correctPayment(practiceId: string, paymentId: string, body: CorrectPaymentRequest, intentKey: string) {
+  correctPayment(
+    practiceId: string,
+    paymentId: string,
+    body: CorrectPaymentRequest,
+    intentKey: string,
+  ) {
     return this.http.post<CorrectionResponse>(
-      `${this.practice(practiceId)}/payments/${this.id(paymentId)}/correct`, body, this.intent(intentKey),
+      `${this.practice(practiceId)}/payments/${this.id(paymentId)}/correct`,
+      body,
+      this.intent(intentKey),
     );
   }
 
-  correctRefund(practiceId: string, refundId: string, body: CorrectRefundRequest, intentKey: string) {
+  correctRefund(
+    practiceId: string,
+    refundId: string,
+    body: CorrectRefundRequest,
+    intentKey: string,
+  ) {
     return this.http.post<CorrectionResponse>(
-      `${this.practice(practiceId)}/refunds/${this.id(refundId)}/correct`, body, this.intent(intentKey),
+      `${this.practice(practiceId)}/refunds/${this.id(refundId)}/correct`,
+      body,
+      this.intent(intentKey),
     );
   }
 
   practicePaymentReceipt(practiceId: string, paymentId: string) {
-    return this.http.get<PaymentReceipt>(`${this.practice(practiceId)}/payments/${this.id(paymentId)}/receipt`);
+    return this.http.get<PaymentReceipt>(
+      `${this.practice(practiceId)}/payments/${this.id(paymentId)}/receipt`,
+    );
   }
 
   practiceRefundReceipt(practiceId: string, refundId: string) {
-    return this.http.get<RefundReceipt>(`${this.practice(practiceId)}/refunds/${this.id(refundId)}/receipt`);
+    return this.http.get<RefundReceipt>(
+      `${this.practice(practiceId)}/refunds/${this.id(refundId)}/receipt`,
+    );
   }
 
   myPaymentReceipt(paymentId: string) {
-    return this.http.get<PaymentReceipt>(`${this.root}/patients/me/payments/${this.id(paymentId)}/receipt`);
+    return this.http.get<PaymentReceipt>(
+      `${this.root}/patients/me/payments/${this.id(paymentId)}/receipt`,
+    );
   }
 
   myRefundReceipt(refundId: string) {
-    return this.http.get<RefundReceipt>(`${this.root}/patients/me/refunds/${this.id(refundId)}/receipt`);
+    return this.http.get<RefundReceipt>(
+      `${this.root}/patients/me/refunds/${this.id(refundId)}/receipt`,
+    );
+  }
+
+  dependentTransactions(
+    childPatientId: string,
+    query: Omit<FinancialTransactionQuery, 'patientId'>,
+  ) {
+    return this.http.get<PageResult<FinancialTransactionItem>>(
+      `${this.dependent(childPatientId)}/financial-transactions`,
+      { params: this.params(query) },
+    );
+  }
+
+  dependentPaymentReceipt(childPatientId: string, paymentId: string) {
+    return this.http.get<PaymentReceipt>(
+      `${this.dependent(childPatientId)}/payments/${this.id(paymentId)}/receipt`,
+    );
+  }
+
+  dependentRefundReceipt(childPatientId: string, refundId: string) {
+    return this.http.get<RefundReceipt>(
+      `${this.dependent(childPatientId)}/refunds/${this.id(refundId)}/receipt`,
+    );
+  }
+
+  private dependent(childPatientId: string): string {
+    return `${this.root}/families/mine/dependents/${this.id(childPatientId)}`;
   }
 
   doctorRevenue(fromDate: string, toDate: string, practiceId = '') {
@@ -115,7 +170,8 @@ export class FinanceApi {
   private params(source: object): HttpParams {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(source)) {
-      if (value !== undefined && value !== null && value !== '') params = params.set(key, String(value));
+      if (value !== undefined && value !== null && value !== '')
+        params = params.set(key, String(value));
     }
     return params;
   }

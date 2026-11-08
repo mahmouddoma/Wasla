@@ -1,0 +1,170 @@
+<form class="family-form" (ngSubmit)="submit()" [attr.dir]="language.dir()">
+  <p>{{ 'familyFlow.reviewNotice' | t }}</p>
+  @if (
+    mode() === 'search' || mode() === 'onboard' || mode() === 'resubmit' || mode() === 'identity'
+  ) {
+    <label
+      >{{ 'familyFlow.nameAr' | t
+      }}<input
+        name="nameAr"
+        [(ngModel)]="intake.nameAr"
+        required
+        maxlength="200"
+        autocomplete="off"
+    /></label>
+    @if (mode() !== 'search') {
+      <label
+        >{{ 'familyFlow.nameEn' | t
+        }}<input name="nameEn" [(ngModel)]="intake.nameEn" maxlength="200" autocomplete="off"
+      /></label>
+    }
+    <label
+      >{{ 'familyFlow.birth' | t
+      }}<input type="date" name="birth" [(ngModel)]="intake.dateOfBirth" required
+    /></label>
+    <label
+      >{{ 'familyFlow.gender' | t
+      }}<select name="gender" [(ngModel)]="intake.gender">
+        <option value="Male">{{ 'common.male' | t }}</option>
+        <option value="Female">{{ 'common.female' | t }}</option>
+      </select></label
+    >
+  }
+  @if (mode() === 'search' || mode() === 'onboard' || mode() === 'resubmit') {
+    <label
+      >{{ 'familyFlow.childPhone' | t
+      }}<input type="tel" class="ltr-text" dir="ltr" name="phone" [(ngModel)]="intake.phoneNumber"
+    /></label>
+    <label
+      >{{ 'familyFlow.relation' | t
+      }}<select
+        name="relation"
+        [(ngModel)]="intake.relationToChild"
+        [disabled]="mode() === 'resubmit'"
+      >
+        <option value="Father">{{ 'familyFlow.father' | t }}</option>
+        <option value="Mother">{{ 'familyFlow.mother' | t }}</option>
+      </select></label
+    >
+  }
+  @if (mode() === 'search') {
+    <button
+      class="btn btn-outline-secondary"
+      type="button"
+      (click)="search()"
+      [disabled]="busy() || !intake.nameAr.trim() || !intake.dateOfBirth"
+    >
+      {{ 'familyFlow.search' | t }}
+    </button>
+    @if (candidates(); as result) {
+      <fieldset>
+        <legend>{{ 'familyFlow.matches' | t }}</legend>
+        @for (candidate of result.candidates; track candidate.candidateReference) {
+          <label class="candidate"
+            ><input
+              type="radio"
+              name="candidate"
+              [value]="candidate.candidateReference"
+              [(ngModel)]="candidateReference"
+            /><span>{{ candidate.displayNameMasked }} · {{ candidate.birthYear }}</span></label
+          >
+        } @empty {
+          <p>{{ 'familyFlow.noMatch' | t }}</p>
+        }
+        @if (result.hasMore) {
+          <p>{{ 'familyFlow.moreMatches' | t }}</p>
+        }
+      </fieldset>
+    }
+  }
+  @if (mode() === 'onboard' || mode() === 'resubmit') {
+    <label
+      >{{ 'familyFlow.contactName' | t
+      }}<input
+        name="contactName"
+        [(ngModel)]="intake.primaryContactNameAr"
+        maxlength="200"
+        [required]="!intake.phoneNumber"
+    /></label>
+    <label
+      >{{ 'familyFlow.contactPhone' | t
+      }}<input
+        type="tel"
+        class="ltr-text"
+        dir="ltr"
+        name="contactPhone"
+        [(ngModel)]="intake.primaryContactPhone"
+        [required]="!intake.phoneNumber"
+    /></label>
+  }
+  @if (mode() === 'invite' || mode() === 'redeem') {
+    <label
+      >{{ 'familyFlow.parentRole' | t
+      }}<select name="parentRole" [(ngModel)]="intendedParentRole">
+        <option value="Father">{{ 'familyFlow.father' | t }}</option>
+        <option value="Mother">{{ 'familyFlow.mother' | t }}</option>
+      </select></label
+    >
+  }
+  @if (mode() === 'redeem') {
+    <label
+      >{{ 'familyFlow.invitation' | t
+      }}<input name="invitation" [(ngModel)]="invitationReference" required autocomplete="off"
+    /></label>
+  }
+  @if (mode() === 'identity') {
+    <label
+      >{{ 'familyFlow.reason' | t
+      }}<textarea name="reason" [(ngModel)]="reason" required maxlength="1000"></textarea>
+    </label>
+  }
+  @if (mode() !== 'invite' && (mode() !== 'search' || candidateReference)) {
+    <div class="d-grid gap-2">
+      <p class="mb-0">{{ 'familyFlow.evidence' | t }}</p>
+      <input
+        #evidenceFiles
+        class="visually-hidden"
+        type="file"
+        [attr.aria-label]="'familyFlow.evidence' | t"
+        [accept]="accept"
+        multiple
+        (change)="chooseFiles($event)"
+      /><button class="btn btn-outline-secondary" type="button" (click)="evidenceFiles.click()">
+        {{ 'familyFlow.chooseFiles' | t }}
+      </button>
+    </div>
+    @for (file of files; track $index; let i = $index) {
+      <label
+        >{{ file.name
+        }}<select [name]="'type' + i" [(ngModel)]="documentTypes[i]">
+          @for (type of evidenceTypes; track type) {
+            <option [value]="type">{{ 'familyFlow.evidence.' + type | t }}</option>
+          }
+        </select></label
+      >
+    }
+  }
+  @if (invitation(); as token) {
+    <p role="status">{{ 'familyFlow.invitationPrivate' | t }}</p>
+    <output class="invitation-reference" dir="ltr">{{ token.invitationReference }}</output
+    ><button
+      class="btn btn-outline-danger"
+      type="button"
+      (click)="revokeInvitation()"
+      [disabled]="busy()"
+    >
+      {{ 'familyFlow.revokeInvite' | t }}
+    </button>
+  } @else if (mode() !== 'search' || candidateReference) {
+    <button type="submit" class="btn btn-primary" [disabled]="busy()">
+      {{
+        (busy()
+          ? 'common.loading'
+          : mode() === 'invite'
+            ? 'familyFlow.createInvite'
+            : 'familyFlow.submit'
+        ) | t
+      }}
+    </button>
+  }
+</form>

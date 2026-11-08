@@ -1,7 +1,14 @@
 import { PagedResponse } from '../patients';
+import { SafeRecordEntry } from '../medical-records/patient-record.models';
 
 export type FamilyRole = 'Father' | 'Mother' | 'Child' | 'Guardian' | 'LegalGuardian';
-export type FamilyRequestType = 'CreateFamily' | 'AddFamilyMember';
+export type FamilyRequestType =
+  | 'CreateFamily'
+  | 'AddFamilyMember'
+  | 'VerifyParentChild'
+  | 'VerifyGuardianChild'
+  | 'VerifyOperationalParentChild'
+  | 'JoinFamilyAsParent';
 export type FamilyRequestStatus = 'Pending' | 'ModificationRequested' | 'Approved' | 'Rejected';
 
 export interface FamilyMember {
@@ -33,8 +40,8 @@ export interface FamilyRequestSummary {
   status: FamilyRequestStatus;
   requesterPatientId: string;
   requesterNameAr: string;
-  targetPatientId: string;
-  targetNameAr: string;
+  targetPatientId: string | null;
+  targetNameAr: string | null;
   requesterClaimedRole: Exclude<FamilyRole, 'Child'>;
   targetClaimedRole: FamilyRole;
   currentRevisionNumber: number;
@@ -210,7 +217,7 @@ export interface FamilyMedicalDependent {
 }
 
 export interface MedicalRecordFilter {
-  types?: MedicalRecordResourceType[];
+  types?: MedicalRecordFilterType[];
   fromDate?: string;
   toDate?: string;
   encounterId?: string;
@@ -218,17 +225,9 @@ export interface MedicalRecordFilter {
   cursor?: string;
 }
 
-export interface MedicalRecordTimelineEntry {
-  type: string;
-  entryId: string;
-  occurredAtUtc: string;
-  sourceId: string;
-  encounterId: string | null;
-  resourceType: MedicalRecordResourceType | null;
-  status: string;
-  title: string;
-  capabilities: { canViewDetails: boolean; canViewAttachments: boolean };
-}
+export type MedicalRecordFilterType =
+  'all' | 'visits' | 'diagnoses' | 'prescriptions' | 'labs' | 'radiology' | 'historical-documents';
+export type MedicalRecordTimelineEntry = SafeRecordEntry;
 
 export interface MedicalRecordCursorPage<T> {
   items: T[];

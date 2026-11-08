@@ -50,12 +50,6 @@ export interface CommercialCatalog {
   bookingOnly: {
     enabled: boolean;
     planCode: string;
-    maximumSelectablePractices: number;
-    pricingTiers: readonly {
-      minPracticeCount: number;
-      maxPracticeCount: number;
-      monthlyPrice: number;
-    }[];
     monthlyUnitPrice?: number;
     minimumSelectedPractices?: number;
   };

@@ -53,7 +53,9 @@
               <h3 class="dependent-name">{{ ov.patient.nameAr }}</h3>
               <div class="identity-tags">
                 <span class="badge-tag code-font">ID: {{ ov.patient.patientId }}</span>
-                <span class="badge-tag">{{ ov.patient.gender === 'Male' ? ('common.male' | t) : ('common.female' | t) }}</span>
+                <span class="badge-tag">{{
+                  ov.patient.gender === 'Male' ? ('common.male' | t) : ('common.female' | t)
+                }}</span>
                 <span class="badge-tag">{{ ov.patient.dateOfBirth }}</span>
               </div>
             </div>
@@ -96,26 +98,34 @@
               <button
                 type="button"
                 class="filter-pill-btn"
-                [class.active]="filterType() === 'prescription'"
-                (click)="onFilterChange('prescription')"
+                [class.active]="filterType() === 'prescriptions'"
+                (click)="onFilterChange('prescriptions')"
               >
                 {{ 'medications.prescription' | t }}
               </button>
               <button
                 type="button"
                 class="filter-pill-btn"
-                [class.active]="filterType() === 'lab-result'"
-                (click)="onFilterChange('lab-result')"
+                [class.active]="filterType() === 'labs'"
+                (click)="onFilterChange('labs')"
               >
                 {{ 'diagnostics.lab' | t }}
               </button>
               <button
                 type="button"
                 class="filter-pill-btn"
-                [class.active]="filterType() === 'radiology-result'"
-                (click)="onFilterChange('radiology-result')"
+                [class.active]="filterType() === 'radiology'"
+                (click)="onFilterChange('radiology')"
               >
                 {{ 'diagnostics.radiology' | t }}
+              </button>
+              <button
+                type="button"
+                class="filter-pill-btn"
+                [class.active]="filterType() === 'historical-documents'"
+                (click)="onFilterChange('historical-documents')"
+              >
+                {{ 'historical.title' | t }}
               </button>
             </div>
 
@@ -165,40 +175,63 @@
                 </thead>
                 <tbody>
                   @for (entry of timelineEntries(); track entry.entryId) {
-                    <tr class="timeline-row">
-                      <td class="date-cell">{{ entry.occurredAtUtc }}</td>
-                      <td>
-                        <span class="type-pill type-{{ entry.type.toLowerCase() }}">
-                          {{ entry.type }}
-                        </span>
-                      </td>
-                      <td class="title-cell font-medium">{{ entry.title }}</td>
-                      <td>
-                        <span class="status-pill status-{{ entry.status.toLowerCase() }}">
-                          {{ entry.status }}
-                        </span>
-                      </td>
-                      <td class="action-cell">
-                        @if (entry.encounterId) {
-                          <button
-                            type="button"
-                            class="btn-row-action"
-                            (click)="openEncounterDrawer(entry.encounterId)"
-                          >
-                            {{ 'encounters.title' | t }}
-                          </button>
-                        }
-                        @if (entry.capabilities.canViewDetails && entry.resourceType) {
-                          <button
-                            type="button"
-                            class="btn-row-action primary-action"
-                            (click)="openItemDrawer(entry)"
-                          >
-                            {{ 'common.viewDetails' | t }}
-                          </button>
-                        }
-                      </td>
-                    </tr>
+                    @if (isClinical(entry)) {
+                      <tr class="timeline-row">
+                        <td class="date-cell">{{ entry.occurredAtUtc }}</td>
+                        <td>
+                          <span class="type-pill type-{{ entry.type.toLowerCase() }}">
+                            {{ entry.type }}
+                          </span>
+                        </td>
+                        <td class="title-cell font-medium">{{ entry.title }}</td>
+                        <td>
+                          <span class="status-pill status-{{ entry.status.toLowerCase() }}">
+                            {{ entry.status }}
+                          </span>
+                        </td>
+                        <td class="action-cell">
+                          @if (entry.encounterId) {
+                            <button
+                              type="button"
+                              class="btn-row-action"
+                              (click)="openEncounterDrawer(entry.encounterId)"
+                            >
+                              {{ 'encounters.title' | t }}
+                            </button>
+                          }
+                          @if (entry.capabilities.canViewDetails && entry.resourceType) {
+                            <button
+                              type="button"
+                              class="btn-row-action primary-action"
+                              (click)="openItemDrawer(entry)"
+                            >
+                              {{ 'common.viewDetails' | t }}
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    } @else if (isHistorical(entry)) {
+                      <tr class="timeline-row">
+                        <td>{{ entry.occurredAtUtc }}</td>
+                        <td>{{ 'historical.unverified' | t }}</td>
+                        <td>{{ 'historical.category.' + entry.category | t }}</td>
+                        <td>{{ 'historical.state.AvailableUnverified' | t }}</td>
+                        <td>
+                          @if (selectedCapabilities()?.canViewHistoricalDocuments) {
+                            <button
+                              class="btn-row-action"
+                              (click)="documentId.set(entry.documentId); showDocuments.set(true)"
+                            >
+                              {{ 'common.view' | t }}
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    } @else {
+                      <tr class="timeline-row">
+                        <td colspan="5">{{ 'patientRecord.hidden' | t }}</td>
+                      </tr>
+                    }
                   }
                 </tbody>
               </table>
@@ -271,10 +304,12 @@
             <h4 class="section-title">{{ 'encounters.outputs' | t }}</h4>
             <div class="outputs-list">
               @for (out of enc.outputs.items; track out.entryId) {
-                <div class="output-item-row">
-                  <span class="output-title">{{ out.title }}</span>
-                  <span class="output-type">{{ out.type }}</span>
-                </div>
+                @if (isClinical(out)) {
+                  <div class="output-item-row">
+                    <span class="output-title">{{ out.title }}</span>
+                    <span class="output-type">{{ out.type }}</span>
+                  </div>
+                }
               }
             </div>
           </section>
@@ -320,6 +355,28 @@
           </div>
         </section>
 
+        @if (itm.resourceType === 'lab-request' || itm.resourceType === 'radiology-request') {
+          <app-dependent-diagnostics
+            [childId]="selectedDependentId()"
+            [requestId]="itm.sourceId"
+            [kind]="itm.resourceType === 'lab-request' ? 'lab' : 'radiology'"
+            [canSubmit]="
+              (itm.resourceType === 'lab-request'
+                ? selectedCapabilities()?.canSubmitLabResult
+                : selectedCapabilities()?.canSubmitRadiologyResult) || false
+            "
+            [canView]="
+              (itm.resourceType === 'lab-request'
+                ? selectedCapabilities()?.canViewLabSubmissions
+                : selectedCapabilities()?.canViewRadiologySubmissions) || false
+            "
+            [canWithdraw]="
+              (itm.resourceType === 'lab-request'
+                ? selectedCapabilities()?.canWithdrawLabSubmission
+                : selectedCapabilities()?.canWithdrawRadiologySubmission) || false
+            "
+          />
+        }
         <!-- Attachments & Reports Download (WAS-402) -->
         <section class="drawer-section">
           <h4 class="section-title">{{ 'review.documents' | t }}</h4>
@@ -352,6 +409,20 @@
           }
         </section>
       </div>
+    }
+  </app-side-drawer>
+  <app-side-drawer
+    [opened]="showDocuments()"
+    [title]="'historical.title' | t"
+    width="760px"
+    (closed)="showDocuments.set(false)"
+  >
+    @if (showDocuments() && selectedCapabilities()?.canViewHistoricalDocuments) {
+      <app-historical-documents
+        [subject]="{ kind: 'dependent', patientId: selectedDependentId() }"
+        [documentId]="documentId()"
+        [canCreate]="selectedCapabilities()?.canUploadHistoricalDocument || false"
+      />
     }
   </app-side-drawer>
 </section>
