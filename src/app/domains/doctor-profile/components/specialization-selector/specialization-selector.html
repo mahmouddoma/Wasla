@@ -2,7 +2,7 @@
   <!-- Search and summary toolbar -->
   <div class="selector-toolbar">
     <div class="search-box">
-      <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
@@ -28,7 +28,31 @@
     </div>
   </div>
 
-  <!-- Multi-column Grid of specialties -->
+  <!-- Selected Quick Summary Bar -->
+  @if (selected().length) {
+    <div class="selected-summary-strip">
+      <span class="strip-label">{{ 'doctor.activeSet' | t }}:</span>
+      <div class="selected-tags">
+        @for (item of selected(); track item.medicalSpecializationId) {
+          @if (getOptionById(item.medicalSpecializationId); as opt) {
+            <span class="selected-tag-pill" [class.is-primary]="item.isPrimary">
+              @if (item.isPrimary) {
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              }
+              <span class="tag-name">{{ uiLanguage.isRtl() ? opt.nameAr : opt.nameEn || opt.nameAr }}</span>
+              @if (item.isPrimary) {
+                <span class="tag-primary-badge">{{ 'common.primarySpecialization' | t }}</span>
+              }
+            </span>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Airy Pills / Tags Container (No more heavy square blocks!) -->
   <div class="selector-grid">
     @for (option of filteredOptions(); track option.id) {
       <article

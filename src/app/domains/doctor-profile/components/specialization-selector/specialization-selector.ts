@@ -41,6 +41,10 @@ export class SpecializationSelector {
     return this.selected().some((item) => item.medicalSpecializationId === id && item.isPrimary);
   }
 
+  protected getOptionById(id: string): MedicalSpecializationOption | undefined {
+    return this.options().find((o) => o.id === id);
+  }
+
   protected toggle(id: string, event: Event): void {
     if (this.disabled()) return;
     const checked = (event.currentTarget as HTMLInputElement).checked;

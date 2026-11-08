@@ -83,31 +83,6 @@
           </svg>
           <span>{{ 'profile.tabBio' | t }}</span>
         </button>
-
-        <button
-          type="button"
-          role="tab"
-          class="tab-btn"
-          [class.active]="activeSection() === 'all'"
-          [attr.aria-selected]="activeSection() === 'all'"
-          (click)="setSection('all')"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-          </svg>
-          <span>{{ 'common.viewAll' | t }}</span>
-        </button>
       </nav>
     </div>
   </app-page-header>
@@ -118,7 +93,7 @@
       <span>{{ 'ui.full.514' | t }}</span>
     </div>
   } @else {
-    <!-- Full-Width Master Grid -->
+    <!-- Full-Width Workspace -->
     <div
       class="profile-master-grid"
       [class.mode-specialties]="activeSection() === 'specialties'"
@@ -126,88 +101,211 @@
       [class.mode-bio]="activeSection() === 'bio'"
       [class.mode-all]="activeSection() === 'all'"
     >
-      <!-- ═══ Column 1: Specializations & Request ═══ -->
+      <!-- ═══ Section 1: Specializations & Request ═══ -->
       @if (activeSection() === 'specialties' || activeSection() === 'all') {
         <div class="master-col col-specialties">
           @if (canViewSpecializations) {
-            <div class="specialties-inner-grid">
-              <div class="specialties-side-col">
-                <!-- Panel 1: Approved Specializations -->
-                <section class="panel panel-approved">
-                  <div class="section-heading">
-                    <div class="heading-meta">
-                      <div class="heading-title-row">
-                        <h2>{{ 'doctor.approvedSpecializations' | t }}</h2>
-                        @if (approvedCount()) {
-                          <span class="badge-count">{{ approvedCount() }}</span>
-                        }
-                      </div>
-                      <p>{{ 'ui.full.515' | t }}</p>
-                    </div>
+            <div class="specialties-surface">
+              <!-- Top Approved Status Banner -->
+              <section class="approved-status-bar">
+                <div class="status-meta">
+                  <div class="status-title-row">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="status-icon"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <polyline points="9 12 11 14 15 10" />
+                    </svg>
+                    <h2>{{ 'doctor.approvedSpecializations' | t }}</h2>
+                    @if (approvedCount()) {
+                      <span class="badge-count">{{ approvedCount() }}</span>
+                    }
                   </div>
+                  <p>{{ 'ui.full.515' | t }}</p>
+                </div>
 
-                  @if (current().items.length) {
-                    <div class="approved-grid">
-                      @for (item of current().items; track item.medicalSpecializationId) {
-                        <div class="approved-chip" [class.is-primary]="item.isPrimary">
-                          <div class="chip-text">
-                            <strong class="name-ar">{{
-                              langService.isRtl() ? item.nameAr : item.nameEn || item.nameAr
-                            }}</strong>
-                            @if (item.nameEn) {
-                              <small class="name-en" lang="en" dir="ltr">{{ item.nameEn }}</small>
-                            }
-                          </div>
-                          @if (item.isPrimary) {
-                            <span class="primary-badge">
-                              <svg
-                                viewBox="0 0 24 24"
-                                width="11"
-                                height="11"
-                                fill="currentColor"
-                                aria-hidden="true"
-                              >
-                                <polygon
-                                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                                />
-                              </svg>
-                              <span>{{ 'ui.full.516' | t }}</span>
-                            </span>
+                @if (current().items.length) {
+                  <div class="approved-chips-row">
+                    @for (item of current().items; track item.medicalSpecializationId) {
+                      <div class="approved-chip" [class.is-primary]="item.isPrimary">
+                        @if (item.isPrimary) {
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="12"
+                            height="12"
+                            fill="currentColor"
+                            class="star-icon"
+                            aria-hidden="true"
+                          >
+                            <polygon
+                              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                            />
+                          </svg>
+                        }
+                        <div class="chip-text">
+                          <strong class="name-ar">{{
+                            langService.isRtl() ? item.nameAr : item.nameEn || item.nameAr
+                          }}</strong>
+                          @if (item.nameEn) {
+                            <small class="name-en" lang="en" dir="ltr">{{ item.nameEn }}</small>
                           }
                         </div>
+                        @if (item.isPrimary) {
+                          <span class="primary-badge">{{ 'ui.full.516' | t }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="empty-approved-state">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      class="empty-icon"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>{{ 'ui.full.517' | t }}</span>
+                  </div>
+                }
+              </section>
+
+              <!-- Notice card if under review or modification requested -->
+              @if (requestStatusMeta(); as status) {
+                <div
+                  class="notice-card"
+                  [class.notice-info]="status.className === 'status-pending'"
+                  [class.notice-warning]="status.className === 'status-mod'"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="notice-icon"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <div class="notice-content">
+                    <strong>{{ status.label }}</strong>
+                    <p>{{ status.desc }}</p>
+                  </div>
+                </div>
+              }
+
+              <!-- Selection Workspace Panel -->
+              <section class="panel panel-proposal">
+                <div class="section-heading">
+                  <div class="heading-meta">
+                    <div class="heading-title-row">
+                      <h2>{{ 'ui.full.518' | t }}</h2>
+                      @if (openRequest(); as request) {
+                        <span class="revision-pill"
+                          >{{ 'common.reviewPrefix' | t }}{{ request.currentRevisionNumber }} ·
+                          {{ langService.label('status', request.status) }}</span
+                        >
                       }
                     </div>
-                  } @else {
-                    <div class="empty-approved-state">
+                    <p>{{ 'ui.full.519' | t }}</p>
+                  </div>
+                </div>
+
+                <app-specialization-selector
+                  [options]="options()"
+                  [selected]="selected()"
+                  [disabled]="!canEditProposal() || isSpecializationSubmitting()"
+                  (selectionChange)="selected.set($event)"
+                />
+
+                @if (canEditProposal()) {
+                  <div class="form-action-row">
+                    <button
+                      class="btn-primary-medical"
+                      type="button"
+                      [disabled]="isSpecializationSubmitting()"
+                      (click)="saveSpecializations()"
+                    >
+                      @if (isSpecializationSubmitting()) {
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                        <span>{{ 'requests.submitting' | t }}</span>
+                      } @else {
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="16"
+                          height="16"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                        <span>{{
+                          openRequest()
+                            ? langService.t('ui.expressions.190')
+                            : langService.t('ui.expressions.191')
+                        }}</span>
+                      }
+                    </button>
+                  </div>
+                }
+              </section>
+
+              <!-- Collapsible History Timeline -->
+              @if (history().length) {
+                <details class="history-accordion">
+                  <summary class="history-summary">
+                    <div class="history-summary-left">
                       <svg
                         viewBox="0 0 24 24"
-                        width="22"
-                        height="22"
+                        width="16"
+                        height="16"
                         fill="none"
                         stroke="currentColor"
-                        stroke-width="1.8"
-                        class="empty-icon"
+                        stroke-width="2"
                         aria-hidden="true"
                       >
                         <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                        <polyline points="12 6 12 12 14 14" />
                       </svg>
-                      <span>{{ 'ui.full.517' | t }}</span>
+                      <strong>{{ 'ui.full.520' | t }}</strong>
+                      <span class="history-count">({{ history().length }})</span>
                     </div>
-                  }
-                </section>
+                    <svg
+                      class="chevron-icon"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </summary>
 
-                <!-- Panel 3: History Timeline -->
-                @if (history().length) {
-                  <section class="panel panel-history">
-                    <div class="section-heading">
-                      <div class="heading-meta">
-                        <h2>{{ 'ui.full.520' | t }}</h2>
-                        <p>{{ 'ui.full.521' | t }}</p>
-                      </div>
-                    </div>
-
+                  <div class="history-body">
                     <ol class="timeline">
                       @for (item of history(); track item.id) {
                         <li class="timeline-entry">
@@ -234,102 +332,15 @@
                         </li>
                       }
                     </ol>
-                  </section>
-                }
-              </div>
-
-              <div class="specialties-main-col">
-                <!-- Panel 2: Specialty Proposal Grid Selector -->
-                <section class="panel panel-proposal">
-                  <div class="section-heading">
-                    <div class="heading-meta">
-                      <div class="heading-title-row">
-                        <h2>{{ 'ui.full.518' | t }}</h2>
-                        @if (openRequest(); as request) {
-                          <span class="revision-pill"
-                            >{{ 'common.reviewPrefix' | t }}{{ request.currentRevisionNumber }} ·
-                            {{ langService.label('status', request.status) }}</span
-                          >
-                        }
-                      </div>
-                      <p>{{ 'ui.full.519' | t }}</p>
-                    </div>
                   </div>
-
-                  @if (requestStatusMeta(); as status) {
-                    <div
-                      class="notice-card"
-                      [class.notice-info]="status.className === 'status-pending'"
-                      [class.notice-warning]="status.className === 'status-mod'"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        class="notice-icon"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                      <div class="notice-content">
-                        <strong>{{ status.label }}</strong>
-                        <p>{{ status.desc }}</p>
-                      </div>
-                    </div>
-                  }
-
-                  <app-specialization-selector
-                    [options]="options()"
-                    [selected]="selected()"
-                    [disabled]="!canEditProposal() || isSpecializationSubmitting()"
-                    (selectionChange)="selected.set($event)"
-                  />
-
-                  @if (canEditProposal()) {
-                    <div class="form-action-row">
-                      <button
-                        class="btn-primary-medical"
-                        type="button"
-                        [disabled]="isSpecializationSubmitting()"
-                        (click)="saveSpecializations()"
-                      >
-                        @if (isSpecializationSubmitting()) {
-                          <span class="btn-spinner" aria-hidden="true"></span>
-                          <span>{{ 'requests.submitting' | t }}</span>
-                        } @else {
-                          <svg
-                            viewBox="0 0 24 24"
-                            width="16"
-                            height="16"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            aria-hidden="true"
-                          >
-                            <line x1="22" y1="2" x2="11" y2="13" />
-                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                          </svg>
-                          <span>{{
-                            openRequest()
-                              ? langService.t('ui.expressions.190')
-                              : langService.t('ui.expressions.191')
-                          }}</span>
-                        }
-                      </button>
-                    </div>
-                  }
-                </section>
-              </div>
+                </details>
+              }
             </div>
           }
         </div>
       }
-      <!-- ═══ Column 2: Practice Location & Interactive Map ═══ -->
+
+      <!-- ═══ Section 2: Practice Location & Interactive Map ═══ -->
       @if (activeSection() === 'location' || activeSection() === 'all') {
         @if (canViewLocation || canManageLocation) {
           <div class="master-col col-location">
@@ -352,7 +363,7 @@
               <div class="location-inner-grid">
                 <!-- Sub-column 1: Interactive Live Map & GPS Action -->
                 <div class="location-map-col">
-                  <p>{{ 'doctorRemediation.geocodingPrivacy' | t }}</p>
+                  <p class="map-privacy-hint">{{ 'doctorRemediation.geocodingPrivacy' | t }}</p>
                   <!-- GPS Quick Action -->
                   @if (canManageLocation) {
                     <div class="gps-bar">
@@ -397,7 +408,7 @@
                 <!-- Sub-column 2: Address & Coordinates Form -->
                 <div class="location-form-col">
                   <form (submit)="saveLocation($event)" class="location-form">
-                    <p class="field-full">
+                    <p class="field-full usage-hint">
                       {{ 'subscriptions.draft' | t }}
                       @if (subscription.usage(); as usage) {
                         {{ 'subscriptions.practiceLimit' | t }}: {{ usage.practiceCount }} /
@@ -514,7 +525,7 @@
         }
       }
 
-      <!-- ═══ Column 3: Bio & Public Profile ═══ -->
+      <!-- ═══ Section 3: Bio & Public Profile ═══ -->
       @if (activeSection() === 'bio' || activeSection() === 'all') {
         <div class="master-col col-bio">
           <app-public-profile-manager />

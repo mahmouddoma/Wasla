@@ -8,6 +8,25 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
+  'subscriptions.registeredDoctor': { ar: 'طبيب مسجل', en: 'Registered Doctor' },
+  'subscriptions.batch': { ar: 'الدفعة', en: 'Batch' },
+  'subscriptions.batchNumber': { ar: 'دفعة رقم', en: 'Batch #' },
+  'subscriptions.kind.Trial': { ar: 'فترة تجريبية', en: 'Free Trial' },
+  'subscriptions.kind.Paid': { ar: 'اشتراك مدفوع', en: 'Paid Subscription' },
+  'subscriptions.kind.LegacyTransition': { ar: 'فترة انتقالية', en: 'Legacy Transition' },
+  'subscriptions.paymentMethod.Cash': { ar: 'نقدي (كاش)', en: 'Cash' },
+  'subscriptions.paymentMethod.Card': { ar: 'بطاقة دفع', en: 'Card' },
+  'subscriptions.paymentMethod.EWallet': { ar: 'محفظة إلكترونية', en: 'E-Wallet' },
+  'subscriptions.autoRenew': { ar: 'تجديد تلقائي', en: 'Auto renewal' },
+  'subscriptions.willNotRenewTag': { ar: 'ينتهي دون تجديد', en: 'Expires without renewal' },
+  'subscriptions.trialExtensionsCount': { ar: 'مرات تمديد التجربة', en: 'Trial extensions' },
+  'subscriptions.cancellationRequested': { ar: 'طُلب الإلغاء بتاريخ', en: 'Cancellation requested on' },
+  'subscriptions.planName.STARTER': { ar: 'الباقة الأساسية', en: 'Starter Plan' },
+  'subscriptions.planName.PRO': { ar: 'الباقة المتقدمة', en: 'Pro Plan' },
+  'subscriptions.targetPlan': { ar: 'الباقة المطلوبة', en: 'Target plan' },
+  'subscriptions.effectiveDate': { ar: 'تاريخ السريان', en: 'Effective date' },
+  'subscriptions.paymentMethodLabel': { ar: 'طريقة الدفع', en: 'Payment method' },
+  'subscriptions.doctorIdLabel': { ar: 'معرف الطبيب', en: 'Doctor ID' },
   'subscriptions.practiceAllowance': { ar: 'العيادات المتاحة', en: 'Practice allowance' },
   'subscriptions.receptionAllowance': {
     ar: 'حسابات الاستقبال المتاحة',

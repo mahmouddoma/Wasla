@@ -14,6 +14,7 @@ import {
   SubscriptionsApi,
   SubscriptionChangeRequest,
   SubscriptionDetails,
+  SubscriptionListItem,
   SubscriptionListQuery,
   SubscriptionPage,
   SubscriptionSelection,
@@ -24,6 +25,12 @@ import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawe
 import { PlanSelectorComponent } from '../../components/plan-selector/plan-selector.component';
 
 type AdminAction = 'activate' | 'renew' | 'extend' | 'approve' | 'reject' | 'enroll';
+
+interface CachedDoctor {
+  nameAr: string;
+  nameEn?: string | null;
+  approvalStatus?: string | null;
+}
 @Component({
   selector: 'app-admin-subscriptions',
   imports: [
@@ -59,6 +66,7 @@ export class AdminSubscriptionsComponent {
   readonly batch = signal<LegacyTransitionBatch | null>(null);
   readonly renewalSelection = signal<SubscriptionSelection | null>(null);
   readonly paymentUncertain = signal(false);
+  readonly doctorCache = signal<Map<string, CachedDoctor>>(new Map());
   query: SubscriptionListQuery = {
     pageNumber: 1,
     pageSize: 20,
@@ -85,6 +93,41 @@ export class AdminSubscriptionsComponent {
       this.catalog.set(null);
     }
   }
+
+  getDoctorDisplayName(item: SubscriptionListItem): string {
+    if (item.doctorNameAr) {
+      return this.language.currentLang() === 'ar'
+        ? item.doctorNameAr
+        : (item.doctorNameEn || item.doctorNameAr);
+    }
+    const key = item.doctorId || item.id;
+    const cached = this.doctorCache().get(key);
+    if (cached?.nameAr) {
+      return this.language.currentLang() === 'ar'
+        ? cached.nameAr
+        : (cached.nameEn || cached.nameAr);
+    }
+    return this.language.t('subscriptions.registeredDoctor');
+  }
+
+  getDoctorCode(item: SubscriptionListItem): string {
+    const raw = item.doctorId || item.id;
+    return raw ? raw.slice(0, 8) : '';
+  }
+
+  getPlanDisplayName(planCode: string): string {
+    const key = `subscriptions.planName.${planCode}`;
+    const translated = this.language.t(key);
+    return translated !== key ? translated : planCode;
+  }
+
+  copyToClipboard(text: string, event?: Event): void {
+    event?.stopPropagation();
+    if (!text) return;
+    void navigator.clipboard.writeText(text);
+    this.toast.success(this.language.t('common.copied'));
+  }
+
   async load(reset = false): Promise<void> {
     if (reset) this.query.pageNumber = 1;
     const generation = ++this.listGeneration;
@@ -92,13 +135,42 @@ export class AdminSubscriptionsComponent {
     this.error.set(false);
     try {
       const page = await firstValueFrom(this.api.list({ ...this.query }));
-      if (generation === this.listGeneration) this.page.set(page);
+      if (generation === this.listGeneration) {
+        this.page.set(page);
+        void this.enrichDoctorProfiles(page.items);
+      }
     } catch {
       if (generation === this.listGeneration) this.error.set(true);
     } finally {
       if (generation === this.listGeneration) this.loading.set(false);
     }
   }
+
+  private async enrichDoctorProfiles(items: SubscriptionListItem[]): Promise<void> {
+    const toFetch = items.filter(
+      (item) => !item.doctorNameAr && !this.doctorCache().has(item.doctorId || item.id),
+    );
+    if (!toFetch.length) return;
+
+    const results = await Promise.allSettled(
+      toFetch.map((item) => firstValueFrom(this.api.details(item.id))),
+    );
+
+    const updated = new Map(this.doctorCache());
+    for (let i = 0; i < toFetch.length; i++) {
+      const res = results[i];
+      if (res.status === 'fulfilled' && res.value?.doctor) {
+        const key = toFetch[i].doctorId || toFetch[i].id;
+        updated.set(key, {
+          nameAr: res.value.doctor.nameAr,
+          nameEn: res.value.doctor.nameEn,
+          approvalStatus: res.value.doctor.approvalStatus,
+        });
+      }
+    }
+    this.doctorCache.set(updated);
+  }
+
   clearFilters(): void {
     this.query = { pageNumber: 1, pageSize: 20 };
     void this.load();
@@ -115,6 +187,16 @@ export class AdminSubscriptionsComponent {
       const details = await firstValueFrom(this.api.details(id));
       if (generation === this.detailGeneration) {
         this.details.set(details);
+        if (details.doctor) {
+          const updated = new Map(this.doctorCache());
+          const key = details.doctor.id || id;
+          updated.set(key, {
+            nameAr: details.doctor.nameAr,
+            nameEn: details.doctor.nameEn,
+            approvalStatus: details.doctor.approvalStatus,
+          });
+          this.doctorCache.set(updated);
+        }
         this.paymentUncertain.set(false);
       }
     } catch {
@@ -308,7 +390,18 @@ export class AdminSubscriptionsComponent {
   private async inspectAfterMutation(id: string): Promise<void> {
     // A refresh failure must never turn a successful payment into a failed payment message.
     try {
-      this.details.set(await firstValueFrom(this.api.details(id)));
+      const details = await firstValueFrom(this.api.details(id));
+      this.details.set(details);
+      if (details.doctor) {
+        const updated = new Map(this.doctorCache());
+        const key = details.doctor.id || id;
+        updated.set(key, {
+          nameAr: details.doctor.nameAr,
+          nameEn: details.doctor.nameEn,
+          approvalStatus: details.doctor.approvalStatus,
+        });
+        this.doctorCache.set(updated);
+      }
     } catch {
       this.details.set(null);
       this.detailError.set(true);
