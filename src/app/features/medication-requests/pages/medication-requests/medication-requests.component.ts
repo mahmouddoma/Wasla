@@ -1,5 +1,5 @@
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -11,7 +11,6 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { DrugCatalogApi, DrugCatalogItem, DrugData } from '../../../../domains/drug-catalog';
 import {
   MedicationRequestsApi,
@@ -22,7 +21,7 @@ import {
 } from '../../../../domains/medication-requests';
 @Component({
   selector: 'app-medication-requests',
-  imports: [LocalizedDatePipe, ReactiveFormsModule, TranslatePipe, PageHeader, SideDrawer],
+  imports: [LocalizedDatePipe, ReactiveFormsModule, TranslatePipe, PageHeader],
   templateUrl: './medication-requests.component.html',
   styleUrls: [
     '../../../../shared/styles/directory-workspace.css',
@@ -216,6 +215,13 @@ export class MedicationRequestsComponent implements OnInit {
     });
     this.editing.set(true);
   }
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.opened() && !this.busy()) {
+      this.close();
+    }
+  }
+
   close() {
     if (this.busy()) return;
     this.detailSequence++;

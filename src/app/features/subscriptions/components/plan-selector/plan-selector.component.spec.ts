@@ -42,7 +42,7 @@ describe('PlanSelectorComponent', () => {
     fixture.componentInstance.chooseTrial();
     expect(emitted).not.toHaveBeenCalled();
   });
-  it('hides disabled products and features without release approval', () => {
+  it('hides disabled products and features without active access level', () => {
     const catalog = structuredClone(catalogFixture);
     catalog.products[0].enabled = false;
     const fixture = TestBed.createComponent(PlanSelectorComponent);
@@ -53,12 +53,12 @@ describe('PlanSelectorComponent', () => {
       fixture.componentInstance.getPlanFeatures({
         ...catalogFixture.products[0].plans[0],
         features: [
-          { code: 'HIDDEN', nameEn: 'Not ready', isReleaseReady: false, accessLevel: 'Full' },
+          { code: 'HIDDEN', nameEn: 'Not ready', accessLevel: 'None' as any },
         ],
       }),
     ).toEqual([]);
   });
-  it('renders only catalog-approved features instead of inferring benefits from plan codes', () => {
+  it('renders features as returned from the backend catalog response', () => {
     const fixture = TestBed.createComponent(PlanSelectorComponent);
     fixture.componentRef.setInput('catalog', catalogFixture);
     TestBed.inject(LanguageService).setLanguage('en');
@@ -69,13 +69,10 @@ describe('PlanSelectorComponent', () => {
         {
           code: 'MEDICAL_ENCOUNTER',
           nameEn: 'Server-approved visit',
-          isReleaseReady: true,
           accessLevel: 'Full',
         },
-        { code: 'UNREADY', nameEn: 'Not launched', isReleaseReady: false, accessLevel: 'Full' },
       ],
     });
     expect(features).toEqual(['Server-approved visit']);
-    expect(features.join(' ')).not.toContain('Enterprise');
   });
 });

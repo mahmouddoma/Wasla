@@ -412,11 +412,18 @@
         }
       </div>
     } @else {
-      <!-- Doctors Responsive Grid -->
-      <div class="doctors-grid">
-        @for (doctor of result().items; track doctor.doctorId) {
-          @let activePractice = getActivePractice(doctor);
-          <article class="doctor-card doctor-result">
+      <!-- Doctors Split Layout (Master-Detail) -->
+      <div class="doctors-split-layout" [class.has-active-detail]="isDesktop() && drawerOpened() && (drawerDoctor() || drawerLoading())">
+        <!-- Master Pane: Doctors List -->
+        <div class="doctors-master-pane">
+          <div class="doctors-grid">
+            @for (doctor of result().items; track doctor.doctorId) {
+              @let activePractice = getActivePractice(doctor);
+              <article
+                class="doctor-card doctor-result"
+                [class.is-selected]="drawerDoctor()?.doctorId === doctor.doctorId"
+                (click)="onDoctorCardSelect(doctor)"
+              >
             <!-- ── Right Column: Doctor Identity & Clinics Details ── -->
             <div class="doctor-main-column">
               <!-- Top identity cluster -->
@@ -881,7 +888,38 @@
           </article>
         }
       </div>
+    </div>
+
+    <!-- Detail Pane: In-Place Master-Detail on Desktop -->
+    @if (isDesktop() && drawerOpened() && (drawerDoctor() || drawerLoading())) {
+      <aside class="doctor-detail-pane" aria-label="تفاصيل الحجز والعيادة">
+        <div class="detail-pane-header">
+          <div class="pane-title-group">
+            <span class="pane-badge">{{ 'booking.drawerTitle' | t }}</span>
+            <h3 class="pane-heading">
+              {{ drawerDoctor() ? (language.isRtl() ? drawerDoctor()!.nameAr : drawerDoctor()!.nameEn || drawerDoctor()!.nameAr) : ('common.loading' | t) }}
+            </h3>
+          </div>
+          <button
+            type="button"
+            class="btn-close-detail-pane"
+            (click)="closeDrawer()"
+            [attr.aria-label]="'common.close' | t"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="detail-pane-body">
+          <ng-container *ngTemplateOutlet="bookingFlowTemplate" />
+        </div>
+      </aside>
     }
+  </div>
+}
 
     <!-- Empty State -->
     @if (!isLoading() && !result().items.length) {
@@ -960,14 +998,21 @@
     }
   </section>
 
-  <!-- Slide-Over Drawer for In-Place Doctor Details & Booking -->
-  <app-side-drawer
-    [opened]="drawerOpened()"
-    [title]="'booking.drawerTitle' | t"
-    [description]="'booking.choosePracticeHelp' | t"
-    width="640px"
-    (closed)="closeDrawer()"
-  >
+  <!-- Slide-Over Drawer for In-Place Doctor Details & Booking on Mobile/Tablet -->
+  @if (!isDesktop()) {
+    <app-side-drawer
+      [opened]="drawerOpened()"
+      [title]="'booking.drawerTitle' | t"
+      [description]="'booking.choosePracticeHelp' | t"
+      width="100%"
+      (closed)="closeDrawer()"
+    >
+      <ng-container *ngTemplateOutlet="bookingFlowTemplate" />
+    </app-side-drawer>
+  }
+
+  <!-- Shared Booking Flow Template for Master-Detail & Mobile Drawer -->
+  <ng-template #bookingFlowTemplate>
     @if (drawerLoading()) {
       <div class="drawer-loading-skeleton" aria-hidden="true">
         <div class="skeleton-header">
@@ -1319,10 +1364,11 @@
                     class="btn-date-chip"
                     [class.active]="drawerSelectedDate() === item.date"
                     [disabled]="!item.isAvailable"
-                    dir="ltr"
                     (click)="chooseDrawerDate(item.date)"
                   >
-                    {{ item.date }}
+                    <span class="date-chip-day">{{ formatDateChip(item.date).dayName }}</span>
+                    <strong class="date-chip-num">{{ formatDateChip(item.date).dayNumber }}</strong>
+                    <span class="date-chip-month">{{ formatDateChip(item.date).monthName }}</span>
                   </button>
                 } @empty {
                   @if (!drawerBookingLoading() && !drawerMessages().length) {
@@ -1342,10 +1388,13 @@
                       type="button"
                       class="btn-slot-chip"
                       [class.active]="drawerSelectedTime() === slot.time"
-                      dir="ltr"
                       (click)="chooseDrawerSlot(slot.time)"
                     >
-                      {{ slot.time }}
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span dir="ltr">{{ formatSlotTime(slot.time) }}</span>
                     </button>
                   } @empty {
                     @if (!drawerBookingLoading() && !drawerMessages().length) {
@@ -1632,5 +1681,5 @@
         </button>
       </footer>
     }
-  </app-side-drawer>
+  </ng-template>
 </main>

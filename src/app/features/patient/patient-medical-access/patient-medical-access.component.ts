@@ -1,12 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
+  OnDestroy,
   computed,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormField, form, maxLength, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
@@ -33,42 +33,53 @@ import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-patient-medical-access',
-  imports: [FormField, PageHeader, SideDrawer, TranslatePipe],
+  imports: [FormField, DatePipe, NgTemplateOutlet, PageHeader, SideDrawer, TranslatePipe],
   templateUrl: './patient-medical-access.component.html',
   styleUrls: ['./patient-medical-access.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PatientMedicalAccessComponent {
+export class PatientMedicalAccessComponent implements OnDestroy {
   protected readonly uiLanguage = inject(LanguageService);
   protected readonly evidenceFileAccept = EVIDENCE_FILE_ACCEPT;
 
   private readonly api = inject(FamiliesApi);
   private readonly toast = inject(ToastService);
-  private readonly newRequestDialog = viewChild<ElementRef<HTMLDialogElement>>('newRequestDialog');
-  private readonly resubmitDialog = viewChild<ElementRef<HTMLDialogElement>>('resubmitDialog');
 
+  // Responsive Master-Detail detection
+  private readonly resizeListener = () => {
+    if (typeof window !== 'undefined') {
+      this.isDesktop.set(window.innerWidth >= 1025);
+    }
+  };
+  protected readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
+  );
+
+  // Filters & Pagination
   protected readonly status = signal<FamilyMedicalAccessRequestStatus | ''>('');
   protected readonly requestType = signal<FamilyMedicalAccessRequestType | ''>('');
   protected readonly pageNumber = signal(1);
   protected readonly pageSize = 20;
 
+  // List State
   protected readonly listResult = signal<FamilyMedicalPage<FamilyMedicalCase> | null>(null);
   protected readonly loading = signal(true);
   protected readonly submitting = signal(false);
   protected readonly messages = signal<string[]>([]);
 
-  // Selected for drawer details
+  // Master-Detail Active View / Form Mode
+  protected readonly detailMode = signal<'view' | 'create' | 'resubmit' | null>(null);
   protected readonly selectedCase = signal<FamilyMedicalCase | null>(null);
   protected readonly selectedHistory = signal<FamilyMedicalHistoryItem[]>([]);
   protected readonly drawerOpen = signal(false);
   protected readonly documentLoadingId = signal('');
 
-  // Child check
+  // Child Quick Status Check
   protected readonly checkChildId = signal('');
   protected readonly childStatus = signal<FamilyMedicalAccessStatus | null>(null);
   protected readonly checkingChild = signal(false);
 
-  // New request form
+  // New Request Form
   protected readonly newRequestModel = signal({
     requestType: 'Restriction' as FamilyMedicalAccessRequestType,
     childPatientId: '',
@@ -84,7 +95,7 @@ export class PatientMedicalAccessComponent {
   });
   protected readonly newRequestFiles = signal<File[]>([]);
 
-  // Resubmit form
+  // Resubmit Form
   protected readonly resubmitModel = signal({
     reason: '',
     documentTypes: '',
@@ -95,12 +106,45 @@ export class PatientMedicalAccessComponent {
   });
   protected readonly resubmitFiles = signal<File[]>([]);
 
+  // Computed Properties
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.listResult()?.totalCount ?? 0) / this.pageSize)),
   );
 
+  protected readonly hasActiveDetail = computed(
+    () => this.detailMode() !== null && (this.detailMode() === 'create' || !!this.selectedCase()),
+  );
+
+  protected readonly detailTitle = computed(() => {
+    const mode = this.detailMode();
+    if (mode === 'create') {
+      return this.uiLanguage.t('common.createRequest');
+    }
+    if (mode === 'resubmit') {
+      return this.uiLanguage.t('common.resubmit');
+    }
+    const current = this.selectedCase();
+    if (current) {
+      const typeText =
+        current.requestType === 'Restriction'
+          ? this.uiLanguage.t('review.restriction')
+          : this.uiLanguage.t('review.restoration');
+      return `${typeText} - #${current.revision}`;
+    }
+    return this.uiLanguage.t('review.medicalAccessRequests');
+  });
+
   constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resizeListener);
+    }
     void this.load();
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.resizeListener);
+    }
   }
 
   protected async load(): Promise<void> {
@@ -126,6 +170,7 @@ export class PatientMedicalAccessComponent {
 
   protected async openDetailsDrawer(item: FamilyMedicalCase): Promise<void> {
     this.selectedCase.set(item);
+    this.detailMode.set('view');
     this.drawerOpen.set(true);
     try {
       const [fullCase, historyRes] = await Promise.all([
@@ -139,10 +184,15 @@ export class PatientMedicalAccessComponent {
     }
   }
 
-  protected closeDrawer(): void {
+  protected closeDetail(): void {
+    this.detailMode.set(null);
     this.drawerOpen.set(false);
     this.selectedCase.set(null);
     this.selectedHistory.set([]);
+  }
+
+  protected closeDrawer(): void {
+    this.closeDetail();
   }
 
   protected async checkDependentAccess(childId: string): Promise<void> {
@@ -160,9 +210,13 @@ export class PatientMedicalAccessComponent {
   }
 
   protected openNewRequestModal(): void {
+    this.openNewRequestModalWith('Restriction', this.checkChildId());
+  }
+
+  protected openNewRequestModalWith(type?: 'Restriction' | 'Restoration', childId?: string): void {
     this.newRequestModel.set({
-      requestType: 'Restriction',
-      childPatientId: this.checkChildId(),
+      requestType: type ?? 'Restriction',
+      childPatientId: childId ?? this.checkChildId(),
       affectedAdultPatientId: '',
       reason: '',
       documentTypes: '',
@@ -170,11 +224,12 @@ export class PatientMedicalAccessComponent {
     this.newRequestForm().reset();
     this.newRequestFiles.set([]);
     this.messages.set([]);
-    this.newRequestDialog()?.nativeElement.showModal();
+    this.detailMode.set('create');
+    this.drawerOpen.set(true);
   }
 
   protected closeNewRequestModal(): void {
-    this.newRequestDialog()?.nativeElement.close();
+    this.closeDetail();
   }
 
   protected onNewFilesSelected(event: Event): void {
@@ -215,7 +270,7 @@ export class PatientMedicalAccessComponent {
         }),
       );
       this.toast.success(this.uiLanguage.t('common.savedSuccessfully'));
-      this.closeNewRequestModal();
+      this.closeDetail();
       await this.load();
     } catch (error) {
       this.messages.set(parseApiErrors(error).messages);
@@ -233,9 +288,9 @@ export class PatientMedicalAccessComponent {
         this.api.withdrawMedicalAccessRequest(item.requestId, item.rowVersion, crypto.randomUUID()),
       );
       this.toast.success(this.uiLanguage.t('common.savedSuccessfully'));
-      this.closeDrawer();
+      this.closeDetail();
       await this.load();
-    } catch (error) {
+    } catch {
       this.toast.error(this.uiLanguage.t('common.actionFailed'));
     } finally {
       this.submitting.set(false);
@@ -250,11 +305,13 @@ export class PatientMedicalAccessComponent {
     });
     this.resubmitForm().reset();
     this.resubmitFiles.set([]);
-    this.resubmitDialog()?.nativeElement.showModal();
+    this.messages.set([]);
+    this.detailMode.set('resubmit');
+    this.drawerOpen.set(true);
   }
 
   protected closeResubmitModal(): void {
-    this.resubmitDialog()?.nativeElement.close();
+    this.closeDetail();
   }
 
   protected onResubmitFilesSelected(event: Event): void {
@@ -290,8 +347,7 @@ export class PatientMedicalAccessComponent {
         }),
       );
       this.toast.success(this.uiLanguage.t('common.savedSuccessfully'));
-      this.closeResubmitModal();
-      this.closeDrawer();
+      this.closeDetail();
       await this.load();
     } catch (error) {
       this.messages.set(parseApiErrors(error).messages);

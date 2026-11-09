@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -31,6 +31,7 @@ import { DependentDetailsComponent } from '../dependent-details/dependent-detail
   imports: [
     DatePipe,
     FormsModule,
+    NgTemplateOutlet,
     RouterLink,
     TranslatePipe,
     PageHeader,
@@ -77,14 +78,85 @@ export class PatientFamily implements OnDestroy {
   requestStatus: FamilyRequestStatus | '' = '';
   requestType: FamilyRequestType | '' = '';
   requestSearch = '';
+
+  private readonly resizeListener = () => {
+    if (typeof window !== 'undefined') {
+      this.isDesktop.set(window.innerWidth >= 1025);
+    }
+  };
+
+  readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
+  );
+
+  readonly hasActiveDetail = computed(
+    () =>
+      !!this.intakeMode() ||
+      !!this.selectedChild() ||
+      !!this.selectedOnboarding() ||
+      !!this.selectedGovernance() ||
+      !!this.selectedRelationship(),
+  );
+
+  readonly detailTitle = computed(() => {
+    if (this.selectedChild()) return this.selectedChild()!.nameAr;
+    if (this.selectedOnboarding()) {
+      return this.selectedOnboarding()!.intake.nameAr || this.language.t('familyFlow.requests');
+    }
+    if (this.selectedGovernance()) {
+      return this.language.t('familyFlow.kind.' + this.selectedGovernance()!.request.kind);
+    }
+    if (this.selectedRelationship()) {
+      const rel = this.selectedRelationship()!;
+      return rel.targetNameAr && rel.targetNameAr !== '***'
+        ? rel.targetNameAr
+        : this.language.t('familyFlow.requestType.' + rel.requestType);
+    }
+    if (this.intakeMode()) {
+      const mode = this.intakeMode()!;
+      if (mode === 'onboard') return this.language.t('familyFlow.addChild');
+      if (mode === 'search') return this.language.t('familyFlow.linkChild');
+      if (mode === 'redeem') return this.language.t('familyFlow.redeem');
+      return this.language.t('familyFlow.requests');
+    }
+    return this.language.t('familyFlow.requests');
+  });
+
+  isSelectedWorkflow(item: FamilyPendingWorkflow): boolean {
+    return (
+      this.selectedOnboarding()?.request?.requestId === item.reference ||
+      this.selectedGovernance()?.request?.caseId === item.reference
+    );
+  }
+
+  isSelectedOnboarding(id: string): boolean {
+    return this.selectedOnboarding()?.request?.requestId === id;
+  }
+
+  isSelectedGovernance(caseId: string): boolean {
+    return this.selectedGovernance()?.request?.caseId === caseId;
+  }
+
+  isSelectedRelationship(id: string): boolean {
+    return this.selectedRelationship()?.requestId === id;
+  }
+
   private sequence = 0;
   private detailSequence = 0;
+
   constructor() {
     void this.load();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resizeListener);
+    }
   }
+
   ngOnDestroy(): void {
     this.sequence++;
     this.close();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.resizeListener);
+    }
   }
   async load(): Promise<void> {
     const sequence = ++this.sequence;

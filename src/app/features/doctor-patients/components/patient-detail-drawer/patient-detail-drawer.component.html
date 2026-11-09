@@ -1,11 +1,29 @@
-<app-side-drawer
-  [opened]="opened()"
-  [title]="'doctorPatients.drawer.title' | t"
-  [width]="'min(100vw, 1040px)'"
-  [wide]="true"
-  (closed)="onClose()"
->
-  <div class="drawer-inner">
+@if (opened()) {
+  <section class="patient-detail-panel" [attr.aria-label]="'doctorPatients.drawer.title' | t">
+    <header class="panel-header">
+      <div class="panel-heading-wrap">
+        <div class="panel-brand-indicator" aria-hidden="true">
+          <span class="indicator-dot"></span>
+        </div>
+        <div class="panel-titles">
+          <h2>{{ 'doctorPatients.drawer.title' | t }}</h2>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="panel-close-btn"
+        (click)="onClose()"
+        [attr.aria-label]="'common.close' | t"
+        [title]="'common.close' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="drawer-inner">
     @if (loading()) {
       <div class="drawer-loading" role="status">
         <div class="spinner"></div>
@@ -237,18 +255,20 @@
             <!-- Overview Tab -->
             @if (activeTab() === 'overview') {
               <div class="overview-section">
-                <h4 class="record-heading">{{ 'doctorWorkspace.clinicalSummary' | t }}</h4>
-                <div class="record-stats">
-                  <span
-                    ><strong>{{ patient()?.attendanceCount }}</strong>
-                    {{ 'doctorPatients.col.attendanceCount' | t }}</span
-                  >
-                  @if (patient()?.completedEncounterCount != null) {
+                <div class="overview-header-row">
+                  <h4 class="record-heading">{{ 'doctorWorkspace.clinicalSummary' | t }}</h4>
+                  <div class="record-stats">
                     <span
-                      ><strong>{{ patient()?.completedEncounterCount }}</strong>
-                      {{ 'doctorPatients.col.encounters' | t }}</span
+                      ><strong>{{ patient()?.attendanceCount }}</strong>
+                      {{ 'doctorPatients.col.attendanceCount' | t }}</span
                     >
-                  }
+                    @if (patient()?.completedEncounterCount != null) {
+                      <span
+                        ><strong>{{ patient()?.completedEncounterCount }}</strong>
+                        {{ 'doctorPatients.col.encounters' | t }}</span
+                      >
+                    }
+                  </div>
                 </div>
                 <div class="clinical-ledger">
                   <!-- Visited Practices -->
@@ -256,34 +276,38 @@
                     <span class="card-title"><i class="fa-solid fa-hospital me-2" aria-hidden="true"></i>{{
                       'doctorPatients.overview.attendedPractices' | t
                     }}</span>
-                    <div class="practices-chips">
-                      @for (p of overview()?.practices; track p.id) {
-                        <span class="chip" [class.inactive]="!p.isActive">
-                          {{
-                            language.isRtl()
-                              ? p.nameAr || p.nameEn || ('doctorRemediation.unavailable' | t)
-                              : p.nameEn || p.nameAr || ('doctorRemediation.unavailable' | t)
-                          }}
-                          @if (!p.isActive) {
-                            ({{ 'doctorPatients.historicalBadge' | t }})
-                          }
-                        </span>
-                      }
+                    <div class="entry-data">
+                      <div class="practices-chips">
+                        @for (p of overview()?.practices; track p.id) {
+                          <span class="chip" [class.inactive]="!p.isActive">
+                            {{
+                              language.isRtl()
+                                ? p.nameAr || p.nameEn || ('doctorRemediation.unavailable' | t)
+                                : p.nameEn || p.nameAr || ('doctorRemediation.unavailable' | t)
+                            }}
+                            @if (!p.isActive) {
+                              ({{ 'doctorPatients.historicalBadge' | t }})
+                            }
+                          </span>
+                        }
+                      </div>
                     </div>
                   </div>
 
                   <!-- Last Attendance -->
                   <div class="clinical-entry">
-                    <span class="card-title">{{ 'doctorPatients.overview.lastTicket' | t }}</span>
-                    @if (overview()?.lastAttendance; as att) {
-                      <div class="card-highlight">
-                        <strong>#{{ att.ticketNumber }}</strong> —
-                        {{ 'tickets.status.' + att.ticketStatus | t }}
-                      </div>
-                      <div class="card-sub">{{ att.businessDate }} ({{ att.practiceName }})</div>
-                    } @else {
-                      <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
-                    }
+                    <span class="card-title"><i class="fa-solid fa-ticket me-2" aria-hidden="true"></i>{{ 'doctorPatients.overview.lastTicket' | t }}</span>
+                    <div class="entry-data">
+                      @if (overview()?.lastAttendance; as att) {
+                        <div class="card-highlight">
+                          <strong>#{{ att.ticketNumber }}</strong> —
+                          {{ 'tickets.status.' + att.ticketStatus | t }}
+                        </div>
+                        <div class="card-sub">{{ att.businessDate }} ({{ att.practiceName }})</div>
+                      } @else {
+                        <span class="card-sub muted">{{ 'doctorPatients.overview.noData' | t }}</span>
+                      }
+                    </div>
                   </div>
 
                   <!-- Latest Diagnosis -->
@@ -291,14 +315,16 @@
                     <span class="card-title"><i class="fa-solid fa-stethoscope me-2" aria-hidden="true"></i>{{
                       'doctorPatients.overview.lastDiagnosis' | t
                     }}</span>
-                    @if (overview()?.lastDiagnosis; as diag) {
-                      <div class="card-highlight">{{ diag.displayText }}</div>
-                      <div class="card-sub">
-                        {{ diag.encounterDate | localizedDate: language.currentLang() }}
-                      </div>
-                    } @else {
-                      <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
-                    }
+                    <div class="entry-data">
+                      @if (overview()?.lastDiagnosis; as diag) {
+                        <div class="card-highlight">{{ diag.displayText }}</div>
+                        <div class="card-sub">
+                          {{ diag.encounterDate | localizedDate: language.currentLang() }}
+                        </div>
+                      } @else {
+                        <span class="card-sub muted">{{ 'doctorPatients.overview.noData' | t }}</span>
+                      }
+                    </div>
                   </div>
 
                   <!-- Latest Prescription -->
@@ -306,47 +332,51 @@
                     <span class="card-title"><i class="fa-solid fa-prescription me-2" aria-hidden="true"></i>{{
                       'doctorPatients.overview.lastPrescription' | t
                     }}</span>
-                    @if (overview()?.lastPrescription; as rx) {
-                      <div class="card-highlight">
-                        #{{ rx.prescriptionId.substring(0, 8) }} (v{{ rx.currentVersionNumber }})
-                      </div>
-                      <div class="card-sub">
-                        {{ 'prescriptions.status.' + rx.currentStatus | t }} —
-                        {{ rx.medicationCount }}
-                        {{ 'doctorPatients.overview.medications' | t }}
-                      </div>
-                    } @else {
-                      <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
-                    }
+                    <div class="entry-data">
+                      @if (overview()?.lastPrescription; as rx) {
+                        <div class="card-highlight">
+                          #{{ rx.prescriptionId.substring(0, 8) }} (v{{ rx.currentVersionNumber }})
+                        </div>
+                        <div class="card-sub">
+                          {{ 'prescriptions.status.' + rx.currentStatus | t }} —
+                          {{ rx.medicationCount }}
+                          {{ 'doctorPatients.overview.medications' | t }}
+                        </div>
+                      } @else {
+                        <span class="card-sub muted">{{ 'doctorPatients.overview.noData' | t }}</span>
+                      }
+                    </div>
                   </div>
 
                   <!-- Diagnostic Counts -->
                   <div class="clinical-entry">
-                    <span class="card-title">{{ 'doctorPatients.tab.diagnostics' | t }}</span>
-                    <div class="counts-row">
-                      <div class="count-box">
-                        <span class="count-num">
-                          {{
-                            overview()?.labRequestCount !== null
-                              ? overview()?.labRequestCount
-                              : ('doctorPatients.unavailable' | t)
-                          }}
-                        </span>
-                        <span class="count-lbl">{{
-                          'doctorPatients.overview.labRequests' | t
-                        }}</span>
-                      </div>
-                      <div class="count-box">
-                        <span class="count-num">
-                          {{
-                            overview()?.radiologyRequestCount !== null
-                              ? overview()?.radiologyRequestCount
-                              : ('doctorPatients.unavailable' | t)
-                          }}
-                        </span>
-                        <span class="count-lbl">{{
-                          'doctorPatients.overview.radiologyRequests' | t
-                        }}</span>
+                    <span class="card-title"><i class="fa-solid fa-flask me-2" aria-hidden="true"></i>{{ 'doctorPatients.tab.diagnostics' | t }}</span>
+                    <div class="entry-data">
+                      <div class="counts-row">
+                        <div class="count-box">
+                          <span class="count-num">
+                            {{
+                              overview()?.labRequestCount !== null
+                                ? overview()?.labRequestCount
+                                : ('doctorPatients.unavailable' | t)
+                            }}
+                          </span>
+                          <span class="count-lbl">{{
+                            'doctorPatients.overview.labRequests' | t
+                          }}</span>
+                        </div>
+                        <div class="count-box">
+                          <span class="count-num">
+                            {{
+                              overview()?.radiologyRequestCount !== null
+                                ? overview()?.radiologyRequestCount
+                                : ('doctorPatients.unavailable' | t)
+                            }}
+                          </span>
+                          <span class="count-lbl">{{
+                            'doctorPatients.overview.radiologyRequests' | t
+                          }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -356,16 +386,18 @@
                     <span class="card-title"><i class="fa-solid fa-calendar-check me-2" aria-hidden="true"></i>{{
                       'doctorPatients.overview.nextAppointment' | t
                     }}</span>
-                    @if (overview()?.nextAppointment; as app) {
-                      <div class="card-highlight">
-                        {{ app.scheduledStart | localizedDate: language.currentLang() }}
-                      </div>
-                      <div class="card-sub">
-                        {{ app.visitType }} — {{ 'reservations.status.' + app.status | t }}
-                      </div>
-                    } @else {
-                      <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
-                    }
+                    <div class="entry-data">
+                      @if (overview()?.nextAppointment; as app) {
+                        <div class="card-highlight">
+                          {{ app.scheduledStart | localizedDate: language.currentLang() }}
+                        </div>
+                        <div class="card-sub">
+                          {{ app.visitType }} — {{ 'reservations.status.' + app.status | t }}
+                        </div>
+                      } @else {
+                        <span class="card-sub muted">{{ 'doctorPatients.overview.noData' | t }}</span>
+                      }
+                    </div>
                   </div>
 
                   <!-- Current Follow-Up -->
@@ -373,15 +405,17 @@
                     <span class="card-title"><i class="fa-solid fa-calendar-days me-2" aria-hidden="true"></i>{{
                       'doctorPatients.overview.currentFollowUp' | t
                     }}</span>
-                    @if (overview()?.currentFollowUp; as fu) {
-                      <div class="card-highlight">{{ 'followUps.status.' + fu.status | t }}</div>
-                      <div class="card-sub">
-                        {{ 'doctorPatients.followUp.validUntil' | t }}:
-                        {{ fu.validUntil | localizedDate: language.currentLang() }}
-                      </div>
-                    } @else {
-                      <span class="card-sub">{{ 'doctorPatients.overview.noData' | t }}</span>
-                    }
+                    <div class="entry-data">
+                      @if (overview()?.currentFollowUp; as fu) {
+                        <div class="card-highlight">{{ 'followUps.status.' + fu.status | t }}</div>
+                        <div class="card-sub">
+                          {{ 'doctorPatients.followUp.validUntil' | t }}:
+                          {{ fu.validUntil | localizedDate: language.currentLang() }}
+                        </div>
+                      } @else {
+                        <span class="card-sub muted">{{ 'doctorPatients.overview.noData' | t }}</span>
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -452,5 +486,6 @@
         </div>
       </div>
     }
-  </div>
-</app-side-drawer>
+    </div>
+  </section>
+}

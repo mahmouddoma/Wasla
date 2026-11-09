@@ -403,7 +403,14 @@
         </div>
 
         @if (catalogLoading()) {
-          <p role="status">{{ 'subscriptions.loading' | t }}</p>
+          <div class="registration-skeleton-plans py-2" role="status" [attr.aria-label]="'subscriptions.loading' | t">
+            <span class="visually-hidden">{{ 'subscriptions.loading' | t }}</span>
+            <div class="d-flex gap-3 flex-wrap">
+              @for (c of [1, 2, 3]; track c) {
+                <div class="skeleton-shimmer flex-grow-1 p-3 rounded-lg" style="min-width: 200px; height: 140px;"></div>
+              }
+            </div>
+          </div>
         } @else if (catalog(); as availableCatalog) {
           <p>{{ 'subscriptions.registrationOptional' | t }}</p>
           <app-plan-selector [catalog]="availableCatalog" [allowTrial]="false" [selection]="selection()"

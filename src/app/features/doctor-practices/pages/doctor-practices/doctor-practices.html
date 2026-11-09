@@ -25,14 +25,17 @@
             <span class="stat-lbl">{{ 'ui.full.498' | t }}</span>
           </div>
         }
+        @if (subscription.usage(); as usage) {
+          <div class="stat-pill">
+            <span class="stat-num text-teal">{{ usage.practiceCount }} / {{ subscription.terms()?.practiceLimit }}</span>
+            <span class="stat-lbl">{{ 'subscriptions.practiceLimit' | t }}</span>
+          </div>
+        }
       </div>
     </app-page-header>
   }
 
   <!-- Main Container -->
-  @if (subscription.usage(); as usage) {
-    <p>{{ 'subscriptions.practiceLimit' | t }}: {{ usage.practiceCount }} / {{ subscription.terms()?.practiceLimit }} · <a routerLink="/doctor/subscription">{{ 'subscriptions.manage' | t }}</a></p>
-  }
   <section class="practices-content" aria-live="polite">
     @if (isLoading()) {
       <div class="state-card loading-card">
@@ -388,17 +391,23 @@
             }
           }
           @case ('operations') {
-              <app-practice-allocation [practice]="practice" (changed)="reload()" />
-            @if (canManage) { <app-booking-price [practiceId]="practice.id" [canManage]="subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)" /> }
-            <app-practice-operations
-              [practice]="practice"
-              [canActivate]="canActivate && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)"
-              [canViewConfiguration]="canViewConfiguration"
-              [canManageConfiguration]="canManageConfiguration && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)"
-              [canViewBranding]="canViewBranding"
-              [canManageBranding]="canManageBranding && subscription.hasForPractice(practice.id, 'PRACTICE_BRANDING', true)"
-              (practiceChanged)="practiceSaved($event)"
-            />
+            <div class="operations-flow">
+              <div class="operations-cards-row">
+                <app-practice-allocation [practice]="practice" (changed)="reload()" />
+                @if (canManage) {
+                  <app-booking-price [practiceId]="practice.id" [canManage]="subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)" />
+                }
+              </div>
+              <app-practice-operations
+                [practice]="practice"
+                [canActivate]="canActivate && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)"
+                [canViewConfiguration]="canViewConfiguration"
+                [canManageConfiguration]="canManageConfiguration && subscription.hasForPractice(practice.id, 'PRACTICE_MANAGEMENT', true)"
+                [canViewBranding]="canViewBranding"
+                [canManageBranding]="canManageBranding && subscription.hasForPractice(practice.id, 'PRACTICE_BRANDING', true)"
+                (practiceChanged)="practiceSaved($event)"
+              />
+            </div>
           }
           @case ('schedule') {
             <app-practice-schedule [practiceId]="practice.id" [canManage]="canManageSchedule && subscription.hasForPractice(practice.id, 'SCHEDULE_AVAILABILITY', true)" />

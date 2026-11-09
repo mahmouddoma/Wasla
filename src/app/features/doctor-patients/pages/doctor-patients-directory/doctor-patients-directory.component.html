@@ -1,4 +1,4 @@
-<div class="directory-page container-fluid">
+<div class="directory-page container-fluid" [class.has-active-detail]="drawerOpened() && inspectedPatientId()">
   <app-page-header
     [heading]="'doctorPatients.title' | t"
     [description]="'doctorPatients.subtitle' | t"
@@ -180,8 +180,10 @@
     </details>
   </section>
 
-  <!-- Directory Table Section -->
-  <section class="table-section" [attr.aria-busy]="loading()">
+  <!-- Main Workspace Layout: Split View when patient is inspected -->
+  <div class="directory-split-layout" [class.has-active-detail]="drawerOpened() && inspectedPatientId()">
+    <!-- Master Column: Directory Table Section -->
+    <section class="table-section master-pane" [attr.aria-busy]="loading()">
     <div class="directory-heading">
       <h2>
         <i class="fa-solid fa-address-book" aria-hidden="true"></i
@@ -445,12 +447,17 @@
     }
   </section>
 
-  <!-- Patient Inspection Drawer -->
-  <app-patient-detail-drawer
-    [opened]="drawerOpened()"
-    [patientId]="inspectedPatientId()"
-    [initialTab]="drawerTab()"
-    (closed)="closeDrawer()"
-    (tabChanged)="onDrawerTabChanged($event)"
-  ></app-patient-detail-drawer>
+  <!-- Detail Column: Patient Medical Record Block -->
+  @if (drawerOpened() && inspectedPatientId()) {
+    <aside class="detail-pane" [attr.aria-label]="'doctorPatients.drawer.title' | t">
+      <app-patient-detail-drawer
+        [opened]="drawerOpened()"
+        [patientId]="inspectedPatientId()"
+        [initialTab]="drawerTab()"
+        (closed)="closeDrawer()"
+        (tabChanged)="onDrawerTabChanged($event)"
+      ></app-patient-detail-drawer>
+    </aside>
+  }
+</div>
 </div>

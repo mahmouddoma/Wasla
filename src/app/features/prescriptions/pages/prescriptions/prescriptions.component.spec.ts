@@ -7,6 +7,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { DrugCatalogApi } from '../../../../domains/drug-catalog';
 import { PrescriptionsApi, PatientPrescription } from '../../../../domains/prescriptions';
 import { PrescriptionsComponent } from './prescriptions.component';
+
 const patient: PatientPrescription = {
   prescriptionId: 'rx1',
   doctor: { id: 'd1', nameAr: 'طبيب', nameEn: 'Doctor' },
@@ -16,9 +17,11 @@ const patient: PatientPrescription = {
   status: 'Finalized',
   items: [],
 };
+
 describe('Own patient prescriptions', () => {
   let fixture: ComponentFixture<PrescriptionsComponent>, component: PrescriptionsComponent;
   const api = { mine: vi.fn(), myDetails: vi.fn() };
+
   beforeEach(async () => {
     vi.resetAllMocks();
     api.mine.mockReturnValue(of({ items: [patient], totalCount: 1, pageNumber: 1, pageSize: 20 }));
@@ -41,7 +44,9 @@ describe('Own patient prescriptions', () => {
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
+
   afterEach(() => localStorage.removeItem('wasla_lang'));
+
   it('renders the own list, sends pagination and opens details without navigating away', async () => {
     expect(component).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Doctor');
@@ -52,6 +57,7 @@ describe('Own patient prescriptions', () => {
     await component.load(2);
     expect(api.mine).toHaveBeenLastCalledWith(2);
   });
+
   it('handles denied foreign details safely and supports illustrated empty states', async () => {
     api.myDetails.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     await component.inspect('foreign');
@@ -64,5 +70,18 @@ describe('Own patient prescriptions', () => {
     TestBed.inject(LanguageService).setLanguage('ar');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('main').getAttribute('dir')).toBe('rtl');
+  });
+
+  it('renders modern skeleton shimmer placeholders while loading list or details', async () => {
+    component.loading.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.prescriptions-skeleton-wrapper')).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('.skeleton-shimmer').length).toBeGreaterThan(5);
+
+    component.loading.set(false);
+    component.opened.set(true);
+    component.detailLoading.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.drawer-skeleton-wrapper')).toBeTruthy();
   });
 });

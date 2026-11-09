@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -15,6 +15,7 @@ import {
   SubscriptionSelection,
   SubscriptionState,
   SubscriptionChangeType,
+  SubscriptionContract,
   TrialEligibility,
   RenewalPreview,
   RetainedAllocation,
@@ -22,15 +23,16 @@ import {
 import { AllocationReceptionOption } from '../../../../domains/subscriptions/subscriptions-api';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
+import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import { PlanSelectorComponent } from '../../components/plan-selector/plan-selector.component';
 
 @Component({
   selector: 'app-my-subscription',
   imports: [
     CurrencyPipe,
-    DatePipe,
     FormsModule,
     TranslatePipe,
+    LocalizedDatePipe,
     PageHeader,
     SideDrawer,
     PlanSelectorComponent,
@@ -103,6 +105,33 @@ export class MySubscriptionComponent {
   }
   contractName(): string {
     return this.state.terms()?.planCode ?? '';
+  }
+  getPlanTitle(planCode?: string | null): string {
+    if (!planCode) return '';
+    const translated = this.language.t('subscriptions.planName.' + planCode);
+    if (!translated.startsWith('subscriptions.planName.')) return translated;
+    const plan = this.catalog()?.products.flatMap((p) => p.plans).find((p) => p.code === planCode);
+    return plan ? (this.language.isRtl() ? plan.nameAr : plan.nameEn) : planCode;
+  }
+  getContractPlanCode(contract: SubscriptionContract): string {
+    return (
+      this.state.currentDetails(contract)?.subscription?.planCode ||
+      contract.periods[0]?.subscription?.planCode ||
+      contract.periods[0]?.pendingSubscription?.planCode ||
+      ''
+    );
+  }
+  getContractClinicName(contract: SubscriptionContract): string {
+    if (contract.practices && contract.practices.length > 0) {
+      return contract.practices.map((p: { nameAr?: string; nameEn?: string | null }) => p.nameAr || p.nameEn || '').filter(Boolean).join(' · ');
+    }
+    return '';
+  }
+  getContractReference(contractId: string): string {
+    return contractId.slice(0, 8).toUpperCase();
+  }
+  closeContractDetails(): void {
+    this.state.selectContract('');
   }
   practiceName(id: string): string {
     return (

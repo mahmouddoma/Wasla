@@ -204,4 +204,22 @@ describe('PatientMedicalAccessComponent', () => {
 
     expect(mockApi.myMedicalAccessDocument).toHaveBeenCalledWith('req-1', 'doc-1');
   });
+
+  it('should manage Master-Detail modes and close detail properly', () => {
+    fixture.detectChanges();
+
+    component['openNewRequestModal']();
+    expect(component['detailMode']()).toBe('create');
+    expect(component['hasActiveDetail']()).toBe(true);
+
+    component['closeDetail']();
+    expect(component['detailMode']()).toBeNull();
+    expect(component['hasActiveDetail']()).toBe(false);
+    expect(component['drawerOpen']()).toBe(false);
+
+    component['openResubmitModal'](mockCase);
+    expect(component['detailMode']()).toBe('resubmit');
+    expect(component['selectedCase']()).toEqual(mockCase);
+    expect(component['hasActiveDetail']()).toBe(true);
+  });
 });

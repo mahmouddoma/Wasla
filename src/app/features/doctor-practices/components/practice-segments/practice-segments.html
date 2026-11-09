@@ -1,247 +1,402 @@
 <section class="pricing-workspace" [dir]="uiLanguage.dir()">
-  <nav class="section-actions" [attr.aria-label]="'doctorRemediation.pricing' | t">
+  <!-- Segmented Tab Bar -->
+  <nav class="segments-tab-bar" [attr.aria-label]="'doctorRemediation.pricing' | t">
     @if (canViewSegments() || canManageSegments()) {
       <button
-        class="btn"
-        [class.btn-primary]="section() === 'segments'"
+        type="button"
+        class="segments-tab-btn"
+        [class.active]="section() === 'segments'"
         (click)="section.set('segments')"
       >
-        {{ 'doctorRemediation.segments' | t }}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>{{ 'doctorRemediation.segments' | t }}</span>
+        <span class="tab-badge-count">{{ segments().length }}</span>
       </button>
     }
     @if (canViewPricing() || canManagePricing()) {
       <button
-        class="btn"
-        [class.btn-primary]="section() === 'visitTypes'"
+        type="button"
+        class="segments-tab-btn"
+        [class.active]="section() === 'visitTypes'"
         (click)="section.set('visitTypes')"
       >
-        {{ 'doctorRemediation.visitTypes' | t }}</button
-      ><button
-        class="btn"
-        [class.btn-primary]="section() === 'prices'"
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
+        <span>{{ 'doctorRemediation.visitTypes' | t }}</span>
+        <span class="tab-badge-count">{{ visitTypes().length }}</span>
+      </button>
+      <button
+        type="button"
+        class="segments-tab-btn"
+        [class.active]="section() === 'prices'"
         (click)="section.set('prices')"
       >
-        {{ 'doctorRemediation.pricing' | t }}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+        <span>{{ 'doctorRemediation.pricing' | t }}</span>
       </button>
     }
   </nav>
+
   @for (message of messages(); track $index) {
-    <p class="error-text" role="alert">{{ message | t }}</p>
+    <p class="error-banner" role="alert">{{ message | t }}</p>
   }
+
   @if (isLoading()) {
-    <p role="status">{{ 'common.loading' | t }}</p>
+    <div class="loading-state-block" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>{{ 'common.loading' | t }}</span>
+    </div>
   } @else if (section() === 'segments') {
-    <div class="section-heading">
-      <h3>{{ 'doctorRemediation.segments' | t }}</h3>
+    <div class="section-header-row">
+      <div class="header-titles">
+        <h3 class="section-main-title">{{ 'doctorRemediation.segments' | t }}</h3>
+        <p class="section-sub-desc">{{ 'doctorRemediation.segmentsSubTitle' | t }}</p>
+      </div>
       @if (canManageSegments()) {
-        <button class="btn btn-primary" (click)="openAddSegment()">{{ 'common.add' | t }}</button>
+        <button type="button" class="btn-action-primary" (click)="openAddSegment()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>{{ 'doctorRemediation.addSegment' | t }}</span>
+        </button>
       }
     </div>
-    @if (isAddingSegment()) {
-      <form class="editor" (submit)="saveSegment($event)">
-        <label
-          >{{ 'doctorRemediation.nameAr' | t
-          }}<input class="field-input" [formField]="segmentForm.nameAr" /></label
-        ><label
-          >{{ 'doctorRemediation.nameEn' | t
-          }}<input class="field-input" dir="ltr" [formField]="segmentForm.nameEn" /></label
-        >
-        @if (canManageAdvanced()) {
-        <label
-          >{{ 'doctorRemediation.priority' | t
-          }}<input
-            class="field-input"
-            type="number"
-            dir="ltr"
-            [formField]="segmentForm.priority" /></label
-        ><label
-          >{{ 'doctorRemediation.quota' | t
-          }}<input
-            class="field-input"
-            type="number"
-            dir="ltr"
-            [formField]="segmentForm.reservedDailyQuota" /></label
-        ><label
-          >{{ 'doctorRemediation.quotaRelease' | t
-          }}<input
-            class="field-input"
-            type="number"
-            dir="ltr"
-            [formField]="segmentForm.quotaReleaseBeforeMinutes"
-        /></label>
-        } @else { <p>{{ 'subscriptions.featureDenied' | t }}</p> }
-        @if (editingSegmentId() && !editingDefault()) {
-          <label class="toggle-row"
-            ><input type="checkbox" class="sr-only-chk" [formField]="segmentForm.isActive" /><span
-              class="toggle-mark"
-              aria-hidden="true"
-            ></span
-            >{{ 'doctorRemediation.active' | t }}</label
-          >
-        }
-        <div class="section-actions full">
-          <button class="btn btn-primary" [disabled]="!!activeAction()">
-            {{ 'common.save' | t }}</button
-          ><button type="button" class="btn btn-outline-secondary" (click)="cancelSegmentEdit()">
-            {{ 'common.cancel' | t }}
-          </button>
-        </div>
-      </form>
-    }
-    <ul class="directory-list">
+
+    <!-- Segments List -->
+    <div class="tiers-list">
       @for (segment of segments(); track segment.id) {
-        <li>
-          <div>
-            <strong>{{ segmentName(segment.id) }}</strong>
-            @if (segment.isDefault) {
-              <span class="status-badge">{{ 'doctorRemediation.default' | t }}</span>
-            }
-            <p>
-              {{ 'doctorRemediation.priority' | t }}: {{ segment.priority }} /
-              {{ 'doctorRemediation.quota' | t }}:
-              {{ segment.reservedDailyQuota ?? ('doctorRemediation.unavailable' | t) }}
-            </p>
+        <div class="tier-card-row" [class.is-default]="segment.isDefault">
+          <div class="tier-card-start">
+            <div class="tier-avatar" [class.vip-avatar]="segment.nameAr.toLowerCase().includes('vip') || (segment.nameEn && segment.nameEn.toLowerCase().includes('vip'))">
+              @if (segment.nameAr.toLowerCase().includes('vip') || (segment.nameEn && segment.nameEn.toLowerCase().includes('vip'))) {
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              }
+            </div>
+
+            <div class="tier-identity">
+              <div class="tier-name-group">
+                <strong class="tier-title">{{ segmentName(segment.id) }}</strong>
+                @if (segment.isDefault) {
+                  <span class="badge-pill badge-default">{{ 'doctorRemediation.default' | t }}</span>
+                }
+                @if (segment.isActive) {
+                  <span class="badge-pill badge-active">{{ 'doctorRemediation.active' | t }}</span>
+                } @else {
+                  <span class="badge-pill badge-inactive">{{ 'doctorRemediation.inactive' | t }}</span>
+                }
+              </div>
+              @if (segment.nameEn && uiLanguage.isRtl()) {
+                <span class="tier-en-subtitle" dir="ltr">{{ segment.nameEn }}</span>
+              }
+            </div>
           </div>
+
+          <div class="tier-card-meta">
+            <div class="meta-pill">
+              <span class="meta-icon">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </span>
+              <span class="meta-label">{{ 'doctorRemediation.priorityLabel' | t }}:</span>
+              <strong class="meta-val priority-val">{{ segment.priority }}</strong>
+            </div>
+
+            <div class="meta-pill">
+              <span class="meta-icon">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </span>
+              <span class="meta-label">{{ 'doctorRemediation.quotaLabel' | t }}:</span>
+              <strong class="meta-val">{{ segment.reservedDailyQuota ? (segment.reservedDailyQuota + ' ' + ('doctorRemediation.slotsPerDay' | t)) : ('doctorRemediation.unlimited' | t) }}</strong>
+            </div>
+          </div>
+
           @if (canManageSegments()) {
-            <button class="btn btn-outline-secondary" (click)="editSegment(segment)">
-              {{ 'common.edit' | t }}
-            </button>
+            <div class="tier-card-actions">
+              <button type="button" class="btn-action-edit" (click)="editSegment(segment)">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>{{ 'common.edit' | t }}</span>
+              </button>
+            </div>
           }
-        </li>
-      } @empty {
-        <li class="empty-state">
-          <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
-          <h3>{{ 'doctorRemediation.empty' | t }}</h3>
-          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
-        </li>
-      }
-    </ul>
-  } @else if (section() === 'visitTypes') {
-    <h3>{{ 'doctorRemediation.visitTypes' | t }}</h3>
-    @if (editingVisitTypeId()) {
-      <form class="editor" (submit)="saveVisitType($event)">
-        <label
-          >{{ 'doctorRemediation.nameAr' | t
-          }}<input class="field-input" [formField]="visitTypeForm.nameAr" /></label
-        ><label
-          >{{ 'doctorRemediation.nameEn' | t
-          }}<input class="field-input" dir="ltr" [formField]="visitTypeForm.nameEn" /></label
-        ><label class="toggle-row"
-          ><input type="checkbox" class="sr-only-chk" [formField]="visitTypeForm.isActive" /><span
-            class="toggle-mark"
-            aria-hidden="true"
-          ></span
-          >{{ 'doctorRemediation.active' | t }}</label
-        >
-        <div class="section-actions full">
-          <button class="btn btn-primary" [disabled]="!!activeAction()">
-            {{ 'common.save' | t }}</button
-          ><button
-            type="button"
-            class="btn btn-outline-secondary"
-            (click)="editingVisitTypeId.set(null)"
-          >
-            {{ 'common.cancel' | t }}
-          </button>
         </div>
-      </form>
-    }
-    <ul class="directory-list">
-      @for (item of visitTypes(); track item.id) {
-        <li>
-          <strong>{{ visitTypeName(item.id) }}</strong>
-          @if (canManagePricing()) {
-            <button class="btn btn-outline-secondary" (click)="editVisitType(item)">
-              {{ 'common.edit' | t }}
-            </button>
-          }
-        </li>
-      }
-    </ul>
-  } @else {
-    <div class="section-heading">
-      <h3>{{ 'doctorRemediation.pricing' | t }}</h3>
-      @if (canManagePricing()) {
-        <button class="btn btn-primary" (click)="openAddPrice()">{{ 'common.add' | t }}</button>
+      } @empty {
+        <div class="empty-state-card">
+          <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+          <h4>{{ 'doctorRemediation.empty' | t }}</h4>
+          <p>{{ 'doctorRemediation.emptyHelp' | t }}</p>
+        </div>
       }
     </div>
-    <p>{{ 'doctorRemediation.priceHelp' | t }}</p>
-    @if (isAddingPrice()) {
-      <form class="editor" (submit)="addPrice($event)">
-        <label
-          >{{ 'doctorRemediation.segments' | t
-          }}<span class="select-control"
-            ><select class="field-input" [formField]="priceForm.segmentId">
-              <option value="">{{ 'reservations.choose' | t }}</option>
-              @for (segment of segments(); track segment.id) {
-                <option [value]="segment.id">{{ segmentName(segment.id) }}</option>
-              }</select
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m6 9 6 6 6-6" /></svg></span></label
-        ><label
-          >{{ 'doctorRemediation.visitTypes' | t
-          }}<span class="select-control"
-            ><select class="field-input" [formField]="priceForm.visitTypeId">
-              <option value="">{{ 'reservations.choose' | t }}</option>
-              @for (visit of visitTypes(); track visit.id) {
-                <option [value]="visit.id">{{ visitTypeName(visit.id) }}</option>
-              }</select
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m6 9 6 6 6-6" /></svg></span></label
-        ><label
-          >{{ 'doctorRemediation.price' | t
-          }}<input
-            type="number"
-            step="0.01"
-            dir="ltr"
-            class="field-input"
-            [formField]="priceForm.price"
-        /></label>
-        <div class="section-actions full">
-          <button class="btn btn-primary" [disabled]="!!activeAction()">
-            {{ 'common.save' | t }}</button
-          ><button type="button" class="btn btn-outline-secondary" (click)="closeAddPrice()">
+
+    <!-- SideDrawer for Add/Edit Segment -->
+    <app-side-drawer
+      [opened]="isAddingSegment()"
+      [title]="editingSegmentId() ? ('doctorRemediation.editSegment' | t) : ('doctorRemediation.addSegment' | t)"
+      [description]="'doctorRemediation.segmentsSubTitle' | t"
+      [width]="'520px'"
+      (closed)="cancelSegmentEdit()"
+    >
+      <form class="drawer-form" (submit)="saveSegment($event)">
+        <div class="form-group">
+          <label class="form-label" for="segNameAr">{{ 'doctorRemediation.nameAr' | t }} *</label>
+          <input id="segNameAr" class="field-input" [formField]="segmentForm.nameAr" placeholder="مثال: عادي، كبار السن، VIP" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="segNameEn">{{ 'doctorRemediation.nameEn' | t }}</label>
+          <input id="segNameEn" class="field-input" dir="ltr" [formField]="segmentForm.nameEn" placeholder="e.g. Regular, VIP, Seniors" />
+        </div>
+
+        @if (canManageAdvanced()) {
+          <div class="form-row-grid">
+            <div class="form-group">
+              <label class="form-label" for="segPriority">{{ 'doctorRemediation.priority' | t }}</label>
+              <input id="segPriority" class="field-input" type="number" dir="ltr" [formField]="segmentForm.priority" />
+              <span class="field-hint">الأرقام الأعلى تسبق في أولوية قائمة الانتظار</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="segQuota">{{ 'doctorRemediation.quota' | t }}</label>
+              <input id="segQuota" class="field-input" type="number" dir="ltr" [formField]="segmentForm.reservedDailyQuota" placeholder="فارغ لعدد مفتوح" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="segRelease">{{ 'doctorRemediation.quotaRelease' | t }}</label>
+            <input id="segRelease" class="field-input" type="number" dir="ltr" [formField]="segmentForm.quotaReleaseBeforeMinutes" placeholder="بالدقائق (مثال: 60)" />
+          </div>
+        } @else {
+          <div class="feature-denied-note">
+            <p>{{ 'subscriptions.featureDenied' | t }}</p>
+          </div>
+        }
+
+        @if (editingSegmentId() && !editingDefault()) {
+          <div class="toggle-field-row">
+            <div class="toggle-text">
+              <strong>{{ 'doctorRemediation.active' | t }}</strong>
+              <small>تفعيل أو تعطيل هذه الفئة في نظام الحجز</small>
+            </div>
+            <label class="switch-toggle">
+              <input type="checkbox" class="sr-only-chk" [formField]="segmentForm.isActive" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        }
+
+        <div class="drawer-actions-footer">
+          <button type="submit" class="btn btn-primary" [disabled]="!!activeAction()">
+            {{ 'common.save' | t }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelSegmentEdit()">
             {{ 'common.cancel' | t }}
           </button>
         </div>
       </form>
-    }
-    <div class="table-responsive">
-      <table class="table">
+    </app-side-drawer>
+
+  } @else if (section() === 'visitTypes') {
+    <div class="section-header-row">
+      <div class="header-titles">
+        <h3 class="section-main-title">{{ 'doctorRemediation.visitTypes' | t }}</h3>
+        <p class="section-sub-desc">{{ 'doctorRemediation.visitTypesSubTitle' | t }}</p>
+      </div>
+    </div>
+
+    <!-- Visit Types List -->
+    <div class="tiers-list">
+      @for (item of visitTypes(); track item.id) {
+        <div class="tier-card-row">
+          <div class="tier-card-start">
+            <div class="tier-avatar visit-avatar">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+            </div>
+            <div class="tier-identity">
+              <div class="tier-name-group">
+                <strong class="tier-title">{{ visitTypeName(item.id) }}</strong>
+                @if (item.isActive) {
+                  <span class="badge-pill badge-active">{{ 'doctorRemediation.active' | t }}</span>
+                } @else {
+                  <span class="badge-pill badge-inactive">{{ 'doctorRemediation.inactive' | t }}</span>
+                }
+              </div>
+              @if (item.nameEn && uiLanguage.isRtl()) {
+                <span class="tier-en-subtitle" dir="ltr">{{ item.nameEn }}</span>
+              }
+            </div>
+          </div>
+
+          @if (canManagePricing()) {
+            <div class="tier-card-actions">
+              <button type="button" class="btn-action-edit" (click)="editVisitType(item)">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>{{ 'common.edit' | t }}</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- SideDrawer for Edit Visit Type -->
+    <app-side-drawer
+      [opened]="editingVisitTypeId() !== null"
+      [title]="'doctorRemediation.editVisitType' | t"
+      [description]="'doctorRemediation.visitTypesSubTitle' | t"
+      [width]="'520px'"
+      (closed)="editingVisitTypeId.set(null)"
+    >
+      <form class="drawer-form" (submit)="saveVisitType($event)">
+        <div class="form-group">
+          <label class="form-label" for="vtNameAr">{{ 'doctorRemediation.nameAr' | t }} *</label>
+          <input id="vtNameAr" class="field-input" [formField]="visitTypeForm.nameAr" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="vtNameEn">{{ 'doctorRemediation.nameEn' | t }}</label>
+          <input id="vtNameEn" class="field-input" dir="ltr" [formField]="visitTypeForm.nameEn" />
+        </div>
+
+        <div class="toggle-field-row">
+          <div class="toggle-text">
+            <strong>{{ 'doctorRemediation.active' | t }}</strong>
+            <small>إتاحة هذا النوع من الكشوفات في الحجز</small>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" class="sr-only-chk" [formField]="visitTypeForm.isActive" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="drawer-actions-footer">
+          <button type="submit" class="btn btn-primary" [disabled]="!!activeAction()">
+            {{ 'common.save' | t }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="editingVisitTypeId.set(null)">
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </form>
+    </app-side-drawer>
+
+  } @else {
+    <div class="section-header-row">
+      <div class="header-titles">
+        <h3 class="section-main-title">{{ 'doctorRemediation.pricing' | t }}</h3>
+        <p class="section-sub-desc">{{ 'doctorRemediation.priceHelp' | t }}</p>
+      </div>
+      @if (canManagePricing()) {
+        <button type="button" class="btn-action-primary" (click)="openAddPrice()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>{{ 'doctorRemediation.addPrice' | t }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Pricing Matrix Table -->
+    <div class="table-responsive-container">
+      <table class="pricing-matrix-table">
         <thead>
           <tr>
-            <th>{{ 'doctorRemediation.segments' | t }}</th>
+            <th class="segment-col-header">{{ 'doctorRemediation.segments' | t }}</th>
             @for (visit of visitTypes(); track visit.id) {
-              <th>{{ visitTypeName(visit.id) }}</th>
+              <th class="visittype-col-header">{{ visitTypeName(visit.id) }}</th>
             }
           </tr>
         </thead>
         <tbody>
           @for (segment of segments(); track segment.id) {
             <tr>
-              <th scope="row">{{ segmentName(segment.id) }}</th>
+              <th scope="row" class="segment-row-title">
+                <span class="segment-name-cell">{{ segmentName(segment.id) }}</span>
+                @if (segment.isDefault) {
+                  <span class="badge-pill badge-default-sm">{{ 'doctorRemediation.default' | t }}</span>
+                }
+              </th>
               @for (visit of visitTypes(); track visit.id) {
-                <td>
+                <td class="price-cell">
                   @if (priceFor(segment.id, visit.id); as price) {
-                    <strong dir="ltr">{{ price.price }}</strong> {{ 'tickets.currency' | t }}
-                    @if (canManagePricing()) {
-                      <div class="section-actions">
-                        <button
-                          class="btn btn-sm btn-outline-secondary"
-                          (click)="changePrice(price)"
-                        >
-                          {{ 'common.edit' | t }}</button
-                        ><button
-                          class="btn btn-sm btn-outline-danger"
-                          (click)="deletePrice(price)"
-                          [disabled]="!!activeAction()"
-                        >
-                          {{ 'common.delete' | t }}
-                        </button>
+                    <div class="price-cell-box">
+                      <div class="price-display">
+                        <strong class="price-val" dir="ltr">{{ price.price }}</strong>
+                        <span class="price-cur">{{ 'tickets.currency' | t }}</span>
                       </div>
-                    }
+                      @if (canManagePricing()) {
+                        <div class="cell-action-buttons">
+                          <button
+                            type="button"
+                            class="btn-cell-icon btn-edit"
+                            (click)="changePrice(price)"
+                            [title]="'common.edit' | t"
+                          >
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-cell-icon btn-delete"
+                            (click)="deletePrice(price)"
+                            [disabled]="!!activeAction()"
+                            [title]="'common.delete' | t"
+                          >
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      }
+                    </div>
                   } @else {
-                    <span [attr.aria-label]="'doctorRemediation.noPrice' | t">&mdash;</span>
+                    <div class="empty-cell-box">
+                      <span class="no-price-dash" [attr.aria-label]="'doctorRemediation.noPrice' | t">&mdash;</span>
+                      @if (canManagePricing()) {
+                        <button
+                          type="button"
+                          class="btn-quick-add-price"
+                          (click)="openQuickPrice(segment.id, visit.id)"
+                          [title]="'doctorRemediation.addPrice' | t"
+                        >
+                          +
+                        </button>
+                      }
+                    </div>
                   }
                 </td>
               }
@@ -250,5 +405,70 @@
         </tbody>
       </table>
     </div>
+
+    <!-- SideDrawer for Add/Edit Price -->
+    <app-side-drawer
+      [opened]="isAddingPrice()"
+      [title]="editingPriceId() ? ('doctorRemediation.editPrice' | t) : ('doctorRemediation.addPrice' | t)"
+      [description]="'doctorRemediation.pricingSubTitle' | t"
+      [width]="'520px'"
+      (closed)="closeAddPrice()"
+    >
+      <form class="drawer-form" (submit)="addPrice($event)">
+        <div class="form-group">
+          <label class="form-label">{{ 'doctorRemediation.segments' | t }} *</label>
+          <div class="select-wrapper">
+            <select class="field-input field-select" [formField]="priceForm.segmentId">
+              <option value="">{{ 'reservations.choose' | t }}</option>
+              @for (segment of segments(); track segment.id) {
+                <option [value]="segment.id">{{ segmentName(segment.id) }}</option>
+              }
+            </select>
+            <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{{ 'doctorRemediation.visitTypes' | t }} *</label>
+          <div class="select-wrapper">
+            <select class="field-input field-select" [formField]="priceForm.visitTypeId">
+              <option value="">{{ 'reservations.choose' | t }}</option>
+              @for (visit of visitTypes(); track visit.id) {
+                <option [value]="visit.id">{{ visitTypeName(visit.id) }}</option>
+              }
+            </select>
+            <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{{ 'doctorRemediation.price' | t }} *</label>
+          <div class="input-currency-group">
+            <input
+              type="number"
+              step="0.01"
+              dir="ltr"
+              class="field-input input-currency"
+              [formField]="priceForm.price"
+              placeholder="0.00"
+            />
+            <span class="currency-tag">{{ 'tickets.currency' | t }}</span>
+          </div>
+        </div>
+
+        <div class="drawer-actions-footer">
+          <button type="submit" class="btn btn-primary" [disabled]="!!activeAction()">
+            {{ 'common.save' | t }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="closeAddPrice()">
+            {{ 'common.cancel' | t }}
+          </button>
+        </div>
+      </form>
+    </app-side-drawer>
   }
 </section>

@@ -54,6 +54,7 @@ import { PrescriptionWorkspaceComponent } from '../../../prescriptions';
 import { DiagnosticDraftComponent } from '../../../diagnostics';
 import { Phase18Part2Api } from '../../../../domains/phase18';
 import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
+import { ArchivedTicketListComponent } from '../../components/archived-ticket-list/archived-ticket-list.component';
 
 type ArchivedTicketItem = components['schemas']['ArchivedTicketItem'];
 type QueueAction = 'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
@@ -76,6 +77,7 @@ type CompletionBlocker = {
     WalkInPatientSearchComponent,
     PrescriptionWorkspaceComponent,
     DiagnosticDraftComponent,
+    ArchivedTicketListComponent,
   ],
   templateUrl: './queue-workspace.html',
   styleUrl: './queue-workspace.css',
@@ -301,6 +303,10 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   protected readonly archiveOpen = signal(false);
   protected readonly archivedTickets = signal<readonly ArchivedTicketItem[]>([]);
   protected readonly archiveLoading = signal(false);
+  protected readonly archiveFailed = signal(false);
+  protected readonly archiveHasMore = signal(false);
+  private archiveCursor: string | null = null;
+  private archiveSequence = 0;
   protected readonly walkInOpen = signal(false);
   protected readonly walkInDone = signal<PracticeTicket | null>(null);
   protected readonly acceptedWalkIn = signal<{
@@ -555,6 +561,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeArchive();
     this.stopExamTimer();
   }
 
@@ -794,6 +801,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       typeof idOrEvent === 'string' ? idOrEvent : (idOrEvent.target as HTMLSelectElement).value;
     if (id && !this.practices().some((item) => item.id === id)) return;
     const generation = ++this.generation;
+    this.closeArchive();
     this.queueSequence++;
     this.detailSequence++;
     this.eligibilitySequence++;
@@ -849,7 +857,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     return q.waiting.find(matches) ?? q.noShow.find(matches) ?? null;
   }
 
-  protected async inspect(ticketOrId: PracticeTicket | string): Promise<void> {
+  protected async inspect(ticketOrId: PracticeTicket | string, archived = false): Promise<void> {
     const initialTicket: PracticeTicket | null =
       typeof ticketOrId === 'object' && ticketOrId !== null
         ? ticketOrId
@@ -891,8 +899,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
         const merged = initialTicket
           ? normalizeTicket({ ...initialTicket, ...ticket })
           : normalizeTicket(ticket);
-        this.selected.set(merged);
-        this.syncTicketIntoQueue(merged);
+        this.selected.set(archived ? { ...merged, isArchived: true } : merged);
+        if (!archived && !merged.isArchived) this.syncTicketIntoQueue(merged);
       }
     } catch (error) {
       if (this.current(id, generation) && sequence === this.detailSequence && !initialTicket) {
@@ -919,29 +927,55 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   protected async openArchive(): Promise<void> {
-    if (!this.practiceId() || this.busy()) return;
+    if (!this.practiceId() || this.busy() || !this.canViewQueue()) return;
+    this.archivedTickets.set([]);
+    this.archiveCursor = null;
+    this.archiveHasMore.set(false);
     this.archiveOpen.set(true);
+    await this.loadArchive();
+  }
+
+  protected closeArchive(): void {
+    this.archiveSequence++;
+    this.archiveOpen.set(false);
+    this.archivedTickets.set([]);
+    this.archiveCursor = null;
+    this.archiveHasMore.set(false);
+    this.archiveLoading.set(false);
+    this.archiveFailed.set(false);
+  }
+
+  protected async loadArchive(): Promise<void> {
+    if (!this.archiveOpen() || this.archiveLoading() || !this.canViewQueue()) return;
+    const id = this.practiceId(), generation = this.generation, sequence = ++this.archiveSequence;
     this.archiveLoading.set(true);
+    this.archiveFailed.set(false);
     try {
-      const isDoctor = this.actor() === 'Doctor';
-      const op = isDoctor ? 'P18.2-07' : 'P18.2-09';
+      const op = this.isDoctor() ? 'P18.2-07' : 'P18.2-09';
       const page = await firstValueFrom(
         this.phase18Api.call(op, {
-          pathParams: { practiceId: this.practiceId() },
-          query: { pageSize: 50 },
+          pathParams: { practiceId: id },
+          query: { pageSize: 50, cursor: this.archiveCursor },
         }),
       );
-      this.archivedTickets.set(page.items ?? []);
-    } catch {
-      this.toast.error(this.language.t('tickets.operationFailed'));
+      if (!this.current(id, generation) || sequence !== this.archiveSequence || !this.canViewQueue()) return;
+      const items = new Map(this.archivedTickets().map((item) => [item.ticketId, item]));
+      for (const item of page.items ?? []) items.set(item.ticketId, item);
+      this.archivedTickets.set([...items.values()]);
+      this.archiveCursor = page.nextCursor ?? null;
+      this.archiveHasMore.set(page.hasMore && !!page.nextCursor);
+    } catch (error) {
+      if (!this.current(id, generation) || sequence !== this.archiveSequence) return;
+      this.archiveFailed.set(true);
+      await this.failure(error, id, generation);
     } finally {
-      this.archiveLoading.set(false);
+      if (sequence === this.archiveSequence) this.archiveLoading.set(false);
     }
   }
 
   protected async inspectArchivedTicket(item: ArchivedTicketItem): Promise<void> {
-    this.archiveOpen.set(false);
-    await this.inspect(item.ticketId);
+    this.closeArchive();
+    await this.inspect(item.ticketId, true);
   }
 
   protected async callNext(): Promise<void> {
@@ -1011,7 +1045,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   protected async act(action: QueueAction, ticket = this.selected()): Promise<void> {
-    if (!ticket || !this.practiceId() || this.busy()) return;
+    if (!ticket || ticket.isArchived || !this.practiceId() || this.busy()) return;
     if (action === 'manual-call' && ticket.status !== 'Waiting') return;
     if (
       (action === 'recall' || action === 'no-response' || action === 'start') &&

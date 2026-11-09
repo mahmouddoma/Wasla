@@ -19,6 +19,7 @@ import {
   CreatePatientReservationRequest,
   Reservation,
 } from '../../../../domains/reservations/reservation.models';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   AvailableDate,
   AvailableSlot,
@@ -33,7 +34,7 @@ import {
 
 @Component({
   selector: 'app-public-doctors',
-  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PageHeader, SideDrawer],
+  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PageHeader, SideDrawer, NgTemplateOutlet],
   templateUrl: './public-doctors.html',
   styleUrl: './public-doctors.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -132,12 +133,54 @@ export class PublicDoctors {
   protected readonly currentUrl = computed(() => this.router.url);
   protected readonly showDetailedLocation = signal(false);
 
+  protected readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
+  );
+
   protected toggleDetailedLocation(): void {
     this.showDetailedLocation.update((v) => !v);
   }
 
   constructor() {
     void this.initialize();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', () => {
+        this.isDesktop.set(window.innerWidth >= 1025);
+      });
+    }
+  }
+
+  protected formatDateChip(dateStr: string): { dayName: string; dayNumber: string; monthName: string } {
+    if (!dateStr) return { dayName: '', dayNumber: '', monthName: '' };
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const date = new Date(year, month, day);
+        const isAr = this.language.isRtl();
+        const dayName = new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-US', { weekday: 'short' }).format(date);
+        const monthName = new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-US', { month: 'short' }).format(date);
+        return { dayName, dayNumber: String(day), monthName };
+      }
+    } catch {
+      // fallback
+    }
+    return { dayName: '', dayNumber: dateStr, monthName: '' };
+  }
+
+  protected onDoctorCardSelect(doctor: PublicDoctorSearchItem): void {
+    if (this.drawerDoctor()?.doctorId === doctor.doctorId && this.drawerOpened()) {
+      return;
+    }
+    const activePractice = this.getActivePractice(doctor);
+    void this.openDoctorDrawer(
+      doctor,
+      activePractice?.id,
+      activePractice?.nextAvailableSlotDate,
+      activePractice?.nextAvailableSlotTime,
+    );
   }
 
   protected goBack(): void {

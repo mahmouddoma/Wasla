@@ -13,6 +13,10 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Relationship request history',
   },
   'familyFlow.searchRequests': { ar: 'البحث في الطلبات', en: 'Search requests' },
+  'familyFlow.searchPlaceholder': {
+    ar: 'البحث بالاسم أو الرقم التعريفي...',
+    en: 'Search by name or reference ID...',
+  },
   'familyFlow.chooseFiles': { ar: 'اختيار الملفات', en: 'Choose files' },
   'familyReview.before': { ar: 'البيانات الحالية', en: 'Current identity' },
   'familyReview.after': { ar: 'التصحيح المطلوب', en: 'Requested correction' },
@@ -173,6 +177,15 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: "Submit your child's information and relationship evidence for review. Authorized services appear after approval.",
   },
   'familyFlow.children': { ar: 'أطفالي', en: 'My children' },
+  'familyFlow.child': { ar: 'طفل تابع', en: 'Dependent child' },
+  'familyFlow.medicalServices': {
+    ar: 'الخدمات الطبية والمواعيد',
+    en: 'Medical services & appointments',
+  },
+  'familyFlow.accountAndSettings': {
+    ar: 'بيانات الحساب وإدارة الأسرة',
+    en: 'Account & family management',
+  },
   'familyFlow.profile': { ar: 'البيانات والتواصل', en: 'Profile and contacts' },
   'familyFlow.tickets': { ar: 'الدور الحالي', en: 'Current queue' },
   'familyFlow.transactions': { ar: 'المدفوعات', en: 'Payments' },
@@ -432,6 +445,30 @@ export const TRANSLATIONS: TranslationDictionary = {
   },
   'subscriptions.planName.STARTER': { ar: 'الباقة الأساسية', en: 'Starter Plan' },
   'subscriptions.planName.PRO': { ar: 'الباقة المتقدمة', en: 'Pro Plan' },
+  'subscriptions.planName.PROFESSIONAL': { ar: 'الباقة الاحترافية', en: 'Professional Plan' },
+  'subscriptions.planName.PREMIUM': { ar: 'الباقة المتميزة', en: 'Premium Plan' },
+  'subscriptions.planName.ONLINE_BOOKING_ONLY': {
+    ar: 'باقة الحجز الإلكتروني',
+    en: 'Online Booking Plan',
+  },
+  'subscriptions.planName.BOOKING_ONLY': { ar: 'باقة الحجز الإلكتروني', en: 'Online Booking Plan' },
+  'subscriptions.contractReference': { ar: 'رقم مرجع العقد', en: 'Contract reference' },
+  'subscriptions.subscriptionDetailsTitle': {
+    ar: 'تفاصيل اشتراك العيادة',
+    en: 'Clinic subscription details',
+  },
+  'subscriptions.currentSubscription': { ar: 'الاشتراك الحالي', en: 'Current subscription' },
+  'subscriptions.coveredPractice': { ar: 'العيادة المغطاة', en: 'Covered clinic' },
+  'subscriptions.noPracticeAssigned': { ar: 'غير مخصصة لعيادة بعد', en: 'No clinic assigned yet' },
+  'subscriptions.trialPeriodNote': { ar: 'فترة تجريبية مجانية', en: 'Free trial period' },
+  'subscriptions.validUntil': { ar: 'ساري حتى', en: 'Valid until' },
+  'subscriptions.usedOfTotal': { ar: 'مستخدم من أصل', en: 'used of' },
+  'subscriptions.receptionAccountsUsed': {
+    ar: 'حسابات استقبال مفعلة',
+    en: 'Active reception accounts',
+  },
+  'subscriptions.practicesUsed': { ar: 'عيادات مغطاة', en: 'Covered clinics' },
+  'subscriptions.fullyAllocated': { ar: 'مكتملة التخصيص', en: 'Fully allocated' },
   'subscriptions.targetPlan': { ar: 'الباقة المطلوبة', en: 'Target plan' },
   'subscriptions.effectiveDate': { ar: 'تاريخ السريان', en: 'Effective date' },
   'subscriptions.paymentMethodLabel': { ar: 'طريقة الدفع', en: 'Payment method' },
@@ -771,7 +808,25 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'سعر الكشف الظاهر في الحجز',
     en: 'Consultation price shown in booking',
   },
+  'subscriptions.bookingPriceDesc': {
+    ar: 'السعر الأساسي للكشف الذي يظهر للمرضى عند الحجز الإلكتروني عبر المنصة.',
+    en: 'Base consultation fee displayed to patients during online booking.',
+  },
+  'subscriptions.covered': { ar: 'مغطاة بالاشتراك', en: 'Covered' },
+  'subscriptions.uncovered': { ar: 'غير مغطاة', en: 'Uncovered' },
+  'subscriptions.egp': { ar: 'ج.م', en: 'EGP' },
   'subscriptions.savePrice': { ar: 'حفظ سعر الحجز', en: 'Save booking price' },
+  'practice.defaultDuration': { ar: 'مدة الموعد الافتراضية', en: 'Default appointment duration' },
+  'practice.checkInGrace': { ar: 'مهلة تسجيل الحضور', en: 'Check-in grace period' },
+  'practice.cancellationCutoff': { ar: 'مهلة الإلغاء الذاتي', en: 'Self-cancellation cutoff' },
+  'practice.checkInOpenHint': {
+    ar: 'الوقت المسموح به لفتح تسجيل حضور المريض قبل بدء الموعد',
+    en: 'Window allowed for check-in before appointment starts',
+  },
+  'practice.fastTrackHint': {
+    ar: 'ترتيب أولوية نداء المريض في الطابور عند عودته بعد الغياب',
+    en: 'Queue priority position when patient returns after absence',
+  },
   'subscriptions.draft': {
     ar: 'حفظ الموقع ينشئ مسودة غير نشطة ولا يفعّل الحجز.',
     en: 'Saving the location creates an inactive draft and does not enable bookings.',
@@ -865,6 +920,26 @@ export const TRANSLATIONS: TranslationDictionary = {
   'subscriptions.allocationSaved': {
     ar: 'تم تحديث تغطية العيادة بنجاح',
     en: 'Practice coverage updated',
+  },
+  'subscriptions.noOtherContracts': {
+    ar: 'لا توجد عقود أخرى شاغرة حالياً',
+    en: 'No other available contracts at this time',
+  },
+  'subscriptions.noOtherContractsDesc': {
+    ar: 'العيادة مغطاة بالفعل بعقدك الحالي، وجميع مقاعد العيادات لديك مستخدمة بالكامل. لنقل العيادة، يمكنك طلب عقد جديد من صفحة الاشتراكات.',
+    en: 'This clinic is already covered by your current contract and all practice seats are in use. To transfer, request a new contract from subscriptions.',
+  },
+  'subscriptions.goToSubscriptions': {
+    ar: 'الذهاب لصفحة الاشتراكات',
+    en: 'Go to subscriptions',
+  },
+  'subscriptions.currentCoveredContract': {
+    ar: 'العقد الحالي المرتبط بالعيادة',
+    en: 'Current contract covering this practice',
+  },
+  'subscriptions.noAssignedStaff': {
+    ar: 'لا يوجد موظفو استقبال مخصصون لهذه العيادة حالياً.',
+    en: 'No reception staff currently assigned to this practice.',
   },
   'doctorPatients.linkedTicket': { ar: 'تذكرة الحضور المرتبطة', en: 'Linked attendance ticket' },
   'doctorPatients.viewLinkedTicket': { ar: 'عرض تذكرة الحضور', en: 'View attendance ticket' },
@@ -1620,9 +1695,32 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'The visit was saved, but the follow-up was not created. Open encounter details to review eligibility.',
   },
   'doctorRemediation.active': { ar: 'متاح للاستخدام', en: 'Active' },
+  'doctorRemediation.inactive': { ar: 'معطل', en: 'Inactive' },
   'doctorRemediation.pricing': { ar: 'جدول الأسعار', en: 'Pricing matrix' },
   'doctorRemediation.segments': { ar: 'فئات المرضى', en: 'Patient segments' },
+  'doctorRemediation.segmentsSubTitle': {
+    ar: 'إدارة وتصنيف شرائح المرضى وتحديد أولوية الكشف والحصص اليومية',
+    en: 'Manage patient tiers, consultation queue priorities, and daily quotas',
+  },
   'doctorRemediation.visitTypes': { ar: 'أنواع الزيارة', en: 'Visit types' },
+  'doctorRemediation.visitTypesSubTitle': {
+    ar: 'أنواع الكشوفات والخدمات المقدمة في هذه العيادة',
+    en: 'Types of consultations and medical services offered in this clinic',
+  },
+  'doctorRemediation.pricingSubTitle': {
+    ar: 'تحديد سعر كل نوع كشف لكل فئة من فئات المرضى بالعيادة',
+    en: 'Set consultation fees for each visit type per patient tier',
+  },
+  'doctorRemediation.addSegment': { ar: 'إضافة فئة جديدة', en: 'Add new tier' },
+  'doctorRemediation.editSegment': { ar: 'تعديل فئة المرضى', en: 'Edit patient tier' },
+  'doctorRemediation.addVisitType': { ar: 'إضافة نوع زيارة', en: 'Add visit type' },
+  'doctorRemediation.editVisitType': { ar: 'تعديل نوع الزيارة', en: 'Edit visit type' },
+  'doctorRemediation.addPrice': { ar: 'تحديد سعر جديد', en: 'Set new price' },
+  'doctorRemediation.editPrice': { ar: 'تعديل السعر', en: 'Edit price' },
+  'doctorRemediation.priorityLabel': { ar: 'أولوية الدخول', en: 'Queue Priority' },
+  'doctorRemediation.quotaLabel': { ar: 'الحصة اليومية', en: 'Daily Quota' },
+  'doctorRemediation.slotsPerDay': { ar: 'كشوفات/يوم', en: 'slots/day' },
+  'doctorRemediation.unlimited': { ar: 'مفتوح (بدون حد)', en: 'Unlimited' },
   'doctorRemediation.nameAr': { ar: 'الاسم بالعربية', en: 'Arabic name' },
   'doctorRemediation.nameEn': { ar: 'الاسم بالإنجليزية', en: 'English name' },
   'doctorRemediation.priority': { ar: 'أولوية الدخول', en: 'Queue priority' },
@@ -1789,6 +1887,26 @@ export const TRANSLATIONS: TranslationDictionary = {
   'review.medicalAccessHelp': {
     ar: 'مراجعة طلبات حظر واستعادة الوصول إلى السجلات الطبية للأطفال والتابعين.',
     en: 'Review requests to restrict or restore medical record access for dependents.',
+  },
+  'review.checkDependentTitle': {
+    ar: 'فحص صلاحية الوصول الطبي لتابع',
+    en: 'Check Dependent Access Status',
+  },
+  'review.checkDependentHelp': {
+    ar: 'أدخل الرقم التعريفي للتابع للتحقق من أهليته الطبية وحالة حظر أو استعادة الوصول',
+    en: 'Enter dependent patient ID to verify medical eligibility and access status',
+  },
+  'review.childIdPlaceholder': {
+    ar: 'أدخل الرقم التعريفي للطفل...',
+    en: 'Enter dependent child ID...',
+  },
+  'review.emptyTitle': {
+    ar: 'لا توجد طلبات وصول طبي',
+    en: 'No medical access requests',
+  },
+  'review.emptyDesc': {
+    ar: 'لم يتم العثور على أي طلبات لحظر أو استعادة صلاحيات الوصول إلى السجلات الطبية.',
+    en: 'No requests found for restricting or restoring access to medical records.',
   },
   'routes.medicalEligibilities': {
     ar: 'مراجعات الأهلية الطبية',
@@ -2833,6 +2951,11 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'total',
   },
   'prescriptions.empty': { ar: 'لا توجد روشتات للعرض', en: 'No prescriptions to show' },
+  'prescriptions.loading': { ar: 'جارٍ تحميل الروشتات…', en: 'Loading prescriptions…' },
+  'prescriptions.loadingDetails': {
+    ar: 'جارٍ تحميل تفاصيل الروشتة…',
+    en: 'Loading prescription details…',
+  },
   'prescriptions.copyPrevious': { ar: 'نسخ أدوية آخر روشتة', en: 'Copy Previous Prescription' },
   'prescriptions.copySuccess': {
     ar: 'تم نسخ أدوية آخر روشتة بنجاح، يمكنك تعديلها الآن',
@@ -8611,6 +8734,8 @@ export const TRANSLATIONS: TranslationDictionary = {
 
   /* Phase 18 Part Two - Archive & Audit Trails */
   'archive.title': { ar: 'الأرشيف', en: 'Archive' },
+  'archive.emptyHelp': { ar: 'ستظهر هنا السجلات بعد أرشفتها. يمكنك تحديث القائمة لاحقاً.', en: 'Records appear here once archived. You can refresh the list later.' },
+  'tickets.ticketNumber': { ar: 'رقم تذكرة الكشف', en: 'Ticket number' },
   'archive.archivedRecords': { ar: 'السجلات المؤرشفة', en: 'Archived Records' },
   'archive.activeRecords': { ar: 'السجلات الحالية', en: 'Active Records' },
   'archive.isArchivedBadge': { ar: 'مؤرشف', en: 'Archived' },

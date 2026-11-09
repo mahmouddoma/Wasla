@@ -1,33 +1,55 @@
-<section class="booking-price">
-  <h3>{{ 'subscriptions.bookingPrice' | t }}</h3>
+<section class="booking-price booking-price-card">
+  <div class="card-head">
+    <div class="card-head-title">
+      <div class="card-icon-wrap" aria-hidden="true">
+        <i class="fa-solid fa-coins"></i>
+      </div>
+      <div>
+        <h3 id="booking-price-title">{{ 'subscriptions.bookingPrice' | t }}</h3>
+        <p class="card-subtitle">{{ 'subscriptions.bookingPriceDesc' | t }}</p>
+      </div>
+    </div>
+  </div>
+
   @if (loading()) {
-    <p role="status">{{ 'subscriptions.loading' | t }}</p>
+    <div class="card-state-loading" role="status">
+      <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+      <span>{{ 'subscriptions.loading' | t }}</span>
+    </div>
   } @else if (error()) {
-    <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
-    <button class="btn btn-outline-secondary" type="button" (click)="load()">
-      {{ 'subscriptions.retry' | t }}
-    </button>
+    <div class="card-state-error" role="alert">
+      <p>{{ 'subscriptions.loadError' | t }}</p>
+      <button class="btn btn-outline btn-sm" type="button" (click)="load()">
+        {{ 'subscriptions.retry' | t }}
+      </button>
+    </div>
   } @else {
-    <form class="d-flex flex-wrap gap-3 align-items-end" (ngSubmit)="save()">
-      <label for="booking-price"
-        >{{ 'subscriptions.bookingPrice' | t
-        }}<input
-          class="form-control ltr-text"
-          id="booking-price"
-          name="price"
-          type="number"
-          dir="ltr"
-          min="0.01"
-          step="0.01"
-          required
-          [(ngModel)]="price"
-          [disabled]="busy() || !canManage()"
-      /></label>
-      @if (canManage()) {
-        <button class="btn btn-primary" type="submit" [disabled]="busy() || !valid()">
-          {{ 'subscriptions.savePrice' | t }}
-        </button>
-      }
+    <form class="price-form" (ngSubmit)="save()">
+      <div class="price-input-row">
+        <div class="input-currency-group">
+          <input
+            class="price-input"
+            id="booking-price"
+            name="price"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            [(ngModel)]="price"
+            [disabled]="busy() || !canManage()"
+            [attr.aria-label]="'subscriptions.bookingPrice' | t"
+          />
+          <span class="currency-tag">{{ 'subscriptions.egp' | t }}</span>
+        </div>
+        @if (canManage()) {
+          <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy() || !valid()">
+            @if (busy()) {
+              <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+            }
+            <span>{{ 'subscriptions.savePrice' | t }}</span>
+          </button>
+        }
+      </div>
     </form>
   }
 </section>

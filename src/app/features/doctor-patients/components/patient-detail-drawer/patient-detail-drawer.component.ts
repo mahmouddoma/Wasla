@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  HostListener,
   inject,
   input,
   OnChanges,
@@ -17,7 +18,6 @@ import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
-import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import {
   DoctorPatientsApi,
   DoctorMyPatientOverviewResponse,
@@ -48,7 +48,6 @@ export type PatientDrawerTab =
     FormsModule,
     TranslatePipe,
     LocalizedDatePipe,
-    SideDrawer,
     PatientAttendanceListComponent,
     PatientDiagnosisTimelineComponent,
     PatientPrescriptionsListComponent,
@@ -89,6 +88,13 @@ export class PatientDetailDrawerComponent implements OnChanges, OnDestroy {
   readonly overview = signal<DoctorMyPatientOverviewResponse | null>(null);
   readonly loading = signal<boolean>(false);
   readonly error = signal<boolean>(false);
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.opened()) {
+      this.onClose();
+    }
+  }
 
   readonly practiceNames = computed<Readonly<Record<string, string>>>(() =>
     Object.fromEntries(

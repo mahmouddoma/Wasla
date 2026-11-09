@@ -157,17 +157,15 @@ export class PlanSelectorComponent implements OnChanges {
   }
 
   getPlanFeatures(plan: CommercialPlan): string[] {
-    return plan.features
-      .filter(
-        (feature) => feature.isReleaseReady && ['Full', 'ReadOnly'].includes(feature.accessLevel),
-      )
+    return (plan.features ?? [])
+      .filter((feature) => ['Full', 'ReadOnly'].includes(feature.accessLevel))
       .map((feature) => {
-        const translated = this.language.t('subscriptions.feature.' + feature.code);
         const name = this.language.currentLang() === 'ar' ? feature.nameAr : feature.nameEn;
+        const translated = this.language.t('subscriptions.feature.' + feature.code);
         const label =
           name ||
           (translated.startsWith('subscriptions.feature.')
-            ? this.language.t('subscriptions.catalogFeature')
+            ? feature.code
             : translated);
         return feature.accessLevel === 'ReadOnly'
           ? label + ' · ' + this.language.t('subscriptions.readOnlyFeature')

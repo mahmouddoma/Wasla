@@ -11,27 +11,54 @@
     <div pageHeaderActions class="d-flex flex-wrap gap-2">
       @if (workspace()?.canStartExistingChildLink) {
         <button class="btn btn-primary" (click)="start('search')">
-          {{ 'familyFlow.linkChild' | t }}
+          <i class="fa-solid fa-link" aria-hidden="true"></i>
+          <span>{{ 'familyFlow.linkChild' | t }}</span>
         </button>
       }
       @if (workspace()?.canStartChildOnboarding) {
         <button class="btn btn-outline-secondary" (click)="start('onboard')">
-          {{ 'familyFlow.addChild' | t }}
+          <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+          <span>{{ 'familyFlow.addChild' | t }}</span>
         </button>
       }
       @if (session.hasPermission('FamilyJoinInvitations.RedeemOwn')) {
         <button class="btn btn-outline-secondary" (click)="start('redeem')">
-          {{ 'familyFlow.redeem' | t }}
+          <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
+          <span>{{ 'familyFlow.redeem' | t }}</span>
         </button>
       }
     </div>
   </app-page-header>
+
   @if (loading()) {
-    <p class="state" role="status">{{ 'common.loading' | t }}</p>
+    <section class="family-surface" role="status" [attr.aria-label]="'common.loading' | t">
+      <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+      <div class="skeleton-shimmer w-160 h-20 mb-3"></div>
+      @for (item of [1, 2]; track item) {
+        <div class="child-card skeleton-child-card mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="skeleton-shimmer child-avatar-skeleton"></div>
+              <div class="d-flex flex-column gap-2">
+                <div class="skeleton-shimmer w-160 h-20"></div>
+                <div class="skeleton-shimmer w-110 h-14"></div>
+              </div>
+            </div>
+            <div class="skeleton-shimmer w-120 h-40 rounded-md"></div>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <div class="skeleton-shimmer w-100 h-32 rounded-full"></div>
+            <div class="skeleton-shimmer w-100 h-32 rounded-full"></div>
+            <div class="skeleton-shimmer w-100 h-32 rounded-full"></div>
+            <div class="skeleton-shimmer w-100 h-32 rounded-full"></div>
+          </div>
+        </div>
+      }
+    </section>
   } @else if (failed()) {
     <div class="state" role="alert">
       <h2>{{ 'familyFlow.failed' | t }}</h2>
-      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
+      <button class="btn btn-primary" (click)="load()">{{ 'common.retry' | t }}</button>
     </div>
   } @else if (workspace(); as value) {
     @if (!value.hasFamily) {
@@ -41,121 +68,284 @@
         <p>{{ 'familyFlow.emptyHint' | t }}</p>
         @if (value.canStartChildOnboarding) {
           <button class="btn btn-primary" (click)="start('onboard')">
-            {{ 'familyFlow.addChild' | t }}
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+            <span>{{ 'familyFlow.addChild' | t }}</span>
           </button>
         }
       </div>
     }
-    @if (value.dependents.length) {
-      <section class="workspace-surface">
-        <h2>{{ 'familyFlow.children' | t }}</h2>
-        @for (child of value.dependents; track child.patientId) {
-          <article class="dependent-row">
-            <h3>{{ child.nameAr }}</h3>
-            <div class="d-flex flex-wrap gap-2">
-              @if (child.canViewProfile) {
-                <button class="btn btn-outline-secondary" (click)="inspectChild(child, 'profile')">
-                  {{ 'familyFlow.profile' | t }}
-                </button>
+
+    <div class="family-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
+      <!-- Master Pane: Children & Requests -->
+      <div class="family-master-pane">
+        <!-- ── 1. My Children Section ── -->
+        @if (value.dependents.length) {
+      <section class="family-surface">
+        <div class="surface-header-bar">
+          <div class="surface-title-group">
+            <span class="surface-badge-dot" aria-hidden="true"></span>
+            <h2 class="surface-title">{{ 'familyFlow.children' | t }}</h2>
+            <span class="count-pill">{{ value.dependents.length }}</span>
+          </div>
+        </div>
+
+        <div class="children-list">
+          @for (child of value.dependents; track child.patientId) {
+            <article class="dependent-row child-card">
+              <!-- Child Hero Identity & Primary Booking CTA -->
+              <div class="child-hero-row">
+                <div class="child-identity-group">
+                  <div class="child-avatar" aria-hidden="true">
+                    <i class="fa-solid fa-child-reaching"></i>
+                  </div>
+                  <div class="child-info">
+                    <h3 class="child-name">{{ child.nameAr }}</h3>
+                    <div class="child-tags-line">
+                      <span class="meta-tag patient-id-tag" [title]="'ID: ' + child.patientId">
+                        <i class="fa-solid fa-fingerprint" aria-hidden="true"></i>
+                        <span>ID: {{ child.patientId }}</span>
+                      </span>
+                      <span class="meta-tag relation-tag">
+                        <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.child' | t }}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Primary Booking Hero Action -->
+                @if (child.canBook) {
+                  <div class="child-hero-action">
+                    <a
+                      class="btn btn-primary btn-hero-book"
+                      routerLink="/doctors"
+                      [queryParams]="{ patientId: child.patientId }"
+                    >
+                      <i class="fa-solid fa-calendar-plus" aria-hidden="true"></i>
+                      <span>{{ 'familyFlow.book' | t }}</span>
+                    </a>
+                  </div>
+                }
+              </div>
+
+              <!-- Structured Functional Channels -->
+              <div class="child-channels-grid">
+                <!-- Channel 1: Medical & Appointments -->
+                <div class="channel-group">
+                  <span class="channel-label">
+                    <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+                    <span>{{ 'familyFlow.medicalServices' | t }}</span>
+                  </span>
+                  <div class="channel-actions">
+                    @if (child.canViewMedicalRecord) {
+                      <a
+                        class="channel-pill-btn"
+                        routerLink="/patient/dependent-records"
+                        [queryParams]="{ patientId: child.patientId }"
+                      >
+                        <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.medicalRecord' | t }}</span>
+                      </a>
+                    }
+                    @if (child.canViewReservations) {
+                      <a
+                        class="channel-pill-btn"
+                        routerLink="/patient/reservations"
+                        [queryParams]="{ patientId: child.patientId }"
+                      >
+                        <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.reservations' | t }}</span>
+                      </a>
+                    }
+                    @if (child.canViewTicket) {
+                      <button
+                        type="button"
+                        class="channel-pill-btn"
+                        (click)="inspectChild(child, 'tickets')"
+                      >
+                        <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.tickets' | t }}</span>
+                      </button>
+                    }
+                    @if (child.canViewHistoricalDocuments || child.canUploadHistoricalDocument) {
+                      <button
+                        type="button"
+                        class="channel-pill-btn"
+                        (click)="inspectChild(child, 'documents')"
+                      >
+                        <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                        <span>{{ 'historical.title' | t }}</span>
+                      </button>
+                    }
+                    @if (child.canViewTransactions) {
+                      <button
+                        type="button"
+                        class="channel-pill-btn"
+                        (click)="inspectChild(child, 'transactions')"
+                      >
+                        <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.transactions' | t }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Channel 2: Profile & Family Management -->
+                <div class="channel-group">
+                  <span class="channel-label">
+                    <i class="fa-solid fa-user-gear" aria-hidden="true"></i>
+                    <span>{{ 'familyFlow.accountAndSettings' | t }}</span>
+                  </span>
+                  <div class="channel-actions">
+                    @if (child.canViewProfile) {
+                      <button
+                        type="button"
+                        class="channel-pill-btn"
+                        (click)="inspectChild(child, 'profile')"
+                      >
+                        <i class="fa-solid fa-address-card" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.profile' | t }}</span>
+                      </button>
+                    }
+                    @if (child.canRequestIdentityCorrection) {
+                      <button
+                        type="button"
+                        class="channel-pill-btn channel-pill-btn--subtle"
+                        (click)="start('identity', child)"
+                      >
+                        <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.correctIdentity' | t }}</span>
+                      </button>
+                    }
+                    @if (session.hasPermission('FamilyJoinInvitations.CreateOwn')) {
+                      <button
+                        type="button"
+                        class="channel-pill-btn channel-pill-btn--subtle"
+                        (click)="start('invite', child)"
+                      >
+                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                        <span>{{ 'familyFlow.inviteParent' | t }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scope Warnings if any -->
+              @if (!child.canViewMedicalRecord && child.medicalReasonCode) {
+                <div class="scope-alert-banner">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  <span>{{ 'familyFlow.medicalUnavailable' | t }}</span>
+                </div>
               }
-              @if (child.canViewTicket) {
-                <button class="btn btn-outline-secondary" (click)="inspectChild(child, 'tickets')">
-                  {{ 'familyFlow.tickets' | t }}
-                </button>
+              @if (!child.canBook && child.operationalReasonCode) {
+                <div class="scope-alert-banner">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  <span>{{ 'familyFlow.operationalUnavailable' | t }}</span>
+                </div>
               }
-              @if (child.canViewTransactions) {
-                <button
-                  class="btn btn-outline-secondary"
-                  (click)="inspectChild(child, 'transactions')"
-                >
-                  {{ 'familyFlow.transactions' | t }}
-                </button>
-              }
-              @if (child.canViewHistoricalDocuments || child.canUploadHistoricalDocument) {
-                <button
-                  class="btn btn-outline-secondary"
-                  (click)="inspectChild(child, 'documents')"
-                >
-                  {{ 'historical.title' | t }}
-                </button>
-              }
-              @if (child.canBook) {
-                <a
-                  class="btn btn-primary"
-                  routerLink="/doctors"
-                  [queryParams]="{ patientId: child.patientId }"
-                  >{{ 'familyFlow.book' | t }}</a
-                >
-              }
-              @if (child.canViewReservations) {
-                <a
-                  class="btn btn-outline-secondary"
-                  routerLink="/patient/reservations"
-                  [queryParams]="{ patientId: child.patientId }"
-                  >{{ 'familyFlow.reservations' | t }}</a
-                >
-              }
-              @if (child.canViewMedicalRecord) {
-                <a
-                  class="btn btn-outline-secondary"
-                  routerLink="/patient/dependent-records"
-                  [queryParams]="{ patientId: child.patientId }"
-                  >{{ 'familyFlow.medicalRecord' | t }}</a
-                >
-              }
-              @if (child.canRequestIdentityCorrection) {
-                <button class="btn btn-outline-secondary" (click)="start('identity', child)">
-                  {{ 'familyFlow.correctIdentity' | t }}
-                </button>
-              }
-              @if (session.hasPermission('FamilyJoinInvitations.CreateOwn')) {
-                <button class="btn btn-outline-secondary" (click)="start('invite', child)">
-                  {{ 'familyFlow.inviteParent' | t }}
-                </button>
-              }
-            </div>
-            @if (!child.canViewMedicalRecord && child.medicalReasonCode) {
-              <p class="scope-note">{{ 'familyFlow.medicalUnavailable' | t }}</p>
-            }
-            @if (!child.canBook && child.operationalReasonCode) {
-              <p class="scope-note">{{ 'familyFlow.operationalUnavailable' | t }}</p>
-            }
-          </article>
-        }
+            </article>
+          }
+        </div>
       </section>
     }
-    <section class="workspace-surface">
-      <div class="section-heading">
-        <h2>{{ 'familyFlow.requests' | t }}</h2>
+
+    <!-- ── 2. Family Requests Section ── -->
+    <section class="family-surface requests-surface">
+      <div class="surface-header-bar">
+        <div class="surface-title-group">
+          <span class="surface-badge-dot" aria-hidden="true"></span>
+          <h2 class="surface-title">{{ 'familyFlow.requests' | t }}</h2>
+        </div>
         <button
-          class="btn btn-outline-secondary"
+          type="button"
+          class="btn-requests-history"
           (click)="loadRequests()"
           [disabled]="requestLoading()"
         >
-          {{ 'familyFlow.allRequests' | t }}
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+          <span>{{ 'familyFlow.allRequests' | t }}</span>
         </button>
       </div>
+
+      <!-- Requests Loading -->
+      @if (requestLoading()) {
+        <div class="requests-skeleton-list p-3" role="status" [attr.aria-label]="'common.loading' | t">
+          <div class="skeleton-shimmer w-full h-48 rounded-lg mb-2"></div>
+          <div class="skeleton-shimmer w-full h-48 rounded-lg"></div>
+        </div>
+      }
+
+      <!-- Pending Workflows & Requests -->
       @if (!showingHistory()) {
-        @for (item of value.pendingWorkflows; track item.reference) {
-          <button class="request-row" (click)="openWorkflow(item)">
-            <span>{{ 'familyFlow.kind.' + item.kind | t }}</span
-            ><span>{{ 'familyFlow.status.' + item.status | t }}</span
-            ><span>{{ 'common.view' | t }}</span>
-          </button>
-        }
-        @if (!relationshipHistory()) {
-          @for (item of value.pendingRequests; track item.requestId) {
-            <button class="request-row" (click)="openRelationship(item.requestId)">
-              <span>{{ item.targetNameAr }}</span
-              ><span>{{ 'familyFlow.status.' + item.status | t }}</span
-              ><span>{{ 'common.view' | t }}</span>
+        <div class="requests-card-list">
+          @for (item of value.pendingWorkflows; track item.reference) {
+            <button
+              type="button"
+              class="request-row request-card-item"
+              [class.is-selected]="isSelectedWorkflow(item)"
+              (click)="openWorkflow(item)"
+            >
+              <div class="request-icon-box">
+                <i class="fa-solid fa-file-signature" aria-hidden="true"></i>
+              </div>
+              <div class="request-body-col">
+                <h4 class="request-main-title">{{ 'familyFlow.kind.' + item.kind | t }}</h4>
+                <span class="request-sub-meta">
+                  <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                  <span>{{ item.reference }}</span>
+                </span>
+              </div>
+              <div class="request-status-col">
+                <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                  <span class="pill-dot" aria-hidden="true"></span>
+                  <span>{{ 'familyFlow.status.' + item.status | t }}</span>
+                </span>
+              </div>
+              <div class="request-action-col">
+                <span class="btn-inspect-action">
+                  <span>{{ 'common.view' | t }}</span>
+                  <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                </span>
+              </div>
             </button>
           }
-        }
+          @if (!relationshipHistory()) {
+            @for (item of value.pendingRequests; track item.requestId) {
+              <button
+                type="button"
+                class="request-row request-card-item"
+                [class.is-selected]="selectedRelationship()?.requestId === item.requestId"
+                (click)="openRelationship(item.requestId)"
+              >
+                <div class="request-icon-box">
+                  <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+                </div>
+                <div class="request-body-col">
+                  <h4 class="request-main-title">{{ item.targetNameAr || ('familyFlow.requestType.' + item.requestType | t) }}</h4>
+                  <span class="request-sub-meta">
+                    <span>{{ 'familyFlow.requestType.' + item.requestType | t }}</span>
+                  </span>
+                </div>
+                <div class="request-status-col">
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span>{{ 'familyFlow.status.' + item.status | t }}</span>
+                  </span>
+                </div>
+                <div class="request-action-col">
+                  <span class="btn-inspect-action">
+                    <span>{{ 'common.view' | t }}</span>
+                    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                  </span>
+                </div>
+              </button>
+            }
+          }
+        </div>
       }
-      @if (requestLoading()) {
-        <p role="status">{{ 'common.loading' | t }}</p>
-      }
+
+      <!-- Empty State for Requests -->
       @if (
         !requestLoading() &&
         !value.pendingWorkflows?.length &&
@@ -163,121 +353,270 @@
         !onboarding().length &&
         !governance().length
       ) {
-        <div class="state">
+        <div class="state empty-requests-box">
           <img src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
           <h3>{{ 'familyFlow.noRequests' | t }}</h3>
           <p>{{ 'familyFlow.noRequestsHint' | t }}</p>
         </div>
       }
-      @for (item of onboarding(); track item.request.requestId) {
-        <button class="request-row" (click)="openOnboarding(item.request.requestId)">
-          <span>{{ item.intake.nameAr }}</span
-          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
-          ><span>{{ 'common.view' | t }}</span>
-        </button>
-      }
-      @for (item of governance(); track item.request.caseId) {
-        <button class="request-row" (click)="openGovernance(item.request.caseId)">
-          <span>{{ 'familyFlow.kind.' + item.request.kind | t }}</span
-          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
-          ><span>{{ 'common.view' | t }}</span>
-        </button>
-      }
+
+      <!-- Onboarding & Governance History Lists -->
       @if (onboarding().length || governance().length) {
-        <nav class="d-flex gap-2 mt-3">
+        <div class="requests-card-list">
+          @for (item of onboarding(); track item.request.requestId) {
+            <button
+              type="button"
+              class="request-row request-card-item"
+              [class.is-selected]="isSelectedOnboarding(item.request.requestId)"
+              (click)="openOnboarding(item.request.requestId)"
+            >
+              <div class="request-icon-box">
+                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+              </div>
+              <div class="request-body-col">
+                <h4 class="request-main-title">{{ item.intake.nameAr }}</h4>
+                <span class="request-sub-meta">
+                  <span>{{ 'familyFlow.addChild' | t }}</span>
+                </span>
+              </div>
+              <div class="request-status-col">
+                <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+                  <span class="pill-dot" aria-hidden="true"></span>
+                  <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+                </span>
+              </div>
+              <div class="request-action-col">
+                <span class="btn-inspect-action">
+                  <span>{{ 'common.view' | t }}</span>
+                  <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                </span>
+              </div>
+            </button>
+          }
+          @for (item of governance(); track item.request.caseId) {
+            <button
+              type="button"
+              class="request-row request-card-item"
+              [class.is-selected]="isSelectedGovernance(item.request.caseId)"
+              (click)="openGovernance(item.request.caseId)"
+            >
+              <div class="request-icon-box">
+                <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+              </div>
+              <div class="request-body-col">
+                <h4 class="request-main-title">{{ 'familyFlow.kind.' + item.request.kind | t }}</h4>
+                <span class="request-sub-meta">
+                  <span>ID: {{ item.request.caseId }}</span>
+                </span>
+              </div>
+              <div class="request-status-col">
+                <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+                  <span class="pill-dot" aria-hidden="true"></span>
+                  <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+                </span>
+              </div>
+              <div class="request-action-col">
+                <span class="btn-inspect-action">
+                  <span>{{ 'common.view' | t }}</span>
+                  <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                </span>
+              </div>
+            </button>
+          }
+        </div>
+
+        <nav class="requests-pagination-bar" aria-label="تنقل صفحات طلبات الأسرة">
           <button
-            class="btn btn-outline-secondary"
+            type="button"
+            class="btn-pagination-nav"
             [disabled]="requestPage() === 1"
             (click)="loadRequests(requestPage() - 1)"
           >
-            {{ 'common.previous' | t }}</button
-          ><button
-            class="btn btn-outline-secondary"
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            <span>{{ 'common.previous' | t }}</span>
+          </button>
+          <span class="pagination-page-badge">
+            {{ 'common.page' | t }} {{ requestPage() }}
+          </span>
+          <button
+            type="button"
+            class="btn-pagination-nav"
             [disabled]="onboarding().length < 20 && requestPage() * 20 >= governanceTotal()"
             (click)="loadRequests(requestPage() + 1)"
           >
-            {{ 'common.next' | t }}
+            <span>{{ 'common.next' | t }}</span>
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
           </button>
         </nav>
       }
+
+      <!-- Relationship History Filter & List -->
       @if (relationshipLoading()) {
-        <p role="status">{{ 'common.loading' | t }}</p>
+        <div class="py-2" role="status" [attr.aria-label]="'common.loading' | t">
+          <div class="skeleton-shimmer w-160 h-16 mb-2"></div>
+          <div class="skeleton-shimmer w-full h-32 rounded-md"></div>
+        </div>
       }
       @if (relationshipHistory(); as history) {
-        <h3 class="mt-4">{{ 'familyFlow.relationshipRequests' | t }}</h3>
-        <form class="row g-3 mb-3" (ngSubmit)="loadRelationshipRequests()">
-          <label class="col-sm-4"
-            >{{ 'common.status' | t
-            }}<select class="form-select" name="requestStatus" [(ngModel)]="requestStatus">
-              <option value="">{{ 'common.all' | t }}</option>
-              <option value="Pending">{{ 'familyFlow.status.Pending' | t }}</option>
-              <option value="ModificationRequested">
-                {{ 'familyFlow.status.ModificationRequested' | t }}
-              </option>
-              <option value="Approved">{{ 'familyFlow.status.Approved' | t }}</option>
-              <option value="Rejected">{{ 'familyFlow.status.Rejected' | t }}</option>
-            </select></label
-          >
-          <label class="col-sm-4"
-            >{{ 'common.type' | t
-            }}<select class="form-select" name="requestType" [(ngModel)]="requestType">
-              <option value="">{{ 'common.all' | t }}</option>
-              @for (type of relationshipTypes; track type) {
-                <option [value]="type">{{ 'familyFlow.requestType.' + type | t }}</option>
+        <div class="relationship-history-section">
+          <div class="relationship-history-header">
+            <div class="header-title-wrap">
+              <span class="section-badge-dot" aria-hidden="true"></span>
+              <h3>{{ 'familyFlow.relationshipRequests' | t }}</h3>
+              @if (history.totalCount) {
+                <span class="history-count-badge">{{ history.totalCount }}</span>
               }
-            </select></label
-          >
-          <label class="col-sm-4"
-            >{{ 'familyFlow.searchRequests' | t
-            }}<input class="form-control" name="requestSearch" [(ngModel)]="requestSearch"
-          /></label>
-          <div>
-            <button type="submit" class="btn btn-outline-secondary">
-              {{ 'familyFlow.search' | t }}
-            </button>
+            </div>
           </div>
-        </form>
-        @for (item of history.items; track item.requestId) {
-          <button class="request-row" (click)="openRelationship(item.requestId)">
-            <span>{{ item.targetNameAr || ('familyFlow.awaitIdentity' | t) }}</span
-            ><span>{{ 'familyFlow.requestType.' + item.requestType | t }}</span
-            ><span>{{ 'familyFlow.status.' + item.status | t }}</span>
-          </button>
-        }
-        @if (history.totalCount > 20) {
-          <nav class="d-flex gap-2 mt-3">
-            <button
-              class="btn btn-outline-secondary"
-              [disabled]="history.pageNumber === 1"
-              (click)="loadRelationshipRequests(history.pageNumber - 1)"
-            >
-              {{ 'common.previous' | t }}</button
-            ><button
-              class="btn btn-outline-secondary"
-              [disabled]="history.pageNumber * 20 >= history.totalCount"
-              (click)="loadRelationshipRequests(history.pageNumber + 1)"
-            >
-              {{ 'common.next' | t }}
-            </button>
-          </nav>
-        }
+
+          <form class="history-filter-bar" (ngSubmit)="loadRelationshipRequests()">
+            <div class="filter-field">
+              <span class="filter-label">{{ 'common.status' | t }}</span>
+              <div class="filter-select-wrap">
+                <select class="form-select filter-select" name="requestStatus" [(ngModel)]="requestStatus">
+                  <option value="">{{ 'common.all' | t }}</option>
+                  <option value="Pending">{{ 'familyFlow.status.Pending' | t }}</option>
+                  <option value="ModificationRequested">
+                    {{ 'familyFlow.status.ModificationRequested' | t }}
+                  </option>
+                  <option value="Approved">{{ 'familyFlow.status.Approved' | t }}</option>
+                  <option value="Rejected">{{ 'familyFlow.status.Rejected' | t }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="filter-field">
+              <span class="filter-label">{{ 'common.type' | t }}</span>
+              <div class="filter-select-wrap">
+                <select class="form-select filter-select" name="requestType" [(ngModel)]="requestType">
+                  <option value="">{{ 'common.all' | t }}</option>
+                  @for (type of relationshipTypes; track type) {
+                    <option [value]="type">{{ 'familyFlow.requestType.' + type | t }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="filter-field filter-field-grow">
+              <span class="filter-label">{{ 'familyFlow.searchRequests' | t }}</span>
+              <div class="filter-input-wrap">
+                <input
+                  type="text"
+                  class="form-control filter-input"
+                  name="requestSearch"
+                  [(ngModel)]="requestSearch"
+                  [placeholder]="'familyFlow.searchPlaceholder' | t"
+                />
+              </div>
+            </div>
+
+            <div class="filter-action">
+              <button type="submit" class="btn-filter-submit">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <span>{{ 'common.search' | t }}</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="requests-card-list">
+            @for (item of history.items; track item.requestId) {
+              <button
+                type="button"
+                class="request-row request-card-item"
+                [class.is-selected]="isSelectedRelationship(item.requestId)"
+                (click)="openRelationship(item.requestId)"
+              >
+                <div class="request-icon-box">
+                  <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                </div>
+                <div class="request-body-col">
+                  <h4 class="request-main-title">
+                    {{ (item.targetNameAr && item.targetNameAr !== '***') ? item.targetNameAr : ('familyFlow.requestType.' + item.requestType | t) }}
+                  </h4>
+                  <span class="request-sub-meta">
+                    @if (item.targetNameAr && item.targetNameAr !== '***') {
+                      <span>{{ 'familyFlow.requestType.' + item.requestType | t }}</span>
+                    } @else {
+                      <span>{{ 'familyFlow.relationshipRequests' | t }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="request-status-col">
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span>{{ 'familyFlow.status.' + item.status | t }}</span>
+                  </span>
+                </div>
+                <div class="request-action-col">
+                  <span class="btn-inspect-action">
+                    <span>{{ 'common.view' | t }}</span>
+                    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                  </span>
+                </div>
+              </button>
+            }
+          </div>
+
+          @if (history.totalCount > 20) {
+            <nav class="requests-pagination-bar" aria-label="تنقل صفحات طلبات القرابة السابقة">
+              <button
+                type="button"
+                class="btn-pagination-nav"
+                [disabled]="history.pageNumber === 1"
+                (click)="loadRelationshipRequests(history.pageNumber - 1)"
+              >
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                <span>{{ 'common.previous' | t }}</span>
+              </button>
+              <span class="pagination-page-badge">
+                {{ 'common.page' | t }} {{ history.pageNumber }}
+              </span>
+              <button
+                type="button"
+                class="btn-pagination-nav"
+                [disabled]="history.pageNumber * 20 >= history.totalCount"
+                (click)="loadRelationshipRequests(history.pageNumber + 1)"
+              >
+                <span>{{ 'common.next' | t }}</span>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              </button>
+            </nav>
+          }
+        </div>
       }
     </section>
+  </div>
+
+  <!-- Detail Pane (Inline Split View on Desktop) -->
+  @if (isDesktop() && hasActiveDetail()) {
+    <aside class="family-detail-pane" [attr.aria-label]="detailTitle()">
+      <header class="detail-pane-header">
+        <div class="detail-pane-title-wrap">
+          <span class="detail-pane-indicator" aria-hidden="true"></span>
+          <h2 class="detail-pane-heading">{{ detailTitle() }}</h2>
+        </div>
+        <button
+          type="button"
+          class="btn-detail-close"
+          (click)="close()"
+          [attr.aria-label]="'common.close' | t"
+          [title]="'common.close' | t"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="detail-pane-body">
+        <ng-container *ngTemplateOutlet="detailContentTemplate" />
+      </div>
+    </aside>
+  }
+</div>
   }
 </main>
-<app-side-drawer
-  [opened]="
-    !!intakeMode() ||
-    !!selectedChild() ||
-    !!selectedOnboarding() ||
-    !!selectedGovernance() ||
-    !!selectedRelationship()
-  "
-  [busy]="busy()"
-  [title]="selectedChild()?.nameAr || ('familyFlow.requests' | t)"
-  (closed)="close()"
-  width="760px"
->
+
+<!-- Shared Detail Template for Master-Detail & Mobile Drawer -->
+<ng-template #detailContentTemplate>
   @if (intakeMode(); as mode) {
     <app-family-intake
       [mode]="mode"
@@ -297,55 +636,176 @@
       (busyChanged)="busy.set($event)"
     />
   } @else if (selectedOnboarding(); as item) {
-    <section class="request-details">
-      <h2>{{ item.intake.nameAr }}</h2>
-      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
-      <p>{{ item.request.reviewMessage }}</p>
-      <p>{{ 'familyFlow.reviewNotice' | t }}</p>
-      @if (item.request.canResubmit) {
-        <button class="btn btn-primary" (click)="intakeMode.set('resubmit')">
-          {{ 'familyFlow.resubmit' | t }}
-        </button>
-      }
-      @if (item.request.conflictCaseId; as id) {
-        <button class="btn btn-outline-secondary" (click)="openGovernance(id)">
-          {{ 'familyFlow.reviewStatus' | t }}
-        </button>
-      }
-    </section>
+    <div class="request-detail-view">
+      <div class="detail-overview-card">
+        <div class="detail-overview-header">
+          <div class="overview-title-cluster">
+            <span class="detail-type-badge">
+              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.addChild' | t }}</span>
+            </span>
+            <h3 class="detail-person-name">{{ item.intake.nameAr }}</h3>
+            @if (item.request.requestId) {
+              <span class="detail-ref-tag" dir="ltr">#{{ item.request.requestId }}</span>
+            }
+          </div>
+          <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+            <span class="pill-dot" aria-hidden="true"></span>
+            <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+          </span>
+        </div>
+
+        @if (item.request.reviewMessage) {
+          <div
+            class="detail-message-box"
+            [class.alert-danger]="item.request.status === 'Rejected'"
+            [class.alert-warning]="item.request.status === 'ModificationRequested'"
+          >
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <div class="message-text">
+              <strong>{{ 'familyFlow.reviewNotice' | t }}</strong>
+              <p>{{ item.request.reviewMessage }}</p>
+            </div>
+          </div>
+        }
+
+        <div class="detail-actions-bar">
+          @if (item.request.canResubmit) {
+            <button type="button" class="btn btn-primary" (click)="intakeMode.set('resubmit')">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.resubmit' | t }}</span>
+            </button>
+          }
+          @if (item.request.conflictCaseId; as id) {
+            <button type="button" class="btn btn-outline-secondary" (click)="openGovernance(id)">
+              <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.reviewStatus' | t }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
   } @else if (selectedGovernance(); as item) {
-    <section class="request-details">
-      <h2>{{ 'familyFlow.kind.' + item.request.kind | t }}</h2>
-      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
-      <p>{{ item.feedback }}</p>
-      @if (
-        item.request.kind === 'MembershipConflict' &&
-        item.request.status === 'ModificationRequested'
-      ) {
-        <button class="btn btn-primary" (click)="intakeMode.set('conflict')">
-          {{ 'familyFlow.resubmit' | t }}
-        </button>
-      }
-    </section>
+    <div class="request-detail-view">
+      <div class="detail-overview-card">
+        <div class="detail-overview-header">
+          <div class="overview-title-cluster">
+            <span class="detail-type-badge">
+              <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.kind.' + item.request.kind | t }}</span>
+            </span>
+            <h3 class="detail-person-name">{{ 'familyFlow.kind.' + item.request.kind | t }}</h3>
+            <span class="detail-ref-tag" dir="ltr">#{{ item.request.caseId }}</span>
+          </div>
+          <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+            <span class="pill-dot" aria-hidden="true"></span>
+            <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+          </span>
+        </div>
+
+        @if (item.feedback) {
+          <div class="detail-message-box alert-warning">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <div class="message-text">
+              <p>{{ item.feedback }}</p>
+            </div>
+          </div>
+        }
+
+        @if (
+          item.request.kind === 'MembershipConflict' &&
+          item.request.status === 'ModificationRequested'
+        ) {
+          <div class="detail-actions-bar">
+            <button type="button" class="btn btn-primary" (click)="intakeMode.set('conflict')">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.resubmit' | t }}</span>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
   } @else if (selectedRelationship(); as item) {
-    <section class="request-details">
-      <h2>{{ item.targetNameAr }}</h2>
-      <p>{{ 'familyFlow.status.' + item.status | t }}</p>
-      <p>{{ item.modificationMessage || item.rejectionReason }}</p>
-      @if (
-        item.status === 'ModificationRequested' &&
-        session.hasPermission('FamilyRelationshipRequests.ResubmitOwn')
-      ) {
-        <button class="btn btn-primary" (click)="intakeMode.set('relationship')">
-          {{ 'familyFlow.resubmit' | t }}
-        </button>
-      }
-      @for (event of item.history; track $index) {
-        <p>
-          {{ 'familyFlow.status.' + event.action | t }} ·
-          {{ event.occurredOnUtc | date: 'mediumDate' }}
-        </p>
-      }
-    </section>
+    <div class="request-detail-view">
+      <div class="detail-overview-card">
+        <div class="detail-overview-header">
+          <div class="overview-title-cluster">
+            <span class="detail-type-badge">
+              <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.requestType.' + item.requestType | t }}</span>
+            </span>
+            <h3 class="detail-person-name">
+              {{ (item.targetNameAr && item.targetNameAr !== '***') ? item.targetNameAr : ('familyFlow.requestType.' + item.requestType | t) }}
+            </h3>
+            <span class="detail-ref-tag" dir="ltr">#{{ item.requestId.slice(0, 8) }}</span>
+          </div>
+          <span class="status-pill status-{{ item.status.toLowerCase() }}">
+            <span class="pill-dot" aria-hidden="true"></span>
+            <span>{{ 'familyFlow.status.' + item.status | t }}</span>
+          </span>
+        </div>
+
+        @if (item.modificationMessage || item.rejectionReason) {
+          <div
+            class="detail-message-box"
+            [class.alert-danger]="item.status === 'Rejected'"
+            [class.alert-warning]="item.status === 'ModificationRequested'"
+          >
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+            <div class="message-text">
+              <p>{{ item.modificationMessage || item.rejectionReason }}</p>
+            </div>
+          </div>
+        }
+
+        @if (
+          item.status === 'ModificationRequested' &&
+          session.hasPermission('FamilyRelationshipRequests.ResubmitOwn')
+        ) {
+          <div class="detail-actions-bar">
+            <button type="button" class="btn btn-primary" (click)="intakeMode.set('relationship')">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              <span>{{ 'familyFlow.resubmit' | t }}</span>
+            </button>
+          </div>
+        }
+
+        <!-- Lifecycle Events Timeline -->
+        @if (item.history && item.history.length) {
+          <div class="detail-timeline-section">
+            <h4 class="timeline-heading">
+              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+              <span>سجل الإجراءات والمراحل</span>
+            </h4>
+            <div class="timeline-stepper">
+              @for (event of item.history; track $index) {
+                <div class="timeline-step-item">
+                  <span class="step-dot" aria-hidden="true"></span>
+                  <div class="step-content">
+                    <span class="step-action">{{ 'familyFlow.status.' + event.action | t }}</span>
+                    <time class="step-date" [attr.datetime]="event.occurredOnUtc">
+                      {{ event.occurredOnUtc | date: 'mediumDate' }}
+                    </time>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
   }
-</app-side-drawer>
+</ng-template>
+
+<!-- Slide-Over Drawer for Mobile/Tablet (< 1025px) -->
+@if (!isDesktop()) {
+  <app-side-drawer
+    [opened]="hasActiveDetail()"
+    [busy]="busy()"
+    [title]="detailTitle()"
+    (closed)="close()"
+    width="760px"
+  >
+    <ng-container *ngTemplateOutlet="detailContentTemplate" />
+  </app-side-drawer>
+}

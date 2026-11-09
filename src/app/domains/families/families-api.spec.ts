@@ -409,6 +409,35 @@ describe('FamiliesApi', () => {
     await attachmentResult;
   });
 
+  it.each(['Restriction', 'Restoration'] as const)(
+    'maps the admin %s filter to type while keeping the patient requestType contract',
+    async (requestType) => {
+      const query = { pageNumber: 1, pageSize: 20, requestType };
+      const admin = firstValueFrom(api.adminMedicalAccessRequests(query));
+      const adminRequest = http.expectOne((request) => request.url.endsWith('/admin/family-medical-access-requests'));
+      expect(adminRequest.request.params.get('type')).toBe(requestType);
+      expect(adminRequest.request.params.has('requestType')).toBe(false);
+      adminRequest.flush({ items: [] });
+      await admin;
+
+      const patient = firstValueFrom(api.myMedicalAccessRequests(query));
+      const patientRequest = http.expectOne((request) => request.url.endsWith('/families/mine/medical-access-requests'));
+      expect(patientRequest.request.params.get('requestType')).toBe(requestType);
+      expect(patientRequest.request.params.has('type')).toBe(false);
+      patientRequest.flush({ items: [] });
+      await patient;
+    },
+  );
+
+  it('omits both type filter parameters when all admin request types are selected', async () => {
+    const result = firstValueFrom(api.adminMedicalAccessRequests({ pageNumber: 1, pageSize: 20 }));
+    const request = http.expectOne((request) => request.url.endsWith('/admin/family-medical-access-requests'));
+    expect(request.request.params.has('type')).toBe(false);
+    expect(request.request.params.has('requestType')).toBe(false);
+    request.flush({ items: [] });
+    await result;
+  });
+
   it('wires SuperAdmin review, decisions, and eligibility review routes', async () => {
     const medicalAccessAdminUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-access-requests`;
     const eligibilityReviewsUrl = `${environment.apiBaseUrl}/api/v1/admin/family-medical-eligibilities/reviews`;

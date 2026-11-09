@@ -44,7 +44,51 @@
   </app-page-header>
   <section class="directory" [attr.aria-busy]="loading()">
     @if (loading()) {
-      <p class="p-4" role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="directory-skeleton-wrapper" role="status" [attr.aria-label]="'common.loading' | t">
+        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+        <div class="table-responsive skeleton-table-container">
+          <table class="table align-middle mb-0" aria-hidden="true">
+            <thead>
+              <tr>
+                <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-100"></div></th>
+                <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-80"></div></th>
+                <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-60"></div></th>
+                <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-50"></div></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of [1, 2, 3, 4, 5]; track row) {
+                <tr class="skeleton-table-row">
+                  <td>
+                    <div class="skeleton-shimmer w-160 h-16 mb-2"></div>
+                    <div class="skeleton-shimmer w-110 h-12"></div>
+                  </td>
+                  <td><div class="skeleton-shimmer w-120 h-14"></div></td>
+                  <td><div class="skeleton-shimmer skeleton-pill-badge"></div></td>
+                  <td><div class="skeleton-shimmer skeleton-btn-action"></div></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="skeleton-cards-mobile" aria-hidden="true">
+          @for (card of [1, 2, 3]; track card) {
+            <div class="skeleton-mobile-card">
+              <div class="skeleton-card-top">
+                <div class="skeleton-card-top-info">
+                  <div class="skeleton-shimmer w-140 h-16"></div>
+                  <div class="skeleton-shimmer w-90 h-12"></div>
+                </div>
+                <div class="skeleton-shimmer skeleton-pill-badge"></div>
+              </div>
+              <div class="skeleton-card-bottom">
+                <div class="skeleton-shimmer w-100 h-14"></div>
+                <div class="skeleton-shimmer skeleton-btn-action"></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
     } @else if (failed()) {
       <div class="empty-state">
         <h2>{{ 'medications.failed' | t }}</h2>
@@ -140,7 +184,14 @@
     (closed)="close()"
   >
     @if (detailLoading()) {
-      <p role="status">{{ 'reservations.loading' | t }}</p>
+      <div class="p-4" role="status" [attr.aria-label]="'common.loading' | t">
+        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+        <div class="skeleton-shimmer w-160 h-18 mb-3"></div>
+        <div class="skeleton-shimmer w-full h-14 mb-2"></div>
+        <div class="skeleton-shimmer w-full h-14 mb-2"></div>
+        <div class="skeleton-shimmer w-200 h-14 mb-4"></div>
+        <div class="skeleton-shimmer w-110 h-32 rounded-md"></div>
+      </div>
     }
     @for (message of messages(); track $index) {
       <p class="error-text" role="alert">{{ message | t }}</p>
@@ -277,7 +328,10 @@
                 [disabled]="busy()"
             /></label>
             @if (targetLoading()) {
-              <p role="status">{{ 'reservations.loading' | t }}</p>
+              <div class="py-2" role="status" [attr.aria-label]="'common.loading' | t">
+                <div class="skeleton-shimmer w-full h-32 rounded-md mb-2"></div>
+                <div class="skeleton-shimmer w-full h-32 rounded-md"></div>
+              </div>
             }
             <ul class="history">
               @for (target of targets().items; track target.drugCatalogId) {

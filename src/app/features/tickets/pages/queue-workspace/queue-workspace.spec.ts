@@ -18,6 +18,7 @@ import { PatientsApi, PatientSearchItem } from '../../../../domains/patients';
 import { FollowUpsApi, FollowUpEligibility } from '../../../../domains/follow-ups';
 import { Phase18Part2Api } from '../../../../domains/phase18';
 import { EncountersApi, EncounterDetails } from '../../../../domains/encounters';
+import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
 
 describe('QueueWorkspace', () => {
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -117,6 +118,61 @@ describe('QueueWorkspace', () => {
   it('creates and loads the only active practice queue', () => {
     expect(fixture.componentInstance).toBeTruthy();
     expect(api.queue).toHaveBeenCalledWith('p1');
+  });
+
+  const archived = (ticketId: string): components['schemas']['ArchivedTicketItem'] => ({
+    ticketId, doctorPracticeId: 'p1', ticketNumber: 12, businessDate: '2026-10-01',
+    status: 'Completed', archivedAtUtc: '2026-10-02T10:00:00Z', isArchived: true, detailsRoute: null,
+  });
+  const archivePage = (items: components['schemas']['ArchivedTicketItem'][], nextCursor: string | null = null) =>
+    ({ items, nextCursor, hasMore: !!nextCursor, pageSize: 50, asOfUtc: '2026-11-09T00:00:00Z' });
+
+  it('exposes the Doctor archive, renders real records and pages without duplicate tickets', async () => {
+    const call = vi.mocked(TestBed.inject(Phase18Part2Api).call);
+    call.mockReturnValueOnce(of(archivePage([archived('old')], 'next')));
+    fixture.nativeElement.querySelector('.btn-action-archive').click();
+    await fixture.whenStable();
+    expect(call).toHaveBeenLastCalledWith('P18.2-07', { pathParams: { practiceId: 'p1' }, query: { pageSize: 50, cursor: null } });
+    expect(fixture.nativeElement.querySelector('app-archived-ticket-list tbody').textContent).toContain('2026-10-01');
+    call.mockReturnValueOnce(of(archivePage([archived('old'), archived('older')])));
+    await fixture.componentInstance['loadArchive']();
+    expect(call).toHaveBeenLastCalledWith('P18.2-07', { pathParams: { practiceId: 'p1' }, query: { pageSize: 50, cursor: 'next' } });
+    expect(fixture.componentInstance['archivedTickets']()).toHaveLength(2);
+  });
+
+  it('ignores archive results after closing and blocks requests without view permission', async () => {
+    const pending = new Subject<components['schemas']['ArchivedTicketItemArchivePage']>();
+    const call = vi.mocked(TestBed.inject(Phase18Part2Api).call);
+    call.mockReturnValueOnce(pending);
+    const loading = fixture.componentInstance['openArchive']();
+    fixture.componentInstance['closeArchive']();
+    pending.next(archivePage([archived('obsolete')]));
+    pending.complete();
+    await loading;
+    expect(fixture.componentInstance['archivedTickets']()).toEqual([]);
+    vi.mocked(TestBed.inject(AuthSession).hasPermission).mockReturnValue(false);
+    const restrictedFixture = TestBed.createComponent(QueueWorkspace);
+    await restrictedFixture.whenStable();
+    call.mockClear();
+    await restrictedFixture.componentInstance['openArchive']();
+    expect(call).not.toHaveBeenCalled();
+    expect(restrictedFixture.nativeElement.querySelector('.btn-action-archive')).toBeNull();
+  });
+
+  it('keeps archived detail read-only even when its historical status was Waiting', async () => {
+    api.details.mockReturnValueOnce(of({ ticketId: 'old', ticketNumber: '12', status: 'Waiting',
+      practice: { id: 'p1', nameAr: 'عيادة', nameEn: 'Clinic' },
+      doctor: { id: 'd1', nameAr: 'طبيب', nameEn: 'Doctor' },
+      patient: { id: 'pt1', nameAr: 'مريض', nameEn: 'Patient' }, rowVersion: 'rv1', callAttempts: [], timeline: [] }));
+    await fixture.componentInstance['inspectArchivedTicket'](archived('old'));
+    fixture.detectChanges();
+    expect(api.details).toHaveBeenLastCalledWith('p1', 'old');
+    expect(fixture.componentInstance['selected']()?.isArchived).toBe(true);
+    expect(fixture.componentInstance['queue']().waiting).toEqual([]);
+    expect(fixture.nativeElement.querySelector('.drawer-actions-bar')).toBeNull();
+    api.start.mockClear();
+    await fixture.componentInstance['act']('start');
+    expect(api.start).not.toHaveBeenCalled();
   });
 
   it('loads the doctor queue with ViewOwn without requiring reception permissions', async () => {

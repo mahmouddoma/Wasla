@@ -1,4 +1,8 @@
-<main class="subscription-shell" [dir]="language.dir()">
+<main
+  class="subscription-shell"
+  [dir]="language.dir()"
+  [class.has-active-detail]="!!state.selectedContract()"
+>
   <app-page-header
     [heading]="'subscriptions.mine' | t"
     [description]="'subscriptions.manualOnly' | t"
@@ -10,11 +14,68 @@
   />
 
   @if (loading()) {
-    <section class="subscription-state-panel" role="status" aria-live="polite">
-      <div class="state-spinner" aria-hidden="true"></div>
-      <h2 class="subscription-state-title">{{ 'subscriptions.loading' | t }}</h2>
-      <p class="subscription-state-subtitle">{{ 'subscriptions.manualOnly' | t }}</p>
-    </section>
+    <div class="subscription-skeleton-wrap" role="status" [attr.aria-label]="'subscriptions.loading' | t">
+      <span class="visually-hidden">{{ 'subscriptions.loading' | t }}</span>
+
+      <!-- Top Banner Skeleton -->
+      <div class="skeleton-shimmer skeleton-sub-banner"></div>
+
+      <!-- Contracts Split Skeleton -->
+      <div class="skeleton-sub-split">
+        <!-- Master Pane Skeleton -->
+        <div class="surface-block skeleton-sub-panel">
+          <div class="skeleton-sub-header">
+            <div class="skeleton-title-group">
+              <span class="skeleton-shimmer skeleton-badge-dot"></span>
+              <div class="skeleton-shimmer w-160 h-18"></div>
+              <div class="skeleton-shimmer w-60 h-22 rounded-full"></div>
+            </div>
+            <div class="skeleton-shimmer w-120 h-32 rounded-md"></div>
+          </div>
+          <div class="skeleton-sub-cards">
+            @for (row of [1, 2]; track row) {
+              <div class="skeleton-sub-card">
+                <div class="skeleton-sub-card-top">
+                  <div class="skeleton-shimmer w-140 h-18"></div>
+                  <div class="skeleton-shimmer w-60 h-22 rounded-full"></div>
+                </div>
+                <div class="skeleton-sub-card-mid">
+                  <div class="skeleton-shimmer w-200 h-14"></div>
+                  <div class="skeleton-shimmer w-140 h-14"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Detail Pane Skeleton -->
+        <div class="surface-block skeleton-sub-panel skeleton-detail-sub-panel">
+          <div class="skeleton-sub-header">
+            <div class="skeleton-shimmer w-200 h-20"></div>
+            <div class="skeleton-shimmer w-80 h-24 rounded-full"></div>
+          </div>
+          <div class="skeleton-sub-kpi-grid">
+            <div class="skeleton-sub-kpi-box">
+              <div class="skeleton-shimmer w-80 h-12 mb-2"></div>
+              <div class="skeleton-shimmer w-120 h-18"></div>
+            </div>
+            <div class="skeleton-sub-kpi-box">
+              <div class="skeleton-shimmer w-80 h-12 mb-2"></div>
+              <div class="skeleton-shimmer w-120 h-18"></div>
+            </div>
+            <div class="skeleton-sub-kpi-box">
+              <div class="skeleton-shimmer w-80 h-12 mb-2"></div>
+              <div class="skeleton-shimmer w-120 h-18"></div>
+            </div>
+          </div>
+          <div class="skeleton-sub-detail-box">
+            <div class="skeleton-shimmer w-140 h-16 mb-2"></div>
+            <div class="skeleton-shimmer w-200 h-14 mb-2"></div>
+            <div class="skeleton-shimmer w-100 h-32 rounded-md"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   } @else if (error()) {
     <section class="subscription-state-panel subscription-state-panel--error" role="alert">
       <img
@@ -41,7 +102,10 @@
       </button>
     </section>
   } @else {
-    <div class="subscription-top-bar" [class.has-both]="!!trial() && state.contracts().length === 0">
+    <div
+      class="subscription-top-bar"
+      [class.has-both]="!!trial() && state.contracts().length === 0"
+    >
       @if (trial(); as eligibility) {
         <section class="trial-line surface-block" aria-labelledby="trial-title">
           <div class="trial-line__info">
@@ -74,7 +138,10 @@
       }
 
       @if (state.contracts().length === 0) {
-        <section class="empty-contracts surface-block empty-contracts--inline" aria-labelledby="contracts-empty-title">
+        <section
+          class="empty-contracts surface-block empty-contracts--inline"
+          aria-labelledby="contracts-empty-title"
+        >
           <img
             class="empty-contracts__thumb"
             src="/SVG-AVATAR/Payment Information-bro.svg"
@@ -91,149 +158,252 @@
     </div>
 
     @if (state.contracts().length > 0) {
-      <section class="surface-block contracts-section" aria-labelledby="contracts-title">
-        <header class="section-heading">
-          <div class="section-heading__title-row">
-            <div>
-              <h2 id="contracts-title">{{ 'subscriptions.contracts' | t }}</h2>
-              <p>{{ 'subscriptions.contractHelp' | t }}</p>
-            </div>
-            <span class="count-chip">{{ state.contracts().length }}</span>
-          </div>
-          <a href="#purchase-plan" class="btn btn-outline btn-sm">
-            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
-            <span>{{ 'subscriptions.choosePlan' | t }}</span>
-          </a>
-        </header>
-
-        <div class="contract-directory">
-          @for (contract of state.contracts(); track contract.subscriptionContractId) {
-            <button
-              type="button"
-              class="contract-row"
-              [class.selected]="state.selectedContractId() === contract.subscriptionContractId"
-              [attr.aria-pressed]="state.selectedContractId() === contract.subscriptionContractId"
-              [disabled]="busy()"
-              (click)="selectContract(contract.subscriptionContractId)"
-            >
-              <span class="contract-row__primary">
-                <strong>{{
-                  (
-                    state.currentDetails(contract)?.subscription ||
-                    contract.periods[0]?.subscription ||
-                    contract.periods[0]?.pendingSubscription
-                  )?.planCode
-                }}</strong>
-                <small>
-                  {{ 'subscriptions.contract' | t }}
-                  <bdi>#{{ contract.subscriptionContractId.slice(0, 8) }}</bdi>
-                </small>
-              </span>
-              <span class="contract-row__status">
-                <span class="status-pill">{{ 'subscriptions.' + contract.upcomingStatus | t }}</span>
-              </span>
-              <span class="contract-row__usage">
-                <strong>{{ contract.practices.length }} {{ 'subscriptions.practice' | t }}</strong>
-                <small>
-                  {{ contract.availablePracticeSeats }}
-                  {{ 'subscriptions.availablePracticeSeats' | t }}
-                </small>
-              </span>
-            </button>
-          }
-        </div>
-      </section>
-    }
-
-    @if (state.selectedContract(); as contract) {
-      <section class="surface-block contract-detail" aria-labelledby="selected-contract-title">
-        <header class="section-heading">
-          <div>
-            <h2 id="selected-contract-title">
-              {{ 'subscriptions.contractDetails' | t }}
-              <bdi>#{{ contract.subscriptionContractId.slice(0, 8) }}</bdi>
-            </h2>
-            <p>
-              {{ 'subscriptions.practiceLimit' | t }}:
-              <strong>{{ contract.usage.practiceCount }}</strong>
-              <span class="meta-dot" aria-hidden="true">·</span>
-              {{ 'subscriptions.receptionLimit' | t }}:
-              <strong>{{ contract.usage.receptionCount }}</strong>
-            </p>
-          </div>
-          @if (
-            state.terms()?.kind === 'Paid' &&
-            state.terms()?.status === 'Active' &&
-            !state.terms()?.willNotRenew &&
-            session.hasPermission('Subscriptions.CancelAtPeriodEndOwn')
-          ) {
-            <button
-              type="button"
-              class="btn btn-outline"
-              [disabled]="busy()"
-              (click)="confirmation.set('cancel')"
-            >
-              {{ 'subscriptions.cancel' | t }}
-            </button>
-          }
-        </header>
-
-        @if (contract.practices.length > 0) {
-          <ul class="practice-names">
-            @for (practice of contract.practices; track practice.practiceId) {
-              <li>
-                <i class="fa-solid fa-hospital" aria-hidden="true"></i>
-                <span>{{ practice.nameAr }}</span>
-              </li>
-            }
-          </ul>
-        }
-
-        <div class="periods-list">
-          @for (
-            period of contract.periods;
-            track period.subscription?.id || period.pendingSubscription?.id
-          ) {
-            @if (period.subscription || period.pendingSubscription; as current) {
-              <div class="period-row">
-                <strong>{{ current.planCode }}</strong>
-                <span class="status-pill">{{ 'subscriptions.' + current.status | t }}</span>
-                <bdi class="period-price">{{
-                  current.priceAmount | currency: current.currency
-                }}</bdi>
-                <time dir="ltr" class="period-dates">
-                  {{ current.startsAtUtc | date: 'mediumDate' }} ·
-                  {{ current.endsAtUtc | date: 'mediumDate' }}
-                </time>
-                @if (current.willNotRenew) {
-                  <span class="status-pill status-pill--warn">{{
-                    'subscriptions.cancelledEnd' | t
-                  }}</span>
-                }
+      <div class="contracts-split-layout" [class.has-active-detail]="!!state.selectedContract()">
+        <!-- Master Pane: Contracts Directory -->
+        <section
+          class="surface-block contracts-section contracts-master-pane"
+          aria-labelledby="contracts-title"
+        >
+          <header class="section-heading">
+            <div class="section-heading__title-row">
+              <div>
+                <h2 id="contracts-title">{{ 'subscriptions.contracts' | t }}</h2>
+                <p>{{ 'subscriptions.contractHelp' | t }}</p>
               </div>
-            }
-          }
-        </div>
+              <span class="count-chip">{{ state.contracts().length }}</span>
+            </div>
+            <a href="#purchase-plan" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+              <span>{{ 'subscriptions.choosePlan' | t }}</span>
+            </a>
+          </header>
 
-        @if (state.details(); as detail) {
-          @if (detail.nextPeriod; as next) {
-            <p class="detail-meta-note">
-              {{ 'subscriptions.nextPeriod' | t }}: <strong>{{ next.planCode }}</strong> ·
-              {{ 'subscriptions.' + next.status | t }} ·
-              <time dir="ltr">{{ next.startsAtUtc | date: 'mediumDate' }}</time>
-            </p>
-          }
-          @for (change of detail.changeRequests; track change.id) {
-            <p class="detail-meta-note">
-              <strong>{{ change.targetPlanCode }}</strong> ·
-              {{ 'subscriptions.' + change.status | t }}
-              @if (change.rejectionReason) {
-                · {{ change.rejectionReason }}
+          <div class="contract-directory">
+            @for (contract of state.contracts(); track contract.subscriptionContractId) {
+              <button
+                type="button"
+                class="contract-row"
+                [class.selected]="state.selectedContractId() === contract.subscriptionContractId"
+                [attr.aria-pressed]="state.selectedContractId() === contract.subscriptionContractId"
+                [disabled]="busy()"
+                (click)="selectContract(contract.subscriptionContractId)"
+              >
+                <div class="contract-row__primary">
+                  <span class="contract-plan-heading">
+                    <i class="fa-solid fa-stethoscope plan-icon-accent" aria-hidden="true"></i>
+                    <strong>{{ getPlanTitle(getContractPlanCode(contract)) }}</strong>
+                  </span>
+                  <div class="contract-sub-details">
+                    @if (getContractClinicName(contract); as clinic) {
+                      <span class="clinic-sub-tag">
+                        <i class="fa-solid fa-hospital" aria-hidden="true"></i>
+                        <span>{{ clinic }}</span>
+                      </span>
+                      <span class="meta-dot" aria-hidden="true">·</span>
+                    }
+                    <span
+                      class="ref-badge"
+                      dir="ltr"
+                      [title]="'subscriptions.contractReference' | t"
+                      >#{{ getContractReference(contract.subscriptionContractId) }}</span
+                    >
+                  </div>
+                </div>
+                <div class="contract-row__status">
+                  <span class="status-pill">{{
+                    'subscriptions.' + contract.upcomingStatus | t
+                  }}</span>
+                </div>
+                <div class="contract-row__usage">
+                  <strong
+                    >{{ contract.practices.length }} {{ 'subscriptions.practice' | t }}</strong
+                  >
+                  <small>
+                    @if (contract.availablePracticeSeats > 0) {
+                      {{ contract.availablePracticeSeats }}
+                      {{ 'subscriptions.availablePracticeSeats' | t }}
+                    } @else {
+                      {{ 'subscriptions.fullyAllocated' | t }}
+                    }
+                  </small>
+                </div>
+              </button>
+            }
+          </div>
+        </section>
+
+        <!-- Detail Pane: Contract Details -->
+        @if (state.selectedContract(); as contract) {
+          <section
+            class="surface-block contract-detail contract-detail-pane"
+            aria-labelledby="selected-contract-title"
+          >
+            <header class="section-heading detail-header">
+              <div class="detail-header-info">
+                <div class="detail-title-cluster">
+                  <h2 id="selected-contract-title" class="contract-details-main-heading">
+                    <span>{{ 'subscriptions.subscriptionDetailsTitle' | t }}</span>
+                    @if (getContractClinicName(contract); as clinic) {
+                      <span class="heading-clinic-name">({{ clinic }})</span>
+                    }
+                  </h2>
+                  <button
+                    type="button"
+                    class="btn-close-detail"
+                    [attr.aria-label]="'common.close' | t"
+                    [title]="'common.close' | t"
+                    (click)="closeContractDetails()"
+                  >
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <p class="contract-meta-line">
+                  <span class="plan-pill-highlight">{{
+                    getPlanTitle(getContractPlanCode(contract))
+                  }}</span>
+                  <span class="meta-dot" aria-hidden="true">·</span>
+                  <span class="ref-label-wrap">
+                    <span class="ref-caption">{{ 'subscriptions.contractReference' | t }}:</span>
+                    <bdi class="ref-badge"
+                      >#{{ getContractReference(contract.subscriptionContractId) }}</bdi
+                    >
+                  </span>
+                </p>
+              </div>
+              @if (
+                state.terms()?.kind === 'Paid' &&
+                state.terms()?.status === 'Active' &&
+                !state.terms()?.willNotRenew &&
+                session.hasPermission('Subscriptions.CancelAtPeriodEndOwn')
+              ) {
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  [disabled]="busy()"
+                  (click)="confirmation.set('cancel')"
+                >
+                  {{ 'subscriptions.cancel' | t }}
+                </button>
               }
-            </p>
-          }
+            </header>
+
+            <!-- Structured Ledger / Overview Cards for Doctor -->
+            <div class="contract-kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" aria-hidden="true">
+                  <i class="fa-solid fa-hospital"></i>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">{{ 'subscriptions.coveredPractice' | t }}</span>
+                  <strong class="kpi-val">{{
+                    getContractClinicName(contract) || ('subscriptions.noPracticeAssigned' | t)
+                  }}</strong>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" aria-hidden="true">
+                  <i class="fa-solid fa-stethoscope"></i>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">{{ 'subscriptions.practiceAllowance' | t }}</span>
+                  <strong class="kpi-val">
+                    {{ contract.usage.practiceCount }} {{ 'subscriptions.usedOfTotal' | t }}
+                    {{ contract.usage.practiceCount + contract.availablePracticeSeats }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" aria-hidden="true">
+                  <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="kpi-content">
+                  <span class="kpi-label">{{ 'subscriptions.receptionAllowance' | t }}</span>
+                  <strong class="kpi-val">
+                    {{ contract.usage.receptionCount }}
+                    {{ 'subscriptions.receptionAccountsUsed' | t }}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="periods-list">
+              @for (
+                period of contract.periods;
+                track period.subscription?.id || period.pendingSubscription?.id
+              ) {
+                @if (period.subscription || period.pendingSubscription; as current) {
+                  <div class="period-row">
+                    <div class="period-info-cluster">
+                      <div class="period-icon-box" aria-hidden="true">
+                        <i class="fa-solid fa-file-invoice"></i>
+                      </div>
+                      <div class="period-names">
+                        <strong class="period-plan-name">{{
+                          getPlanTitle(current.planCode)
+                        }}</strong>
+                        <time class="period-dates" [dir]="language.dir()">
+                          <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                          <span>{{
+                            current.startsAtUtc | localizedDate: language.currentLang()
+                          }}</span>
+                          <span class="date-sep">—</span>
+                          <span>{{
+                            current.endsAtUtc | localizedDate: language.currentLang()
+                          }}</span>
+                        </time>
+                      </div>
+                    </div>
+
+                    <div class="period-status-cluster">
+                      <span class="status-pill">{{ 'subscriptions.' + current.status | t }}</span>
+                      <div class="period-price-wrap">
+                        @if (current.priceAmount === 0 || current.kind === 'Trial') {
+                          <span class="price-trial-tag">{{
+                            'subscriptions.trialPeriodNote' | t
+                          }}</span>
+                        } @else {
+                          <bdi class="period-price">{{
+                            current.priceAmount | currency: current.currency
+                          }}</bdi>
+                        }
+                      </div>
+                      @if (current.willNotRenew) {
+                        <span class="status-pill status-pill--warn">{{
+                          'subscriptions.cancelledEnd' | t
+                        }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            @if (state.details(); as detail) {
+              @if (detail.nextPeriod; as next) {
+                <p class="detail-meta-note">
+                  {{ 'subscriptions.nextPeriod' | t }}:
+                  <strong>{{ getPlanTitle(next.planCode) }}</strong> ·
+                  {{ 'subscriptions.' + next.status | t }} ·
+                  <time [dir]="language.dir()">{{
+                    next.startsAtUtc | localizedDate: language.currentLang()
+                  }}</time>
+                </p>
+              }
+              @for (change of detail.changeRequests; track change.id) {
+                <p class="detail-meta-note">
+                  <strong>{{ getPlanTitle(change.targetPlanCode) }}</strong> ·
+                  {{ 'subscriptions.' + change.status | t }}
+                  @if (change.rejectionReason) {
+                    · {{ change.rejectionReason }}
+                  }
+                </p>
+              }
+            }
+          </section>
         }
-      </section>
+      </div>
     }
 
     @if (session.hasPermission('Subscriptions.RequestChangeOwn')) {
@@ -253,7 +423,9 @@
                 <span class="selection-indicator-dot" aria-hidden="true"></span>
                 <strong>{{ getSelectedPlanName() }}</strong>
                 @if (activeSelection.billingCycle) {
-                  <span class="status-pill">{{ 'subscriptions.' + activeSelection.billingCycle | t }}</span>
+                  <span class="status-pill">{{
+                    'subscriptions.' + activeSelection.billingCycle | t
+                  }}</span>
                 }
               } @else {
                 <span class="purchase-actions__hint">{{ 'subscriptions.choosePlan' | t }}</span>

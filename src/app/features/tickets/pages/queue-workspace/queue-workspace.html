@@ -69,7 +69,7 @@
         <span>{{ 'reservations.refresh' | t }}</span>
       </button>
 
-      @if (!isDoctor()) {
+      @if (canViewQueue()) {
         <button
           type="button"
           class="btn-action-archive"
@@ -1937,7 +1937,11 @@
         }
         @if (walkInModel().patientId) {
           @if (optionsLoading()) {
-            <p role="status">{{ 'tickets.loading' | t }}</p>
+            <div class="py-2" role="status" [attr.aria-label]="'tickets.loading' | t">
+              <span class="visually-hidden">{{ 'tickets.loading' | t }}</span>
+              <div class="skeleton-shimmer w-160 h-16 mb-2"></div>
+              <div class="skeleton-shimmer w-full h-32 rounded-md"></div>
+            </div>
           } @else {
             @if (eligibilities().length) {
               <label class="field"
@@ -2073,6 +2077,23 @@
       </form>
     }
   </ng-template>
+
+  <app-side-drawer
+    [opened]="archiveOpen()"
+    [title]="'archive.archivedTickets' | t"
+    width="720px"
+    (closed)="closeArchive()"
+  >
+    <app-archived-ticket-list
+      [items]="archivedTickets()"
+      [loading]="archiveLoading()"
+      [failed]="archiveFailed()"
+      [hasMore]="archiveHasMore()"
+      (inspected)="inspectArchivedTicket($event)"
+      (more)="loadArchive()"
+      (retried)="loadArchive()"
+    />
+  </app-side-drawer>
 
   <app-side-drawer
     [opened]="ticketDetailOpen() || !!selected() || detailLoading()"
@@ -2302,7 +2323,7 @@
               </button>
             </div>
           </form>
-        } @else {
+        } @else if (!ticket.isArchived) {
           <div class="drawer-actions-bar">
             @if (ticket.status === 'Waiting' && canManualCall()) {
               <button

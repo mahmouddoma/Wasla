@@ -1,0 +1,46 @@
+<section [attr.aria-busy]="loading()">
+  <p class="text-secondary">{{ 'archive.readOnlyNotice' | t }}</p>
+  @if (items().length) {
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <caption class="visually-hidden">{{ 'archive.archivedTickets' | t }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ 'tickets.ticketNumber' | t }}</th>
+            <th scope="col">{{ 'tickets.businessDate' | t }}</th>
+            <th scope="col">{{ 'archive.archivedAt' | t }}</th>
+            <th scope="col"><span class="visually-hidden">{{ 'tickets.inspect' | t }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.ticketId) {
+            <tr>
+              <th scope="row" dir="ltr">{{ item.ticketNumber }}</th>
+              <td><time dir="ltr" [attr.datetime]="item.businessDate">{{ item.businessDate }}</time></td>
+              <td><time dir="ltr" [attr.datetime]="item.archivedAtUtc">{{ item.archivedAtUtc | date:'yyyy-MM-dd HH:mm' }}</time></td>
+              <td><button type="button" class="btn btn-outline-secondary btn-sm" (click)="inspected.emit(item)">{{ 'tickets.inspect' | t }}</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (!loading() && !failed()) {
+    <div class="archive-empty text-center">
+      <img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
+      <h3>{{ 'archive.noArchivedRecords' | t }}</h3>
+      <p class="text-secondary">{{ 'archive.emptyHelp' | t }}</p>
+      <button type="button" class="btn btn-outline-secondary" (click)="retried.emit()">{{ 'reservations.refresh' | t }}</button>
+    </div>
+  }
+  @if (loading()) {
+    <p role="status">{{ 'tickets.loading' | t }}</p>
+  }
+  @if (failed()) {
+    <div role="alert">
+      <p>{{ 'tickets.loadFailed' | t }}</p>
+      <button type="button" class="btn btn-outline-secondary" [disabled]="loading()" (click)="retried.emit()">{{ 'common.retry' | t }}</button>
+    </div>
+  } @else if (hasMore()) {
+    <button type="button" class="btn btn-outline-secondary" [disabled]="loading()" (click)="more.emit()">{{ 'common.loadMore' | t }}</button>
+  }
+</section>

@@ -1,40 +1,88 @@
 @if (session.hasPermission('Subscriptions.ViewOwn')) {
-  <section class="allocation-panel" aria-labelledby="allocation-title">
-    <h3 id="allocation-title">{{ 'subscriptions.practiceCoverage' | t }}</h3>
+  <section class="allocation-panel allocation-card" aria-labelledby="allocation-title">
+    <div class="card-head">
+      <div class="card-head-title">
+        <div class="card-icon-wrap" aria-hidden="true">
+          <i class="fa-solid fa-file-contract"></i>
+        </div>
+        <div>
+          <h3 id="allocation-title">{{ 'subscriptions.practiceCoverage' | t }}</h3>
+          <p class="card-subtitle">
+            {{
+              'subscriptions.coverage.' + (practice().commercial?.effectiveState || 'Unallocated')
+                | t
+            }}
+          </p>
+        </div>
+      </div>
+      @if (practice().commercial?.effectiveState === 'Covered' || value()?.allocation) {
+        <span class="coverage-badge covered">
+          <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+          <span>{{ 'subscriptions.covered' | t }}</span>
+        </span>
+      } @else {
+        <span class="coverage-badge uncovered">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>{{ 'subscriptions.uncovered' | t }}</span>
+        </span>
+      }
+    </div>
+
     @if (loading()) {
-      <p role="status">{{ 'common.loading' | t }}</p>
+      <div class="allocation-skeleton" role="status" [attr.aria-label]="'common.loading' | t">
+        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+        <div class="skeleton-shimmer w-160 h-18 mb-2"></div>
+        <div class="skeleton-shimmer w-full h-14 mb-3"></div>
+        <div class="skeleton-actions-row">
+          <div class="skeleton-shimmer w-130 h-32 rounded-md"></div>
+        </div>
+      </div>
     } @else if (error()) {
-      <p role="alert">{{ 'subscriptions.loadError' | t }}</p>
-      <button class="btn btn-outline" type="button" (click)="load()">
-        {{ 'common.retry' | t }}
-      </button>
+      <div class="card-state-error" role="alert">
+        <p>{{ 'subscriptions.loadError' | t }}</p>
+        <button class="btn btn-outline btn-sm" type="button" (click)="load()">
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
     } @else {
-      <p>
-        {{
-          'subscriptions.coverage.' + (practice().commercial?.effectiveState || 'Unallocated') | t
-        }}
-      </p>
       @if (value(); as details) {
-        <p>
-          {{ details.effectivePeriod?.planCode }}
-          @if (details.contractUsage) {
-            ? {{ details.contractUsage.practiceCount }} {{ 'subscriptions.practice' | t }}
+        <div class="allocation-meta-pills">
+          @if (details.effectivePeriod?.planCode) {
+            <span class="meta-tag plan-tag">
+              <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+              <strong>{{ getPlanTitle(details.effectivePeriod?.planCode) }}</strong>
+            </span>
           }
-        </p>
+          @if (details.contractUsage) {
+            <span class="meta-tag usage-tag">
+              <i class="fa-solid fa-hospital" aria-hidden="true"></i>
+              <span
+                >{{ details.contractUsage.practiceCount }} {{ 'subscriptions.practice' | t }}</span
+              >
+            </span>
+          }
+        </div>
       }
       @if (session.hasPermission('Subscriptions.AllocationsManageOwn')) {
-        <div class="actions">
-          <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="open('move')">
-            {{ 'subscriptions.allocateOrMove' | t }}
+        <div class="card-actions">
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            [disabled]="busy()"
+            (click)="open('move')"
+          >
+            <i class="fa-solid fa-link" aria-hidden="true"></i>
+            <span>{{ 'subscriptions.allocateOrMove' | t }}</span>
           </button>
           @if (value()?.allocation) {
             <button
-              class="btn btn-outline"
+              class="btn btn-outline btn-sm"
               type="button"
               [disabled]="busy()"
               (click)="open('release')"
             >
-              {{ 'subscriptions.releaseAllocation' | t }}
+              <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+              <span>{{ 'subscriptions.releaseAllocation' | t }}</span>
             </button>
           }
         </div>
@@ -49,82 +97,252 @@
     "
     (closed)="!busy() && action.set(null)"
   >
-    @if (action() === 'move') {
-      @if (step() === 1) {
-        <label for="allocation-target">{{ 'subscriptions.chooseContract' | t }}</label
-        ><span class="select-wrap"
-          ><select
-            id="allocation-target"
-            class="field-input"
-            [value]="targetId()"
-            (change)="chooseTarget($event)"
-          >
-            <option value="">{{ 'subscriptions.chooseContract' | t }}</option>
-            @for (contract of state.availableContracts(); track contract.subscriptionContractId) {
-              @if (
-                contract.subscriptionContractId !== value()?.allocation?.subscriptionContractId
-              ) {
-                <option [value]="contract.subscriptionContractId">
-                  {{ state.currentDetails(contract)?.subscription?.planCode }} ·
-                  {{ contract.availablePracticeSeats }}
-                  {{ 'subscriptions.availablePracticeSeats' | t }} ·
-                  {{ contract.subscriptionContractId.slice(0, 8) }}
-                </option>
-              }
-            }</select
-          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-        ></span>
-        <button type="button" class="btn btn-primary" [disabled]="!canMove()" (click)="step.set(2)">
-          {{ 'common.next' | t }}
-        </button>
-      } @else {
-        <p>{{ 'subscriptions.transferExplanation' | t }}</p>
-        <p>
-          {{ 'subscriptions.targetContract' | t }}:
-          {{ state.currentDetails(target()!)?.subscription?.planCode }} ·
-          {{ target()?.availableReceptionSeats }} {{ 'subscriptions.availableReceptionSeats' | t }}
-        </p>
-        @if (targetAllowsStaff()) {
-          <p>{{ 'subscriptions.keepStaff' | t }}</p>
-          @for (member of staff(); track member.id) {
-            <label class="check-row"
-              ><input
-                class="sr-only-chk"
-                type="checkbox"
-                [checked]="selectedStaff().includes(member.id)"
-                (change)="toggleStaff(member.id, $event)"
-              /><span class="check-box" aria-hidden="true"></span
-              >{{ language.isRtl() ? member.nameAr : member.nameEn || member.nameAr }}</label
+    <div class="drawer-flow">
+      <!-- Current Contract Context (if clinic is allocated) -->
+      @if (currentContract(); as cur) {
+        <div class="current-contract-banner">
+          <div class="banner-badge-title">
+            <i class="fa-solid fa-hospital-user" aria-hidden="true"></i>
+            <span>{{ 'subscriptions.currentCoveredContract' | t }}</span>
+          </div>
+          <div class="banner-info-row">
+            <span class="banner-plan-name">
+              <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+              <strong>{{ getPlanTitle(state.currentDetails(cur)?.subscription?.planCode) }}</strong>
+            </span>
+            <span class="ref-badge" dir="ltr"
+              >#{{ cur.subscriptionContractId.slice(0, 8).toUpperCase() }}</span
             >
-          }
-        } @else {
-          <p>{{ 'subscriptions.noReceptionInContract' | t }}</p>
-        }
-        <div class="actions">
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="busy() || !canMove()"
-            (click)="confirm()"
-          >
-            {{ 'subscriptions.confirm' | t }}</button
-          ><button class="btn btn-outline" type="button" [disabled]="busy()" (click)="step.set(1)">
-            {{ 'subscriptions.back' | t }}
-          </button>
+            <span class="status-pill">{{ 'subscriptions.' + cur.upcomingStatus | t }}</span>
+          </div>
         </div>
       }
-    } @else if (action() === 'release') {
-      <p>{{ 'subscriptions.releaseExplanation' | t }}</p>
-      <label for="release-reason">{{ 'subscriptions.reason' | t }}</label
-      ><textarea
-        id="release-reason"
-        class="field-input"
-        [(ngModel)]="reason"
-        [disabled]="busy()"
-      ></textarea
-      ><button class="btn btn-primary" type="button" [disabled]="busy()" (click)="confirm()">
-        {{ 'subscriptions.confirm' | t }}
-      </button>
-    }
+
+      @if (action() === 'move') {
+        @if (step() === 1) {
+          @if (availableTargetContracts().length === 0) {
+            <div class="empty-target-state">
+              <div class="empty-state-icon" aria-hidden="true">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <h4>{{ 'subscriptions.noOtherContracts' | t }}</h4>
+              <p class="empty-state-desc">
+                {{ 'subscriptions.noOtherContractsDesc' | t }}
+              </p>
+              <div class="empty-state-actions">
+                <a
+                  routerLink="/doctor/subscriptions"
+                  class="btn btn-primary"
+                  (click)="action.set(null)"
+                >
+                  <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                  <span>{{ 'subscriptions.goToSubscriptions' | t }}</span>
+                </a>
+                <button type="button" class="btn btn-outline" (click)="action.set(null)">
+                  {{ 'common.close' | t }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="step-form-block">
+              <div class="step-header">
+                <span class="step-num">1</span>
+                <div>
+                  <h4 class="step-title">{{ 'subscriptions.chooseContract' | t }}</h4>
+                  <p class="step-desc">{{ 'subscriptions.contractHelp' | t }}</p>
+                </div>
+              </div>
+
+              <div class="field-wrap">
+                <label for="allocation-target" class="field-label">{{
+                  'subscriptions.chooseContract' | t
+                }}</label>
+                <div class="select-wrap">
+                  <select
+                    id="allocation-target"
+                    class="field-input select-control"
+                    [value]="targetId()"
+                    (change)="chooseTarget($event)"
+                  >
+                    <option value="">{{ 'subscriptions.chooseContract' | t }}</option>
+                    @for (
+                      contract of availableTargetContracts();
+                      track contract.subscriptionContractId
+                    ) {
+                      <option [value]="contract.subscriptionContractId">
+                        {{ getPlanTitle(state.currentDetails(contract)?.subscription?.planCode) }} ·
+                        {{ contract.availablePracticeSeats }}
+                        {{ 'subscriptions.availablePracticeSeats' | t }} · #{{
+                          contract.subscriptionContractId.slice(0, 8).toUpperCase()
+                        }}
+                      </option>
+                    }
+                  </select>
+                  <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="drawer-action-footer">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="!canMove()"
+                  (click)="step.set(2)"
+                >
+                  <span>{{ 'common.next' | t }}</span>
+                  <i class="fa-solid fa-arrow-left dir-arrow" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+          }
+        } @else {
+          <!-- Step 2: Target Review & Reception Staff Transfer -->
+          <div class="step-form-block">
+            <div class="step-header">
+              <span class="step-num">2</span>
+              <div>
+                <h4 class="step-title">{{ 'subscriptions.targetContract' | t }}</h4>
+                <p class="step-desc">{{ 'subscriptions.transferExplanation' | t }}</p>
+              </div>
+            </div>
+
+            <!-- Target Summary -->
+            <div class="target-review-card">
+              <div class="target-plan-badge">
+                <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+                <strong>{{
+                  getPlanTitle(state.currentDetails(target()!)?.subscription?.planCode)
+                }}</strong>
+              </div>
+              <span class="target-seats-tag">
+                {{ target()?.availableReceptionSeats }}
+                {{ 'subscriptions.availableReceptionSeats' | t }}
+              </span>
+            </div>
+
+            <!-- Staff List -->
+            @if (targetAllowsStaff()) {
+              <div class="staff-transfer-section">
+                <div class="section-title-wrap">
+                  <h5 class="staff-section-title">
+                    <i class="fa-solid fa-users" aria-hidden="true"></i>
+                    <span>{{ 'subscriptions.keepStaff' | t }}</span>
+                  </h5>
+                  <span class="staff-count-tag">{{ staff().length }}</span>
+                </div>
+
+                @if (staff().length > 0) {
+                  <div class="staff-cards-list">
+                    @for (member of staff(); track member.id) {
+                      <label
+                        class="staff-select-card"
+                        [class.selected]="selectedStaff().includes(member.id)"
+                      >
+                        <div class="staff-card-left">
+                          <span class="staff-avatar-initial">{{
+                            (language.isRtl()
+                              ? member.nameAr
+                              : member.nameEn || member.nameAr
+                            ).charAt(0)
+                          }}</span>
+                          <div class="staff-card-names">
+                            <strong class="staff-member-name">{{
+                              language.isRtl() ? member.nameAr : member.nameEn || member.nameAr
+                            }}</strong>
+                            @if (member.nameEn && language.isRtl()) {
+                              <span class="staff-phone" dir="ltr">{{ member.nameEn }}</span>
+                            }
+                          </div>
+                        </div>
+                        <div class="staff-card-chk">
+                          <input
+                            class="sr-only-chk"
+                            type="checkbox"
+                            [checked]="selectedStaff().includes(member.id)"
+                            (change)="toggleStaff(member.id, $event)"
+                          />
+                          <span class="check-box" aria-hidden="true"></span>
+                        </div>
+                      </label>
+                    }
+                  </div>
+                } @else {
+                  <p class="no-staff-notice">
+                    <i class="fa-solid fa-info-circle" aria-hidden="true"></i>
+                    <span>{{ 'subscriptions.noAssignedStaff' | t }}</span>
+                  </p>
+                }
+              </div>
+            } @else {
+              <div class="warning-callout" role="alert">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <p>{{ 'subscriptions.noReceptionInContract' | t }}</p>
+              </div>
+            }
+
+            <div class="drawer-action-footer">
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="busy() || !canMove()"
+                (click)="confirm()"
+              >
+                @if (busy()) {
+                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+                }
+                <span>{{ 'subscriptions.confirm' | t }}</span>
+              </button>
+              <button
+                class="btn btn-outline"
+                type="button"
+                [disabled]="busy()"
+                (click)="step.set(1)"
+              >
+                {{ 'subscriptions.back' | t }}
+              </button>
+            </div>
+          </div>
+        }
+      } @else if (action() === 'release') {
+        <!-- Release Coverage Flow -->
+        <div class="release-form-block">
+          <div class="warning-callout warning-callout--danger" role="alert">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <p>{{ 'subscriptions.releaseExplanation' | t }}</p>
+          </div>
+
+          <div class="field-wrap">
+            <label for="release-reason" class="field-label">{{ 'subscriptions.reason' | t }}</label>
+            <textarea
+              id="release-reason"
+              class="field-input textarea-control"
+              rows="3"
+              [(ngModel)]="reason"
+              [disabled]="busy()"
+              [placeholder]="'subscriptions.reason' | t"
+            ></textarea>
+          </div>
+
+          <div class="drawer-action-footer">
+            <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="confirm()">
+              @if (busy()) {
+                <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+              }
+              <span>{{ 'subscriptions.confirm' | t }}</span>
+            </button>
+            <button
+              class="btn btn-outline"
+              type="button"
+              [disabled]="busy()"
+              (click)="action.set(null)"
+            >
+              {{ 'common.close' | t }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
   </app-side-drawer>
 }

@@ -9,6 +9,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
@@ -26,7 +27,7 @@ import { AllocationReceptionOption } from '../../../../domains/subscriptions/sub
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 @Component({
   selector: 'app-practice-allocation',
-  imports: [FormsModule, TranslatePipe, SideDrawer],
+  imports: [FormsModule, RouterLink, TranslatePipe, SideDrawer],
   templateUrl: './practice-allocation.component.html',
   styleUrl: './practice-allocation.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,6 +77,25 @@ export class PracticeAllocationComponent implements OnChanges, OnDestroy {
     } finally {
       if (seq === this.generation) this.loading.set(false);
     }
+  }
+  getPlanTitle(planCode?: string | null): string {
+    if (!planCode) return '';
+    const translated = this.language.t('subscriptions.planName.' + planCode);
+    if (!translated.startsWith('subscriptions.planName.')) return translated;
+    return planCode;
+  }
+  availableTargetContracts() {
+    const currentContractId = this.value()?.allocation?.subscriptionContractId;
+    return this.state.availableContracts().filter(
+      (c) => c.subscriptionContractId !== currentContractId,
+    );
+  }
+  currentContract() {
+    const currentContractId = this.value()?.allocation?.subscriptionContractId;
+    if (!currentContractId) return null;
+    return (
+      this.state.contracts().find((c) => c.subscriptionContractId === currentContractId) ?? null
+    );
   }
   target() {
     return this.state.contracts().find((c) => c.subscriptionContractId === this.targetId()) ?? null;

@@ -231,7 +231,7 @@ export class FamiliesApi {
     query: FamilyMedicalAccessRequestQuery,
   ): Observable<FamilyMedicalPage<FamilyMedicalCase>> {
     return this.http.get<FamilyMedicalPage<FamilyMedicalCase>>(this.adminMedicalAccessUrl, {
-      params: medicalAccessQueryParams(query),
+      params: medicalAccessQueryParams(query, 'type'),
     });
   }
 
@@ -545,9 +545,12 @@ function idempotencyHeaders(key?: string): HttpHeaders {
   return key?.trim() ? new HttpHeaders({ 'Idempotency-Key': key.trim() }) : new HttpHeaders();
 }
 
-function medicalAccessQueryParams(query: FamilyMedicalAccessRequestQuery): HttpParams {
+function medicalAccessQueryParams(
+  query: FamilyMedicalAccessRequestQuery,
+  typeParameter: 'requestType' | 'type' = 'requestType',
+): HttpParams {
   let params = new HttpParams().set('pageNumber', query.pageNumber).set('pageSize', query.pageSize);
-  if (query.requestType) params = params.set('requestType', query.requestType);
+  if (query.requestType) params = params.set(typeParameter, query.requestType);
   if (query.status) params = params.set('status', query.status);
   if (query.search?.trim()) params = params.set('search', query.search.trim());
   if (query.familyId?.trim()) params = params.set('familyId', query.familyId.trim());

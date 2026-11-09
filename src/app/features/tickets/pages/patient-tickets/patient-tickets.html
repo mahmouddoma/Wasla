@@ -32,7 +32,7 @@
       </div>
       @if (!loading()) {
         <div class="stat-pill">
-          <span class="stat-num">{{ tickets().length }}</span>
+          <span class="stat-num">{{ viewMode() === 'active' ? tickets().length : archivedTickets().length }}</span>
           <span class="stat-lbl">{{
             (viewMode() === 'active' ? 'tickets.mine.title' : 'archive.title') | t
           }}</span>
@@ -70,6 +70,7 @@
   <!-- Content Container -->
   <div class="tickets-content">
     <!-- Informational Dynamic Queue Notice -->
+    @if (viewMode() === 'active') {
     <div class="queue-notice-banner" role="note">
       <div class="notice-icon" aria-hidden="true">
         <svg
@@ -88,6 +89,7 @@
       <p class="notice-text">{{ 'tickets.mine.dynamicNotice' | t }}</p>
     </div>
 
+    }
     <!-- Main Tickets Surface Panel -->
     <section class="tickets-panel" [attr.aria-busy]="loading()">
       <div class="panel-header">
@@ -107,19 +109,25 @@
             </svg>
           </div>
           <div>
-            <h2 class="panel-title">{{ 'tickets.mine.title' | t }}</h2>
+            <h2 class="panel-title">{{ (viewMode() === 'active' ? 'tickets.mine.title' : 'archive.archivedTickets') | t }}</h2>
           </div>
         </div>
 
         @if (!loading()) {
           <div class="panel-count-badge">
-            <span class="pulse-dot"></span>
-            <span>{{ tickets().length }} {{ 'tickets.mine.title' | t }}</span>
+            
+            <span>{{ viewMode() === 'active' ? tickets().length : archivedTickets().length }} {{ 'tickets.mine.title' | t }}</span>
           </div>
         }
       </div>
 
-      @if (loading()) {
+      @if (viewMode() === 'archived') {
+        <app-archived-ticket-list
+          [items]="archivedTickets()" [loading]="loading()" [failed]="loadFailed()"
+          [hasMore]="archiveHasMore()" (inspected)="inspect($event.ticketId)"
+          (more)="loadMore()" (retried)="retry()"
+        />
+      } @else if (loading()) {
         <div class="state-block" role="status">
           <span class="spinner-ring" aria-hidden="true"></span>
           <p class="state-title">{{ 'tickets.loading' | t }}</p>
@@ -328,7 +336,7 @@
 
       @if (selected(); as ticket) {
         <div class="drawer-body">
-          @if (ticket.isArchived) {
+          @if (selectedArchived() || ticket.isArchived) {
             <div class="archive-banner-notice">
               <svg
                 viewBox="0 0 24 24"
@@ -346,6 +354,7 @@
             </div>
           }
           <!-- Queue Highlight Banner -->
+          @if (!selectedArchived() && !ticket.isArchived) {
           <div class="drawer-status-card">
             <div class="ahead-highlight">
               <span class="ahead-highlight-num">{{ ticket.patientsAheadNow }}</span>
@@ -359,6 +368,7 @@
             </div>
           </div>
 
+          }
           <!-- Structured Info List (No Carditis, Rule 32.2) -->
           <div class="drawer-info-list">
             <div class="info-row">

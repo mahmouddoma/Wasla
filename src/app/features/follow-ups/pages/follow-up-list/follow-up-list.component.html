@@ -37,9 +37,66 @@
   </app-page-header>
   <section class="directory">
     @if (loading()) {
-      <div class="loading-state" role="status">
-        <span class="spinner" aria-hidden="true"></span>
-        <p>{{ 'reservations.loading' | t }}</p>
+      <div class="directory-skeleton-wrapper" role="status" [attr.aria-label]="'common.loading' | t">
+        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+
+        <!-- Skeleton Header Bar -->
+        <div class="skeleton-header-bar">
+          <div class="skeleton-title-group">
+            <span class="skeleton-shimmer skeleton-badge-dot"></span>
+            <div class="skeleton-shimmer w-160 h-18"></div>
+            <div class="skeleton-shimmer w-70 h-22 rounded-full"></div>
+          </div>
+        </div>
+
+        <!-- Table Skeleton -->
+        <div class="table-responsive skeleton-table-container">
+          <table class="table followups-table align-middle mb-0" aria-hidden="true">
+            <thead>
+              <tr>
+                <th scope="col" class="th-patient"><div class="skeleton-shimmer skeleton-th-bar w-80"></div></th>
+                <th scope="col" class="th-valid"><div class="skeleton-shimmer skeleton-th-bar w-80"></div></th>
+                <th scope="col" class="th-status"><div class="skeleton-shimmer skeleton-th-bar w-60"></div></th>
+                <th scope="col" class="th-actions"><div class="skeleton-shimmer skeleton-th-bar w-50"></div></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of [1, 2, 3, 4, 5]; track row) {
+                <tr class="skeleton-table-row">
+                  <td class="td-patient">
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="skeleton-shimmer skeleton-avatar"></div>
+                      <div class="skeleton-shimmer w-140 h-16"></div>
+                    </div>
+                  </td>
+                  <td class="td-valid"><div class="skeleton-shimmer w-100 h-14"></div></td>
+                  <td class="td-status"><div class="skeleton-shimmer skeleton-pill-badge"></div></td>
+                  <td class="td-actions"><div class="skeleton-shimmer skeleton-btn-action"></div></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Skeleton Cards -->
+        <div class="skeleton-cards-mobile" aria-hidden="true">
+          @for (card of [1, 2, 3]; track card) {
+            <div class="skeleton-mobile-card">
+              <div class="skeleton-card-top">
+                <div class="skeleton-shimmer skeleton-avatar"></div>
+                <div class="skeleton-card-top-info">
+                  <div class="skeleton-shimmer w-140 h-16"></div>
+                  <div class="skeleton-shimmer w-90 h-12"></div>
+                </div>
+                <div class="skeleton-shimmer skeleton-pill-badge"></div>
+              </div>
+              <div class="skeleton-card-bottom">
+                <div class="skeleton-shimmer w-100 h-14"></div>
+                <div class="skeleton-shimmer skeleton-btn-action"></div>
+              </div>
+            </div>
+          }
+        </div>
       </div>
     } @else if (failed()) {
       <div class="empty-state" role="alert">
@@ -155,7 +212,14 @@
   @if (selected() || detailLoading()) {
     <app-side-drawer [opened]="true" [title]="'followUps.followUp' | t" (closed)="close()">
       @if (detailLoading()) {
-        <p role="status">{{ 'reservations.loading' | t }}</p>
+        <div class="p-4" role="status" [attr.aria-label]="'common.loading' | t">
+          <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+          <div class="skeleton-shimmer w-160 h-18 mb-3"></div>
+          <div class="skeleton-shimmer w-full h-14 mb-2"></div>
+          <div class="skeleton-shimmer w-full h-14 mb-2"></div>
+          <div class="skeleton-shimmer w-200 h-14 mb-4"></div>
+          <div class="skeleton-shimmer w-110 h-32 rounded-md"></div>
+        </div>
       }
       @if (selected(); as eligibility) {
         <div class="drawer-detail-card">

@@ -29,10 +29,11 @@ import {
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SubscriptionState } from '../../../../domains/subscriptions';
+import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-practice-segments',
-  imports: [FormField, TranslatePipe],
+  imports: [FormField, TranslatePipe, SideDrawer],
   templateUrl: './practice-segments.html',
   styleUrl: './practice-segments.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,6 +145,14 @@ export class PracticeSegments implements OnInit {
     this.editingPriceId.set(null);
     this.isAddingPrice.set(false);
     this.priceModel.set({ segmentId: '', visitTypeId: '', price: 0 });
+    this.priceForm().reset();
+  }
+
+  protected openQuickPrice(segmentId: string, visitTypeId: string): void {
+    if (!this.canManagePricing()) return;
+    this.editingPriceId.set(null);
+    this.isAddingPrice.set(true);
+    this.priceModel.set({ segmentId, visitTypeId, price: 0 });
     this.priceForm().reset();
   }
 
