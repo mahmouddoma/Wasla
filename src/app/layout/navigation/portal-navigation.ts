@@ -402,7 +402,7 @@ export class PortalNavigation {
       { id: 'finance', labelKey: 'sidebar.finance', route: '/patient/finance', icon: 'receipt' },
       {
         id: 'medical-record',
-        labelKey: 'familyFlow.medicalRecord',
+        labelKey: 'patientRecord.title',
         route: '/patient/medical-record',
         icon: 'clipboard-list',
       },
@@ -533,6 +533,7 @@ export class PortalNavigation {
       health:
         this.user()?.userType === 'Patient'
           ? [
+              'medical-record',
               'encounters',
               'prescriptions',
               'follow-ups',

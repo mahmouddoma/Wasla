@@ -1,6 +1,6 @@
 <main class="record-page" [attr.dir]="language.dir()">
   <app-page-header
-    [heading]="'familyFlow.medicalRecord' | t"
+    [heading]="'patientRecord.title' | t"
     [description]="'patientRecord.description' | t"
     icon="requests"
     [actionLabel]="activeView() === 'timeline' ? ('common.refresh' | t) : null"
@@ -8,28 +8,55 @@
     [actionLoading]="loading()"
     (actionClicked)="load()"
   >
-    <nav pageHeaderActions class="d-flex gap-2 flex-wrap">
-      @if (session.hasPermission('MedicalRecords.ViewOwn')) {
-      <button
-        class="btn btn-outline-secondary"
-        [attr.aria-pressed]="activeView() === 'timeline'"
-        (click)="activeView.set('timeline')"
-      >
-        {{ 'patientRecord.timeline' | t }}
-      </button>
-      <button type="button" class="btn btn-outline-secondary" [attr.aria-pressed]="activeView() === 'access'" (click)="activeView.set('access')">{{ 'recordAccess.title' | t }}</button>
-      }
-      @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
-        <button
-          class="btn btn-outline-secondary"
-          [attr.aria-pressed]="showDocuments()"
-          (click)="documentId.set(null); activeView.set('documents')"
-        >
-          {{ 'historical.title' | t }}
+    <nav pageHeaderActions class="record-header-actions">
+      @if (session.hasPermission('MedicalDocuments.CreateOwn')) {
+        <button type="button" class="btn btn-primary btn-upload-header" (click)="openUpload()">
+          <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+          <span>{{ 'patientRecord.uploadDocument' | t }}</span>
         </button>
       }
+      <div class="view-switch-pills" role="tablist">
+        @if (session.hasPermission('MedicalRecords.ViewOwn')) {
+          <button
+            type="button"
+            role="tab"
+            class="view-pill-btn"
+            [class.active]="activeView() === 'timeline'"
+            [attr.aria-selected]="activeView() === 'timeline'"
+            (click)="activeView.set('timeline')"
+          >
+            <i class="fa-solid fa-timeline" aria-hidden="true"></i>
+            <span>{{ 'patientRecord.timeline' | t }}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="view-pill-btn"
+            [class.active]="activeView() === 'access'"
+            [attr.aria-selected]="activeView() === 'access'"
+            (click)="activeView.set('access')"
+          >
+            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+            <span>{{ 'recordAccess.title' | t }}</span>
+          </button>
+        }
+        @if (session.hasPermission('MedicalDocuments.ViewOwn') || session.hasPermission('MedicalDocuments.CreateOwn')) {
+          <button
+            type="button"
+            role="tab"
+            class="view-pill-btn"
+            [class.active]="showDocuments()"
+            [attr.aria-selected]="showDocuments()"
+            (click)="documentId.set(null); activeView.set('documents')"
+          >
+            <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+            <span>{{ 'historical.title' | t }}</span>
+          </button>
+        }
+      </div>
     </nav>
   </app-page-header>
+
   <section class="record-surface">
     @if (activeView() === 'access' && session.hasPermission('MedicalRecords.ViewOwn')) {
       <app-record-access-log />
@@ -40,21 +67,28 @@
         [canCreate]="session.hasPermission('MedicalDocuments.CreateOwn')"
       />
     } @else {
-      <nav class="d-flex gap-2 flex-wrap mb-4">
-        <button
-          class="btn btn-outline-secondary"
-          (click)="timeline('all')"
-          [attr.aria-pressed]="filter() === 'all'"
-        >
-          {{ 'patientRecord.all' | t }}</button
-        ><button
-          class="btn btn-outline-secondary"
-          (click)="timeline('historical-documents')"
-          [attr.aria-pressed]="filter() === 'historical-documents'"
-        >
-          {{ 'historical.title' | t }}
-        </button>
-      </nav>
+      <!-- Timeline Filter Sub-Pills -->
+      <div class="timeline-subfilter-bar">
+        <div class="subfilter-pills-group">
+          <button
+            type="button"
+            class="subfilter-pill"
+            [class.active]="filter() === 'all'"
+            (click)="timeline('all')"
+          >
+            {{ 'patientRecord.all' | t }}
+          </button>
+          <button
+            type="button"
+            class="subfilter-pill"
+            [class.active]="filter() === 'historical-documents'"
+            (click)="timeline('historical-documents')"
+          >
+            {{ 'historical.title' | t }}
+          </button>
+        </div>
+      </div>
+
       @if (loading()) {
         <div class="patient-record-skeleton" role="status" [attr.aria-label]="'common.loading' | t">
           <span class="visually-hidden">{{ 'common.loading' | t }}</span>
@@ -70,54 +104,95 @@
           }
         </div>
       } @else if (failed()) {
-        <p role="alert">{{ 'familyFlow.failed' | t }}</p>
-        <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
+        <div class="state-banner error-banner" role="alert">
+          <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+          <span>{{ 'familyFlow.failed' | t }}</span>
+          <button class="btn btn-sm btn-outline-secondary ms-auto" (click)="load()">
+            {{ 'common.retry' | t }}
+          </button>
+        </div>
       } @else if (!entries().length) {
-        <div class="empty-state">
+        <div class="empty-state-surface">
           <img
             src="/SVG-AVATAR/Medical prescription-bro.svg"
             alt=""
             loading="lazy"
             decoding="async"
           />
-          <h2>{{ 'patientRecord.empty' | t }}</h2>
-          <p>{{ 'patientRecord.emptyHint' | t }}</p>
+          <h2 class="empty-heading">{{ 'patientRecord.empty' | t }}</h2>
+          <p class="empty-subtext">{{ 'patientRecord.emptyHint' | t }}</p>
           <button class="btn btn-outline-secondary" (click)="timeline('all')">
-            {{ 'patientRecord.all' | t }}
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+            <span>{{ 'patientRecord.all' | t }}</span>
           </button>
         </div>
       } @else {
-        @for (entry of entries(); track entry.entryId) {
-          <article class="timeline-row">
-            @if (isHistorical(entry)) {
-              <div>
-                <h3>{{ 'historical.category.' + entry.category | t }}</h3>
-                <p>{{ 'historical.unverified' | t }}</p>
-                @if (!entry.dateUnknown && entry.documentDate) {
-                  <time [attr.datetime]="entry.documentDate">{{ entry.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</time>
-                } @else {
-                  <span>{{ 'historical.documentDateUnknown' | t }}</span>
+        <div class="timeline-cards-stream">
+          @for (entry of entries(); track entry.entryId) {
+            <article class="timeline-entry-card">
+              @if (isHistorical(entry)) {
+                <div class="entry-icon-box entry-icon-box--historical" aria-hidden="true">
+                  <i class="fa-solid fa-file-medical"></i>
+                </div>
+                <div class="entry-content-col">
+                  <div class="entry-title-row">
+                    <h3 class="entry-title">{{ 'historical.category.' + entry.category | t }}</h3>
+                    <span class="entry-badge-tag">{{ 'historical.unverified' | t }}</span>
+                  </div>
+                  <div class="entry-meta-row">
+                    @if (!entry.dateUnknown && entry.documentDate) {
+                      <time class="entry-time-pill" [attr.datetime]="entry.documentDate">
+                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                        <span>{{ entry.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</span>
+                      </time>
+                    } @else {
+                      <span class="entry-time-unknown">{{ 'historical.documentDateUnknown' | t }}</span>
+                    }
+                  </div>
+                </div>
+                @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
+                  <div class="entry-action-col">
+                    <button
+                      type="button"
+                      class="btn-view-document"
+                      (click)="openDocument(entry.documentId)"
+                    >
+                      <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                      <span>{{ 'common.view' | t }}</span>
+                    </button>
+                  </div>
                 }
-              </div>
-              @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
-                <button class="btn btn-outline-secondary" (click)="openDocument(entry.documentId)">
-                  {{ 'common.view' | t }}
-                </button>
+              } @else if (isClinical(entry)) {
+                <div class="entry-icon-box entry-icon-box--clinical" aria-hidden="true">
+                  <i class="fa-solid fa-notes-medical"></i>
+                </div>
+                <div class="entry-content-col">
+                  <h3 class="entry-title">{{ entry.title }}</h3>
+                  <div class="entry-meta-row">
+                    <time class="entry-time-pill" [attr.datetime]="entry.occurredAtUtc">
+                      <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                      <span>{{ entry.occurredAtUtc | date: 'mediumDate' }}</span>
+                    </time>
+                  </div>
+                </div>
+              } @else {
+                <p class="entry-hidden-text">{{ 'patientRecord.hidden' | t }}</p>
               }
-            } @else if (isClinical(entry)) {
-              <div>
-                <h3>{{ entry.title }}</h3>
-                <time>{{ entry.occurredAtUtc | date: 'mediumDate' }}</time>
-              </div>
-            } @else {
-              <p>{{ 'patientRecord.hidden' | t }}</p>
-            }
-          </article>
-        }
+            </article>
+          }
+        </div>
+
         @if (hasMore()) {
-          <button class="btn btn-outline-secondary mt-3" (click)="timeline(filter(), true)">
-            {{ 'patientRecord.more' | t }}
-          </button>
+          <div class="load-more-center">
+            <button
+              type="button"
+              class="btn-load-more"
+              (click)="timeline(filter(), true)"
+            >
+              <span>{{ 'patientRecord.more' | t }}</span>
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+          </div>
         }
       }
     }

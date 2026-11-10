@@ -1,50 +1,104 @@
-<section [attr.aria-busy]="loading()" aria-labelledby="record-access-heading">
-  <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-    <h2 id="record-access-heading">{{ 'recordAccess.title' | t }}</h2>
+<section class="record-access-section" [attr.aria-busy]="loading()" aria-labelledby="record-access-heading">
+  <div class="access-log-header">
+    <div class="access-log-title-wrap">
+      <div class="header-indicator-dot" aria-hidden="true"></div>
+      <div>
+        <h2 id="record-access-heading" class="access-log-title">{{ 'recordAccess.title' | t }}</h2>
+        <p class="access-log-subtitle">{{ 'recordAccess.description' | t }}</p>
+      </div>
+    </div>
     <button
       type="button"
-      class="btn btn-outline-secondary"
+      class="btn-refresh-log"
       [disabled]="loading() || denied()"
       (click)="load()"
     >
-      {{ 'common.refresh' | t }}
+      @if (loading()) {
+        <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+      } @else {
+        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+      }
+      <span>{{ 'common.refresh' | t }}</span>
     </button>
   </div>
-  <p class="text-secondary">{{ 'recordAccess.description' | t }}</p>
+
   @if (denied()) {
-    <p role="alert">{{ 'recordAccess.unavailable' | t }}</p>
+    <div class="state-banner error-banner" role="alert">
+      <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+      <span>{{ 'recordAccess.unavailable' | t }}</span>
+    </div>
   } @else {
     @if (items().length) {
-      <div class="table-responsive">
-        <table class="table align-middle">
+      <div class="access-log-table-container">
+        <table class="access-log-table">
           <caption class="visually-hidden">
-            {{
-              'recordAccess.title' | t
-            }}
+            {{ 'recordAccess.title' | t }}
           </caption>
           <thead>
             <tr>
-              <th scope="col">{{ 'recordAccess.actor' | t }}</th>
-              <th scope="col">{{ 'recordAccess.action' | t }}</th>
-              <th scope="col">{{ 'recordAccess.time' | t }}</th>
+              <th scope="col" class="col-actor">{{ 'recordAccess.actor' | t }}</th>
+              <th scope="col" class="col-action">{{ 'recordAccess.action' | t }}</th>
+              <th scope="col" class="col-time">{{ 'recordAccess.time' | t }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of items(); track item.entryId) {
-              <tr>
-                <td>{{ actorLabel(item.actorCategory) }}</td>
-                <td>{{ actionLabel(item.action) }}</td>
-                <td>
-                  <time dir="ltr" [attr.datetime]="item.occurredAtUtc">{{
-                    item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm'
-                  }}</time>
+              <tr class="access-log-row">
+                <td class="col-actor">
+                  <div class="actor-cell">
+                    <span class="actor-icon-box" aria-hidden="true">
+                      <i class="fa-solid fa-user-shield"></i>
+                    </span>
+                    <span class="actor-name">{{ actorLabel(item.actorCategory) }}</span>
+                  </div>
+                </td>
+                <td class="col-action">
+                  <span class="action-badge">
+                    <span class="action-dot" aria-hidden="true"></span>
+                    <span>{{ actionLabel(item.action) }}</span>
+                  </span>
+                </td>
+                <td class="col-time">
+                  <time class="time-stamp-cell" dir="ltr" [attr.datetime]="item.occurredAtUtc">
+                    <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                    <span>{{ item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
+                  </time>
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-    } @else if (!loading() && !failed()) {
+
+      @if (hasMore()) {
+        <div class="load-more-wrap">
+          <button
+            type="button"
+            class="btn-load-more"
+            [disabled]="loading()"
+            (click)="load(true)"
+          >
+            @if (loading()) {
+              <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+              <span>{{ 'common.loading' | t }}</span>
+            } @else {
+              <span>{{ 'common.loadMore' | t }}</span>
+            }
+          </button>
+        </div>
+      }
+    } @else if (loading()) {
+      <div class="table-skeleton-wrap" role="status" [attr.aria-label]="'common.loading' | t">
+        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="skeleton-log-row">
+            <div class="skeleton-shimmer w-100 h-16 rounded-md"></div>
+            <div class="skeleton-shimmer w-120 h-16 rounded-md"></div>
+            <div class="skeleton-shimmer w-140 h-16 rounded-md"></div>
+          </div>
+        }
+      </div>
+    } @else if (!failed()) {
       <div class="access-empty text-center">
         <img
           class="state-empty-illustration"
@@ -53,37 +107,13 @@
           loading="lazy"
           decoding="async"
         />
-        <h3>{{ 'recordAccess.empty' | t }}</h3>
-        <p>{{ 'recordAccess.emptyHelp' | t }}</p>
+        <h3 class="empty-title">{{ 'recordAccess.empty' | t }}</h3>
+        <p class="empty-desc">{{ 'recordAccess.emptyHelp' | t }}</p>
         <button type="button" class="btn btn-outline-secondary" (click)="load()">
-          {{ 'common.refresh' | t }}
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          <span>{{ 'common.refresh' | t }}</span>
         </button>
       </div>
-    }
-    @if (loading()) {
-      <p role="status">{{ 'common.loading' | t }}</p>
-    }
-    @if (failed()) {
-      <div role="alert">
-        <p>{{ 'familyFlow.failed' | t }}</p>
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          [disabled]="loading()"
-          (click)="load(hasMore())"
-        >
-          {{ 'common.retry' | t }}
-        </button>
-      </div>
-    } @else if (hasMore()) {
-      <button
-        type="button"
-        class="btn btn-outline-secondary"
-        [disabled]="loading()"
-        (click)="load(true)"
-      >
-        {{ 'common.loadMore' | t }}
-      </button>
     }
   }
 </section>

@@ -6,6 +6,7 @@ import {
   signal,
   OnDestroy,
 } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -37,6 +38,8 @@ import {
 @Component({
   selector: 'app-dependent-medical-record',
   imports: [
+    DatePipe,
+    NgTemplateOutlet,
     PageHeader,
     SideDrawer,
     TranslatePipe,
@@ -58,6 +61,40 @@ export class DependentMedicalRecordComponent implements OnDestroy {
   readonly workspaceChildren = signal<FamilyWorkspaceChild[]>([]);
   readonly documentId = signal<string | null>(null);
   readonly showDocuments = signal(false);
+
+  // Responsive Master-Detail Split View (>= 1025px) vs Side Drawer (< 1025px)
+  private readonly resizeListener = () => {
+    if (typeof window !== 'undefined') {
+      this.isDesktop.set(window.innerWidth >= 1025);
+    }
+  };
+
+  readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
+  );
+
+  readonly hasActiveDetail = computed(
+    () => this.encounterDrawerOpen() || this.itemDrawerOpen() || this.showDocuments(),
+  );
+
+  readonly activeDetailTitle = computed(() => {
+    if (this.showDocuments()) return this.uiLanguage.t('historical.title');
+    if (this.encounterDrawerOpen()) return this.uiLanguage.t('review.encounterDetails');
+    if (this.itemDrawerOpen()) {
+      const itm = this.selectedItem();
+      if (!itm) return this.uiLanguage.t('review.itemDetails');
+      if (itm.resourceType === 'lab-request') return this.uiLanguage.t('diagnostics.lab');
+      if (itm.resourceType === 'radiology-request') return this.uiLanguage.t('diagnostics.radiology');
+      return this.uiLanguage.t('medications.prescription');
+    }
+    return '';
+  });
+
+  closeAllDetails(): void {
+    this.closeEncounterDrawer();
+    this.closeItemDrawer();
+    this.showDocuments.set(false);
+  }
   readonly selectedCapabilities = computed(() =>
     this.workspaceChildren().find((child) => child.patientId === this.selectedDependentId()),
   );
@@ -67,6 +104,9 @@ export class DependentMedicalRecordComponent implements OnDestroy {
   private readonly mediaUrls = new Set<string>();
   private destroyed = false;
   ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.resizeListener);
+    }
     this.destroyed = true;
     this.sequence++;
     this.closeEncounterDrawer();
@@ -108,6 +148,9 @@ export class DependentMedicalRecordComponent implements OnDestroy {
   );
 
   constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resizeListener, { passive: true });
+    }
     void this.loadDependents();
     void firstValueFrom(this.workspaceApi.workspace())
       .then((value) => {

@@ -3,11 +3,12 @@ import {
   Component,
   OnChanges,
   OnDestroy,
+  computed,
   inject,
   input,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, Subscription } from 'rxjs';
@@ -28,7 +29,7 @@ import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-historical-documents',
-  imports: [DatePipe, FormsModule, TranslatePipe, SideDrawer],
+  imports: [DatePipe, FormsModule, NgTemplateOutlet, TranslatePipe, SideDrawer],
   templateUrl: './historical-documents.component.html',
   styleUrl: './historical-documents.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +43,47 @@ export class HistoricalDocumentsComponent implements OnChanges, OnDestroy {
   private readonly api = inject(HistoricalDocumentsApi);
   private readonly toast = inject(ToastService);
   private readonly session = inject(AuthSession);
+
+  // Responsive Master-Detail Split View (>= 1025px) vs Side Drawer (< 1025px)
+  private readonly resizeListener = () => {
+    if (typeof window !== 'undefined') {
+      this.isDesktop.set(window.innerWidth >= 1025);
+    }
+  };
+
+  readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
+  );
+
+  readonly hasActiveDetail = computed(
+    () => this.editing() || this.withdrawing() || !!this.selected(),
+  );
+
+  readonly detailTitle = computed(() => {
+    if (this.withdrawing()) return this.language.t('historical.withdraw');
+    if (this.editing()) {
+      return this.selected()
+        ? this.language.t('historical.revise')
+        : this.language.t('historical.add');
+    }
+    if (this.selected()) {
+      return (
+        this.selected()?.currentVersion?.metadata?.title ||
+        this.language.t('historical.document')
+      );
+    }
+    return this.language.t('historical.document');
+  });
+
+  isSelected(id: string): boolean {
+    return this.selected()?.documentId === id;
+  }
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resizeListener, { passive: true });
+    }
+  }
   readonly documents = signal<HistoricalDocument[]>([]);
   readonly selected = signal<HistoricalDocument | null>(null);
   readonly versions = signal<HistoricalVersion[]>([]);
@@ -84,6 +126,9 @@ export class HistoricalDocumentsComponent implements OnChanges, OnDestroy {
     if (id) this.inspect(id);
   }
   ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.resizeListener);
+    }
     this.generation++;
     this.listRequest?.unsubscribe();
     this.detailRequest?.unsubscribe();

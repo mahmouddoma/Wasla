@@ -289,4 +289,17 @@ describe('DependentMedicalRecordComponent', () => {
     expect(component['selectedItem']()).toBeNull();
     expect(component['itemDrawerOpen']()).toBe(false);
   });
+
+  it('renders inline split-view detail pane on desktop when detail is active', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.isDesktop.set(true);
+    component['encounterDrawerOpen'].set(true);
+    component['selectedEncounter'].set(mockEncounter);
+    fixture.detectChanges();
+
+    const detailPane = fixture.nativeElement.querySelector('.dependent-record-detail-pane');
+    expect(detailPane).toBeTruthy();
+  });
 });

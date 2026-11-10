@@ -1,308 +1,578 @@
-<section [attr.dir]="language.dir()" aria-labelledby="historical-title">
-  <div class="section-heading">
-    <div>
-      <h2 id="historical-title">{{ 'historical.title' | t }}</h2>
-      <p>{{ 'historical.disclaimer' | t }}</p>
-    </div>
-    @if (canCreate()) {
-      <button class="btn btn-primary" type="button" (click)="startEdit()">
-        {{ 'historical.add' | t }}
-      </button>
-    }
-  </div>
-  @if (subject().kind === 'own') {
-    <label class="d-flex align-items-center gap-2 mb-3"
-      ><input type="checkbox" [(ngModel)]="includeWithdrawn" (ngModelChange)="load(1)" />{{
-        'historical.includeWithdrawn' | t
-      }}</label
-    >
-  }
-  @if (loading()) {
-    <div class="directory-skeleton-wrapper" role="status" [attr.aria-label]="'common.loading' | t">
-      <span class="visually-hidden">{{ 'common.loading' | t }}</span>
-      <div class="table-responsive skeleton-table-container">
-        <table class="table align-middle mb-0" aria-hidden="true">
-          <thead>
-            <tr>
-              <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-100"></div></th>
-              <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-80"></div></th>
-              <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-60"></div></th>
-              <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-50"></div></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of [1, 2, 3, 4]; track row) {
-              <tr class="skeleton-table-row">
-                <td>
-                  <div class="skeleton-shimmer w-160 h-16 mb-2"></div>
-                  <div class="skeleton-shimmer w-110 h-12"></div>
-                </td>
-                <td><div class="skeleton-shimmer w-100 h-14"></div></td>
-                <td><div class="skeleton-shimmer skeleton-pill-badge"></div></td>
-                <td><div class="skeleton-shimmer skeleton-btn-action"></div></td>
-              </tr>
-            }
-          </tbody>
-        </table>
+<section class="historical-section" [attr.dir]="language.dir()" aria-labelledby="historical-title">
+  <!-- Section Heading Bar -->
+  <div class="section-heading-surface">
+    <div class="heading-title-group">
+      <span class="heading-indicator-dot" aria-hidden="true"></span>
+      <div>
+        <h2 id="historical-title" class="historical-heading">{{ 'historical.title' | t }}</h2>
+        <p class="historical-disclaimer">{{ 'historical.disclaimer' | t }}</p>
       </div>
     </div>
-  } @else if (failed()) {
-    <div role="alert">
-      <p>{{ 'historical.failed' | t }}</p>
-      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
+    <div class="heading-actions-group">
+      @if (subject().kind === 'own') {
+        <label class="custom-filter-toggle">
+          <input
+            type="checkbox"
+            class="toggle-checkbox"
+            [(ngModel)]="includeWithdrawn"
+            (ngModelChange)="load(1)"
+          />
+          <span class="toggle-slider" aria-hidden="true"></span>
+          <span class="toggle-label-text">{{ 'historical.includeWithdrawn' | t }}</span>
+        </label>
+      }
+      @if (canCreate()) {
+        <button class="btn btn-primary btn-add-doc" type="button" (click)="startEdit()">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          <span>{{ 'historical.add' | t }}</span>
+        </button>
+      }
     </div>
-  } @else if (!canView()) {
-    <p>{{ 'historical.listUnavailable' | t }}</p>
-  } @else if (!documents().length) {
-    <div class="empty-state">
-      <img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
-      <h3>{{ 'historical.empty' | t }}</h3>
-      <p>{{ 'historical.emptyHint' | t }}</p>
-      <button class="btn btn-outline-secondary" (click)="load(1)">
-        {{ 'common.refresh' | t }}
-      </button>
-    </div>
-  } @else {
-    <div class="table-responsive">
-      <table class="table align-middle">
-        <thead>
-          <tr>
-            <th>{{ 'historical.document' | t }}</th>
-            <th>{{ 'historical.date' | t }}</th>
-            <th>{{ 'common.status' | t }}</th>
-            <th>{{ 'common.actions' | t }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (document of documents(); track document.documentId) {
-            <tr>
-              <td>
-                <strong>{{
-                  document.currentVersion?.metadata?.title || ('historical.document' | t)
-                }}</strong
-                ><small>{{ 'historical.unverified' | t }}</small>
-              </td>
-              <td>
-                @if (document.currentVersion?.metadata; as metadata) {
-                  @if (!metadata.dateUnknown && metadata.documentDate) {
-                    <time [attr.datetime]="metadata.documentDate">{{ metadata.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</time>
-                  } @else {
-                    <span>{{ 'historical.documentDateUnknown' | t }}</span>
-                  }
-                } @else {
-                  <span>{{ 'historical.documentDateUnknown' | t }}</span>
+  </div>
+
+  <!-- Master-Detail Split Layout -->
+  <div class="historical-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
+    <!-- Master Pane: Documents Directory -->
+    <div class="historical-master-pane">
+      @if (loading()) {
+        <div class="directory-skeleton-wrapper" role="status" [attr.aria-label]="'common.loading' | t">
+          <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+          <div class="table-responsive skeleton-table-container">
+            <table class="table align-middle mb-0" aria-hidden="true">
+              <thead>
+                <tr>
+                  <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-100"></div></th>
+                  <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-80"></div></th>
+                  <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-60"></div></th>
+                  <th scope="col"><div class="skeleton-shimmer skeleton-th-bar w-50"></div></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of [1, 2, 3, 4]; track row) {
+                  <tr class="skeleton-table-row">
+                    <td>
+                      <div class="skeleton-shimmer w-160 h-16 mb-2"></div>
+                      <div class="skeleton-shimmer w-110 h-12"></div>
+                    </td>
+                    <td><div class="skeleton-shimmer w-100 h-14"></div></td>
+                    <td><div class="skeleton-shimmer skeleton-pill-badge"></div></td>
+                    <td><div class="skeleton-shimmer skeleton-btn-action"></div></td>
+                  </tr>
                 }
-                <small>{{ 'historical.uploadedAt' | t }}: <time [attr.datetime]="document.uploadedAtUtc">{{ document.uploadedAtUtc | date:'mediumDate':undefined:language.currentLang() }}</time></small>
-              </td>
-              <td>{{ 'historical.state.' + document.state | t }}</td>
-              <td>
-                <div class="d-flex flex-wrap gap-2">
-                  <button class="btn btn-sm btn-outline-secondary" (click)="inspect(document)">
-                    {{ 'common.view' | t }}
-                  </button>
-                  @if (document.canRevise) {
-                    <button class="btn btn-sm btn-outline-secondary" (click)="startEdit(document)">
-                      {{ 'historical.revise' | t }}
-                    </button>
-                  }
-                  @if (document.canWithdraw) {
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      (click)="confirmWithdraw(document)"
-                    >
-                      {{ 'historical.withdraw' | t }}
-                    </button>
-                  }
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else if (failed()) {
+        <div class="state-banner error-banner" role="alert">
+          <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+          <span>{{ 'historical.failed' | t }}</span>
+          <button class="btn btn-sm btn-outline-secondary ms-auto" (click)="load()">
+            {{ 'common.retry' | t }}
+          </button>
+        </div>
+      } @else if (!canView()) {
+        <div class="state-banner info-banner" role="status">
+          <i class="fa-solid fa-lock" aria-hidden="true"></i>
+          <span>{{ 'historical.listUnavailable' | t }}</span>
+        </div>
+      } @else if (!documents().length) {
+        <div class="empty-state-surface">
+          <img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
+          <h3 class="empty-title">{{ 'historical.empty' | t }}</h3>
+          <p class="empty-hint">{{ 'historical.emptyHint' | t }}</p>
+          <button class="btn btn-outline-secondary" (click)="load(1)">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+            <span>{{ 'common.refresh' | t }}</span>
+          </button>
+        </div>
+      } @else {
+        <div class="documents-table-container">
+          <table class="documents-table">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'historical.document' | t }}</th>
+                <th scope="col">{{ 'historical.date' | t }}</th>
+                <th scope="col">{{ 'common.status' | t }}</th>
+                <th scope="col" class="text-end">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (document of documents(); track document.documentId) {
+                <tr
+                  class="clickable-doc-row"
+                  [class.is-selected]="isSelected(document.documentId)"
+                  (click)="inspect(document)"
+                >
+                  <td>
+                    <div class="doc-identity-cell">
+                      <span class="doc-type-icon" aria-hidden="true">
+                        <i class="fa-regular fa-file-lines"></i>
+                      </span>
+                      <div class="doc-titles">
+                        <strong class="doc-main-title">
+                          {{ document.currentVersion?.metadata?.title || ('historical.document' | t) }}
+                        </strong>
+                        <span class="doc-unverified-tag">{{ 'historical.unverified' | t }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="doc-dates-cell">
+                      @if (document.currentVersion?.metadata; as metadata) {
+                        @if (!metadata.dateUnknown && metadata.documentDate) {
+                          <time class="doc-date-primary" [attr.datetime]="metadata.documentDate">
+                            {{ metadata.documentDate | date:'mediumDate':'UTC':language.currentLang() }}
+                          </time>
+                        } @else {
+                          <span class="doc-date-unknown">{{ 'historical.documentDateUnknown' | t }}</span>
+                        }
+                      } @else {
+                        <span class="doc-date-unknown">{{ 'historical.documentDateUnknown' | t }}</span>
+                      }
+                      <small class="doc-upload-time">
+                        {{ 'historical.uploadedAt' | t }}:
+                        <time [attr.datetime]="document.uploadedAtUtc">
+                          {{ document.uploadedAtUtc | date:'mediumDate':undefined:language.currentLang() }}
+                        </time>
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-pill status-{{ document.state.toLowerCase() }}">
+                      <span class="pill-dot" aria-hidden="true"></span>
+                      <span>{{ 'historical.state.' + document.state | t }}</span>
+                    </span>
+                  </td>
+                  <td class="text-end" (click)="$event.stopPropagation()">
+                    <div class="row-actions-group">
+                      <button
+                        type="button"
+                        class="btn-row-action"
+                        [title]="'common.view' | t"
+                        (click)="inspect(document)"
+                      >
+                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                        <span>{{ 'common.view' | t }}</span>
+                      </button>
+                      @if (document.canRevise) {
+                        <button
+                          type="button"
+                          class="btn-row-action"
+                          [title]="'historical.revise' | t"
+                          (click)="startEdit(document)"
+                        >
+                          <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                          <span>{{ 'historical.revise' | t }}</span>
+                        </button>
+                      }
+                      @if (document.canWithdraw) {
+                        <button
+                          type="button"
+                          class="btn-row-action btn-row-action--danger"
+                          [title]="'historical.withdraw' | t"
+                          (click)="confirmWithdraw(document)"
+                        >
+                          <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                          <span>{{ 'historical.withdraw' | t }}</span>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="pagination-footer-bar" [attr.aria-label]="'common.pagination' | t">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="page() === 1"
+            (click)="load(page() - 1)"
+          >
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            <span>{{ 'common.previous' | t }}</span>
+          </button>
+          <span class="pagination-counter">{{ 'common.page' | t }} {{ page() }}</span>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="page() * 20 >= total()"
+            (click)="load(page() + 1)"
+          >
+            <span>{{ 'common.next' | t }}</span>
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          </button>
+        </nav>
+      }
     </div>
-    <nav class="d-flex justify-content-between gap-3" [attr.aria-label]="'common.pagination' | t">
-      <button
-        class="btn btn-outline-secondary"
-        [disabled]="page() === 1"
-        (click)="load(page() - 1)"
-      >
-        {{ 'common.previous' | t }}</button
-      ><span>{{ page() }}</span
-      ><button
-        class="btn btn-outline-secondary"
-        [disabled]="page() * 20 >= total()"
-        (click)="load(page() + 1)"
-      >
-        {{ 'common.next' | t }}
-      </button>
-    </nav>
+
+    <!-- Detail Pane (Inline Split View on Desktop >= 1025px) -->
+    @if (isDesktop() && hasActiveDetail()) {
+      <aside class="historical-detail-pane" [attr.aria-label]="detailTitle()">
+        <header class="detail-pane-header">
+          <div class="detail-pane-title-wrap">
+            <span class="detail-pane-indicator" aria-hidden="true"></span>
+            <h3 class="detail-pane-heading">{{ detailTitle() }}</h3>
+          </div>
+          <button
+            type="button"
+            class="btn-detail-close"
+            (click)="close()"
+            [attr.aria-label]="'common.close' | t"
+            [title]="'common.close' | t"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="detail-pane-body">
+          <ng-container *ngTemplateOutlet="detailContentTemplate" />
+        </div>
+      </aside>
+    }
+  </div>
+
+  <!-- Slide-Over Drawer for Mobile / Tablet View (< 1025px) -->
+  @if (!isDesktop()) {
+    <app-side-drawer
+      [opened]="hasActiveDetail()"
+      [busy]="busy()"
+      [title]="detailTitle()"
+      (closed)="close()"
+    >
+      <div class="drawer-scrollable-body">
+        <ng-container *ngTemplateOutlet="detailContentTemplate" />
+      </div>
+    </app-side-drawer>
   }
 </section>
-<app-side-drawer
-  [opened]="editing() || withdrawing() || !!selected()"
-  [busy]="busy()"
-  [title]="
-    (withdrawing() ? 'historical.withdraw' : editing() ? 'historical.add' : 'historical.document')
-      | t
-  "
-  (closed)="close()"
->
-  <div class="drawer-body">
-    @if (editing()) {
-      <form (ngSubmit)="save()" class="document-form">
-        <label
-          >{{ 'historical.category' | t
-          }}<select name="category" [(ngModel)]="category">
+
+<!-- Reusable Detail Content Template -->
+<ng-template #detailContentTemplate>
+  @if (editing()) {
+    <form (ngSubmit)="save()" class="document-form-stack">
+      <div class="form-group-item">
+        <label class="form-item-label" for="doc-category">{{ 'historical.category' | t }}</label>
+        <div class="select-with-arrow">
+          <select id="doc-category" class="field-select" name="category" [(ngModel)]="category">
             @for (item of categories; track item) {
               <option [value]="item">{{ 'historical.category.' + item | t }}</option>
             }
-          </select></label
-        >
-        <label
-          >{{ 'historical.documentTitle' | t
-          }}<input name="title" [(ngModel)]="title" maxlength="200"
-        /></label>
-        <label class="d-flex align-items-center gap-2"
-          ><input type="checkbox" name="unknown" [(ngModel)]="dateUnknown" />{{
-            'historical.unknownDate' | t
-          }}</label
-        >
-        @if (!dateUnknown) {
-          <label
-            >{{ 'historical.date' | t
-            }}<input type="date" name="date" [(ngModel)]="documentDate" required
-          /></label>
-        }
-        <label
-          >{{ 'historical.provider' | t
-          }}<input name="provider" [(ngModel)]="providerName" maxlength="200"
-        /></label>
-        <label
-          >{{ 'historical.note' | t
-          }}<textarea name="note" [(ngModel)]="patientNote" maxlength="2000"></textarea>
-        </label>
-        @if (selected()) {
-          <label
-            >{{ 'historical.reason' | t
-            }}<textarea name="reason" [(ngModel)]="reason" required maxlength="1000"></textarea>
-          </label>
-        }
-        <div class="d-grid gap-2">
-          <input
-            #documentFiles
-            class="visually-hidden"
-            [attr.aria-label]="'historical.files' | t"
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            multiple
-            (change)="chooseFiles($event)"
-          />
-          <button class="btn btn-outline-secondary" type="button" (click)="documentFiles.click()">
-            {{ 'familyFlow.chooseFiles' | t }}
-          </button>
-          <small>{{ 'historical.fileHint' | t }}</small>
-          @for (file of files; track $index) {
-            <span>{{ file.name }}</span>
-          }
+          </select>
         </div>
-        @if (receipt(); as result) {
-          <p role="alert">
-            {{ 'historical.state.' + result.validationState | t }} {{ 'historical.unsafeHint' | t }}
-          </p>
-          @if (
-            result.failureCode === 'MalwareDetected' ||
-            result.failureCode === 'ScannerUnavailable' ||
-            result.failureCode === 'ScannerSizeLimit'
-          ) {
-            <p>{{ 'historical.failure.' + result.failureCode | t }}</p>
-          }
-        }
-        <button class="btn btn-primary" type="submit" [disabled]="busy()">
-          {{ (busy() ? 'common.loading' : 'common.save') | t }}
-        </button>
-      </form>
-    } @else if (withdrawing()) {
-      <form (ngSubmit)="withdraw()" class="document-form">
-        <p>{{ 'historical.withdrawHint' | t }}</p>
-        <label
-          >{{ 'historical.reason' | t
-          }}<textarea
+      </div>
+
+      <div class="form-group-item">
+        <label class="form-item-label" for="doc-title">{{ 'historical.documentTitle' | t }}</label>
+        <input
+          id="doc-title"
+          class="field-input"
+          name="title"
+          [(ngModel)]="title"
+          maxlength="200"
+          [placeholder]="'historical.documentTitle' | t"
+        />
+      </div>
+
+      <div class="form-group-item">
+        <label class="custom-filter-toggle">
+          <input
+            type="checkbox"
+            class="toggle-checkbox"
+            name="unknown"
+            [(ngModel)]="dateUnknown"
+          />
+          <span class="toggle-slider" aria-hidden="true"></span>
+          <span class="toggle-label-text">{{ 'historical.unknownDate' | t }}</span>
+        </label>
+      </div>
+
+      @if (!dateUnknown) {
+        <div class="form-group-item">
+          <label class="form-item-label" for="doc-date">{{ 'historical.date' | t }}</label>
+          <input
+            id="doc-date"
+            type="date"
+            class="field-input date-input-control"
+            name="date"
+            [(ngModel)]="documentDate"
+            required
+          />
+        </div>
+      }
+
+      <div class="form-group-item">
+        <label class="form-item-label" for="doc-provider">{{ 'historical.provider' | t }}</label>
+        <input
+          id="doc-provider"
+          class="field-input"
+          name="provider"
+          [(ngModel)]="providerName"
+          maxlength="200"
+          [placeholder]="'historical.provider' | t"
+        />
+      </div>
+
+      <div class="form-group-item">
+        <label class="form-item-label" for="doc-note">{{ 'historical.note' | t }}</label>
+        <textarea
+          id="doc-note"
+          class="field-input textarea-field"
+          name="note"
+          [(ngModel)]="patientNote"
+          maxlength="2000"
+          rows="3"
+        ></textarea>
+      </div>
+
+      @if (selected()) {
+        <div class="form-group-item">
+          <label class="form-item-label" for="doc-reason">{{ 'historical.reason' | t }}</label>
+          <textarea
+            id="doc-reason"
+            class="field-input textarea-field"
             name="reason"
             [(ngModel)]="reason"
             required
             maxlength="1000"
-          ></textarea></label
-        ><button type="submit" class="btn btn-danger" [disabled]="busy() || !reason.trim()">
-          {{ 'historical.confirmWithdraw' | t }}
-        </button>
-      </form>
-    } @else if (selected(); as document) {
-      <p>{{ 'historical.disclaimer' | t }}</p>
-      <p>{{ 'historical.state.' + document.state | t }}</p>
-      @if (document.currentVersion; as version) {
-        <h3>{{ version.metadata.title || ('historical.document' | t) }}</h3>
-        <p>{{ 'historical.category.' + version.metadata.category | t }}</p>
-        <dl>
-          <dt>{{ 'historical.date' | t }}</dt>
-          <dd>
-            @if (!version.metadata.dateUnknown && version.metadata.documentDate) {
-              <time [attr.datetime]="version.metadata.documentDate">{{ version.metadata.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</time>
-            } @else { {{ 'historical.documentDateUnknown' | t }} }
-          </dd>
-          <dt>{{ 'historical.uploadedAt' | t }}</dt>
-          <dd><time [attr.datetime]="document.uploadedAtUtc">{{ document.uploadedAtUtc | date:'medium':undefined:language.currentLang() }}</time></dd>
-        </dl>
-        <p>{{ version.metadata.providerName }}</p>
-        <p>{{ version.metadata.patientNote }}</p>
-        @if (document.state === 'AvailableUnverified') {
-          @for (attachment of version.attachments; track attachment.attachmentId) {
-            <button
-              type="button"
-              class="attachment"
-              (click)="download(attachment.attachmentId, attachment.fileName)"
-            >
-              {{ attachment.fileName }} — {{ 'common.download' | t }}
-            </button>
-          }
-        }
+            rows="2"
+          ></textarea>
+        </div>
       }
-      @if (subject().kind === 'own' && document.state === 'AvailableUnverified') {
-        <button class="btn btn-outline-secondary mt-3" (click)="loadVersions()">
-          {{ 'historical.versions' | t }}
-        </button>
-        @for (version of versions(); track version.versionNumber) {
-          <div class="version-row">
-            <strong>{{ 'historical.version' | t }} {{ version.versionNumber }}</strong
-            ><span>{{ version.createdAtUtc | date: 'mediumDate' }}</span>
-            @for (attachment of version.attachments; track attachment.attachmentId) {
-              <button
-                type="button"
-                class="attachment"
-                (click)="download(attachment.attachmentId, attachment.fileName)"
-              >
-                {{ attachment.fileName }}
-              </button>
+
+      <div class="form-group-item">
+        <label class="form-item-label">{{ 'historical.files' | t }}</label>
+        <input
+          #documentFiles
+          class="visually-hidden"
+          [attr.aria-label]="'historical.files' | t"
+          type="file"
+          accept="application/pdf,image/jpeg,image/png"
+          multiple
+          (change)="chooseFiles($event)"
+        />
+        <div class="file-uploader-box" (click)="documentFiles.click()">
+          <i class="fa-solid fa-cloud-arrow-up uploader-icon" aria-hidden="true"></i>
+          <span class="uploader-prompt">{{ 'familyFlow.chooseFiles' | t }}</span>
+          <small class="uploader-hint">{{ 'historical.fileHint' | t }}</small>
+        </div>
+
+        @if (files.length > 0) {
+          <div class="selected-files-list">
+            @for (file of files; track $index) {
+              <span class="file-chip">
+                <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+                <span class="file-name">{{ file.name }}</span>
+              </span>
             }
           </div>
         }
-        @if (versions().length) {
-          <div class="d-flex gap-2 mt-3">
-            <button
-              class="btn btn-outline-secondary"
-              [disabled]="versionPage() === 1"
-              (click)="loadVersions(versionPage() - 1)"
-            >
-              {{ 'common.previous' | t }}</button
-            ><button
-              class="btn btn-outline-secondary"
-              [disabled]="versions().length < 20"
-              (click)="loadVersions(versionPage() + 1)"
-            >
-              {{ 'common.next' | t }}
-            </button>
+      </div>
+
+      @if (receipt(); as result) {
+        <div class="state-banner warning-banner" role="alert">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <div>
+            <p>{{ 'historical.state.' + result.validationState | t }} {{ 'historical.unsafeHint' | t }}</p>
+            @if (
+              result.failureCode === 'MalwareDetected' ||
+              result.failureCode === 'ScannerUnavailable' ||
+              result.failureCode === 'ScannerSizeLimit'
+            ) {
+              <p>{{ 'historical.failure.' + result.failureCode | t }}</p>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="form-action-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="close()">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button class="btn btn-primary" type="submit" [disabled]="busy()">
+          @if (busy()) {
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>{{ 'common.loading' | t }}</span>
+          } @else {
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+            <span>{{ 'common.save' | t }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  } @else if (withdrawing()) {
+    <form (ngSubmit)="withdraw()" class="document-form-stack">
+      <div class="state-banner warning-banner" role="alert">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <span>{{ 'historical.withdrawHint' | t }}</span>
+      </div>
+
+      <div class="form-group-item">
+        <label class="form-item-label" for="withdraw-reason">{{ 'historical.reason' | t }}</label>
+        <textarea
+          id="withdraw-reason"
+          class="field-input textarea-field"
+          name="reason"
+          [(ngModel)]="reason"
+          required
+          maxlength="1000"
+          rows="4"
+        ></textarea>
+      </div>
+
+      <div class="form-action-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="close()">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button type="submit" class="btn btn-danger" [disabled]="busy() || !reason.trim()">
+          @if (busy()) {
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>{{ 'common.loading' | t }}</span>
+          } @else {
+            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+            <span>{{ 'historical.confirmWithdraw' | t }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  } @else if (selected(); as document) {
+    <div class="document-inspect-body">
+      <div class="inspect-header-card">
+        <span class="status-pill status-{{ document.state.toLowerCase() }}">
+          <span class="pill-dot" aria-hidden="true"></span>
+          <span>{{ 'historical.state.' + document.state | t }}</span>
+        </span>
+        <p class="inspect-disclaimer">{{ 'historical.disclaimer' | t }}</p>
+      </div>
+
+      @if (document.currentVersion; as version) {
+        <div class="inspect-details-list">
+          <div class="inspect-detail-row">
+            <span class="detail-label">{{ 'historical.document' | t }}</span>
+            <span class="detail-val-strong">{{ version.metadata.title || ('historical.document' | t) }}</span>
+          </div>
+
+          <div class="inspect-detail-row">
+            <span class="detail-label">{{ 'historical.category' | t }}</span>
+            <span class="detail-val">{{ 'historical.category.' + version.metadata.category | t }}</span>
+          </div>
+
+          <div class="inspect-detail-row">
+            <span class="detail-label">{{ 'historical.date' | t }}</span>
+            <span class="detail-val">
+              @if (!version.metadata.dateUnknown && version.metadata.documentDate) {
+                <time [attr.datetime]="version.metadata.documentDate">
+                  {{ version.metadata.documentDate | date:'mediumDate':'UTC':language.currentLang() }}
+                </time>
+              } @else {
+                <span class="text-muted">{{ 'historical.documentDateUnknown' | t }}</span>
+              }
+            </span>
+          </div>
+
+          <div class="inspect-detail-row">
+            <span class="detail-label">{{ 'historical.uploadedAt' | t }}</span>
+            <span class="detail-val">
+              <time [attr.datetime]="document.uploadedAtUtc">
+                {{ document.uploadedAtUtc | date:'medium':undefined:language.currentLang() }}
+              </time>
+            </span>
+          </div>
+
+          @if (version.metadata.providerName) {
+            <div class="inspect-detail-row">
+              <span class="detail-label">{{ 'historical.provider' | t }}</span>
+              <span class="detail-val">{{ version.metadata.providerName }}</span>
+            </div>
+          }
+
+          @if (version.metadata.patientNote) {
+            <div class="inspect-detail-row">
+              <span class="detail-label">{{ 'historical.note' | t }}</span>
+              <p class="detail-note-text">{{ version.metadata.patientNote }}</p>
+            </div>
+          }
+        </div>
+
+        @if (document.state === 'AvailableUnverified') {
+          <div class="inspect-attachments-section">
+            <h4 class="section-sub-title">{{ 'historical.files' | t }}</h4>
+            <div class="attachments-list">
+              @for (attachment of version.attachments; track attachment.attachmentId) {
+                <button
+                  type="button"
+                  class="attachment-download-card"
+                  (click)="download(attachment.attachmentId, attachment.fileName)"
+                >
+                  <i class="fa-regular fa-file-pdf attachment-icon" aria-hidden="true"></i>
+                  <span class="attachment-name">{{ attachment.fileName }}</span>
+                  <span class="download-badge">
+                    <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+                    <span>{{ 'common.download' | t }}</span>
+                  </span>
+                </button>
+              }
+            </div>
           </div>
         }
       }
-    }
-  </div>
-</app-side-drawer>
+
+      @if (subject().kind === 'own' && document.state === 'AvailableUnverified') {
+        <div class="versions-section">
+          <div class="versions-header">
+            <h4 class="section-sub-title">{{ 'historical.versions' | t }}</h4>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="loadVersions()">
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              <span>{{ 'historical.versions' | t }}</span>
+            </button>
+          </div>
+
+          @for (version of versions(); track version.versionNumber) {
+            <div class="version-item-card">
+              <div class="version-meta-line">
+                <strong class="version-num">{{ 'historical.version' | t }} {{ version.versionNumber }}</strong>
+                <time class="version-date">{{ version.createdAtUtc | date: 'mediumDate' }}</time>
+              </div>
+              <div class="version-files-list">
+                @for (attachment of version.attachments; track attachment.attachmentId) {
+                  <button
+                    type="button"
+                    class="version-file-btn"
+                    (click)="download(attachment.attachmentId, attachment.fileName)"
+                  >
+                    <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+                    <span>{{ attachment.fileName }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          @if (versions().length) {
+            <div class="version-pagination-row">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                [disabled]="versionPage() === 1"
+                (click)="loadVersions(versionPage() - 1)"
+              >
+                {{ 'common.previous' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                [disabled]="versions().length < 20"
+                (click)="loadVersions(versionPage() + 1)"
+              >
+                {{ 'common.next' | t }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>

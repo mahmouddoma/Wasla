@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, afterRenderEffect, computed, inject, signal, untracked, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -27,6 +27,8 @@ export class PatientRecordComponent implements OnDestroy {
   readonly language = inject(LanguageService);
   readonly session = inject(AuthSession);
   private readonly api = inject(MedicalRecordsApi);
+  private readonly documentsPanel = viewChild(HistoricalDocumentsComponent);
+  private readonly uploadRequested = signal(false);
   readonly overview = signal<SafeRecordOverview | null>(null);
   readonly entries = signal<SafeRecordEntry[]>([]);
   readonly loading = signal(false);
@@ -41,11 +43,23 @@ export class PatientRecordComponent implements OnDestroy {
   private cursor: string | null = null;
   private sequence = 0;
   constructor() {
+    afterRenderEffect(() => {
+      const panel = this.documentsPanel();
+      if (!panel || !this.uploadRequested()) return;
+      this.uploadRequested.set(false);
+      if (this.session.hasPermission('MedicalDocuments.CreateOwn')) untracked(() => panel.startEdit());
+    });
     if (!this.session.hasPermission('MedicalRecords.ViewOwn')) this.activeView.set('documents');
     else void this.load();
   }
   ngOnDestroy(): void {
     this.sequence++;
+  }
+  openUpload(): void {
+    if (!this.session.hasPermission('MedicalDocuments.CreateOwn')) return;
+    this.documentId.set(null);
+    this.activeView.set('documents');
+    this.uploadRequested.set(true);
   }
   async load(): Promise<void> {
     if (!this.session.hasPermission('MedicalRecords.ViewOwn')) return;

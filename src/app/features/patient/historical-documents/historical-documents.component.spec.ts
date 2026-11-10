@@ -117,4 +117,12 @@ describe('HistoricalDocumentsComponent', () => {
     expect(api.list).not.toHaveBeenCalled();
     expect(fixture.componentInstance.editing()).toBe(true);
   });
+  it('renders inline split-view detail pane on desktop when editing', () => {
+    const fixture = create();
+    fixture.componentInstance.isDesktop.set(true);
+    fixture.componentInstance.startEdit();
+    fixture.detectChanges();
+    const detailPane = fixture.nativeElement.querySelector('.historical-detail-pane');
+    expect(detailPane).toBeTruthy();
+  });
 });

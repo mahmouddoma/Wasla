@@ -8,6 +8,8 @@ export interface TranslationDictionary {
 }
 
 export const TRANSLATIONS: TranslationDictionary = {
+  'patientRecord.title': { ar: 'سجلي الطبي', en: 'My medical record' },
+  'patientRecord.uploadDocument': { ar: 'رفع مستند طبي', en: 'Upload a medical document' },
   'readiness.reason.OnlineBookingDisabled': { ar: 'الحجز الإلكتروني غير مفعّل لهذه العيادة.', en: 'Online booking is disabled for this practice.' },
   'readiness.reason.NoPricing': { ar: 'لم تتوفر تسعيرة الكشف الجديد العادي المطلوبة للحجز.', en: 'The standard new-consultation price required for booking is unavailable.' },
   'readiness.reason.NoAvailableCapacity': { ar: 'لا توجد سعة حجز إلكتروني متاحة ضمن الفترة المعروضة.', en: 'No online booking capacity is available within the displayed period.' },
