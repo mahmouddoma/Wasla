@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Subject, of, throwError } from 'rxjs';
+import { Subject, of, throwError, Observable } from 'rxjs';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
-import { PagedResponse, PatientSearchItem } from '../../../domains/patients';
+import { PagedResponse, PatientSearchItem, RegistrationMatchesRequest, RegistrationMatchesResponse, RegistrationSearchResponse } from '../../../domains/patients';
 import { PatientsApi } from '../../../domains/patients';
 import {
   ReceptionPracticeContext,
@@ -25,7 +25,7 @@ describe('ReceptionPatients', () => {
     doctorNameAr: null,
     doctorNameEn: null,
     isActive: true,
-    permissionCodes: ['Patients.SearchBasic', 'PracticeReservations.Create'],
+    permissionCodes: ['Patients.SearchBasic', 'PracticeReservations.Create', 'Patients.Register', 'Patients.RegisterFull', 'Patients.RegistrationMatch'],
   };
 
   const sampleSearchItem: PatientSearchItem = {
@@ -49,6 +49,8 @@ describe('ReceptionPatients', () => {
   const patientsApi = {
     create: vi.fn(() => of({ patientId: 'new-pat-1' })),
     search: vi.fn(() => of(samplePage)),
+    registrationMatches: vi.fn<(request: RegistrationMatchesRequest) => Observable<RegistrationMatchesResponse>>(),
+    registerFull: vi.fn(),
   };
 
   const practicesApi = {
@@ -69,11 +71,25 @@ describe('ReceptionPatients', () => {
     error: vi.fn(),
   };
 
+  const prepareRegistration = (mode: 'basic' | 'full' = 'basic') => {
+    component['registrationAccountMode'].set(mode);
+    component['createModel'].update(value => ({ ...value, nameAr: 'Synthetic person', dateOfBirth: '1990-01-01', gender: 'Male', phoneNumber: '01011122233', email: 'synthetic@example.invalid' }));
+    fixture.detectChanges();
+  };
+  const softMatch: RegistrationSearchResponse = {
+    matchOutcome: 'PossibleMatch', canCreateBasic: true, canCreateFull: true, requiresClaimForAccount: false,
+    candidates: [{ patientId: 'existing', nameAr: 'Existing person', dateOfBirth: '1990-01-01', gender: 'Male', phoneMasked: '010****33', emailMasked: 'e***@example.invalid', isLinkedAccount: false }],
+  };
+
   beforeEach(async () => {
     vi.clearAllMocks();
     practicesApi.list.mockReturnValue(of([samplePractice]));
     patientsApi.create.mockReturnValue(of({ patientId: 'new-pat-1' }));
     patientsApi.search.mockReturnValue(of(samplePage));
+    patientsApi.registrationMatches.mockImplementation(request => of(request.mode === 'Search'
+      ? { matchOutcome: 'NoMatch', candidates: [], canCreateBasic: true, canCreateFull: true, requiresClaimForAccount: false }
+      : { patientId: request.patientId ?? '', attestationId: 'attestation', expiresOnUtc: null }));
+    patientsApi.registerFull.mockReturnValue(of({ patientId: 'new-full', applicationUserId: 'new-user', profileType: 'Full', accountStatus: 'PendingActivation', activationEmailMasked: 's***@example.invalid', invitationExpiresOnUtc: '2026-12-01' }));
     session.hasPermission.mockReturnValue(true);
 
     TestBed.configureTestingModule({
@@ -187,9 +203,73 @@ describe('ReceptionPatients', () => {
         nameAr: 'مريض جديد',
         doctorPracticeId: samplePractice.id,
       }),
+      expect.any(String),
     );
     expect(toast.success).toHaveBeenCalled();
     expect(component['createdPatientId']()).toBe('new-pat-1');
+  });
+
+  it.each(['basic', 'full'] as const)('requires explicit distinct-person review before %s registration on a soft match', async (mode) => {
+    prepareRegistration(mode);
+    patientsApi.registrationMatches.mockReturnValueOnce(of(softMatch));
+    await component['createPatient'](new Event('submit'));
+    expect(patientsApi.registrationMatches).toHaveBeenCalledWith(expect.objectContaining({ mode: 'Search', doctorPracticeId: 'practice-1', email: 'synthetic@example.invalid', pageSize: 20 }));
+    expect(patientsApi.create).not.toHaveBeenCalled();
+    expect(patientsApi.registerFull).not.toHaveBeenCalled();
+    component['fullRegistrationVerifiedInPerson'].set(true);
+    component['distinctPersonConfirmed'].set(true);
+    component['matchReviewReason'].set('Verified different people with original identity evidence');
+    await component['createPatient'](new Event('submit'));
+    const expected = expect.objectContaining({ matchReviewOutcome: 'DistinctPerson', matchReviewReason: 'Verified different people with original identity evidence' });
+    expect(mode === 'basic' ? patientsApi.create : patientsApi.registerFull).toHaveBeenCalledWith(expected, expect.any(String));
+    expect(patientsApi.registrationMatches).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks exact identity collisions and requires explicit verified reuse instead of creating a duplicate', async () => {
+    prepareRegistration();
+    patientsApi.registrationMatches.mockReturnValueOnce(of({ ...softMatch, canCreateBasic: false, canCreateFull: false, requiresClaimForAccount: true }));
+    await component['createPatient'](new Event('submit'));
+    expect(component['canDistinguish']()).toBe(false);
+    component['distinctPersonConfirmed'].set(true);
+    component['matchReviewReason'].set('This cannot override an exact match');
+    await component['createPatient'](new Event('submit'));
+    expect(patientsApi.create).not.toHaveBeenCalled();
+    await component['reuseCandidate'](softMatch.candidates![0]);
+    expect(patientsApi.registrationMatches).toHaveBeenCalledTimes(1);
+    component['fullRegistrationVerifiedInPerson'].set(true);
+    await component['reuseCandidate'](softMatch.candidates![0]);
+    expect(patientsApi.registrationMatches).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'ConfirmReuse', doctorPracticeId: 'practice-1', patientId: 'existing', verifiedInPerson: true }), expect.any(String));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Existing person');
+    expect(component['reusedPatient']()?.patientId).toBe('existing');
+    expect(patientsApi.create).not.toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalled();
+  });
+
+  it('clears matching decisions when identity criteria change and never creates after a denied search', async () => {
+    prepareRegistration();
+    patientsApi.registrationMatches.mockReturnValueOnce(of(softMatch));
+    await component['createPatient'](new Event('submit'));
+    component['distinctPersonConfirmed'].set(true);
+    component['createModel'].update(value => ({ ...value, email: 'different@example.invalid' }));
+    fixture.detectChanges();
+    expect(component['identityMatches']()).toBeNull();
+    expect(component['distinctPersonConfirmed']()).toBe(false);
+    patientsApi.registrationMatches.mockReturnValueOnce(throwError(() => new Error('Denied')));
+    await component['createPatient'](new Event('submit'));
+    expect(patientsApi.create).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('links a scoped contact selection without exposing a raw identifier input', async () => {
+    prepareRegistration();
+    component['registrationOpen'].set(true);
+    component['chooseLinkedContact'](sampleSearchItem);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#linkedId')).toBeNull();
+    expect(component['createModel']().primaryContactLinkedPatientId).toBe(sampleSearchItem.patientId);
+    await component['createPatient'](new Event('submit'));
+    expect(patientsApi.create).toHaveBeenCalledWith(expect.objectContaining({ primaryContactLinkedPatientId: 'pat-1' }), expect.any(String));
   });
   it('hands off a named patient and the current clinic without displaying its ID', async () => {
     await component['search']();
@@ -217,7 +297,7 @@ describe('ReceptionPatients', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.empty-state img')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.empty-state button')).toBeTruthy();
-    session.hasPermission.mockImplementation((code) => code !== 'Patients.Register');
+    session.hasPermission.mockImplementation((code) => !['Patients.Register', 'Patients.RegisterFull'].includes(code));
     fixture.destroy();
     fixture = TestBed.createComponent(ReceptionPatients);
     component = fixture.componentInstance;
@@ -265,6 +345,7 @@ describe('ReceptionPatients', () => {
         primaryContactLinkedPatientId: 'linked',
         primaryContactPhoneNumber: '01011122233',
       }),
+      expect.any(String),
     );
     expect(fixture.nativeElement.querySelector('.selected-context')?.textContent).toContain(
       'Synthetic',
@@ -328,7 +409,7 @@ describe('ReceptionPatients', () => {
     }));
     fixture.detectChanges();
     const save = component['createPatient'](new Event('submit'));
-    await Promise.resolve();
+    await vi.waitFor(() => expect(patientsApi.create).toHaveBeenCalled());
     TestBed.inject(ReceptionPracticeContext).select('');
     fixture.detectChanges();
     pending.next({ patientId: 'registered' });

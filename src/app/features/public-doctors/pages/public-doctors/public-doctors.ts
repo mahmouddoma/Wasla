@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
@@ -9,23 +9,10 @@ import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
+import { PatientBookingState, PatientBookingDrawerComponent } from '../../../patient-booking';
 import { DoctorProfileApi, EgyptLocationOption } from '../../../../domains/doctor-profile';
-import { ToastService } from '../../../../core/notifications/toast.service';
-import { createIdempotencyKey } from '../../../../core/http/create-idempotency-key';
-import { ReservationsApi } from '../../../../domains/reservations/reservations-api';
 import {
-  BookablePatient,
-  CreatePatientReservationRequest,
-  Reservation,
-} from '../../../../domains/reservations/reservation.models';
-import { NgTemplateOutlet } from '@angular/common';
-import {
-  AvailableDate,
-  AvailableSlot,
-  BookingOptions,
   PublicDiscoveryApi,
-  PublicDoctorDetails,
   PublicDoctorSearchItem,
   PublicDoctorSearchResponse,
   PublicPracticeSummary,
@@ -34,7 +21,7 @@ import {
 
 @Component({
   selector: 'app-public-doctors',
-  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PageHeader, SideDrawer, NgTemplateOutlet],
+  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PageHeader, PatientBookingDrawerComponent],
   templateUrl: './public-doctors.html',
   styleUrl: './public-doctors.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,11 +38,15 @@ export class PublicDoctors {
   protected readonly authSession = inject(AuthSession);
   private readonly location = inject(Location);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(PublicDiscoveryApi);
   private readonly locationsApi = inject(DoctorProfileApi);
-  private readonly reservationsApi = inject(ReservationsApi);
-  private readonly toastService = inject(ToastService);
+  private searchSequence = 0;
+  private citySequence = 0;
+  private areaSequence = 0;
+  private destroyed = false;
+  protected readonly citiesLoading = signal(false);
+  protected readonly areasLoading = signal(false);
+  protected readonly locationFailed = signal(false);
 
   protected readonly specializations = signal<PublicSpecialization[]>([]);
   protected readonly governorates = signal<EgyptLocationOption[]>([]);
@@ -93,61 +84,13 @@ export class PublicDoctors {
   });
   protected readonly isInsidePortal = computed(() => this.authSession.isAuthenticated());
 
-  // Slide-Over Drawer state for doctor details & booking
-  protected readonly drawerOpened = signal(false);
-  protected readonly drawerLoading = signal(false);
-  protected readonly drawerDoctor = signal<PublicDoctorDetails | null>(null);
-  protected readonly drawerSelectedPractice = signal<PublicPracticeSummary | null>(null);
-  protected readonly drawerDates = signal<AvailableDate[]>([]);
-  protected readonly drawerSelectedDate = signal('');
-  protected readonly drawerSlots = signal<AvailableSlot[]>([]);
-  protected readonly drawerSelectedTime = signal('');
-  protected readonly drawerOptions = signal<BookingOptions | null>(null);
-  protected readonly drawerBookingLoading = signal(false);
-  protected readonly drawerMessages = signal<string[]>([]);
-  protected readonly drawerDoctorImageBroken = signal(false);
-  protected readonly drawerBrokenLogos = signal<string[]>([]);
-  private drawerBookingRequest = 0;
-  private bookingIntent: { signature: string; key: string } | null = null;
-
-  // Direct In-Place Booking State
-  protected readonly isPatient = computed(
-    () => this.authSession.isAuthenticated() && this.authSession.user()?.userType === 'Patient',
-  );
-  protected readonly bookablePatients = signal<BookablePatient[]>([]);
-  protected readonly selectedPatientId = signal<string>('');
-  protected readonly bookingNote = signal<string>('');
-  protected readonly bookingSubmitting = signal(false);
-  protected readonly bookingConfirmedReservation = signal<Reservation | null>(null);
-  protected readonly selectedSegment = signal<{
-    segmentId: string;
-    nameAr: string;
-    nameEn?: string | null;
-    price: number;
-  } | null>(null);
-  protected readonly selectedVisitType = signal<{
-    visitTypeId: string;
-    nameAr: string;
-    nameEn?: string | null;
-  } | null>(null);
-  protected readonly currentUrl = computed(() => this.router.url);
+  protected readonly booking = inject(PatientBookingState);
   protected readonly showDetailedLocation = signal(false);
-
-  protected readonly isDesktop = signal(
-    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
-  );
-
-  protected toggleDetailedLocation(): void {
-    this.showDetailedLocation.update((v) => !v);
-  }
+  protected toggleDetailedLocation(): void { this.showDetailedLocation.update(value => !value); }
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => { this.destroyed = true; ++this.searchSequence; ++this.citySequence; ++this.areaSequence; });
     void this.initialize();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', () => {
-        this.isDesktop.set(window.innerWidth >= 1025);
-      });
-    }
   }
 
   protected formatDateChip(dateStr: string): { dayName: string; dayNumber: string; monthName: string } {
@@ -171,9 +114,6 @@ export class PublicDoctors {
   }
 
   protected onDoctorCardSelect(doctor: PublicDoctorSearchItem): void {
-    if (this.drawerDoctor()?.doctorId === doctor.doctorId && this.drawerOpened()) {
-      return;
-    }
     const activePractice = this.getActivePractice(doctor);
     void this.openDoctorDrawer(
       doctor,
@@ -201,19 +141,44 @@ export class PublicDoctors {
     this.filters.update((value) => ({ ...value, cityId: '', areaId: '' }));
     this.cities.set([]);
     this.areas.set([]);
+    const sequence = ++this.citySequence;
+    ++this.areaSequence;
+    this.areasLoading.set(false);
+    this.locationFailed.set(false);
     const id = Number(this.filters().governorateId);
-    if (id) this.cities.set(await firstValueFrom(this.locationsApi.cities(id)));
+    this.citiesLoading.set(!!id);
+    try {
+      if (id) {
+        const cities = await firstValueFrom(this.locationsApi.cities(id));
+        if (sequence === this.citySequence && id === Number(this.filters().governorateId)) this.cities.set(cities);
+      }
+    } catch { if (sequence === this.citySequence) this.locationFailed.set(true); }
+    finally { if (sequence === this.citySequence) this.citiesLoading.set(false); }
   }
 
   protected async cityChanged(event: Event): Promise<void> {
     this.updateFilter('cityId', event);
     this.filters.update((value) => ({ ...value, areaId: '' }));
     this.areas.set([]);
+    const sequence = ++this.areaSequence;
+    this.locationFailed.set(false);
     const id = Number(this.filters().cityId);
-    if (id) this.areas.set(await firstValueFrom(this.locationsApi.areas(id)));
+    this.areasLoading.set(!!id);
+    try {
+      if (id) {
+        const areas = await firstValueFrom(this.locationsApi.areas(id));
+        if (sequence === this.areaSequence && id === Number(this.filters().cityId)) this.areas.set(areas);
+      }
+    } catch { if (sequence === this.areaSequence) this.locationFailed.set(true); }
+    finally { if (sequence === this.areaSequence) this.areasLoading.set(false); }
   }
 
   protected async resetFilters(): Promise<void> {
+    ++this.citySequence;
+    ++this.areaSequence;
+    this.citiesLoading.set(false);
+    this.areasLoading.set(false);
+    this.locationFailed.set(false);
     this.filters.set({
       searchText: '',
       specializationId: '',
@@ -227,12 +192,14 @@ export class PublicDoctors {
   }
 
   protected async search(pageNumber = 1): Promise<void> {
+    if (this.destroyed) return;
+    const sequence = ++this.searchSequence;
     this.isLoading.set(true);
     this.messages.set([]);
+    this.result.set({ items: [], totalCount: 0, pageNumber, pageSize: this.result().pageSize });
     try {
       const f = this.filters();
-      this.result.set(
-        await firstValueFrom(
+      const result = await firstValueFrom(
           this.api.doctors({
             searchText: f.searchText.trim() || undefined,
             specializationId: f.specializationId || undefined,
@@ -242,12 +209,12 @@ export class PublicDoctors {
             pageNumber,
             pageSize: this.result().pageSize,
           }),
-        ),
       );
+      if (sequence === this.searchSequence) this.result.set(result);
     } catch (error) {
-      this.messages.set(this.mapDrawerError(error));
+      if (sequence === this.searchSequence) this.messages.set(this.mapDrawerError(error));
     } finally {
-      this.isLoading.set(false);
+      if (sequence === this.searchSequence) this.isLoading.set(false);
     }
   }
 
@@ -255,332 +222,11 @@ export class PublicDoctors {
     this.brokenImages.update((ids) => [...new Set([...ids, doctorId])]);
   }
 
-  // Slide-Over Drawer booking actions
   protected async openDoctorDrawer(
-    doctorItem: PublicDoctorSearchItem,
-    practiceId?: string,
-    preselectedDate?: string | null,
-    preselectedTime?: string | null,
+    doctor: PublicDoctorSearchItem, practiceId?: string,
+    businessDate?: string | null, slotStartTime?: string | null,
   ): Promise<void> {
-    this.drawerOpened.set(true);
-    this.drawerLoading.set(true);
-    this.drawerDoctor.set(null);
-    this.drawerSelectedPractice.set(null);
-    this.drawerDates.set([]);
-    this.drawerSelectedDate.set('');
-    this.drawerSlots.set([]);
-    this.drawerSelectedTime.set('');
-    this.drawerOptions.set(null);
-    this.drawerMessages.set([]);
-    this.drawerDoctorImageBroken.set(false);
-    this.bookingConfirmedReservation.set(null);
-    this.bookingNote.set('');
-    this.bookingSubmitting.set(false);
-
-    if (this.isPatient() && this.bookablePatients().length === 0) {
-      try {
-        const patients = await firstValueFrom(this.reservationsApi.bookablePatients());
-        this.bookablePatients.set(patients);
-        const requested = this.route.snapshot.queryParamMap.get('patientId');
-        const patient =
-          patients.find((p) => p.patientId === requested) ||
-          patients.find((p) => p.isSelf) ||
-          patients[0];
-        if (patient) this.selectedPatientId.set(patient.patientId);
-      } catch {
-        // Patient list optional or loaded on confirm
-      }
-    }
-
-    try {
-      const details = await firstValueFrom(this.api.doctor(doctorItem.doctorId));
-      this.drawerDoctor.set(details);
-
-      const targetPractice = practiceId
-        ? details.practices.find((p) => p.id === practiceId)
-        : details.practices.find((p) => p.isBookable && p.onlineBookingEnabled !== false) ||
-          details.practices[0] ||
-          null;
-
-      if (
-        targetPractice &&
-        targetPractice.isBookable &&
-        targetPractice.onlineBookingEnabled !== false
-      ) {
-        await this.chooseDrawerPractice(targetPractice);
-        const targetDate =
-          preselectedDate &&
-          this.drawerDates().some((d) => d.date === preselectedDate && d.isAvailable)
-            ? preselectedDate
-            : this.drawerDates().find((d) => d.isAvailable)?.date;
-
-        if (targetDate) {
-          await this.chooseDrawerDate(targetDate);
-          if (preselectedTime) {
-            const cleanTime = preselectedTime.slice(0, 5);
-            const matched = this.drawerSlots().find((s) => s.time.startsWith(cleanTime));
-            if (matched) {
-              await this.chooseDrawerSlot(matched.time);
-            }
-          }
-        }
-      } else if (targetPractice) {
-        this.drawerSelectedPractice.set(targetPractice);
-      }
-    } catch (error) {
-      this.drawerMessages.set(this.mapDrawerError(error));
-    } finally {
-      this.drawerLoading.set(false);
-    }
-  }
-
-  protected closeDrawer(): void {
-    this.drawerOpened.set(false);
-    this.bookingConfirmedReservation.set(null);
-    this.bookingNote.set('');
-    this.bookingSubmitting.set(false);
-    this.selectedSegment.set(null);
-    this.selectedVisitType.set(null);
-  }
-
-  protected updateBookingNote(event: Event): void {
-    this.bookingNote.set((event.target as HTMLInputElement).value);
-  }
-
-  protected selectPatient(patientId: string): void {
-    this.selectedPatientId.set(patientId);
-  }
-
-  protected async confirmBooking(
-    segment: { segmentId: string; nameAr: string; nameEn?: string | null; price: number },
-    visitType: { visitTypeId: string; nameAr: string; nameEn?: string | null },
-  ): Promise<void> {
-    const practice = this.drawerSelectedPractice();
-    const date = this.drawerSelectedDate();
-    const time = this.drawerSelectedTime();
-
-    if (!practice || !date || !time || this.bookingSubmitting()) return;
-
-    if (!this.authSession.isAuthenticated()) {
-      void this.router.navigate(['/login'], {
-        queryParams: { returnUrl: this.router.url },
-      });
-      return;
-    }
-
-    let patientId = this.selectedPatientId();
-    if (!patientId && this.bookablePatients().length > 0) {
-      patientId = this.bookablePatients()[0].patientId;
-      this.selectedPatientId.set(patientId);
-    }
-
-    if (!patientId && this.isPatient()) {
-      try {
-        const patients = await firstValueFrom(this.reservationsApi.bookablePatients());
-        this.bookablePatients.set(patients);
-        const requested = this.route.snapshot.queryParamMap.get('patientId');
-        const patient =
-          patients.find((p) => p.patientId === requested) ||
-          patients.find((p) => p.isSelf) ||
-          patients[0];
-        if (patient) {
-          patientId = patient.patientId;
-          this.selectedPatientId.set(patientId);
-        }
-      } catch (err) {
-        this.drawerMessages.set(this.mapDrawerError(err));
-        return;
-      }
-    }
-
-    if (!patientId) {
-      this.toastService.error('booking.patientRequired');
-      return;
-    }
-
-    if (this.bookingSubmitting()) return;
-    this.bookingSubmitting.set(true);
-    this.drawerMessages.set([]);
-
-    try {
-      const request: CreatePatientReservationRequest = {
-        doctorPracticeId: practice.id,
-        patientId,
-        businessDate: date,
-        slotStartTime: time,
-        segmentId: segment.segmentId,
-        visitTypeId: visitType.visitTypeId,
-        bookingNote: this.bookingNote().trim() || null,
-      };
-
-      const signature = JSON.stringify(request);
-      if (this.bookingIntent?.signature !== signature)
-        this.bookingIntent = { signature, key: createIdempotencyKey() };
-      const idempotencyKey = this.bookingIntent.key;
-      const reservation = await firstValueFrom(
-        this.reservationsApi.createPatient(request, idempotencyKey),
-      );
-
-      this.toastService.success('booking.successToast');
-      this.bookingIntent = null;
-      this.bookingConfirmedReservation.set(reservation);
-    } catch (error) {
-      const parsed = parseApiErrors(error);
-      const unavailable =
-        error instanceof HttpErrorResponse &&
-        error.status === 403 &&
-        parsed.codes.some((code) => code.startsWith('Subscription.'));
-      if (unavailable) {
-        ++this.drawerBookingRequest;
-        this.drawerDates.set([]);
-        this.drawerSlots.set([]);
-        this.drawerOptions.set(null);
-        this.drawerSelectedDate.set('');
-        this.drawerSelectedTime.set('');
-        this.selectedSegment.set(null);
-        this.selectedVisitType.set(null);
-      }
-      const errMsgs = unavailable ? ['booking.practiceUnavailable'] : this.mapDrawerError(error);
-      this.drawerMessages.set(errMsgs);
-      if (errMsgs.length > 0) {
-        this.toastService.error(errMsgs[0]);
-      }
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        // Refresh choices without replaying a mutation or losing the patient's selection.
-        await this.chooseDrawerDate(date);
-        this.drawerMessages.set(errMsgs);
-      }
-      if (error instanceof HttpErrorResponse && [403, 404].includes(error.status) && !unavailable) {
-        this.bookablePatients.set([]);
-        this.selectedPatientId.set('');
-        try {
-          const patients = await firstValueFrom(this.reservationsApi.bookablePatients());
-          this.bookablePatients.set(patients);
-          this.selectedPatientId.set(
-            patients.find((patient) => patient.patientId === patientId)?.patientId ??
-              patients.find((patient) => patient.isSelf)?.patientId ??
-              '',
-          );
-          await this.chooseDrawerDate(date);
-        } catch {
-          this.drawerOptions.set(null);
-          this.drawerSlots.set([]);
-          this.drawerSelectedTime.set('');
-        }
-        this.drawerMessages.set(errMsgs);
-      }
-    } finally {
-      this.bookingSubmitting.set(false);
-    }
-  }
-
-  protected async chooseDrawerPractice(practice: PublicPracticeSummary): Promise<void> {
-    this.drawerSelectedPractice.set(practice);
-    this.drawerDates.set([]);
-    this.drawerSelectedDate.set('');
-    this.drawerSlots.set([]);
-    this.drawerSelectedTime.set('');
-    this.drawerOptions.set(null);
-    this.drawerMessages.set([]);
-
-    if (!practice.isBookable || practice.onlineBookingEnabled === false) return;
-    const request = ++this.drawerBookingRequest;
-    this.drawerBookingLoading.set(true);
-
-    try {
-      const dates = await firstValueFrom(this.api.availableDates(practice.id));
-      if (request === this.drawerBookingRequest) {
-        this.drawerDates.set(dates);
-        const firstAvailable = dates.find((d) => d.isAvailable);
-        if (firstAvailable) {
-          await this.chooseDrawerDate(firstAvailable.date);
-        }
-      }
-    } catch (error) {
-      if (request === this.drawerBookingRequest) {
-        this.drawerMessages.set(this.mapDrawerError(error));
-      }
-    } finally {
-      if (request === this.drawerBookingRequest) this.drawerBookingLoading.set(false);
-    }
-  }
-
-  protected async chooseDrawerDate(date: string): Promise<void> {
-    const practice = this.drawerSelectedPractice();
-    if (!practice) return;
-    const request = ++this.drawerBookingRequest;
-    this.drawerSelectedDate.set(date);
-    this.drawerSlots.set([]);
-    this.drawerSelectedTime.set('');
-    this.drawerOptions.set(null);
-    this.selectedSegment.set(null);
-    this.selectedVisitType.set(null);
-    this.drawerMessages.set([]);
-    this.drawerBookingLoading.set(true);
-
-    try {
-      const slots = await firstValueFrom(this.api.availableSlots(practice.id, date));
-      if (request === this.drawerBookingRequest) this.drawerSlots.set(slots);
-    } catch (error) {
-      if (request === this.drawerBookingRequest) {
-        this.drawerMessages.set(this.mapDrawerError(error));
-      }
-    } finally {
-      if (request === this.drawerBookingRequest) this.drawerBookingLoading.set(false);
-    }
-  }
-
-  protected async chooseDrawerSlot(time: string): Promise<void> {
-    const practice = this.drawerSelectedPractice();
-    const date = this.drawerSelectedDate();
-    if (!practice || !date) return;
-    const request = ++this.drawerBookingRequest;
-    this.drawerSelectedTime.set(time);
-    this.drawerOptions.set(null);
-    this.selectedSegment.set(null);
-    this.selectedVisitType.set(null);
-    this.drawerMessages.set([]);
-    this.drawerBookingLoading.set(true);
-
-    try {
-      const options = await firstValueFrom(this.api.bookingOptions(practice.id, date, time));
-      if (request === this.drawerBookingRequest) {
-        this.drawerOptions.set(options);
-        const normalVisit =
-          options.visitTypes.find((vt) => vt.type !== 'FollowUp') || options.visitTypes[0];
-        if (normalVisit) {
-          this.selectedVisitType.set(normalVisit);
-          const defSegment =
-            normalVisit.segments.find((s) => s.isDefault) || normalVisit.segments[0];
-          if (defSegment) {
-            this.selectedSegment.set(defSegment);
-          }
-        }
-      }
-    } catch (error) {
-      if (request !== this.drawerBookingRequest) return;
-      this.drawerMessages.set(this.mapDrawerError(error));
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        await this.chooseDrawerDate(date);
-      }
-    } finally {
-      if (request === this.drawerBookingRequest) this.drawerBookingLoading.set(false);
-    }
-  }
-
-  protected selectSegment(
-    segment: { segmentId: string; nameAr: string; nameEn?: string | null; price: number },
-    visitType: { visitTypeId: string; nameAr: string; nameEn?: string | null },
-  ): void {
-    this.selectedSegment.set(segment);
-    this.selectedVisitType.set(visitType);
-  }
-
-  protected async confirmQuickBooking(): Promise<void> {
-    const segment = this.selectedSegment();
-    const visitType = this.selectedVisitType();
-    if (!segment || !visitType) return;
-    await this.confirmBooking(segment, visitType);
+    await this.booking.open({ doctorId: doctor.doctorId, doctorPracticeId: practiceId, businessDate, slotStartTime });
   }
 
   protected formatSlot(date: string | null | undefined, time: string | null | undefined): string {
@@ -694,21 +340,18 @@ export class PublicDoctors {
     );
   }
 
-  protected drawerLogoFailed(id: string): void {
-    this.drawerBrokenLogos.update((ids) => [...new Set([...ids, id])]);
-  }
-
   private async initialize(): Promise<void> {
     try {
       const [specializations, governorates] = await Promise.all([
         firstValueFrom(this.api.specializations()),
         firstValueFrom(this.locationsApi.governorates()),
       ]);
+      if (this.destroyed) return;
       this.specializations.set(specializations);
       this.governorates.set(governorates);
     } catch (error) {
       const parsed = parseApiErrors(error);
-      this.messages.set(parsed.messages);
+      if (!this.destroyed) this.messages.set(parsed.messages);
     }
     await this.search();
   }

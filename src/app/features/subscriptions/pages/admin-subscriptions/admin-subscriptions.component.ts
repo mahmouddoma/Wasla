@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -36,6 +36,7 @@ interface CachedDoctor {
   imports: [
     CurrencyPipe,
     DatePipe,
+    NgTemplateOutlet,
     FormsModule,
     TranslatePipe,
     PageHeader,
@@ -46,7 +47,7 @@ interface CachedDoctor {
   styleUrls: ['../../subscriptions.css', './admin-subscriptions.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminSubscriptionsComponent {
+export class AdminSubscriptionsComponent implements OnDestroy {
   readonly operations = ['activate', 'extend', 'renew'] as const;
   readonly language = inject(LanguageService);
   readonly session = inject(AuthSession);
@@ -82,9 +83,39 @@ export class AdminSubscriptionsComponent {
   private intentBody = '';
   private listGeneration = 0;
   private detailGeneration = 0;
+
+  private readonly resizeListener = () => {
+    if (typeof window !== 'undefined') {
+      this.isDesktop.set(window.innerWidth >= 1025);
+    }
+  };
+
+  readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : false,
+  );
+
+  readonly hasActiveDetail = computed(() => this.selectedId() !== null);
+
+  readonly detailTitle = computed(() => {
+    const doc = this.details()?.doctor;
+    if (doc) {
+      return this.language.currentLang() === 'ar' ? doc.nameAr : (doc.nameEn || doc.nameAr);
+    }
+    return this.language.t('subscriptions.details');
+  });
+
   constructor() {
     void this.load();
     void this.loadCatalog();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resizeListener, { passive: true });
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.resizeListener);
+    }
   }
   private async loadCatalog(): Promise<void> {
     try {

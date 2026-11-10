@@ -168,6 +168,9 @@ export class PortalNavigation {
               },
             ]
           : []),
+        ...(this.session.hasPermission('HiddenEncounterAccessRequests.ViewIncoming')
+          ? [{ id: 'medical-sharing', labelKey: 'sharing.inbox', route: '/doctor/medical-sharing', icon: 'shield' as const }]
+          : []),
         ...(this.session.hasPermission(PERMISSIONS.doctorPatientsViewOwn)
           ? [
               {

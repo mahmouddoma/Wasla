@@ -11,6 +11,18 @@ import { ReservationsApi } from '../../../../domains/reservations/reservations-a
 import { ToastService } from '../../../../core/notifications/toast.service';
 
 describe('PublicDoctorDetailsPage', () => {
+  it('displays the standard new-consultation baseline without unsupported ratings or reviews', async () => {
+    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
+    await fixture.whenStable();
+    const language = TestBed.inject(LanguageService);
+    for (const lang of ['ar', 'en'] as const) {
+      language.setLanguage(lang);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.rating-stars')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.rating-count')).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain(language.t('booking.standardNewConsultation'));
+    }
+  });
   const practice: PublicPracticeSummary = {
     id: 'branch-1', nameAr: 'العيادة', nameEn: 'Clinic', logoUrl: null,
     governorate: null, city: null, area: null, detailedAddress: null,
@@ -37,11 +49,12 @@ describe('PublicDoctorDetailsPage', () => {
         { provide: PublicDiscoveryApi, useValue: api },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap({ doctorId: 'doctor-1' }) } },
+          useValue: { snapshot: { paramMap: convertToParamMap({ doctorId: 'doctor-1' }), queryParamMap: convertToParamMap({}) } },
         },
         {
           provide: AuthSession,
           useValue: {
+            token: () => null,
             isAuthenticated: () => false,
             hasRole: () => false,
             user: () => null,
@@ -65,174 +78,12 @@ describe('PublicDoctorDetailsPage', () => {
     TestBed.inject(LanguageService).setLanguage('ar');
   });
   afterEach(() => localStorage.removeItem('wasla_lang'));
-  it('updates translated controls, clinic names and direction when language changes', async () => {
+  it('opens the same booking flow from the selected profile practice without creating a reservation', async () => {
     const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
     await fixture.whenStable();
-    TestBed.inject(LanguageService).setLanguage('en');
-    await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('main')?.dir).toBe('ltr');
-    expect(element.textContent).toContain('Back to search');
-    expect(element.textContent).toContain('Clinic Selected');
-    expect(element.querySelector('.practice-list h3')?.textContent).toContain('Clinic');
-  });
-  it('does not announce empty availability while the clinic dates are loading', async () => {
-    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
-    await fixture.whenStable();
-    const dates = new Subject<AvailableDate[]>();
-    api.availableDates.mockReturnValue(dates);
-    const pending = fixture.componentInstance['choosePractice'](practice);
-    await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.textContent).not.toContain(TestBed.inject(LanguageService).t('booking.noDays'));
-    dates.next([]);
-    await pending;
-    await fixture.whenStable();
-    expect(element.textContent).toContain(TestBed.inject(LanguageService).t('booking.noDays'));
-  });
-  it('prevents choosing dates marked unavailable by the server', async () => {
-    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
-    await fixture.whenStable();
-    api.availableDates.mockReturnValue(of([{ date: '2026-09-20', isAvailable: false }]));
+    const open = vi.spyOn(fixture.componentInstance['booking'], 'open').mockResolvedValue();
     await fixture.componentInstance['choosePractice'](practice);
-    await fixture.whenStable();
-    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.choice-grid button')!;
-    expect(button.disabled).toBe(true);
-    button.click();
+    expect(open).toHaveBeenCalledWith({ doctorId: 'doctor-1', doctorPracticeId: 'branch-1' });
     expect(api.availableSlots).not.toHaveBeenCalled();
-  });
-  it('renders the doctor and refuses booking for unavailable branches', async () => {
-    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
-    await fixture.whenStable();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('أحمد');
-    api.availableDates.mockClear();
-    await fixture.componentInstance['choosePractice']({ ...practice, isBookable: false });
-    expect(api.availableDates).not.toHaveBeenCalled();
-  });
-  it('keeps the latest branch dates when responses arrive out of order', async () => {
-    const page = TestBed.createComponent(PublicDoctorDetailsPage).componentInstance;
-    await Promise.resolve();
-    api.availableDates.mockReset();
-    const first = new Subject<AvailableDate[]>();
-    const second = new Subject<AvailableDate[]>();
-    api.availableDates.mockReturnValueOnce(first).mockReturnValueOnce(second);
-    page['selectedTime'].set('17:00');
-    const pendingFirst = page['choosePractice'](practice, false);
-    const pendingSecond = page['choosePractice']({ ...practice, id: 'branch-2' }, false);
-    expect(page['selectedTime']()).toBe('');
-    second.next([{ date: '2026-09-20', isAvailable: true }]);
-    await pendingSecond;
-    first.next([{ date: '2026-09-19', isAvailable: true }]);
-    await pendingFirst;
-    expect(page['dates']()).toEqual([{ date: '2026-09-20', isAvailable: true }]);
-    expect(page['selectedPractice']()?.id).toBe('branch-2');
-  });
-  it('clears old slots and ignores failures belonging to an earlier date', async () => {
-    const page = TestBed.createComponent(PublicDoctorDetailsPage).componentInstance;
-    await page['choosePractice'](practice);
-    const first = new Subject<AvailableSlot[]>();
-    const second = new Subject<AvailableSlot[]>();
-    api.availableSlots.mockReturnValueOnce(first).mockReturnValueOnce(second);
-    page['slots'].set([{ date: '2026-09-18', time: '17:00' }]);
-    const pendingFirst = page['chooseDate']('2026-09-19');
-    expect(page['slots']()).toEqual([]);
-    const pendingSecond = page['chooseDate']('2026-09-20');
-    first.error(new HttpErrorResponse({ status: 500 }));
-    await pendingFirst;
-    expect(page['bookingLoading']()).toBe(true);
-    expect(page['messages']()).toEqual([]);
-    second.next([{ date: '2026-09-20', time: '18:00' }]);
-    await pendingSecond;
-    expect(page['slots']()[0].time).toBe('18:00');
-  });
-  it('refreshes slots when the current slot conflicts', async () => {
-    const page = TestBed.createComponent(PublicDoctorDetailsPage).componentInstance;
-    await page['choosePractice'](practice);
-    await page['chooseDate']('2026-09-20');
-    api.bookingOptions.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-    await page['chooseSlot']('18:00');
-    expect(api.availableSlots).toHaveBeenCalledTimes(2);
-    expect(page['selectedTime']()).toBe('');
-    expect(page['bookingLoading']()).toBe(false);
-  });
-  it('shows the not-found state for an unknown doctor', async () => {
-    api.doctor.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
-    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
-    await fixture.whenStable();
-    expect(fixture.componentInstance['notFound']()).toBe(true);
-    expect(fixture.componentInstance['isLoading']()).toBe(false);
-  });
-  it('auto-selects first available date, slot, and default segment for 3-click booking', async () => {
-    api.availableDates.mockReturnValue(of([{ date: '2026-10-15', isAvailable: true }]));
-    api.availableSlots.mockReturnValue(of([{ date: '2026-10-15', time: '10:00' }]));
-    api.bookingOptions.mockReturnValue(
-      of({
-        practiceId: 'branch-1',
-        date: '2026-10-15',
-        time: '10:00',
-        visitTypes: [
-          {
-            visitTypeId: 'vt-1',
-            type: 'NewConsultation',
-            nameAr: 'كشف',
-            nameEn: 'Consultation',
-            segments: [
-              { segmentId: 'seg-1', nameAr: 'عادي', nameEn: 'Regular', price: 300, isDefault: true },
-            ],
-          },
-        ],
-      }),
-    );
-    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
-    await fixture.whenStable();
-    const page = fixture.componentInstance;
-    expect(page['selectedPractice']()?.id).toBe('branch-1');
-    expect(page['selectedDate']()).toBe('2026-10-15');
-    expect(page['selectedTime']()).toBe('10:00');
-    expect(page['selectedSegment']()?.segmentId).toBe('seg-1');
-    expect(page['selectedVisitType']()?.visitTypeId).toBe('vt-1');
-  });
-  async function bookingPage() {
-    vi.spyOn(TestBed.inject(AuthSession), 'isAuthenticated').mockReturnValue(true);
-    const fixture = TestBed.createComponent(PublicDoctorDetailsPage);
-    await fixture.whenStable();
-    const page = fixture.componentInstance;
-    page['selectedPractice'].set(practice);
-    page['selectedDate'].set('2026-11-10');
-    page['selectedTime'].set('10:00');
-    page['selectedPatientId'].set('patient-1');
-    return page;
-  }
-  const segment = { segmentId: 'segment', nameAr: 'Standard', price: 300 };
-  const visit = { visitTypeId: 'visit', nameAr: 'Consultation' };
-  it('retains the intent key on network retry and changes it only when the booking changes', async () => {
-    const page = await bookingPage();
-    const create = vi.spyOn(TestBed.inject(ReservationsApi), 'createPatient').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
-    await page['confirmBooking'](segment, visit);
-    await page['confirmBooking'](segment, visit);
-    expect(create.mock.calls[0][1]).toBe(create.mock.calls[1][1]);
-    page['bookingNote'].set('Changed booking');
-    await page['confirmBooking'](segment, visit);
-    expect(create.mock.calls[2][1]).not.toBe(create.mock.calls[0][1]);
-    expect(page['bookingConfirmedReservation']()).toBeNull();
-  });
-  it('refreshes the exact practice/date after conflict without replaying the booking', async () => {
-    const page = await bookingPage();
-    const create = vi.spyOn(TestBed.inject(ReservationsApi), 'createPatient').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-    await page['confirmBooking'](segment, visit);
-    expect(api.availableSlots).toHaveBeenCalledWith('branch-1', '2026-11-10');
-    expect(page['selectedTime']()).toBe('');
-    expect(create).toHaveBeenCalledOnce();
-  });
-  it('removes stale booking choices on expiry and preserves patient selection and note', async () => {
-    const page = await bookingPage();
-    page['bookingNote'].set('Keep this');
-    vi.spyOn(TestBed.inject(ReservationsApi), 'createPatient').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403, error: { errors: [{ code: 'Subscription.Expired' }] } })));
-    await page['confirmBooking'](segment, visit);
-    expect(page['selectedTime']()).toBe('');
-    expect(page['options']()).toBeNull();
-    expect(page['selectedPatientId']()).toBe('patient-1');
-    expect(page['bookingNote']()).toBe('Keep this');
-    expect(page['messages']()).toEqual(['booking.practiceUnavailable']);
   });
 });

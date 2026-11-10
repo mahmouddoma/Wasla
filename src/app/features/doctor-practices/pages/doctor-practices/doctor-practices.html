@@ -223,30 +223,20 @@
         </div>
 
         <div class="practice-detail-side">
-          <div class="readiness-note" [class.ready]="practice.isActive">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              @if (practice.isActive) {
-                <polyline points="20 6 9 17 4 12"></polyline>
-              } @else {
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              }
-            </svg>
-            <span>
-              {{
-                practice.isActive
-                  ? ('practice.readyForBookingGuide' | t)
-                  : ('practice.activationGuide' | t)
-              }}
-            </span>
+          <div class="readiness-note" [attr.aria-busy]="readinessLoading()">
+            <div class="readiness-status">
+              <dl>
+                <div><dt>{{ 'readiness.operational' | t }}</dt><dd>{{ (practice.isActive ? 'readiness.enabled' : 'readiness.disabled') | t }}</dd></div>
+                <div><dt>{{ 'readiness.online' | t }}</dt><dd>{{ (onlineBookingEnabled() === null ? 'readiness.unknown' : onlineBookingEnabled() ? 'readiness.enabled' : 'readiness.disabled') | t }}</dd></div>
+                <div><dt>{{ 'readiness.bookable' | t }}</dt><dd>{{ (!practice.isActive ? 'readiness.unavailable' : !publicReadiness() ? 'readiness.unknown' : publicReadiness()!.isBookable ? 'readiness.available' : 'readiness.unavailable') | t }}</dd></div>
+              </dl>
+              @if (readinessReason(); as reason) { <p role="status">{{ reason | t }}</p> }
+              <div class="readiness-actions">
+                @if (canViewConfiguration || canManageConfiguration) { <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectSection('operations')">{{ 'readiness.configuration' | t }}</button> }
+                @if (canViewSchedule || canManageSchedule) { <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectSection('schedule')">{{ 'readiness.schedule' | t }}</button> }
+                @if (canViewPricing || canManagePricing) { <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectSection('segments')">{{ 'readiness.pricing' | t }}</button> }
+              </div>
+            </div>
           </div>
         </div>
       </div>

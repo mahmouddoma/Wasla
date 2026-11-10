@@ -1,27 +1,14 @@
+import { SharedRecordSchemas } from './shared-record.models';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { SafeRecordOverview, SafeRecordPage } from './patient-record.models';
 import {
-  AccessInboxSummaryResponse,
-  AccessRequestHistoryItem,
-  ApproveHiddenAccessRequest,
-  CreateHiddenAccessRequest,
-  HiddenAccessRequestItem,
-  HiddenAccessRequestSummaryPage,
   MedicalRecordAccessLogPage,
   MedicalRecordEncounterDetail,
   MedicalRecordItemDetail,
-  MedicalRecordTimelinePage,
-  OwnerAccessRequestItem,
-  OwnerAccessRequestPage,
-  RejectHiddenAccessRequest,
-  RevokeHiddenAccessRequest,
-  TreatingDoctorMedicalOverview,
   UpdateEncounterVisibilityRequest,
-  UpdateEncounterVisibilityResponse,
-  VisibilityHistoryItem,
 } from './medical-records.models';
 
 @Injectable({ providedIn: 'root' })
@@ -77,14 +64,10 @@ export class MedicalRecordsApi {
   }
 
   patientAccessLog(
-    fromDate?: string,
-    toDate?: string,
     cursor?: string,
     pageSize = 20,
   ): Observable<MedicalRecordAccessLogPage> {
     let params = new HttpParams().set('pageSize', pageSize.toString());
-    if (fromDate) params = params.set('fromDate', fromDate);
-    if (toDate) params = params.set('toDate', toDate);
     if (cursor) params = params.set('cursor', cursor);
 
     return this.http.get<MedicalRecordAccessLogPage>(`${this.patientRecordUrl}/access-log`, {
@@ -97,8 +80,8 @@ export class MedicalRecordsApi {
   doctorTreatingOverview(
     practiceId: string,
     ticketId: string,
-  ): Observable<TreatingDoctorMedicalOverview> {
-    return this.http.get<TreatingDoctorMedicalOverview>(
+  ): Observable<SharedRecordSchemas['DoctorSharedMedicalRecordOverviewResponse']> {
+    return this.http.get<SharedRecordSchemas['DoctorSharedMedicalRecordOverviewResponse']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/overview`,
     );
   }
@@ -111,14 +94,14 @@ export class MedicalRecordsApi {
     toDate?: string,
     cursor?: string,
     pageSize = 20,
-  ): Observable<MedicalRecordTimelinePage> {
+  ): Observable<SharedRecordSchemas['TimelineEntryRecordPage']> {
     let params = new HttpParams().set('pageSize', pageSize.toString());
     if (types) params = params.set('types', types);
     if (fromDate) params = params.set('fromDate', fromDate);
     if (toDate) params = params.set('toDate', toDate);
     if (cursor) params = params.set('cursor', cursor);
 
-    return this.http.get<MedicalRecordTimelinePage>(
+    return this.http.get<SharedRecordSchemas['TimelineEntryRecordPage']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/timeline`,
       { params },
     );
@@ -128,8 +111,8 @@ export class MedicalRecordsApi {
     practiceId: string,
     ticketId: string,
     encounterId: string,
-  ): Observable<MedicalRecordEncounterDetail> {
-    return this.http.get<MedicalRecordEncounterDetail>(
+  ): Observable<SharedRecordSchemas['DoctorSharedMedicalRecordEncounterResponse']> {
+    return this.http.get<SharedRecordSchemas['DoctorSharedMedicalRecordEncounterResponse']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/encounters/${encounterId}`,
     );
   }
@@ -139,8 +122,8 @@ export class MedicalRecordsApi {
     ticketId: string,
     resourceType: string,
     sourceId: string,
-  ): Observable<MedicalRecordItemDetail> {
-    return this.http.get<MedicalRecordItemDetail>(
+  ): Observable<SharedRecordSchemas['DoctorSharedMedicalRecordItemResponse']> {
+    return this.http.get<SharedRecordSchemas['DoctorSharedMedicalRecordItemResponse']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/items/${resourceType}/${sourceId}`,
     );
   }
@@ -161,9 +144,11 @@ export class MedicalRecordsApi {
   doctorTreatingAccessRequests(
     practiceId: string,
     ticketId: string,
-  ): Observable<HiddenAccessRequestSummaryPage> {
-    return this.http.get<HiddenAccessRequestSummaryPage>(
+    cursor?: string,
+  ): Observable<SharedRecordSchemas['HiddenAccessResponseRecordPage']> {
+    return this.http.get<SharedRecordSchemas['HiddenAccessResponseRecordPage']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/access-requests`,
+      { params: cursor ? { cursor } : {} },
     );
   }
 
@@ -171,8 +156,8 @@ export class MedicalRecordsApi {
     practiceId: string,
     ticketId: string,
     requestId: string,
-  ): Observable<HiddenAccessRequestItem> {
-    return this.http.get<HiddenAccessRequestItem>(
+  ): Observable<SharedRecordSchemas['HiddenAccessResponse']> {
+    return this.http.get<SharedRecordSchemas['HiddenAccessResponse']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/access-requests/${requestId}`,
     );
   }
@@ -180,59 +165,60 @@ export class MedicalRecordsApi {
   doctorCreateAccessRequest(
     practiceId: string,
     ticketId: string,
-    body: CreateHiddenAccessRequest,
-  ): Observable<HiddenAccessRequestItem> {
-    return this.http.post<HiddenAccessRequestItem>(
+    body: SharedRecordSchemas['HiddenAccessCreateRequest'],
+    idempotencyKey: string,
+  ): Observable<SharedRecordSchemas['HiddenAccessResponse']> {
+    return this.http.post<SharedRecordSchemas['HiddenAccessResponse']>(
       `${this.doctorsUrl}/practices/${practiceId}/tickets/${ticketId}/medical-record/access-requests`,
-      body,
+      body, { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 
   // === Doctor Access Inbox & Reviews (WAS-602 .. WAS-608) ===
 
-  doctorAccessInboxSummary(): Observable<AccessInboxSummaryResponse> {
-    return this.http.get<AccessInboxSummaryResponse>(
+  doctorAccessInboxSummary(): Observable<SharedRecordSchemas['AccessInboxSummary']> {
+    return this.http.get<SharedRecordSchemas['AccessInboxSummary']>(
       `${this.doctorsUrl}/medical-record-access-requests/inbox/summary`,
     );
   }
 
   doctorAccessInbox(
     status?: string,
-    pageNumber = 1,
+    cursor?: string,
     pageSize = 20,
-  ): Observable<OwnerAccessRequestPage> {
-    let params = new HttpParams()
-      .set('pageNumber', pageNumber.toString())
-      .set('pageSize', pageSize.toString());
+  ): Observable<SharedRecordSchemas['HiddenAccessResponseRecordPage']> {
+    let params = new HttpParams().set('pageSize', pageSize.toString());
+    if (cursor) params = params.set('cursor', cursor);
     if (status) params = params.set('status', status);
 
-    return this.http.get<OwnerAccessRequestPage>(
+    return this.http.get<SharedRecordSchemas['HiddenAccessResponseRecordPage']>(
       `${this.doctorsUrl}/medical-record-access-requests/inbox`,
       { params },
     );
   }
 
-  doctorAccessRequestDetails(requestId: string): Observable<OwnerAccessRequestItem> {
-    return this.http.get<OwnerAccessRequestItem>(
+  doctorAccessRequestDetails(requestId: string): Observable<SharedRecordSchemas['HiddenAccessResponse']> {
+    return this.http.get<SharedRecordSchemas['HiddenAccessResponse']>(
       `${this.doctorsUrl}/medical-record-access-requests/${requestId}`,
     );
   }
 
   doctorApproveAccessRequest(
     requestId: string,
-    body: ApproveHiddenAccessRequest,
-  ): Observable<OwnerAccessRequestItem> {
-    return this.http.post<OwnerAccessRequestItem>(
+    body: SharedRecordSchemas['AccessDecisionRequest'],
+    idempotencyKey: string,
+  ): Observable<SharedRecordSchemas['HiddenAccessResponse']> {
+    return this.http.post<SharedRecordSchemas['HiddenAccessResponse']>(
       `${this.doctorsUrl}/medical-record-access-requests/${requestId}/approve`,
-      body,
+      body, { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 
   doctorRejectAccessRequest(
     requestId: string,
-    body: RejectHiddenAccessRequest,
-  ): Observable<OwnerAccessRequestItem> {
-    return this.http.post<OwnerAccessRequestItem>(
+    body: SharedRecordSchemas['AccessDecisionRequest'],
+  ): Observable<SharedRecordSchemas['HiddenAccessResponse']> {
+    return this.http.post<SharedRecordSchemas['HiddenAccessResponse']>(
       `${this.doctorsUrl}/medical-record-access-requests/${requestId}/reject`,
       body,
     );
@@ -240,16 +226,16 @@ export class MedicalRecordsApi {
 
   doctorRevokeAccessGrant(
     requestId: string,
-    body: RevokeHiddenAccessRequest,
-  ): Observable<OwnerAccessRequestItem> {
-    return this.http.post<OwnerAccessRequestItem>(
+    body: SharedRecordSchemas['AccessDecisionRequest'],
+  ): Observable<SharedRecordSchemas['HiddenAccessResponse']> {
+    return this.http.post<SharedRecordSchemas['HiddenAccessResponse']>(
       `${this.doctorsUrl}/medical-record-access-requests/${requestId}/revoke`,
       body,
     );
   }
 
-  doctorAccessRequestHistory(requestId: string): Observable<readonly AccessRequestHistoryItem[]> {
-    return this.http.get<readonly AccessRequestHistoryItem[]>(
+  doctorAccessRequestHistory(requestId: string): Observable<readonly SharedRecordSchemas['RequestHistoryResponse'][]> {
+    return this.http.get<readonly SharedRecordSchemas['RequestHistoryResponse'][]>(
       `${this.doctorsUrl}/medical-record-access-requests/${requestId}/history`,
     );
   }
@@ -259,9 +245,9 @@ export class MedicalRecordsApi {
   doctorUpdateEncounterVisibility(
     practiceId: string,
     encounterId: string,
-    body: UpdateEncounterVisibilityRequest,
-  ): Observable<UpdateEncounterVisibilityResponse> {
-    return this.http.patch<UpdateEncounterVisibilityResponse>(
+    body: Pick<UpdateEncounterVisibilityRequest, 'visibility' | 'rowVersion'>,
+  ): Observable<SharedRecordSchemas['EncounterVisibilityResponse']> {
+    return this.http.patch<SharedRecordSchemas['EncounterVisibilityResponse']>(
       `${this.doctorsUrl}/practices/${practiceId}/encounters/${encounterId}/visibility`,
       body,
     );
@@ -270,9 +256,11 @@ export class MedicalRecordsApi {
   doctorEncounterVisibilityHistory(
     practiceId: string,
     encounterId: string,
-  ): Observable<readonly VisibilityHistoryItem[]> {
-    return this.http.get<readonly VisibilityHistoryItem[]>(
+    cursor?: string,
+  ): Observable<SharedRecordSchemas['VisibilityHistoryResponseRecordPage']> {
+    return this.http.get<SharedRecordSchemas['VisibilityHistoryResponseRecordPage']>(
       `${this.doctorsUrl}/practices/${practiceId}/encounters/${encounterId}/visibility/history`,
+      { params: cursor ? { cursor } : {} },
     );
   }
 }

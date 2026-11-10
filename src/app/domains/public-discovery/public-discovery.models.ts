@@ -52,7 +52,9 @@ export interface PublicDoctorDetails extends PublicDoctorSearchItem {
   qualifications: PublicQualification[];
 }
 /** Transport identifiers are normalized once before reaching booking UI. */
-export interface PublicPracticeResponse extends Omit<PublicPracticeSummary, 'id'> {
+export interface PublicPracticeResponse extends Omit<PublicPracticeSummary, 'id' | 'detailedAddress'> {
+  address?: string | null;
+  detailedAddress?: string | null;
   id?: string | null;
   practiceId?: string | null;
   doctorPracticeId?: string | null;

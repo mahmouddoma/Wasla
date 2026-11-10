@@ -22,6 +22,29 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('shows an accessible retry notice for unavailable session verification and recovers in place', async () => {
+    const session = TestBed.inject(AuthSession);
+    session.begin({ accessToken: 'synthetic-token', expiresOnUtc: new Date(Date.now() + 60_000).toISOString(), passwordChangeRequired: false });
+    session.complete({ applicationUserId: 'patient', userName: 'patient', email: '', phoneNumber: '', userType: 'Patient', roles: ['Patient'], permissions: [], isFirstLogin: false, doctorId: null, patientId: 'patient' });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    const url = `${environment.apiBaseUrl}/api/v1/auth/me`;
+    http.expectOne(url).flush({}, { status: 503, statusText: 'Unavailable' });
+    await fixture.whenStable(); fixture.detectChanges();
+    const notice: HTMLElement = fixture.nativeElement.querySelector('.session-verification');
+    expect(notice.getAttribute('role')).toBe('status');
+    expect(session.isAuthenticated()).toBe(true);
+    notice.querySelector('button')!.click();
+    const request = http.expectOne(url);
+    fixture.detectChanges();
+    expect(notice.querySelector('button')!.disabled).toBe(true);
+    request.flush(session.user());
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.session-verification')).toBeNull();
+    http.verify();
+  });
+
   it('renders the shell and opens a route while restored account data is pending', async () => {
     const session = TestBed.inject(AuthSession);
     session.begin({

@@ -155,6 +155,34 @@ describe('Login', () => {
     expect(navigate).toHaveBeenCalledWith(['/workspace/doctor']);
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
+
+  it.each(['/doctors?cityId=2&search=Ahmed', '/doctors/doctor-1'])('returns a patient to discovery destination %s after login', async (destination) => {
+    api.currentUser.mockReturnValueOnce(of({ ...sampleUser, userType: 'Patient', patientId: 'patient', doctorId: null }));
+    route.snapshot.queryParamMap.get.mockImplementation(key => key === 'returnUrl' ? destination : null);
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    fixture.componentInstance['model'].set({ identifier: 'patient', password: 'Synthetic123!' });
+    await fixture.componentInstance['onSubmit'](new Event('submit'));
+    expect(navigateByUrl).toHaveBeenCalledWith(destination);
+  });
+
+  it.each(['Pending', 'Rejected', 'Suspended'])('keeps a %s doctor behind onboarding despite a return URL', async (approvalStatus) => {
+    doctorApi.onboardingStatus.mockReturnValueOnce(of({ approvalStatus }));
+    route.snapshot.queryParamMap.get.mockImplementation(key => key === 'returnUrl' ? '/doctor/queue' : null);
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    fixture.componentInstance['model'].set({ identifier: 'doctor', password: 'Synthetic123!' });
+    await fixture.componentInstance['onSubmit'](new Event('submit'));
+    expect(navigateByUrl).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/doctor/onboarding']);
+  });
+
+  it('falls back after a return route navigation fails without clearing the successful session', async () => {
+    route.snapshot.queryParamMap.get.mockImplementation(key => key === 'returnUrl' ? '/doctor/queue' : null);
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockRejectedValueOnce(new Error('Unavailable route'));
+    fixture.componentInstance['model'].set({ identifier: 'doctor', password: 'Synthetic123!' });
+    await fixture.componentInstance['onSubmit'](new Event('submit'));
+    expect(navigate).toHaveBeenCalledWith(['/workspace/doctor']);
+    expect(session.clear).not.toHaveBeenCalled();
+  });
   it('navigates to change-password when password change is required', async () => {
     session.requiresPasswordChange.mockReturnValue(true);
     fixture.componentInstance['model'].set({

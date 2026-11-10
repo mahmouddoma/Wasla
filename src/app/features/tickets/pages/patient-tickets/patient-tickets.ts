@@ -17,7 +17,10 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PracticeTicket, TicketsApi } from '../../../../domains/tickets';
 import { Phase18Part2Api } from '../../../../domains/phase18';
-import { ArchivedTicket, ArchivedTicketListComponent } from '../../components/archived-ticket-list/archived-ticket-list.component';
+import {
+  ArchivedTicket,
+  ArchivedTicketListComponent,
+} from '../../components/archived-ticket-list/archived-ticket-list.component';
 
 @Component({
   selector: 'app-patient-tickets',
@@ -46,7 +49,10 @@ export class PatientTickets implements OnInit {
   protected readonly messages = signal<readonly string[]>([]);
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => { this.listSequence++; this.detailSequence++; });
+    inject(DestroyRef).onDestroy(() => {
+      this.listSequence++;
+      this.detailSequence++;
+    });
     afterRenderEffect(() => {
       const dialog = this.drawer()?.nativeElement;
       if (dialog && !dialog.open) dialog.showModal();
@@ -86,11 +92,13 @@ export class PatientTickets implements OnInit {
     this.messages.set([]);
     try {
       if (this.viewMode() === 'archived') {
-        const page = await firstValueFrom(this.phase18Api.call('P18.2-11', {
-          query: { pageSize: 50, cursor: this.archiveCursor },
-        }));
+        const page = await firstValueFrom(
+          this.phase18Api.call('P18.2-11', {
+            query: { pageSize: 50, cursor: this.archiveCursor },
+          }),
+        );
         if (sequence !== this.listSequence) return;
-        const items = new Map(this.archivedTickets().map(item => [item.ticketId, item]));
+        const items = new Map(this.archivedTickets().map((item) => [item.ticketId, item]));
         for (const item of page.items ?? []) items.set(item.ticketId, item);
         this.archivedTickets.set([...items.values()]);
         this.archiveCursor = page.nextCursor ?? null;

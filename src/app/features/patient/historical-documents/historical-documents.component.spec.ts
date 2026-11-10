@@ -6,6 +6,7 @@ import { HistoricalDocument } from '../../../domains/medical-records/historical-
 import { ToastService } from '../../../core/notifications/toast.service';
 import { documentFixture } from '../../../../testing/family-workspace';
 import { HistoricalDocumentsComponent } from './historical-documents.component';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 describe('HistoricalDocumentsComponent', () => {
   const api = {
@@ -16,6 +17,7 @@ describe('HistoricalDocumentsComponent', () => {
     attachment: vi.fn(),
   };
   const toast = { success: vi.fn(), error: vi.fn() };
+  afterEach(() => localStorage.removeItem('wasla_lang'));
   beforeEach(() => {
     vi.clearAllMocks();
     api.list.mockReturnValue(of({ items: [], totalCount: 0 }));
@@ -34,6 +36,31 @@ describe('HistoricalDocumentsComponent', () => {
     fixture.detectChanges();
     return fixture;
   }
+  it.each(['ar', 'en'] as const)('separates clinical document date from upload time in %s list and detail', async (lang) => {
+    const document = documentFixture();
+    document.currentVersion!.metadata.documentDate = '2020-01-01';
+    document.currentVersion!.metadata.dateUnknown = false;
+    api.list.mockReturnValueOnce(of({ items: [document], totalCount: 1 }));
+    api.details.mockReturnValueOnce(of(document));
+    const fixture = create();
+    const language = TestBed.inject(LanguageService);
+    language.setLanguage(lang);
+    fixture.detectChanges();
+    const dates = fixture.nativeElement.querySelectorAll('tbody time');
+    expect(dates[0].getAttribute('datetime')).toBe('2020-01-01');
+    expect(dates[1].getAttribute('datetime')).toBe(document.uploadedAtUtc);
+    expect(fixture.nativeElement.querySelector('tbody').textContent).toContain(language.t('historical.uploadedAt'));
+    fixture.componentInstance.inspect(document);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.drawer-body time[datetime="2020-01-01"]')).toBeTruthy();
+  });
+  it('labels unknown document dates without substituting the upload date', () => {
+    api.list.mockReturnValueOnce(of({ items: [documentFixture()], totalCount: 1 }));
+    const fixture = create();
+    const language = TestBed.inject(LanguageService);
+    expect(fixture.nativeElement.querySelector('tbody').textContent).toContain(language.t('historical.documentDateUnknown'));
+    expect(fixture.nativeElement.querySelectorAll('tbody time')).toHaveLength(1);
+  });
   it('renders an illustrated empty state and an upload action', () => {
     const fixture = create();
     expect(fixture.componentInstance).toBeTruthy();

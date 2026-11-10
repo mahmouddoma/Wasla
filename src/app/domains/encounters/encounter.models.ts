@@ -43,6 +43,9 @@ export interface PatientEncounterDetails {
   } | null;
 }
 export interface EncounterDetails extends EncounterSummary {
+  readonly visibility?: 'Visible' | 'Hidden';
+  readonly visibilityRevision?: number;
+  readonly canChangeVisibility?: boolean;
   readonly doctor: ClinicalIdentity;
   readonly labRequestDraft?: DiagnosticRequestStateResponse | null;
   readonly radiologyRequestDraft?: DiagnosticRequestStateResponse | null;

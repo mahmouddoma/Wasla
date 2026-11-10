@@ -1,0 +1,153 @@
+<section [attr.aria-busy]="loading()">
+  <p class="text-secondary">{{ 'activity.description' | t }}</p>
+  <div class="d-flex flex-wrap gap-3 mb-3">
+    <label class="activity-field"
+      ><span>{{ 'audit.action' | t }}</span>
+      <select
+        [value]="action()"
+        [disabled]="loading() || !options()"
+        (change)="filter('action', $event)"
+      >
+        <option value="">{{ 'reservations.All' | t }}</option>
+        @for (option of options()?.actions || []; track option.code) {
+          <option [value]="option.code">{{ label(option.code, options()?.actions) }}</option>
+        }
+      </select>
+    </label>
+    <label class="activity-field"
+      ><span>{{ 'audit.outcome' | t }}</span>
+      <select
+        [value]="outcome()"
+        [disabled]="loading() || !options()"
+        (change)="filter('outcome', $event)"
+      >
+        <option value="">{{ 'reservations.All' | t }}</option>
+        @for (option of options()?.outcomes || []; track option.code) {
+          <option [value]="option.code">{{ label(option.code, options()?.outcomes) }}</option>
+        }
+      </select>
+    </label>
+    <button
+      type="button"
+      class="btn btn-outline-secondary align-self-end"
+      [disabled]="loading()"
+      (click)="retry()"
+    >
+      {{ 'common.refresh' | t }}
+    </button>
+  </div>
+  @if (items().length) {
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <caption class="visually-hidden">
+          {{
+            'activity.title' | t
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ 'audit.action' | t }}</th>
+            <th scope="col">{{ 'audit.outcome' | t }}</th>
+            <th scope="col">{{ 'audit.occurredAt' | t }}</th>
+            <th scope="col">
+              <span class="visually-hidden">{{ 'common.view' | t }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.eventKey) {
+            <tr>
+              <td>{{ label(item.action, options()?.actions) }}</td>
+              <td>{{ label(item.outcome, options()?.outcomes) }}</td>
+              <td>
+                <time dir="ltr" [attr.datetime]="item.occurredAtUtc">{{
+                  item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm'
+                }}</time>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  [disabled]="!item.eventKey || detailLoading()"
+                  (click)="inspect(item)"
+                >
+                  {{ 'common.view' | t }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (!loading() && !failed()) {
+    <div class="activity-empty text-center">
+      <img
+        class="state-empty-illustration"
+        src="/SVG-AVATAR/Doctors-cuate.svg"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <h3>{{ 'audit.noEvents' | t }}</h3>
+      <p>{{ 'activity.emptyHelp' | t }}</p>
+      <button type="button" class="btn btn-outline-secondary" (click)="load()">
+        {{ 'common.refresh' | t }}
+      </button>
+    </div>
+  }
+  @if (loading()) {
+    <p role="status">{{ 'common.loading' | t }}</p>
+  }
+  @if (failed()) {
+    <div role="alert">
+      <p>{{ 'activity.failed' | t }}</p>
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        [disabled]="loading()"
+        (click)="retry()"
+      >
+        {{ 'common.retry' | t }}
+      </button>
+    </div>
+  } @else if (hasMore()) {
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      [disabled]="loading()"
+      (click)="load(true)"
+    >
+      {{ 'common.loadMore' | t }}
+    </button>
+  }
+  @if (detailLoading()) {
+    <p role="status">{{ 'common.loading' | t }}</p>
+  }
+  @if (detailFailed()) {
+    <p role="alert">{{ 'activity.failed' | t }}</p>
+  }
+  @if (selected(); as item) {
+    <section class="activity-detail" aria-labelledby="activity-detail-title">
+      <div class="d-flex justify-content-between gap-3">
+        <h3 id="activity-detail-title">{{ 'audit.details' | t }}</h3>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeDetails()">
+          {{ 'common.close' | t }}
+        </button>
+      </div>
+      <dl>
+        <dt>{{ 'audit.actor' | t }}</dt>
+        <dd>{{ actorLabel(item) }}</dd>
+        <dt>{{ 'audit.action' | t }}</dt>
+        <dd>{{ label(item.action, options()?.actions) }}</dd>
+        <dt>{{ 'audit.outcome' | t }}</dt>
+        <dd>{{ label(item.outcome, options()?.outcomes) }}</dd>
+        <dt>{{ 'audit.occurredAt' | t }}</dt>
+        <dd>
+          <time dir="ltr">{{ item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm' }}</time>
+        </dd>
+        <dt>{{ 'activity.resource' | t }}</dt>
+        <dd>{{ label(item.entityType, options()?.entityTypes) }}</dd>
+      </dl>
+    </section>
+  }
+</section>

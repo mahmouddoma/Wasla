@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
+import { resolveReturnUrl } from '../../../core/auth/return-navigation';
 import { DoctorApi } from '../../../domains/doctors';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -70,15 +71,15 @@ export class Login {
             this.toast.error(this.uiLanguage.t('common.failedToLoad'));
           }
         }
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const returnUrl = resolveReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'), user.userType);
         if (
           !this.session.requiresPasswordChange() &&
           !['/doctor/onboarding', '/doctor/subscription'].includes(destination) &&
-          returnUrl &&
-          /^\/(patient|doctor|reception|admin)\/reservations(?:\?|$)/.test(returnUrl)
-        )
-          await this.router.navigateByUrl(returnUrl);
-        else await this.router.navigate([destination]);
+          returnUrl
+        ) {
+          const restored = await this.router.navigateByUrl(returnUrl).catch(() => false);
+          if (!restored) await this.router.navigate([destination]);
+        } else await this.router.navigate([destination]);
       } catch (error) {
         this.session.clear();
         const parsed = parseApiErrors(error);

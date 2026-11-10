@@ -18,7 +18,7 @@ import { PatientsApi, PatientSearchItem } from '../../../../domains/patients';
 import { FollowUpsApi, FollowUpEligibility } from '../../../../domains/follow-ups';
 import { Phase18Part2Api } from '../../../../domains/phase18';
 import { EncountersApi, EncounterDetails } from '../../../../domains/encounters';
-import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
+import type { componentsPart2 as components } from '../../../../domains/phase18';
 
 describe('QueueWorkspace', () => {
   afterEach(() => localStorage.removeItem('wasla_lang'));
@@ -416,6 +416,7 @@ describe('Reception queue authorization', () => {
         { provide: TicketsApi, useValue: api },
         { provide: DoctorPracticesApi, useValue: doctorApi },
         { provide: ReceptionPracticesApi, useValue: { list: () => of([practice()]) } },
+        { provide: Phase18Part2Api, useValue: { call: vi.fn(() => of({ items: [], hasMore: false })) } },
         { provide: AuthSession, useValue: { hasPermission: () => false } },
       ],
     });
@@ -431,6 +432,19 @@ describe('Reception queue authorization', () => {
     expect(api.queue).toHaveBeenCalledWith('p1');
     expect(api.walkInOptions).toHaveBeenCalledWith('p1', {});
     for (const request of Object.values(doctorApi)) expect(request).not.toHaveBeenCalled();
+  });
+
+  it('renders the assigned Reception archive using its actor-scoped endpoint', async () => {
+    const component = await start();
+    const call = vi.mocked(TestBed.inject(Phase18Part2Api).call);
+    await component['openArchive']();
+    fixture.detectChanges();
+    expect(call).toHaveBeenLastCalledWith('P18.2-09', { pathParams: { practiceId: 'p1' }, query: { pageSize: 50, cursor: null } });
+    expect(fixture.nativeElement.querySelector('app-archived-ticket-list img')).toBeTruthy();
+    call.mockClear();
+    await component['selectPractice']('unassigned');
+    expect(component['practiceId']()).toBe('p1');
+    expect(call).not.toHaveBeenCalled();
   });
   it('does not request queue or catalog without View', async () => {
     grants = [];

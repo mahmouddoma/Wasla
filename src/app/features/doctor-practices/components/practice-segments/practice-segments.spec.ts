@@ -123,6 +123,38 @@ describe('PracticeSegments', () => {
     );
   });
 
+  it('explains reserved capacity and end-of-day release in both languages', async () => {
+    component['openAddSegment']();
+    for (const language of ['ar', 'en'] as const) {
+      TestBed.inject(LanguageService).setLanguage(language);
+      await fixture.whenStable();
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector('#quotaHelp')?.textContent).toContain('10000');
+      expect(element.querySelector('#releaseHelp')?.textContent).toContain('10080');
+      expect(element.querySelector('#priorityHelp')?.textContent).toContain('1000');
+      expect(element.querySelector('#segQuota')?.getAttribute('min')).toBe('1');
+    }
+  });
+
+  it('rejects zero, fractional and out-of-range reserved capacity before mutation', async () => {
+    for (const quota of ['0', '1.5', '10001']) {
+      component['segmentModel'].set({ nameAr: 'Test', nameEn: '', priority: 0,
+        reservedDailyQuota: quota, quotaReleaseBeforeMinutes: '0', isActive: true });
+      await component['saveSegment'](new Event('submit'));
+      expect(mockApi.addSegment).not.toHaveBeenCalled();
+      expect(component['messages']().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('sends zero release minutes unchanged and accepts negative priority', async () => {
+    component['segmentModel'].set({ nameAr: 'Test', nameEn: '', priority: -1,
+      reservedDailyQuota: '1', quotaReleaseBeforeMinutes: '0', isActive: true });
+    await component['saveSegment'](new Event('submit'));
+    expect(mockApi.addSegment).toHaveBeenCalledWith('prac-1', expect.objectContaining({
+      priority: -1, reservedDailyQuota: 1, quotaReleaseBeforeMinutes: 0,
+    }));
+  });
+
   it('should populate edit segment form', () => {
     (component as unknown as { editSegment: (s: DoctorPracticeSegment) => void }).editSegment(
       mockSegments[0],

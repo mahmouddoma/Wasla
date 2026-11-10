@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
+import type { componentsPart2 as components } from '../../../../domains/phase18';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 export type ArchivedTicket = components['schemas']['ArchivedTicketItem'];

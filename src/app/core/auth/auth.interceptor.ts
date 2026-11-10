@@ -4,18 +4,20 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthSession } from './auth-session';
+import { backendRequestUrl } from '../http/backend-request-url';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const session = inject(AuthSession);
   const router = inject(Router);
   const hadSession = session.session() !== null;
   const token = session.token();
-  if (!token && session.session()) session.clear();
-  const isWaslaApi = request.url.startsWith(environment.apiBaseUrl);
-  const isAnonymousOnboarding = request.url.includes('/api/v1/patient-onboarding');
+  const apiUrl = backendRequestUrl(request.url, environment.apiBaseUrl);
+  const isWaslaApi = apiUrl !== null;
+  if (isWaslaApi && !token && session.session()) session.clear();
+  const isAnonymousOnboarding = apiUrl !== null && /\/api\/v1\/patient-onboarding(?:\/|$)/.test(apiUrl.pathname);
   const headers: Record<string, string> = {};
   if (isWaslaApi && !request.headers.has('Accept-Language'))
-    headers['Accept-Language'] = document.documentElement.lang === 'en' ? 'en' : 'ar';
+    headers['Accept-Language'] = typeof document !== 'undefined' && document.documentElement.lang === 'en' ? 'en' : 'ar';
   if (isWaslaApi && !isAnonymousOnboarding && token && !request.headers.has('Authorization'))
     headers['Authorization'] = `Bearer ${token}`;
   const authorizedRequest = Object.keys(headers).length
@@ -30,7 +32,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         !isAnonymousOnboarding &&
         (token !== null || hadSession) &&
         session.token() === token &&
-        !request.url.endsWith('/login')
+        !/\/api\/v1\/auth\/login\/?$/.test(apiUrl?.pathname ?? '')
       ) {
         session.clear();
         void router.navigate(['/login']);

@@ -1,6 +1,7 @@
 import { Gender } from '../../core/auth/auth.models';
 
 export type PatientRelationshipType = 'Father' | 'Mother' | 'Guardian' | 'LegalGuardian' | 'Other';
+export type PatientIdentityVerificationBasis = 'GovernmentIdSeen' | 'PatientProvidedKnownDemographics' | 'ApprovedAlternateEvidence';
 
 export interface CreatePatientRequest {
   nameAr: string;
@@ -16,6 +17,9 @@ export interface CreatePatientRequest {
   primaryContactRelationshipType: PatientRelationshipType;
   primaryContactIsPrimary: boolean;
   primaryContactLinkedPatientId: string;
+  matchReviewOutcome?: 'DistinctPerson';
+  matchReviewReason?: string;
+  matchingAttestationBasis?: PatientIdentityVerificationBasis;
 }
 
 export interface CreatePatientResponse {
@@ -116,7 +120,7 @@ export interface RegisterFullPatientRequest {
   readonly identityVerificationBasis: string;
   readonly nameEn?: string;
   readonly verificationNote?: string;
-  readonly matchReviewOutcome?: string;
+  readonly matchReviewOutcome?: 'DistinctPerson';
   readonly matchReviewReason?: string;
   readonly profileImage?: File;
   readonly personalIdFrontImage?: File;
@@ -148,10 +152,26 @@ export interface RegistrationMatchesRequest {
   readonly claimantEmail?: string;
 }
 
-export interface RegistrationMatchesResponse {
-  readonly matches?: readonly PatientSearchItem[];
-  readonly patientId?: string;
-  readonly attestationId?: string;
-  readonly status?: string;
+export interface RegistrationCandidate {
+  readonly patientId: string;
+  readonly nameAr: string | null;
+  readonly dateOfBirth: string;
+  readonly gender: Gender;
+  readonly emailMasked: string | null;
+  readonly phoneMasked: string | null;
+  readonly isLinkedAccount: boolean;
 }
+export interface RegistrationSearchResponse {
+  readonly matchOutcome: string | null;
+  readonly candidates: readonly RegistrationCandidate[] | null;
+  readonly canCreateBasic: boolean;
+  readonly canCreateFull: boolean;
+  readonly requiresClaimForAccount: boolean;
+}
+export interface RegistrationAttestationResponse {
+  readonly patientId: string;
+  readonly attestationId: string;
+  readonly expiresOnUtc: string | null;
+}
+export type RegistrationMatchesResponse = RegistrationSearchResponse | RegistrationAttestationResponse;
 

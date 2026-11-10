@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -14,10 +14,11 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { HistoricalDocumentsComponent } from '../historical-documents/historical-documents.component';
+import { RecordAccessLogComponent } from '../record-access-log/record-access-log.component';
 
 @Component({
   selector: 'app-patient-record',
-  imports: [DatePipe, TranslatePipe, PageHeader, HistoricalDocumentsComponent],
+  imports: [DatePipe, TranslatePipe, PageHeader, HistoricalDocumentsComponent, RecordAccessLogComponent],
   templateUrl: './patient-record.component.html',
   styleUrl: './patient-record.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,7 +32,8 @@ export class PatientRecordComponent implements OnDestroy {
   readonly loading = signal(false);
   readonly failed = signal(false);
   readonly hasMore = signal(false);
-  readonly showDocuments = signal(false);
+  readonly activeView = signal<'timeline' | 'documents' | 'access'>('timeline');
+  readonly showDocuments = computed(() => this.activeView() === 'documents');
   readonly filter = signal('all');
   readonly documentId = signal<string | null>(null);
   readonly isClinical = isClinicalRecordEntry;
@@ -39,7 +41,7 @@ export class PatientRecordComponent implements OnDestroy {
   private cursor: string | null = null;
   private sequence = 0;
   constructor() {
-    if (!this.session.hasPermission('MedicalRecords.ViewOwn')) this.showDocuments.set(true);
+    if (!this.session.hasPermission('MedicalRecords.ViewOwn')) this.activeView.set('documents');
     else void this.load();
   }
   ngOnDestroy(): void {
@@ -52,13 +54,18 @@ export class PatientRecordComponent implements OnDestroy {
     this.failed.set(false);
     this.entries.set([]);
     this.overview.set(null);
+    this.cursor = null;
+    this.hasMore.set(false);
+    const filter = this.filter();
     try {
       const overview = await firstValueFrom(this.api.patientOverview());
       if (sequence !== this.sequence) return;
       this.overview.set(overview);
-      this.entries.set(overview.timeline.items);
-      this.cursor = overview.timeline.nextCursor;
-      this.hasMore.set(overview.timeline.hasMore);
+      const timeline = filter === 'all' ? overview.timeline : await firstValueFrom(this.api.patientTimeline(filter));
+      if (sequence !== this.sequence) return;
+      this.entries.set(timeline.items);
+      this.cursor = timeline.nextCursor;
+      this.hasMore.set(timeline.hasMore);
     } catch (error) {
       if (sequence === this.sequence) this.fail(error);
     } finally {
@@ -74,6 +81,7 @@ export class PatientRecordComponent implements OnDestroy {
     if (!append) {
       this.entries.set([]);
       this.cursor = null;
+      this.hasMore.set(false);
     }
     try {
       const result = await firstValueFrom(
@@ -99,7 +107,7 @@ export class PatientRecordComponent implements OnDestroy {
   openDocument(id: string): void {
     if (this.session.hasPermission('MedicalDocuments.ViewOwn')) {
       this.documentId.set(id);
-      this.showDocuments.set(true);
+      this.activeView.set('documents');
     }
   }
   private fail(error: unknown): void {
@@ -109,7 +117,7 @@ export class PatientRecordComponent implements OnDestroy {
       this.hasMore.set(false);
       this.overview.set(null);
       this.entries.set([]);
-      this.showDocuments.set(false);
+      this.activeView.set('timeline');
     }
   }
 }

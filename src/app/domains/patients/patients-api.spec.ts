@@ -34,6 +34,9 @@ describe('PatientsApi', () => {
         primaryContactRelationshipType: 'Father',
         primaryContactIsPrimary: true,
         primaryContactLinkedPatientId: '',
+        matchReviewOutcome: 'DistinctPerson',
+        matchReviewReason: 'Verified separate person',
+        matchingAttestationBasis: 'GovernmentIdSeen',
       }),
     );
     const request = http.expectOne(url);
@@ -43,6 +46,9 @@ describe('PatientsApi', () => {
     expect(body.get('PrimaryContactPhoneNumber')).toBe('01000000000');
     expect(body.has('UserName')).toBe(false);
     expect(body.has('Password')).toBe(false);
+    expect(body.get('MatchReviewOutcome')).toBe('DistinctPerson');
+    expect(body.get('MatchReviewReason')).toBe('Verified separate person');
+    expect(body.get('MatchingAttestationBasis')).toBe('GovernmentIdSeen');
     request.flush({ patientId: 'patient' });
     await result;
   });
@@ -174,10 +180,15 @@ describe('PatientsApi', () => {
         email: 'test@example.com',
         verifiedInPerson: true,
         identityVerificationBasis: 'GovernmentIdSeen',
-      }),
+        matchReviewOutcome: 'DistinctPerson',
+        matchReviewReason: 'Original documents confirm different identities',
+      }, '11111111-1111-4111-8111-111111111111'),
     );
     const req = http.expectOne(`${url}/full`);
     expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('Idempotency-Key')).toBe('11111111-1111-4111-8111-111111111111');
+    expect(req.request.body.get('MatchReviewOutcome')).toBe('DistinctPerson');
+    expect(req.request.body.get('MatchReviewReason')).toBe('Original documents confirm different identities');
     expect((req.request.body as FormData).get('DoctorPracticeId')).toBe('pr1');
     expect((req.request.body as FormData).get('VerifiedInPerson')).toBe('true');
     req.flush(
@@ -204,7 +215,14 @@ describe('PatientsApi', () => {
     const req = http.expectOne(`${url}/registration-matches`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ matches: [], status: 'NoMatch' });
+    req.flush({ candidates: [], matchOutcome: 'NoMatch', canCreateBasic: true, canCreateFull: true, requiresClaimForAccount: false });
     await result;
+  });
+  it('sends the required idempotency key when confirming reuse', async () => {
+    const result = firstValueFrom(api.registrationMatches({ mode: 'ConfirmReuse', doctorPracticeId: 'pr1', patientId: 'p1', verifiedInPerson: true, verificationBasis: 'GovernmentIdSeen' }, '11111111-1111-4111-8111-111111111111'));
+    const request = http.expectOne(`${url}/registration-matches`);
+    expect(request.request.headers.get('Idempotency-Key')).toBe('11111111-1111-4111-8111-111111111111');
+    request.flush({ patientId: 'p1', attestationId: 'attestation', expiresOnUtc: null });
+    expect((await result).patientId).toBe('p1');
   });
 });

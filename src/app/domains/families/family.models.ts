@@ -208,6 +208,14 @@ export interface FamilyMedicalDecisionRequest {
   message?: string;
   idempotencyKey?: string;
 }
+export interface FamilyMedicalAccessApprovalRequest extends FamilyMedicalDecisionRequest {
+  basisReference?: string;
+}
+export interface FamilyMedicalEligibilityApprovalRequest extends FamilyMedicalDecisionRequest {
+  policyVersion: string;
+  basisReference: string;
+  authorityRelationshipRequestId: string;
+}
 
 export interface FamilyMedicalDependent {
   patientId: string;
@@ -314,6 +322,9 @@ export interface FamilyMedicalEligibilityReview {
   createdAtUtc?: string;
   policyVersion?: string | null;
   basisReference?: string | null;
+  authorityRelationshipRequestId?: string | null;
+  adultVerification?: { familyMemberId: string; relationshipRequestId: string; verifiedOnUtc: string } | null;
+  childVerification?: { familyMemberId: string; relationshipRequestId: string; verifiedOnUtc: string } | null;
   canApprove?: boolean;
   canReject?: boolean;
   canRevoke?: boolean;

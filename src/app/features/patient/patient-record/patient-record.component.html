@@ -3,24 +3,27 @@
     [heading]="'familyFlow.medicalRecord' | t"
     [description]="'patientRecord.description' | t"
     icon="requests"
-    [actionLabel]="'common.refresh' | t"
+    [actionLabel]="activeView() === 'timeline' ? ('common.refresh' | t) : null"
     actionIcon="refresh"
     [actionLoading]="loading()"
     (actionClicked)="load()"
   >
-    <nav pageHeaderActions class="d-flex gap-2">
+    <nav pageHeaderActions class="d-flex gap-2 flex-wrap">
+      @if (session.hasPermission('MedicalRecords.ViewOwn')) {
       <button
         class="btn btn-outline-secondary"
-        [attr.aria-pressed]="!showDocuments()"
-        (click)="showDocuments.set(false)"
+        [attr.aria-pressed]="activeView() === 'timeline'"
+        (click)="activeView.set('timeline')"
       >
         {{ 'patientRecord.timeline' | t }}
       </button>
+      <button type="button" class="btn btn-outline-secondary" [attr.aria-pressed]="activeView() === 'access'" (click)="activeView.set('access')">{{ 'recordAccess.title' | t }}</button>
+      }
       @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
         <button
           class="btn btn-outline-secondary"
           [attr.aria-pressed]="showDocuments()"
-          (click)="documentId.set(null); showDocuments.set(true)"
+          (click)="documentId.set(null); activeView.set('documents')"
         >
           {{ 'historical.title' | t }}
         </button>
@@ -28,7 +31,9 @@
     </nav>
   </app-page-header>
   <section class="record-surface">
-    @if (showDocuments()) {
+    @if (activeView() === 'access' && session.hasPermission('MedicalRecords.ViewOwn')) {
+      <app-record-access-log />
+    } @else if (showDocuments()) {
       <app-historical-documents
         [documentId]="documentId()"
         [canView]="session.hasPermission('MedicalDocuments.ViewOwn')"
@@ -88,7 +93,11 @@
               <div>
                 <h3>{{ 'historical.category.' + entry.category | t }}</h3>
                 <p>{{ 'historical.unverified' | t }}</p>
-                <time>{{ entry.occurredAtUtc | date: 'mediumDate' }}</time>
+                @if (!entry.dateUnknown && entry.documentDate) {
+                  <time [attr.datetime]="entry.documentDate">{{ entry.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</time>
+                } @else {
+                  <span>{{ 'historical.documentDateUnknown' | t }}</span>
+                }
               </div>
               @if (session.hasPermission('MedicalDocuments.ViewOwn')) {
                 <button class="btn btn-outline-secondary" (click)="openDocument(entry.documentId)">

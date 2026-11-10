@@ -425,11 +425,13 @@
           }
         </div>
 
-        <nav class="requests-pagination-bar" aria-label="تنقل صفحات طلبات الأسرة">
+      }
+      @if (requestPage() > 1 || onboarding().length || governance().length) {
+        <nav class="requests-pagination-bar" [attr.aria-label]="'familyFlow.relationshipRequests' | t">
           <button
             type="button"
             class="btn-pagination-nav"
-            [disabled]="requestPage() === 1"
+            [disabled]="requestLoading() || requestPage() === 1"
             (click)="loadRequests(requestPage() - 1)"
           >
             <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
@@ -441,7 +443,7 @@
           <button
             type="button"
             class="btn-pagination-nav"
-            [disabled]="onboarding().length < 20 && requestPage() * 20 >= governanceTotal()"
+            [disabled]="requestLoading() || (!onboardingHasNext() && !governanceHasNext())"
             (click)="loadRequests(requestPage() + 1)"
           >
             <span>{{ 'common.next' | t }}</span>

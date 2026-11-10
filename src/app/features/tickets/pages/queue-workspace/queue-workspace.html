@@ -92,6 +92,9 @@
           <span>{{ 'archive.title' | t }}</span>
         </button>
       }
+      @if (canViewActivity()) {
+        <button type="button" class="btn-action-archive" [disabled]="!practiceId() || busy()" (click)="openActivity()">{{ 'activity.title' | t }}</button>
+      }
     </div>
   </app-page-header>
   <div class="queue-workspace-layout" [class.has-walkin-open]="(walkInOpen() || !!walkInDone()) && canWalkIn()">
@@ -1786,113 +1789,6 @@
               <span>{{ 'tickets.walkIn.changePatient' | t }}</span>
             </button>
           </div>
-        } @else if (walkInMode() === 'create' && canRegisterPatient()) {
-          <div class="walkin-create-patient-block">
-            <div class="walkin-substep-header">
-              <div class="substep-title">
-                <span class="substep-icon-badge" aria-hidden="true">
-                  <i class="fa-solid fa-user-plus"></i>
-                </span>
-                <div>
-                  <h3 class="substep-heading">{{ 'tickets.walkIn.registerNewPatient' | t }}</h3>
-                  <p class="substep-subheading">{{ 'reception.patients.registerHelp' | t }}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="btn btn-outline-secondary btn-back-to-search"
-                (click)="cancelPatientRegistration()"
-                [disabled]="busy() || isCreatingPatient()"
-              >
-                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                <span>{{ 'tickets.walkIn.backToSearch' | t }}</span>
-              </button>
-            </div>
-
-            <div class="walkin-quick-patient-form">
-              <div class="quick-form-field">
-                <label for="walkinPatientNameAr">
-                  {{ 'reception.patients.nameAr' | t }}
-                </label>
-                <input
-                  id="walkinPatientNameAr"
-                  type="text"
-                  class="field-input"
-                  [formField]="patientCreateForm.nameAr"
-                  [placeholder]="'reception.arabicNameExample' | t"
-                />
-              </div>
-
-              <div class="quick-form-field">
-                <label for="walkinPatientPhone">{{ 'workspace.phone' | t }}</label>
-                <input
-                  id="walkinPatientPhone"
-                  type="tel"
-                  dir="ltr"
-                  class="field-input ltr-text"
-                  [formField]="patientCreateForm.phoneNumber"
-                  [placeholder]="'reception.phoneExample' | t"
-                />
-              </div>
-
-              <div class="form-row-2col">
-                <div class="quick-form-field">
-                  <label for="walkinPatientDob">
-                    {{ 'reception.patients.birth' | t }} *
-                  </label>
-                  <input
-                    id="walkinPatientDob"
-                    type="date"
-                    dir="ltr"
-                    class="field-input ltr-text"
-                    [formField]="patientCreateForm.dateOfBirth"
-                  />
-                </div>
-
-                <div class="quick-form-field">
-                  <label for="walkinPatientGender">
-                    {{ 'register.gender' | t }} *
-                  </label>
-                  <select
-                    id="walkinPatientGender"
-                    class="field-select"
-                    [formField]="patientCreateForm.gender"
-                  >
-                    <option value="">{{ 'common.choose' | t }}</option>
-                    <option value="Male">{{ 'register.male' | t }}</option>
-                    <option value="Female">{{ 'register.female' | t }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="quick-form-field">
-                <label for="walkinPatientNameEn">{{ 'common.nameEn' | t }}</label>
-                <input
-                  id="walkinPatientNameEn"
-                  type="text"
-                  dir="ltr"
-                  class="field-input ltr-text"
-                  [formField]="patientCreateForm.nameEn"
-                  [placeholder]="'reception.englishNameExample' | t"
-                />
-              </div>
-
-              <button
-                type="button"
-                class="btn btn-primary btn-save-quick-patient"
-                (click)="createWalkInPatient($event)"
-                [disabled]="busy() || isCreatingPatient() || patientCreateForm().invalid()"
-              >
-                @if (isCreatingPatient()) {
-                  <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-                  <span>{{ 'reservations.loading' | t }}</span>
-                } @else {
-                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                  <span>{{ 'tickets.walkIn.saveAndProceed' | t }}</span>
-                }
-              </button>
-            </div>
-          </div>
         } @else if (canSearchPatient()) {
           <div class="walkin-patient-search-header">
             <div>
@@ -2079,11 +1975,12 @@
   </ng-template>
 
   <app-side-drawer
-    [opened]="archiveOpen()"
+    [opened]="archiveOpen() && canViewQueue()"
     [title]="'archive.archivedTickets' | t"
     width="720px"
     (closed)="closeArchive()"
   >
+    @if (archiveOpen() && canViewQueue()) {
     <app-archived-ticket-list
       [items]="archivedTickets()"
       [loading]="archiveLoading()"
@@ -2093,6 +1990,13 @@
       (more)="loadArchive()"
       (retried)="loadArchive()"
     />
+    }
+  </app-side-drawer>
+
+  <app-side-drawer [opened]="activityOpen() && canViewActivity()" [title]="'activity.title' | t" width="720px" (closed)="activityOpen.set(false)">
+    @if (activityOpen() && canViewActivity()) {
+      <app-practice-activity [practiceId]="practiceId()" [actor]="isDoctor() ? 'Doctor' : 'Reception'" />
+    }
   </app-side-drawer>
 
   <app-side-drawer

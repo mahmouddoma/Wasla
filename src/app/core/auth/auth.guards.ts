@@ -2,18 +2,20 @@ import { inject } from '@angular/core';
 import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 import { AuthSession } from './auth-session';
 import { PERMISSIONS } from './permissions';
+import { resolveReturnUrl } from './return-navigation';
 
 export const anonymousOnlyMatchGuard: CanMatchFn = () => {
   const session = inject(AuthSession);
   return !session.isAuthenticated();
 };
 
-export const authenticatedGuard: CanActivateFn = () => {
+export const authenticatedGuard: CanActivateFn = (_route, state) => {
   const session = inject(AuthSession);
   const router = inject(Router);
   if (!session.isAuthenticated()) {
     session.clear();
-    return router.createUrlTree(['/login']);
+    const returnUrl = resolveReturnUrl(state.url);
+    return router.createUrlTree(['/login'], { queryParams: returnUrl ? { returnUrl } : undefined });
   }
   return session.requiresPasswordChange() ? router.createUrlTree(['/change-password']) : true;
 };

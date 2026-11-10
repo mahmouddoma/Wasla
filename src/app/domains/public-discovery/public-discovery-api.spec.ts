@@ -17,6 +17,21 @@ describe('PublicDiscoveryApi', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it.each([
+    [{ address: 'Server address', detailedAddress: 'Legacy address' }, 'Server address'],
+    [{ address: null, detailedAddress: 'Legacy address' }, null],
+    [{ address: '', detailedAddress: 'Legacy address' }, ''],
+    [{ detailedAddress: 'Legacy address' }, 'Legacy address'],
+    [{}, null],
+  ])('normalizes address semantics for both public endpoints (%j)', async (fields, expected) => {
+    const doctor = { doctorId: 'd1', practices: [{ id: 'p1', ...fields }, { id: 'p2', address: 'Second branch' }] };
+    const search = firstValueFrom(api.doctors({ pageNumber: 1, pageSize: 20 }));
+    http.expectOne(request => request.url === `${url}/doctors`).flush({ items: [doctor], totalCount: 1, pageNumber: 1, pageSize: 20 });
+    expect((await search).items[0].practices.map(practice => [practice.id, practice.detailedAddress])).toEqual([['p1', expected], ['p2', 'Second branch']]);
+    const details = firstValueFrom(api.doctor('d1'));
+    http.expectOne(`${url}/doctors/d1`).flush(doctor);
+    expect((await details).practices[0].detailedAddress).toBe(expected);
+  });
   it('WAS-726 binds each anonymous practice logo to its exact public route', () => {
     expect(api.practiceLogoUrl('clinic-1')).toBe(url + '/practices/clinic-1/logo');
     expect(() => api.practiceLogoUrl('')).toThrow();

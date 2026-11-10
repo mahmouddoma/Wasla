@@ -1,3 +1,5 @@
+import { ReceptionRegistrationHandoff } from '../../../../domains/patients';
+import { printTicket } from '../../utils/print-ticket';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -11,7 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, form, min, required, submit, validate, disabled, maxLength } from '@angular/forms/signals';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { PatientsApi, PatientSearchItem } from '../../../../domains/patients';
@@ -53,8 +55,9 @@ import { DiagnosticRequestStateResponse } from '../../../../domains/diagnostics'
 import { PrescriptionWorkspaceComponent } from '../../../prescriptions';
 import { DiagnosticDraftComponent } from '../../../diagnostics';
 import { Phase18Part2Api } from '../../../../domains/phase18';
-import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
+import type { componentsPart2 as components } from '../../../../domains/phase18';
 import { ArchivedTicketListComponent } from '../../components/archived-ticket-list/archived-ticket-list.component';
+import { PracticeActivityComponent } from '../../../practice-activity';
 
 type ArchivedTicketItem = components['schemas']['ArchivedTicketItem'];
 type QueueAction = 'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
@@ -78,6 +81,7 @@ type CompletionBlocker = {
     PrescriptionWorkspaceComponent,
     DiagnosticDraftComponent,
     ArchivedTicketListComponent,
+    PracticeActivityComponent,
   ],
   templateUrl: './queue-workspace.html',
   styleUrl: './queue-workspace.css',
@@ -98,6 +102,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   protected readonly reception = inject(ReceptionPracticeContext);
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(AuthSession);
+  private readonly router = inject(Router);
+  private readonly registrationHandoff = inject(ReceptionRegistrationHandoff);
   private readonly toast = inject(ToastService);
   protected readonly language = inject(LanguageService);
   private initialized = false;
@@ -301,6 +307,11 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.activeFilter.set(filter);
   }
   protected readonly archiveOpen = signal(false);
+  protected readonly activityOpen = signal(false);
+  protected readonly canViewActivity = computed(() => this.canViewQueue() && (
+    this.isDoctor() ? this.session.hasPermission(PERMISSIONS.auditPracticeView)
+      : this.reception.allows(PERMISSIONS.auditOwnActivityView)
+  ));
   protected readonly archivedTickets = signal<readonly ArchivedTicketItem[]>([]);
   protected readonly archiveLoading = signal(false);
   protected readonly archiveFailed = signal(false);
@@ -327,28 +338,6 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       this.segments().find((segment) => segment.segmentId === this.walkInModel().segmentId)
         ?.visitTypes ?? [],
   );
-  protected readonly walkInMode = signal<'search' | 'create'>('search');
-  protected readonly isCreatingPatient = signal(false);
-  protected readonly patientCreateModel = signal({
-    nameAr: '',
-    nameEn: '',
-    dateOfBirth: '',
-    gender: '' as 'Male' | 'Female' | '',
-    phoneNumber: '',
-  });
-  protected readonly patientCreateForm = form(this.patientCreateModel, (field) => {
-    required(field.nameAr, { message: 'validation.nameArRequired' });
-    maxLength(field.nameAr, 200, { message: 'validation.nameLength' });
-    maxLength(field.nameEn, 200, { message: 'validation.nameLength' });
-    required(field.dateOfBirth, { message: 'ui.full.757' });
-    validate(field.dateOfBirth, ({ value }) => {
-      if (!value()) return undefined;
-      return new Date(value() + 'T00:00:00') > new Date()
-        ? { kind: 'futureDate', message: 'validation.birthFuture' }
-        : undefined;
-    });
-    required(field.gender, { message: 'ui.full.758' });
-  });
   protected readonly reasonModel = signal({ reason: '' });
   protected readonly walkInModel = signal({
     patientId: '',
@@ -575,71 +564,18 @@ export class QueueWorkspace implements OnInit, OnDestroy {
 
   printWalkInTicket(ticket: PracticeTicket): void {
     if (typeof window === 'undefined') return;
-    const practiceName =
-      this.practices().find((p) => p.id === this.practiceId())?.nameAr ||
-      this.label(ticket.practice);
-    const doctorName = this.label(ticket.doctor);
-    const patientName = ticket.patient
-      ? this.label(ticket.patient)
-      : this.acceptedWalkIn()?.patientName || '';
-    const ticketNum = ticket.ticketNumber;
-    const dateStr = new Date().toLocaleString(
-      this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US',
-      { dateStyle: 'medium', timeStyle: 'short' },
-    );
-    const ahead = ticket.patientsAheadNow ?? 0;
-    const aheadText =
-      ahead === 0
-        ? this.language.t('reception.arrival.nextInLine')
-        : this.language.t('reception.arrival.aheadCount', { count: ahead });
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html dir="${this.language.dir()}">
-      <head>
-        <meta charset="utf-8">
-        <title>Ticket #${ticketNum}</title>
-        <style>
-          @page { size: 80mm auto; margin: 4mm; }
-          body { font-family: system-ui, -apple-system, sans-serif; text-align: center; color: #000; padding: 6px; }
-          .title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-          .sub { font-size: 13px; color: #444; margin-bottom: 12px; }
-          .ticket-box { border: 2px dashed #000; padding: 10px; margin: 10px 0; border-radius: 8px; }
-          .lbl { font-size: 12px; text-transform: uppercase; color: #555; }
-          .num { font-size: 38px; font-weight: 900; line-height: 1.1; margin: 4px 0; }
-          .patient { font-size: 15px; font-weight: bold; margin-top: 6px; }
-          .ahead { font-size: 13px; margin-top: 6px; background: #eee; padding: 4px; border-radius: 4px; }
-          .footer { font-size: 11px; color: #666; margin-top: 14px; border-top: 1px solid #ccc; padding-top: 6px; }
-        </style>
-      </head>
-      <body>
-        <div class="title">${practiceName}</div>
-        <div class="sub">${doctorName}</div>
-        <div class="ticket-box">
-          <div class="lbl">${this.language.t('reception.arrival.ticketNumber')}</div>
-          <div class="num">#${ticketNum}</div>
-          <div class="patient">${patientName}</div>
-          <div class="ahead">${aheadText}</div>
-        </div>
-        <div class="footer">
-          <div>${dateStr}</div>
-          <div>وصلة - Wasla Health Platform</div>
-        </div>
-        <script>
-          window.onload = function() { window.print(); window.close(); };
-        </script>
-      </body>
-      </html>
-    `;
-
-    const printWin = window.open('', '_blank', 'width=380,height=520');
-    if (printWin) {
-      printWin.document.open();
-      printWin.document.write(htmlContent);
-      printWin.document.close();
-    } else {
-      window.print();
-    }
+    const ahead = ticket.patientsAheadNow;
+    const result = printTicket({
+      practice: this.practices().find(p => p.id === this.practiceId())?.nameAr || this.label(ticket.practice),
+      doctor: this.label(ticket.doctor),
+      patient: ticket.patient ? this.label(ticket.patient) : this.acceptedWalkIn()?.patientName || '',
+      number: Number(ticket.ticketNumber),
+      numberLabel: this.language.t('reception.arrival.ticketNumber'),
+      ahead: ahead == null ? null : ahead === 0 ? this.language.t('reception.arrival.nextInLine') : this.language.t('reception.arrival.aheadCount', { count: ahead }),
+      date: new Date().toLocaleString(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+      footer: 'Wasla', dir: this.language.dir(), lang: this.language.currentLang(),
+    });
+    if (result !== 'opened') this.toast.error(this.language.t(result === 'blocked' ? 'tickets.printBlocked' : 'tickets.printInvalid'));
   }
 
   async ngOnInit(): Promise<void> {
@@ -663,6 +599,12 @@ export class QueueWorkspace implements OnInit, OnDestroy {
           ? this.practices()[0].id
           : '';
       await this.selectPractice(initial);
+      const patient = this.registrationHandoff.consume(initial);
+      if (patient && this.actor() === 'Reception' && this.canWalkIn() && this.canSearchPatient()) {
+        await this.openWalkIn();
+        this.patientResults.set([patient]);
+        await this.choosePatient(patient.patientId);
+      }
       this.initialized = true;
     } catch (error) {
       await this.failure(error);
@@ -801,6 +743,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       typeof idOrEvent === 'string' ? idOrEvent : (idOrEvent.target as HTMLSelectElement).value;
     if (id && !this.practices().some((item) => item.id === id)) return;
     const generation = ++this.generation;
+    this.activityOpen.set(false);
     this.closeArchive();
     this.queueSequence++;
     this.detailSequence++;
@@ -877,19 +820,15 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.messages.set([]);
     this.reasonModel.set({ reason: '' });
 
-    // 1. Instant 0ms synchronous assignment directly from memory!
     this.ticketDetailOpen.set(true);
-    if (initialTicket) {
-      this.selected.set(initialTicket);
-    }
+    this.selected.set(null);
 
     // 2. Background fresh sync
     const generation = this.generation,
       id = this.practiceId(),
       sequence = ++this.detailSequence;
 
-    // Only show detailLoading indicator if we didn't have the ticket in memory
-    this.detailLoading.set(!initialTicket);
+    this.detailLoading.set(true);
 
     if (!ticketId) return;
 
@@ -903,7 +842,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
         if (!archived && !merged.isArchived) this.syncTicketIntoQueue(merged);
       }
     } catch (error) {
-      if (this.current(id, generation) && sequence === this.detailSequence && !initialTicket) {
+      if (this.current(id, generation) && sequence === this.detailSequence) {
+        this.selected.set(null);
         await this.failure(error, id, generation);
       }
     } finally {
@@ -933,6 +873,10 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.archiveHasMore.set(false);
     this.archiveOpen.set(true);
     await this.loadArchive();
+  }
+
+  protected openActivity(): void {
+    if (this.practiceId() && this.canViewActivity() && !this.busy()) this.activityOpen.set(true);
   }
 
   protected closeArchive(): void {
@@ -1163,66 +1107,10 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   protected startPatientRegistration(criteria?: WalkInPatientSearch): void {
-    if (this.busy()) return;
-    this.patientCreateModel.set({
-      nameAr: criteria?.name || '',
-      nameEn: '',
-      dateOfBirth: criteria?.dateOfBirth || '',
-      gender: '',
-      phoneNumber: criteria?.phoneNumber || '',
-    });
-    this.walkInMode.set('create');
-  }
-
-  protected cancelPatientRegistration(): void {
-    if (this.busy() || this.isCreatingPatient()) return;
-    this.walkInMode.set('search');
-  }
-
-  protected async createWalkInPatient(event: Event): Promise<void> {
-    event.preventDefault();
-    if (this.busy() || this.isCreatingPatient() || !this.canRegisterPatient() || !this.practiceId()) return;
-    await submit(this.patientCreateForm, async () => {
-      this.isCreatingPatient.set(true);
-      try {
-        const value = this.patientCreateModel();
-        const res = await firstValueFrom(
-          this.patientsApi.create({
-            nameAr: value.nameAr.trim(),
-            nameEn: value.nameEn.trim(),
-            dateOfBirth: value.dateOfBirth,
-            gender: value.gender as 'Male' | 'Female',
-            phoneNumber: value.phoneNumber.trim(),
-            email: '',
-            primaryContactNameAr: '',
-            primaryContactPhoneNumber: '',
-            primaryContactRelationshipType: 'Guardian',
-            primaryContactLinkedPatientId: '',
-            primaryContactIsPrimary: true,
-            doctorPracticeId: this.practiceId(),
-          }),
-        );
-        this.toast.success(this.language.t('patient.registered'));
-        const newPatient: PatientSearchItem = {
-          patientId: res.patientId,
-          nameAr: value.nameAr.trim(),
-          nameEn: value.nameEn.trim() || value.nameAr.trim(),
-          dateOfBirth: value.dateOfBirth,
-          gender: value.gender as 'Male' | 'Female',
-          phoneNumber: value.phoneNumber.trim() || null,
-          hasContactPhone: false,
-        };
-        this.patientResults.set([newPatient]);
-        this.selectedPatient.set(newPatient);
-        this.walkInModel.update((model) => ({ ...model, patientId: res.patientId }));
-        this.walkInMode.set('search');
-        await this.refreshWalkInPatient();
-      } catch (error) {
-        await this.failure(error, this.practiceId(), this.generation);
-      } finally {
-        this.isCreatingPatient.set(false);
-      }
-    });
+    if (this.busy() || !this.canRegisterPatient() || !this.practiceId()) return;
+    void this.router.navigate(['/reception/patients'], { queryParams: {
+      action: 'new', returnTo: 'queue', practiceId: this.practiceId(),
+    } });
   }
 
   protected changePatient(): void {
@@ -2063,15 +1951,6 @@ export class QueueWorkspace implements OnInit, OnDestroy {
 
   private resetWalkIn(): void {
     this.patientSearchSequence++;
-    this.walkInMode.set('search');
-    this.isCreatingPatient.set(false);
-    this.patientCreateModel.set({
-      nameAr: '',
-      nameEn: '',
-      dateOfBirth: '',
-      gender: '',
-      phoneNumber: '',
-    });
     this.patientResults.set([]);
     this.selectedPatient.set(null);
     this.patientSearchLoading.set(false);

@@ -13,6 +13,7 @@ import {
   ClaimHistoryResponseItem,
   PatientDuplicateDetails,
   PatientDuplicatesPage,
+  PatientDuplicateStatus,
   RegisterVerifiedPatientAccountRequest,
   RegisterVerifiedPatientAccountResponse,
   RejectPatientClaimRequest,
@@ -282,10 +283,11 @@ export class PatientIdentityApi {
 
   // === SuperAdmin Patient Duplicates (WAS-628 .. WAS-630) ===
 
-  adminDuplicates(pageNumber = 1, pageSize = 20): Observable<PatientDuplicatesPage> {
-    const params = new HttpParams()
+  adminDuplicates(pageNumber = 1, pageSize = 20, status?: PatientDuplicateStatus): Observable<PatientDuplicatesPage> {
+    let params = new HttpParams()
       .set('pageNumber', pageNumber.toString())
       .set('pageSize', pageSize.toString());
+    if (status) params = params.set('status', status);
     return this.http.get<PatientDuplicatesPage>(this.adminDuplicatesUrl, { params });
   }
 

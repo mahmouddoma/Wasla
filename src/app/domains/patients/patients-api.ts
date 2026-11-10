@@ -14,6 +14,8 @@ import {
   RegisterFullPatientResponse,
   RegistrationMatchesRequest,
   RegistrationMatchesResponse,
+  RegistrationSearchResponse,
+  RegistrationAttestationResponse,
   UpdatePatientProfileRequest,
   UpsertPatientContactRequest,
 } from './patient.models';
@@ -24,7 +26,7 @@ export class PatientsApi {
   private readonly patientsUrl = `${environment.apiBaseUrl}/api/v1/patients`;
   private readonly meUrl = `${this.patientsUrl}/me`;
 
-  create(request: CreatePatientRequest): Observable<CreatePatientResponse> {
+  create(request: CreatePatientRequest, idempotencyKey?: string): Observable<CreatePatientResponse> {
     const body = new FormData();
     appendText(body, 'NameAr', request.nameAr);
     appendText(body, 'NameEn', request.nameEn);
@@ -32,6 +34,9 @@ export class PatientsApi {
     appendText(body, 'Gender', request.gender);
     appendText(body, 'PhoneNumber', request.phoneNumber);
     appendText(body, 'Email', request.email);
+    if (request.matchReviewOutcome) appendText(body, 'MatchReviewOutcome', request.matchReviewOutcome);
+    if (request.matchReviewReason) appendText(body, 'MatchReviewReason', request.matchReviewReason);
+    if (request.matchingAttestationBasis) appendText(body, 'MatchingAttestationBasis', request.matchingAttestationBasis);
     if (request.doctorPracticeId?.trim()) {
       appendText(body, 'DoctorPracticeId', request.doctorPracticeId.trim());
     }
@@ -48,7 +53,7 @@ export class PatientsApi {
       body.append('PrimaryContactIsPrimary', String(request.primaryContactIsPrimary));
       appendText(body, 'PrimaryContactLinkedPatientId', request.primaryContactLinkedPatientId);
     }
-    return this.http.post<CreatePatientResponse>(this.patientsUrl, body);
+    return this.http.post<CreatePatientResponse>(this.patientsUrl, body, idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {});
   }
 
   search(query: PatientSearchQuery): Observable<PagedResponse<PatientSearchItem>> {
@@ -116,7 +121,7 @@ export class PatientsApi {
     return this.http.delete<void>(`${this.meUrl}/contacts/${contactId}`);
   }
 
-  registerFull(request: RegisterFullPatientRequest): Observable<RegisterFullPatientResponse> {
+  registerFull(request: RegisterFullPatientRequest, idempotencyKey: string): Observable<RegisterFullPatientResponse> {
     const body = new FormData();
     appendText(body, 'DoctorPracticeId', request.doctorPracticeId);
     appendText(body, 'NameAr', request.nameAr);
@@ -134,15 +139,19 @@ export class PatientsApi {
     if (request.personalIdFrontImage) body.append('PersonalIdFrontImage', request.personalIdFrontImage);
     if (request.personalIdBackImage) body.append('PersonalIdBackImage', request.personalIdBackImage);
 
-    return this.http.post<RegisterFullPatientResponse>(`${this.patientsUrl}/full`, body);
+    return this.http.post<RegisterFullPatientResponse>(`${this.patientsUrl}/full`, body, { headers: { 'Idempotency-Key': idempotencyKey } });
   }
 
+  registrationMatches(request: RegistrationMatchesRequest & { mode: 'Search' }): Observable<RegistrationSearchResponse>;
+  registrationMatches(request: RegistrationMatchesRequest & { mode: 'ConfirmReuse' | 'ConfirmClaimIdentity' }, idempotencyKey: string): Observable<RegistrationAttestationResponse>;
   registrationMatches(
     request: RegistrationMatchesRequest,
+    idempotencyKey?: string,
   ): Observable<RegistrationMatchesResponse> {
     return this.http.post<RegistrationMatchesResponse>(
       `${this.patientsUrl}/registration-matches`,
       request,
+      idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {},
     );
   }
 }

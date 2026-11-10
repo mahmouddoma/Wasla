@@ -8,7 +8,12 @@ import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { createIdempotencyKey } from '../../../core/http/create-idempotency-key';
 import { DoctorPracticesApi } from '../../../domains/doctor-practices';
-import { PatientSearchItem, PatientSearchQuery, PatientsApi } from '../../../domains/patients';
+import {
+  PatientSearchItem,
+  PatientSearchQuery,
+  PatientsApi,
+  RegistrationMatchesRequest,
+} from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import {
   AvailableDate,
@@ -34,7 +39,7 @@ import {
 import { CheckInSubmission, PracticeTicket, TicketsApi } from '../../../domains/tickets';
 import { FollowUpEligibility, FollowUpsApi } from '../../../domains/follow-ups';
 import { Phase18Part2Api } from '../../../domains/phase18';
-import type { components } from '../../../domains/phase18/phase18-part2-openapi.types';
+import type { componentsPart2 as components } from '../../../domains/phase18';
 
 export interface ReservationDraft {
   patientId: string;
@@ -62,6 +67,7 @@ export class ReservationWorkspaceStore {
   private readonly phase18Api = inject(Phase18Part2Api);
   readonly pendingAttestation = signal<PendingAttestation | null>(null);
   readonly isAttesting = signal(false);
+  private attestationIntent: { signature: string; key: string } | null = null;
   readonly bookingPatientId = signal('');
   readonly bookingPatient = signal<Pick<
     PatientSearchItem,
@@ -162,6 +168,15 @@ export class ReservationWorkspaceStore {
   readonly metadata = signal<ReservationMetadata | null>(null);
   readonly filters = signal<ReservationFilterOptions | null>(null);
   readonly query = signal<ReservationQuery>({ view: 'Upcoming', pageNumber: 1, pageSize: 20 });
+  readonly isArchivedView = computed(() =>
+    this.actor() === 'Reception'
+      ? this.receptionView() === 'Archive'
+      : this.query().view === 'Archived',
+  );
+  readonly archivedItems = signal<readonly components['schemas']['ArchivedReservationItem'][]>([]);
+  readonly archiveHasMore = signal(false);
+  private archiveCursor: string | null = null;
+
   readonly page = signal<ReservationPage>({
     items: [],
     totalCount: 0,
@@ -303,7 +318,7 @@ export class ReservationWorkspaceStore {
           this.patients.set(await firstValueFrom(this.api.bookablePatients()));
         } catch (error) {
           // Create authority is independent of View authority; keep the list accessible.
-          await this.failure(error);
+          await this.failure(error, false);
         }
       }
       if (actor === 'Doctor')
@@ -361,6 +376,7 @@ export class ReservationWorkspaceStore {
     if (this.actor() === 'Reception') this.reception.select(id);
     this.close();
     this.filters.set(null);
+    this.resetArchive();
     this.loading.set(false);
     this.listFailed.set(false);
     this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
@@ -384,61 +400,52 @@ export class ReservationWorkspaceStore {
     }
     await this.loadList();
   }
-  async loadList(): Promise<void> {
+  async loadList(append = false): Promise<void> {
     if (!this.canView() || (this.scoped() && !this.practiceId())) return;
+    if (append && (this.loading() || !this.archiveHasMore() || !this.archiveCursor)) return;
     const sequence = ++this.listSequence;
+    const archived = this.isArchivedView();
+    if (!append) {
+      this.resetArchive();
+    }
     this.loading.set(true);
     this.listFailed.set(false);
     this.messages.set([]);
     try {
-      let page: ReservationPage;
-      const isArchivedView =
-        (this.actor() === 'Reception' && this.receptionView() === 'Archive') ||
-        (this.actor() === 'Patient' && this.query().view === 'Archived') ||
-        (this.actor() === 'Doctor' && this.query().view === 'Archived');
-
-      if (isArchivedView) {
-        if (this.actor() === 'Doctor') {
-          const res = (await firstValueFrom(
-            this.phase18Api.call('P18.2-08', {
-              pathParams: { practiceId: this.practiceId() },
-              query: {
-                Search: this.query().search?.trim() || undefined,
-                PageSize: this.query().pageSize ?? 20,
-              },
-            }),
-          )) as components['schemas']['ArchivedReservationItemArchivePage'];
-          page = this.mapArchivedReservations(res?.items || [], !!res?.hasMore);
-        } else if (this.actor() === 'Reception') {
-          const res = (await firstValueFrom(
-            this.phase18Api.call('P18.2-10', {
-              pathParams: { practiceId: this.practiceId() },
-              query: {
-                Search: this.query().search?.trim() || undefined,
-                PageSize: this.query().pageSize ?? 20,
-              },
-            }),
-          )) as components['schemas']['ArchivedReservationItemArchivePage'];
-          page = this.mapArchivedReservations(res?.items || [], !!res?.hasMore);
-        } else {
-          const res = (await firstValueFrom(
-            this.phase18Api.call('P18.2-12', {
-              query: {
-                Search: this.query().search?.trim() || undefined,
-                PageSize: this.query().pageSize ?? 20,
-              },
-            }),
-          )) as components['schemas']['ArchivedReservationItemArchivePage'];
-          page = this.mapArchivedReservations(res?.items || [], !!res?.hasMore);
-        }
+      if (archived) {
+        const query = this.query();
+        const options = {
+          pathParams: this.scoped() ? { practiceId: this.practiceId() } : undefined,
+          query: {
+            Search: query.search?.trim() || undefined,
+            Status: query.status || undefined,
+            FromBusinessDate: query.fromDate || undefined,
+            ToBusinessDate: query.toDate || undefined,
+            Cursor: this.archiveCursor,
+            PageSize: query.pageSize ?? 20,
+          },
+        };
+        const op =
+          this.actor() === 'Doctor'
+            ? 'P18.2-08'
+            : this.actor() === 'Reception'
+              ? 'P18.2-10'
+              : 'P18.2-12';
+        const result = await firstValueFrom(this.phase18Api.call(op, options));
+        if (sequence !== this.listSequence) return;
+        const items = new Map(this.archivedItems().map((item) => [item.reservationId, item]));
+        for (const item of result.items ?? []) items.set(item.reservationId, item);
+        this.archivedItems.set([...items.values()]);
+        this.archiveCursor = result.nextCursor ?? null;
+        this.archiveHasMore.set(result.hasMore && !!this.archiveCursor);
       } else {
-        page = await firstValueFrom(this.api.list(this.scope(), this.listQuery()));
+        const page = await firstValueFrom(this.api.list(this.scope(), this.listQuery()));
+        if (sequence === this.listSequence) this.page.set(page);
       }
-      if (sequence === this.listSequence) this.page.set(page);
     } catch (error) {
       if (sequence === this.listSequence) {
         this.listFailed.set(true);
-        this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+        if (!archived) this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
         await this.failure(error);
       }
     } finally {
@@ -446,43 +453,7 @@ export class ReservationWorkspaceStore {
     }
   }
 
-  private mapArchivedReservations(
-    items: readonly components['schemas']['ArchivedReservationItem'][],
-    hasMore: boolean,
-  ): ReservationPage {
-    return {
-      items: items.map((item) => ({
-        reservationId: item.reservationId,
-        reference: item.reservationReference ?? item.reservationId.slice(0, 8),
-        status: item.status ?? 'Completed',
-        isLate: false,
-        doctorPracticeId: item.doctorPracticeId,
-        appointment: {
-          businessDate: item.businessDate,
-          slotStartTime: '09:00',
-          period: 'Morning',
-        },
-        patient: { id: '', nameAr: '—', nameEn: '—' },
-        doctor: { id: '', nameAr: '—', nameEn: '—' },
-        practice: { id: item.doctorPracticeId, nameAr: '—', nameEn: '—' },
-        capabilities: {
-          canCancel: false,
-          canReschedule: false,
-          canRestoreFromNoShow: false,
-        },
-        timeline: [],
-        rowVersion: '',
-        isArchived: true,
-        archivedAtUtc: item.archivedAtUtc,
-        linkedTicketId: item.linkedTicketId ?? null,
-        canViewLinkedTicket: !!item.linkedTicketId,
-      })),
-      totalCount: items.length + (hasMore ? 1 : 0),
-      pageNumber: 1,
-      pageSize: this.query().pageSize ?? 20,
-    };
-  }
-  async inspect(id: string, arrivalContext?: Reservation): Promise<void> {
+  async inspect(id: string, arrivalContext?: Reservation, archived = false): Promise<void> {
     this.arrival.set(false);
     this.checkedInTicket.set(null);
     this.acceptedArrival.set(null);
@@ -496,14 +467,16 @@ export class ReservationWorkspaceStore {
       const item = await firstValueFrom(this.api.details(this.scope(), id));
       if (sequence === this.detailSequence)
         this.detail.set(
-          arrivalContext
-            ? {
-                ...item,
-                status: item.status || arrivalContext.status,
-                price: item.price ?? arrivalContext.price,
-                currency: item.currency ?? arrivalContext.currency,
-              }
-            : item,
+          archived
+            ? { ...item, isArchived: true }
+            : arrivalContext
+              ? {
+                  ...item,
+                  status: item.status || arrivalContext.status,
+                  price: item.price ?? arrivalContext.price,
+                  currency: item.currency ?? arrivalContext.currency,
+                }
+              : item,
         );
     } catch (error) {
       if (sequence === this.detailSequence) await this.failure(error);
@@ -824,17 +797,20 @@ export class ReservationWorkspaceStore {
     this.isAttesting.set(true);
     this.busy.set(true);
     this.messages.set([]);
+    const generation = this.scopeGeneration;
     try {
-      const matchRes = await firstValueFrom(
-        this.patientsApi.registrationMatches({
-          mode: 'ConfirmReuse',
-          doctorPracticeId: pending.doctorPracticeId,
-          patientId: pending.patientId,
-          verifiedInPerson: true,
-          verificationBasis: basis,
-          reason: reason?.trim() || undefined,
-        }),
-      );
+      const matchingRequest: RegistrationMatchesRequest & { mode: 'ConfirmReuse' } = {
+        mode: 'ConfirmReuse',
+        doctorPracticeId: pending.doctorPracticeId,
+        patientId: pending.patientId,
+        verifiedInPerson: true,
+        verificationBasis: basis,
+        reason: reason?.trim() || undefined,
+      };
+      const signature = JSON.stringify(matchingRequest);
+      if (this.attestationIntent?.signature !== signature) this.attestationIntent = { signature, key: createIdempotencyKey() };
+      const matchRes = await firstValueFrom(this.patientsApi.registrationMatches(matchingRequest, this.attestationIntent.key));
+      if (generation !== this.scopeGeneration || this.pendingAttestation() !== pending) return;
       const attestationId = matchRes.attestationId;
       if (!attestationId) {
         throw new Error('No attestationId returned from verification');
@@ -857,8 +833,13 @@ export class ReservationWorkspaceStore {
             )
           : this.api.createReception(this.practiceId(), body, this.intentKey('create', body));
       const response = await firstValueFrom(request);
+      if (generation !== this.scopeGeneration || this.pendingAttestation() !== pending) {
+        this.toast.success(this.language.t('reservations.saved'));
+        return;
+      }
       this.detail.set(response);
       this.pendingAttestation.set(null);
+      this.attestationIntent = null;
       this.editor.set(null);
       this.eligibility.set(null);
       this.eligibilities.set([]);
@@ -1213,6 +1194,12 @@ export class ReservationWorkspaceStore {
       pageSize: q.pageSize,
     };
   }
+  private resetArchive(): void {
+    this.archivedItems.set([]);
+    this.archiveCursor = null;
+    this.archiveHasMore.set(false);
+  }
+
   private isCommercialDenial(error: unknown): boolean {
     return (
       error instanceof HttpErrorResponse &&
@@ -1220,7 +1207,14 @@ export class ReservationWorkspaceStore {
       parseApiErrors(error).codes.some((code) => code.startsWith('Subscription.'))
     );
   }
-  private async failure(error: unknown): Promise<void> {
+  private async failure(error: unknown, refreshBookingSubjects = true): Promise<void> {
+    if (
+      error instanceof HttpErrorResponse &&
+      [401, 403, 404].includes(error.status) &&
+      !this.isCommercialDenial(error)
+    ) {
+      this.resetArchive();
+    }
     const parsed = parseApiErrors(error);
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];
     this.messages.set(messages);
@@ -1236,10 +1230,12 @@ export class ReservationWorkspaceStore {
       this.patients.set([]);
       this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
       this.loading.set(false);
-      try {
-        this.patients.set(await firstValueFrom(this.api.bookablePatients()));
-      } catch {
-        // View and booking permissions are independent; denied booking stays empty.
+      if (refreshBookingSubjects) {
+        try {
+          this.patients.set(await firstValueFrom(this.api.bookablePatients()));
+        } catch {
+          // View and booking permissions are independent; denied booking stays empty.
+        }
       }
     }
     if (

@@ -10,6 +10,18 @@
     (actionClicked)="registrationOpen.set(true)"
   />
 
+  @if (reusedPatient(); as patient) {
+    <section class="selected-context" aria-live="polite">
+      <strong>{{ patient.nameAr }}</strong>
+      <span>{{ 'identityReview.reuseSuccess' | t }}</span>
+      @if (canBook()) {
+        <button type="button" class="btn btn-primary" (click)="bookReusedPatient()">
+          {{ 'identityReview.continueBooking' | t }}
+        </button>
+      }
+    </section>
+  }
+
   @if (messages().length && !registrationOpen()) {
     <div class="notice" role="alert">
       <svg
@@ -758,6 +770,30 @@
     [attr.aria-busy]="isCreating()"
   >
     <fieldset [disabled]="isCreating()" class="registration-fieldset">
+      <div
+        class="d-flex gap-2 flex-wrap"
+        role="group"
+        [attr.aria-label]="'identityReview.accountType' | t"
+      >
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [disabled]="!canRegisterBasic()"
+          [attr.aria-pressed]="registrationAccountMode() === 'basic'"
+          (click)="registrationAccountMode.set('basic')"
+        >
+          {{ 'identityReview.basic' | t }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [disabled]="!canRegisterFull()"
+          [attr.aria-pressed]="registrationAccountMode() === 'full'"
+          (click)="registrationAccountMode.set('full')"
+        >
+          {{ 'identityReview.full' | t }}
+        </button>
+      </div>
       <div class="section-title-row">
         <h3>{{ 'register.stepPersonal' | t }}</h3>
         <p class="section-subtitle">{{ 'reception.patients.registerHelp' | t }}</p>
@@ -929,18 +965,116 @@
             </div>
 
             <div class="form-field">
-              <label for="linkedId">{{ 'reception.patients.linkContact' | t }}</label>
-              <input
-                id="linkedId"
-                dir="ltr"
-                [formField]="createForm.primaryContactLinkedPatientId"
-                [placeholder]="'reception.patientIdExample' | t"
-              />
-              <small class="field-hint">{{ 'reception.patients.linkContactHelp' | t }}</small>
+              @if (linkedContact(); as contact) {
+                <p>
+                  <strong>{{
+                    uiLanguage.isRtl() ? contact.nameAr : contact.nameEn || contact.nameAr
+                  }}</strong>
+                  <bdi>{{ contact.phoneNumber }}</bdi>
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="clearLinkedContact()"
+                >
+                  {{ 'identityReview.unlinkContact' | t }}
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="openContactPicker()"
+                  [disabled]="!canSearch() || !selectedPracticeAllows('Patients.SearchBasic')"
+                >
+                  {{ 'reception.patients.linkContact' | t }}
+                </button>
+                <small class="field-hint">{{ 'identityReview.contactHelp' | t }}</small>
+              }
             </div>
           </div>
         </details>
       </div>
+      @if (registrationAccountMode() === 'full' || identityMatches()) {
+        <section class="identity-review">
+          <h3>{{ 'identityReview.title' | t }}</h3>
+          <p>{{ 'identityReview.help' | t }}</p>
+          <label class="identity-toggle">
+            <input
+              type="checkbox"
+              class="sr-only-chk"
+              [checked]="fullRegistrationVerifiedInPerson()"
+              (change)="toggleIdentityReview('verified', $event)"
+            />
+            <span class="identity-checkbox" aria-hidden="true">{{
+              fullRegistrationVerifiedInPerson() ? '✓' : ''
+            }}</span>
+            <span>{{ 'reception.patients.verifiedInPersonConfirm' | t }}</span>
+          </label>
+          <label class="form-field"
+            >{{ 'identityReview.basis' | t }}
+            <select [value]="fullRegistrationBasis()" (change)="updateRegistrationBasis($event)">
+              <option value="GovernmentIdSeen">{{ 'identityReview.governmentId' | t }}</option>
+              <option value="ApprovedAlternateEvidence">
+                {{ 'identityReview.alternateEvidence' | t }}
+              </option>
+            </select>
+          </label>
+          @if (identityMatches(); as result) {
+            <p role="status">
+              {{
+                (result.matchOutcome === 'NoMatch'
+                  ? 'identityReview.noMatch'
+                  : 'identityReview.existingRecord'
+                ) | t
+              }}
+            </p>
+            <ul class="list-unstyled">
+              @for (candidate of result.candidates || []; track candidate.patientId) {
+                <li class="identity-candidate">
+                  <div>
+                    <strong>{{ candidate.nameAr }}</strong
+                    ><br /><time dir="ltr">{{ candidate.dateOfBirth }}</time>
+                    <bdi>{{ candidate.phoneMasked }}</bdi> <bdi>{{ candidate.emailMasked }}</bdi>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [disabled]="!fullRegistrationVerifiedInPerson()"
+                    (click)="reuseCandidate(candidate)"
+                  >
+                    {{ 'identityReview.useExisting' | t }}
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (result.requiresClaimForAccount) {
+              <p>{{ 'identityReview.claimRequired' | t }}</p>
+            }
+            @if (canDistinguish()) {
+              <label class="identity-toggle"
+                ><input
+                  type="checkbox"
+                  class="sr-only-chk"
+                  [checked]="distinctPersonConfirmed()"
+                  (change)="toggleIdentityReview('distinct', $event)"
+                /><span class="identity-checkbox" aria-hidden="true">{{
+                  distinctPersonConfirmed() ? '✓' : ''
+                }}</span
+                ><span>{{ 'identityReview.distinct' | t }}</span></label
+              >
+              <label class="form-field"
+                >{{ 'identityReview.reason' | t
+                }}<textarea
+                  rows="3"
+                  maxlength="500"
+                  [value]="matchReviewReason()"
+                  (input)="updateRegistrationText('reason', $event)"
+                ></textarea>
+              </label>
+            }
+          }
+        </section>
+      }
     </fieldset>
 
     @if (createForm().touched() && createForm().invalid()) {
@@ -965,3 +1099,17 @@
     </button>
   </form>
 </ng-template>
+
+<app-side-drawer
+  [opened]="contactPickerOpen()"
+  [title]="'reception.patients.linkContact' | t"
+  (closed)="contactPickerOpen.set(false)"
+>
+  @if (contactPickerOpen()) {
+    <app-patient-picker
+      [label]="'reception.patients.linkContact' | t"
+      [practiceId]="selectedPracticeId()"
+      (selected)="chooseLinkedContact($event)"
+    />
+  }
+</app-side-drawer>

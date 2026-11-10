@@ -71,7 +71,12 @@ export class FamilyMedicalEligibilityDetailsComponent {
   protected readonly canPerformApprove = computed(() => {
     const item = this.details();
     if (!item) return false;
-    return (item.canApprove ?? this.isPending()) && this.canDecide;
+    return item.canApprove === true && this.canDecide && this.hasApprovalMetadata();
+  });
+  protected readonly hasApprovalMetadata = computed(() => {
+    const item = this.details();
+    return !!(item?.policyVersion?.trim() && item.basisReference?.trim() &&
+      item.authorityRelationshipRequestId && item.adultVerification?.relationshipRequestId && item.childVerification?.relationshipRequestId);
   });
 
   protected readonly canPerformReject = computed(() => {
@@ -128,9 +133,13 @@ export class FamilyMedicalEligibilityDetailsComponent {
 
   protected async submitAction(): Promise<void> {
     const item = this.details();
-    if (!item) return;
+    if (!item || this.submitting()) return;
 
     const actionType = this.action();
+    if (actionType === 'approve' && !this.canPerformApprove()) {
+      this.messages.set([this.uiLanguage.t('familyPolicy.approvalUnavailable')]);
+      return;
+    }
     const reasonText = this.noteModel().text.trim();
 
     if ((actionType === 'reject' || actionType === 'revoke') && !reasonText) {
@@ -146,6 +155,9 @@ export class FamilyMedicalEligibilityDetailsComponent {
       if (actionType === 'approve') {
         await firstValueFrom(
           this.api.approveMedicalEligibility(item.reviewId, {
+            policyVersion: item.policyVersion!,
+            basisReference: item.basisReference!,
+            authorityRelationshipRequestId: item.authorityRelationshipRequestId!,
             rowVersion: item.rowVersion,
             reason: reasonText || undefined,
             idempotencyKey,

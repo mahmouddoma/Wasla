@@ -2,12 +2,15 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PERMISSIONS } from '../../../core/auth/permissions';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
@@ -15,7 +18,7 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { Phase18Part2Api } from '../../../domains/phase18';
-import { components } from '../../../domains/phase18/phase18-part2-openapi.types';
+import type { componentsPart2 as components } from '../../../domains/phase18';
 import { firstValueFrom } from 'rxjs';
 
 type ArchiveHealth = components['schemas']['ArchiveHealth'];
@@ -41,6 +44,17 @@ export class ArchiveOperationsComponent implements OnInit {
   private readonly toast = inject(ToastService);
   protected readonly language = inject(LanguageService);
   protected readonly session = inject(AuthSession);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readSequence = 0;
+  private detailSequence = 0;
+  readonly canReadOperations = computed(() => this.session.hasPermission(PERMISSIONS.archiveOperationsView));
+  readonly canReadTickets = computed(() => this.session.hasPermission(PERMISSIONS.archivePlatformView));
+  readonly canReadReservations = computed(() => this.session.hasPermission(PERMISSIONS.archiveReservationsPlatformView));
+  readonly canReadAudit = computed(() => this.session.hasPermission(PERMISSIONS.auditEventsView));
+  readonly canSearchSensitive = computed(() => this.session.hasPermission(PERMISSIONS.auditSensitiveRestrictedView));
+  readonly auditAction = signal('');
+  readonly auditOutcome = signal('');
 
   // Tabs
   readonly activeTab = signal<'operations' | 'archives' | 'audit'>('operations');
@@ -95,11 +109,26 @@ export class ArchiveOperationsComponent implements OnInit {
   readonly canPauseWorker = computed(() => this.health()?.control.canPause ?? false);
   readonly canResumeWorker = computed(() => this.health()?.control.canResume ?? false);
 
+  constructor() {
+    inject(DestroyRef).onDestroy(() => { ++this.readSequence; ++this.detailSequence; });
+  }
+
   async ngOnInit(): Promise<void> {
+    const tab = this.route.snapshot.data['archiveTab'];
+    if (tab === 'archives' || tab === 'audit') this.activeTab.set(tab);
+    if (!this.canReadTickets()) this.archiveEntity.set('reservations');
     await this.loadInitialData();
   }
 
   async setTab(tab: 'operations' | 'archives' | 'audit'): Promise<void> {
+    if (!this.allowed(tab)) return;
+    await this.router.navigate(['/admin', tab === 'operations' ? 'archive-operations' : tab]);
+    ++this.readSequence;
+    ++this.detailSequence;
+    this.selectedArchivedTicket.set(null);
+    this.selectedArchivedReservation.set(null);
+    this.selectedAuditEvent.set(null);
+    this.sensitiveSearchResults.set([]);
     this.activeTab.set(tab);
     if (tab === 'operations' && !this.health()) {
       await this.loadOperationsData();
@@ -115,20 +144,24 @@ export class ArchiveOperationsComponent implements OnInit {
   }
 
   async loadInitialData(): Promise<void> {
+    if (!this.allowed(this.activeTab())) return;
     this.loading.set(true);
     try {
-      await this.loadOperationsData();
+      if (this.activeTab() === 'archives') await this.loadArchivesData();
+      else if (this.activeTab() === 'audit') await this.loadAuditData();
+      else await this.loadOperationsData();
     } finally {
       this.loading.set(false);
     }
   }
 
   async loadOperationsData(): Promise<void> {
+    if (!this.canReadOperations()) return;
     try {
       const [health, runsPage, exceptionsPage, options] = await Promise.all([
         firstValueFrom(this.api.call('P18.2-16')),
-        firstValueFrom(this.api.call('P18.2-17', { query: { pageSize: 20 } })),
-        firstValueFrom(this.api.call('P18.2-19', { query: { pageSize: 20 } })),
+        this.session.hasPermission(PERMISSIONS.archiveOperationsRuns) ? firstValueFrom(this.api.call('P18.2-17', { query: { pageSize: 20 } })) : Promise.resolve({ items: [], nextCursor: null, hasMore: false }),
+        this.session.hasPermission(PERMISSIONS.archiveOperationsFailures) ? firstValueFrom(this.api.call('P18.2-19', { query: { pageSize: 20 } })) : Promise.resolve({ items: [], nextCursor: null, hasMore: false }),
         firstValueFrom(this.api.call('P18.2-35')),
       ]);
       this.health.set(health);
@@ -156,6 +189,7 @@ export class ArchiveOperationsComponent implements OnInit {
   }
 
   async inspectRun(run: ArchiveRunItem): Promise<void> {
+    if (!this.session.hasPermission(PERMISSIONS.archiveOperationsRuns)) return;
     try {
       const detail = await firstValueFrom(
         this.api.call('P18.2-18', { pathParams: { runId: run.runId } }),
@@ -167,6 +201,7 @@ export class ArchiveOperationsComponent implements OnInit {
   }
 
   async inspectException(exc: ArchiveExceptionItem): Promise<void> {
+    if (!this.session.hasPermission(PERMISSIONS.archiveOperationsFailures)) return;
     try {
       const detail = await firstValueFrom(
         this.api.call('P18.2-20', { pathParams: { exceptionId: exc.exceptionId } }),
@@ -190,7 +225,7 @@ export class ArchiveOperationsComponent implements OnInit {
   async executePause(): Promise<void> {
     const reason = this.controlReason().trim();
     const currentHealth = this.health();
-    if (!reason || !currentHealth) return;
+    if (!reason || !currentHealth || this.isMutating()) return;
 
     this.isMutating.set(true);
     try {
@@ -216,7 +251,7 @@ export class ArchiveOperationsComponent implements OnInit {
   async executeResume(): Promise<void> {
     const reason = this.controlReason().trim();
     const currentHealth = this.health();
-    if (!reason || !currentHealth) return;
+    if (!reason || !currentHealth || this.isMutating()) return;
 
     this.isMutating.set(true);
     try {
@@ -240,12 +275,18 @@ export class ArchiveOperationsComponent implements OnInit {
   }
 
   async setArchiveEntity(entity: 'tickets' | 'reservations'): Promise<void> {
+    if (entity === 'tickets' ? !this.canReadTickets() : !this.canReadReservations()) return;
     this.archiveEntity.set(entity);
     this.archiveCursor.set(null);
     await this.loadArchivesData();
   }
 
-  async loadArchivesData(): Promise<void> {
+  async loadArchivesData(append = false): Promise<void> {
+    if (!this.allowed('archives') || (append && (!this.archiveHasMore() || this.loading()))) return;
+    const sequence = ++this.readSequence;
+    if (!append) { this.archiveCursor.set(null); this.archivedTickets.set([]); this.archivedReservations.set([]); }
+    this.selectedArchivedTicket.set(null);
+    this.selectedArchivedReservation.set(null);
     this.loading.set(true);
     try {
       if (this.practiceOptions().length === 0) {
@@ -254,95 +295,114 @@ export class ArchiveOperationsComponent implements OnInit {
         );
         this.practiceOptions.set(practices.items ?? []);
       }
+      if (sequence !== this.readSequence) return;
 
       const entity = this.archiveEntity();
       const query: Record<string, string | number | boolean | null | undefined> = {
         pageSize: 20,
+        cursor: append ? this.archiveCursor() : undefined,
       };
       if (this.archiveSearchQuery().trim()) {
         if (entity === 'tickets')
           query['ticketNumber'] = Number(this.archiveSearchQuery().trim()) || undefined;
         else query['reference'] = this.archiveSearchQuery().trim();
       }
-      if (this.archivePracticeFilter()) query['doctorPracticeId'] = this.archivePracticeFilter();
+      if (this.archivePracticeFilter()) query['practiceId'] = this.archivePracticeFilter();
       if (this.archiveStatusFilter()) query['status'] = this.archiveStatusFilter();
 
       if (entity === 'tickets') {
         const res = await firstValueFrom(this.api.call('P18.2-13', { query }));
-        this.archivedTickets.set(res.items ?? []);
+        if (sequence !== this.readSequence) return;
+        this.archivedTickets.update(items => append ? [...new Map([...items, ...(res.items ?? [])].map(item => [item.ticketId, item])).values()] : res.items ?? []);
         this.archiveCursor.set(res.nextCursor ?? null);
         this.archiveHasMore.set(res.hasMore);
       } else {
         const res = await firstValueFrom(this.api.call('P18.2-14', { query }));
-        this.archivedReservations.set(res.items ?? []);
+        if (sequence !== this.readSequence) return;
+        this.archivedReservations.update(items => append ? [...new Map([...items, ...(res.items ?? [])].map(item => [item.reservationId, item])).values()] : res.items ?? []);
         this.archiveCursor.set(res.nextCursor ?? null);
         this.archiveHasMore.set(res.hasMore);
       }
     } catch {
       this.toast.error(this.language.t('common.errorLoading') || 'Error loading archived records');
     } finally {
-      this.loading.set(false);
+      if (sequence === this.readSequence) this.loading.set(false);
     }
   }
 
   async inspectPlatformTicket(item: PlatformTicketMetadata): Promise<void> {
+    if (!this.canReadTickets()) return;
+    const detailSequence = ++this.detailSequence;
     try {
       const detail = await firstValueFrom(
         this.api.call('P18.2-15', { pathParams: { ticketId: item.ticketId } }),
       );
-      this.selectedArchivedTicket.set(detail);
+      if (detailSequence === this.detailSequence) this.selectedArchivedTicket.set(detail);
     } catch {
-      this.selectedArchivedTicket.set(item);
+      this.selectedArchivedTicket.set(null);
+      this.toast.error(this.language.t('common.errorLoading'));
     }
   }
 
   async inspectPlatformReservation(item: PlatformReservationMetadata): Promise<void> {
+    if (!this.canReadReservations()) return;
+    const detailSequence = ++this.detailSequence;
     try {
       const detail = await firstValueFrom(
         this.api.call('P18.2-31', { pathParams: { reservationId: item.reservationId } }),
       );
-      this.selectedArchivedReservation.set(detail);
+      if (detailSequence === this.detailSequence) this.selectedArchivedReservation.set(detail);
     } catch {
-      this.selectedArchivedReservation.set(item);
+      this.selectedArchivedReservation.set(null);
+      this.toast.error(this.language.t('common.errorLoading'));
     }
   }
 
-  async loadAuditData(): Promise<void> {
+  async loadAuditData(append = false): Promise<void> {
+    if (!this.canReadAudit() || (append && (!this.auditHasMore() || this.loading()))) return;
+    const sequence = ++this.readSequence;
+    if (!append) { this.auditCursor.set(null); this.auditEvents.set([]); }
+    this.selectedAuditEvent.set(null);
     this.loading.set(true);
     try {
       const [events, options] = await Promise.all([
-        firstValueFrom(this.api.call('P18.2-28', { query: { pageSize: 25 } })),
+        firstValueFrom(this.api.call('P18.2-28', { query: { pageSize: 25, cursor: append ? this.auditCursor() : undefined,
+          action: this.auditAction() || undefined, outcome: this.auditOutcome() || undefined } })),
         firstValueFrom(this.api.call('P18.2-38')),
       ]);
-      this.auditEvents.set(events.items ?? []);
+      if (sequence !== this.readSequence) return;
+      this.auditEvents.update(items => append ? [...new Map([...items, ...(events.items ?? [])].map(item => [item.eventKey, item])).values()] : events.items ?? []);
       this.auditCursor.set(events.nextCursor ?? null);
       this.auditHasMore.set(events.hasMore);
       this.auditOptions.set(options);
     } catch {
       this.toast.error(this.language.t('common.errorLoading') || 'Error loading audit trail');
     } finally {
-      this.loading.set(false);
+      if (sequence === this.readSequence) this.loading.set(false);
     }
   }
 
   async inspectAuditEvent(event: SafeAuditEvent): Promise<void> {
+    if (!this.canReadAudit()) return;
+    const detailSequence = ++this.detailSequence;
     if (!event.eventKey) {
-      this.selectedAuditEvent.set(event);
+      this.selectedAuditEvent.set(null);
       return;
     }
     try {
       const detail = await firstValueFrom(
         this.api.call('P18.2-29', { pathParams: { eventKey: event.eventKey } }),
       );
-      this.selectedAuditEvent.set(detail);
+      if (detailSequence === this.detailSequence) this.selectedAuditEvent.set(detail);
     } catch {
-      this.selectedAuditEvent.set(event);
+      this.selectedAuditEvent.set(null);
+      this.toast.error(this.language.t('common.errorLoading'));
     }
   }
 
   async executeSensitiveSearch(): Promise<void> {
     const reason = this.sensitiveSearchReason().trim();
-    if (!reason) return;
+    if (!reason || !this.canSearchSensitive() || this.sensitiveSearching()) return;
 
     this.sensitiveSearching.set(true);
     try {
@@ -378,6 +438,10 @@ export class ArchiveOperationsComponent implements OnInit {
     } catch {
       return utcStr;
     }
+  }
+
+  private allowed(tab: 'operations' | 'archives' | 'audit'): boolean {
+    return tab === 'operations' ? this.canReadOperations() : tab === 'audit' ? this.canReadAudit() : this.canReadTickets() || this.canReadReservations();
   }
 
   label(item?: { nameAr?: string | null; nameEn?: string | null } | null): string {

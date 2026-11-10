@@ -6,6 +6,13 @@ import { PERMISSIONS } from '../../core/auth/permissions';
 
 export const ADMIN_ROUTES: Routes = [
   {
+    path: 'patient-duplicates',
+    canActivate: [permissionGuard],
+    data: { actor: 'SuperAdmin', permission: PERMISSIONS.patientDuplicatesView },
+    loadComponent: () => import('./patient-duplicates/patient-duplicates.component').then(module => module.PatientDuplicatesComponent),
+    title: 'duplicates.title',
+  },
+  {
     path: 'family-review',
     canActivate: [permissionGuard],
     data: {
@@ -84,7 +91,8 @@ export const ADMIN_ROUTES: Routes = [
     canActivate: [permissionGuard],
     data: {
       actor: 'SuperAdmin',
-      permission: [PERMISSIONS.superAdminsViewAll, PERMISSIONS.archiveOperationsView],
+      permission: PERMISSIONS.archiveOperationsView,
+      archiveTab: 'operations',
     },
     loadComponent: () =>
       import('./archive-operations/archive-operations.component').then(
@@ -97,13 +105,21 @@ export const ADMIN_ROUTES: Routes = [
     canActivate: [permissionGuard],
     data: {
       actor: 'SuperAdmin',
-      permission: [PERMISSIONS.superAdminsViewAll, PERMISSIONS.archivePlatformView],
+      permission: [PERMISSIONS.archivePlatformView, PERMISSIONS.archiveReservationsPlatformView],
+      archiveTab: 'archives',
     },
     loadComponent: () =>
       import('./archive-operations/archive-operations.component').then(
         (m) => m.ArchiveOperationsComponent,
       ),
     title: 'archive.title',
+  },
+  {
+    path: 'audit',
+    canActivate: [permissionGuard],
+    data: { actor: 'SuperAdmin', permission: PERMISSIONS.auditEventsView, archiveTab: 'audit' },
+    loadComponent: () => import('./archive-operations/archive-operations.component').then(m => m.ArchiveOperationsComponent),
+    title: 'audit.events',
   },
   {
     path: 'patient-claims',

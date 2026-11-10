@@ -28,7 +28,7 @@
     (actionClicked)="store.openEditor('create')"
   >
     <div pageHeaderDeck class="reservations-stats-deck">
-      @if (store.actor() !== 'Reception' && !store.loading() && !store.listFailed()) {
+      @if (store.actor() !== 'Reception' && !store.isArchivedView() && !store.loading() && !store.listFailed()) {
         <div class="stat-pill">
           <span class="stat-num">{{ store.page().totalCount }}</span>
           <span class="stat-lbl">{{ 'reservations.summary.total' | t }}</span>
@@ -259,8 +259,8 @@
       @if (store.canView()) {
         <div class="surface-filters-section">
           <div class="search-and-tools-row">
-            @if (store.actor() === 'Patient') {
-              <div class="patient-filters-row">
+            @if (store.actor() === 'Patient' || store.actor() === 'Doctor') {
+              <div class="reservation-view-filters">
                 <div class="field-group">
                   <label class="field-label"
                     >{{ 'reservations.view' | t
@@ -504,6 +504,42 @@
         </div>
       }
 
+      @if (store.isArchivedView()) {
+        <section class="p-3" [attr.aria-busy]="store.loading()">
+          <p class="text-secondary">{{ 'archive.readOnlyNotice' | t }}</p>
+          @if (store.archivedItems().length) {
+            <div class="table-scroll">
+              <table class="wasla-table">
+                <caption class="sr-only">{{ 'archive.archivedReservations' | t }}</caption>
+                <thead><tr><th scope="col">{{ 'reservations.reference' | t }}</th><th scope="col">{{ 'tickets.businessDate' | t }}</th><th scope="col">{{ 'archive.archivedAt' | t }}</th><th scope="col"><span class="sr-only">{{ 'tickets.inspect' | t }}</span></th></tr></thead>
+                <tbody>
+                  @for (item of store.archivedItems(); track item.reservationId) {
+                    <tr>
+                      <th scope="row"><bdi>{{ item.reservationReference }}</bdi></th>
+                      <td><time dir="ltr" [attr.datetime]="item.businessDate">{{ item.businessDate }}</time></td>
+                      <td><time dir="ltr" [attr.datetime]="item.archivedAtUtc">{{ item.archivedAtUtc | date:'yyyy-MM-dd HH:mm' }}</time></td>
+                      <td><button type="button" class="btn btn-outline-secondary btn-sm" (click)="store.inspect(item.reservationId, undefined, true)">{{ 'tickets.inspect' | t }}</button></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (!store.loading() && !store.listFailed()) {
+            <div class="text-center py-4">
+              <img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" width="180" height="150" loading="lazy" decoding="async" />
+              <h2>{{ 'archive.noArchivedRecords' | t }}</h2>
+              <p>{{ 'archive.emptyHelp' | t }}</p>
+              <button type="button" class="btn btn-outline-secondary" (click)="store.loadList()">{{ 'common.refresh' | t }}</button>
+            </div>
+          }
+          @if (store.loading()) { <p role="status">{{ 'common.loading' | t }}</p> }
+          @if (store.listFailed()) {
+            <div role="alert"><p>{{ 'familyFlow.failed' | t }}</p><button type="button" class="btn btn-outline-secondary" [disabled]="store.loading()" (click)="store.loadList(store.archiveHasMore())">{{ 'common.retry' | t }}</button></div>
+          } @else if (store.archiveHasMore()) {
+            <button type="button" class="btn btn-outline-secondary" [disabled]="store.loading()" (click)="store.loadList(true)">{{ 'common.loadMore' | t }}</button>
+          }
+        </section>
+      } @else {
       <div class="table-scroll">
         <table class="wasla-table">
           <caption class="sr-only">
@@ -741,8 +777,9 @@
         </table>
       </div>
 
+      }
       <!-- Pagination Footer -->
-      @if (!store.loading() && !store.listFailed()) {
+      @if (!store.isArchivedView() && !store.loading() && !store.listFailed()) {
         <nav class="pagination-bar" [attr.aria-label]="'reservations.pagination' | t">
           <div class="pagination-info">
             <span>{{ 'reservations.title' | t }} · {{ store.page().totalCount }}</span>

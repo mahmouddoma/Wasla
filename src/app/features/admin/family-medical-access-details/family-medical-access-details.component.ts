@@ -80,6 +80,12 @@ export class FamilyMedicalAccessDetailsComponent {
       this.details()?.status === 'ModificationRequested',
   );
 
+  protected readonly canApproveRequest = computed(() => {
+    const item = this.details();
+    // Signed restriction grounds are not published by the current API.
+    return this.canDecide && item?.requestType === 'Restoration' && item.capabilities.canApprove;
+  });
+
   constructor() {
     effect(() => {
       const id = this.requestIdInput();
@@ -137,9 +143,13 @@ export class FamilyMedicalAccessDetailsComponent {
 
   protected async submitDecision(): Promise<void> {
     const caseDetails = this.details();
-    if (!caseDetails) return;
+    if (!caseDetails || this.submitting()) return;
 
     const actionType = this.action();
+    if (actionType === 'approve' && !this.canApproveRequest()) {
+      this.messages.set([this.uiLanguage.t('familyPolicy.approvalUnavailable')]);
+      return;
+    }
     const reasonText = this.reviewModel().text.trim();
 
     // Validation: modification and reject require text

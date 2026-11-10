@@ -2,7 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { ArchivedTicket, ArchivedTicketListComponent } from './archived-ticket-list.component';
 
 describe('ArchivedTicketListComponent', () => {
-  const ticket: ArchivedTicket = { ticketId: 't1', doctorPracticeId: 'p1', ticketNumber: 12, businessDate: '2026-10-01', archivedAtUtc: '2026-10-02T10:00:00Z', status: 'Completed', isArchived: true, detailsRoute: null };
+  const ticket: ArchivedTicket = {
+    ticketId: 't1',
+    doctorPracticeId: 'p1',
+    ticketNumber: 12,
+    businessDate: '2026-10-01',
+    archivedAtUtc: '2026-10-02T10:00:00Z',
+    status: 'Completed',
+    isArchived: true,
+    detailsRoute: null,
+  };
 
   it('renders actual archive fields and emits the selected item', async () => {
     const fixture = TestBed.createComponent(ArchivedTicketListComponent);

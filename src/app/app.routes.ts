@@ -166,6 +166,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'doctor/medical-sharing',
+        canActivate: [permissionGuard],
+        data: { actor: 'Doctor', permission: 'HiddenEncounterAccessRequests.ViewIncoming' },
+        loadComponent: () => import('./features/medical-sharing').then(module => module.MedicalSharingComponent),
+        title: 'sharing.inbox',
+      },
+      {
         path: 'patient/encounters',
         data: { actor: 'Patient' },
         loadChildren: () =>

@@ -1,8 +1,10 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, registerLocaleData } from '@angular/common';
+import localeAr from '@angular/common/locales/ar';
 import { SupportedLang, TRANSLATIONS } from './translations';
 
 const STORAGE_KEY = 'wasla_lang';
+registerLocaleData(localeAr);
 
 @Injectable({
   providedIn: 'root',

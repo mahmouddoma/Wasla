@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { components } from '../../../../domains/phase18/phase18-part2-openapi.types';
+import type { componentsPart2 as components } from '../../../../domains/phase18';
 import { TicketsApi } from '../../../../domains/tickets';
 import { Phase18Part2Api } from '../../../../domains/phase18';
 import { PatientTickets } from './patient-tickets';
@@ -74,11 +74,25 @@ describe('PatientTickets', () => {
   });
 
   const archived = (ticketId: string): components['schemas']['ArchivedTicketItem'] => ({
-    ticketId, ticketNumber: 19, doctorPracticeId: 'p1', businessDate: '2026-10-01',
-    archivedAtUtc: '2026-10-02T10:00:00Z', status: 'Completed', detailsRoute: null, isArchived: true,
+    ticketId,
+    ticketNumber: 19,
+    doctorPracticeId: 'p1',
+    businessDate: '2026-10-01',
+    archivedAtUtc: '2026-10-02T10:00:00Z',
+    status: 'Completed',
+    detailsRoute: null,
+    isArchived: true,
   });
-  const page = (items: components['schemas']['ArchivedTicketItem'][], nextCursor: string | null = null) =>
-    ({ items, nextCursor, hasMore: !!nextCursor, pageSize: 50, asOfUtc: '2026-11-09T00:00:00Z' });
+  const page = (
+    items: components['schemas']['ArchivedTicketItem'][],
+    nextCursor: string | null = null,
+  ) => ({
+    items,
+    nextCursor,
+    hasMore: !!nextCursor,
+    pageSize: 50,
+    asOfUtc: '2026-11-09T00:00:00Z',
+  });
 
   it('renders archive facts without fabricated names or live queue positions, and follows the cursor', async () => {
     phase18Api.call.mockReturnValueOnce(of(page([archived('old')], 'next')));
@@ -90,9 +104,38 @@ describe('PatientTickets', () => {
     expect(fixture.componentInstance['tickets']()).toEqual([]);
     phase18Api.call.mockReturnValueOnce(of(page([archived('old'), archived('older')])));
     await fixture.componentInstance['loadMore']();
-    expect(phase18Api.call).toHaveBeenLastCalledWith('P18.2-11', { query: { pageSize: 50, cursor: 'next' } });
-    expect(fixture.componentInstance['archivedTickets']().map(item => item.ticketId)).toEqual(['old', 'older']);
+    expect(phase18Api.call).toHaveBeenLastCalledWith('P18.2-11', {
+      query: { pageSize: 50, cursor: 'next' },
+    });
+    expect(fixture.componentInstance['archivedTickets']().map((item) => item.ticketId)).toEqual([
+      'old',
+      'older',
+    ]);
     expect(fixture.componentInstance['archiveHasMore']()).toBe(false);
+  });
+
+  it('opens archived details with the existing patient endpoint and suppresses live queue banners', async () => {
+    await fixture.componentInstance['setViewMode']('archived');
+    api.myDetails.mockReturnValueOnce(
+      of({
+        ticketId: 'old',
+        ticketNumber: '19',
+        status: 'Completed',
+        isArchived: true,
+        practice: { id: 'p1', nameAr: 'عيادة', nameEn: 'Clinic' },
+        doctor: { id: 'd1', nameAr: 'طبيب', nameEn: 'Doctor' },
+        patient: { id: 'pt1', nameAr: 'مريض', nameEn: 'Patient' },
+        patientsAheadNow: 99,
+        callAttempts: [],
+        timeline: [],
+        lastUpdatedOnUtc: '2026-10-02T10:00:00Z',
+      }),
+    );
+    await fixture.componentInstance['inspect']('old');
+    fixture.detectChanges();
+    expect(api.myDetails).toHaveBeenLastCalledWith('old');
+    expect(fixture.nativeElement.querySelector('.drawer-status-card')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.archive-banner-notice')).toBeTruthy();
   });
 
   it('discards a late archive response after switching back to current tickets', async () => {
@@ -114,10 +157,14 @@ describe('PatientTickets', () => {
     await fixture.componentInstance['loadMore']();
     fixture.detectChanges();
     expect(fixture.componentInstance['archivedTickets']()).toHaveLength(1);
-    expect(fixture.nativeElement.querySelector('app-archived-ticket-list [role="alert"]')).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector('app-archived-ticket-list [role="alert"]'),
+    ).toBeTruthy();
     phase18Api.call.mockReturnValueOnce(of(page([archived('older')])));
     await fixture.componentInstance['retry']();
-    expect(phase18Api.call).toHaveBeenLastCalledWith('P18.2-11', { query: { pageSize: 50, cursor: 'next' } });
+    expect(phase18Api.call).toHaveBeenLastCalledWith('P18.2-11', {
+      query: { pageSize: 50, cursor: 'next' },
+    });
     expect(fixture.componentInstance['archivedTickets']()).toHaveLength(2);
   });
 });

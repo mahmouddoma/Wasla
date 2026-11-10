@@ -87,6 +87,8 @@ export class AdminLayout {
         icon: 'clipboard-list',
         permission: PERMISSIONS.archiveOperationsView,
       },
+      { id: 'archives', labelKey: 'archive.title', route: '/admin/archives', icon: 'clipboard-list', permission: PERMISSIONS.archivePlatformView },
+      { id: 'audit', labelKey: 'audit.events', route: '/admin/audit', icon: 'shield', permission: PERMISSIONS.auditEventsView },
       {
         id: 'doctors',
         labelKey: 'admin.navDoctors',
@@ -130,6 +132,13 @@ export class AdminLayout {
         permission: PERMISSIONS.patientClaimsViewAll,
       },
       {
+        id: 'patient-duplicates',
+        labelKey: 'duplicates.title',
+        route: '/admin/patient-duplicates',
+        icon: 'users',
+        permission: PERMISSIONS.patientDuplicatesView,
+      },
+      {
         id: 'family-requests',
         labelKey: 'family.requests',
         route: '/admin/family-relationship-requests',
@@ -151,7 +160,8 @@ export class AdminLayout {
         permission: PERMISSIONS.familyMedicalAccessEligibilityReview,
       },
     ];
-    return definitions.filter((item) => this.session.hasPermission(item.permission));
+    return definitions.filter((item) => this.session.hasPermission(item.permission) ||
+      (item.id === 'archives' && this.session.hasPermission(PERMISSIONS.archiveReservationsPlatformView)));
   });
   protected readonly mobileNavItems = computed(() => {
     const priorities = [

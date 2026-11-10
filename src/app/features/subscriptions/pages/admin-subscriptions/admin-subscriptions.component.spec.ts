@@ -84,4 +84,18 @@ describe('AdminSubscriptionsComponent', () => {
     component.reason = 'Approved exception';
     expect(component.valid()).toBe(true);
   });
+  it('renders inline split-view detail pane on desktop and closes on close()', async () => {
+    const fixture = TestBed.createComponent(AdminSubscriptionsComponent);
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    component.isDesktop.set(true);
+    await component.inspect('sub-1');
+    fixture.detectChanges();
+    expect(component.selectedId()).toBe('sub-1');
+    expect(fixture.nativeElement.querySelector('.subscriptions-detail-pane')).not.toBeNull();
+    component.close();
+    fixture.detectChanges();
+    expect(component.selectedId()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.subscriptions-detail-pane')).toBeNull();
+  });
 });

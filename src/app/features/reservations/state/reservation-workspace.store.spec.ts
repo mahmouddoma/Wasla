@@ -3,7 +3,8 @@ import { signal } from '@angular/core';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { of, throwError, Subject } from 'rxjs';
+import { of, throwError, Subject, Observable } from 'rxjs';
+import type { componentsPart2 as components } from '../../../domains/phase18';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PatientsApi, PatientSearchItem, PagedResponse } from '../../../domains/patients';
@@ -173,7 +174,15 @@ describe('ReservationWorkspaceStore', () => {
     mine: vi.fn(() => of({ items: [] })),
   };
   const phase18Api = {
-    call: vi.fn(() => of({ items: [], hasMore: false })),
+    call: vi.fn((): Observable<components['schemas']['ArchivedReservationItemArchivePage']> =>
+      of({
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+        pageSize: 20,
+        asOfUtc: '2026-11-09T00:00:00Z',
+      }),
+    ),
   };
   const currentPracticeId = signal('clinic'),
     grants = signal<string[]>([]);
@@ -188,6 +197,96 @@ describe('ReservationWorkspaceStore', () => {
     }),
   };
   let store: ReservationWorkspaceStore;
+  const archived = (reservationId: string): components['schemas']['ArchivedReservationItem'] => ({
+    reservationId,
+    reservationReference: 'R-20',
+    doctorPracticeId: 'clinic',
+    businessDate: '2026-10-01',
+    status: 'Completed',
+    archivedAtUtc: '2026-10-02T10:00:00Z',
+    detailsRoute: null,
+    isArchived: true,
+  });
+  const archivePage = (
+    items: components['schemas']['ArchivedReservationItem'][],
+    nextCursor: string | null = null,
+  ) => ({
+    items,
+    nextCursor,
+    hasMore: !!nextCursor,
+    pageSize: 20,
+    asOfUtc: '2026-11-09T00:00:00Z',
+  });
+
+  it.each([
+    ['Patient', 'P18.2-12'],
+    ['Doctor', 'P18.2-08'],
+    ['Reception', 'P18.2-10'],
+  ] as const)(
+    'loads %s archive facts and forwards cursors without inventing appointments',
+    async (actor, operation) => {
+      vi.mocked(TestBed.inject(AuthSession).hasPermission).mockReturnValue(true);
+      grants.set(['PracticeReservations.View']);
+      store.actor.set(actor);
+      store.practiceId.set('clinic');
+      store.receptionView.set('Archive');
+      store.query.update((query) => ({ ...query, view: 'Archived' }));
+      phase18Api.call.mockReturnValueOnce(of(archivePage([archived('old')], 'next')));
+      await store.loadList();
+      expect(phase18Api.call).toHaveBeenLastCalledWith(
+        operation,
+        expect.objectContaining({
+          query: expect.objectContaining({ Cursor: null, PageSize: 20 }),
+        }),
+      );
+      expect(store.archivedItems()[0]).not.toHaveProperty('appointment');
+      expect(store.archivedItems()[0]).not.toHaveProperty('patient');
+      phase18Api.call.mockReturnValueOnce(of(archivePage([archived('old'), archived('older')])));
+      await store.loadList(true);
+      expect(phase18Api.call).toHaveBeenLastCalledWith(
+        operation,
+        expect.objectContaining({ query: expect.objectContaining({ Cursor: 'next' }) }),
+      );
+      expect(store.archivedItems()).toHaveLength(2);
+      store.query.update((query) => ({ ...query, search: 'changed' }));
+      phase18Api.call.mockReturnValueOnce(of(archivePage([])));
+      await store.loadList();
+      expect(phase18Api.call).toHaveBeenLastCalledWith(
+        operation,
+        expect.objectContaining({
+          query: expect.objectContaining({ Cursor: null, Search: 'changed' }),
+        }),
+      );
+    },
+  );
+
+  it('loads archive-aware details as read-only even if historical capabilities allowed editing', async () => {
+    vi.mocked(TestBed.inject(AuthSession).hasPermission).mockReturnValue(true);
+    api.details.mockReturnValueOnce(of(reservationFixture));
+    await store.inspect('r1', undefined, true);
+    expect(store.detail()?.isArchived).toBe(true);
+    expect(store.canCancel()).toBe(false);
+    expect(store.canReschedule()).toBe(false);
+  });
+
+  it('clears archive data after permission revocation and ignores late requests from a different view', async () => {
+    vi.mocked(TestBed.inject(AuthSession).hasPermission).mockReturnValue(true);
+    store.query.update((query) => ({ ...query, view: 'Archived' }));
+    phase18Api.call.mockReturnValueOnce(of(archivePage([archived('old')], 'next')));
+    await store.loadList();
+    phase18Api.call.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 401 })));
+    await store.loadList(true);
+    expect(store.archivedItems()).toEqual([]);
+    const pending = new Subject<components['schemas']['ArchivedReservationItemArchivePage']>();
+    phase18Api.call.mockReturnValueOnce(pending);
+    const loading = store.loadList();
+    store.query.update((query) => ({ ...query, view: 'Upcoming' }));
+    await store.loadList();
+    pending.next(archivePage([archived('obsolete')]));
+    pending.complete();
+    await loading;
+    expect(store.archivedItems()).toEqual([]);
+  });
   const draft: ReservationDraft = {
     patientId: '',
     segmentId: '',
@@ -927,6 +1026,7 @@ describe('ReservationWorkspaceStore', () => {
         attestationId: 'attestation-uuid-777',
         patientId: 'patient-409',
         status: 'Confirmed',
+        expiresOnUtc: null,
       }),
     );
 
@@ -942,6 +1042,7 @@ describe('ReservationWorkspaceStore', () => {
         verificationBasis: 'GovernmentIdSeen',
         reason: 'Verified ID in person',
       }),
+      expect.any(String),
     );
     expect(api.createReception).toHaveBeenCalledWith(
       'clinic',

@@ -1,0 +1,332 @@
+@if (mode() === 'inbox') {
+  <app-page-header
+    [heading]="'sharing.inbox' | t"
+    [description]="'sharing.description' | t"
+    icon="requests"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  />
+}
+<section class="sharing-surface" [attr.aria-busy]="loading()">
+  @if (unavailable()) {
+    <div role="status" class="sharing-state">
+      <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+      <h3>{{ 'sharing.unavailable' | t }}</h3>
+      <p>{{ 'sharing.description' | t }}</p>
+    </div>
+  } @else {
+    @if (pendingCount() !== null && mode() === 'inbox') { <p>{{ 'sharing.pendingCount' | t }}: {{ pendingCount() }}</p> }
+    @if (failed()) {
+      <p role="alert">{{ 'common.failedToLoad' | t }}</p>
+      <button class="btn btn-outline-secondary" type="button" (click)="load()">
+        {{ 'common.retry' | t }}
+      </button>
+    }
+    @if (loading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    }
+    @if (mode() !== 'visibility') {
+      @if (mode() === 'inbox') {
+        <label for="sharing-status">{{ 'review.status' | t }}</label>
+        <select id="sharing-status" [value]="status()" (change)="filterStatus($event)">
+          <option value="">{{ 'common.all' | t }}</option>
+          @for (value of ['Pending', 'Approved', 'Rejected', 'Revoked', 'Expired']; track value) {
+            <option [value]="value">{{ 'sharing.status.' + value | t }}</option>
+          }
+        </select>
+      } @else {
+        <h3>{{ 'sharing.treating' | t }}</h3>
+        <p>{{ 'sharing.context' | t }}</p>
+        @for (entry of entries(); track entry.entryId ?? $index) {
+          <div class="sharing-row">
+            @if (hidden(entry); as placeholder) {
+              <div>
+                <strong>{{ 'sharing.hidden' | t }}</strong>
+                <p>
+                  {{ placeholder.visitDate | date: 'mediumDate' : '' : language.currentLang() }}
+                </p>
+              </div>
+              @if (
+                overview()?.capabilities?.canRequestHiddenAccess &&
+                session.hasPermission('HiddenEncounterAccessRequests.Create')
+              ) {
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  [disabled]="busy()"
+                  (click)="requestHidden(placeholder)"
+                >
+                  {{ 'sharing.requestAccess' | t }}
+                </button>
+              }
+            } @else if (clinical(entry); as clinical) {
+              <div>
+                <strong>{{ clinical.title }}</strong>
+                <p>
+                  {{ clinical.occurredAtUtc | date: 'mediumDate' : '' : language.currentLang() }}
+                </p>
+              </div>
+              @if (clinical.capabilities.canViewDetails) {
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  (click)="openEncounter(clinical)"
+                >
+                  {{ 'common.viewDetails' | t }}
+                </button>
+              }
+            }
+          </div>
+        }
+        @if (timelineHasMore()) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="loading()"
+            (click)="loadTimeline()"
+          >
+            {{ 'common.loadMore' | t }}
+          </button>
+        }
+        @if (
+          ownEncounterId() && session.hasPermission('MedicalEncounterVisibility.ViewHistoryOwn')
+        ) {
+          <button type="button" class="btn btn-outline-secondary" (click)="inspectVisibility()">
+            {{ 'sharing.visibilityHistory' | t }}
+          </button>
+        }
+      }
+      <h3>{{ (mode() === 'inbox' ? 'sharing.incoming' : 'sharing.sent') | t }}</h3>
+      @for (request of requests(); track request.requestId) {
+        <div class="sharing-row">
+          <div>
+            @if (request.ownerDetails) {
+              <strong>{{ partyName(request.ownerDetails.patient) }}</strong>
+              <p>{{ partyName(request.ownerDetails.requestingDoctor) }}</p>
+            }
+            <span>{{ 'sharing.status.' + request.effectiveStatus | t }}</span>
+            <p>{{ request.requestedAtUtc | date: 'medium' : '' : language.currentLang() }}</p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="busy()"
+            (click)="inspect(request)"
+          >
+            {{ 'common.viewDetails' | t }}
+          </button>
+        </div>
+      } @empty {
+        @if (!loading() && !failed()) {
+          <div class="sharing-state">
+            <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+            <h3>{{ 'sharing.empty' | t }}</h3>
+            <p>{{ 'sharing.description' | t }}</p>
+            <button type="button" class="btn btn-outline-secondary" (click)="load()">
+              {{ 'common.refresh' | t }}
+            </button>
+          </div>
+        }
+      }
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [disabled]="loading()"
+          (click)="load(true)"
+        >
+          {{ 'common.loadMore' | t }}
+        </button>
+      }
+    }
+    @if (mode() !== 'inbox' && ownEncounterId()) {
+      <h3>{{ 'sharing.changeVisibility' | t }}</h3>
+      @if (visibilityContext()?.visibility; as visibility) {
+        <p>{{ 'sharing.visibility.' + visibility | t }}</p>
+      }
+      @if (
+        visibilityContext()?.canChangeVisibility === true &&
+        session.hasPermission('MedicalEncounterVisibility.UpdateOwn')
+      ) {
+        <p>{{ 'sharing.confirmNotice' | t }}</p>
+        <label for="sharing-visibility">{{ 'sharing.changeVisibility' | t }}</label>
+        <select
+          id="sharing-visibility"
+          [value]="nextVisibility()"
+          [disabled]="busy()"
+          (change)="selectVisibility($event)"
+        >
+          <option value="Visible">{{ 'sharing.visibility.Visible' | t }}</option>
+          <option value="Hidden">{{ 'sharing.visibility.Hidden' | t }}</option>
+        </select>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="busy() || nextVisibility() === visibilityContext()?.visibility"
+          (click)="changeVisibility()"
+        >
+          {{ 'sharing.confirmVisibility' | t }}
+        </button>
+      } @else {
+        <p>{{ 'sharing.visibilityReadOnly' | t }}</p>
+      }
+      @if (
+        mode() === 'visibility' &&
+        session.hasPermission('MedicalEncounterVisibility.ViewHistoryOwn')
+      ) {
+        <button type="button" class="btn btn-outline-secondary" (click)="inspectVisibility()">
+          {{ 'sharing.visibilityHistory' | t }}
+        </button>
+      }
+    }
+  }
+</section>
+<app-side-drawer
+  [opened]="!!selected()"
+  [title]="'sharing.requestDetails' | t"
+  [busy]="busy()"
+  (closed)="close()"
+>
+  @if (selected(); as request) {
+    <p>{{ 'sharing.status.' + request.effectiveStatus | t }}</p>
+    <p>{{ request.reason }}</p>
+    @if (request.ownerDetails) {
+      <p>
+        {{ partyName(request.ownerDetails.patient) }} ·
+        {{ partyName(request.ownerDetails.requestingDoctor) }}
+      </p>
+    }
+    @if (mode() === 'inbox') {
+      <p>{{ 'sharing.confirmNotice' | t }}</p>
+      <div class="sharing-actions">
+        @if (
+          request.capabilities.canApprove &&
+          session.hasPermission('HiddenEncounterAccessRequests.DecideOwn')
+        ) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="busy()"
+            (click)="decide('approve')"
+          >
+            {{ 'sharing.confirmApproval' | t }}
+          </button>
+        }
+        @if (
+          request.capabilities.canReject &&
+          session.hasPermission('HiddenEncounterAccessRequests.DecideOwn')
+        ) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="busy()"
+            (click)="decide('reject')"
+          >
+            {{ 'review.rejectRequest' | t }}
+          </button>
+        }
+        @if (
+          request.capabilities.canRevoke &&
+          session.hasPermission('HiddenEncounterAccessRequests.RevokeOwn')
+        ) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="busy()"
+            (click)="decide('revoke')"
+          >
+            {{ 'review.revokeAction' | t }}
+          </button>
+        }
+      </div>
+    }
+    @for (event of history(); track event.historyId) {
+      <p>
+        {{ event.occurredAtUtc | date: 'medium' : '' : language.currentLang() }} ·
+        {{ 'sharing.historyAction' | t }}
+      </p>
+    }
+  }
+</app-side-drawer>
+<app-side-drawer
+  [opened]="!!hiddenTarget()"
+  [title]="'sharing.requestAccess' | t"
+  [busy]="busy()"
+  (closed)="close()"
+>
+  <label for="sharing-reason">{{ 'review.reason' | t }}</label>
+  <textarea
+    id="sharing-reason"
+    rows="4"
+    maxlength="2000"
+    [value]="reason()"
+    (input)="updateReason($event)"
+    [disabled]="busy()"
+  ></textarea>
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="busy() || !reason().trim()"
+    (click)="sendRequest()"
+  >
+    {{ 'sharing.sendRequest' | t }}
+  </button>
+</app-side-drawer>
+<app-side-drawer [opened]="!!encounter()" [title]="'sharing.treating' | t" (closed)="close()">
+  @if (encounter(); as details) {
+    <p>{{ partyName(details.doctor) }} · {{ partyName(details.practice) }}</p>
+    <p>{{ details.visitDate | date: 'mediumDate' : '' : language.currentLang() }}</p>
+    @for (diagnosis of details.diagnoses ?? []; track diagnosis.diagnosisId) {
+      <p>{{ diagnosis.displayText }}</p>
+    }
+    @for (entry of details.outputs.items ?? []; track entry.entryId ?? $index) {
+      @if (clinical(entry); as output) {
+        <div class="sharing-row">
+          <span>{{ output.title }}</span>
+          @if (output.capabilities.canViewDetails) {
+            <button type="button" class="btn btn-outline-secondary" (click)="openItem(output)">
+              {{ 'common.viewDetails' | t }}
+            </button>
+          }
+        </div>
+      }
+    }
+  }
+</app-side-drawer>
+<app-side-drawer [opened]="!!recordItem()" [title]="'sharing.treating' | t" (closed)="close()">
+  @if (recordItem(); as item) {
+    @for (line of contentLines(); track $index) {
+      <p>{{ line }}</p>
+    }
+    @for (attachment of item.attachments ?? []; track attachment.attachmentId) {
+      @if (attachment.canDownload && item.capabilities.canViewAttachments) {
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="openAttachment(attachment)"
+        >
+          {{ attachment.fileName }}
+        </button>
+      }
+    }
+  }
+</app-side-drawer>
+<app-side-drawer
+  [opened]="!!visibilityHistory()"
+  [title]="'sharing.visibilityHistory' | t"
+  (closed)="close()"
+>
+  <p>{{ 'sharing.visibilityReadOnly' | t }}</p>
+  @if (visibilityHistory()?.hasMore) {
+    <button type="button" class="btn btn-outline-secondary" (click)="inspectVisibility(true)">
+      {{ 'common.loadMore' | t }}
+    </button>
+  }
+  @for (event of visibilityHistory()?.items ?? []; track event.historyId) {
+    <p>
+      {{ event.occurredAtUtc | date: 'medium' : '' : language.currentLang() }} ·
+      {{ 'sharing.visibility.' + event.newVisibility | t }}
+    </p>
+  }
+</app-side-drawer>

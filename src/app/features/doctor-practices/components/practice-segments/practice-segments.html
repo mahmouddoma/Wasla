@@ -129,7 +129,7 @@
                 </svg>
               </span>
               <span class="meta-label">{{ 'doctorRemediation.quotaLabel' | t }}:</span>
-              <strong class="meta-val">{{ segment.reservedDailyQuota ? (segment.reservedDailyQuota + ' ' + ('doctorRemediation.slotsPerDay' | t)) : ('doctorRemediation.unlimited' | t) }}</strong>
+              <strong class="meta-val">{{ segment.reservedDailyQuota !== null ? (segment.reservedDailyQuota + ' ' + ('doctorRemediation.slotsPerDay' | t)) : ('segmentsHelp.noReservation' | t) }}</strong>
             </div>
           </div>
 
@@ -165,31 +165,33 @@
       <form class="drawer-form" (submit)="saveSegment($event)">
         <div class="form-group">
           <label class="form-label" for="segNameAr">{{ 'doctorRemediation.nameAr' | t }} *</label>
-          <input id="segNameAr" class="field-input" [formField]="segmentForm.nameAr" placeholder="مثال: عادي، كبار السن، VIP" />
+          <input id="segNameAr" class="field-input" [formField]="segmentForm.nameAr" [placeholder]="'segmentsHelp.nameExample' | t" />
         </div>
 
         <div class="form-group">
           <label class="form-label" for="segNameEn">{{ 'doctorRemediation.nameEn' | t }}</label>
-          <input id="segNameEn" class="field-input" dir="ltr" [formField]="segmentForm.nameEn" placeholder="e.g. Regular, VIP, Seniors" />
+          <input id="segNameEn" class="field-input" dir="ltr" [formField]="segmentForm.nameEn" [placeholder]="'segmentsHelp.nameExample' | t" />
         </div>
 
         @if (canManageAdvanced()) {
           <div class="form-row-grid">
             <div class="form-group">
               <label class="form-label" for="segPriority">{{ 'doctorRemediation.priority' | t }}</label>
-              <input id="segPriority" class="field-input" type="number" dir="ltr" [formField]="segmentForm.priority" />
-              <span class="field-hint">الأرقام الأعلى تسبق في أولوية قائمة الانتظار</span>
+              <input id="segPriority" class="field-input" type="number" dir="ltr" [formField]="segmentForm.priority" step="1" aria-describedby="priorityHelp" />
+              <span id="priorityHelp" class="field-hint">{{ 'segmentsHelp.priority' | t }}</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="segQuota">{{ 'doctorRemediation.quota' | t }}</label>
-              <input id="segQuota" class="field-input" type="number" dir="ltr" [formField]="segmentForm.reservedDailyQuota" placeholder="فارغ لعدد مفتوح" />
+              <input id="segQuota" class="field-input" type="number" dir="ltr" [formField]="segmentForm.reservedDailyQuota" [placeholder]="'segmentsHelp.optionalQuota' | t" step="1" aria-describedby="quotaHelp" />
+              <span id="quotaHelp" class="field-hint">{{ 'segmentsHelp.quota' | t }}</span>
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="segRelease">{{ 'doctorRemediation.quotaRelease' | t }}</label>
-            <input id="segRelease" class="field-input" type="number" dir="ltr" [formField]="segmentForm.quotaReleaseBeforeMinutes" placeholder="بالدقائق (مثال: 60)" />
+            <input id="segRelease" class="field-input" type="number" dir="ltr" [formField]="segmentForm.quotaReleaseBeforeMinutes" [placeholder]="'segmentsHelp.minutesExample' | t" step="1" aria-describedby="releaseHelp" />
+            <span id="releaseHelp" class="field-hint">{{ 'segmentsHelp.release' | t }}</span>
           </div>
         } @else {
           <div class="feature-denied-note">
@@ -201,7 +203,7 @@
           <div class="toggle-field-row">
             <div class="toggle-text">
               <strong>{{ 'doctorRemediation.active' | t }}</strong>
-              <small>تفعيل أو تعطيل هذه الفئة في نظام الحجز</small>
+              <small>{{ 'segmentsHelp.active' | t }}</small>
             </div>
             <label class="switch-toggle">
               <input type="checkbox" class="sr-only-chk" [formField]="segmentForm.isActive" />

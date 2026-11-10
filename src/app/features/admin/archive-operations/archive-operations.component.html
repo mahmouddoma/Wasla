@@ -1,12 +1,12 @@
 <div class="archive-operations-workspace">
   <!-- Page Header -->
   <app-page-header
-    [heading]="'archive.operations.title' | t"
+    [heading]="(activeTab() === 'operations' ? 'archive.operations.title' : activeTab() === 'archives' ? 'archive.title' : 'audit.events') | t"
     [description]="'archive.operations.subtitle' | t"
     icon="workspace"
   >
-    <div class="header-actions">
-      @if (health()) {
+    <div class="header-actions" pageHeaderActions>
+      @if (activeTab() === 'operations' && health()) {
         <div
           class="worker-status-badge"
           [class.active]="isWorkerActive()"
@@ -55,7 +55,7 @@
     <button
       type="button"
       role="tab"
-      class="tab-btn"
+      class="tab-btn" [hidden]="!canReadOperations()"
       [class.active]="activeTab() === 'operations'"
       [attr.aria-selected]="activeTab() === 'operations'"
       (click)="setTab('operations')"
@@ -68,7 +68,7 @@
     <button
       type="button"
       role="tab"
-      class="tab-btn"
+      class="tab-btn" [hidden]="!canReadTickets() && !canReadReservations()"
       [class.active]="activeTab() === 'archives'"
       [attr.aria-selected]="activeTab() === 'archives'"
       (click)="setTab('archives')"
@@ -78,7 +78,7 @@
     <button
       type="button"
       role="tab"
-      class="tab-btn"
+      class="tab-btn" [hidden]="!canReadAudit()"
       [class.active]="activeTab() === 'audit'"
       [attr.aria-selected]="activeTab() === 'audit'"
       (click)="setTab('audit')"
@@ -153,7 +153,7 @@
         </div>
 
         @if (runs().length === 0) {
-          <div class="empty-state-panel">
+          <div class="empty-state-panel"><img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" width="160" alt="" loading="lazy" decoding="async" />
             <p>{{ 'archive.noArchivedRecords' | t }}</p>
           </div>
         } @else {
@@ -210,7 +210,7 @@
         </div>
 
         @if (exceptions().length === 0) {
-          <div class="empty-state-panel">
+          <div class="empty-state-panel"><img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" width="160" alt="" loading="lazy" decoding="async" />
             <p>{{ 'audit.noEvents' | t }}</p>
           </div>
         } @else {
@@ -263,7 +263,7 @@
         <div class="entity-toggle" role="group">
           <button
             type="button"
-            class="entity-toggle-btn"
+            class="entity-toggle-btn" [hidden]="!canReadTickets()"
             [class.active]="archiveEntity() === 'tickets'"
             (click)="setArchiveEntity('tickets')"
           >
@@ -271,7 +271,7 @@
           </button>
           <button
             type="button"
-            class="entity-toggle-btn"
+            class="entity-toggle-btn" [hidden]="!canReadReservations()"
             [class.active]="archiveEntity() === 'reservations'"
             (click)="setArchiveEntity('reservations')"
           >
@@ -314,7 +314,7 @@
       <!-- Tickets Table -->
       @if (archiveEntity() === 'tickets') {
         @if (archivedTickets().length === 0) {
-          <div class="empty-state-panel">
+          <div class="empty-state-panel"><img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" width="160" alt="" loading="lazy" decoding="async" />
             <p>{{ 'archive.noArchivedRecords' | t }}</p>
           </div>
         } @else {
@@ -360,7 +360,7 @@
       <!-- Reservations Table -->
       @if (archiveEntity() === 'reservations') {
         @if (archivedReservations().length === 0) {
-          <div class="empty-state-panel">
+          <div class="empty-state-panel"><img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" width="160" alt="" loading="lazy" decoding="async" />
             <p>{{ 'archive.noArchivedRecords' | t }}</p>
           </div>
         } @else {
@@ -404,6 +404,9 @@
           </div>
         }
       }
+      @if (archiveHasMore()) {
+        <button type="button" class="btn-secondary-action" [disabled]="loading()" (click)="loadArchivesData(true)">{{ 'common.loadMore' | t }}</button>
+      }
     </div>
   }
 
@@ -418,7 +421,7 @@
 
         <button
           type="button"
-          class="btn-secondary-action"
+          class="btn-secondary-action" [hidden]="!canSearchSensitive()"
           (click)="sensitiveSearchOpen.set(!sensitiveSearchOpen())"
         >
           <svg
@@ -436,7 +439,7 @@
       </div>
 
       <!-- Sensitive Search Drawer / Panel -->
-      @if (sensitiveSearchOpen()) {
+      @if (sensitiveSearchOpen() && canSearchSensitive()) {
         <div class="sensitive-search-panel">
           <div class="panel-header">
             <h3>{{ 'audit.searchSensitive' | t }}</h3>
@@ -487,9 +490,19 @@
         </div>
       }
 
+      <div class="filter-controls-group">
+        <select class="filter-select" [attr.aria-label]="'audit.action' | t" [ngModel]="auditAction()" (ngModelChange)="auditAction.set($event); loadAuditData()">
+          <option value="">{{ 'audit.action' | t }}</option>
+          @for (option of auditOptions()?.actions ?? []; track option.code) { <option [value]="option.code">{{ label(option) }}</option> }
+        </select>
+        <select class="filter-select" [attr.aria-label]="'audit.outcome' | t" [ngModel]="auditOutcome()" (ngModelChange)="auditOutcome.set($event); loadAuditData()">
+          <option value="">{{ 'audit.outcome' | t }}</option>
+          @for (option of auditOptions()?.outcomes ?? []; track option.code) { <option [value]="option.code">{{ label(option) }}</option> }
+        </select>
+      </div>
       <!-- Main Audit Events Table -->
       @if (auditEvents().length === 0) {
-        <div class="empty-state-panel">
+        <div class="empty-state-panel"><img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" width="160" alt="" loading="lazy" decoding="async" />
           <p>{{ 'audit.noEvents' | t }}</p>
         </div>
       } @else {
@@ -537,6 +550,9 @@
             </tbody>
           </table>
         </div>
+      }
+      @if (auditHasMore()) {
+        <button type="button" class="btn-secondary-action" [disabled]="loading()" (click)="loadAuditData(true)">{{ 'common.loadMore' | t }}</button>
       }
     </div>
   }

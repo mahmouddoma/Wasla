@@ -6,9 +6,10 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { PatientRecordComponent } from './patient-record.component';
 
 describe('PatientRecordComponent', () => {
-  const api = { patientOverview: vi.fn(), patientTimeline: vi.fn() };
+  const api = { patientOverview: vi.fn(), patientTimeline: vi.fn(), patientAccessLog: vi.fn() };
   beforeEach(() => {
     vi.clearAllMocks();
+    api.patientAccessLog.mockReturnValue(of({ items: [], hasMore: false }));
     api.patientOverview.mockReturnValue(
       of({
         patient: { nameAr: 'مريض' },
@@ -55,5 +56,14 @@ describe('PatientRecordComponent', () => {
     const component = TestBed.createComponent(PatientRecordComponent).componentInstance;
     component.openDocument('doc');
     expect(component.showDocuments()).toBe(false);
+  });
+  it('opens patient access history from the medical record navigation', async () => {
+    const fixture = TestBed.createComponent(PatientRecordComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.activeView.set('access');
+    await fixture.whenStable();
+    expect(api.patientAccessLog).toHaveBeenCalledWith(undefined);
+    expect(fixture.nativeElement.querySelector('app-record-access-log')).toBeTruthy();
+    expect(fixture.componentInstance.showDocuments()).toBe(false);
   });
 });

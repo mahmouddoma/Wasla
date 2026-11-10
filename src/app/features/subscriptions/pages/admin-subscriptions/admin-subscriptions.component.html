@@ -9,8 +9,12 @@
     (actionClicked)="load()"
   />
 
-  <!-- ═══ Search & Filters Panel ═══ -->
-  <section class="filters-card" [attr.aria-label]="'subscriptions.search' | t">
+  <!-- Master-Detail Split Layout -->
+  <div class="subscriptions-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
+    <!-- Master Pane -->
+    <div class="subscriptions-master-pane">
+      <!-- ═══ Search & Filters Panel ═══ -->
+      <section class="filters-card" [attr.aria-label]="'subscriptions.search' | t">
     <div class="filters-card-header">
       <div class="filters-title-group">
         <svg
@@ -272,7 +276,7 @@
             </thead>
             <tbody>
               @for (item of result.items; track item.id) {
-                <tr class="table-row">
+                <tr class="table-row" [class.is-selected]="selectedId() === item.id" (click)="inspect(item.id)">
                   <!-- Doctor Cell -->
                   <td>
                     <div class="doctor-cell">
@@ -390,7 +394,7 @@
                       class="btn-inspect-sub"
                       type="button"
                       [disabled]="!session.hasPermission('Subscriptions.ViewDetails')"
-                      (click)="inspect(item.id)"
+                      (click)="inspect(item.id); $event.stopPropagation()"
                     >
                       <svg
                         viewBox="0 0 24 24"
@@ -561,14 +565,55 @@
     </section>
   }
 
-  <!-- ═══ Side Drawer: Subscription Details ═══ -->
-  <app-side-drawer
-    [opened]="selectedId() !== null"
-    [busy]="busy()"
-    [wide]="true"
-    [title]="'subscriptions.details' | t"
-    (closed)="close()"
-  >
+    </div>
+
+    <!-- Detail Pane (Inline Split View on Desktop >= 1025px) -->
+    @if (isDesktop() && hasActiveDetail()) {
+      <aside class="subscriptions-detail-pane" [attr.aria-label]="detailTitle()">
+        <header class="detail-pane-header">
+          <div class="detail-pane-title-wrap">
+            <span class="detail-pane-indicator" aria-hidden="true"></span>
+            <h2 class="detail-pane-heading">{{ detailTitle() }}</h2>
+          </div>
+          <button
+            type="button"
+            class="btn-detail-close"
+            [attr.aria-label]="'common.close' | t"
+            [disabled]="busy()"
+            (click)="close()"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="detail-pane-body">
+          <ng-container *ngTemplateOutlet="detailContentTemplate" />
+        </div>
+      </aside>
+    }
+  </div>
+
+  <!-- Slide-Over Drawer for Mobile / Tablet View (< 1025px) -->
+  @if (!isDesktop()) {
+    <app-side-drawer
+      [opened]="hasActiveDetail()"
+      [busy]="busy()"
+      [wide]="true"
+      [title]="detailTitle()"
+      (closed)="close()"
+    >
+      <div class="drawer-scrollable-body">
+        <ng-container *ngTemplateOutlet="detailContentTemplate" />
+      </div>
+    </app-side-drawer>
+  }
+</main>
+
+<!-- Shared Detail Template for Master-Detail & Mobile Drawer -->
+<ng-template #detailContentTemplate>
     @if (detailLoading()) {
       <div class="drawer-loading-box" role="status">
         <div class="state-spinner" aria-hidden="true"></div>
@@ -609,8 +654,8 @@
               <div class="hero-doctor-meta">
                 <div class="hero-title-row">
                   <h3 class="hero-doctor-name">{{ detail.doctor?.nameAr || ('subscriptions.registeredDoctor' | t) }}</h3>
-                  @if (detail.doctor?.nameEn) {
-                    <span class="hero-doctor-en" dir="ltr">{{ detail.doctor?.nameEn }}</span>
+                  @if (detail.doctor?.nameEn; as doctorNameEn) {
+                    <span class="hero-doctor-en" dir="ltr">{{ doctorNameEn }}</span>
                   }
                 </div>
 
@@ -627,12 +672,12 @@
                     <span class="status-pulse-dot" aria-hidden="true"></span>
                     <span>{{ 'subscriptions.' + current.status | t }}</span>
                   </span>
-                  @if (detail.doctor?.approvalStatus) {
+                  @if (detail.doctor?.approvalStatus; as approvalStatus) {
                     <span class="approval-badge">
                       <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                      <span>{{ 'subscriptions.doctorApproval' | t }}: {{ 'subscriptions.doctorStatus.' + detail.doctor?.approvalStatus | t }}</span>
+                      <span>{{ 'subscriptions.doctorApproval' | t }}: {{ 'subscriptions.doctorStatus.' + approvalStatus | t }}</span>
                     </span>
                   }
                 </div>
@@ -1019,5 +1064,4 @@
         </div>
       }
     }
-  </app-side-drawer>
-</main>
+</ng-template>

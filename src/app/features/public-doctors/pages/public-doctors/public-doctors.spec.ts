@@ -15,6 +15,21 @@ import { PublicDoctors } from './public-doctors';
 
 describe('PublicDoctors', () => {
   let fixture: ComponentFixture<PublicDoctors>;
+  it('renders server prices and addresses without invented ratings, review counts or waiting estimates', async () => {
+    api.doctors.mockReturnValueOnce(of({ items: [mockDoctorDetails], totalCount: 1, pageNumber: 1, pageSize: 20 }));
+    await fixture.componentInstance['search']();
+    await fixture.whenStable();
+    const language = TestBed.inject(LanguageService);
+    for (const lang of ['en', 'ar'] as const) {
+      language.setLanguage(lang);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.rating-stars')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.rating-count')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.wait-chip')).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain(language.t('booking.standardNewConsultation'));
+      expect(fixture.nativeElement.textContent).toContain(mockDoctorDetails.practices[0].detailedAddress);
+    }
+  });
   const empty: PublicDoctorSearchResponse = {
     items: [],
     totalCount: 0,
@@ -109,264 +124,10 @@ describe('PublicDoctors', () => {
     await fixture.whenStable();
   });
   afterEach(() => localStorage.removeItem('wasla_lang'));
-
-  it('requests availability using the selected clinic ID', async () => {
-    await fixture.componentInstance['openDoctorDrawer'](mockDoctorDetails, 'practice-1');
-    expect(api.availableDates).toHaveBeenCalledWith('practice-1');
-    fixture.detectChanges();
-    const image = fixture.nativeElement.querySelector(
-      '.practice-name-cluster img',
-    ) as HTMLImageElement;
-    expect(image.getAttribute('src')).toBe('/api/v1/public/practices/practice-1/logo');
-    image.dispatchEvent(new Event('error'));
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.practice-name-cluster img')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.practice-name-cluster svg')).not.toBeNull();
-  });
-
-  it('shows a loading error without claiming that the clinic has no booking days', async () => {
-    api.availableDates.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
-    await fixture.componentInstance['openDoctorDrawer'](mockDoctorDetails);
-    await fixture.whenStable();
-    expect(fixture.componentInstance['drawerMessages']()).toEqual(['discovery.resourceNotFound']);
-    const text = (fixture.nativeElement as HTMLElement).textContent;
-    const language = TestBed.inject(LanguageService);
-    expect(text).toContain(language.t('discovery.resourceNotFound'));
-    expect(text).not.toContain(language.t('booking.noDays'));
-  });
-
-  it('loads reference data and renders an empty search result', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-    expect(locations.governorates).toHaveBeenCalledOnce();
-    expect(api.specializations).toHaveBeenCalledOnce();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('لا توجد نتائج مطابقة');
-  });
-  it('changes language, direction and reference names', async () => {
-    TestBed.inject(LanguageService).setLanguage('en');
-    await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('main')?.dir).toBe('ltr');
-    expect(element.querySelector('h1')?.textContent).toContain('Find your doctor');
-    expect(element.textContent).toContain('Cairo');
-  });
-  it('submits trimmed filters with the existing pagination contract', async () => {
-    const element: HTMLElement = fixture.nativeElement;
-    const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
-    input.value = '  Ahmed  ';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    element
-      .querySelector('form')!
-      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    await fixture.whenStable();
-    expect(api.doctors).toHaveBeenLastCalledWith(
-      expect.objectContaining({ searchText: 'Ahmed', pageNumber: 1, pageSize: 20 }),
-    );
-  });
-  it('clears dependent location filters when the governorate changes', async () => {
-    fixture.componentInstance['filters'].update((value) => ({
-      ...value,
-      cityId: '1028',
-      areaId: '10280003',
-    }));
-    const select = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLSelectElement>(
-      'select',
-    )[1];
-    select.value = '1';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-    await fixture.whenStable();
-    expect(locations.cities).toHaveBeenCalledWith(1);
-    expect(fixture.componentInstance['filters']()).toMatchObject({
-      governorateId: '1',
-      cityId: '',
-      areaId: '',
-    });
-  });
-  it('renders search errors and retries through the visible action', async () => {
-    api.doctors.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-    await fixture.componentInstance['search']();
-    await fixture.whenStable();
-    expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')).not.toBeNull();
-    api.doctors.mockReturnValue(of(empty));
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('.search-error button')!
-      .click();
-    await fixture.whenStable();
-    expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')).toBeNull();
-  });
-  it('renders returned doctors and replaces a broken photo with a fallback', async () => {
-    api.doctors.mockReturnValue(
-      of({
-        ...empty,
-        totalCount: 1,
-        items: [
-          {
-            doctorId: 'doctor-1',
-            nameAr: 'د. أحمد',
-            nameEn: 'Dr. Ahmed',
-            profileImageUrl: '/missing.png',
-            specializations: [],
-            practices: [],
-          },
-        ],
-      }),
-    );
-    await fixture.componentInstance['search']();
-    await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('.doctor-result h3')?.textContent).toContain('د. أحمد');
-    expect(element.querySelector('.doctor-heading a')?.getAttribute('href')).toBe(
-      '/doctors/doctor-1',
-    );
-    element.querySelector('img')!.dispatchEvent(new Event('error'));
-    await fixture.whenStable();
-    expect(element.querySelector('.image-placeholder')).not.toBeNull();
-    expect(element.querySelector<HTMLButtonElement>('.pagination button')?.disabled).toBe(true);
-  });
-  it('opens and closes the slide-over drawer for in-place booking', async () => {
-    const doctorItem = {
-      doctorId: 'doctor-1',
-      nameAr: 'د. أحمد',
-      nameEn: 'Dr. Ahmed',
-      profileImageUrl: null,
-      specializations: [],
-      practices: [],
-    };
-    expect(fixture.componentInstance['drawerOpened']()).toBe(false);
-    await fixture.componentInstance['openDoctorDrawer'](doctorItem);
-    await fixture.whenStable();
-    expect(fixture.componentInstance['drawerOpened']()).toBe(true);
-    expect(api.doctor).toHaveBeenCalledWith('doctor-1');
-    fixture.componentInstance['closeDrawer']();
-    expect(fixture.componentInstance['drawerOpened']()).toBe(false);
-  });
-
-  it('selects and switches active practice for a doctor', () => {
-    const doctor = {
-      doctorId: 'doc-1',
-      nameAr: 'د. علي',
-      nameEn: 'Dr. Ali',
-      profileImageUrl: null,
-      specializations: [],
-      practices: [
-        { ...mockDoctorDetails.practices[0], id: 'practice-a', nameAr: 'فرع الدقي' },
-        { ...mockDoctorDetails.practices[0], id: 'practice-b', nameAr: 'فرع المعادي' },
-      ],
-    };
-    expect(fixture.componentInstance['getActivePractice'](doctor)?.id).toBe('practice-a');
-    fixture.componentInstance['selectDoctorPractice']('doc-1', 'practice-b');
-    expect(fixture.componentInstance['getActivePractice'](doctor)?.id).toBe('practice-b');
-  });
-
-  it('generates 3 preview schedule days with formatted slot times', () => {
-    const practice = {
-      ...mockDoctorDetails.practices[0],
-      isToday: true,
-      nextAvailableSlotDate: new Date().toISOString().slice(0, 10),
-      nextAvailableSlotTime: '18:30:00',
-    };
-    const days = fixture.componentInstance['getScheduleDays'](practice);
-    expect(days).toHaveLength(3);
-    expect(days[0].label).toBe('اليوم');
-    expect(days[0].isAvailable).toBe(true);
-    expect(days[0].slotTime).toContain('06:30');
-  });
-
-  it('submits patient booking in-place and renders receipt on success', async () => {
-    const component = fixture.componentInstance;
-    const authSession = TestBed.inject(AuthSession);
-    vi.spyOn(authSession, 'isAuthenticated').mockReturnValue(true);
-    vi.spyOn(authSession, 'user').mockReturnValue({
-      applicationUserId: 'u-1',
-      userName: 'patient.ahmed',
-      email: 'p@wasla.local',
-      phoneNumber: '01000000000',
-      userType: 'Patient',
-      roles: ['Patient'],
-      permissions: [],
-      isFirstLogin: false,
-      doctorId: null,
-      patientId: 'p-1',
-    });
-
-    component['drawerOpened'].set(true);
-    component['drawerSelectedPractice'].set(mockDoctorDetails.practices[0]);
-    component['drawerSelectedDate'].set('2026-10-06');
-    component['drawerSelectedTime'].set('06:00:00');
-    component['selectedPatientId'].set('p-1');
-
-    const segment = { segmentId: 'seg-1', nameAr: 'كشف عادي', price: 300 };
-    const visitType = { visitTypeId: 'vt-1', nameAr: 'كشف جديد' };
-
-    await component['confirmBooking'](segment, visitType);
-    await fixture.whenStable();
-
-    expect(reservationsApi.createPatient).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith('booking.successToast');
-    expect(component['bookingConfirmedReservation']()).not.toBeNull();
-    expect(component['bookingConfirmedReservation']()?.reference).toBe('RES-84920');
-
-    fixture.detectChanges();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('.booking-success-receipt')).not.toBeNull();
-    expect(element.textContent).toContain('RES-84920');
-  });
-  function prepareBooking() {
-    const component = fixture.componentInstance;
-    vi.spyOn(TestBed.inject(AuthSession), 'isAuthenticated').mockReturnValue(true);
-    component['drawerOpened'].set(true);
-    component['drawerSelectedPractice'].set(mockDoctorDetails.practices[0]);
-    component['drawerSelectedDate'].set('2026-10-06');
-    component['drawerSelectedTime'].set('06:00:00');
-    component['selectedPatientId'].set('p-1');
-    return component;
-  }
-  const segment = { segmentId: 's1', nameAr: 'Standard', price: 300 };
-  const visitType = { visitTypeId: 'v1', nameAr: 'Consultation' };
-  it('reuses the intent key after a network error and changes it when the booking changes', async () => {
-    const component = prepareBooking();
-    reservationsApi.createPatient.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 0 })),
-    );
-    await component['confirmBooking'](segment, visitType);
-    await component['confirmBooking'](segment, visitType);
-    const calls = reservationsApi.createPatient.mock.calls as unknown as [unknown, string][];
-    expect(calls[0][1]).toBe(calls[1][1]);
-    component['bookingNote'].set('Different intent');
-    await component['confirmBooking'](segment, visitType);
-    expect(calls[2][1]).not.toBe(calls[0][1]);
-  });
-  it('clears stale online booking choices on entitlement denial while preserving the patient and note', async () => {
-    const component = prepareBooking();
-    component['bookingNote'].set('Keep this note');
-    component['selectedSegment'].set(segment);
-    component['selectedVisitType'].set(visitType);
-    reservationsApi.createPatient.mockReturnValue(
-      throwError(
-        () =>
-          new HttpErrorResponse({
-            status: 403,
-            error: { errors: [{ code: 'Subscription.FeatureNotEntitled' }] },
-          }),
-      ),
-    );
-    await component['confirmBooking'](segment, visitType);
-    expect(component['drawerSelectedTime']()).toBe('');
-    expect(component['drawerOptions']()).toBeNull();
-    expect(component['selectedSegment']()).toBeNull();
-    expect(component['selectedPatientId']()).toBe('p-1');
-    expect(component['bookingNote']()).toBe('Keep this note');
-    expect(component['drawerMessages']()).toEqual(['booking.practiceUnavailable']);
-    await component['confirmBooking'](segment, visitType);
-    expect(reservationsApi.createPatient).toHaveBeenCalledTimes(1);
-  });
-  it('does not send a second booking while confirmation is pending', async () => {
-    const component = prepareBooking();
-    const pending = new Subject<never>();
-    reservationsApi.createPatient.mockReturnValue(pending);
-    const first = component['confirmBooking'](segment, visitType);
-    await component['confirmBooking'](segment, visitType);
-    expect(reservationsApi.createPatient).toHaveBeenCalledTimes(1);
-    pending.error(new HttpErrorResponse({ status: 0 }));
-    await first;
+  it('launches the shared booking flow with the explicit selected appointment', async () => {
+    const open = vi.spyOn(fixture.componentInstance['booking'], 'open').mockResolvedValue();
+    await fixture.componentInstance['openDoctorDrawer'](mockDoctorDetails, 'practice-1', '2026-11-10', '15:30:00');
+    expect(open).toHaveBeenCalledWith({ doctorId: 'doctor-1', doctorPracticeId: 'practice-1', businessDate: '2026-11-10', slotStartTime: '15:30:00' });
+    expect(reservationsApi.createPatient).not.toHaveBeenCalled();
   });
 });

@@ -8,95 +8,299 @@
     [actionLoading]="loading()"
     (actionClicked)="load()"
   >
-    <nav pageHeaderActions class="d-flex gap-2">
-      @if (session.hasPermission('ChildOnboarding.ViewAll')) {
-        <button
-          class="btn btn-outline-secondary"
-          [attr.aria-pressed]="queue() === 'onboarding'"
-          (click)="selectQueue('onboarding')"
-        >
-          {{ 'familyReview.onboarding' | t }}
-        </button>
-      }
-      @if (session.hasPermission('FamilyRelationshipRequests.ViewAll')) {
-        <button
-          class="btn btn-outline-secondary"
-          [attr.aria-pressed]="queue() === 'governance'"
-          (click)="selectQueue('governance')"
-        >
-          {{ 'familyReview.governance' | t }}
-        </button>
-      }
-    </nav>
+    <div pageHeaderActions class="d-flex align-items-center gap-2">
+      <span class="header-queue-meta">
+        {{ queue() === 'onboarding' ? ('familyReview.onboarding' | t) : ('familyReview.governance' | t) }}
+      </span>
+    </div>
   </app-page-header>
-  <section class="review-surface">
-    @if (loading()) {
-      <div class="family-review-skeleton" role="status" [attr.aria-label]="'common.loading' | t">
-        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
-        @for (item of [1, 2, 3, 4]; track item) {
-          <div class="review-row skeleton-review-row">
-            <div class="skeleton-shimmer w-160 h-16"></div>
-            <div class="skeleton-shimmer skeleton-pill-badge"></div>
-            <div class="skeleton-shimmer w-90 h-14"></div>
-            <div class="skeleton-shimmer w-60 h-28 rounded-md"></div>
+
+  <!-- Master-Detail Split Layout -->
+  <div class="family-review-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
+    <!-- Master Pane: Queue Directory -->
+    <div class="family-review-master-pane">
+      <section class="review-surface surface-block" aria-labelledby="queue-table-title">
+        <!-- Queue Switcher Tabs Bar -->
+        <header class="queue-nav-bar">
+          <div class="queue-tabs-group" role="tablist">
+            @if (session.hasPermission('ChildOnboarding.ViewAll')) {
+              <button
+                type="button"
+                role="tab"
+                class="queue-tab-btn"
+                [class.active]="queue() === 'onboarding'"
+                [attr.aria-selected]="queue() === 'onboarding'"
+                (click)="selectQueue('onboarding')"
+              >
+                <i class="fa-solid fa-child" aria-hidden="true"></i>
+                <span>{{ 'familyReview.onboarding' | t }}</span>
+                @if (queue() === 'onboarding' && onboarding().length) {
+                  <span class="count-pill">{{ onboarding().length }}</span>
+                }
+              </button>
+            }
+            @if (session.hasPermission('FamilyRelationshipRequests.ViewAll')) {
+              <button
+                type="button"
+                role="tab"
+                class="queue-tab-btn"
+                [class.active]="queue() === 'governance'"
+                [attr.aria-selected]="queue() === 'governance'"
+                (click)="selectQueue('governance')"
+              >
+                <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                <span>{{ 'familyReview.governance' | t }}</span>
+                @if (queue() === 'governance' && total()) {
+                  <span class="count-pill">{{ total() }}</span>
+                }
+              </button>
+            }
           </div>
+
+          <!-- Quick Search Filter -->
+          <div class="queue-search-wrap">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon" aria-hidden="true"></i>
+              <input
+                type="text"
+                class="form-control queue-search-input"
+                [value]="searchQuery()"
+                (input)="searchQuery.set($any($event.target).value)"
+                [placeholder]="'common.search' | t"
+              />
+              @if (searchQuery()) {
+                <button
+                  type="button"
+                  class="btn-clear-search"
+                  (click)="searchQuery.set('')"
+                  [attr.aria-label]="'common.close' | t"
+                >
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+          </div>
+        </header>
+
+        <!-- Loading State -->
+        @if (loading()) {
+          <div class="family-review-skeleton p-4" role="status" [attr.aria-label]="'common.loading' | t">
+            <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+            <div class="skeleton-shimmer w-full h-44 rounded-md mb-3"></div>
+            @for (item of [1, 2, 3, 4]; track item) {
+              <div class="skeleton-shimmer w-full h-40 rounded-md mb-2"></div>
+            }
+          </div>
+        } @else if (failed()) {
+          <div class="state-callout error-state p-4" role="alert">
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+            <div class="state-texts">
+              <p class="state-message">{{ 'familyFlow.failed' | t }}</p>
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="load()">
+                {{ 'common.retry' | t }}
+              </button>
+            </div>
+          </div>
+        } @else if (queue() === 'onboarding' ? !filteredOnboarding().length : !filteredGovernance().length) {
+          <div class="empty-state">
+            <img src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" class="empty-illustration" />
+            <h3 class="empty-title">{{ 'familyReview.empty' | t }}</h3>
+            <p class="empty-desc">{{ 'familyReview.emptyHint' | t }}</p>
+            <button type="button" class="btn btn-outline-secondary" (click)="load(1)">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              <span>{{ 'common.refresh' | t }}</span>
+            </button>
+          </div>
+        } @else {
+          <!-- Directory Table -->
+          <div class="table-container">
+            <table class="directory-table">
+              <thead>
+                <tr>
+                  @if (queue() === 'onboarding') {
+                    <th scope="col">{{ 'common.name' | t }}</th>
+                    <th scope="col">{{ 'familyFlow.child' | t }}</th>
+                    <th scope="col">{{ 'common.status' | t }}</th>
+                    <th scope="col">{{ 'review.submittedAt' | t }}</th>
+                    <th scope="col" class="action-column"></th>
+                  } @else {
+                    <th scope="col">{{ 'familyFlow.request' | t }}</th>
+                    <th scope="col">{{ 'common.status' | t }}</th>
+                    <th scope="col">{{ 'common.date' | t }}</th>
+                    <th scope="col" class="action-column"></th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @if (queue() === 'onboarding') {
+                  @for (item of filteredOnboarding(); track item.request.requestId) {
+                    <tr
+                      class="clickable-row"
+                      [class.is-selected]="selectedId() === item.request.requestId"
+                      tabindex="0"
+                      (click)="inspectChild(item.request.requestId)"
+                      (keydown.enter)="inspectChild(item.request.requestId)"
+                    >
+                      <td>
+                        <div class="child-identity-cell">
+                          <strong class="child-name-ar">{{ item.intake.nameAr }}</strong>
+                          @if (item.intake.nameEn) {
+                            <span class="child-name-en">{{ item.intake.nameEn }}</span>
+                          }
+                        </div>
+                      </td>
+                      <td>
+                        <div class="contact-meta-cell">
+                          <span class="contact-name">
+                            <i class="fa-solid fa-user-shield contact-icon" aria-hidden="true"></i>
+                            <span>{{ item.intake.primaryContactNameAr }}</span>
+                          </span>
+                          <span class="contact-relation">({{ 'familyFlow.relation.' + item.intake.relationToChild | t }})</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+                          <span class="pill-dot" aria-hidden="true"></span>
+                          <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+                        </span>
+                      </td>
+                      <td class="date-cell">
+                        <span class="date-text">{{ item.request.createdAtUtc | date: 'mediumDate' }}</span>
+                      </td>
+                      <td class="action-cell">
+                        <button
+                          type="button"
+                          class="btn-open-review"
+                          (click)="$event.stopPropagation(); inspectChild(item.request.requestId)"
+                        >
+                          <span>{{ 'common.view' | t }}</span>
+                          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                } @else {
+                  @for (item of filteredGovernance(); track item.request.caseId) {
+                    <tr
+                      class="clickable-row"
+                      [class.is-selected]="selectedId() === item.request.caseId"
+                      tabindex="0"
+                      (click)="inspectGovernance(item.request.caseId)"
+                      (keydown.enter)="inspectGovernance(item.request.caseId)"
+                    >
+                      <td>
+                        <div class="case-kind-cell">
+                          <span class="kind-tag">
+                            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                            <span>{{ 'familyFlow.kind.' + item.request.kind | t }}</span>
+                          </span>
+                          <span class="case-id-chip code-font">#{{ item.request.caseId }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+                          <span class="pill-dot" aria-hidden="true"></span>
+                          <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+                        </span>
+                      </td>
+                      <td class="date-cell">
+                        <span class="date-text">{{ item.createdAtUtc | date: 'mediumDate' }}</span>
+                      </td>
+                      <td class="action-cell">
+                        <button
+                          type="button"
+                          class="btn-open-review"
+                          (click)="$event.stopPropagation(); inspectGovernance(item.request.caseId)"
+                        >
+                          <span>{{ 'common.view' | t }}</span>
+                          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <footer class="pagination-footer">
+            <div class="pagination-meta">
+              <span>{{ 'common.page' | t }} {{ page() }}</span>
+              @if (queue() === 'governance' && total()) {
+                <span class="total-meta">({{ total() }} {{ 'common.total' | t }})</span>
+              }
+            </div>
+            <div class="pagination-controls">
+              <button
+                type="button"
+                class="btn-page-nav"
+                [disabled]="page() === 1"
+                (click)="load(page() - 1)"
+              >
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                <span>{{ 'common.previous' | t }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-page-nav"
+                [disabled]="queue() === 'onboarding' ? onboarding().length < 20 : page() * 20 >= total()"
+                (click)="load(page() + 1)"
+              >
+                <span>{{ 'common.next' | t }}</span>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              </button>
+            </div>
+          </footer>
         }
-      </div>
-    } @else if (failed()) {
-      <p role="alert">{{ 'familyFlow.failed' | t }}</p>
-      <button class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button>
-    } @else if (!onboarding().length && !governance().length) {
-      <div class="empty-state">
-        <img src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" />
-        <h2>{{ 'familyReview.empty' | t }}</h2>
-        <p>{{ 'familyReview.emptyHint' | t }}</p>
-        <button class="btn btn-outline-secondary" (click)="load(1)">
-          {{ 'common.refresh' | t }}
-        </button>
-      </div>
-    } @else {
-      @for (item of onboarding(); track item.request.requestId) {
-        <button class="review-row" (click)="inspectChild(item.request.requestId)">
-          <strong>{{ item.intake.nameAr }}</strong
-          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
-          ><span>{{ item.request.createdAtUtc | date: 'mediumDate' }}</span
-          ><span>{{ 'common.view' | t }}</span>
-        </button>
-      }
-      @for (item of governance(); track item.request.caseId) {
-        <button class="review-row" (click)="inspectGovernance(item.request.caseId)">
-          <strong>{{ 'familyFlow.kind.' + item.request.kind | t }}</strong
-          ><span>{{ 'familyFlow.status.' + item.request.status | t }}</span
-          ><span>{{ item.createdAtUtc | date: 'mediumDate' }}</span
-          ><span>{{ 'common.view' | t }}</span>
-        </button>
-      }
-      <nav class="d-flex gap-2 mt-3">
-        <button
-          class="btn btn-outline-secondary"
-          [disabled]="page() === 1"
-          (click)="load(page() - 1)"
-        >
-          {{ 'common.previous' | t }}</button
-        ><button
-          class="btn btn-outline-secondary"
-          [disabled]="queue() === 'onboarding' ? onboarding().length < 20 : page() * 20 >= total()"
-          (click)="load(page() + 1)"
-        >
-          {{ 'common.next' | t }}
-        </button>
-      </nav>
+      </section>
+    </div>
+
+    <!-- Detail Pane (Inline Split View on Desktop >= 1025px) -->
+    @if (isDesktop() && hasActiveDetail()) {
+      <aside class="family-review-detail-pane" [attr.aria-label]="detailTitle()">
+        <header class="detail-pane-header">
+          <div class="detail-pane-title-wrap">
+            <span class="detail-pane-indicator" aria-hidden="true"></span>
+            <h2 class="detail-pane-heading">{{ detailTitle() }}</h2>
+          </div>
+          <button
+            type="button"
+            class="btn-detail-close"
+            (click)="close()"
+            [attr.aria-label]="'common.close' | t"
+            [title]="'common.close' | t"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="detail-pane-body">
+          <ng-container *ngTemplateOutlet="detailContentTemplate" />
+        </div>
+      </aside>
     }
-  </section>
+  </div>
+
+  <!-- Slide-Over Drawer for Mobile / Tablet View (< 1025px) -->
+  @if (!isDesktop()) {
+    <app-side-drawer
+      [opened]="hasActiveDetail()"
+      [busy]="busy()"
+      [title]="detailTitle()"
+      width="720px"
+      (closed)="close()"
+    >
+      <div class="drawer-scrollable-body">
+        <ng-container *ngTemplateOutlet="detailContentTemplate" />
+      </div>
+    </app-side-drawer>
+  }
 </main>
-<app-side-drawer
-  [opened]="detailLoading() || !!childReview() || !!governanceReview()"
-  [busy]="busy()"
-  [title]="'familyReview.title' | t"
-  width="760px"
-  (closed)="close()"
->
-  <div class="review-details">
+
+<!-- Shared Detail Template for Master-Detail & Mobile Drawer -->
+<ng-template #detailContentTemplate>
+  <div class="review-details-content">
     @if (detailLoading()) {
       <div class="p-3" role="status" [attr.aria-label]="'common.loading' | t">
         <span class="visually-hidden">{{ 'common.loading' | t }}</span>
@@ -105,163 +309,408 @@
         <div class="skeleton-shimmer w-full h-40 rounded-md mb-2"></div>
       </div>
     }
+
+    <!-- ── Child Onboarding Review ── -->
     @if (childReview(); as item) {
-      <h2>{{ item.intake.nameAr }}</h2>
-      <p>{{ item.intake.nameEn }}</p>
-      <p>{{ item.intake.dateOfBirth }}</p>
-      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
-      <p>{{ item.request.reviewMessage }}</p>
-      @if (item.possibleMatches.length) {
-        <fieldset>
-          <legend>{{ 'familyReview.matches' | t }}</legend>
-          <p>{{ 'familyReview.matchHint' | t }}</p>
-          @for (match of item.possibleMatches; track match.patientId) {
-            <label class="match-row"
-              ><input
-                type="radio"
-                name="identity"
-                [value]="match.patientId"
-                [(ngModel)]="confirmedExistingPatientId"
-              /><span>{{ match.nameAr }} · {{ match.dateOfBirth }}</span></label
-            >
-          }
-        </fieldset>
-      }
-      @if (item.possibleMatchPageNumber > 1 || item.hasMorePossibleMatches) {
-        <div class="d-flex gap-2 my-3">
-          <button
-            class="btn btn-outline-secondary"
-            [disabled]="item.possibleMatchPageNumber === 1"
-            (click)="inspectChild(item.request.requestId, item.possibleMatchPageNumber - 1)"
-          >
-            {{ 'common.previous' | t }}</button
-          ><button
-            class="btn btn-outline-secondary"
-            [disabled]="!item.hasMorePossibleMatches"
-            (click)="inspectChild(item.request.requestId, item.possibleMatchPageNumber + 1)"
-          >
-            {{ 'common.next' | t }}
-          </button>
+      <div class="review-hero-card">
+        <div class="hero-identity-line">
+          <div class="hero-names">
+            <h3 class="hero-name-ar">{{ item.intake.nameAr }}</h3>
+            @if (item.intake.nameEn) {
+              <span class="hero-name-en">{{ item.intake.nameEn }}</span>
+            }
+          </div>
+          <div class="hero-badges">
+            <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+              <span class="pill-dot" aria-hidden="true"></span>
+              <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+            </span>
+            <span class="revision-tag">#{{ item.request.revision }}</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="detail-card-section">
+        <h4 class="section-heading">
+          <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+          <span>{{ 'review.relationshipVerification' | t }}</span>
+        </h4>
+        <div class="key-value-grid">
+          <div class="kv-item">
+            <span class="kv-label">{{ 'common.birthDate' | t }}</span>
+            <span class="kv-value">{{ item.intake.dateOfBirth }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="kv-label">{{ 'common.gender' | t }}</span>
+            <span class="kv-value">{{ (item.intake.gender === 'Male' ? 'common.male' : 'common.female') | t }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="kv-label">{{ 'review.primaryContact' | t }}</span>
+            <span class="kv-value">{{ item.intake.primaryContactNameAr }} ({{ 'familyFlow.relation.' + item.intake.relationToChild | t }})</span>
+          </div>
+          <div class="kv-item">
+            <span class="kv-label">{{ 'common.phone' | t }}</span>
+            <span class="kv-value code-font">{{ item.intake.primaryContactPhone }}</span>
+          </div>
+        </div>
+      </section>
+
+      @if (item.request.reviewMessage) {
+        <div class="review-message-callout alert-note">
+          <i class="fa-solid fa-comment-medical" aria-hidden="true"></i>
+          <p>{{ item.request.reviewMessage }}</p>
         </div>
       }
-      @for (document of item.evidence; track document.documentId) {
-        @if (session.hasPermission('ChildOnboarding.ViewEvidence')) {
-          <button class="evidence-row" (click)="evidence(document.documentId)">
-            {{ document.originalFileName }} · {{ 'common.download' | t }}
-          </button>
+
+      <!-- Possible Matches -->
+      @if (item.possibleMatches.length) {
+        <section class="detail-card-section matches-section">
+          <h4 class="section-heading">
+            <i class="fa-solid fa-users-viewfinder" aria-hidden="true"></i>
+            <span>{{ 'familyReview.matches' | t }}</span>
+          </h4>
+          <p class="section-hint">{{ 'familyReview.matchHint' | t }}</p>
+          <div class="matches-list">
+            @for (match of item.possibleMatches; track match.patientId) {
+              <label class="match-select-card" [class.selected]="confirmedExistingPatientId === match.patientId">
+                <input
+                  type="radio"
+                  name="identity"
+                  class="sr-only-chk"
+                  [value]="match.patientId"
+                  [(ngModel)]="confirmedExistingPatientId"
+                />
+                <div class="match-radio-indicator" aria-hidden="true"></div>
+                <div class="match-info">
+                  <strong class="match-name">{{ match.nameAr }}</strong>
+                  <span class="match-meta">{{ match.dateOfBirth }} · <span class="code-font">ID: {{ match.patientId }}</span></span>
+                </div>
+              </label>
+            }
+          </div>
+
+          @if (item.possibleMatchPageNumber > 1 || item.hasMorePossibleMatches) {
+            <div class="d-flex gap-2 my-2">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                [disabled]="item.possibleMatchPageNumber === 1"
+                (click)="inspectChild(item.request.requestId, item.possibleMatchPageNumber - 1)"
+              >
+                {{ 'common.previous' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                [disabled]="!item.hasMorePossibleMatches"
+                (click)="inspectChild(item.request.requestId, item.possibleMatchPageNumber + 1)"
+              >
+                {{ 'common.next' | t }}
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- Evidence Documents -->
+      <section class="detail-card-section">
+        <h4 class="section-heading">
+          <i class="fa-solid fa-file-shield" aria-hidden="true"></i>
+          <span>{{ 'review.documents' | t }}</span>
+        </h4>
+        @if (item.evidence.length === 0) {
+          <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
+        } @else {
+          <div class="evidence-list">
+            @for (document of item.evidence; track document.documentId) {
+              @if (session.hasPermission('ChildOnboarding.ViewEvidence')) {
+                <div class="evidence-item-row">
+                  <div class="doc-icon-wrap" aria-hidden="true">
+                    <i class="fa-solid fa-file-pdf"></i>
+                  </div>
+                  <div class="doc-text-wrap">
+                    <span class="doc-filename">{{ document.originalFileName }}</span>
+                  </div>
+                  <button type="button" class="btn-download-doc" (click)="evidence(document.documentId)">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i>
+                    <span>{{ 'common.download' | t }}</span>
+                  </button>
+                </div>
+              }
+            }
+          </div>
         }
-      }
-      @if (
-        item.request.familyRelationshipRequestId &&
-        session.hasPermission('FamilyOperationalProofRequests.Revoke')
-      ) {
-        <button class="btn btn-outline-secondary my-3" (click)="loadAuthorities()">
-          {{ 'familyReview.authorities' | t }}
-        </button>
-      }
-    }
-    @if (governanceReview(); as item) {
-      <h2>{{ 'familyFlow.kind.' + item.request.kind | t }}</h2>
-      <p>{{ 'familyFlow.status.' + item.request.status | t }}</p>
-      <p>{{ item.feedback }}</p>
-      @for (document of item.evidence; track document.documentId) {
-        <button class="evidence-row" (click)="evidence(document.documentId)">
-          {{ document.originalFileName }} · {{ 'common.download' | t }}
-        </button>
-      }
-      @for (revision of item.revisions; track revision.revision) {
-        <section class="revision">
-          <h3>{{ 'historical.version' | t }} {{ revision.revision }}</h3>
-          <p>{{ revision.reason }}</p>
-          <p>{{ revision.createdAtUtc | date: 'mediumDate' }}</p>
-          @if (item.request.kind === 'IdentityCorrection') {
-            @if (identitySnapshot(revision.beforeSnapshot); as before) {
-              <h4>{{ 'familyReview.before' | t }}</h4>
-              <p>{{ before.nameAr }} · {{ before.nameEn }}</p>
-              <p>{{ before.dateOfBirth }}</p>
-              @if (before.gender) {
-                <p>{{ (before.gender === 'Male' ? 'common.male' : 'common.female') | t }}</p>
+      </section>
+
+      <!-- Operational Authorities -->
+      @if (item.request.familyRelationshipRequestId && session.hasPermission('FamilyOperationalProofRequests.Revoke')) {
+        <section class="detail-card-section">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="section-heading m-0">
+              <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+              <span>{{ 'familyReview.authorities' | t }}</span>
+            </h4>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="loadAuthorities()">
+              {{ 'familyReview.authorities' | t }}
+            </button>
+          </div>
+
+          @for (authority of authorities(); track authority.authorityId) {
+            <div class="authority-row">
+              <div class="auth-meta">
+                <span class="auth-title">{{ 'familyReview.authority' | t }}</span>
+                <span class="code-font text-muted">#{{ authority.authorityId }}</span>
+              </div>
+              @if (authority.isActive) {
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  (click)="revoking.set(authority); reason = ''"
+                >
+                  {{ 'familyReview.revoke' | t }}
+                </button>
+              } @else {
+                <span class="badge-inactive">{{ 'familyReview.inactive' | t }}</span>
               }
-            }
-            @if (identitySnapshot(revision.afterSnapshot); as after) {
-              <h4>{{ 'familyReview.after' | t }}</h4>
-              <p>{{ after.nameAr }} · {{ after.nameEn }}</p>
-              <p>{{ after.dateOfBirth }}</p>
-              @if (after.gender) {
-                <p>{{ (after.gender === 'Male' ? 'common.male' : 'common.female') | t }}</p>
-              }
-            }
+            </div>
           }
         </section>
       }
     }
-    <div class="d-flex flex-wrap gap-2 mt-4">
-      @if (canDecide('approve')) {
-        <button class="btn btn-primary" (click)="ask('approve')">
-          {{ 'familyReview.approve' | t }}
-        </button>
+
+    <!-- ── Governance Review ── -->
+    @if (governanceReview(); as item) {
+      <div class="review-hero-card">
+        <div class="hero-identity-line">
+          <div class="hero-names">
+            <h3 class="hero-name-ar">{{ 'familyFlow.kind.' + item.request.kind | t }}</h3>
+            <span class="case-id-chip code-font">#{{ item.request.caseId }}</span>
+          </div>
+          <div class="hero-badges">
+            <span class="status-pill status-{{ item.request.status.toLowerCase() }}">
+              <span class="pill-dot" aria-hidden="true"></span>
+              <span>{{ 'familyFlow.status.' + item.request.status | t }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      @if (item.feedback) {
+        <div class="review-message-callout alert-note">
+          <i class="fa-solid fa-comment-dots" aria-hidden="true"></i>
+          <p>{{ item.feedback }}</p>
+        </div>
       }
-      @if (canDecide('request-modification')) {
-        <button class="btn btn-outline-secondary" (click)="ask('request-modification')">
-          {{ 'familyReview.modify' | t }}
-        </button>
-      }
-      @if (canDecide('reject')) {
-        <button class="btn btn-outline-danger" (click)="ask('reject')">
-          {{ 'familyReview.reject' | t }}
-        </button>
-      }
-      @if (canDecide('refer-governance')) {
-        <button class="btn btn-outline-secondary" (click)="ask('refer-governance')">
-          {{ 'familyReview.refer' | t }}
-        </button>
-      }
-    </div>
-    @if (confirming(); as action) {
-      <form class="decision-form" (ngSubmit)="decide()">
-        <p>{{ 'familyReview.confirm' | t }}</p>
-        <label
-          >{{ 'familyReview.reason' | t
-          }}<textarea
-            name="reason"
-            [(ngModel)]="reason"
-            [required]="action !== 'approve' || !!governanceReview()"
-            maxlength="1000"
-          ></textarea></label
-        ><button class="btn btn-primary" type="submit" [disabled]="busy()">
-          {{ 'familyReview.confirmAction' | t }}</button
-        ><button
-          class="btn btn-outline-secondary"
-          type="button"
-          [disabled]="busy()"
-          (click)="confirming.set(null)"
-        >
-          {{ 'common.cancel' | t }}
-        </button>
-      </form>
-    }
-    @for (authority of authorities(); track authority.authorityId) {
-      <div class="authority-row">
-        <span>{{ 'familyReview.authority' | t }}</span>
-        @if (authority.isActive) {
-          <button class="btn btn-outline-danger" (click)="revoking.set(authority); reason = ''">
-            {{ 'familyReview.revoke' | t }}
-          </button>
+
+      <!-- Evidence Documents -->
+      <section class="detail-card-section">
+        <h4 class="section-heading">
+          <i class="fa-solid fa-file-shield" aria-hidden="true"></i>
+          <span>{{ 'review.documents' | t }}</span>
+        </h4>
+        @if (item.evidence.length === 0) {
+          <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
         } @else {
-          <span>{{ 'familyReview.inactive' | t }}</span>
+          <div class="evidence-list">
+            @for (document of item.evidence; track document.documentId) {
+              <div class="evidence-item-row">
+                <div class="doc-icon-wrap" aria-hidden="true">
+                  <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <div class="doc-text-wrap">
+                  <span class="doc-filename">{{ document.originalFileName }}</span>
+                </div>
+                <button type="button" class="btn-download-doc" (click)="evidence(document.documentId)">
+                  <i class="fa-solid fa-download" aria-hidden="true"></i>
+                  <span>{{ 'common.download' | t }}</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Revisions Timeline & Identity Comparison -->
+      <section class="detail-card-section">
+        <h4 class="section-heading">
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+          <span>{{ 'historical.version' | t }}</span>
+        </h4>
+        @for (revision of item.revisions; track revision.revision) {
+          <div class="revision-card">
+            <div class="revision-header">
+              <span class="revision-pill">{{ 'historical.version' | t }} {{ revision.revision }}</span>
+              <span class="revision-date">{{ revision.createdAtUtc | date: 'mediumDate' }}</span>
+            </div>
+            @if (revision.reason) {
+              <p class="revision-reason">{{ revision.reason }}</p>
+            }
+
+            @if (item.request.kind === 'IdentityCorrection') {
+              <div class="diff-comparison-grid">
+                @if (identitySnapshot(revision.beforeSnapshot); as before) {
+                  <div class="diff-card before-card">
+                    <span class="diff-tag before-tag">{{ 'familyReview.before' | t }}</span>
+                    <strong class="diff-title">{{ before.nameAr }}</strong>
+                    @if (before.nameEn) {
+                      <span class="diff-subtitle">{{ before.nameEn }}</span>
+                    }
+                    <div class="diff-meta">
+                      <span>{{ before.dateOfBirth }}</span>
+                      @if (before.gender) {
+                        <span>· {{ (before.gender === 'Male' ? 'common.male' : 'common.female') | t }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (identitySnapshot(revision.afterSnapshot); as after) {
+                  <div class="diff-card after-card">
+                    <span class="diff-tag after-tag">{{ 'familyReview.after' | t }}</span>
+                    <strong class="diff-title">{{ after.nameAr }}</strong>
+                    @if (after.nameEn) {
+                      <span class="diff-subtitle">{{ after.nameEn }}</span>
+                    }
+                    <div class="diff-meta">
+                      <span>{{ after.dateOfBirth }}</span>
+                      @if (after.gender) {
+                        <span>· {{ (after.gender === 'Male' ? 'common.male' : 'common.female') | t }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- Decision Confirmation Card -->
+    @if (confirming(); as action) {
+      <div class="decision-box">
+        <h4 class="decision-title">
+          <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+          <span>{{ 'familyReview.confirm' | t }}</span>
+        </h4>
+        <form class="decision-form" (ngSubmit)="decide()">
+          <div class="form-field-group">
+            <label class="form-label" for="decision-reason">
+              {{ 'familyReview.reason' | t }}
+              @if (action !== 'approve' || !!governanceReview()) {
+                <span>*</span>
+              }
+            </label>
+            <textarea
+              id="decision-reason"
+              name="reason"
+              class="form-control"
+              rows="3"
+              [(ngModel)]="reason"
+              [required]="action !== 'approve' || !!governanceReview()"
+              maxlength="1000"
+              placeholder="اكتب توضيح القرار أو سبب التعديل..."
+            ></textarea>
+          </div>
+
+          <div class="decision-form-actions">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="confirming.set(null)"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+            <button
+              type="submit"
+              class="btn"
+              [class.btn-primary]="action === 'approve'"
+              [class.btn-warning]="action === 'request-modification'"
+              [class.btn-danger]="action === 'reject'"
+              [disabled]="busy()"
+            >
+              @if (busy()) {
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+              }
+              <span>{{ 'familyReview.confirmAction' | t }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Revoke Authority Confirmation -->
+    @if (revoking()) {
+      <div class="decision-box danger-box">
+        <h4 class="decision-title">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>{{ 'familyReview.revokeHint' | t }}</span>
+        </h4>
+        <form class="decision-form" (ngSubmit)="revoke()">
+          <div class="form-field-group">
+            <label class="form-label" for="revoke-reason">{{ 'familyReview.reason' | t }} *</label>
+            <textarea
+              id="revoke-reason"
+              name="revokeReason"
+              class="form-control"
+              rows="3"
+              [(ngModel)]="reason"
+              required
+              placeholder="اكتب سبب إلغاء الصلاحية التشغيلية..."
+            ></textarea>
+          </div>
+          <div class="decision-form-actions">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="busy()"
+              (click)="revoking.set(null)"
+            >
+              {{ 'common.cancel' | t }}
+            </button>
+            <button
+              type="submit"
+              class="btn btn-danger"
+              [disabled]="busy() || !reason.trim()"
+            >
+              @if (busy()) {
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+              }
+              <span>{{ 'familyReview.confirmAction' | t }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Decision Action Buttons Toolbar -->
+    @if (!confirming() && !revoking()) {
+      <div class="review-actions-bar">
+        @if (canDecide('approve')) {
+          <button type="button" class="btn btn-primary" (click)="ask('approve')">
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+            <span>{{ 'familyReview.approve' | t }}</span>
+          </button>
+        }
+        @if (canDecide('request-modification')) {
+          <button type="button" class="btn btn-outline-warning" (click)="ask('request-modification')">
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            <span>{{ 'familyReview.modify' | t }}</span>
+          </button>
+        }
+        @if (canDecide('reject')) {
+          <button type="button" class="btn btn-outline-danger" (click)="ask('reject')">
+            <i class="fa-solid fa-ban" aria-hidden="true"></i>
+            <span>{{ 'familyReview.reject' | t }}</span>
+          </button>
+        }
+        @if (canDecide('refer-governance')) {
+          <button type="button" class="btn btn-outline-secondary" (click)="ask('refer-governance')">
+            <i class="fa-solid fa-arrow-turn-down" aria-hidden="true"></i>
+            <span>{{ 'familyReview.refer' | t }}</span>
+          </button>
         }
       </div>
     }
-    @if (revoking()) {
-      <form class="decision-form" (ngSubmit)="revoke()">
-        <p>{{ 'familyReview.revokeHint' | t }}</p>
-        <label
-          >{{ 'familyReview.reason' | t
-          }}<textarea name="revokeReason" [(ngModel)]="reason" required></textarea></label
-        ><button class="btn btn-danger" [disabled]="busy() || !reason.trim()">
-          {{ 'familyReview.confirmAction' | t }}
-        </button>
-      </form>
-    }
   </div>
-</app-side-drawer>
+</ng-template>

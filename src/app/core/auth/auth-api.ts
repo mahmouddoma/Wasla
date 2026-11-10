@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -26,8 +26,8 @@ export class AuthApi {
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.authUrl}/login`, request);
   }
-  currentUser(): Observable<CurrentUser> {
-    return this.http.get<CurrentUser>(`${this.authUrl}/me`);
+  currentUser(context?: HttpContext): Observable<CurrentUser> {
+    return this.http.get<CurrentUser>(`${this.authUrl}/me`, { context });
   }
   changePassword(request: ChangePasswordRequest): Observable<void> {
     return this.http.post<void>(`${this.authUrl}/change-password`, request);

@@ -74,12 +74,16 @@ export class PublicDiscoveryApi {
     return `${this.url}/practices/${encodeURIComponent(this.practiceId(practiceId))}`;
   }
   private practice(response: PublicPracticeResponse): PublicPracticeSummary {
-    const { id, practiceId, doctorPracticeId, ...practice } = response;
+    const { id, practiceId, doctorPracticeId, address, detailedAddress, ...practice } = response;
     const identifier = [id, practiceId, doctorPracticeId].find(
       (value) =>
         typeof value === 'string' && value.trim() && !['undefined', 'null'].includes(value.trim()),
     );
-    return { ...practice, id: this.practiceId(identifier) };
+    return {
+      ...practice,
+      id: this.practiceId(identifier),
+      detailedAddress: address !== undefined ? address : detailedAddress ?? null,
+    };
   }
   private practiceId(value: string | null | undefined): string {
     if (

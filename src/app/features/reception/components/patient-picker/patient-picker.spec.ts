@@ -69,13 +69,28 @@ describe('PatientPicker', () => {
     expect(compiled.textContent).toContain('أحمد علي');
   });
 
-  it('should emit selected patient when choose is called', () => {
+  it('emits only an explicitly selected returned patient', async () => {
     let emittedPatient: PatientSearchItem | null = null;
     component.selected.subscribe((p) => (emittedPatient = p));
 
-    (component as unknown as { choose: (p: PatientSearchItem) => void }).choose(mockPatient);
+    component['model'].update(model => ({ ...model, phoneNumber: '01012345678' }));
+    await component['search'](new Event('submit'));
+    component['choose'](mockPatient);
 
     expect(emittedPatient).toEqual(mockPatient);
+  });
+
+  it('scopes contact searches to the current practice and rejects a patient outside the results', async () => {
+    fixture.componentRef.setInput('practiceId', 'clinic'); fixture.detectChanges();
+    const selected = vi.fn(); component.selected.subscribe(selected);
+    component['choose'](mockPatient);
+    expect(selected).not.toHaveBeenCalled();
+    component['model'].update(model => ({ ...model, phoneNumber: '01012345678' }));
+    await component['search'](new Event('submit'));
+    expect(mockPatientsApi.search).toHaveBeenLastCalledWith(expect.objectContaining({ doctorPracticeId: 'clinic' }));
+    fixture.componentRef.setInput('practiceId', 'other-clinic'); fixture.detectChanges();
+    component['choose'](mockPatient);
+    expect(selected).not.toHaveBeenCalled();
   });
 
   it('should handle search error gracefully', async () => {

@@ -1,5 +1,6 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { HttpContext, HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
+import { SKIP_ERROR_TOAST } from '../../../../core/notifications/api-error-toast.interceptor';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
@@ -38,20 +39,26 @@ export class FollowUpListComponent implements OnInit {
     return Math.max(1, Math.ceil(p.totalCount / p.pageSize));
   });
   readonly selected = signal<FollowUpEligibility | null>(null);
-  readonly loading = signal(false);
+  readonly loading = signal(true);
   readonly failed = signal(false);
   readonly detailLoading = signal(false);
   readonly messages = signal<readonly string[]>([]);
   private sequence = 0;
   private detailSequence = 0;
+  private metadataSequence = 0;
+  constructor() { inject(DestroyRef).onDestroy(() => { ++this.sequence; ++this.detailSequence; ++this.metadataSequence; }); }
   async ngOnInit() {
-    // Follow-up viewing remains available when Create/bookable-patients is denied.
-    try {
-      this.patients.set(await firstValueFrom(this.reservations.bookablePatients()));
-    } catch {
-      this.patients.set([]);
-    }
+    void this.loadPatientOptions();
     await this.load();
+  }
+  private async loadPatientOptions(): Promise<void> {
+    const sequence = ++this.metadataSequence;
+    try {
+      const patients = await firstValueFrom(this.reservations.bookablePatients(new HttpContext().set(SKIP_ERROR_TOAST, true)));
+      if (sequence === this.metadataSequence) this.patients.set(patients);
+    } catch {
+      if (sequence === this.metadataSequence) this.patients.set([]);
+    }
   }
   async load() {
     const sequence = ++this.sequence;
@@ -115,7 +122,11 @@ export class FollowUpListComponent implements OnInit {
     const messages = [...parsed.messages, ...Object.values(parsed.fields).flat()];
     this.messages.set(messages.length ? messages : ['encounters.failed']);
     this.toast.error(messages[0] || 'encounters.failed');
-    if (error instanceof HttpErrorResponse && (error.status === 403 || error.status === 404))
+    if (error instanceof HttpErrorResponse && [401, 403, 404].includes(error.status)) {
+      ++this.metadataSequence;
+      this.patients.set([]);
+      this.page.set({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
       this.selected.set(null);
+    }
   }
 }

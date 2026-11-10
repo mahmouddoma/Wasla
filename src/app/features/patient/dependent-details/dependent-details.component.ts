@@ -66,6 +66,8 @@ export class DependentDetailsComponent implements OnChanges, OnDestroy {
   contactId: string | null = null;
   contact = this.emptyContact();
   private generation = 0;
+  private transactionsSequence = 0;
+  private receiptSequence = 0;
   private intent: { signature: string; key: string } | null = null;
   ngOnChanges(): void {
     this.generation++;
@@ -73,6 +75,8 @@ export class DependentDetailsComponent implements OnChanges, OnDestroy {
     void this.selectTab(this.initialTab());
   }
   ngOnDestroy(): void {
+    ++this.transactionsSequence;
+    ++this.receiptSequence;
     this.generation++;
     this.revokePhoto();
   }
@@ -235,6 +239,8 @@ export class DependentDetailsComponent implements OnChanges, OnDestroy {
   async loadTransactions(page: number): Promise<void> {
     if (!this.child().canViewTransactions) return;
     const generation = this.generation;
+    const sequence = ++this.transactionsSequence;
+    ++this.receiptSequence;
     this.transactions.set([]);
     this.receipt.set(null);
     try {
@@ -244,19 +250,20 @@ export class DependentDetailsComponent implements OnChanges, OnDestroy {
           pageSize: 20,
         }),
       );
-      if (generation === this.generation) {
+      if (generation === this.generation && sequence === this.transactionsSequence) {
         this.transactions.set(result.items);
         this.page.set(page);
         this.total.set(result.totalCount);
       }
     } catch (error) {
-      if (generation === this.generation) this.fail(error);
+      if (generation === this.generation && sequence === this.transactionsSequence) this.fail(error);
     }
   }
   async openReceipt(item: FinancialTransactionItem): Promise<void> {
     if (!this.child().canViewReceipts) return;
     this.receipt.set(null);
     const generation = this.generation;
+    const sequence = ++this.receiptSequence;
     try {
       const result =
         item.transactionType === 'Refund'
@@ -266,9 +273,9 @@ export class DependentDetailsComponent implements OnChanges, OnDestroy {
           : await firstValueFrom(
               this.finance.dependentPaymentReceipt(this.child().patientId, item.transactionId),
             );
-      if (generation === this.generation) this.receipt.set(result);
+      if (generation === this.generation && sequence === this.receiptSequence) this.receipt.set(result);
     } catch (error) {
-      if (generation === this.generation) this.fail(error);
+      if (generation === this.generation && sequence === this.receiptSequence) this.fail(error);
     }
   }
   private async mutate(
@@ -312,6 +319,8 @@ export class DependentDetailsComponent implements OnChanges, OnDestroy {
     }
   }
   private reset(): void {
+    ++this.transactionsSequence;
+    ++this.receiptSequence;
     this.profile.set(null);
     this.tickets.set([]);
     this.ticket.set(null);

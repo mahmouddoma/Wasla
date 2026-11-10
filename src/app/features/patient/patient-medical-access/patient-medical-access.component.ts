@@ -27,6 +27,7 @@ import {
   FamilyMedicalDocument,
   FamilyMedicalHistoryItem,
   FamilyMedicalPage,
+  FamilyMember,
 } from '../../../domains/families';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
@@ -44,6 +45,28 @@ export class PatientMedicalAccessComponent implements OnDestroy {
 
   private readonly api = inject(FamiliesApi);
   private readonly toast = inject(ToastService);
+  protected readonly members = signal<FamilyMember[]>([]);
+  protected readonly children = computed(() => this.members().filter(member => member.role === 'Child'));
+  protected readonly adults = computed(() => this.members().filter(member => member.role !== 'Child'));
+  protected readonly canRequestAny = computed(() => !!this.childStatus()?.canRequestRestriction || !!this.childStatus()?.canRequestRestoration);
+  private accessSequence = 0;
+  private membersSequence = 0;
+  protected memberName(id: string): string {
+    const member = this.members().find(item => item.patientId === id);
+    return member ? (this.uiLanguage.isRtl() ? member.nameAr : member.nameEn || member.nameAr) : this.uiLanguage.t('familyPolicy.memberUnavailable');
+  }
+  protected selectCheckChild(event: Event): void {
+    const id = (event.target as HTMLSelectElement).value;
+    this.checkChildId.set(id);
+    void this.checkDependentAccess(id);
+  }
+  private async loadMembers(): Promise<void> {
+    const sequence = ++this.membersSequence;
+    try {
+      const family = await firstValueFrom(this.api.mine());
+      if (sequence === this.membersSequence) this.members.set(family.members ?? []);
+    } catch { if (sequence === this.membersSequence) this.members.set([]); }
+  }
 
   // Responsive Master-Detail detection
   private readonly resizeListener = () => {
@@ -94,6 +117,14 @@ export class PatientMedicalAccessComponent implements OnDestroy {
     maxLength(field.reason, 2000, { message: 'validation.max2000' });
   });
   protected readonly newRequestFiles = signal<File[]>([]);
+  protected readonly canCreateRequest = computed(() => {
+    const model = this.newRequestModel();
+    const access = this.childStatus();
+    return !this.checkingChild() && model.childPatientId === this.checkChildId() &&
+      this.children().some(child => child.patientId === model.childPatientId) &&
+      this.adults().some(adult => adult.patientId === model.affectedAdultPatientId) &&
+      (model.requestType === 'Restoration' ? access?.canRequestRestoration === true : access?.canRequestRestriction === true);
+  });
 
   // Resubmit Form
   protected readonly resubmitModel = signal({
@@ -139,9 +170,12 @@ export class PatientMedicalAccessComponent implements OnDestroy {
       window.addEventListener('resize', this.resizeListener);
     }
     void this.load();
+    void this.loadMembers();
   }
 
   ngOnDestroy(): void {
+    ++this.accessSequence;
+    ++this.membersSequence;
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.resizeListener);
     }
@@ -196,24 +230,32 @@ export class PatientMedicalAccessComponent implements OnDestroy {
   }
 
   protected async checkDependentAccess(childId: string): Promise<void> {
-    if (!childId.trim()) return;
+    const sequence = ++this.accessSequence;
+    this.childStatus.set(null);
+    this.checkingChild.set(false);
+    if (!this.children().some(child => child.patientId === childId)) return;
     this.checkingChild.set(true);
     try {
       const res = await firstValueFrom(this.api.childMedicalAccess(childId.trim()));
-      this.childStatus.set(res);
+      if (sequence === this.accessSequence) this.childStatus.set(res);
     } catch {
-      this.childStatus.set(null);
-      this.toast.error(this.uiLanguage.t('common.failedToLoad'));
+      if (sequence === this.accessSequence) { this.childStatus.set(null); this.toast.error(this.uiLanguage.t('common.failedToLoad')); }
     } finally {
-      this.checkingChild.set(false);
+      if (sequence === this.accessSequence) this.checkingChild.set(false);
     }
   }
 
   protected openNewRequestModal(): void {
-    this.openNewRequestModalWith('Restriction', this.checkChildId());
+    this.openNewRequestModalWith(this.childStatus()?.canRequestRestriction ? 'Restriction' : 'Restoration', this.checkChildId());
   }
 
   protected openNewRequestModalWith(type?: 'Restriction' | 'Restoration', childId?: string): void {
+    const id = childId ?? this.checkChildId();
+    const allowed = type === 'Restoration' ? this.childStatus()?.canRequestRestoration : this.childStatus()?.canRequestRestriction;
+    if (id !== this.checkChildId() || !this.children().some(child => child.patientId === id) || !allowed) {
+      this.toast.error(this.uiLanguage.t('familyPolicy.requestUnavailable'));
+      return;
+    }
     this.newRequestModel.set({
       requestType: type ?? 'Restriction',
       childPatientId: childId ?? this.checkChildId(),
@@ -246,6 +288,8 @@ export class PatientMedicalAccessComponent implements OnDestroy {
 
   protected async submitNewRequest(): Promise<void> {
     const model = this.newRequestModel();
+    const allowed = model.requestType === 'Restoration' ? this.childStatus()?.canRequestRestoration : this.childStatus()?.canRequestRestriction;
+    if (this.submitting() || !allowed || model.childPatientId !== this.checkChildId() || !this.children().some(child => child.patientId === model.childPatientId) || !this.adults().some(adult => adult.patientId === model.affectedAdultPatientId)) return;
     if (!model.childPatientId || !model.affectedAdultPatientId || !model.reason.trim()) {
       this.messages.set([this.uiLanguage.t('validation.required')]);
       return;
@@ -258,6 +302,10 @@ export class PatientMedicalAccessComponent implements OnDestroy {
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+      if (docTypes.length !== this.newRequestFiles().length || docTypes.some(type => type === 'Evidence' || type === 'UpdatedEvidence')) {
+        this.messages.set([this.uiLanguage.t('familyPolicy.evidenceUnavailable')]);
+        return;
+      }
       await firstValueFrom(
         this.api.createMedicalAccessRequest({
           requestType: model.requestType,
@@ -265,7 +313,7 @@ export class PatientMedicalAccessComponent implements OnDestroy {
           affectedAdultPatientId: model.affectedAdultPatientId.trim(),
           reason: model.reason.trim(),
           evidenceFiles: this.newRequestFiles(),
-          documentTypes: docTypes.length ? docTypes : ['Evidence'],
+          documentTypes: docTypes,
           idempotencyKey: crypto.randomUUID(),
         }),
       );
@@ -328,7 +376,7 @@ export class PatientMedicalAccessComponent implements OnDestroy {
 
   protected async submitResubmit(): Promise<void> {
     const current = this.selectedCase();
-    if (!current) return;
+    if (!current || !current.capabilities.canResubmit || this.submitting()) return;
     const model = this.resubmitModel();
 
     this.submitting.set(true);
@@ -337,12 +385,16 @@ export class PatientMedicalAccessComponent implements OnDestroy {
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+      if (docTypes.length !== this.resubmitFiles().length || docTypes.some(type => type === 'Evidence' || type === 'UpdatedEvidence')) {
+        this.messages.set([this.uiLanguage.t('familyPolicy.evidenceUnavailable')]);
+        return;
+      }
       await firstValueFrom(
         this.api.resubmitMedicalAccessRequest(current.requestId, {
           rowVersion: current.rowVersion,
           reason: model.reason.trim(),
           evidenceFiles: this.resubmitFiles(),
-          documentTypes: docTypes.length ? docTypes : ['UpdatedEvidence'],
+          documentTypes: docTypes,
           idempotencyKey: crypto.randomUUID(),
         }),
       );

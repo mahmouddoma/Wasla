@@ -1,0 +1,45 @@
+<main class="duplicates-page" [dir]="language.dir()">
+  <app-page-header [heading]="'duplicates.title' | t" [description]="'duplicates.description' | t" icon="family-requests" [actionLabel]="'common.refresh' | t" actionIcon="refresh" [actionLoading]="loading()" (actionClicked)="load()" />
+  @if (!canView()) { <p role="alert">{{ 'duplicates.unavailable' | t }}</p> }
+  @else {
+    <section class="duplicates-surface" [attr.aria-busy]="loading()">
+      <label class="duplicate-filter">{{ 'common.status' | t }}
+        <select [value]="status()" [disabled]="loading()" (change)="setStatus($event)"><option value="">{{ 'reservations.All' | t }}</option>@for (value of statuses; track value) { <option [value]="value">{{ 'duplicates.status.' + value | t }}</option> }</select>
+      </label>
+      @if (loading()) { <p role="status">{{ 'common.loading' | t }}</p> }
+      @else if (failed()) { <div role="alert"><p>{{ 'common.failedToLoad' | t }}</p><button type="button" class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button></div> }
+      @else if (!result()?.items?.length) {
+        <div class="duplicate-empty text-center"><img class="state-empty-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" /><h2>{{ 'duplicates.empty' | t }}</h2><p>{{ 'duplicates.emptyHelp' | t }}</p><button type="button" class="btn btn-outline-secondary" (click)="load()">{{ 'common.refresh' | t }}</button></div>
+      } @else {
+        <div class="table-responsive"><table class="table align-middle">
+          <caption class="visually-hidden">{{ 'duplicates.title' | t }}</caption>
+          <thead><tr><th scope="col">{{ 'duplicates.created' | t }}</th><th scope="col">{{ 'common.status' | t }}</th><th scope="col"><span class="visually-hidden">{{ 'common.view' | t }}</span></th></tr></thead>
+          <tbody>@for (item of result()?.items || []; track item.caseId) { <tr><td><time dir="ltr">{{ item.createdOnUtc | date:'yyyy-MM-dd HH:mm' }}</time></td><td>{{ 'duplicates.status.' + item.status | t }}</td><td><button type="button" class="btn btn-outline-secondary" (click)="inspect(item.caseId)">{{ 'common.view' | t }}</button></td></tr> }</tbody>
+        </table></div>
+        @if (result(); as page) {
+          <nav class="d-flex justify-content-between align-items-center gap-3" [attr.aria-label]="'reservations.pagination' | t"><button type="button" class="btn btn-outline-secondary" [disabled]="page.pageNumber <= 1" (click)="load(page.pageNumber - 1)">{{ 'common.previous' | t }}</button><span>{{ page.pageNumber }}</span><button type="button" class="btn btn-outline-secondary" [disabled]="page.pageNumber * page.pageSize >= page.totalCount" (click)="load(page.pageNumber + 1)">{{ 'common.next' | t }}</button></nav>
+        }
+      }
+    </section>
+  }
+  <app-side-drawer [opened]="drawerOpen() && canView()" [busy]="busy()" [title]="'duplicates.review' | t" width="720px" (closed)="close()">
+    @if (detailLoading()) { <p role="status">{{ 'common.loading' | t }}</p> }
+    @else if (detailFailed()) { <p role="alert">{{ 'common.failedToLoad' | t }}</p> }
+    @else if (selected(); as item) {
+      <p>{{ 'duplicates.noMerge' | t }}</p>
+      <div class="duplicate-comparison">
+        @for (patient of [item.patientA, item.patientB]; track patient.id; let first = $first) {
+          <section><h3>{{ (first ? 'duplicates.first' : 'duplicates.second') | t }}</h3><dl><dt>{{ 'discovery.name' | t }}</dt><dd>{{ patient.nameAr || ('duplicates.unnamed' | t) }}</dd><dt>{{ 'duplicates.birthDate' | t }}</dt><dd><time [attr.datetime]="patient.dateOfBirth">{{ patient.dateOfBirth | date:'mediumDate':'UTC':language.currentLang() }}</time></dd><dt>{{ 'workspace.email' | t }}</dt><dd><bdi>{{ patient.emailMasked || ('duplicates.emailUnavailable' | t) }}</bdi></dd></dl></section>
+        }
+      </div>
+      <p>{{ (item.matchIndicators === 'PhoneOrDemographics' ? 'duplicates.demographicMatch' : 'duplicates.reviewEvidence') | t }}</p>
+      @if (canResolve() && item.rowVersion) {
+        <form (submit)="resolve($event)" novalidate><fieldset [disabled]="busy()">
+          <label>{{ 'duplicates.classification' | t }}<select [formField]="decisionForm.resolution"><option value="">{{ 'reservations.choose' | t }}</option>@for (value of statuses; track value) { <option [value]="value">{{ 'duplicates.status.' + value | t }}</option> }</select></label>
+          <label>{{ 'duplicates.reason' | t }}<textarea [formField]="decisionForm.reason" rows="4"></textarea></label>
+          <button type="submit" class="btn btn-primary" [disabled]="busy() || decisionForm().invalid()">{{ 'duplicates.save' | t }}</button>
+        </fieldset></form>
+      }
+    }
+  </app-side-drawer>
+</main>

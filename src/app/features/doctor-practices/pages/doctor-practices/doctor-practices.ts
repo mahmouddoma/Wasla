@@ -1,6 +1,6 @@
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
@@ -8,6 +8,8 @@ import { AuthSession } from '../../../../core/auth/auth-session';
 import { PERMISSIONS } from '../../../../core/auth/permissions';
 import { DoctorPractice } from '../../../../domains/doctor-practices';
 import { DoctorPracticesApi } from '../../../../domains/doctor-practices';
+import { DoctorProfileApi } from '../../../../domains/doctor-profile';
+import { PublicDiscoveryApi, PublicPracticeSummary } from '../../../../domains/public-discovery';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
@@ -48,6 +50,17 @@ export class DoctorPractices {
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+  private readonly profileApi = inject(DoctorProfileApi);
+  private readonly publicApi = inject(PublicDiscoveryApi);
+  private readinessSequence = 0;
+  protected readonly onlineBookingEnabled = signal<boolean | null>(null);
+  protected readonly publicReadiness = signal<PublicPracticeSummary | null>(null);
+  protected readonly readinessReason = computed(() => {
+    const reason = this.publicReadiness()?.bookingDisabledReason;
+    return reason && ['OnlineBookingDisabled', 'NoPricing', 'NoAvailableCapacity', 'NoAvailableSchedule'].includes(reason)
+      ? `readiness.reason.${reason}` : null;
+  });
+  protected readonly readinessLoading = signal(false);
 
   protected readonly practices = signal<DoctorPractice[]>([]);
   protected readonly activeCount = computed(
@@ -104,6 +117,7 @@ export class DoctorPractices {
   );
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => ++this.readinessSequence);
     void this.subscription.refresh().catch(() => undefined);
     if (!this.isSectionAvailable(this.activeSection())) {
       this.activeSection.set('overview');
@@ -168,6 +182,7 @@ export class DoctorPractices {
     this.resetRequestState();
     try {
       this.selectedPractice.set(await firstValueFrom(this.api.details(this.practiceId)));
+      void this.loadReadiness(this.practiceId);
       await this.subscription.refresh(true);
       await this.subscription.refreshPractice(this.practiceId);
     } catch (error) {
@@ -192,6 +207,7 @@ export class DoctorPractices {
       return;
     }
     this.selectedPractice.set(practice);
+    void this.loadReadiness(practice.id);
     void this.subscription.refresh(true).then(() => this.subscription.refreshPractice(practice.id)).catch(() => undefined);
   }
 
@@ -209,6 +225,30 @@ export class DoctorPractices {
     ]
       .filter(Boolean)
       .join(this.langService.isRtl() ? '، ' : ', ');
+  }
+
+  private async loadReadiness(practiceId: string): Promise<void> {
+    const sequence = ++this.readinessSequence;
+    this.onlineBookingEnabled.set(null);
+    this.publicReadiness.set(null);
+    this.readinessLoading.set(true);
+    const reads: Promise<void>[] = [];
+    if (this.canViewConfiguration) reads.push((async () => {
+      const configuration = await firstValueFrom(this.api.configuration(practiceId));
+      if (sequence === this.readinessSequence) this.onlineBookingEnabled.set(configuration.allowOnlineBooking);
+    })());
+    if (this.session.hasPermission(PERMISSIONS.doctorProfileViewOwn)) reads.push((async () => {
+      const profile = await firstValueFrom(this.profileApi.publicProfile());
+      if (sequence !== this.readinessSequence) return;
+      const doctor = await firstValueFrom(this.publicApi.doctor(profile.doctorId));
+      if (sequence === this.readinessSequence) {
+        const practice = doctor.practices.find(item => item.id === practiceId) ?? null;
+        this.publicReadiness.set(practice);
+        if (this.onlineBookingEnabled() === null && practice) this.onlineBookingEnabled.set(practice.onlineBookingEnabled ?? null);
+      }
+    })());
+    await Promise.allSettled(reads);
+    if (sequence === this.readinessSequence) this.readinessLoading.set(false);
   }
 
   protected logout(): void {

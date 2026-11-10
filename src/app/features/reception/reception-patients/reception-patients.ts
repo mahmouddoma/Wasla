@@ -1,3 +1,4 @@
+import { ReceptionRegistrationHandoff } from '../../../domains/patients';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -20,6 +21,7 @@ import {
   maxLength,
   min,
   required,
+  readonly as readonlyField,
   submit,
   validate,
 } from '@angular/forms/signals';
@@ -35,14 +37,18 @@ import {
   PagedResponse,
   PatientRelationshipType,
   PatientSearchItem,
+  RegistrationSearchResponse,
+  RegistrationCandidate,
 } from '../../../domains/patients';
 import { PatientsApi } from '../../../domains/patients';
 import { ReceptionPracticeContext } from '../../../domains/reception-practices';
 import { hasReceptionPatientSearchCriteria } from '../patient-search-criteria';
+import { PatientPicker } from '../components/patient-picker/patient-picker';
+import { createIdempotencyKey } from '../../../core/http/create-idempotency-key';
 
 @Component({
   selector: 'app-reception-patients',
-  imports: [FormField, TranslatePipe, PageHeader, SideDrawer, NgTemplateOutlet],
+  imports: [FormField, TranslatePipe, PageHeader, SideDrawer, NgTemplateOutlet, PatientPicker],
   templateUrl: './reception-patients.html',
   styleUrl: './reception-patients.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,7 +62,9 @@ export class ReceptionPatients {
   private readonly practiceContext = inject(ReceptionPracticeContext);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
+  private readonly registrationHandoff = inject(ReceptionRegistrationHandoff);
   private readonly route = inject(ActivatedRoute);
+  protected readonly returnToQueue = this.route.snapshot.queryParamMap.get('returnTo') === 'queue';
 
   protected readonly createModel = signal({
     nameAr: '',
@@ -71,6 +79,8 @@ export class ReceptionPatients {
     primaryContactLinkedPatientId: '',
   });
   protected readonly createForm = form(this.createModel, (field) => {
+    readonlyField(field.primaryContactNameAr, () => !!this.linkedContact());
+    readonlyField(field.primaryContactPhoneNumber, () => !!this.linkedContact());
     required(field.nameAr, { message: 'validation.nameArRequired' });
     maxLength(field.nameAr, 200, { message: 'validation.nameLength' });
     maxLength(field.nameEn, 200, { message: 'validation.nameLength' });
@@ -140,17 +150,31 @@ export class ReceptionPatients {
   protected readonly canSearch = computed(() =>
     this.session.hasPermission(PERMISSIONS.patientsSearchBasic),
   );
-  protected readonly canRegister = computed(() =>
-    this.session.hasPermission(PERMISSIONS.patientsRegister),
-  );
+  protected readonly canRegisterBasic = computed(() => this.session.hasPermission(PERMISSIONS.patientsRegister) && this.selectedPracticeAllows(PERMISSIONS.patientsRegister));
+  protected readonly canRegister = computed(() => this.canRegisterBasic() || this.canRegisterFull());
   protected readonly canVerifyClaimIdentity = computed(() =>
     this.session.hasPermission(PERMISSIONS.patientsRegistrationMatch),
   );
   protected readonly registrationOpen = signal(false);
   protected readonly registrationAccountMode = signal<'basic' | 'full'>('basic');
-  protected readonly fullRegistrationBasis = signal('GovernmentIdSeen');
-  protected readonly fullRegistrationVerifiedInPerson = signal(true);
+  protected readonly fullRegistrationBasis = signal<'GovernmentIdSeen' | 'ApprovedAlternateEvidence'>('GovernmentIdSeen');
+  protected readonly fullRegistrationVerifiedInPerson = signal(false);
   protected readonly fullRegistrationNote = signal('');
+  protected readonly identityMatches = signal<RegistrationSearchResponse | null>(null);
+  protected readonly distinctPersonConfirmed = signal(false);
+  protected readonly matchReviewReason = signal('');
+  protected readonly reusedPatient = signal<RegistrationCandidate | null>(null);
+  protected readonly linkedContact = signal<PatientSearchItem | null>(null);
+  protected readonly contactPickerOpen = signal(false);
+  protected readonly canRegisterFull = computed(() => this.session.hasPermission('Patients.RegisterFull') && this.selectedPracticeAllows('Patients.RegisterFull'));
+  protected readonly canDistinguish = computed(() => {
+    const result = this.identityMatches();
+    return !!result && ['PossibleMatch', 'MultipleMatches'].includes(result.matchOutcome ?? '') &&
+      !result.requiresClaimForAccount && (this.registrationAccountMode() === 'full' ? result.canCreateFull : result.canCreateBasic);
+  });
+  private matchSignature = '';
+  private identitySequence = 0;
+  private mutationIntent: { signature: string; key: string } | null = null;
   protected readonly personalIdFrontImage = signal<File | undefined>(undefined);
   protected readonly personalIdBackImage = signal<File | undefined>(undefined);
   protected readonly fullAccountActivationInfo = signal<{
@@ -185,6 +209,10 @@ export class ReceptionPatients {
       this.selectedPatientId.set('');
       this.selectedPatient.set(null);
       this.createdPatientId.set('');
+      this.reusedPatient.set(null);
+      this.linkedContact.set(null);
+      this.contactPickerOpen.set(false);
+      this.createModel.update(value => ({ ...value, primaryContactLinkedPatientId: '' }));
       this.messages.set([]);
       this.isSearching.set(false);
       if (
@@ -193,6 +221,18 @@ export class ReceptionPatients {
         this.selectedPracticeAllows(PERMISSIONS.patientsSearchBasic)
       )
         untracked(() => void this.search());
+    });
+
+    effect(() => {
+      this.registrationSignature();
+      untracked(() => {
+        this.identitySequence++;
+        this.matchSignature = '';
+        this.identityMatches.set(null);
+        this.distinctPersonConfirmed.set(false);
+        this.matchReviewReason.set('');
+        this.fullRegistrationVerifiedInPerson.set(false);
+      });
     });
 
     const params = this.route.snapshot.queryParamMap;
@@ -280,9 +320,119 @@ export class ReceptionPatients {
     return Math.abs(ageDate.getUTCFullYear() - 1970);
   }
 
+  private registrationSignature(): string {
+    const value = this.createModel();
+    return JSON.stringify([this.selectedPracticeId(), this.registrationAccountMode(), value.nameAr.trim(), value.dateOfBirth, value.gender, value.phoneNumber.trim(), value.email.trim().toLowerCase()]);
+  }
+  private mutationKey(request: object): string {
+    const signature = JSON.stringify(request);
+    if (this.mutationIntent?.signature !== signature) this.mutationIntent = { signature, key: createIdempotencyKey() };
+    return this.mutationIntent.key;
+  }
+
+  private async reviewIdentity(): Promise<boolean> {
+    const signature = this.registrationSignature();
+    if (this.matchSignature !== signature) {
+      const value = this.createModel(), sequence = ++this.identitySequence;
+      const result = await firstValueFrom(this.api.registrationMatches({
+        mode: 'Search', doctorPracticeId: this.selectedPracticeId(),
+        email: value.email.trim() || undefined, phoneNumber: value.phoneNumber.trim() || undefined,
+        nameAr: value.nameAr.trim(), dateOfBirth: value.dateOfBirth,
+        gender: value.gender as 'Male' | 'Female', pageSize: 20,
+      }));
+      if (sequence !== this.identitySequence || signature !== this.registrationSignature()) return false;
+      this.matchSignature = signature;
+      this.identityMatches.set(result);
+    }
+    const result = this.identityMatches();
+    const allowed = this.registrationAccountMode() === 'full' ? result?.canCreateFull : result?.canCreateBasic;
+    if (allowed !== true || result?.requiresClaimForAccount) {
+      this.toast.error(this.uiLanguage.t('identityReview.existingRecord'));
+      return false;
+    }
+    if (result?.matchOutcome === 'NoMatch' && !result.candidates?.length) return true;
+    if (!this.canDistinguish() || !this.distinctPersonConfirmed() || !this.fullRegistrationVerifiedInPerson() || this.matchReviewReason().trim().length < 10 || this.matchReviewReason().trim().length > 500) {
+      this.toast.error(this.uiLanguage.t('identityReview.reviewRequired'));
+      return false;
+    }
+    return true;
+  }
+
+  protected updateRegistrationText(kind: 'reason' | 'note', event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
+    (kind === 'reason' ? this.matchReviewReason : this.fullRegistrationNote).set(value);
+  }
+  protected updateRegistrationBasis(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === 'GovernmentIdSeen' || value === 'ApprovedAlternateEvidence') this.fullRegistrationBasis.set(value);
+  }
+  protected toggleIdentityReview(kind: 'verified' | 'distinct', event: Event): void {
+    (kind === 'verified' ? this.fullRegistrationVerifiedInPerson : this.distinctPersonConfirmed).set((event.target as HTMLInputElement).checked);
+  }
+
+  protected chooseLinkedContact(patient: PatientSearchItem): void {
+    this.linkedContact.set(patient);
+    this.createModel.update(value => ({ ...value, primaryContactLinkedPatientId: patient.patientId, primaryContactNameAr: patient.nameAr, primaryContactPhoneNumber: patient.phoneNumber ?? '' }));
+    this.contactPickerOpen.set(false);
+  }
+  protected clearLinkedContact(): void {
+    this.linkedContact.set(null);
+    this.createModel.update(value => ({ ...value, primaryContactLinkedPatientId: '' }));
+  }
+  protected openContactPicker(): void {
+    if (this.canSearch() && this.selectedPracticeAllows(PERMISSIONS.patientsSearchBasic)) this.contactPickerOpen.set(true);
+  }
+
+  protected async reuseCandidate(candidate: RegistrationCandidate): Promise<void> {
+    if (this.isCreating() || !this.canVerifyClaimIdentity() || !this.selectedPracticeAllows(PERMISSIONS.patientsRegistrationMatch) || !this.fullRegistrationVerifiedInPerson() || !this.identityMatches()?.candidates?.some(item => item.patientId === candidate.patientId)) return;
+    const generation = this.contextGeneration, signature = this.registrationSignature();
+    this.isCreating.set(true);
+    try {
+      const request = { mode: 'ConfirmReuse' as const, doctorPracticeId: this.selectedPracticeId(), patientId: candidate.patientId, verifiedInPerson: true, verificationBasis: this.fullRegistrationBasis(), reason: this.matchReviewReason().trim() || undefined };
+      const response = await firstValueFrom(this.api.registrationMatches(request, this.mutationKey(request)));
+      if (generation !== this.contextGeneration || signature !== this.registrationSignature()) return;
+      if (response.patientId !== candidate.patientId) throw new Error('Invalid reuse response');
+      this.reusedPatient.set(candidate);
+      this.selectedPatient.set(null);
+      this.selectedPatientId.set('');
+      this.registrationOpen.set(false);
+      this.toast.success(this.uiLanguage.t('identityReview.reuseSuccess'));
+      this.mutationIntent = null;
+      if (this.returnToQueue) await this.continueWalkIn();
+    } catch (error) {
+      if (generation === this.contextGeneration) this.toast.error(flattenErrors(error).join(' ') || this.uiLanguage.t('common.requestFailed'));
+    } finally { this.isCreating.set(false); }
+  }
+
+  protected async continueWalkIn(): Promise<void> {
+    const practiceId = this.selectedPracticeId();
+    const generation = this.contextGeneration;
+    if (!practiceId || !this.returnToQueue || !this.canSearch()) return;
+    let patient = this.selectedPatient();
+    const reused = this.reusedPatient();
+    if (!patient && reused) {
+      const model = this.createModel();
+      const result = await firstValueFrom(this.api.search({ doctorPracticeId: practiceId,
+        name: model.nameAr.trim() || reused.nameAr || undefined, phoneNumber: model.phoneNumber.trim() || undefined,
+        dateOfBirth: model.dateOfBirth || undefined, pageNumber: 1, pageSize: 20 }));
+      patient = result.items.find(item => item.patientId === reused.patientId) ?? null;
+    }
+    if (!patient || generation !== this.contextGeneration || practiceId !== this.selectedPracticeId()) return;
+    this.registrationHandoff.stage(practiceId, patient);
+    await this.router.navigate(['/reception/queue'], { queryParams: { practiceId } });
+  }
+
+  protected bookReusedPatient(): void {
+    if (this.returnToQueue) { void this.continueWalkIn(); return; }
+    const patient = this.reusedPatient();
+    if (!patient || !this.selectedPracticeId() || !this.canBook()) return;
+    void this.router.navigate(['/reception/reservations'], { queryParams: { practiceId: this.selectedPracticeId(), patientId: patient.patientId } });
+  }
+
   protected async createPatient(event: Event): Promise<void> {
     event.preventDefault();
     if (!this.canRegister()) return;
+    if (this.registrationAccountMode() === 'basic' && !this.canRegisterBasic()) return;
     await submit(this.createForm, async () => {
       if (this.isCreating()) return;
       this.isCreating.set(true);
@@ -290,6 +440,16 @@ export class ReceptionPatients {
       const generation = this.contextGeneration;
       try {
         const value = this.createModel();
+        const practiceId = this.selectedPracticeId();
+        if (!practiceId || !this.canVerifyClaimIdentity() || !this.selectedPracticeAllows(PERMISSIONS.patientsRegistrationMatch)) {
+          this.toast.error(this.uiLanguage.t('identityReview.permissionRequired'));
+          return;
+        }
+        if (this.registrationAccountMode() === 'full' && !this.canRegisterFull()) return;
+        if (!await this.reviewIdentity()) return;
+        if (generation !== this.contextGeneration) return;
+        const distinct = this.canDistinguish();
+        const reason = this.matchReviewReason().trim();
         let responsePatientId = '';
         if (this.registrationAccountMode() === 'full') {
           if (!value.email.trim()) {
@@ -297,8 +457,11 @@ export class ReceptionPatients {
             this.toast.error(this.uiLanguage.t('validation.emailRequired'));
             return;
           }
-          const fullRes = await firstValueFrom(
-            this.api.registerFull({
+          if (!this.fullRegistrationVerifiedInPerson()) {
+            this.toast.error(this.uiLanguage.t('identityReview.verifyRequired'));
+            return;
+          }
+          const request = {
               doctorPracticeId: this.selectedPracticeId(),
               nameAr: value.nameAr,
               nameEn: value.nameEn || undefined,
@@ -309,29 +472,32 @@ export class ReceptionPatients {
               verifiedInPerson: this.fullRegistrationVerifiedInPerson(),
               identityVerificationBasis: this.fullRegistrationBasis(),
               verificationNote: this.fullRegistrationNote().trim() || undefined,
+              ...(distinct ? { matchReviewOutcome: 'DistinctPerson' as const, matchReviewReason: reason } : {}),
               profileImage: this.profileImage(),
               personalIdFrontImage: this.personalIdFrontImage(),
               personalIdBackImage: this.personalIdBackImage(),
-            }),
-          );
+          };
+          const fullRes = await firstValueFrom(this.api.registerFull(request, this.mutationKey(request)));
           responsePatientId = fullRes.patientId;
           this.fullAccountActivationInfo.set({
             activationEmailMasked: fullRes.activationEmailMasked,
             invitationExpiresOnUtc: fullRes.invitationExpiresOnUtc,
           });
         } else {
-          const response = await firstValueFrom(
-            this.api.create({
+          const request = {
               ...value,
               doctorPracticeId: this.selectedPracticeId(),
               gender: value.gender as 'Male' | 'Female',
               primaryContactIsPrimary: true,
               profileImage: this.profileImage(),
-            }),
-          );
+              ...(distinct ? { matchReviewOutcome: 'DistinctPerson' as const, matchReviewReason: reason, matchingAttestationBasis: this.fullRegistrationBasis() } : {}),
+          };
+          const response = await firstValueFrom(this.api.create(request, this.mutationKey(request)));
           responsePatientId = response.patientId;
         }
         this.toast.success(this.uiLanguage.t('patient.registered'));
+        this.mutationIntent = null;
+        if (generation !== this.contextGeneration) return;
         if (generation === this.contextGeneration) {
           this.createdPatientId.set(responsePatientId);
           this.selectedPatientId.set(responsePatientId);
@@ -346,6 +512,7 @@ export class ReceptionPatients {
           });
         }
         this.registrationOpen.set(false);
+        if (this.returnToQueue) await this.continueWalkIn();
         this.createModel.set({
           nameAr: '',
           nameEn: '',
@@ -359,6 +526,7 @@ export class ReceptionPatients {
           primaryContactLinkedPatientId: '',
         });
         this.profileImage.set(undefined);
+        this.linkedContact.set(null);
         this.personalIdFrontImage.set(undefined);
         this.personalIdBackImage.set(undefined);
         this.createForm().reset();
@@ -441,14 +609,17 @@ export class ReceptionPatients {
   }
 
   protected fileChanged(event: Event): void {
+    this.mutationIntent = null;
     this.profileImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
   }
 
   protected idFrontFileChanged(event: Event): void {
+    this.mutationIntent = null;
     this.personalIdFrontImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
   }
 
   protected idBackFileChanged(event: Event): void {
+    this.mutationIntent = null;
     this.personalIdBackImage.set((event.currentTarget as HTMLInputElement).files?.[0]);
   }
 
@@ -496,19 +667,19 @@ export class ReceptionPatients {
 
     this.isSubmittingAttestation.set(true);
     try {
-      const response = await firstValueFrom(
-        this.api.registrationMatches({
-          mode: 'ConfirmClaimIdentity',
+      const request = {
+          mode: 'ConfirmClaimIdentity' as const,
           doctorPracticeId: practiceId,
           patientId: patient.patientId,
           claimantEmail: am.claimantEmail.trim(),
           verifiedInPerson: am.verifiedInPerson,
           verificationBasis: am.verificationBasis,
           reason: am.reason.trim(),
-        }),
-      );
+        };
+      const response = await firstValueFrom(this.api.registrationMatches(request, this.mutationKey(request)));
       this.generatedAttestationId.set(response.attestationId || '');
       this.toast.success(this.uiLanguage.t('reception.patients.attestationCreatedToast'));
+      this.mutationIntent = null;
     } catch (error) {
       const errs = flattenErrors(error);
       this.toast.error(errs.join(' ') || this.uiLanguage.t('common.requestFailed'));

@@ -1,0 +1,110 @@
+<app-side-drawer [opened]="booking.opened()" [title]="'booking.drawerTitle' | t"
+  [description]="'booking.choosePracticeHelp' | t" [busy]="booking.submitting()" width="620px" (closed)="booking.close()">
+  <div class="booking-content" [attr.aria-busy]="booking.loading() || booking.submitting()">
+    @if (booking.messages().length) {
+      <div role="alert" class="booking-notice">@for (message of booking.messages(); track $index) { <p>{{ message | t }}</p> }</div>
+    }
+    @if (booking.receipt(); as receipt) {
+      <section class="booking-receipt" role="status" aria-live="polite">
+        <h2>{{ 'booking.successTitle' | t }}</h2>
+        <p>{{ 'booking.successSubtitle' | t }}</p>
+        <dl>
+          <div><dt>{{ 'booking.referenceNumber' | t }}</dt><dd dir="ltr">{{ receipt.reference }}</dd></div>
+          <div><dt>{{ 'patientBooking.doctor' | t }}</dt><dd>{{ name(receipt.doctor) }}</dd></div>
+          <div><dt>{{ 'booking.choosePractice' | t }}</dt><dd>{{ name(receipt.practice) }}</dd></div>
+          <div><dt>{{ 'booking.patientNameLabel' | t }}</dt><dd>{{ name(receipt.patient) }}</dd></div>
+          <div><dt>{{ 'booking.appointmentTime' | t }}</dt><dd dir="ltr">{{ receipt.appointment.businessDate }} · {{ receipt.appointment.slotStartTime.slice(0, 5) }}</dd></div>
+          @if (receipt.price !== undefined) {
+            <div><dt>{{ 'booking.consultationFee' | t }}</dt><dd>{{ receipt.price }} {{ receipt.currency || ('discovery.currency' | t) }}</dd></div>
+          }
+        </dl>
+        <a class="booking-primary" routerLink="/patient/reservations" (click)="booking.close()">{{ 'booking.viewMyReservations' | t }}</a>
+      </section>
+    } @else {
+      @if (booking.doctor(); as doctor) {
+        <h2>{{ name(doctor) }}</h2>
+        <section class="booking-section" [attr.aria-label]="'booking.choosePractice' | t">
+          <h3>{{ 'booking.choosePractice' | t }}</h3>
+          <div class="booking-choices">
+            @for (practice of doctor.practices; track practice.id) {
+              <button type="button" [disabled]="booking.submitting()" [attr.aria-pressed]="booking.practice()?.id === practice.id"
+                (click)="booking.choosePractice(practice.id)">{{ name(practice) }}</button>
+            }
+          </div>
+        </section>
+        @if (booking.practice(); as practice) {
+          @if (!practice.isBookable || practice.onlineBookingEnabled === false) {
+            <section class="booking-empty">
+              <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+              <h3>{{ 'discovery.bookInClinic' | t }}</h3><p>{{ 'discovery.walkInNotice' | t }}</p>
+              @if (practice.detailedAddress) { <p>{{ practice.detailedAddress }}</p> }
+            </section>
+          } @else {
+            <section class="booking-section">
+              <h3>{{ 'booking.availableDays' | t }}</h3>
+              <div class="booking-choices">
+                @for (date of booking.dates(); track date.date) {
+                  <button type="button" dir="ltr" [disabled]="!date.isAvailable || booking.submitting()"
+                    [attr.aria-pressed]="booking.date() === date.date" (click)="booking.chooseDate(date.date)">{{ date.date }}</button>
+                }
+              </div>
+              @if (!booking.loading() && !booking.dates().length) {
+                <div class="booking-empty"><img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
+                  <h3>{{ 'booking.noDays' | t }}</h3><p>{{ 'booking.choosePracticeHelp' | t }}</p>
+                  <button type="button" (click)="booking.choosePractice(practice.id)">{{ 'common.retry' | t }}</button>
+                </div>
+              }
+            </section>
+            @if (booking.date()) {
+              <section class="booking-section">
+                <h3>{{ 'booking.availableTimes' | t }}</h3>
+                <div class="booking-choices">
+                  @for (slot of booking.slots(); track slot.time) {
+                    <button type="button" dir="ltr" [disabled]="booking.submitting()" [attr.aria-pressed]="booking.time() === slot.time"
+                      (click)="booking.chooseTime(slot.time)">{{ slot.time.slice(0, 5) }}</button>
+                  } @empty { @if (!booking.loading()) { <p>{{ 'booking.noTimes' | t }}</p> } }
+                </div>
+              </section>
+            }
+            @if (booking.options(); as options) {
+              <section class="booking-section">
+                <h3>{{ 'booking.visitAndPrice' | t }}</h3>
+                @if (booking.isPatient()) {
+                  <label for="booking-patient">{{ 'booking.selectPatientLabel' | t }}</label>
+                  <select id="booking-patient" [value]="booking.patientId()" [disabled]="booking.submitting()" (change)="selectPatient($event)">
+                    <option value="" disabled>{{ 'booking.selectPatientLabel' | t }}</option>
+                    @for (patient of booking.patients(); track patient.patientId) { <option [value]="patient.patientId">{{ name(patient) }}</option> }
+                  </select>
+                }
+                @for (visit of options.visitTypes; track visit.visitTypeId) {
+                  <h4>{{ name(visit) }}</h4>
+                  <div class="booking-choices">
+                    @for (segment of visit.segments; track segment.segmentId) {
+                      <button type="button" [disabled]="booking.submitting()" [attr.aria-pressed]="booking.visit()?.visitTypeId === visit.visitTypeId && booking.segment()?.segmentId === segment.segmentId"
+                        (click)="booking.selectOption(visit.visitTypeId, segment.segmentId)">{{ name(segment) }} · {{ segment.price }} {{ 'discovery.currency' | t }}</button>
+                    }
+                  </div>
+                } @empty { <p>{{ 'booking.optionsUnavailable' | t }}</p> }
+                <label for="booking-note">{{ 'booking.bookingNotes' | t }}</label>
+                <textarea id="booking-note" rows="2" maxlength="1000" [disabled]="booking.submitting()" [value]="booking.note()"
+                  (input)="updateNote($event)" [placeholder]="'booking.bookingNotesPlaceholder' | t"></textarea>
+                @if (booking.segment(); as segment) {
+                  <p class="booking-summary">{{ 'booking.appointmentTime' | t }}: <b dir="ltr">{{ booking.date() }} · {{ booking.time().slice(0, 5) }}</b><br />
+                    {{ 'booking.consultationFee' | t }}: <strong>{{ segment.price }} {{ 'discovery.currency' | t }}</strong></p>
+                  <p>{{ 'booking.payAtClinic' | t }}</p>
+                }
+                @if (booking.isPatient()) {
+                  <button class="booking-primary" type="button" [disabled]="!booking.canConfirm()" (click)="booking.confirm()">
+                    {{ (booking.submitting() ? 'booking.bookingInProgress' : 'booking.confirmBookingBtn') | t }}</button>
+                } @else {
+                  <button class="booking-primary" type="button" (click)="booking.login()">{{ 'booking.loginToBook' | t }}</button>
+                }
+              </section>
+            }
+          }
+        }
+      }
+      @if (booking.loading()) { <p role="status">{{ 'booking.loadingAvailability' | t }}</p> }
+    }
+  </div>
+</app-side-drawer>

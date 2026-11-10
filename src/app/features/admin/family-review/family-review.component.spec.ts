@@ -123,4 +123,29 @@ describe('FamilyReviewComponent', () => {
     expect(component.detailLoading()).toBe(false);
     expect(component.reason).toBe('');
   });
+
+  it('manages Master-Detail active state and filters queue by search query', () => {
+    const component = TestBed.createComponent(FamilyReviewComponent).componentInstance;
+    component.onboarding.set([
+      review,
+      {
+        ...review,
+        request: { ...review.request, requestId: 'req-2' },
+        intake: { ...review.intake, nameAr: 'سارة', nameEn: 'Sara' },
+      },
+    ]);
+
+    expect(component.hasActiveDetail()).toBe(false);
+    component.childReview.set(review);
+    expect(component.hasActiveDetail()).toBe(true);
+    expect(component.detailTitle()).toBe('طفل');
+    expect(component.selectedId()).toBe('request');
+
+    component.searchQuery.set('سارة');
+    expect(component.filteredOnboarding().length).toBe(1);
+    expect(component.filteredOnboarding()[0].intake.nameAr).toBe('سارة');
+
+    component.searchQuery.set('non-existent');
+    expect(component.filteredOnboarding().length).toBe(0);
+  });
 });

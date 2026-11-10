@@ -142,6 +142,10 @@ export class PatientFamily implements OnDestroy {
   }
 
   private sequence = 0;
+  private requestsSequence = 0;
+  private relationshipsSequence = 0;
+  readonly onboardingHasNext = signal(false);
+  readonly governanceHasNext = computed(() => this.requestPage() * 20 < this.governanceTotal());
   private detailSequence = 0;
 
   constructor() {
@@ -152,6 +156,8 @@ export class PatientFamily implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    ++this.requestsSequence;
+    ++this.relationshipsSequence;
     this.sequence++;
     this.close();
     if (typeof window !== 'undefined') {
@@ -159,6 +165,8 @@ export class PatientFamily implements OnDestroy {
     }
   }
   async load(): Promise<void> {
+    ++this.requestsSequence;
+    ++this.relationshipsSequence;
     const sequence = ++this.sequence;
     this.loading.set(true);
     this.failed.set(false);
@@ -169,6 +177,9 @@ export class PatientFamily implements OnDestroy {
     this.relationshipHistory.set(null);
     this.onboarding.set([]);
     this.governance.set([]);
+    this.onboardingHasNext.set(false);
+    this.governanceTotal.set(0);
+    this.requestPage.set(1);
     this.close();
     try {
       const workspace = await firstValueFrom(this.api.workspace());
@@ -207,6 +218,8 @@ export class PatientFamily implements OnDestroy {
     this.selectedChild.set(child);
   }
   async loadRequests(page = 1): Promise<void> {
+    if (page < 1) return;
+    const requestSequence = ++this.requestsSequence;
     this.showingHistory.set(true);
     if (page === 1) void this.loadRelationshipRequests();
     const sequence = this.sequence;
@@ -219,7 +232,14 @@ export class PatientFamily implements OnDestroy {
         : Promise.resolve([]),
       firstValueFrom(this.api.governanceCases(page)),
     ]);
-    if (sequence !== this.sequence) return;
+    if (sequence !== this.sequence || requestSequence !== this.requestsSequence) return;
+    const denied = results.find(result => result.status === 'rejected' && result.reason instanceof HttpErrorResponse && [401, 403].includes(result.reason.status));
+    if (denied?.status === 'rejected') {
+      this.requestLoading.set(false);
+      this.handleError(denied.reason);
+      return;
+    }
+    this.onboardingHasNext.set(results[0].status === 'fulfilled' && results[0].value.length === 20);
     if (results[0].status === 'fulfilled') this.onboarding.set(results[0].value);
     else this.handleError(results[0].reason);
     if (results[1].status === 'fulfilled') {
@@ -239,6 +259,7 @@ export class PatientFamily implements OnDestroy {
   async loadRelationshipRequests(pageNumber = 1): Promise<void> {
     if (!this.session.hasPermission('FamilyRelationshipRequests.ViewOwn')) return;
     const sequence = this.sequence;
+    const requestSequence = ++this.relationshipsSequence;
     this.relationshipLoading.set(true);
     this.relationshipHistory.set(null);
     try {
@@ -251,11 +272,11 @@ export class PatientFamily implements OnDestroy {
           search: this.requestSearch.trim(),
         }),
       );
-      if (sequence === this.sequence) this.relationshipHistory.set(result);
+      if (sequence === this.sequence && requestSequence === this.relationshipsSequence) this.relationshipHistory.set(result);
     } catch (error) {
-      if (sequence === this.sequence) this.handleError(error);
+      if (sequence === this.sequence && requestSequence === this.relationshipsSequence) this.handleError(error);
     } finally {
-      if (sequence === this.sequence) this.relationshipLoading.set(false);
+      if (sequence === this.sequence && requestSequence === this.relationshipsSequence) this.relationshipLoading.set(false);
     }
   }
   async openOnboarding(id: string): Promise<void> {
@@ -304,6 +325,12 @@ export class PatientFamily implements OnDestroy {
   private handleError(error: unknown): void {
     this.toast.error(this.language.t('familyFlow.failed'));
     if (error instanceof HttpErrorResponse && [401, 403, 404].includes(error.status)) {
+      ++this.sequence;
+      ++this.requestsSequence;
+      ++this.relationshipsSequence;
+      this.loading.set(false);
+      this.requestLoading.set(false);
+      this.relationshipLoading.set(false);
       this.workspace.set(null);
       this.onboarding.set([]);
       this.governance.set([]);

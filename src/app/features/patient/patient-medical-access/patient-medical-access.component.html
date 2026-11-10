@@ -12,7 +12,7 @@
       <button
         type="button"
         class="btn btn-primary btn-create-header"
-        (click)="openNewRequestModal()"
+        [disabled]="checkingChild() || !canRequestAny()" (click)="openNewRequestModal()"
       >
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         <span>{{ 'common.createRequest' | t }}</span>
@@ -20,6 +20,7 @@
     </div>
   </app-page-header>
 
+  @if (checkChildId() && !checkingChild() && !canRequestAny()) { <p role="status">{{ 'familyPolicy.requestUnavailable' | t }}</p> }
   <!-- Master-Detail Split Layout -->
   <div class="medical-access-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
     <!-- Master Pane: Child Inspector & Requests Directory -->
@@ -36,18 +37,13 @@
 
         <div class="child-check-form-row">
           <div class="check-input-group">
-            <label for="check-child-input" class="check-label">{{ 'review.childPatientId' | t }}</label>
+            <label for="check-child-input" class="check-label">{{ 'familyPolicy.child' | t }}</label>
             <div class="input-with-icon">
               <i class="fa-solid fa-id-card input-icon" aria-hidden="true"></i>
-              <input
-                id="check-child-input"
-                type="text"
-                class="form-control check-input code-font"
-                [value]="checkChildId()"
-                (input)="checkChildId.set($any($event.target).value)"
-                (keydown.enter)="checkDependentAccess(checkChildId())"
-                [placeholder]="'review.childIdPlaceholder' | t"
-              />
+              <select id="check-child-input" class="family-member-select" [value]="checkChildId()" (change)="selectCheckChild($event)">
+                <option value="">{{ 'common.choose' | t }}</option>
+                @for (child of children(); track child.patientId) { <option [value]="child.patientId">{{ memberName(child.patientId) }}</option> }
+              </select>
             </div>
           </div>
 
@@ -200,8 +196,8 @@
                 <tr>
                   <th scope="col">{{ 'review.requestType' | t }}</th>
                   <th scope="col">{{ 'common.statusLabel' | t }}</th>
-                  <th scope="col">{{ 'review.childPatientId' | t }}</th>
-                  <th scope="col">{{ 'review.affectedAdultPatientId' | t }}</th>
+                  <th scope="col">{{ 'familyPolicy.child' | t }}</th>
+                  <th scope="col">{{ 'familyPolicy.adult' | t }}</th>
                   <th scope="col">{{ 'review.reason' | t }}</th>
                   <th scope="col">{{ 'review.submittedAt' | t }}</th>
                   <th scope="col" class="action-column"></th>
@@ -225,19 +221,19 @@
                     <td>
                       <span class="status-pill status-{{ item.status.toLowerCase() }}">
                         <span class="pill-dot" aria-hidden="true"></span>
-                        <span>{{ item.status }}</span>
+                        <span>{{ 'familyFlow.status.' + item.status | t }}</span>
                       </span>
                     </td>
                     <td>
-                      <span class="id-ref-chip code-font" [title]="item.childPatientId">
+                      <span class="id-ref-chip code-font" >
                         <i class="fa-solid fa-fingerprint" aria-hidden="true"></i>
-                        <span>{{ item.childPatientId }}</span>
+                        <span>{{ memberName(item.childPatientId) }}</span>
                       </span>
                     </td>
                     <td>
-                      <span class="id-ref-chip code-font" [title]="item.affectedAdultPatientId">
+                      <span class="id-ref-chip code-font" >
                         <i class="fa-solid fa-user" aria-hidden="true"></i>
-                        <span>{{ item.affectedAdultPatientId }}</span>
+                        <span>{{ memberName(item.affectedAdultPatientId) }}</span>
                       </span>
                     </td>
                     <td class="reason-preview-cell" [title]="item.reason">{{ item.reason }}</td>
@@ -366,30 +362,24 @@
       </div>
 
       <div class="form-field-group">
-        <label class="form-label" for="detail-child-id">{{ 'review.childPatientId' | t }} *</label>
+        <label class="form-label" for="detail-child-id">{{ 'familyPolicy.child' | t }} *</label>
         <div class="input-with-icon">
           <i class="fa-solid fa-fingerprint input-icon" aria-hidden="true"></i>
-          <input
-            id="detail-child-id"
-            type="text"
-            class="form-control code-font"
-            [formField]="newRequestForm.childPatientId"
-            [placeholder]="'review.childIdPlaceholder' | t"
-          />
+          <select id="detail-child-id" class="family-member-select" [formField]="newRequestForm.childPatientId" (change)="selectCheckChild($event)">
+            <option value="">{{ 'common.choose' | t }}</option>
+            @for (member of children(); track member.patientId) { <option [value]="member.patientId">{{ memberName(member.patientId) }}</option> }
+          </select>
         </div>
       </div>
 
       <div class="form-field-group">
-        <label class="form-label" for="detail-adult-id">{{ 'review.affectedAdultPatientId' | t }} *</label>
+        <label class="form-label" for="detail-adult-id">{{ 'familyPolicy.adult' | t }} *</label>
         <div class="input-with-icon">
           <i class="fa-solid fa-user input-icon" aria-hidden="true"></i>
-          <input
-            id="detail-adult-id"
-            type="text"
-            class="form-control code-font"
-            [formField]="newRequestForm.affectedAdultPatientId"
-            placeholder="معرف الطرف المعني..."
-          />
+          <select id="detail-adult-id" class="family-member-select" [formField]="newRequestForm.affectedAdultPatientId">
+            <option value="">{{ 'common.choose' | t }}</option>
+            @for (member of adults(); track member.patientId) { <option [value]="member.patientId">{{ memberName(member.patientId) }}</option> }
+          </select>
         </div>
       </div>
 
@@ -444,7 +434,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          [disabled]="submitting()"
+          [disabled]="submitting() || !canCreateRequest()"
           (click)="submitNewRequest()"
         >
           @if (submitting()) {
@@ -585,12 +575,12 @@
         </h4>
         <div class="key-value-grid">
           <div class="kv-item">
-            <span class="kv-label">{{ 'review.childPatientId' | t }}</span>
-            <span class="kv-value code-font">{{ cur.childPatientId }}</span>
+            <span class="kv-label">{{ 'familyPolicy.child' | t }}</span>
+            <span class="kv-value code-font">{{ memberName(cur.childPatientId) }}</span>
           </div>
           <div class="kv-item">
-            <span class="kv-label">{{ 'review.affectedAdultPatientId' | t }}</span>
-            <span class="kv-value code-font">{{ cur.affectedAdultPatientId }}</span>
+            <span class="kv-label">{{ 'familyPolicy.adult' | t }}</span>
+            <span class="kv-value code-font">{{ memberName(cur.affectedAdultPatientId) }}</span>
           </div>
           <div class="kv-item">
             <span class="kv-label">{{ 'review.familyId' | t }}</span>

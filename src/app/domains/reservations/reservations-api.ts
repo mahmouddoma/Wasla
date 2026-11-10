@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -33,8 +33,8 @@ export class ReservationsApi {
   metadata(): Observable<ReservationMetadata> {
     return this.http.get<ReservationMetadata>(`${this.root}/reservations/metadata`);
   }
-  bookablePatients(): Observable<BookablePatient[]> {
-    return this.http.get<BookablePatient[]>(`${this.root}/reservations/bookable-patients`);
+  bookablePatients(context?: HttpContext): Observable<BookablePatient[]> {
+    return this.http.get<BookablePatient[]>(`${this.root}/reservations/bookable-patients`, { context });
   }
   list(scope: ReservationScope, query: ReservationQuery): Observable<ReservationPage> {
     let params = new HttpParams();

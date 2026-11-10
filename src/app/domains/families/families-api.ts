@@ -22,6 +22,8 @@ import {
   FamilyMedicalAccessSummary,
   FamilyMedicalCase,
   FamilyMedicalDecisionRequest,
+  FamilyMedicalEligibilityApprovalRequest,
+  FamilyMedicalAccessApprovalRequest,
   FamilyMedicalDependent,
   FamilyMedicalEligibilityReview,
   FamilyMedicalEligibilityReviewQuery,
@@ -236,7 +238,7 @@ export class FamiliesApi {
   }
 
   adminMedicalAccessRequest(requestId: string): Observable<FamilyMedicalCase> {
-    return this.http.get<FamilyMedicalCase>(`${this.adminMedicalAccessUrl}/${requestId}`);
+    return this.http.get<{ case: FamilyMedicalCase }>(`${this.adminMedicalAccessUrl}/${requestId}`).pipe(map(response => response.case));
   }
 
   adminMedicalAccessDocument(
@@ -263,7 +265,7 @@ export class FamiliesApi {
 
   approveMedicalAccessRequest(
     requestId: string,
-    request: FamilyMedicalDecisionRequest,
+    request: FamilyMedicalAccessApprovalRequest,
   ): Observable<FamilyMedicalCase> {
     return this.medicalAccessDecision(
       `${this.adminMedicalAccessUrl}/${requestId}/approve`,
@@ -305,7 +307,7 @@ export class FamiliesApi {
 
   approveMedicalEligibility(
     reviewId: string,
-    request: FamilyMedicalDecisionRequest,
+    request: FamilyMedicalEligibilityApprovalRequest,
   ): Observable<FamilyMedicalEligibilityReview> {
     return this.medicalEligibilityDecision(`${this.eligibilityUrl}/${reviewId}/approve`, request);
   }

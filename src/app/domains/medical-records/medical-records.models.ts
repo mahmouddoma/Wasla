@@ -88,17 +88,14 @@ export interface MedicalRecordItemDetail {
 }
 
 export interface MedicalRecordAccessLogEntry {
-  readonly id: string;
-  readonly actorName: string;
-  readonly actorRole: string;
-  readonly action: string;
-  readonly resource: string;
-  readonly timestampUtc: string;
-  readonly ticketId?: string;
+  readonly entryId: string;
+  readonly actorCategory: string | null;
+  readonly action: string | null;
+  readonly occurredAtUtc: string;
 }
 
 export interface MedicalRecordAccessLogPage {
-  readonly items: readonly MedicalRecordAccessLogEntry[];
+  readonly items: readonly MedicalRecordAccessLogEntry[] | null;
   readonly nextCursor?: string | null;
   readonly hasMore: boolean;
 }

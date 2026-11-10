@@ -24,6 +24,7 @@ import {
 import { EncounterWorkspaceStore } from '../../state/encounter-workspace.store';
 import { PrescriptionWorkspaceComponent } from '../../../prescriptions';
 import { DiagnosticDraftComponent } from '../../../diagnostics';
+import { MedicalSharingComponent } from '../../../medical-sharing';
 import { RouterLink } from '@angular/router';
 
 interface LocalizedNameEntity {
@@ -50,6 +51,7 @@ interface LocalizedNameEntity {
     SideDrawer,
     PrescriptionWorkspaceComponent,
     DiagnosticDraftComponent,
+    MedicalSharingComponent,
     RouterLink,
   ],
   providers: [EncounterWorkspaceStore],

@@ -1,6 +1,6 @@
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
-import { ChangeDetectionStrategy, Component, input, output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, input, output, inject, signal, untracked } from '@angular/core';
 import { FormField, form, submit } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
@@ -19,6 +19,7 @@ export class PatientPicker {
   protected readonly uiLanguage = inject(LanguageService);
 
   readonly label = input.required<string>();
+  readonly practiceId = input<string | null>(null);
   readonly selected = output<PatientSearchItem>();
   private readonly api = inject(PatientsApi);
   protected readonly model = signal({ name: '', phoneNumber: '', dateOfBirth: '' });
@@ -28,6 +29,18 @@ export class PatientPicker {
   protected readonly loading = signal(false);
   protected readonly searched = signal(false);
   protected readonly message = signal('');
+  private sequence = 0;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.sequence++);
+    effect(() => {
+      this.practiceId();
+      untracked(() => {
+        this.sequence++;
+        this.results.set([]); this.selectedPatient.set(null); this.searched.set(false); this.loading.set(false);
+      });
+    });
+  }
 
   protected async search(event: Event): Promise<void> {
     event.preventDefault();
@@ -38,25 +51,29 @@ export class PatientPicker {
         return;
       }
       this.loading.set(true);
+      const sequence = ++this.sequence;
       this.message.set('');
       this.results.set([]);
       this.searched.set(false);
       try {
         const response = await firstValueFrom(
-          this.api.search({ ...this.model(), pageNumber: 1, pageSize: 20 }),
+          this.api.search({ ...this.model(), doctorPracticeId: this.practiceId() || undefined, pageNumber: 1, pageSize: 20 }),
         );
+        if (sequence !== this.sequence) return;
         this.results.set(response.items);
         this.searched.set(true);
       } catch (error) {
+        if (sequence !== this.sequence) return;
         const parsed = parseApiErrors(error);
         this.message.set([...parsed.messages, ...Object.values(parsed.fields).flat()].join(' '));
       } finally {
-        this.loading.set(false);
+        if (sequence === this.sequence) this.loading.set(false);
       }
     });
   }
 
   protected choose(patient: PatientSearchItem): void {
+    if (!this.results().some(item => item.patientId === patient.patientId)) return;
     this.selectedPatient.set(patient);
     this.selected.emit(patient);
   }

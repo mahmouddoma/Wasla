@@ -2,7 +2,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { DoctorPatientsApi } from '../../../../domains/doctor-patients';
 import { ToastService } from '../../../../core/notifications/toast.service';
-import { NgTemplateOutlet } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -30,6 +30,7 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
   selector: 'app-reservation-workspace',
   imports: [
     TranslatePipe,
+    DatePipe,
     NgTemplateOutlet,
     RouterLink,
     PageHeader,

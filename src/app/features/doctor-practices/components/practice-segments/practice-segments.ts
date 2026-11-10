@@ -15,6 +15,7 @@ import {
   form,
   disabled,
   maxLength,
+  max,
   min,
   required,
   submit,
@@ -78,7 +79,8 @@ export class PracticeSegments implements OnInit {
     required(field.nameAr, { message: 'ui.full.478' });
     maxLength(field.nameAr, 200);
     maxLength(field.nameEn, 200);
-    min(field.priority, 0);
+    min(field.priority, -1000);
+    max(field.priority, 1000);
   });
   protected readonly visitTypeModel = signal({ nameAr: '', nameEn: '', isActive: true });
   protected readonly visitTypeForm = form(this.visitTypeModel, (field) => {
@@ -163,7 +165,14 @@ export class PracticeSegments implements OnInit {
       const value = this.segmentModel();
       const quota = nullableNumber(value.reservedDailyQuota);
       const release = nullableNumber(value.quotaReleaseBeforeMinutes);
-      if ((quota === null) !== (release === null)) {
+      if (this.canManageAdvanced() &&
+          (!Number.isInteger(value.priority) || value.priority < -1000 || value.priority > 1000 ||
+           (quota !== null && (!Number.isInteger(quota) || quota < 1 || quota > 10000)) ||
+           (release !== null && (!Number.isInteger(release) || release < 0 || release > 10080)))) {
+        this.messages.set([this.uiLanguage.t('segmentsHelp.invalidValues')]);
+        return;
+      }
+      if (this.canManageAdvanced() && (quota === null) !== (release === null)) {
         this.messages.set([this.uiLanguage.t('ui.full.482')]);
         return;
       }

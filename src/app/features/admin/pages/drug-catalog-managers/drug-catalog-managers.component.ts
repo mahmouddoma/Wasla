@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
@@ -20,7 +21,7 @@ import {
 
 @Component({
   selector: 'app-drug-catalog-managers',
-  imports: [ReactiveFormsModule, TranslatePipe, PageHeader, SideDrawer],
+  imports: [NgTemplateOutlet, ReactiveFormsModule, TranslatePipe, PageHeader, SideDrawer],
   providers: [
     DrugCatalogManagersApi,
     {
@@ -35,7 +36,7 @@ import {
   styleUrls: ['./drug-catalog-managers.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DrugCatalogManagersComponent implements OnInit {
+export class DrugCatalogManagersComponent implements OnInit, OnDestroy {
   readonly medical = inject(CATALOG_MANAGER_KIND) === 'medical';
   readonly managerTitle = this.medical ? 'diagnostics.managers' : 'medications.managers';
   readonly managerHelp = this.medical ? 'diagnostics.managersHelp' : 'medications.managersHelp';
@@ -56,6 +57,19 @@ export class DrugCatalogManagersComponent implements OnInit {
   readonly detail = signal<DrugCatalogManager | null>(null);
   readonly messages = signal<string[]>([]);
   readonly pendingAction = signal<'activate' | 'deactivate' | null>(null);
+
+  readonly selectedId = computed(() => this.detail()?.id ?? null);
+  readonly hasActiveDetail = computed(() => this.opened());
+
+  private readonly resizeListener = () => {
+    if (typeof window !== 'undefined') {
+      this.isDesktop.set(window.innerWidth >= 1025);
+    }
+  };
+
+  readonly isDesktop = signal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1025 : false,
+  );
 
   readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.page().totalCount || 0) / (this.page().pageSize || 20))),
@@ -78,6 +92,15 @@ export class DrugCatalogManagersComponent implements OnInit {
   private detailSequence = 0;
   ngOnInit() {
     void this.load();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resizeListener, { passive: true });
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.resizeListener);
+    }
   }
   allowed(action: string) {
     return (

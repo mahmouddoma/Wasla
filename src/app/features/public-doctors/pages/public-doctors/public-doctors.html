@@ -313,11 +313,14 @@
           </span>
         </button>
 
+        @if (locationFailed()) { <p role="alert">{{ 'discovery.locationFailed' | t }}</p> }
+        @if (citiesLoading() || areasLoading()) { <p role="status">{{ 'common.loading' | t }}</p> }
         @if (showDetailedLocation()) {
           <div class="sub-location-inputs">
             <div class="control-wrap select-wrap sub-select-wrap">
               <select
                 id="doctor-city-select"
+                [disabled]="citiesLoading() || !filters().governorateId"
                 class="field-control field-select field-control-sm"
                 [value]="filters().cityId"
                 (change)="cityChanged($event)"
@@ -335,7 +338,7 @@
                 id="doctor-area-select"
                 class="field-control field-select field-control-sm"
                 [value]="filters().areaId"
-                [disabled]="!filters().cityId"
+                [disabled]="citiesLoading() || areasLoading() || !filters().cityId"
                 (change)="updateFilter('areaId', $event)"
               >
                 <option value="">{{ 'discovery.allAreas' | t }}</option>
@@ -413,7 +416,7 @@
       </div>
     } @else {
       <!-- Doctors Split Layout (Master-Detail) -->
-      <div class="doctors-split-layout" [class.has-active-detail]="isDesktop() && drawerOpened() && (drawerDoctor() || drawerLoading())">
+      <div class="doctors-split-layout">
         <!-- Master Pane: Doctors List -->
         <div class="doctors-master-pane">
           <div class="doctors-grid">
@@ -421,7 +424,7 @@
               @let activePractice = getActivePractice(doctor);
               <article
                 class="doctor-card doctor-result"
-                [class.is-selected]="drawerDoctor()?.doctorId === doctor.doctorId"
+                [class.is-selected]="booking.opened() && booking.doctor()?.doctorId === doctor.doctorId"
                 (click)="onDoctorCardSelect(doctor)"
               >
             <!-- ── Right Column: Doctor Identity & Clinics Details ── -->
@@ -511,13 +514,7 @@
                   }
 
                   <!-- Doctor Social & Trust Proof Row (Stars & Ratings) -->
-                  <div class="doctor-rating-row">
-                    <div class="rating-stars" [attr.aria-label]="'discovery.ratingFive' | t">
-                      <span class="star-icon">★</span>
-                      <strong class="rating-score">4.9</strong>
-                    </div>
-                    <span class="rating-count"> (140 {{ 'booking.patientReviews' | t }}) </span>
-                    <span class="doctor-trust-divider">·</span>
+                  <div class="doctor-practice-meta">
                     <span class="doctor-clinics-count">
                       <svg
                         viewBox="0 0 24 24"
@@ -628,7 +625,7 @@
                         </svg>
                       </div>
                       <div class="chip-data">
-                        <span class="chip-label">{{ 'booking.consultationFee' | t }}</span>
+                        <span class="chip-label">{{ 'booking.standardNewConsultation' | t }}</span>
                         <div class="chip-value">
                           @if (practice.publicSearchPrice !== null) {
                             <strong class="val-num">{{ practice.publicSearchPrice }}</strong>
@@ -639,26 +636,6 @@
                             }}</span>
                           }
                         </div>
-                      </div>
-                    </div>
-
-                    <div class="detail-chip wait-chip">
-                      <div class="chip-icon" aria-hidden="true">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
-                      </div>
-                      <div class="chip-data">
-                        <span class="chip-label">{{ 'booking.waitingTime' | t }}</span>
-                        <span class="chip-value font-bold">{{ 'booking.approxWaiting' | t }}</span>
                       </div>
                     </div>
                   </div>
@@ -740,7 +717,7 @@
                                 type="button"
                                 class="slot-btn"
                                 (click)="
-                                  openDoctorDrawer(doctor, practice.id, day.key, day.slotTime)
+                                  openDoctorDrawer(doctor, practice.id, day.key, practice.nextAvailableSlotTime)
                                 "
                                 [title]="'booking.bookNow' | t"
                               >
@@ -890,34 +867,6 @@
       </div>
     </div>
 
-    <!-- Detail Pane: In-Place Master-Detail on Desktop -->
-    @if (isDesktop() && drawerOpened() && (drawerDoctor() || drawerLoading())) {
-      <aside class="doctor-detail-pane" aria-label="تفاصيل الحجز والعيادة">
-        <div class="detail-pane-header">
-          <div class="pane-title-group">
-            <span class="pane-badge">{{ 'booking.drawerTitle' | t }}</span>
-            <h3 class="pane-heading">
-              {{ drawerDoctor() ? (language.isRtl() ? drawerDoctor()!.nameAr : drawerDoctor()!.nameEn || drawerDoctor()!.nameAr) : ('common.loading' | t) }}
-            </h3>
-          </div>
-          <button
-            type="button"
-            class="btn-close-detail-pane"
-            (click)="closeDrawer()"
-            [attr.aria-label]="'common.close' | t"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <div class="detail-pane-body">
-          <ng-container *ngTemplateOutlet="bookingFlowTemplate" />
-        </div>
-      </aside>
-    }
   </div>
 }
 
@@ -998,688 +947,5 @@
     }
   </section>
 
-  <!-- Slide-Over Drawer for In-Place Doctor Details & Booking on Mobile/Tablet -->
-  @if (!isDesktop()) {
-    <app-side-drawer
-      [opened]="drawerOpened()"
-      [title]="'booking.drawerTitle' | t"
-      [description]="'booking.choosePracticeHelp' | t"
-      width="100%"
-      (closed)="closeDrawer()"
-    >
-      <ng-container *ngTemplateOutlet="bookingFlowTemplate" />
-    </app-side-drawer>
-  }
-
-  <!-- Shared Booking Flow Template for Master-Detail & Mobile Drawer -->
-  <ng-template #bookingFlowTemplate>
-    @if (drawerLoading()) {
-      <div class="drawer-loading-skeleton" aria-hidden="true">
-        <div class="skeleton-header">
-          <div class="skeleton-avatar"></div>
-          <div class="skeleton-lines">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line sub"></div>
-          </div>
-        </div>
-        <div class="skeleton-box"></div>
-        <div class="skeleton-box"></div>
-      </div>
-    }
-
-    @if (drawerMessages().length) {
-      <div class="drawer-error-alert" role="alert">
-        @for (msg of drawerMessages(); track msg) {
-          <p>{{ msg | t }}</p>
-        }
-      </div>
-    }
-
-    @if (bookingConfirmedReservation(); as confirmed) {
-      <!-- Booking Confirmation Success Receipt -->
-      <section class="booking-success-receipt" role="status" aria-live="polite">
-        <div class="receipt-icon-wrap">
-          <div class="receipt-icon-circle">
-            <svg
-              viewBox="0 0 24 24"
-              width="36"
-              height="36"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-            >
-              <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </div>
-        </div>
-
-        <h3 class="receipt-headline">{{ 'booking.successTitle' | t }}</h3>
-        <p class="receipt-subtext">{{ 'booking.successSubtitle' | t }}</p>
-
-        <div class="receipt-ref-badge">
-          <span class="ref-title">{{ 'booking.referenceNumber' | t }}</span>
-          <strong class="ref-code" dir="ltr">#{{ confirmed.reference }}</strong>
-        </div>
-
-        <div class="receipt-summary-card">
-          <div class="receipt-data-row">
-            <span class="data-label">{{ 'discovery.doctor' | t }}</span>
-            <strong class="data-value">
-              {{
-                language.isRtl()
-                  ? confirmed.doctor.nameAr
-                  : confirmed.doctor.nameEn || confirmed.doctor.nameAr
-              }}
-            </strong>
-          </div>
-
-          <div class="receipt-data-row">
-            <span class="data-label">{{ 'booking.choosePractice' | t }}</span>
-            <span class="data-value">
-              {{
-                language.isRtl()
-                  ? confirmed.practice.nameAr
-                  : confirmed.practice.nameEn || confirmed.practice.nameAr
-              }}
-            </span>
-          </div>
-
-          <div class="receipt-data-row is-featured">
-            <span class="data-label">{{ 'booking.appointmentTime' | t }}</span>
-            <strong class="data-value appointment-highlight" dir="ltr">
-              {{
-                formatSlot(confirmed.appointment.businessDate, confirmed.appointment.slotStartTime)
-              }}
-            </strong>
-          </div>
-
-          <div class="receipt-data-row">
-            <span class="data-label">{{ 'booking.patientNameLabel' | t }}</span>
-            <span class="data-value">
-              {{
-                language.isRtl()
-                  ? confirmed.patient.nameAr
-                  : confirmed.patient.nameEn || confirmed.patient.nameAr
-              }}
-            </span>
-          </div>
-
-          @if (confirmed.price) {
-            <div class="receipt-data-row is-price">
-              <span class="data-label">{{ 'booking.consultationFee' | t }}</span>
-              <strong class="data-price">
-                {{ confirmed.price }} {{ 'discovery.currency' | t }}
-              </strong>
-            </div>
-          }
-        </div>
-
-        <p class="receipt-clinic-notice">{{ 'booking.payAtClinic' | t }}</p>
-
-        <div class="receipt-cta-buttons">
-          @if (isPatient()) {
-            <a
-              [routerLink]="['/patient/tickets']"
-              class="btn-receipt-ticket"
-              (click)="closeDrawer()"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"
-                />
-                <path d="M13 5v2M13 17v2M13 11v2" />
-              </svg>
-              <span>{{ 'sidebar.tickets' | t }}</span>
-            </a>
-          }
-
-          <a
-            [routerLink]="['/patient/reservations']"
-            class="btn-receipt-view"
-            (click)="closeDrawer()"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>{{ 'booking.viewMyReservations' | t }}</span>
-          </a>
-
-          <button type="button" class="btn-receipt-close" (click)="closeDrawer()">
-            <span>{{ 'booking.doneAndClose' | t }}</span>
-          </button>
-        </div>
-      </section>
-    } @else if (drawerDoctor(); as doc) {
-      <!-- Doctor Mini Profile -->
-      <section class="drawer-doc-profile">
-        <div class="doc-summary-header">
-          <div class="doc-summary-avatar">
-            @if (doc.profileImageUrl && !drawerDoctorImageBroken()) {
-              <img
-                [src]="doc.profileImageUrl"
-                [alt]="language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr"
-                (error)="drawerDoctorImageBroken.set(true)"
-              />
-            } @else {
-              <span class="doc-initial" aria-hidden="true">
-                {{ (language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr).charAt(0) }}
-              </span>
-            }
-          </div>
-          <div class="doc-summary-info">
-            <div class="doc-title-row">
-              <h3 class="doc-summary-name">
-                {{ language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr }}
-              </h3>
-              @if (doc.nameEn) {
-                <span class="doc-summary-en">
-                  {{ doc.nameEn }}
-                </span>
-              }
-            </div>
-            @if (doc.specializations.length) {
-              <div class="doc-specs-tags">
-                @for (spec of doc.specializations; track spec.id) {
-                  <span class="spec-chip">
-                    {{ language.isRtl() ? spec.nameAr : spec.nameEn || spec.nameAr }}
-                  </span>
-                }
-              </div>
-            }
-          </div>
-        </div>
-
-        @if (doc.qualifications.length) {
-          <div class="doc-qualifications-block">
-            <h4>{{ 'doctor.qualifications' | t }}</h4>
-            <ul class="qualifications-chips">
-              @for (q of doc.qualifications; track q.id) {
-                <li>
-                  {{ language.isRtl() ? q.nameAr : q.nameEn || q.nameAr }}
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </section>
-
-      <!-- Clinics / Practices Selection -->
-      <section class="drawer-practices-section">
-        <div class="section-title-wrap">
-          <div class="title-with-badge">
-            <h4>{{ 'booking.availableClinics' | t }}</h4>
-            <span class="clinics-count-pill">{{ doc.practices.length }}</span>
-          </div>
-          <span class="section-subtitle">{{ 'booking.choosePractice' | t }}</span>
-        </div>
-
-        <div class="drawer-practices-grid">
-          @for (practice of doc.practices; track practice.id) {
-            <button
-              type="button"
-              class="drawer-practice-card"
-              [class.active]="drawerSelectedPractice()?.id === practice.id"
-              (click)="chooseDrawerPractice(practice)"
-            >
-              <div class="practice-card-top">
-                <div class="practice-name-cluster">
-                  @if (!failedPracticeLogos().has(practice.id)) {
-                    <img
-                      class="practice-card-icon"
-                      [src]="practiceLogoUrl(practice.id)"
-                      width="32"
-                      height="32"
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      (error)="markPracticeLogoFailed(practice.id)"
-                    />
-                  } @else {
-                    <svg
-                      class="practice-card-icon"
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6"
-                      />
-                    </svg>
-                  }
-                  <span class="practice-card-name">
-                    {{ language.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr }}
-                  </span>
-                </div>
-                <div class="practice-price-cluster">
-                  <span class="practice-card-price">
-                    {{
-                      practice.publicSearchPrice === null
-                        ? ('discovery.feeDeterminedAtClinic' | t)
-                        : practice.publicSearchPrice + ' ' + ('discovery.currency' | t)
-                    }}
-                  </span>
-                  @if (drawerSelectedPractice()?.id === practice.id) {
-                    <span class="selected-check-indicator" aria-hidden="true">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="3"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </span>
-                  }
-                </div>
-              </div>
-              @if (practice.governorate || practice.city || practice.detailedAddress) {
-                <div class="practice-card-addr">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  <span>
-                    {{
-                      language.isRtl()
-                        ? practice.governorate?.nameAr
-                        : practice.governorate?.nameEn || practice.governorate?.nameAr
-                    }}
-                    ·
-                    {{
-                      language.isRtl()
-                        ? practice.city?.nameAr
-                        : practice.city?.nameEn || practice.city?.nameAr
-                    }}
-                    @if (practice.detailedAddress) {
-                      — {{ practice.detailedAddress }}
-                    }
-                  </span>
-                </div>
-              }
-            </button>
-          } @empty {
-            <p class="drawer-empty-hint">{{ 'discovery.noClinics' | t }}</p>
-          }
-        </div>
-      </section>
-
-      <!-- Date & Slot Booking Flow -->
-      @if (drawerSelectedPractice(); as activePractice) {
-        <section class="drawer-booking-flow">
-          <div class="section-title-wrap">
-            <div class="title-with-badge">
-              <h4>{{ 'booking.chooseTime' | t }}</h4>
-              <span class="active-practice-tag">
-                {{
-                  language.isRtl()
-                    ? activePractice.nameAr
-                    : activePractice.nameEn || activePractice.nameAr
-                }}
-              </span>
-            </div>
-            @if (drawerBookingLoading()) {
-              <span class="booking-loading-indicator">{{ 'booking.loadingAvailability' | t }}</span>
-            }
-          </div>
-
-          @if (activePractice.isBookable && activePractice.onlineBookingEnabled !== false) {
-            <!-- 1. Available Dates -->
-            <div class="booking-drawer-step">
-              <span class="step-label">{{ 'booking.availableDays' | t }}</span>
-              <div class="dates-chip-grid">
-                @for (item of drawerDates(); track item.date) {
-                  <button
-                    type="button"
-                    class="btn-date-chip"
-                    [class.active]="drawerSelectedDate() === item.date"
-                    [disabled]="!item.isAvailable"
-                    (click)="chooseDrawerDate(item.date)"
-                  >
-                    <span class="date-chip-day">{{ formatDateChip(item.date).dayName }}</span>
-                    <strong class="date-chip-num">{{ formatDateChip(item.date).dayNumber }}</strong>
-                    <span class="date-chip-month">{{ formatDateChip(item.date).monthName }}</span>
-                  </button>
-                } @empty {
-                  @if (!drawerBookingLoading() && !drawerMessages().length) {
-                    <p class="drawer-empty-hint">{{ 'booking.noDays' | t }}</p>
-                  }
-                }
-              </div>
-            </div>
-
-            <!-- 2. Available Slots -->
-            @if (drawerSelectedDate()) {
-              <div class="booking-drawer-step">
-                <span class="step-label">{{ 'booking.availableTimes' | t }}</span>
-                <div class="slots-chip-grid">
-                  @for (slot of drawerSlots(); track slot.date + slot.time) {
-                    <button
-                      type="button"
-                      class="btn-slot-chip"
-                      [class.active]="drawerSelectedTime() === slot.time"
-                      (click)="chooseDrawerSlot(slot.time)"
-                    >
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                      </svg>
-                      <span dir="ltr">{{ formatSlotTime(slot.time) }}</span>
-                    </button>
-                  } @empty {
-                    @if (!drawerBookingLoading() && !drawerMessages().length) {
-                      <p class="drawer-empty-hint">{{ 'booking.noTimes' | t }}</p>
-                    }
-                  }
-                </div>
-                <!-- 3. Visit Types & Instant 1-Click Confirmation -->
-                @if (drawerOptions(); as booking) {
-                  <div class="booking-drawer-step">
-                    <span class="step-label">{{ 'booking.visitAndPrice' | t }}</span>
-
-                    <!-- Segment / Price Category Selector Pills -->
-                    <div class="segment-chips-grid">
-                      @for (visitType of booking.visitTypes; track visitType.visitTypeId) {
-                        @if (visitType.type !== 'FollowUp') {
-                          @for (segment of visitType.segments; track segment.segmentId) {
-                            <button
-                              type="button"
-                              class="btn-segment-chip"
-                              [class.active]="selectedSegment()?.segmentId === segment.segmentId"
-                              (click)="selectSegment(segment, visitType)"
-                            >
-                              <span class="chip-segment-name">
-                                {{
-                                  language.isRtl()
-                                    ? segment.nameAr
-                                    : segment.nameEn || segment.nameAr
-                                }}
-                              </span>
-                              <strong class="chip-segment-price">
-                                {{ segment.price }} {{ 'discovery.currency' | t }}
-                              </strong>
-                            </button>
-                          }
-                        }
-                      }
-                    </div>
-
-                    <!-- Patient Profile Selector (if authenticated as Patient) -->
-                    @if (isPatient()) {
-                      <div class="patient-selector-block">
-                        <span class="step-label">{{ 'booking.selectPatientLabel' | t }}</span>
-                        @if (bookablePatients().length > 1) {
-                          <div class="patient-select-wrapper">
-                            <select
-                              class="patient-custom-select"
-                              [value]="selectedPatientId()"
-                              (change)="selectPatient($any($event.target).value)"
-                              id="bookablePatientSelect"
-                            >
-                              @for (p of bookablePatients(); track p.patientId) {
-                                <option [value]="p.patientId">
-                                  {{ language.isRtl() ? p.nameAr : p.nameEn || p.nameAr }}
-                                  {{ p.isSelf ? ' (' + ('booking.myself' | t) + ')' : '' }}
-                                </option>
-                              }
-                            </select>
-                          </div>
-                        } @else {
-                          <div class="patient-single-info">
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="15"
-                              height="15"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                              <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <span>
-                              {{
-                                bookablePatients().length === 1
-                                  ? language.isRtl()
-                                    ? bookablePatients()[0].nameAr
-                                    : bookablePatients()[0].nameEn || bookablePatients()[0].nameAr
-                                  : authSession.user()?.userName || ''
-                              }}
-                            </span>
-                          </div>
-                        }
-                      </div>
-                    }
-
-                    <!-- Optional Notes for Doctor -->
-                    <div class="booking-note-field">
-                      <label class="step-label" for="drawerBookingNotes">{{
-                        'booking.bookingNotes' | t
-                      }}</label>
-                      <input
-                        id="drawerBookingNotes"
-                        type="text"
-                        class="booking-notes-input"
-                        [value]="bookingNote()"
-                        (input)="updateBookingNote($event)"
-                        [placeholder]="'booking.bookingNotesPlaceholder' | t"
-                      />
-                    </div>
-
-                    <!-- Compact Confirmation Summary Card -->
-                    <div class="booking-summary-banner">
-                      <div class="summary-line">
-                        <span class="summary-label">{{ 'booking.appointmentTime' | t }}:</span>
-                        <strong class="summary-value" dir="ltr">{{
-                          formatSlot(drawerSelectedDate(), drawerSelectedTime())
-                        }}</strong>
-                      </div>
-                      @if (selectedSegment(); as seg) {
-                        <div class="summary-line">
-                          <span class="summary-label">{{ 'booking.consultationFee' | t }}:</span>
-                          <strong class="summary-price"
-                            >{{ seg.price }} {{ 'discovery.currency' | t }}</strong
-                          >
-                        </div>
-                      }
-                      <p class="summary-clinic-note">{{ 'booking.payAtClinic' | t }}</p>
-                    </div>
-
-                    <!-- Primary Action Button (Click 3: Confirm Now) -->
-                    <div class="booking-primary-action-wrap">
-                      @if (authSession.isAuthenticated()) {
-                        <button
-                          type="button"
-                          class="btn-primary-confirm-booking"
-                          [disabled]="bookingSubmitting() || !selectedSegment()"
-                          (click)="confirmQuickBooking()"
-                        >
-                          @if (bookingSubmitting()) {
-                            <span class="btn-spinner" aria-hidden="true"></span>
-                            <span>{{ 'booking.bookingInProgress' | t }}</span>
-                          } @else {
-                            <span>{{ 'booking.confirmBookingBtn' | t }}</span>
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="16"
-                              height="16"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2.2"
-                              aria-hidden="true"
-                            >
-                              <path
-                                [attr.d]="
-                                  language.isRtl()
-                                    ? 'M19 12H5M12 19l-7-7 7-7'
-                                    : 'M5 12h14M12 5l7 7-7 7'
-                                "
-                              />
-                            </svg>
-                          }
-                        </button>
-                      } @else {
-                        <a
-                          class="btn-primary-confirm-booking is-login-prompt"
-                          [routerLink]="['/login']"
-                          [queryParams]="{ returnUrl: currentUrl() }"
-                        >
-                          <span>{{ 'booking.loginToBook' | t }}</span>
-                        </a>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          } @else {
-            <!-- Direct Walk-in / In-Clinic Consultation Guidance -->
-            <div class="drawer-walkin-card">
-              <div class="drawer-walkin-header">
-                <div class="drawer-walkin-icon-circle" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="22"
-                    height="22"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                </div>
-                <div class="drawer-walkin-title-group">
-                  <h5 class="drawer-walkin-heading">{{ 'discovery.bookInClinic' | t }}</h5>
-                  <p class="drawer-walkin-subtext">{{ 'discovery.walkInNotice' | t }}</p>
-                </div>
-              </div>
-
-              <div class="drawer-walkin-info-list">
-                <div class="drawer-walkin-item">
-                  <div class="item-icon-wrap" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                  </div>
-                  <div class="item-content">
-                    <span class="item-label">{{ 'discovery.clinicAddress' | t }}</span>
-                    <strong class="item-value">
-                      {{
-                        language.isRtl()
-                          ? activePractice.governorate?.nameAr
-                          : activePractice.governorate?.nameEn || activePractice.governorate?.nameAr
-                      }}
-                      ·
-                      {{
-                        language.isRtl()
-                          ? activePractice.city?.nameAr
-                          : activePractice.city?.nameEn || activePractice.city?.nameAr
-                      }}
-                      @if (activePractice.detailedAddress) {
-                        — {{ activePractice.detailedAddress }}
-                      }
-                    </strong>
-                  </div>
-                </div>
-
-                <div class="drawer-walkin-item">
-                  <div class="item-icon-wrap" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <rect x="2" y="4" width="20" height="16" rx="2" />
-                      <line x1="2" y1="10" x2="22" y2="10" />
-                    </svg>
-                  </div>
-                  <div class="item-content">
-                    <span class="item-label">{{ 'booking.consultationFee' | t }}</span>
-                    <div class="item-value">
-                      @if (activePractice.publicSearchPrice !== null) {
-                        <strong class="fee-num">{{ activePractice.publicSearchPrice }}</strong>
-                        <span class="fee-curr">{{ 'discovery.currency' | t }}</span>
-                      } @else {
-                        <span class="fee-muted">{{ 'discovery.feeDeterminedAtClinic' | t }}</span>
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <div class="drawer-walkin-item">
-                  <div class="item-icon-wrap" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                  </div>
-                  <div class="item-content">
-                    <span class="item-label">{{ 'discovery.clinicInstructions' | t }}</span>
-                    <p class="item-instruction-text">{{ 'discovery.bookInClinicNote' | t }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
-        </section>
-      }
-
-      <!-- Drawer Bottom Actions -->
-      <footer class="drawer-footer-actions">
-        <button type="button" class="btn-drawer-dismiss" (click)="closeDrawer()">
-          <span>{{ 'discovery.closeDrawer' | t }}</span>
-        </button>
-      </footer>
-    }
-  </ng-template>
+  <app-patient-booking-drawer />
 </main>

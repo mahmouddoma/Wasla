@@ -109,20 +109,20 @@ describe('MedicalRecordsApi', () => {
 
   // WAS-593
   it('WAS-593: patientAccessLog fetches access log', () => {
-    api.patientAccessLog().subscribe((res) => {
-      expect(res.items.length).toBe(1);
+    api.patientAccessLog('opaque-cursor').subscribe((res) => {
+      expect(res.items?.length).toBe(1);
     });
     const req = http.expectOne((r) => r.url === `${patientUrl}/access-log`);
     expect(req.request.method).toBe('GET');
+    expect(req.request.params.keys().sort()).toEqual(['cursor', 'pageSize']);
+    expect(req.request.params.get('cursor')).toBe('opaque-cursor');
     req.flush({
       items: [
         {
-          id: 'l1',
-          actorName: 'Dr A',
-          actorRole: 'Doctor',
+          entryId: 'l1',
+          actorCategory: 'Doctor',
           action: 'View',
-          resource: 'Record',
-          timestampUtc: '2026-10-01',
+          occurredAtUtc: '2026-10-01T10:00:00Z',
         },
       ],
       hasMore: false,

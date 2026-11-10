@@ -156,4 +156,15 @@ describe('Drug catalog manager governance UI', () => {
     expect(fixture.nativeElement.querySelector('main').getAttribute('dir')).toBe('rtl');
     expect(fixture.nativeElement.textContent).toContain('مسؤولو دليل الأدوية');
   });
+  it('renders inline split-view detail pane on desktop and closes on close()', async () => {
+    component.isDesktop.set(true);
+    await component.inspect('m1');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.catalog-managers-detail-pane')).toBeTruthy();
+    expect(component.selectedId()).toBe('m1');
+    component.close();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.catalog-managers-detail-pane')).toBeFalsy();
+    expect(component.selectedId()).toBeNull();
+  });
 });

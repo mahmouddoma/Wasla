@@ -1,13 +1,16 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, Routes } from '@angular/router';
 import { AuthSession } from '../../core/auth/auth-session';
+import { resolveReturnUrl } from '../../core/auth/return-navigation';
 import { receptionPracticeGuard } from '../../domains/reception-practices';
 export const reservationGuard: CanActivateFn = (route, state) => {
   const session = inject(AuthSession),
     router = inject(Router),
     user = session.user();
-  if (!session.isAuthenticated() || !user)
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+  if (!session.isAuthenticated() || !user) {
+    const returnUrl = resolveReturnUrl(state.url);
+    return router.createUrlTree(['/login'], { queryParams: returnUrl ? { returnUrl } : undefined });
+  }
   if (session.requiresPasswordChange()) return router.createUrlTree(['/change-password']);
   const actor = route.data['reservationActor'] ?? route.data['actor'];
   const allowed =

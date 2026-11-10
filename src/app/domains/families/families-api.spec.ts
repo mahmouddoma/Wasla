@@ -421,7 +421,7 @@ describe('FamiliesApi', () => {
       await admin;
 
       const patient = firstValueFrom(api.myMedicalAccessRequests(query));
-      const patientRequest = http.expectOne((request) => request.url.endsWith('/families/mine/medical-access-requests'));
+      const patientRequest = http.expectOne((request) => request.url.endsWith('/families/mine/medical-access-requests/mine'));
       expect(patientRequest.request.params.get('requestType')).toBe(requestType);
       expect(patientRequest.request.params.has('type')).toBe(false);
       patientRequest.flush({ items: [] });

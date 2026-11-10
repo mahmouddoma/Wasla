@@ -1,0 +1,89 @@
+<section [attr.aria-busy]="loading()" aria-labelledby="record-access-heading">
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+    <h2 id="record-access-heading">{{ 'recordAccess.title' | t }}</h2>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      [disabled]="loading() || denied()"
+      (click)="load()"
+    >
+      {{ 'common.refresh' | t }}
+    </button>
+  </div>
+  <p class="text-secondary">{{ 'recordAccess.description' | t }}</p>
+  @if (denied()) {
+    <p role="alert">{{ 'recordAccess.unavailable' | t }}</p>
+  } @else {
+    @if (items().length) {
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <caption class="visually-hidden">
+            {{
+              'recordAccess.title' | t
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'recordAccess.actor' | t }}</th>
+              <th scope="col">{{ 'recordAccess.action' | t }}</th>
+              <th scope="col">{{ 'recordAccess.time' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.entryId) {
+              <tr>
+                <td>{{ actorLabel(item.actorCategory) }}</td>
+                <td>{{ actionLabel(item.action) }}</td>
+                <td>
+                  <time dir="ltr" [attr.datetime]="item.occurredAtUtc">{{
+                    item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm'
+                  }}</time>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!loading() && !failed()) {
+      <div class="access-empty text-center">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Medical prescription-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h3>{{ 'recordAccess.empty' | t }}</h3>
+        <p>{{ 'recordAccess.emptyHelp' | t }}</p>
+        <button type="button" class="btn btn-outline-secondary" (click)="load()">
+          {{ 'common.refresh' | t }}
+        </button>
+      </div>
+    }
+    @if (loading()) {
+      <p role="status">{{ 'common.loading' | t }}</p>
+    }
+    @if (failed()) {
+      <div role="alert">
+        <p>{{ 'familyFlow.failed' | t }}</p>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [disabled]="loading()"
+          (click)="load(hasMore())"
+        >
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
+    } @else if (hasMore()) {
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        [disabled]="loading()"
+        (click)="load(true)"
+      >
+        {{ 'common.loadMore' | t }}
+      </button>
+    }
+  }
+</section>

@@ -83,9 +83,16 @@
                 ><small>{{ 'historical.unverified' | t }}</small>
               </td>
               <td>
-                {{
-                  document.uploadedAtUtc | date: 'mediumDate' : undefined : language.currentLang()
-                }}
+                @if (document.currentVersion?.metadata; as metadata) {
+                  @if (!metadata.dateUnknown && metadata.documentDate) {
+                    <time [attr.datetime]="metadata.documentDate">{{ metadata.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</time>
+                  } @else {
+                    <span>{{ 'historical.documentDateUnknown' | t }}</span>
+                  }
+                } @else {
+                  <span>{{ 'historical.documentDateUnknown' | t }}</span>
+                }
+                <small>{{ 'historical.uploadedAt' | t }}: <time [attr.datetime]="document.uploadedAtUtc">{{ document.uploadedAtUtc | date:'mediumDate':undefined:language.currentLang() }}</time></small>
               </td>
               <td>{{ 'historical.state.' + document.state | t }}</td>
               <td>
@@ -235,6 +242,16 @@
       @if (document.currentVersion; as version) {
         <h3>{{ version.metadata.title || ('historical.document' | t) }}</h3>
         <p>{{ 'historical.category.' + version.metadata.category | t }}</p>
+        <dl>
+          <dt>{{ 'historical.date' | t }}</dt>
+          <dd>
+            @if (!version.metadata.dateUnknown && version.metadata.documentDate) {
+              <time [attr.datetime]="version.metadata.documentDate">{{ version.metadata.documentDate | date:'mediumDate':'UTC':language.currentLang() }}</time>
+            } @else { {{ 'historical.documentDateUnknown' | t }} }
+          </dd>
+          <dt>{{ 'historical.uploadedAt' | t }}</dt>
+          <dd><time [attr.datetime]="document.uploadedAtUtc">{{ document.uploadedAtUtc | date:'medium':undefined:language.currentLang() }}</time></dd>
+        </dl>
         <p>{{ version.metadata.providerName }}</p>
         <p>{{ version.metadata.patientNote }}</p>
         @if (document.state === 'AvailableUnverified') {
