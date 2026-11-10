@@ -3,18 +3,29 @@
     [heading]="'patientRecord.title' | t"
     [description]="'patientRecord.description' | t"
     icon="requests"
-    [actionLabel]="activeView() === 'timeline' ? ('common.refresh' | t) : null"
-    actionIcon="refresh"
-    [actionLoading]="loading()"
-    (actionClicked)="load()"
   >
     <nav pageHeaderActions class="record-header-actions">
-      @if (session.hasPermission('MedicalDocuments.CreateOwn')) {
-        <button type="button" class="btn btn-primary btn-upload-header" (click)="openUpload()">
-          <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-          <span>{{ 'patientRecord.uploadDocument' | t }}</span>
-        </button>
-      }
+      <div class="header-action-row">
+        @if (session.hasPermission('MedicalDocuments.CreateOwn')) {
+          <button type="button" class="btn btn-primary btn-upload-header" (click)="openUpload()">
+            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+            <span>{{ 'patientRecord.uploadDocument' | t }}</span>
+          </button>
+        }
+        @if (activeView() === 'timeline') {
+          <button
+            type="button"
+            class="btn-refresh-icon"
+            (click)="load()"
+            [disabled]="loading()"
+            [title]="'common.refresh' | t"
+            [attr.aria-label]="'common.refresh' | t"
+          >
+            <i class="fa-solid fa-rotate" [class.fa-spin]="loading()" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+
       <div class="view-switch-pills" role="tablist">
         @if (session.hasPermission('MedicalRecords.ViewOwn')) {
           <button
@@ -26,7 +37,8 @@
             (click)="activeView.set('timeline')"
           >
             <i class="fa-solid fa-timeline" aria-hidden="true"></i>
-            <span>{{ 'patientRecord.timeline' | t }}</span>
+            <span class="tab-label-full">{{ 'patientRecord.timeline' | t }}</span>
+            <span class="tab-label-short">{{ 'patientRecord.timeline' | t }}</span>
           </button>
           <button
             type="button"
@@ -37,7 +49,8 @@
             (click)="activeView.set('access')"
           >
             <i class="fa-solid fa-eye" aria-hidden="true"></i>
-            <span>{{ 'recordAccess.title' | t }}</span>
+            <span class="tab-label-full">{{ 'recordAccess.title' | t }}</span>
+            <span class="tab-label-short">{{ language.isRtl() ? 'سجل الاطلاع' : 'Access Log' }}</span>
           </button>
         }
         @if (session.hasPermission('MedicalDocuments.ViewOwn') || session.hasPermission('MedicalDocuments.CreateOwn')) {
@@ -50,7 +63,8 @@
             (click)="documentId.set(null); activeView.set('documents')"
           >
             <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
-            <span>{{ 'historical.title' | t }}</span>
+            <span class="tab-label-full">{{ 'historical.title' | t }}</span>
+            <span class="tab-label-short">{{ language.isRtl() ? 'المستندات' : 'Documents' }}</span>
           </button>
         }
       </div>

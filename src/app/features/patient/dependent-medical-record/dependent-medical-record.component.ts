@@ -77,6 +77,69 @@ export class DependentMedicalRecordComponent implements OnDestroy {
     () => this.encounterDrawerOpen() || this.itemDrawerOpen() || this.showDocuments(),
   );
 
+  protected readonly hasActiveFilter = computed(() => {
+    return this.filterType() !== '' || this.fromDate() !== '' || this.toDate() !== '' || this.showDocuments();
+  });
+
+  protected formatAccessStatus(status: string | null | undefined): string {
+    if (!status) return '';
+    const s = status.toLowerCase();
+    if (s === 'allowed') return this.uiLanguage.t('medicalAccess.statusAllowed');
+    if (s === 'restricted') return this.uiLanguage.t('medicalAccess.statusRestricted');
+    if (s === 'pending') return this.uiLanguage.t('medicalAccess.statusPending');
+    return status;
+  }
+
+  protected shortId(id: string | null | undefined): string {
+    if (!id) return '';
+    if (id.length <= 12) return id;
+    return `${id.slice(0, 6)}...${id.slice(-4)}`;
+  }
+
+  protected copyPatientId(id: string | null | undefined): void {
+    if (!id || typeof navigator === 'undefined' || !navigator.clipboard) return;
+    void navigator.clipboard.writeText(id);
+    this.toast.success(this.uiLanguage.t('common.copied') || 'تم النسخ');
+  }
+
+  protected formatAge(dateOfBirth: string | null | undefined): string {
+    if (!dateOfBirth) return '';
+    try {
+      const birth = new Date(dateOfBirth);
+      if (isNaN(birth.getTime())) return '';
+      const now = new Date();
+      let years = now.getFullYear() - birth.getFullYear();
+      let months = now.getMonth() - birth.getMonth();
+      if (now.getDate() < birth.getDate()) {
+        months--;
+      }
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      const isAr = this.uiLanguage.currentLang() === 'ar';
+      if (years <= 0) {
+        if (months <= 1) return isAr ? 'شهر واحد' : '1 month';
+        if (months === 2) return isAr ? 'شهران' : '2 months';
+        return isAr ? `${months} أشهر` : `${months} months`;
+      }
+      if (years === 1) return isAr ? 'سنة واحدة' : '1 year';
+      if (years === 2) return isAr ? 'سنتان' : '2 years';
+      if (years <= 10) return isAr ? `${years} سنوات` : `${years} years`;
+      return isAr ? `${years} سنة` : `${years} years`;
+    } catch {
+      return '';
+    }
+  }
+
+  protected resetFilters(): void {
+    this.filterType.set('');
+    this.fromDate.set('');
+    this.toDate.set('');
+    this.showDocuments.set(false);
+    void this.loadMedicalRecord(this.selectedDependentId());
+  }
+
   readonly activeDetailTitle = computed(() => {
     if (this.showDocuments()) return this.uiLanguage.t('historical.title');
     if (this.encounterDrawerOpen()) return this.uiLanguage.t('review.encounterDetails');

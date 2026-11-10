@@ -302,4 +302,21 @@ describe('DependentMedicalRecordComponent', () => {
     const detailPane = fixture.nativeElement.querySelector('.dependent-record-detail-pane');
     expect(detailPane).toBeTruthy();
   });
+
+  it('formats access status, age, and shortId properly', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(component['formatAccessStatus']('Allowed')).toContain('مصرّح بالاطلاع');
+    expect(component['formatAccessStatus']('Restricted')).toContain('محظور الاطلاع');
+    expect(component['shortId']('4351-f105-5b79-43ec-9bf2-6b561bef8ca3')).toBe('4351-f...8ca3');
+    expect(component['formatAge']('2020-01-01')).toBeTruthy();
+
+    component['filterType'].set('prescriptions');
+    component['fromDate'].set('2026-01-01');
+    component['resetFilters']();
+
+    expect(component['filterType']()).toBe('');
+    expect(component['fromDate']()).toBe('');
+  });
 });

@@ -1,110 +1,319 @@
-<app-side-drawer [opened]="booking.opened()" [title]="'booking.drawerTitle' | t"
-  [description]="'booking.choosePracticeHelp' | t" [busy]="booking.submitting()" width="620px" (closed)="booking.close()">
-  <div class="booking-content" [attr.aria-busy]="booking.loading() || booking.submitting()">
+<app-side-drawer
+  [opened]="booking.opened()"
+  [title]="'booking.drawerTitle' | t"
+  [description]="'booking.choosePracticeHelp' | t"
+  [busy]="booking.submitting()"
+  width="580px"
+  (closed)="booking.close()"
+>
+  <div class="booking-drawer-wrapper" [attr.aria-busy]="booking.loading() || booking.submitting()">
     @if (booking.messages().length) {
-      <div role="alert" class="booking-notice">@for (message of booking.messages(); track $index) { <p>{{ message | t }}</p> }</div>
+      <div role="alert" class="booking-notice">
+        @for (message of booking.messages(); track $index) {
+          <p><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ message | t }}</p>
+        }
+      </div>
     }
+
     @if (booking.receipt(); as receipt) {
       <section class="booking-receipt" role="status" aria-live="polite">
-        <h2>{{ 'booking.successTitle' | t }}</h2>
-        <p>{{ 'booking.successSubtitle' | t }}</p>
-        <dl>
-          <div><dt>{{ 'booking.referenceNumber' | t }}</dt><dd dir="ltr">{{ receipt.reference }}</dd></div>
-          <div><dt>{{ 'patientBooking.doctor' | t }}</dt><dd>{{ name(receipt.doctor) }}</dd></div>
-          <div><dt>{{ 'booking.choosePractice' | t }}</dt><dd>{{ name(receipt.practice) }}</dd></div>
-          <div><dt>{{ 'booking.patientNameLabel' | t }}</dt><dd>{{ name(receipt.patient) }}</dd></div>
-          <div><dt>{{ 'booking.appointmentTime' | t }}</dt><dd dir="ltr">{{ receipt.appointment.businessDate }} · {{ receipt.appointment.slotStartTime.slice(0, 5) }}</dd></div>
+        <div class="receipt-success-icon" aria-hidden="true">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h2 class="receipt-title">{{ 'booking.successTitle' | t }}</h2>
+        <p class="receipt-subtitle">{{ 'booking.successSubtitle' | t }}</p>
+
+        <dl class="receipt-details-list">
+          <div>
+            <dt>{{ 'booking.referenceNumber' | t }}</dt>
+            <dd dir="ltr" class="code-font">{{ receipt.reference }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'patientBooking.doctor' | t }}</dt>
+            <dd>{{ name(receipt.doctor) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'booking.choosePractice' | t }}</dt>
+            <dd>{{ name(receipt.practice) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'booking.patientNameLabel' | t }}</dt>
+            <dd>{{ name(receipt.patient) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'booking.appointmentTime' | t }}</dt>
+            <dd dir="ltr">
+              {{ receipt.appointment.businessDate }} · {{ formatSlotTime(receipt.appointment.slotStartTime) }}
+            </dd>
+          </div>
           @if (receipt.price !== undefined) {
-            <div><dt>{{ 'booking.consultationFee' | t }}</dt><dd>{{ receipt.price }} {{ receipt.currency || ('discovery.currency' | t) }}</dd></div>
+            <div>
+              <dt>{{ 'booking.consultationFee' | t }}</dt>
+              <dd class="price-highlight">{{ receipt.price }} {{ receipt.currency || ('discovery.currency' | t) }}</dd>
+            </div>
           }
         </dl>
-        <a class="booking-primary" routerLink="/patient/reservations" (click)="booking.close()">{{ 'booking.viewMyReservations' | t }}</a>
+
+        <a class="booking-primary" routerLink="/patient/reservations" (click)="booking.close()">
+          <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+          <span>{{ 'booking.viewMyReservations' | t }}</span>
+        </a>
       </section>
     } @else {
       @if (booking.doctor(); as doctor) {
-        <h2>{{ name(doctor) }}</h2>
-        <section class="booking-section" [attr.aria-label]="'booking.choosePractice' | t">
-          <h3>{{ 'booking.choosePractice' | t }}</h3>
-          <div class="booking-choices">
-            @for (practice of doctor.practices; track practice.id) {
-              <button type="button" [disabled]="booking.submitting()" [attr.aria-pressed]="booking.practice()?.id === practice.id"
-                (click)="booking.choosePractice(practice.id)">{{ name(practice) }}</button>
-            }
-          </div>
-        </section>
-        @if (booking.practice(); as practice) {
-          @if (!practice.isBookable || practice.onlineBookingEnabled === false) {
-            <section class="booking-empty">
-              <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
-              <h3>{{ 'discovery.bookInClinic' | t }}</h3><p>{{ 'discovery.walkInNotice' | t }}</p>
-              @if (practice.detailedAddress) { <p>{{ practice.detailedAddress }}</p> }
-            </section>
-          } @else {
-            <section class="booking-section">
-              <h3>{{ 'booking.availableDays' | t }}</h3>
-              <div class="booking-choices">
-                @for (date of booking.dates(); track date.date) {
-                  <button type="button" dir="ltr" [disabled]="!date.isAvailable || booking.submitting()"
-                    [attr.aria-pressed]="booking.date() === date.date" (click)="booking.chooseDate(date.date)">{{ date.date }}</button>
+        <div class="booking-scrollable-body">
+          <!-- Doctor Identity Header Card -->
+          <div class="booking-doctor-header">
+            <div class="doctor-avatar-circle" aria-hidden="true">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <div class="doctor-text-info">
+              <h2 class="doctor-display-name">{{ name(doctor) }}</h2>
+              <div class="doctor-meta-row">
+                <span class="verified-pill">
+                  <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                  <span>{{ 'discovery.verifiedDoctor' | t }}</span>
+                </span>
+                @if (booking.practice(); as practice) {
+                  <span class="practice-pill">
+                    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                    <span>{{ name(practice) }}</span>
+                  </span>
                 }
               </div>
-              @if (!booking.loading() && !booking.dates().length) {
-                <div class="booking-empty"><img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
-                  <h3>{{ 'booking.noDays' | t }}</h3><p>{{ 'booking.choosePracticeHelp' | t }}</p>
-                  <button type="button" (click)="booking.choosePractice(practice.id)">{{ 'common.retry' | t }}</button>
-                </div>
-              }
-            </section>
-            @if (booking.date()) {
-              <section class="booking-section">
-                <h3>{{ 'booking.availableTimes' | t }}</h3>
-                <div class="booking-choices">
-                  @for (slot of booking.slots(); track slot.time) {
-                    <button type="button" dir="ltr" [disabled]="booking.submitting()" [attr.aria-pressed]="booking.time() === slot.time"
-                      (click)="booking.chooseTime(slot.time)">{{ slot.time.slice(0, 5) }}</button>
-                  } @empty { @if (!booking.loading()) { <p>{{ 'booking.noTimes' | t }}</p> } }
-                </div>
-              </section>
-            }
-            @if (booking.options(); as options) {
-              <section class="booking-section">
-                <h3>{{ 'booking.visitAndPrice' | t }}</h3>
-                @if (booking.isPatient()) {
-                  <label for="booking-patient">{{ 'booking.selectPatientLabel' | t }}</label>
-                  <select id="booking-patient" [value]="booking.patientId()" [disabled]="booking.submitting()" (change)="selectPatient($event)">
-                    <option value="" disabled>{{ 'booking.selectPatientLabel' | t }}</option>
-                    @for (patient of booking.patients(); track patient.patientId) { <option [value]="patient.patientId">{{ name(patient) }}</option> }
-                  </select>
+            </div>
+          </div>
+
+          <!-- Practice Selector (if multiple) -->
+          @if (doctor.practices.length > 1) {
+            <section class="booking-step-section" [attr.aria-label]="'booking.choosePractice' | t">
+              <h3 class="step-heading">
+                <span class="step-num">1</span>
+                <span>{{ 'booking.choosePractice' | t }}</span>
+              </h3>
+              <div class="booking-choices-grid">
+                @for (practice of doctor.practices; track practice.id) {
+                  <button
+                    type="button"
+                    class="choice-card-btn"
+                    [disabled]="booking.submitting()"
+                    [attr.aria-pressed]="booking.practice()?.id === practice.id"
+                    (click)="booking.choosePractice(practice.id)"
+                  >
+                    <i class="fa-solid fa-hospital-user choice-icon" aria-hidden="true"></i>
+                    <span class="choice-label">{{ name(practice) }}</span>
+                  </button>
                 }
-                @for (visit of options.visitTypes; track visit.visitTypeId) {
-                  <h4>{{ name(visit) }}</h4>
-                  <div class="booking-choices">
-                    @for (segment of visit.segments; track segment.segmentId) {
-                      <button type="button" [disabled]="booking.submitting()" [attr.aria-pressed]="booking.visit()?.visitTypeId === visit.visitTypeId && booking.segment()?.segmentId === segment.segmentId"
-                        (click)="booking.selectOption(visit.visitTypeId, segment.segmentId)">{{ name(segment) }} · {{ segment.price }} {{ 'discovery.currency' | t }}</button>
+              </div>
+            </section>
+          }
+
+          @if (booking.practice(); as practice) {
+            @if (!practice.isBookable || practice.onlineBookingEnabled === false) {
+              <section class="booking-empty">
+                <img src="/SVG-AVATAR/Doctors-bro.svg" alt="" loading="lazy" decoding="async" />
+                <h3>{{ 'discovery.bookInClinic' | t }}</h3>
+                <p>{{ 'discovery.walkInNotice' | t }}</p>
+                @if (practice.detailedAddress) {
+                  <p class="practice-address">{{ practice.detailedAddress }}</p>
+                }
+              </section>
+            } @else {
+              <!-- Available Days -->
+              <section class="booking-step-section">
+                <h3 class="step-heading">
+                  <span class="step-num">{{ doctor.practices.length > 1 ? '2' : '1' }}</span>
+                  <span>{{ 'booking.availableDays' | t }}</span>
+                </h3>
+
+                @if (booking.loading() && !booking.dates().length) {
+                  <div class="dates-loading-skeleton" role="status">
+                    <span class="skeleton-shimmer h-44 w-100 rounded-md"></span>
+                    <span class="skeleton-shimmer h-44 w-100 rounded-md"></span>
+                    <span class="skeleton-shimmer h-44 w-100 rounded-md"></span>
+                  </div>
+                } @else if (booking.dates().length) {
+                  <div class="dates-grid-layout">
+                    @for (date of booking.dates(); track date.date) {
+                      <button
+                        type="button"
+                        class="date-card-pill"
+                        [disabled]="!date.isAvailable || booking.submitting()"
+                        [attr.aria-pressed]="booking.date() === date.date"
+                        (click)="booking.chooseDate(date.date)"
+                      >
+                        @if (dateBadge(date.date); as badge) {
+                          <span class="date-badge-accent">{{ badge }}</span>
+                        }
+                        <span class="date-day-name">{{ formatDateDayName(date.date) }}</span>
+                        <span class="date-day-num">{{ formatDateDayMonth(date.date) }}</span>
+                      </button>
                     }
                   </div>
-                } @empty { <p>{{ 'booking.optionsUnavailable' | t }}</p> }
-                <label for="booking-note">{{ 'booking.bookingNotes' | t }}</label>
-                <textarea id="booking-note" rows="2" maxlength="1000" [disabled]="booking.submitting()" [value]="booking.note()"
-                  (input)="updateNote($event)" [placeholder]="'booking.bookingNotesPlaceholder' | t"></textarea>
-                @if (booking.segment(); as segment) {
-                  <p class="booking-summary">{{ 'booking.appointmentTime' | t }}: <b dir="ltr">{{ booking.date() }} · {{ booking.time().slice(0, 5) }}</b><br />
-                    {{ 'booking.consultationFee' | t }}: <strong>{{ segment.price }} {{ 'discovery.currency' | t }}</strong></p>
-                  <p>{{ 'booking.payAtClinic' | t }}</p>
-                }
-                @if (booking.isPatient()) {
-                  <button class="booking-primary" type="button" [disabled]="!booking.canConfirm()" (click)="booking.confirm()">
-                    {{ (booking.submitting() ? 'booking.bookingInProgress' : 'booking.confirmBookingBtn') | t }}</button>
-                } @else {
-                  <button class="booking-primary" type="button" (click)="booking.login()">{{ 'booking.loginToBook' | t }}</button>
+                } @else if (!booking.loading()) {
+                  <div class="booking-empty-days">
+                    <img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
+                    <h4>{{ 'booking.noDays' | t }}</h4>
+                    <p>{{ 'booking.choosePracticeHelp' | t }}</p>
+                    <button type="button" class="btn-retry-inline" (click)="booking.choosePractice(practice.id)">
+                      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                      <span>{{ 'common.retry' | t }}</span>
+                    </button>
+                  </div>
                 }
               </section>
+
+              <!-- Available Times -->
+              @if (booking.date()) {
+                <section class="booking-step-section">
+                  <h3 class="step-heading">
+                    <span class="step-num">{{ doctor.practices.length > 1 ? '3' : '2' }}</span>
+                    <span>{{ 'booking.availableTimes' | t }}</span>
+                  </h3>
+                  <div class="slots-grid-layout">
+                    @for (slot of booking.slots(); track slot.time) {
+                      <button
+                        type="button"
+                        class="slot-card-pill"
+                        [disabled]="booking.submitting()"
+                        [attr.aria-pressed]="booking.time() === slot.time"
+                        (click)="booking.chooseTime(slot.time)"
+                      >
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                        <span>{{ formatSlotTime(slot.time) }}</span>
+                      </button>
+                    } @empty {
+                      @if (!booking.loading()) {
+                        <p class="no-times-hint">{{ 'booking.noTimes' | t }}</p>
+                      }
+                    }
+                  </div>
+                </section>
+              }
+
+              <!-- Visit Type, Patient & Price Options -->
+              @if (booking.options(); as options) {
+                <section class="booking-step-section">
+                  <h3 class="step-heading">
+                    <span class="step-num">{{ doctor.practices.length > 1 ? '4' : '3' }}</span>
+                    <span>{{ 'booking.visitAndPrice' | t }}</span>
+                  </h3>
+
+                  @if (booking.isPatient()) {
+                    <div class="field-item-wrap">
+                      <label for="booking-patient" class="field-item-label">
+                        <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+                        <span>{{ 'booking.selectPatientLabel' | t }}</span>
+                      </label>
+                      <div class="select-with-arrow">
+                        <select
+                          id="booking-patient"
+                          class="booking-select-field"
+                          [value]="booking.patientId()"
+                          [disabled]="booking.submitting()"
+                          (change)="selectPatient($event)"
+                        >
+                          <option value="" disabled>{{ 'booking.selectPatientLabel' | t }}</option>
+                          @for (patient of booking.patients(); track patient.patientId) {
+                            <option [value]="patient.patientId">{{ name(patient) }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+                  }
+
+                  @for (visit of options.visitTypes; track visit.visitTypeId) {
+                    <div class="visit-type-group">
+                      <h4 class="visit-type-title">{{ name(visit) }}</h4>
+                      <div class="segment-choices-grid">
+                        @for (segment of visit.segments; track segment.segmentId) {
+                          <button
+                            type="button"
+                            class="segment-choice-card"
+                            [disabled]="booking.submitting()"
+                            [attr.aria-pressed]="booking.visit()?.visitTypeId === visit.visitTypeId && booking.segment()?.segmentId === segment.segmentId"
+                            (click)="booking.selectOption(visit.visitTypeId, segment.segmentId)"
+                          >
+                            <span class="segment-name">{{ name(segment) }}</span>
+                            <span class="segment-price-tag">{{ segment.price }} {{ 'discovery.currency' | t }}</span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="no-options-hint">{{ 'booking.optionsUnavailable' | t }}</p>
+                  }
+
+                  <div class="field-item-wrap mt-3">
+                    <label for="booking-note" class="field-item-label">
+                      <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
+                      <span>{{ 'booking.bookingNotes' | t }}</span>
+                    </label>
+                    <textarea
+                      id="booking-note"
+                      rows="2"
+                      maxlength="1000"
+                      class="booking-textarea"
+                      [disabled]="booking.submitting()"
+                      [value]="booking.note()"
+                      (input)="updateNote($event)"
+                      [placeholder]="'booking.bookingNotesPlaceholder' | t"
+                    ></textarea>
+                  </div>
+                </section>
+              }
             }
           }
+        </div>
+
+        <!-- Sticky Bottom Confirmation Bar (Never Clipped, Fully Accessible) -->
+        @if (booking.practice()?.isBookable && booking.practice()?.onlineBookingEnabled !== false) {
+          <footer class="booking-sticky-footer">
+            <div class="footer-summary-row">
+              <div class="footer-meta-summary">
+                @if (booking.date() && booking.time()) {
+                  <span class="summary-time-pill">
+                    <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+                    <span>{{ formatDateDayMonth(booking.date()) }} · {{ formatSlotTime(booking.time()) }}</span>
+                  </span>
+                }
+                @if (booking.segment(); as segment) {
+                  <span class="summary-price-pill">
+                    <span class="price-val">{{ segment.price }}</span>
+                    <span class="price-curr">{{ 'discovery.currency' | t }}</span>
+                  </span>
+                }
+              </div>
+
+              @if (booking.isPatient()) {
+                <button
+                  class="booking-primary-btn"
+                  type="button"
+                  [disabled]="!booking.canConfirm()"
+                  (click)="booking.confirm()"
+                >
+                  @if (booking.submitting()) {
+                    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span>{{ 'booking.bookingInProgress' | t }}</span>
+                  } @else {
+                    <i class="fa-solid fa-check" aria-hidden="true"></i>
+                    <span>{{ 'booking.confirmBookingBtn' | t }}</span>
+                  }
+                </button>
+              } @else {
+                <button class="booking-primary-btn" type="button" (click)="booking.login()">
+                  <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                  <span>{{ 'booking.loginToBook' | t }}</span>
+                </button>
+              }
+            </div>
+            <p class="footer-guarantee-note">
+              <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+              <span>{{ 'booking.payAtClinic' | t }}</span>
+            </p>
+          </footer>
         }
       }
-      @if (booking.loading()) { <p role="status">{{ 'booking.loadingAvailability' | t }}</p> }
     }
   </div>
 </app-side-drawer>

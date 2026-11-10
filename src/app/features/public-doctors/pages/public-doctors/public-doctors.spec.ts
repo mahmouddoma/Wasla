@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -123,7 +124,11 @@ describe('PublicDoctors', () => {
     fixture = TestBed.createComponent(PublicDoctors);
     await fixture.whenStable();
   });
-  afterEach(() => localStorage.removeItem('wasla_lang'));
+  afterEach(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('wasla_lang');
+    }
+  });
   it('launches the shared booking flow with the explicit selected appointment', async () => {
     const open = vi.spyOn(fixture.componentInstance['booking'], 'open').mockResolvedValue();
     await fixture.componentInstance['openDoctorDrawer'](mockDoctorDetails, 'practice-1', '2026-11-10', '15:30:00');

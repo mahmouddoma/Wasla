@@ -9,8 +9,8 @@
       @if (dependents().length > 0) {
         <label class="dependent-select-integrated">
           <span class="dependent-select-label">
-            <i class="fa-solid fa-child" aria-hidden="true"></i>
-            <span>{{ 'family.selectDependent' | t }}:</span>
+            <i class="fa-solid fa-child-reaching" aria-hidden="true"></i>
+            <span>{{ 'family.selectDependent' | t }}</span>
           </span>
           <div class="select-with-arrow">
             <select
@@ -20,7 +20,7 @@
             >
               @for (dep of dependents(); track dep.patientId) {
                 <option [value]="dep.patientId">
-                  {{ dep.nameAr }} ({{ dep.medicalAccess.status }})
+                  {{ dep.nameAr }} ({{ formatAccessStatus(dep.medicalAccess.status) }})
                 </option>
               }
             </select>
@@ -61,39 +61,71 @@
             <div class="dependent-overview-bar">
               <div class="patient-identity-box">
                 <div class="patient-avatar-box" aria-hidden="true">
-                  <i class="fa-solid fa-hospital-user"></i>
+                  <i class="fa-solid fa-child-reaching"></i>
                 </div>
                 <div class="patient-text-meta">
-                  <h3 class="dependent-name">{{ ov.patient.nameAr }}</h3>
+                  <div class="name-status-row">
+                    <h3 class="dependent-name">{{ ov.patient.nameAr }}</h3>
+                    <span class="access-status-badge">
+                      <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                      <span>{{ formatAccessStatus(dep.medicalAccess.status) }}</span>
+                    </span>
+                  </div>
                   <div class="identity-tags">
-                    <span class="badge-tag code-font">ID: {{ ov.patient.patientId }}</span>
-                    <span class="badge-tag">{{
-                      ov.patient.gender === 'Male' ? ('common.male' | t) : ('common.female' | t)
-                    }}</span>
+                    @if (formatAge(ov.patient.dateOfBirth); as age) {
+                      <span class="badge-tag age-tag">
+                        <i class="fa-solid fa-cake-candles" aria-hidden="true"></i>
+                        <span>{{ age }}</span>
+                      </span>
+                    }
                     <span class="badge-tag">
                       <i class="fa-regular fa-calendar" aria-hidden="true"></i>
                       <span>{{ ov.patient.dateOfBirth }}</span>
                     </span>
+                    <span class="badge-tag gender-tag">{{
+                      ov.patient.gender === 'Male' ? ('common.male' | t) : ('common.female' | t)
+                    }}</span>
+                    <button
+                      type="button"
+                      class="badge-tag code-font copyable-id-btn"
+                      [title]="'common.copyId' | t"
+                      (click)="copyPatientId(ov.patient.patientId)"
+                    >
+                      <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                      <span>#{{ shortId(ov.patient.patientId) }}</span>
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <!-- Summary Statistics Matrix (Integrated, No Nested Cards) -->
+              <!-- Summary Statistics Matrix (Integrated, Enhanced Clinical Units) -->
               <div class="summary-stats-matrix">
-                <div class="stat-unit">
-                  <span class="stat-num">{{ ov.summary.completedVisitCount }}</span>
+                <div class="stat-unit unit-visits">
+                  <div class="stat-unit-header">
+                    <i class="fa-solid fa-stethoscope stat-icon" aria-hidden="true"></i>
+                    <span class="stat-num">{{ ov.summary.completedVisitCount }}</span>
+                  </div>
                   <span class="stat-desc">{{ 'family.completedVisits' | t }}</span>
                 </div>
-                <div class="stat-unit">
-                  <span class="stat-num">{{ ov.summary.currentPrescriptionCount }}</span>
+                <div class="stat-unit unit-prescriptions">
+                  <div class="stat-unit-header">
+                    <i class="fa-solid fa-prescription-bottle-medical stat-icon" aria-hidden="true"></i>
+                    <span class="stat-num">{{ ov.summary.currentPrescriptionCount }}</span>
+                  </div>
                   <span class="stat-desc">{{ 'medications.prescription' | t }}</span>
                 </div>
-                <div class="stat-unit">
-                  <span class="stat-num">{{ ov.summary.officialLabResultCount }}</span>
+                <div class="stat-unit unit-labs">
+                  <div class="stat-unit-header">
+                    <i class="fa-solid fa-vial-virus stat-icon" aria-hidden="true"></i>
+                    <span class="stat-num">{{ ov.summary.officialLabResultCount }}</span>
+                  </div>
                   <span class="stat-desc">{{ 'diagnostics.lab' | t }}</span>
                 </div>
-                <div class="stat-unit">
-                  <span class="stat-num">{{ ov.summary.officialRadiologyResultCount }}</span>
+                <div class="stat-unit unit-radiology">
+                  <div class="stat-unit-header">
+                    <i class="fa-solid fa-x-ray stat-icon" aria-hidden="true"></i>
+                    <span class="stat-num">{{ ov.summary.officialRadiologyResultCount }}</span>
+                  </div>
                   <span class="stat-desc">{{ 'diagnostics.radiology' | t }}</span>
                 </div>
               </div>
@@ -144,34 +176,43 @@
                     [class.active]="showDocuments()"
                     (click)="showDocuments.set(true)"
                   >
-                    {{ 'historical.title' | t }}
+                    {{ 'family.dependentHistoricalDocuments' | t }}
                   </button>
                 }
               </div>
 
               <div class="date-filter-group">
-                <label class="date-control-label">
-                  <span>{{ 'common.from' | t }}</span>
-                  <div class="date-input-wrap">
+                <div class="date-range-box">
+                  <label class="date-control-label">
+                    <span>{{ 'common.from' | t }}</span>
                     <input
                       type="date"
                       class="date-input"
                       [value]="fromDate()"
                       (change)="onDateFilterChange($any($event.target).value, toDate())"
                     />
-                  </div>
-                </label>
-                <label class="date-control-label">
-                  <span>{{ 'common.to' | t }}</span>
-                  <div class="date-input-wrap">
+                  </label>
+                  <span class="date-divider">—</span>
+                  <label class="date-control-label">
+                    <span>{{ 'common.to' | t }}</span>
                     <input
                       type="date"
                       class="date-input"
                       [value]="toDate()"
                       (change)="onDateFilterChange(fromDate(), $any($event.target).value)"
                     />
-                  </div>
-                </label>
+                  </label>
+                  @if (fromDate() || toDate()) {
+                    <button
+                      type="button"
+                      class="btn-clear-date"
+                      (click)="onDateFilterChange('', '')"
+                      title="مسح التاريخ"
+                    >
+                      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
               </div>
             </div>
 
@@ -207,7 +248,14 @@
             } @else if (timelineEntries().length === 0) {
               <div class="empty-state-surface p-4">
                 <img src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" loading="lazy" decoding="async" />
-                <p class="empty-hint">{{ 'common.nothingFound' | t }}</p>
+                <h4 class="empty-title">{{ 'family.emptyDependentTimelineTitle' | t }}</h4>
+                <p class="empty-hint">{{ 'family.emptyDependentTimelineDesc' | t }}</p>
+                @if (hasActiveFilter()) {
+                  <button type="button" class="btn-reset-filters-pill" (click)="resetFilters()">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    <span>{{ 'family.resetFilters' | t }}</span>
+                  </button>
+                }
               </div>
             } @else {
               <div class="timeline-table-container">

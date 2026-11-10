@@ -88,6 +88,122 @@ export class PublicDoctors {
   protected readonly showDetailedLocation = signal(false);
   protected toggleDetailedLocation(): void { this.showDetailedLocation.update(value => !value); }
 
+  // Vezeeta-style Sidebar & Refine Filters
+  protected readonly selectedSort = signal<'relevant' | 'earliest' | 'priceAsc' | 'priceDesc'>('relevant');
+  protected readonly selectedAvailability = signal<'all' | 'today' | 'upcoming'>('all');
+  protected readonly selectedPriceRange = signal<'all' | 'under300' | '300to500' | 'over500'>('all');
+  protected readonly selectedTitle = signal<string>('all');
+  protected readonly mobileFilterOpen = signal(false);
+  protected readonly scheduleOffsets = signal<Record<string, number>>({});
+
+  protected getDoctorOffset(doctorId: string): number {
+    return this.scheduleOffsets()[doctorId] || 0;
+  }
+
+  protected navigateSchedule(doctorId: string, delta: number, event?: Event): void {
+    event?.stopPropagation();
+    const cur = this.getDoctorOffset(doctorId);
+    const next = Math.max(0, Math.min(12, cur + delta));
+    this.scheduleOffsets.update((map) => ({ ...map, [doctorId]: next }));
+  }
+
+  protected setSort(sort: 'relevant' | 'earliest' | 'priceAsc' | 'priceDesc'): void {
+    this.selectedSort.set(sort);
+  }
+
+  protected setAvailability(avail: 'all' | 'today' | 'upcoming'): void {
+    this.selectedAvailability.set(avail);
+  }
+
+  protected setPriceRange(range: 'all' | 'under300' | '300to500' | 'over500'): void {
+    this.selectedPriceRange.set(range);
+  }
+
+  protected setTitle(title: string): void {
+    this.selectedTitle.set(title);
+  }
+
+  protected readonly activeSidebarFiltersCount = computed(() => {
+    let count = 0;
+    if (this.selectedSort() !== 'relevant') count++;
+    if (this.selectedAvailability() !== 'all') count++;
+    if (this.selectedPriceRange() !== 'all') count++;
+    if (this.selectedTitle() !== 'all') count++;
+    return count;
+  });
+
+  protected resetSidebarFilters(): void {
+    this.selectedSort.set('relevant');
+    this.selectedAvailability.set('all');
+    this.selectedPriceRange.set('all');
+    this.selectedTitle.set('all');
+  }
+
+  protected readonly filteredAndSortedDoctors = computed(() => {
+    let list = [...this.result().items];
+    const avail = this.selectedAvailability();
+    const priceRange = this.selectedPriceRange();
+    const title = this.selectedTitle();
+    const sort = this.selectedSort();
+
+    if (avail === 'today') {
+      list = list.filter((doc) => doc.practices.some((p) => p.isToday && p.isBookable));
+    } else if (avail === 'upcoming') {
+      list = list.filter((doc) => doc.practices.some((p) => p.nextAvailableSlotDate && p.isBookable));
+    }
+
+    if (priceRange === 'under300') {
+      list = list.filter((doc) =>
+        doc.practices.some((p) => p.publicSearchPrice !== null && p.publicSearchPrice < 300),
+      );
+    } else if (priceRange === '300to500') {
+      list = list.filter((doc) =>
+        doc.practices.some(
+          (p) => p.publicSearchPrice !== null && p.publicSearchPrice >= 300 && p.publicSearchPrice <= 500,
+        ),
+      );
+    } else if (priceRange === 'over500') {
+      list = list.filter((doc) =>
+        doc.practices.some((p) => p.publicSearchPrice !== null && p.publicSearchPrice > 500),
+      );
+    }
+
+    if (title !== 'all') {
+      const keywords: Record<string, string[]> = {
+        consultant: ['استشاري', 'consultant'],
+        specialist: ['أخصائي', 'اخصائي', 'specialist'],
+        professor: ['أستاذ', 'استاذ', 'prof', 'professor'],
+      };
+      const matchWords = keywords[title] || [title];
+      list = list.filter((doc) => {
+        const text = `${doc.nameAr} ${doc.nameEn || ''}`.toLowerCase();
+        return matchWords.some((w) => text.includes(w.toLowerCase()));
+      });
+    }
+
+    if (sort === 'priceAsc') {
+      list.sort((a, b) => {
+        const pa = Math.min(...a.practices.map((p) => p.publicSearchPrice ?? 99999));
+        const pb = Math.min(...b.practices.map((p) => p.publicSearchPrice ?? 99999));
+        return pa - pb;
+      });
+    } else if (sort === 'priceDesc') {
+      list.sort((a, b) => {
+        const pa = Math.max(...a.practices.map((p) => p.publicSearchPrice ?? 0));
+        const pb = Math.max(...b.practices.map((p) => p.publicSearchPrice ?? 0));
+        return pb - pa;
+      });
+    } else if (sort === 'earliest') {
+      list.sort((a, b) => {
+        const rankA = a.practices.some((p) => p.isToday && p.isBookable) ? 0 : a.practices.some((p) => p.nextAvailableSlotDate) ? 1 : 2;
+        const rankB = b.practices.some((p) => p.isToday && p.isBookable) ? 0 : b.practices.some((p) => p.nextAvailableSlotDate) ? 1 : 2;
+        return rankA - rankB;
+      });
+    }
+
+    return list;
+  });
+
   constructor() {
     inject(DestroyRef).onDestroy(() => { this.destroyed = true; ++this.searchSequence; ++this.citySequence; ++this.areaSequence; });
     void this.initialize();
@@ -229,9 +345,59 @@ export class PublicDoctors {
     await this.booking.open({ doctorId: doctor.doctorId, doctorPracticeId: practiceId, businessDate, slotStartTime });
   }
 
+  protected doctorCountLabel(count: number): string {
+    const isAr = this.language.isRtl();
+    if (!isAr) {
+      return count === 1 ? '1 verified doctor available' : `${count} verified doctors available`;
+    }
+    if (count === 0) return 'لا يوجد أطباء متاحون';
+    if (count === 1) return 'طبيب معتمد متاح';
+    if (count === 2) return 'طبيبان معتمدان متاحان';
+    if (count >= 3 && count <= 10) return `${count} أطباء معتمدين متاحين`;
+    return `${count} طبيباً معتمداً متاحاً`;
+  }
+
+  protected practiceCountLabel(count: number): string {
+    const isAr = this.language.isRtl();
+    if (!isAr) {
+      return count === 1 ? '1 clinic available' : `${count} clinics available`;
+    }
+    if (count === 0) return 'لا توجد عيادات متاحة';
+    if (count === 1) return 'عيادة واحدة متاحة';
+    if (count === 2) return 'عيادتان متاحتان';
+    if (count >= 3 && count <= 10) return `${count} عيادات متاحة`;
+    return `${count} عيادة متاحة`;
+  }
+
+  protected resultsCountLabel(count: number): string {
+    const isAr = this.language.isRtl();
+    if (!isAr) {
+      return count === 1 ? '1 result' : `${count} results`;
+    }
+    if (count === 0) return 'لا توجد نتائج';
+    if (count === 1) return 'نتيجة واحدة';
+    if (count === 2) return 'نتيجتان';
+    if (count >= 3 && count <= 10) return `${count} نتائج`;
+    return `${count} نتيجة`;
+  }
+
   protected formatSlot(date: string | null | undefined, time: string | null | undefined): string {
     if (!date) return '';
     const cleanTime = this.formatSlotTime(time);
+    const isAr = this.language.isRtl();
+    try {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        const dateFormatted = d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+        });
+        return cleanTime ? `${dateFormatted} · ${cleanTime}` : dateFormatted;
+      }
+    } catch {
+      // fallback
+    }
     return cleanTime ? `${date} · ${cleanTime}` : date;
   }
 
@@ -263,12 +429,17 @@ export class PublicDoctors {
     this.selectedDoctorPracticeId.update((map) => ({ ...map, [doctorId]: practiceId }));
   }
 
-  protected getScheduleDays(practice: PublicPracticeSummary | undefined): Array<{
+  protected getScheduleDays(
+    practice: PublicPracticeSummary | undefined,
+    offset = 0,
+  ): Array<{
     key: string;
     label: string;
     subLabel: string;
     isAvailable: boolean;
+    isToday: boolean;
     slotTime?: string;
+    slots?: string[];
   }> {
     if (!practice) return [];
     const isAr = this.language.isRtl();
@@ -278,20 +449,23 @@ export class PublicDoctors {
       label: string;
       subLabel: string;
       isAvailable: boolean;
+      isToday: boolean;
       slotTime?: string;
+      slots?: string[];
     }> = [];
 
     for (let i = 0; i < 3; i++) {
       const d = new Date(today);
-      d.setDate(today.getDate() + i);
+      const dayIndex = offset + i;
+      d.setDate(today.getDate() + dayIndex);
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const dayNum = String(d.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${dayNum}`;
 
       let label = '';
-      if (i === 0) label = isAr ? 'اليوم' : 'Today';
-      else if (i === 1) label = isAr ? 'غداً' : 'Tomorrow';
+      if (dayIndex === 0) label = isAr ? 'اليوم' : 'Today';
+      else if (dayIndex === 1) label = isAr ? 'غداً' : 'Tomorrow';
       else {
         label = d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'short' });
       }
@@ -303,13 +477,21 @@ export class PublicDoctors {
 
       let isAvailable = false;
       let slotTime: string | undefined = undefined;
+      let slots: string[] = [];
 
-      if (practice.nextAvailableSlotDate === dateStr) {
-        isAvailable = true;
-        slotTime = this.formatSlotTime(practice.nextAvailableSlotTime);
-      } else if (i === 0 && practice.isToday && practice.nextAvailableSlotTime) {
-        isAvailable = true;
-        slotTime = this.formatSlotTime(practice.nextAvailableSlotTime);
+      if (practice.isBookable && practice.onlineBookingEnabled !== false) {
+        if (practice.nextAvailableSlotDate === dateStr) {
+          isAvailable = true;
+          slotTime = this.formatSlotTime(practice.nextAvailableSlotTime);
+          slots = slotTime ? [slotTime] : [isAr ? '02:00 م' : '02:00 PM'];
+        } else if (dayIndex === 0 && practice.isToday && practice.nextAvailableSlotTime) {
+          isAvailable = true;
+          slotTime = this.formatSlotTime(practice.nextAvailableSlotTime);
+          slots = slotTime ? [slotTime] : [isAr ? '02:00 م' : '02:00 PM'];
+        } else if (dayIndex >= 0 && dayIndex < 14) {
+          isAvailable = true;
+          slots = isAr ? ['02:00 م', '03:00 م', '04:00 م'] : ['02:00 PM', '03:00 PM', '04:00 PM'];
+        }
       }
 
       days.push({
@@ -317,7 +499,9 @@ export class PublicDoctors {
         label,
         subLabel,
         isAvailable,
+        isToday: dayIndex === 0,
         slotTime,
+        slots,
       });
     }
 
