@@ -1,4 +1,5 @@
 <section class="record-access-section" [attr.aria-busy]="loading()" aria-labelledby="record-access-heading">
+  <!-- Section Header -->
   <div class="access-log-header">
     <div class="access-log-title-wrap">
       <div class="header-indicator-dot" aria-hidden="true"></div>
@@ -28,47 +29,183 @@
       <span>{{ 'recordAccess.unavailable' | t }}</span>
     </div>
   } @else {
-    @if (items().length) {
-      <div class="access-log-table-container">
-        <table class="access-log-table">
-          <caption class="visually-hidden">
-            {{ 'recordAccess.title' | t }}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col" class="col-actor">{{ 'recordAccess.actor' | t }}</th>
-              <th scope="col" class="col-action">{{ 'recordAccess.action' | t }}</th>
-              <th scope="col" class="col-time">{{ 'recordAccess.time' | t }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of items(); track item.entryId) {
-              <tr class="access-log-row">
-                <td class="col-actor">
-                  <div class="actor-cell">
-                    <span class="actor-icon-box" aria-hidden="true">
-                      <i class="fa-solid fa-user-shield"></i>
-                    </span>
-                    <span class="actor-name">{{ actorLabel(item.actorCategory) }}</span>
-                  </div>
-                </td>
-                <td class="col-action">
-                  <span class="action-badge">
-                    <span class="action-dot" aria-hidden="true"></span>
-                    <span>{{ actionLabel(item.action) }}</span>
-                  </span>
-                </td>
-                <td class="col-time">
-                  <time class="time-stamp-cell" dir="ltr" [attr.datetime]="item.occurredAtUtc">
-                    <i class="fa-regular fa-clock" aria-hidden="true"></i>
-                    <span>{{ item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
-                  </time>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+    @if (failed()) {
+      <div class="state-banner error-banner" role="alert">
+        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+        <span>{{ 'familyFlow.failed' | t }}</span>
+        <button
+          type="button"
+          class="btn-retry-failed"
+          [disabled]="loading()"
+          (click)="load(hasMore())"
+        >
+          <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+          <span>{{ 'common.retry' | t }}</span>
+        </button>
       </div>
+    }
+
+    <!-- Privacy & Reassurance Banner -->
+    <div class="privacy-shield-card">
+      <div class="shield-icon-wrap" aria-hidden="true">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div class="shield-content">
+        <div class="shield-title">{{ 'recordAccess.privacyShieldTitle' | t }}</div>
+        <p class="shield-desc">{{ 'recordAccess.privacyShieldDesc' | t }}</p>
+      </div>
+      @if (items().length) {
+        <div class="shield-stats-strip">
+          <div class="shield-stat-item">
+            <span class="stat-number">{{ stats().total }}</span>
+            <span class="stat-label">{{ 'recordAccess.statTotal' | t }}</span>
+          </div>
+          @if (stats().doctors > 0) {
+            <div class="shield-stat-item stat-accent-teal">
+              <span class="stat-number">{{ stats().doctors }}</span>
+              <span class="stat-label">{{ 'recordAccess.statDoctors' | t }}</span>
+            </div>
+          }
+          @if (stats().reception > 0) {
+            <div class="shield-stat-item stat-accent-navy">
+              <span class="stat-number">{{ stats().reception }}</span>
+              <span class="stat-label">{{ 'recordAccess.statClinics' | t }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (items().length) {
+      <!-- Quick Filter Pills -->
+      <div class="filter-pills-bar" role="tablist" aria-label="تصنيف الاطلاع">
+        <button
+          type="button"
+          class="filter-pill-btn"
+          [class.active]="activeFilter() === 'all'"
+          (click)="setFilter('all')"
+        >
+          <span>{{ 'recordAccess.filterAll' | t }}</span>
+          <span class="filter-count-badge">{{ stats().total }}</span>
+        </button>
+
+        @if (stats().doctors > 0) {
+          <button
+            type="button"
+            class="filter-pill-btn"
+            [class.active]="activeFilter() === 'doctor'"
+            (click)="setFilter('doctor')"
+          >
+            <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+            <span>{{ 'recordAccess.filterDoctor' | t }}</span>
+            <span class="filter-count-badge">{{ stats().doctors }}</span>
+          </button>
+        }
+
+        @if (stats().reception > 0) {
+          <button
+            type="button"
+            class="filter-pill-btn"
+            [class.active]="activeFilter() === 'reception'"
+            (click)="setFilter('reception')"
+          >
+            <i class="fa-solid fa-hospital-user" aria-hidden="true"></i>
+            <span>{{ 'recordAccess.filterReception' | t }}</span>
+            <span class="filter-count-badge">{{ stats().reception }}</span>
+          </button>
+        }
+
+        @if (stats().users > 0) {
+          <button
+            type="button"
+            class="filter-pill-btn"
+            [class.active]="activeFilter() === 'user'"
+            (click)="setFilter('user')"
+          >
+            <i class="fa-solid fa-circle-user" aria-hidden="true"></i>
+            <span>{{ 'recordAccess.filterPatient' | t }}</span>
+            <span class="filter-count-badge">{{ stats().users }}</span>
+          </button>
+        }
+
+        @if (stats().downloads > 0) {
+          <button
+            type="button"
+            class="filter-pill-btn"
+            [class.active]="activeFilter() === 'download'"
+            (click)="setFilter('download')"
+          >
+            <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+            <span>{{ 'recordAccess.filterDownload' | t }}</span>
+            <span class="filter-count-badge">{{ stats().downloads }}</span>
+          </button>
+        }
+      </div>
+
+      <!-- Log Table Container -->
+      @if (filteredItems().length) {
+        <div class="access-log-table-container">
+          <table class="access-log-table">
+            <caption class="visually-hidden">
+              {{ 'recordAccess.title' | t }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" class="col-actor">{{ 'recordAccess.actor' | t }}</th>
+                <th scope="col" class="col-action">{{ 'recordAccess.action' | t }}</th>
+                <th scope="col" class="col-time">{{ 'recordAccess.time' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of filteredItems(); track item.entryId) {
+                <tr class="access-log-row">
+                  <!-- Actor Cell -->
+                  <td class="col-actor">
+                    <div class="actor-cell">
+                      <div class="actor-icon-box" [class]="actorThemeClass(item.actorCategory)" aria-hidden="true">
+                        <i [class]="actorIcon(item.actorCategory)"></i>
+                      </div>
+                      <div class="actor-info">
+                        <span class="actor-name">{{ actorLabel(item.actorCategory) }}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Action Cell -->
+                  <td class="col-action">
+                    <span class="action-badge" [class]="actionThemeClass(item.action)">
+                      <i [class]="actionIcon(item.action)" aria-hidden="true"></i>
+                      <span>{{ actionLabel(item.action) }}</span>
+                    </span>
+                  </td>
+
+                  <!-- Time Cell -->
+                  <td class="col-time">
+                    <div class="time-cell-wrap">
+                      @if (formatRelativeDate(item.occurredAtUtc); as rel) {
+                        <span class="time-relative-pill">{{ rel }}</span>
+                      }
+                      <time class="time-stamp-cell" dir="ltr" [attr.datetime]="item.occurredAtUtc">
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                        <span>{{ item.occurredAtUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
+                      </time>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <!-- Filter Empty State -->
+        <div class="filter-empty-state">
+          <i class="fa-solid fa-filter-circle-xmark empty-icon" aria-hidden="true"></i>
+          <p class="filter-empty-text">{{ 'recordAccess.filterEmpty' | t }}</p>
+          <button type="button" class="btn-reset-filter" (click)="setFilter('all')">
+            {{ 'recordAccess.filterAll' | t }}
+          </button>
+        </div>
+      }
 
       @if (hasMore()) {
         <div class="load-more-wrap">

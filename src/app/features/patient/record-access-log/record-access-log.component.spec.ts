@@ -100,4 +100,43 @@ describe('RecordAccessLogComponent', () => {
     pending.complete();
     await load;
   });
+
+  it('normalizes actor categories and filters list by category pills', async () => {
+    const doctorEntry = {
+      entryId: 'e1',
+      actorCategory: 'doctor',
+      action: 'view',
+      occurredAtUtc: '2026-11-09T10:00:00Z',
+    };
+    const userEntry = {
+      entryId: 'e2',
+      actorCategory: 'user',
+      action: 'download',
+      occurredAtUtc: '2026-11-09T11:00:00Z',
+    };
+    api.patientAccessLog.mockReturnValueOnce(
+      of({ items: [doctorEntry, userEntry], hasMore: false }),
+    );
+    const fixture = TestBed.createComponent(RecordAccessLogComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Default 'all' filter shows both
+    expect(fixture.nativeElement.querySelectorAll('tbody tr')).toHaveLength(2);
+
+    // Filter to doctor only
+    fixture.componentInstance['setFilter']('doctor');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('tbody tr')).toHaveLength(1);
+
+    // Filter to user only
+    fixture.componentInstance['setFilter']('user');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('tbody tr')).toHaveLength(1);
+
+    // Filter to download action
+    fixture.componentInstance['setFilter']('download');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('tbody tr')).toHaveLength(1);
+  });
 });
