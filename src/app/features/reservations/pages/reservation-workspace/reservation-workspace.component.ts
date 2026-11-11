@@ -14,7 +14,6 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import {
   Reservation,
@@ -34,7 +33,6 @@ import { ReservationCheckInComponent } from '../../components/reservation-check-
     NgTemplateOutlet,
     RouterLink,
     PageHeader,
-    SideDrawer,
     ReservationDetailsComponent,
     ReservationEditorComponent,
     ReservationCheckInComponent,
@@ -77,6 +75,15 @@ export class ReservationWorkspaceComponent implements OnInit {
   readonly language = inject(LanguageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  readonly hasActiveDetail = computed(
+    () =>
+      !!this.store.detail() ||
+      this.store.detailLoading() ||
+      !!this.store.editor() ||
+      !!this.store.checkedInTicket() ||
+      !!this.store.pendingAttestation(),
+  );
 
   readonly emptyTitleKey = computed(() => {
     if (this.store.actor() !== 'Reception') return 'reservations.empty';

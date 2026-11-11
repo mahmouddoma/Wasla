@@ -28,7 +28,12 @@
     (actionClicked)="store.openEditor('create')"
   >
     <div pageHeaderDeck class="reservations-stats-deck">
-      @if (store.actor() !== 'Reception' && !store.isArchivedView() && !store.loading() && !store.listFailed()) {
+      @if (
+        store.actor() !== 'Reception' &&
+        !store.isArchivedView() &&
+        !store.loading() &&
+        !store.listFailed()
+      ) {
         <div class="stat-pill">
           <span class="stat-num">{{ store.page().totalCount }}</span>
           <span class="stat-lbl">{{ 'reservations.summary.total' | t }}</span>
@@ -60,794 +65,898 @@
     </div>
   </app-page-header>
 
-  <!-- Main Content Body -->
+  <!-- Main Content Body: Master-Detail Split Layout -->
   <div class="reservations-content">
-    <!-- Table Surface Panel with Unified Controls -->
-    <section class="table-surface-panel" [attr.aria-label]="'reservations.title' | t">
-      <div class="table-surface-header">
-        <div class="table-title-wrap">
-          <div class="table-icon-circle" aria-hidden="true">
-            <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
-          </div>
-          <div class="table-title-headings">
-            <h2 class="table-title">
-              {{
-                (store.actor() === 'Reception'
-                  ? 'reception.appointments.title'
-                  : 'reservations.records'
-                ) | t
-              }}
-            </h2>
-          </div>
-          <div class="table-header-meta">
-            @if (!store.loading() && !store.listFailed()) {
-              <span class="count-badge">
-                @if (store.actor() !== 'Reception') {
-                  <span class="pulse-dot"></span>
+    <div class="reservations-split-layout" [class.has-active-detail]="hasActiveDetail()">
+      <div class="reservations-master-pane">
+        <!-- Table Surface Panel with Unified Controls -->
+        <section class="table-surface-panel" [attr.aria-label]="'reservations.title' | t">
+          <div class="table-surface-header">
+            <div class="table-title-wrap">
+              <div class="table-icon-circle" aria-hidden="true">
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+              </div>
+              <div class="table-title-headings">
+                <h2 class="table-title">
+                  {{
+                    (store.actor() === 'Reception'
+                      ? 'reception.appointments.title'
+                      : 'reservations.records'
+                    ) | t
+                  }}
+                </h2>
+              </div>
+              <div class="table-header-meta">
+                @if (!store.loading() && !store.listFailed()) {
+                  <span class="count-badge">
+                    @if (store.actor() !== 'Reception') {
+                      <span class="pulse-dot"></span>
+                    }
+                    <span>{{ store.page().totalCount }} {{ 'reservations.count' | t }}</span>
+                  </span>
                 }
-                <span>{{ store.page().totalCount }} {{ 'reservations.count' | t }}</span>
-              </span>
-            }
-            @if (store.loading()) {
-              <span class="loading-inline-indicator">
-                <span class="spinner-ring-sm" aria-hidden="true"></span>
-                <span>{{ 'reservations.loading' | t }}</span>
-              </span>
-            }
-          </div>
-        </div>
+                @if (store.loading()) {
+                  <span class="loading-inline-indicator">
+                    <span class="spinner-ring-sm" aria-hidden="true"></span>
+                    <span>{{ 'reservations.loading' | t }}</span>
+                  </span>
+                }
+              </div>
+            </div>
 
-        <!-- Header Controls: Clinic Selector (Doctor) or Views/Date (Reception) -->
-        <div class="workspace-header-controls">
-          @if (store.actor() === 'Doctor') {
-            <div class="practice-selector-row">
-              <div class="practice-selector-label">
-                <div class="practice-icon-circle" aria-hidden="true">
-                  <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+            <!-- Header Controls: Clinic Selector (Doctor) or Views/Date (Reception) -->
+            <div class="workspace-header-controls">
+              @if (store.actor() === 'Doctor') {
+                <div class="practice-selector-row">
+                  <div class="practice-selector-label">
+                    <div class="practice-icon-circle" aria-hidden="true">
+                      <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+                    </div>
+                    <span class="field-title">{{ 'reservations.practice' | t }}</span>
+                  </div>
+                  <div class="practice-selector-input-wrap">
+                    <select
+                      class="practice-select"
+                      [value]="store.practiceId()"
+                      (change)="practice($event)"
+                      [disabled]="store.busy()"
+                      [attr.aria-label]="'reservations.practice' | t"
+                    >
+                      <option value="">{{ 'reservations.choose' | t }}</option>
+                      @for (p of store.practices(); track p.id) {
+                        <option [value]="p.id">{{ label(p) }}</option>
+                      }
+                    </select>
+                  </div>
                 </div>
-                <span class="field-title">{{ 'reservations.practice' | t }}</span>
+              }
+
+              @if (store.actor() === 'Reception') {
+                <div class="reception-view-toolbar">
+                  <div class="quick-views" role="group" [attr.aria-label]="'reservations.view' | t">
+                    @for (view of receptionViews; track view) {
+                      <button
+                        type="button"
+                        [attr.aria-pressed]="store.receptionView() === view"
+                        (click)="store.setReceptionView(view)"
+                      >
+                        {{ 'reception.appointments.view.' + view | t }}
+                      </button>
+                    }
+                  </div>
+
+                  <div
+                    class="reception-day-stepper"
+                    [attr.aria-label]="'reception.appointments.dateNav' | t"
+                  >
+                    <button
+                      type="button"
+                      class="btn-date-step btn-date-prev"
+                      (click)="stepDay(-1)"
+                      [title]="'reception.appointments.prevDay' | t"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        aria-hidden="true"
+                        class="icon-prev"
+                      >
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                      <span class="step-label">{{ 'reception.appointments.prevDay' | t }}</span>
+                    </button>
+
+                    <div class="date-stepper-display">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span class="date-stepper-text">{{ formattedCurrentDate() }}</span>
+                      @if (isTodaySelected()) {
+                        <span class="badge-today-pill">{{
+                          'reception.appointments.todayBadge' | t
+                        }}</span>
+                      } @else {
+                        <button type="button" class="btn-back-today" (click)="goToToday()">
+                          {{ 'reception.appointments.backToToday' | t }}
+                        </button>
+                      }
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn-date-step btn-date-next"
+                      (click)="stepDay(1)"
+                      [title]="'reception.appointments.nextDay' | t"
+                    >
+                      <span class="step-label">{{ 'reception.appointments.nextDay' | t }}</span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        aria-hidden="true"
+                        class="icon-next"
+                      >
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Patient Doctor Discovery Banner (when applicable) -->
+          @if (store.actor() === 'Patient' && !store.practiceId()) {
+            <div class="patient-doctor-discovery-row">
+              <div class="discovery-text">
+                <div class="discovery-icon-circle" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </div>
+                <div class="discovery-copy">
+                  <span class="discovery-title">{{ 'reservations.bookNewAppointment' | t }}</span>
+                  <span class="discovery-subtitle">{{ 'reservations.findDoctorHelp' | t }}</span>
+                </div>
               </div>
-              <div class="practice-selector-input-wrap">
-                <select
-                  class="practice-select"
-                  [value]="store.practiceId()"
-                  (change)="practice($event)"
-                  [disabled]="store.busy()"
-                  [attr.aria-label]="'reservations.practice' | t"
+              <a class="btn-find-doctor" routerLink="/doctors">
+                <span>{{ 'reservations.findDoctor' | t }}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  aria-hidden="true"
                 >
-                  <option value="">{{ 'reservations.choose' | t }}</option>
-                  @for (p of store.practices(); track p.id) {
-                    <option [value]="p.id">{{ label(p) }}</option>
-                  }
-                </select>
-              </div>
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </a>
             </div>
           }
 
-          @if (store.actor() === 'Reception') {
-            <div class="reception-view-toolbar">
-              <div class="quick-views" role="group" [attr.aria-label]="'reservations.view' | t">
-                @for (view of receptionViews; track view) {
+          <!-- ── Integrated Surface Filters & Search ───────────────────────── -->
+          @if (store.canView()) {
+            <div class="surface-filters-section">
+              <div class="search-and-tools-row">
+                @if (store.actor() === 'Patient' || store.actor() === 'Doctor') {
+                  <div class="reservation-view-filters">
+                    <div class="field-group">
+                      <label class="field-label"
+                        >{{ 'reservations.view' | t
+                        }}<select
+                          class="field-select"
+                          [value]="store.query().view ?? ''"
+                          (change)="setFilter('view', $event)"
+                        >
+                          @for (v of ['Upcoming', 'History', 'Archived', 'All']; track v) {
+                            <option [value]="v">{{ 'reservations.' + v | t }}</option>
+                          }
+                        </select></label
+                      >
+                    </div>
+                    <div class="field-group">
+                      <label class="field-label"
+                        >{{ 'reservations.patient' | t
+                        }}<select
+                          class="field-select"
+                          [value]="store.query().patientId ?? ''"
+                          (change)="setFilter('patientId', $event)"
+                        >
+                          <option value="">{{ 'reservations.All' | t }}</option>
+                          @for (p of viewPatients(); track p[0]) {
+                            <option [value]="p[0]">{{ label(p[1]) }}</option>
+                          }
+                        </select></label
+                      >
+                    </div>
+                  </div>
+                } @else {
+                  <div class="field-group-search">
+                    <div class="search-input-wrap">
+                      <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                      <input
+                        type="search"
+                        class="field-input search-input"
+                        [placeholder]="
+                          (store.actor() === 'Reception'
+                            ? 'reception.appointments.search'
+                            : 'reservations.search'
+                          ) | t
+                        "
+                        [value]="store.query().search ?? ''"
+                        (change)="setFilter('search', $event)"
+                      />
+                      @if (store.query().search) {
+                        <button
+                          type="button"
+                          class="btn-clear-search"
+                          (click)="clearSearch()"
+                          [title]="'common.resetFilters' | t"
+                          [attr.aria-label]="'common.resetFilters' | t"
+                        >
+                          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+
+                @if (hasActiveFilters()) {
                   <button
                     type="button"
-                    [attr.aria-pressed]="store.receptionView() === view"
-                    (click)="store.setReceptionView(view)"
+                    class="btn-reset-filters"
+                    (click)="resetFilters()"
+                    [title]="'common.resetFilters' | t"
                   >
-                    {{ 'reception.appointments.view.' + view | t }}
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    <span>{{ 'common.resetFilters' | t }}</span>
                   </button>
                 }
               </div>
 
-              <div
-                class="reception-day-stepper"
-                [attr.aria-label]="'reception.appointments.dateNav' | t"
-              >
+              @if (store.actor() === 'Reception') {
+                <details class="advanced-filters">
+                  <summary class="advanced-filters-summary">
+                    <div class="summary-title-box">
+                      <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                      <span>{{ 'reception.appointments.moreFilters' | t }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down summary-chevron" aria-hidden="true"></i>
+                  </summary>
+                  <ng-container [ngTemplateOutlet]="advancedFilters" />
+                </details>
+              } @else {
+                <ng-container [ngTemplateOutlet]="advancedFilters" />
+              }
+
+              <ng-template #advancedFilters>
+                <div class="filters-grid">
+                  <div class="field-group">
+                    <label class="field-label" for="filter-status">
+                      <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+                      {{ 'reservations.status' | t }}
+                    </label>
+                    <select
+                      id="filter-status"
+                      class="field-select"
+                      [value]="store.query().status ?? ''"
+                      (change)="setFilter('status', $event)"
+                    >
+                      <option value="">{{ 'reservations.All' | t }}</option>
+                      @for (
+                        s of store.filters()?.statuses || store.metadata()?.statuses || [];
+                        track s.code
+                      ) {
+                        <option [value]="s.code">{{ label(s) }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="field-group">
+                    <label class="field-label" for="filter-from">
+                      <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                      {{ 'reservations.from' | t }}
+                    </label>
+                    <input
+                      id="filter-from"
+                      type="date"
+                      dir="ltr"
+                      class="field-input date-input"
+                      [value]="store.query().fromDate ?? ''"
+                      (change)="setFilter('fromDate', $event)"
+                    />
+                  </div>
+
+                  <div class="field-group">
+                    <label class="field-label" for="filter-to">
+                      <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                      {{ 'reservations.to' | t }}
+                    </label>
+                    <input
+                      id="filter-to"
+                      type="date"
+                      dir="ltr"
+                      class="field-input date-input"
+                      [value]="store.query().toDate ?? ''"
+                      (change)="setFilter('toDate', $event)"
+                    />
+                  </div>
+
+                  @if (store.actor() !== 'Patient') {
+                    <div class="field-group">
+                      <label class="field-label" for="filter-source">
+                        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+                        {{ 'reservations.source' | t }}
+                      </label>
+                      <select
+                        id="filter-source"
+                        class="field-select"
+                        [value]="store.query().bookingSource ?? ''"
+                        (change)="setFilter('bookingSource', $event)"
+                      >
+                        <option value="">{{ 'reservations.All' | t }}</option>
+                        @for (
+                          s of store.filters()?.bookingSources ||
+                            store.metadata()?.bookingSources ||
+                            [];
+                          track s.code
+                        ) {
+                          <option [value]="s.code">{{ label(s) }}</option>
+                        }
+                      </select>
+                    </div>
+                  }
+
+                  @if (store.scoped()) {
+                    <div class="field-group">
+                      <label class="field-label" for="filter-segment">
+                        <i class="fa-solid fa-tags" aria-hidden="true"></i>
+                        {{
+                          (store.actor() === 'Reception'
+                            ? 'reception.appointments.visitPrice'
+                            : 'reservations.segment'
+                          ) | t
+                        }}
+                      </label>
+                      <select
+                        id="filter-segment"
+                        class="field-select"
+                        [value]="store.query().segmentId ?? ''"
+                        (change)="setFilter('segmentId', $event)"
+                      >
+                        <option value="">{{ 'reservations.All' | t }}</option>
+                        @for (s of store.filters()?.segments || []; track s.id) {
+                          <option [value]="s.id">{{ label(s) }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="filter-late">
+                        <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                        {{ 'reservations.late' | t }}
+                      </label>
+                      <select
+                        id="filter-late"
+                        class="field-select"
+                        [value]="store.query().isLate ?? ''"
+                        (change)="setFilter('isLate', $event)"
+                      >
+                        <option value="">{{ 'reservations.All' | t }}</option>
+                        <option value="true">{{ 'reservations.lateOnly' | t }}</option>
+                        <option value="false">{{ 'reservations.onTime' | t }}</option>
+                      </select>
+                    </div>
+                  }
+
+                  @if (store.actor() === 'Admin') {
+                    <div class="field-group">
+                      <label class="field-label" for="filter-doctor">
+                        <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+                        {{ 'reservations.doctorId' | t }}
+                      </label>
+                      <input
+                        id="filter-doctor"
+                        dir="ltr"
+                        class="field-input"
+                        [value]="store.query().doctorId ?? ''"
+                        (change)="setFilter('doctorId', $event)"
+                      />
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="filter-practice">
+                        <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+                        {{ 'reservations.practiceId' | t }}
+                      </label>
+                      <input
+                        id="filter-practice"
+                        dir="ltr"
+                        class="field-input"
+                        [value]="store.query().practiceId ?? ''"
+                        (change)="setFilter('practiceId', $event)"
+                      />
+                    </div>
+                  }
+                </div>
+              </ng-template>
+            </div>
+          }
+
+          @if (store.isArchivedView()) {
+            <section class="p-3" [attr.aria-busy]="store.loading()">
+              <p class="text-secondary">{{ 'archive.readOnlyNotice' | t }}</p>
+              @if (store.archivedItems().length) {
+                <div class="table-scroll">
+                  <table class="wasla-table">
+                    <caption class="sr-only">
+                      {{
+                        'archive.archivedReservations' | t
+                      }}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ 'reservations.reference' | t }}</th>
+                        <th scope="col">{{ 'tickets.businessDate' | t }}</th>
+                        <th scope="col">{{ 'archive.archivedAt' | t }}</th>
+                        <th scope="col">
+                          <span class="sr-only">{{ 'tickets.inspect' | t }}</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of store.archivedItems(); track item.reservationId) {
+                        <tr>
+                          <th scope="row">
+                            <bdi>{{ item.reservationReference }}</bdi>
+                          </th>
+                          <td>
+                            <time dir="ltr" [attr.datetime]="item.businessDate">{{
+                              item.businessDate
+                            }}</time>
+                          </td>
+                          <td>
+                            <time dir="ltr" [attr.datetime]="item.archivedAtUtc">{{
+                              item.archivedAtUtc | date: 'yyyy-MM-dd HH:mm'
+                            }}</time>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="store.inspect(item.reservationId, undefined, true)"
+                            >
+                              {{ 'tickets.inspect' | t }}
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else if (!store.loading() && !store.listFailed()) {
+                <div class="text-center py-4">
+                  <img
+                    class="state-empty-illustration"
+                    src="/SVG-AVATAR/Medical prescription-bro.svg"
+                    alt=""
+                    width="180"
+                    height="150"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <h2>{{ 'archive.noArchivedRecords' | t }}</h2>
+                  <p>{{ 'archive.emptyHelp' | t }}</p>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="store.loadList()"
+                  >
+                    {{ 'common.refresh' | t }}
+                  </button>
+                </div>
+              }
+              @if (store.loading()) {
+                <p role="status">{{ 'common.loading' | t }}</p>
+              }
+              @if (store.listFailed()) {
+                <div role="alert">
+                  <p>{{ 'familyFlow.failed' | t }}</p>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [disabled]="store.loading()"
+                    (click)="store.loadList(store.archiveHasMore())"
+                  >
+                    {{ 'common.retry' | t }}
+                  </button>
+                </div>
+              } @else if (store.archiveHasMore()) {
                 <button
                   type="button"
-                  class="btn-date-step btn-date-prev"
-                  (click)="stepDay(-1)"
-                  [title]="'reception.appointments.prevDay' | t"
+                  class="btn btn-outline-secondary"
+                  [disabled]="store.loading()"
+                  (click)="store.loadList(true)"
+                >
+                  {{ 'common.loadMore' | t }}
+                </button>
+              }
+            </section>
+          } @else {
+            <div class="table-scroll">
+              <table class="wasla-table">
+                <caption class="sr-only">
+                  {{
+                    'reservations.title' | t
+                  }}
+                  ·
+                  {{
+                    store.page().totalCount
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    @if (store.actor() !== 'Reception') {
+                      <th scope="col">{{ 'reservations.reference' | t }}</th>
+                    }
+                    <th scope="col">{{ 'reservations.patient' | t }}</th>
+                    @if (store.actor() !== 'Reception') {
+                      <th scope="col">{{ 'reservations.practice' | t }}</th>
+                    }
+                    <th scope="col">{{ 'reservations.appointment' | t }}</th>
+                    @if (store.actor() === 'Reception') {
+                      <th scope="col">{{ 'reception.appointments.visitPrice' | t }}</th>
+                    }
+                    <th scope="col">{{ 'reservations.status' | t }}</th>
+                    <th scope="col" class="th-actions">
+                      {{
+                        (store.actor() === 'Reception'
+                          ? 'reception.appointments.open'
+                          : 'reservations.inspect'
+                        ) | t
+                      }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of store.page().items; track r.reservationId) {
+                    <tr
+                      class="table-row"
+                      [class.is-selected-row]="store.detail()?.reservationId === r.reservationId"
+                    >
+                      @if (store.actor() !== 'Reception') {
+                        <td class="td-ref">
+                          <span class="mobile-cell-label" aria-hidden="true">{{
+                            'reservations.reference' | t
+                          }}</span>
+                          <span class="ref-badge" dir="ltr">{{ r.reference }}</span>
+                        </td>
+                      }
+                      <td class="td-patient">
+                        <span class="mobile-cell-label" aria-hidden="true">{{
+                          'reservations.patient' | t
+                        }}</span>
+                        <div class="cell-entity">
+                          <div class="avatar-circle-sm" aria-hidden="true">
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>
+                          </div>
+                          <span class="entity-name">{{ label(r.patient) }}</span>
+                        </div>
+                      </td>
+                      @if (store.actor() !== 'Reception') {
+                        <td class="td-practice">
+                          <span class="mobile-cell-label" aria-hidden="true">{{
+                            'reservations.practice' | t
+                          }}</span>
+                          <div class="cell-entity">
+                            <div class="clinic-icon-sm" aria-hidden="true">
+                              <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+                            </div>
+                            <span>{{ label(r.practice) }}</span>
+                          </div>
+                        </td>
+                      }
+                      <td class="td-appointment" dir="ltr">
+                        <span class="mobile-cell-label" aria-hidden="true">{{
+                          'reservations.appointment' | t
+                        }}</span>
+                        <div class="appointment-datetime-cell">
+                          <span class="cell-date">{{ r.appointment.businessDate }}</span>
+                          <span class="cell-time-tag">
+                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                            <span>{{
+                              r.appointment.scheduledTime || r.appointment.slotStartTime
+                            }}</span>
+                          </span>
+                        </div>
+                      </td>
+                      @if (store.actor() === 'Reception') {
+                        <td class="td-visit">
+                          <span class="mobile-cell-label" aria-hidden="true">{{
+                            'reception.appointments.visitPrice' | t
+                          }}</span
+                          ><span class="visit-name">{{ label(r.visitType) }}</span>
+                          @if (r.segment) {
+                            <span class="visit-name">{{ label(r.segment) }}</span>
+                          }
+                          @if (r.price !== undefined) {
+                            <bdi class="visit-price">{{ r.price }} {{ r.currency || 'EGP' }}</bdi>
+                          }
+                        </td>
+                      }
+                      <td class="td-status">
+                        <span class="mobile-cell-label" aria-hidden="true">{{
+                          'reservations.status' | t
+                        }}</span>
+                        <div class="status-cell-wrap">
+                          <span class="status-pill-badge" [class]="statusClass(r.status)">
+                            {{ status(r.status) }}
+                          </span>
+                          @if (r.isLate) {
+                            <span class="badge-late-alert">
+                              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                              <span>{{ 'reservations.late' | t }}</span>
+                            </span>
+                          }
+                        </div>
+                      </td>
+                      <td class="td-actions">
+                        @if (store.canArrive(r)) {
+                          <button
+                            type="button"
+                            class="btn-arrival-action btn btn-primary"
+                            (click)="openArrival(r)"
+                            [disabled]="store.busy()"
+                          >
+                            <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+                            <span>{{ 'reception.arrival.patientArrived' | t }}</span>
+                          </button>
+                        }
+                        <button
+                          type="button"
+                          class="btn-inspect-action"
+                          (click)="store.inspect(r.reservationId)"
+                          [disabled]="store.busy()"
+                          [title]="
+                            (store.actor() === 'Reception'
+                              ? 'reception.appointments.open'
+                              : 'reservations.inspect'
+                            ) | t
+                          "
+                        >
+                          <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                          <span>{{
+                            (store.actor() === 'Reception'
+                              ? 'reception.appointments.open'
+                              : 'reservations.inspect'
+                            ) | t
+                          }}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr class="empty-row">
+                      <td [attr.colspan]="store.actor() === 'Reception' ? 5 : 6">
+                        <div class="table-empty-box">
+                          @if (store.loading()) {
+                            <div
+                              class="reservation-skeleton-box py-3 w-100"
+                              role="status"
+                              [attr.aria-label]="'reservations.loading' | t"
+                            >
+                              <span class="visually-hidden">{{ 'reservations.loading' | t }}</span>
+                              @for (r of [1, 2, 3, 4]; track r) {
+                                <div
+                                  class="d-flex justify-content-between align-items-center py-2 border-bottom"
+                                >
+                                  <div class="skeleton-shimmer w-160 h-16"></div>
+                                  <div class="skeleton-shimmer w-110 h-14"></div>
+                                  <div class="skeleton-shimmer skeleton-pill-badge"></div>
+                                  <div class="skeleton-shimmer w-70 h-28 rounded-md"></div>
+                                </div>
+                              }
+                            </div>
+                          } @else if (store.listFailed()) {
+                            <img
+                              class="empty-illustration"
+                              src="/SVG-AVATAR/Medicine-rafiki.svg"
+                              alt=""
+                              aria-hidden="true"
+                              width="140"
+                              height="140"
+                            />
+                            <div role="alert">
+                              <p class="empty-title">{{ 'reservations.loadFailed' | t }}</p>
+                              <p class="empty-subtitle">{{ 'reservations.loadFailedHelp' | t }}</p>
+                            </div>
+                            <button type="button" class="btn-secondary" (click)="store.loadList()">
+                              {{ 'common.retry' | t }}
+                            </button>
+                          } @else {
+                            <img
+                              class="empty-illustration"
+                              src="/SVG-AVATAR/Doctors-rafiki (1).svg"
+                              alt=""
+                              aria-hidden="true"
+                              width="140"
+                              height="140"
+                            />
+                            <p class="empty-title">{{ emptyTitleKey() | t }}</p>
+                            <span class="empty-subtitle">{{ emptySubtitleKey() | t }}</span>
+                            @if (store.actor() === 'Reception' && store.canView()) {
+                              <div class="empty-actions">
+                                @if (store.canCreate()) {
+                                  <button
+                                    type="button"
+                                    class="btn btn-primary btn-empty-create"
+                                    (click)="store.openEditor('create')"
+                                  >
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      width="16"
+                                      height="16"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="2.2"
+                                      aria-hidden="true"
+                                    >
+                                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    <span>{{ 'reception.appointments.book' | t }}</span>
+                                  </button>
+                                }
+                                @if (store.isReceptionFiltered() || !isTodaySelected()) {
+                                  <button
+                                    type="button"
+                                    class="btn btn-secondary btn-empty-reset"
+                                    (click)="resetFilters()"
+                                  >
+                                    {{ 'reception.appointments.resetFilters' | t }}
+                                  </button>
+                                }
+                              </div>
+                            }
+                            @if (store.actor() === 'Patient') {
+                              <a class="btn-primary" routerLink="/doctors">
+                                {{ 'reservations.findDoctor' | t }}
+                              </a>
+                            }
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          <!-- Pagination Footer -->
+          @if (!store.isArchivedView() && !store.loading() && !store.listFailed()) {
+            <nav class="pagination-bar" [attr.aria-label]="'reservations.pagination' | t">
+              <div class="pagination-info">
+                <span>{{ 'reservations.title' | t }} · {{ store.page().totalCount }}</span>
+              </div>
+              <div class="pagination-controls">
+                <button
+                  type="button"
+                  class="btn-page btn-page-prev"
+                  (click)="page(-1)"
+                  [disabled]="store.page().pageNumber <= 1"
                 >
                   <svg
                     viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    aria-hidden="true"
-                    class="icon-prev"
-                  >
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                  </svg>
-                  <span class="step-label">{{ 'reception.appointments.prevDay' | t }}</span>
-                </button>
-
-                <div class="date-stepper-display">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="15"
-                    height="15"
+                    width="14"
+                    height="14"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
                     aria-hidden="true"
                   >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
+                    <polyline points="15 18 9 12 15 6"></polyline>
                   </svg>
-                  <span class="date-stepper-text">{{ formattedCurrentDate() }}</span>
-                  @if (isTodaySelected()) {
-                    <span class="badge-today-pill">{{
-                      'reception.appointments.todayBadge' | t
-                    }}</span>
-                  } @else {
-                    <button type="button" class="btn-back-today" (click)="goToToday()">
-                      {{ 'reception.appointments.backToToday' | t }}
-                    </button>
-                  }
-                </div>
-
+                  <span>{{ 'reservations.previous' | t }}</span>
+                </button>
+                <span class="page-current">{{ store.page().pageNumber }}</span>
                 <button
                   type="button"
-                  class="btn-date-step btn-date-next"
-                  (click)="stepDay(1)"
-                  [title]="'reception.appointments.nextDay' | t"
+                  class="btn-page btn-page-next"
+                  (click)="page(1)"
+                  [disabled]="
+                    store.page().pageNumber * store.page().pageSize >= store.page().totalCount
+                  "
                 >
-                  <span class="step-label">{{ 'reception.appointments.nextDay' | t }}</span>
+                  <span>{{ 'reservations.next' | t }}</span>
                   <svg
                     viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
+                    width="14"
+                    height="14"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2.2"
+                    stroke-width="2"
                     aria-hidden="true"
-                    class="icon-next"
                   >
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
                 </button>
               </div>
-            </div>
+            </nav>
           }
-        </div>
+        </section>
       </div>
 
-      <!-- Patient Doctor Discovery Banner (when applicable) -->
-      @if (store.actor() === 'Patient' && !store.practiceId()) {
-        <div class="patient-doctor-discovery-row">
-          <div class="discovery-text">
-            <div class="discovery-icon-circle" aria-hidden="true">
+      <!-- Detail Pane (Master-Detail side-by-side next to the table) -->
+      @if (hasActiveDetail()) {
+        <aside class="reservations-detail-pane" [attr.aria-label]="drawerTitle()">
+          <header class="detail-pane-header">
+            <div class="detail-pane-title-wrap">
+              <span class="detail-pane-indicator" aria-hidden="true"></span>
+              <div class="detail-pane-titles">
+                <h2 class="detail-pane-heading">{{ drawerTitle() }}</h2>
+                @if (drawerDescription()) {
+                  <p class="detail-pane-sub">{{ drawerDescription() }}</p>
+                }
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-detail-close"
+              [attr.aria-label]="'common.close' | t"
+              [disabled]="store.busy() || store.isAttesting()"
+              (click)="store.close()"
+            >
               <svg
                 viewBox="0 0 24 24"
                 width="18"
                 height="18"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </div>
-            <div class="discovery-copy">
-              <span class="discovery-title">{{ 'reservations.bookNewAppointment' | t }}</span>
-              <span class="discovery-subtitle">{{ 'reservations.findDoctorHelp' | t }}</span>
-            </div>
-          </div>
-          <a class="btn-find-doctor" routerLink="/doctors">
-            <span>{{ 'reservations.findDoctor' | t }}</span>
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </a>
-        </div>
-      }
-
-      <!-- ── Integrated Surface Filters & Search ───────────────────────── -->
-      @if (store.canView()) {
-        <div class="surface-filters-section">
-          <div class="search-and-tools-row">
-            @if (store.actor() === 'Patient' || store.actor() === 'Doctor') {
-              <div class="reservation-view-filters">
-                <div class="field-group">
-                  <label class="field-label"
-                    >{{ 'reservations.view' | t
-                    }}<select
-                      class="field-select"
-                      [value]="store.query().view ?? ''"
-                      (change)="setFilter('view', $event)"
-                    >
-                      @for (v of ['Upcoming', 'History', 'Archived', 'All']; track v) {
-                        <option [value]="v">{{ 'reservations.' + v | t }}</option>
-                      }
-                    </select></label
-                  >
-                </div>
-                <div class="field-group">
-                  <label class="field-label"
-                    >{{ 'reservations.patient' | t
-                    }}<select
-                      class="field-select"
-                      [value]="store.query().patientId ?? ''"
-                      (change)="setFilter('patientId', $event)"
-                    >
-                      <option value="">{{ 'reservations.All' | t }}</option>
-                      @for (p of viewPatients(); track p[0]) {
-                        <option [value]="p[0]">{{ label(p[1]) }}</option>
-                      }
-                    </select></label
-                  >
-                </div>
-              </div>
-            } @else {
-              <div class="field-group-search">
-                <div class="search-input-wrap">
-                  <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
-                  <input
-                    type="search"
-                    class="field-input search-input"
-                    [placeholder]="
-                      (store.actor() === 'Reception'
-                        ? 'reception.appointments.search'
-                        : 'reservations.search'
-                      ) | t
-                    "
-                    [value]="store.query().search ?? ''"
-                    (change)="setFilter('search', $event)"
-                  />
-                  @if (store.query().search) {
-                    <button
-                      type="button"
-                      class="btn-clear-search"
-                      (click)="clearSearch()"
-                      [title]="'common.resetFilters' | t"
-                      [attr.aria-label]="'common.resetFilters' | t"
-                    >
-                      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                    </button>
-                  }
-                </div>
-              </div>
-            }
-
-            @if (hasActiveFilters()) {
-              <button
-                type="button"
-                class="btn-reset-filters"
-                (click)="resetFilters()"
-                [title]="'common.resetFilters' | t"
-              >
-                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                <span>{{ 'common.resetFilters' | t }}</span>
-              </button>
-            }
-          </div>
-
-          @if (store.actor() === 'Reception') {
-            <details class="advanced-filters">
-              <summary class="advanced-filters-summary">
-                <div class="summary-title-box">
-                  <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-                  <span>{{ 'reception.appointments.moreFilters' | t }}</span>
-                </div>
-                <i class="fa-solid fa-chevron-down summary-chevron" aria-hidden="true"></i>
-              </summary>
-              <ng-container [ngTemplateOutlet]="advancedFilters" />
-            </details>
-          } @else {
-            <ng-container [ngTemplateOutlet]="advancedFilters" />
-          }
-
-          <ng-template #advancedFilters>
-            <div class="filters-grid">
-              <div class="field-group">
-                <label class="field-label" for="filter-status">
-                  <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
-                  {{ 'reservations.status' | t }}
-                </label>
-                <select
-                  id="filter-status"
-                  class="field-select"
-                  [value]="store.query().status ?? ''"
-                  (change)="setFilter('status', $event)"
-                >
-                  <option value="">{{ 'reservations.All' | t }}</option>
-                  @for (
-                    s of store.filters()?.statuses || store.metadata()?.statuses || [];
-                    track s.code
-                  ) {
-                    <option [value]="s.code">{{ label(s) }}</option>
-                  }
-                </select>
-              </div>
-
-              <div class="field-group">
-                <label class="field-label" for="filter-from">
-                  <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                  {{ 'reservations.from' | t }}
-                </label>
-                <input
-                  id="filter-from"
-                  type="date"
-                  dir="ltr"
-                  class="field-input date-input"
-                  [value]="store.query().fromDate ?? ''"
-                  (change)="setFilter('fromDate', $event)"
-                />
-              </div>
-
-              <div class="field-group">
-                <label class="field-label" for="filter-to">
-                  <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                  {{ 'reservations.to' | t }}
-                </label>
-                <input
-                  id="filter-to"
-                  type="date"
-                  dir="ltr"
-                  class="field-input date-input"
-                  [value]="store.query().toDate ?? ''"
-                  (change)="setFilter('toDate', $event)"
-                />
-              </div>
-
-              @if (store.actor() !== 'Patient') {
-                <div class="field-group">
-                  <label class="field-label" for="filter-source">
-                    <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
-                    {{ 'reservations.source' | t }}
-                  </label>
-                  <select
-                    id="filter-source"
-                    class="field-select"
-                    [value]="store.query().bookingSource ?? ''"
-                    (change)="setFilter('bookingSource', $event)"
-                  >
-                    <option value="">{{ 'reservations.All' | t }}</option>
-                    @for (
-                      s of store.filters()?.bookingSources ||
-                        store.metadata()?.bookingSources ||
-                        [];
-                      track s.code
-                    ) {
-                      <option [value]="s.code">{{ label(s) }}</option>
-                    }
-                  </select>
-                </div>
-              }
-
-              @if (store.scoped()) {
-                <div class="field-group">
-                  <label class="field-label" for="filter-segment">
-                    <i class="fa-solid fa-tags" aria-hidden="true"></i>
-                    {{
-                      (store.actor() === 'Reception'
-                        ? 'reception.appointments.visitPrice'
-                        : 'reservations.segment'
-                      ) | t
-                    }}
-                  </label>
-                  <select
-                    id="filter-segment"
-                    class="field-select"
-                    [value]="store.query().segmentId ?? ''"
-                    (change)="setFilter('segmentId', $event)"
-                  >
-                    <option value="">{{ 'reservations.All' | t }}</option>
-                    @for (s of store.filters()?.segments || []; track s.id) {
-                      <option [value]="s.id">{{ label(s) }}</option>
-                    }
-                  </select>
-                </div>
-
-                <div class="field-group">
-                  <label class="field-label" for="filter-late">
-                    <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-                    {{ 'reservations.late' | t }}
-                  </label>
-                  <select
-                    id="filter-late"
-                    class="field-select"
-                    [value]="store.query().isLate ?? ''"
-                    (change)="setFilter('isLate', $event)"
-                  >
-                    <option value="">{{ 'reservations.All' | t }}</option>
-                    <option value="true">{{ 'reservations.lateOnly' | t }}</option>
-                    <option value="false">{{ 'reservations.onTime' | t }}</option>
-                  </select>
-                </div>
-              }
-
-              @if (store.actor() === 'Admin') {
-                <div class="field-group">
-                  <label class="field-label" for="filter-doctor">
-                    <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
-                    {{ 'reservations.doctorId' | t }}
-                  </label>
-                  <input
-                    id="filter-doctor"
-                    dir="ltr"
-                    class="field-input"
-                    [value]="store.query().doctorId ?? ''"
-                    (change)="setFilter('doctorId', $event)"
-                  />
-                </div>
-
-                <div class="field-group">
-                  <label class="field-label" for="filter-practice">
-                    <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
-                    {{ 'reservations.practiceId' | t }}
-                  </label>
-                  <input
-                    id="filter-practice"
-                    dir="ltr"
-                    class="field-input"
-                    [value]="store.query().practiceId ?? ''"
-                    (change)="setFilter('practiceId', $event)"
-                  />
-                </div>
-              }
-            </div>
-          </ng-template>
-        </div>
-      }
-
-      @if (store.isArchivedView()) {
-        <section class="p-3" [attr.aria-busy]="store.loading()">
-          <p class="text-secondary">{{ 'archive.readOnlyNotice' | t }}</p>
-          @if (store.archivedItems().length) {
-            <div class="table-scroll">
-              <table class="wasla-table">
-                <caption class="sr-only">{{ 'archive.archivedReservations' | t }}</caption>
-                <thead><tr><th scope="col">{{ 'reservations.reference' | t }}</th><th scope="col">{{ 'tickets.businessDate' | t }}</th><th scope="col">{{ 'archive.archivedAt' | t }}</th><th scope="col"><span class="sr-only">{{ 'tickets.inspect' | t }}</span></th></tr></thead>
-                <tbody>
-                  @for (item of store.archivedItems(); track item.reservationId) {
-                    <tr>
-                      <th scope="row"><bdi>{{ item.reservationReference }}</bdi></th>
-                      <td><time dir="ltr" [attr.datetime]="item.businessDate">{{ item.businessDate }}</time></td>
-                      <td><time dir="ltr" [attr.datetime]="item.archivedAtUtc">{{ item.archivedAtUtc | date:'yyyy-MM-dd HH:mm' }}</time></td>
-                      <td><button type="button" class="btn btn-outline-secondary btn-sm" (click)="store.inspect(item.reservationId, undefined, true)">{{ 'tickets.inspect' | t }}</button></td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          } @else if (!store.loading() && !store.listFailed()) {
-            <div class="text-center py-4">
-              <img class="state-empty-illustration" src="/SVG-AVATAR/Medical prescription-bro.svg" alt="" width="180" height="150" loading="lazy" decoding="async" />
-              <h2>{{ 'archive.noArchivedRecords' | t }}</h2>
-              <p>{{ 'archive.emptyHelp' | t }}</p>
-              <button type="button" class="btn btn-outline-secondary" (click)="store.loadList()">{{ 'common.refresh' | t }}</button>
-            </div>
-          }
-          @if (store.loading()) { <p role="status">{{ 'common.loading' | t }}</p> }
-          @if (store.listFailed()) {
-            <div role="alert"><p>{{ 'familyFlow.failed' | t }}</p><button type="button" class="btn btn-outline-secondary" [disabled]="store.loading()" (click)="store.loadList(store.archiveHasMore())">{{ 'common.retry' | t }}</button></div>
-          } @else if (store.archiveHasMore()) {
-            <button type="button" class="btn btn-outline-secondary" [disabled]="store.loading()" (click)="store.loadList(true)">{{ 'common.loadMore' | t }}</button>
-          }
-        </section>
-      } @else {
-      <div class="table-scroll">
-        <table class="wasla-table">
-          <caption class="sr-only">
-            {{
-              'reservations.title' | t
-            }}
-            ·
-            {{
-              store.page().totalCount
-            }}
-          </caption>
-          <thead>
-            <tr>
-              @if (store.actor() !== 'Reception') {
-                <th scope="col">{{ 'reservations.reference' | t }}</th>
-              }
-              <th scope="col">{{ 'reservations.patient' | t }}</th>
-              @if (store.actor() !== 'Reception') {
-                <th scope="col">{{ 'reservations.practice' | t }}</th>
-              }
-              <th scope="col">{{ 'reservations.appointment' | t }}</th>
-              @if (store.actor() === 'Reception') {
-                <th scope="col">{{ 'reception.appointments.visitPrice' | t }}</th>
-              }
-              <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col" class="th-actions">
-                {{
-                  (store.actor() === 'Reception'
-                    ? 'reception.appointments.open'
-                    : 'reservations.inspect'
-                  ) | t
-                }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of store.page().items; track r.reservationId) {
-              <tr class="table-row">
-                @if (store.actor() !== 'Reception') {
-                  <td class="td-ref">
-                    <span class="mobile-cell-label" aria-hidden="true">{{
-                      'reservations.reference' | t
-                    }}</span>
-                    <span class="ref-badge" dir="ltr">{{ r.reference }}</span>
-                  </td>
-                }
-                <td class="td-patient">
-                  <span class="mobile-cell-label" aria-hidden="true">{{
-                    'reservations.patient' | t
-                  }}</span>
-                  <div class="cell-entity">
-                    <div class="avatar-circle-sm" aria-hidden="true">
-                      <i class="fa-solid fa-user" aria-hidden="true"></i>
-                    </div>
-                    <span class="entity-name">{{ label(r.patient) }}</span>
-                  </div>
-                </td>
-                @if (store.actor() !== 'Reception') {
-                  <td class="td-practice">
-                    <span class="mobile-cell-label" aria-hidden="true">{{
-                      'reservations.practice' | t
-                    }}</span>
-                    <div class="cell-entity">
-                      <div class="clinic-icon-sm" aria-hidden="true">
-                        <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
-                      </div>
-                      <span>{{ label(r.practice) }}</span>
-                    </div>
-                  </td>
-                }
-                <td class="td-appointment" dir="ltr">
-                  <span class="mobile-cell-label" aria-hidden="true">{{
-                    'reservations.appointment' | t
-                  }}</span>
-                  <div class="appointment-datetime-cell">
-                    <span class="cell-date">{{ r.appointment.businessDate }}</span>
-                    <span class="cell-time-tag">
-                      <i class="fa-regular fa-clock" aria-hidden="true"></i>
-                      <span>{{ r.appointment.scheduledTime || r.appointment.slotStartTime }}</span>
-                    </span>
-                  </div>
-                </td>
-                @if (store.actor() === 'Reception') {
-                  <td class="td-visit">
-                    <span class="mobile-cell-label" aria-hidden="true">{{
-                      'reception.appointments.visitPrice' | t
-                    }}</span
-                    ><span class="visit-name">{{ label(r.visitType) }}</span>
-                    @if (r.segment) {
-                      <span class="visit-name">{{ label(r.segment) }}</span>
-                    }
-                    @if (r.price !== undefined) {
-                      <bdi class="visit-price">{{ r.price }} {{ r.currency || 'EGP' }}</bdi>
-                    }
-                  </td>
-                }
-                <td class="td-status">
-                  <span class="mobile-cell-label" aria-hidden="true">{{
-                    'reservations.status' | t
-                  }}</span>
-                  <div class="status-cell-wrap">
-                    <span class="status-pill-badge" [class]="statusClass(r.status)">
-                      {{ status(r.status) }}
-                    </span>
-                    @if (r.isLate) {
-                      <span class="badge-late-alert">
-                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-                        <span>{{ 'reservations.late' | t }}</span>
-                      </span>
-                    }
-                  </div>
-                </td>
-                <td class="td-actions">
-                  @if (store.canArrive(r)) {
-                    <button
-                      type="button"
-                      class="btn-arrival-action btn btn-primary"
-                      (click)="openArrival(r)"
-                      [disabled]="store.busy()"
-                    >
-                      <i class="fa-solid fa-user-check" aria-hidden="true"></i>
-                      <span>{{ 'reception.arrival.patientArrived' | t }}</span>
-                    </button>
-                  }
-                  <button
-                    type="button"
-                    class="btn-inspect-action"
-                    (click)="store.inspect(r.reservationId)"
-                    [disabled]="store.busy()"
-                    [title]="
-                      (store.actor() === 'Reception'
-                        ? 'reception.appointments.open'
-                        : 'reservations.inspect'
-                      ) | t
-                    "
-                  >
-                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
-                    <span>{{
-                      (store.actor() === 'Reception'
-                        ? 'reception.appointments.open'
-                        : 'reservations.inspect'
-                      ) | t
-                    }}</span>
-                  </button>
-                </td>
-              </tr>
-            } @empty {
-              <tr class="empty-row">
-                <td [attr.colspan]="store.actor() === 'Reception' ? 5 : 6">
-                  <div class="table-empty-box">
-                    @if (store.loading()) {
-                      <div class="reservation-skeleton-box py-3 w-100" role="status" [attr.aria-label]="'reservations.loading' | t">
-                        <span class="visually-hidden">{{ 'reservations.loading' | t }}</span>
-                        @for (r of [1, 2, 3, 4]; track r) {
-                          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <div class="skeleton-shimmer w-160 h-16"></div>
-                            <div class="skeleton-shimmer w-110 h-14"></div>
-                            <div class="skeleton-shimmer skeleton-pill-badge"></div>
-                            <div class="skeleton-shimmer w-70 h-28 rounded-md"></div>
-                          </div>
-                        }
-                      </div>
-                    } @else if (store.listFailed()) {
-                      <img
-                        class="empty-illustration"
-                        src="/SVG-AVATAR/Medicine-rafiki.svg"
-                        alt=""
-                        aria-hidden="true"
-                        width="140"
-                        height="140"
-                      />
-                      <div role="alert">
-                        <p class="empty-title">{{ 'reservations.loadFailed' | t }}</p>
-                        <p class="empty-subtitle">{{ 'reservations.loadFailedHelp' | t }}</p>
-                      </div>
-                      <button type="button" class="btn-secondary" (click)="store.loadList()">
-                        {{ 'common.retry' | t }}
-                      </button>
-                    } @else {
-                      <img
-                        class="empty-illustration"
-                        src="/SVG-AVATAR/Doctors-rafiki (1).svg"
-                        alt=""
-                        aria-hidden="true"
-                        width="140"
-                        height="140"
-                      />
-                      <p class="empty-title">{{ emptyTitleKey() | t }}</p>
-                      <span class="empty-subtitle">{{ emptySubtitleKey() | t }}</span>
-                      @if (store.actor() === 'Reception' && store.canView()) {
-                        <div class="empty-actions">
-                          @if (store.canCreate()) {
-                            <button
-                              type="button"
-                              class="btn btn-primary btn-empty-create"
-                              (click)="store.openEditor('create')"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2.2"
-                                aria-hidden="true"
-                              >
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                              </svg>
-                              <span>{{ 'reception.appointments.book' | t }}</span>
-                            </button>
-                          }
-                          @if (store.isReceptionFiltered() || !isTodaySelected()) {
-                            <button
-                              type="button"
-                              class="btn btn-secondary btn-empty-reset"
-                              (click)="resetFilters()"
-                            >
-                              {{ 'reception.appointments.resetFilters' | t }}
-                            </button>
-                          }
-                        </div>
-                      }
-                      @if (store.actor() === 'Patient') {
-                        <a class="btn-primary" routerLink="/doctors">
-                          {{ 'reservations.findDoctor' | t }}
-                        </a>
-                      }
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      }
-      <!-- Pagination Footer -->
-      @if (!store.isArchivedView() && !store.loading() && !store.listFailed()) {
-        <nav class="pagination-bar" [attr.aria-label]="'reservations.pagination' | t">
-          <div class="pagination-info">
-            <span>{{ 'reservations.title' | t }} · {{ store.page().totalCount }}</span>
-          </div>
-          <div class="pagination-controls">
-            <button
-              type="button"
-              class="btn-page btn-page-prev"
-              (click)="page(-1)"
-              [disabled]="store.page().pageNumber <= 1"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.2"
                 aria-hidden="true"
               >
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-              <span>{{ 'reservations.previous' | t }}</span>
-            </button>
-            <span class="page-current">{{ store.page().pageNumber }}</span>
-            <button
-              type="button"
-              class="btn-page btn-page-next"
-              (click)="page(1)"
-              [disabled]="
-                store.page().pageNumber * store.page().pageSize >= store.page().totalCount
-              "
-            >
-              <span>{{ 'reservations.next' | t }}</span>
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <polyline points="9 18 15 12 9 6"></polyline>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
+          </header>
+          <div class="detail-pane-body">
+            <ng-container [ngTemplateOutlet]="reservationDetailContent" />
           </div>
-        </nav>
+        </aside>
       }
-    </section>
+    </div>
   </div>
 
-  <!-- ═══ Side Drawer: Reservation Details & Editor ═══ -->
-  <app-side-drawer
-    [opened]="
-      !!store.detail() ||
-      store.detailLoading() ||
-      !!store.editor() ||
-      !!store.checkedInTicket() ||
-      !!store.pendingAttestation()
-    "
-    [busy]="store.busy() || store.isAttesting()"
-    [title]="drawerTitle()"
-    [description]="drawerDescription()"
-    theme="navy"
-    width="640px"
-    (closed)="store.close()"
-  >
+  <!-- Shared Detail Template for Master-Detail & Mobile Drawer -->
+  <ng-template #reservationDetailContent>
     @if (store.checkedInTicket(); as ticket) {
       <section class="arrival-done" role="status">
         <!-- ══ 1. Success Announcement ══ -->
@@ -1294,5 +1403,5 @@
         <p>{{ 'reservations.loading' | t }}</p>
       </div>
     }
-  </app-side-drawer>
+  </ng-template>
 </main>

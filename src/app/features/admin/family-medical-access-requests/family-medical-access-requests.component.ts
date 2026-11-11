@@ -58,6 +58,41 @@ export class FamilyMedicalAccessRequestsComponent {
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.pageSize)),
   );
 
+  protected readonly totalCount = computed(
+    () => this.summary()?.totalCount ?? this.result()?.totalCount ?? 0,
+  );
+
+  protected readonly pendingCount = computed(() => {
+    const s = this.summary();
+    if (s?.pendingCount !== undefined && s?.pendingCount !== null) return s.pendingCount;
+    if (s?.countsByStatus && typeof s.countsByStatus['Pending'] === 'number') {
+      return s.countsByStatus['Pending'];
+    }
+    return this.result()?.items?.filter((i) => i.status === 'Pending').length ?? 0;
+  });
+
+  protected readonly restrictionCount = computed(() => {
+    const s = this.summary();
+    if (s?.restrictionCount !== undefined && s?.restrictionCount !== null) return s.restrictionCount;
+    if (s?.countsByType && typeof s.countsByType['Restriction'] === 'number') {
+      return s.countsByType['Restriction'];
+    }
+    return this.result()?.items?.filter((i) => i.requestType === 'Restriction').length ?? 0;
+  });
+
+  protected readonly restorationCount = computed(() => {
+    const s = this.summary();
+    if (s?.restorationCount !== undefined && s?.restorationCount !== null) return s.restorationCount;
+    if (s?.countsByType && typeof s.countsByType['Restoration'] === 'number') {
+      return s.countsByType['Restoration'];
+    }
+    return this.result()?.items?.filter((i) => i.requestType === 'Restoration').length ?? 0;
+  });
+
+  protected readonly hasActiveFilters = computed(
+    () => !!this.model().search.trim() || !!this.status() || !!this.requestType(),
+  );
+
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       if (this.searchTimer) clearTimeout(this.searchTimer);
@@ -129,6 +164,33 @@ export class FamilyMedicalAccessRequestsComponent {
     this.searchForm().reset();
     this.pageNumber.set(1);
     void this.load();
+  }
+
+  protected clearAllFilters(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.model.set({ search: '' });
+    this.searchForm().reset();
+    this.status.set('');
+    this.requestType.set('');
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected getStatusLabel(statusVal: string): string {
+    switch (statusVal) {
+      case 'Pending':
+        return this.uiLanguage.t('common.pendingReview');
+      case 'Approved':
+        return this.uiLanguage.t('common.approved');
+      case 'Rejected':
+        return this.uiLanguage.t('common.rejected');
+      case 'ModificationRequested':
+        return this.uiLanguage.t('common.modificationRequested');
+      case 'Withdrawn':
+        return this.uiLanguage.t('common.withdrawn');
+      default:
+        return statusVal;
+    }
   }
 
   protected setFilter(filter: 'status' | 'requestType', event: Event): void {

@@ -33,4 +33,41 @@ describe('RevenueDashboard', () => {
     expect(fixture.nativeElement.textContent).toContain('100');
     expect(fixture.nativeElement.textContent).not.toContain('patientId');
   });
+
+  it('updates dates and activePreset when a quick preset is clicked', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: FinanceApi,
+          useValue: {
+            adminRevenue: () =>
+              of({
+                summary: {
+                  grossRevenue: 250,
+                  totalRefunds: 0,
+                  netRevenue: 250,
+                  paymentCount: 2,
+                  refundCount: 0,
+                  currencyCode: 'EGP',
+                },
+                byDoctorPractice: [],
+              }),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(RevenueDashboard);
+    const component = fixture.componentInstance;
+    await fixture.whenStable();
+
+    (component as any).setPreset('thisYear');
+    expect((component as any).activePreset()).toBe('thisYear');
+    expect((component as any).model().fromDate.startsWith(new Date().getFullYear().toString())).toBe(true);
+
+    (component as any).clearFilters();
+    expect((component as any).activePreset()).toBe('thisMonth');
+    expect((component as any).model().doctorId).toBe('');
+    expect((component as any).model().practiceId).toBe('');
+  });
 });

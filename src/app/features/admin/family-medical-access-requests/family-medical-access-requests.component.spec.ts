@@ -118,4 +118,27 @@ describe('FamilyMedicalAccessRequestsComponent', () => {
     expect(component['status']()).toBe('');
     expect(component['requestType']()).toBe('');
   });
+
+  it('should reset all filters via clearAllFilters', () => {
+    component['status'].set('Pending');
+    component['requestType'].set('Restriction');
+    component['model'].set({ search: 'query' });
+    expect(component['hasActiveFilters']()).toBe(true);
+
+    component['clearAllFilters']();
+    expect(component['status']()).toBe('');
+    expect(component['requestType']()).toBe('');
+    expect(component['model']().search).toBe('');
+    expect(component['pageNumber']()).toBe(1);
+    expect(component['hasActiveFilters']()).toBe(false);
+  });
+
+  it('should return translated status label', () => {
+    expect(component['getStatusLabel']('Pending')).toBeTruthy();
+    expect(component['getStatusLabel']('Approved')).toBeTruthy();
+    expect(component['getStatusLabel']('Rejected')).toBeTruthy();
+    expect(component['getStatusLabel']('ModificationRequested')).toBeTruthy();
+    expect(component['getStatusLabel']('Withdrawn')).toBeTruthy();
+    expect(component['getStatusLabel']('UnknownStatus')).toBe('UnknownStatus');
+  });
 });

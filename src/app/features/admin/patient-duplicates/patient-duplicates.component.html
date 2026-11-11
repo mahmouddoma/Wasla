@@ -1,45 +1,472 @@
 <main class="duplicates-page" [dir]="language.dir()">
-  <app-page-header [heading]="'duplicates.title' | t" [description]="'duplicates.description' | t" icon="family-requests" [actionLabel]="'common.refresh' | t" actionIcon="refresh" [actionLoading]="loading()" (actionClicked)="load()" />
-  @if (!canView()) { <p role="alert">{{ 'duplicates.unavailable' | t }}</p> }
-  @else {
-    <section class="duplicates-surface" [attr.aria-busy]="loading()">
-      <label class="duplicate-filter">{{ 'common.status' | t }}
-        <select [value]="status()" [disabled]="loading()" (change)="setStatus($event)"><option value="">{{ 'reservations.All' | t }}</option>@for (value of statuses; track value) { <option [value]="value">{{ 'duplicates.status.' + value | t }}</option> }</select>
-      </label>
-      @if (loading()) { <p role="status">{{ 'common.loading' | t }}</p> }
-      @else if (failed()) { <div role="alert"><p>{{ 'common.failedToLoad' | t }}</p><button type="button" class="btn btn-outline-secondary" (click)="load()">{{ 'common.retry' | t }}</button></div> }
-      @else if (!result()?.items?.length) {
-        <div class="duplicate-empty text-center"><img class="state-empty-illustration" src="/SVG-AVATAR/Doctors-cuate.svg" alt="" loading="lazy" decoding="async" /><h2>{{ 'duplicates.empty' | t }}</h2><p>{{ 'duplicates.emptyHelp' | t }}</p><button type="button" class="btn btn-outline-secondary" (click)="load()">{{ 'common.refresh' | t }}</button></div>
+  <app-page-header
+    [heading]="'duplicates.title' | t"
+    [description]="'duplicates.description' | t"
+    icon="family-requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="load()"
+  />
+
+  @if (!canView()) {
+    <div class="permission-alert" role="alert">
+      <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p>{{ 'duplicates.unavailable' | t }}</p>
+    </div>
+  } @else {
+  <!-- Main Management Surface: Master-Detail Split Layout -->
+  <div class="duplicates-split-layout" [class.has-active-detail]="drawerOpen()">
+    <div class="duplicates-master-pane">
+      <div class="management-table-surface">
+      <!-- Integrated Toolbar & Quick Chips Bar -->
+      <div class="table-unified-toolbar">
+        <!-- Executive Quick Filter Chips Row (Rule 32.1: NO colored borders, NO dash "-") -->
+        <div class="summary-chips-row" role="region" [attr.aria-label]="'review.quickFilters' | t">
+          <button
+            type="button"
+            class="summary-chip"
+            [class.active]="status() === ''"
+            (click)="setQuickFilter('')"
+          >
+            <span class="chip-label">{{ 'reservations.All' | t }}</span>
+            @if (status() === '') {
+              <span class="chip-value">{{ totalCount() }}</span>
+            }
+          </button>
+
+          <button
+            type="button"
+            class="summary-chip"
+            [class.active]="status() === 'NeedsMoreEvidence'"
+            (click)="setQuickFilter('NeedsMoreEvidence')"
+          >
+            <span class="chip-dot dot-warning" aria-hidden="true"></span>
+            <span class="chip-label">{{ 'duplicates.status.NeedsMoreEvidence' | t }}</span>
+            @if (status() === 'NeedsMoreEvidence') {
+              <span class="chip-value">{{ totalCount() }}</span>
+            }
+          </button>
+
+          <button
+            type="button"
+            class="summary-chip"
+            [class.active]="status() === 'ConfirmedDuplicate'"
+            (click)="setQuickFilter('ConfirmedDuplicate')"
+          >
+            <span class="chip-dot dot-danger" aria-hidden="true"></span>
+            <span class="chip-label">{{ 'duplicates.status.ConfirmedDuplicate' | t }}</span>
+            @if (status() === 'ConfirmedDuplicate') {
+              <span class="chip-value">{{ totalCount() }}</span>
+            }
+          </button>
+
+          <button
+            type="button"
+            class="summary-chip"
+            [class.active]="status() === 'DistinctPatients'"
+            (click)="setQuickFilter('DistinctPatients')"
+          >
+            <span class="chip-dot dot-success" aria-hidden="true"></span>
+            <span class="chip-label">{{ 'duplicates.status.DistinctPatients' | t }}</span>
+            @if (status() === 'DistinctPatients') {
+              <span class="chip-value">{{ totalCount() }}</span>
+            }
+          </button>
+        </div>
+
+        <div class="filters-deck-integrated">
+          <label class="filter-select-integrated">
+            <span class="filter-select-label">{{ 'common.status' | t }}</span>
+            <div class="select-wrapper">
+              <select [value]="status()" [disabled]="loading()" (change)="setStatus($event)">
+                <option value="">{{ 'reservations.All' | t }}</option>
+                @for (value of statuses; track value) {
+                  <option [value]="value">{{ 'duplicates.status.' + value | t }}</option>
+                }
+              </select>
+              <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Loading State: Element Shimmer Skeleton -->
+      @if (loading() && !result()) {
+        <div class="skeleton-surface" role="status" [attr.aria-label]="'common.loading' | t">
+          <!-- Desktop Table Elements Skeleton -->
+          <div class="skeleton-table desktop-only">
+            <div class="skeleton-table-header">
+              <span class="skeleton-th skeleton-th-case"></span>
+              <span class="skeleton-th skeleton-th-status"></span>
+              <span class="skeleton-th skeleton-th-date"></span>
+              <span class="skeleton-th skeleton-th-action"></span>
+            </div>
+            <div class="skeleton-table-body">
+              @for (i of [1, 2, 3, 4, 5]; track i) {
+                <div class="skeleton-row-item">
+                  <div class="skeleton-cell">
+                    <div class="skeleton-line-shimmer w-case"></div>
+                  </div>
+                  <div class="skeleton-cell">
+                    <div class="skeleton-pill-shimmer"></div>
+                  </div>
+                  <div class="skeleton-cell">
+                    <div class="skeleton-line-shimmer w-date"></div>
+                  </div>
+                  <div class="skeleton-cell skeleton-cell-action">
+                    <div class="skeleton-btn-shimmer"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Mobile Cards Elements Skeleton -->
+          <div class="skeleton-cards-deck mobile-only">
+            @for (i of [1, 2, 3]; track i) {
+              <div class="skeleton-mobile-card">
+                <div class="skeleton-card-top">
+                  <div class="skeleton-line-shimmer w-case"></div>
+                  <div class="skeleton-pill-shimmer"></div>
+                </div>
+                <div class="skeleton-card-mid">
+                  <div class="skeleton-line-shimmer w-date"></div>
+                </div>
+                <div class="skeleton-card-bottom">
+                  <div class="skeleton-btn-full-shimmer"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      } @else if (failed()) {
+        <div class="state-container error-state" role="alert">
+          <div class="empty-icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3 class="empty-title">{{ 'common.failedToLoad' | t }}</h3>
+          <button type="button" class="btn-reset-filters" (click)="load()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>{{ 'common.retry' | t }}</span>
+          </button>
+        </div>
+      } @else if (!result()?.items?.length) {
+        <div class="state-container empty-state">
+          <div class="empty-icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+          </div>
+          <h2 class="empty-title">{{ 'duplicates.empty' | t }}</h2>
+          <p class="empty-help-text">{{ 'duplicates.emptyHelp' | t }}</p>
+          <div class="empty-actions-row">
+            @if (status()) {
+              <button type="button" class="btn-clear-filter" (click)="clearAllFilters()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>{{ 'common.resetFilters' | t }}</span>
+              </button>
+            }
+            <button type="button" class="btn-reset-filters" (click)="load()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              <span>{{ 'common.refresh' | t }}</span>
+            </button>
+          </div>
+        </div>
       } @else {
-        <div class="table-responsive"><table class="table align-middle">
-          <caption class="visually-hidden">{{ 'duplicates.title' | t }}</caption>
-          <thead><tr><th scope="col">{{ 'duplicates.created' | t }}</th><th scope="col">{{ 'common.status' | t }}</th><th scope="col"><span class="visually-hidden">{{ 'common.view' | t }}</span></th></tr></thead>
-          <tbody>@for (item of result()?.items || []; track item.caseId) { <tr><td><time dir="ltr">{{ item.createdOnUtc | date:'yyyy-MM-dd HH:mm' }}</time></td><td>{{ 'duplicates.status.' + item.status | t }}</td><td><button type="button" class="btn btn-outline-secondary" (click)="inspect(item.caseId)">{{ 'common.view' | t }}</button></td></tr> }</tbody>
-        </table></div>
-        @if (result(); as page) {
-          <nav class="d-flex justify-content-between align-items-center gap-3" [attr.aria-label]="'reservations.pagination' | t"><button type="button" class="btn btn-outline-secondary" [disabled]="page.pageNumber <= 1" (click)="load(page.pageNumber - 1)">{{ 'common.previous' | t }}</button><span>{{ page.pageNumber }}</span><button type="button" class="btn btn-outline-secondary" [disabled]="page.pageNumber * page.pageSize >= page.totalCount" (click)="load(page.pageNumber + 1)">{{ 'common.next' | t }}</button></nav>
-        }
+        <!-- 1. Desktop Table View (>= 992px) -->
+        <div class="table-container desktop-only">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'duplicates.created' | t }}</th>
+                <th scope="col">{{ 'duplicates.review' | t }}</th>
+                <th scope="col">{{ 'common.status' | t }}</th>
+                <th scope="col" class="action-column"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of result()?.items || []; track item.caseId) {
+                <tr
+                  class="clickable-row"
+                  [class.is-selected-row]="selectedCaseId() === item.caseId"
+                  tabindex="0"
+                  (click)="inspect(item.caseId)"
+                  (keydown.enter)="inspect(item.caseId)"
+                >
+                  <!-- Created Date -->
+                  <td class="date-cell">
+                    <time dir="ltr">{{ item.createdOnUtc | date: 'yyyy-MM-dd HH:mm' }}</time>
+                  </td>
+
+                  <!-- Case ID -->
+                  <td>
+                    <span class="case-badge code-font">#{{ item.caseId }}</span>
+                  </td>
+
+                  <!-- Status -->
+                  <td>
+                    <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                      <span class="status-dot"></span>
+                      <span class="status-text">{{ 'duplicates.status.' + item.status | t }}</span>
+                    </span>
+                  </td>
+
+                  <!-- Action -->
+                  <td class="action-cell">
+                    <button
+                      type="button"
+                      class="btn-inspect-row"
+                      (click)="$event.stopPropagation(); inspect(item.caseId)"
+                    >
+                      <span>{{ 'common.view' | t }}</span>
+                      <svg class="action-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. Mobile Cards View (< 992px) -->
+        <div class="mobile-cards-view mobile-only">
+          @for (item of result()?.items || []; track item.caseId) {
+            <article
+              class="mobile-request-card"
+              tabindex="0"
+              (click)="inspect(item.caseId)"
+              (keydown.enter)="inspect(item.caseId)"
+            >
+              <!-- Card Header -->
+              <div class="mobile-card-header">
+                <span class="case-badge code-font">#{{ item.caseId }}</span>
+                <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                  <span class="status-dot"></span>
+                  <span class="status-text">{{ 'duplicates.status.' + item.status | t }}</span>
+                </span>
+              </div>
+
+              <!-- Card Body -->
+              <div class="mobile-card-body">
+                <div class="mobile-date-row">
+                  <svg class="date-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                  </svg>
+                  <time dir="ltr">{{ item.createdOnUtc | date: 'yyyy-MM-dd HH:mm' }}</time>
+                </div>
+              </div>
+
+              <!-- Card Footer -->
+              <div class="mobile-card-footer">
+                <button
+                  type="button"
+                  class="btn-mobile-review"
+                  (click)="$event.stopPropagation(); inspect(item.caseId)"
+                >
+                  <span>{{ 'common.view' | t }}</span>
+                  <svg class="action-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+
+        <!-- Pagination Footer -->
+        <footer class="pagination-footer">
+          <div class="pagination-meta">
+            <span>{{ 'common.page' | t }} <strong>{{ pageNumber() }}</strong> / {{ totalPages() }}</span>
+            <span class="meta-separator">•</span>
+            <span>({{ totalCount() }} {{ 'common.total' | t }})</span>
+          </div>
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="pageNumber() <= 1 || loading()"
+              (click)="load(pageNumber() - 1)"
+            >
+              <svg class="nav-arrow" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>{{ 'common.previous' | t }}</span>
+            </button>
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="pageNumber() >= totalPages() || loading()"
+              (click)="load(pageNumber() + 1)"
+            >
+              <span>{{ 'common.next' | t }}</span>
+              <svg class="nav-arrow" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </footer>
       }
-    </section>
-  }
-  <app-side-drawer [opened]="drawerOpen() && canView()" [busy]="busy()" [title]="'duplicates.review' | t" width="720px" (closed)="close()">
-    @if (detailLoading()) { <p role="status">{{ 'common.loading' | t }}</p> }
-    @else if (detailFailed()) { <p role="alert">{{ 'common.failedToLoad' | t }}</p> }
-    @else if (selected(); as item) {
-      <p>{{ 'duplicates.noMerge' | t }}</p>
-      <div class="duplicate-comparison">
-        @for (patient of [item.patientA, item.patientB]; track patient.id; let first = $first) {
-          <section><h3>{{ (first ? 'duplicates.first' : 'duplicates.second') | t }}</h3><dl><dt>{{ 'discovery.name' | t }}</dt><dd>{{ patient.nameAr || ('duplicates.unnamed' | t) }}</dd><dt>{{ 'duplicates.birthDate' | t }}</dt><dd><time [attr.datetime]="patient.dateOfBirth">{{ patient.dateOfBirth | date:'mediumDate':'UTC':language.currentLang() }}</time></dd><dt>{{ 'workspace.email' | t }}</dt><dd><bdi>{{ patient.emailMasked || ('duplicates.emailUnavailable' | t) }}</bdi></dd></dl></section>
+      </div>
+    </div>
+
+    <!-- Master-Detail Side Pane (Side-by-side next to the table) -->
+    @if (drawerOpen() && canView()) {
+      <aside class="duplicates-detail-pane" [attr.aria-label]="'duplicates.review' | t">
+        <header class="detail-pane-header">
+          <div class="detail-pane-title-wrap">
+            <span class="detail-pane-indicator" aria-hidden="true"></span>
+            <div class="detail-pane-titles">
+              <h2 class="detail-pane-heading">{{ 'duplicates.review' | t }}</h2>
+              <p class="detail-pane-sub">{{ 'duplicates.noMerge' | t }}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-detail-close"
+            [attr.aria-label]="'common.close' | t"
+            [disabled]="busy()"
+            (click)="close()"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </header>
+        <div class="detail-pane-body">
+    @if (detailLoading()) {
+      <div class="drawer-loading-skeleton" role="status">
+        <div class="skeleton-line-shimmer w-title mb-3"></div>
+        <div class="skeleton-comparison-grid">
+          <div class="skeleton-card-shimmer"></div>
+          <div class="skeleton-card-shimmer"></div>
+        </div>
+      </div>
+    } @else if (detailFailed()) {
+      <div class="state-container error-state" role="alert">
+        <p>{{ 'common.failedToLoad' | t }}</p>
+      </div>
+    } @else if (selected(); as item) {
+      <div class="drawer-detail-body">
+        <!-- Informational Banner -->
+        <div class="info-notice-banner">
+          <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+          </svg>
+          <div class="notice-text">
+            <strong>{{ 'duplicates.noMerge' | t }}</strong>
+            <p>{{ (item.matchIndicators === 'PhoneOrDemographics' ? 'duplicates.demographicMatch' : 'duplicates.reviewEvidence') | t }}</p>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Patient Candidates Comparison Grid -->
+        <div class="duplicate-comparison duplicate-comparison-grid">
+          @for (patient of [item.patientA, item.patientB]; track patient.id; let first = $first) {
+            <div class="patient-candidate-card">
+              <div class="candidate-header">
+                <span class="candidate-order-badge">{{ (first ? 'duplicates.first' : 'duplicates.second') | t }}</span>
+                <span class="candidate-id code-font" dir="ltr">{{ patient.id }}</span>
+              </div>
+              <div class="candidate-body">
+                <div class="candidate-field">
+                  <span class="field-label">{{ 'discovery.name' | t }}</span>
+                  <strong class="field-val">{{ patient.nameAr || ('duplicates.unnamed' | t) }}</strong>
+                </div>
+                <div class="candidate-field">
+                  <span class="field-label">{{ 'duplicates.birthDate' | t }}</span>
+                  <span class="field-val">
+                    <time [attr.datetime]="patient.dateOfBirth">{{ patient.dateOfBirth | date: 'mediumDate':'UTC':language.currentLang() }}</time>
+                  </span>
+                </div>
+                <div class="candidate-field">
+                  <span class="field-label">{{ 'workspace.email' | t }}</span>
+                  <span class="field-val" dir="ltr">
+                    <bdi>{{ patient.emailMasked || ('duplicates.emailUnavailable' | t) }}</bdi>
+                  </span>
+                </div>
+                <div class="candidate-field">
+                  <span class="field-label">{{ 'common.gender' | t }}</span>
+                  <span class="field-val">{{ patient.gender }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Resolution Decision Form -->
+        @if (canResolve() && item.rowVersion) {
+          <form class="resolution-form-section" (submit)="resolve($event)" novalidate>
+            <h4 class="resolution-form-title">{{ 'duplicates.classification' | t }}</h4>
+
+            <fieldset [disabled]="busy()" class="resolution-fieldset">
+              <label class="form-control-row">
+                <span class="control-label">{{ 'duplicates.classification' | t }} <span class="req-star">*</span></span>
+                <div class="select-wrapper">
+                  <select [formField]="decisionForm.resolution">
+                    <option value="">{{ 'reservations.choose' | t }}</option>
+                    @for (value of statuses; track value) {
+                      <option [value]="value">{{ 'duplicates.status.' + value | t }}</option>
+                    }
+                  </select>
+                  <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </label>
+
+              <label class="form-control-row">
+                <span class="control-label">{{ 'duplicates.reason' | t }} <span class="req-star">*</span></span>
+                <textarea
+                  [formField]="decisionForm.reason"
+                  rows="3"
+                  class="decision-textarea"
+                  [placeholder]="'review.decisionNotes' | t"
+                ></textarea>
+              </label>
+
+              <div class="resolution-actions-row">
+                <button
+                  type="submit"
+                  class="btn-submit-decision"
+                  [disabled]="busy() || decisionForm().invalid()"
+                >
+                  @if (busy()) {
+                    <span class="spinner-inline" aria-hidden="true"></span>
+                  }
+                  <span>{{ 'duplicates.save' | t }}</span>
+                </button>
+              </div>
+            </fieldset>
+          </form>
         }
       </div>
-      <p>{{ (item.matchIndicators === 'PhoneOrDemographics' ? 'duplicates.demographicMatch' : 'duplicates.reviewEvidence') | t }}</p>
-      @if (canResolve() && item.rowVersion) {
-        <form (submit)="resolve($event)" novalidate><fieldset [disabled]="busy()">
-          <label>{{ 'duplicates.classification' | t }}<select [formField]="decisionForm.resolution"><option value="">{{ 'reservations.choose' | t }}</option>@for (value of statuses; track value) { <option [value]="value">{{ 'duplicates.status.' + value | t }}</option> }</select></label>
-          <label>{{ 'duplicates.reason' | t }}<textarea [formField]="decisionForm.reason" rows="4"></textarea></label>
-          <button type="submit" class="btn btn-primary" [disabled]="busy() || decisionForm().invalid()">{{ 'duplicates.save' | t }}</button>
-        </fieldset></form>
-      }
     }
-  </app-side-drawer>
+        </div>
+      </aside>
+    }
+  </div>
+}
 </main>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
@@ -23,12 +23,57 @@ export class RevenueDashboard implements OnInit {
   protected readonly messages = signal<readonly string[]>([]);
   protected readonly model = signal({ fromDate: '', toDate: '', doctorId: '', practiceId: '' });
   protected readonly filters = form(this.model);
+  protected readonly activePreset = signal<'thisMonth' | 'last30Days' | 'lastMonth' | 'thisYear' | 'custom'>('thisMonth');
+
+  protected readonly hasActiveFilters = computed(
+    () => !!this.model().doctorId.trim() || !!this.model().practiceId.trim() || this.activePreset() === 'custom',
+  );
 
   async ngOnInit(): Promise<void> {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    this.model.set({ fromDate: this.date(first), toDate: this.date(today), doctorId: '', practiceId: '' });
+    this.applyPreset('thisMonth', false);
     await this.load();
+  }
+
+  protected setPreset(preset: 'thisMonth' | 'last30Days' | 'lastMonth' | 'thisYear'): void {
+    this.applyPreset(preset, true);
+  }
+
+  private applyPreset(preset: 'thisMonth' | 'last30Days' | 'lastMonth' | 'thisYear', triggerLoad = true): void {
+    const today = new Date();
+    let from: Date;
+    let to: Date = today;
+
+    if (preset === 'thisMonth') {
+      from = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else if (preset === 'lastMonth') {
+      from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      to = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (preset === 'last30Days') {
+      from = new Date();
+      from.setDate(today.getDate() - 30);
+    } else {
+      from = new Date(today.getFullYear(), 0, 1);
+    }
+
+    this.activePreset.set(preset);
+    this.model.update((m) => ({
+      ...m,
+      fromDate: this.date(from),
+      toDate: this.date(to),
+    }));
+
+    if (triggerLoad) {
+      void this.load();
+    }
+  }
+
+  protected onDateChange(): void {
+    this.activePreset.set('custom');
+  }
+
+  protected clearFilters(): void {
+    this.model.update((m) => ({ ...m, doctorId: '', practiceId: '' }));
+    this.applyPreset('thisMonth', true);
   }
 
   protected async load(): Promise<void> {

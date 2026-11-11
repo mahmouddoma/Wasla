@@ -78,6 +78,21 @@ describe('Login', () => {
   });
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
+
+  it('renders prominent registration cards for patient and doctor and pricing explore banner', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    const patientReg = element.querySelector<HTMLAnchorElement>('#register-patient-btn');
+    const doctorReg = element.querySelector<HTMLAnchorElement>('#register-doctor-btn');
+    const pricingBanner = element.querySelector<HTMLAnchorElement>('#pricing-landing-link');
+
+    expect(patientReg).not.toBeNull();
+    expect(doctorReg).not.toBeNull();
+    expect(pricingBanner).not.toBeNull();
+    expect(patientReg?.getAttribute('href')).toBe('/register/patient');
+    expect(doctorReg?.getAttribute('href')).toBe('/register/doctor');
+    expect(pricingBanner?.getAttribute('href')).toBe('/pricing');
+  });
+
   it('sends an approved doctor with a pending subscription to subscription review', async () => {
     vi.spyOn(TestBed.inject(SubscriptionState), 'needsReview').mockReturnValue(true);
     fixture.componentInstance['model'].set({ identifier: 'doctor@example.com', password: 'Synthetic123!' });

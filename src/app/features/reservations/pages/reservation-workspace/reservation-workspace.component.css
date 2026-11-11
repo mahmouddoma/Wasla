@@ -175,7 +175,7 @@ app-page-header {
   cursor: not-allowed;
 }
 
-/* ── Content Container ───────────────────────────────────────────── */
+/* ── Content Container & Split Layout ───────────────────────────── */
 .reservations-content {
   position: relative;
   z-index: 5;
@@ -187,6 +187,186 @@ app-page-header {
   gap: 20px;
   flex: 1;
   min-width: 0;
+}
+
+.reservations-split-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+  transition: all 0.25s ease;
+}
+
+.reservations-master-pane {
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: all 0.25s ease;
+}
+
+.reservations-split-layout.has-active-detail .reservations-master-pane {
+  flex: 1 1 calc(100% - 500px);
+  max-width: calc(100% - 500px);
+}
+
+/* Detail Pane (Master-Detail side-by-side next to the table) */
+.reservations-detail-pane {
+  width: 480px;
+  min-width: 440px;
+  max-width: 500px;
+  flex-shrink: 0;
+  background: var(--wasla-surface, #ffffff);
+  border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  border-radius: var(--radius-major, 18px);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 20;
+}
+
+[dir='ltr'] .reservations-detail-pane {
+  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.detail-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, #093344 0%, #062330 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.detail-pane-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detail-pane-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wasla-teal-500, #0ba5a0);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(11, 165, 160, 0.7);
+}
+
+.detail-pane-titles {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-pane-heading {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-pane-sub {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: #9cb5c5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-detail-close {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-detail-close:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  transform: scale(1.05);
+}
+
+.detail-pane-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.drawer-scrollable-body {
+  padding: 16px;
+}
+
+.table-row.is-selected-row {
+  background: rgba(11, 165, 160, 0.06) !important;
+  box-shadow: inset 3px 0 0 var(--wasla-teal-500, #0ba5a0);
+}
+
+[dir='ltr'] .table-row.is-selected-row {
+  box-shadow: inset -3px 0 0 var(--wasla-teal-500, #0ba5a0);
+}
+
+@media (max-width: 991px) {
+  .reservations-split-layout.has-active-detail {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .reservations-split-layout.has-active-detail .reservations-master-pane {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+  }
+
+  .reservations-detail-pane {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: flex !important;
+  }
 }
 
 /* ── Unified Workspace Table Surface Panel ───────────────────────── */

@@ -230,7 +230,9 @@
             </div>
             <div class="info-field">
               <dt>{{ 'doctor.id' | t }}</dt>
-              <dd class="technical-value">{{ doctor.doctorId }}</dd>
+              <dd class="technical-value" [title]="doctor.doctorId">
+                <span class="guid-trunc">{{ doctor.doctorId }}</span>
+              </dd>
             </div>
           </dl>
         </section>
@@ -246,46 +248,68 @@
             <h2>{{ 'doctor.decisionHistory' | t }}</h2>
           </header>
           <dl class="information-grid governance-grid">
-            <div class="info-field">
-              <dt>{{ 'common.approvalDate' | t }}</dt>
-              <dd>{{ formatDate(doctor.approvedOnUtc) }}</dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.approvedBy' | t }}</dt>
-              <dd class="technical-value">
-                {{ doctor.approvedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
-              </dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.rejectedOn' | t }}</dt>
-              <dd>{{ formatDate(doctor.rejectedOnUtc) }}</dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.rejectedBy' | t }}</dt>
-              <dd class="technical-value">
-                {{ doctor.rejectedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
-              </dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.suspendedOn' | t }}</dt>
-              <dd>{{ formatDate(doctor.suspendedOnUtc) }}</dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.suspendedBy' | t }}</dt>
-              <dd class="technical-value">
-                {{ doctor.suspendedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
-              </dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.reactivatedOn' | t }}</dt>
-              <dd>{{ formatDate(doctor.reactivatedOnUtc) }}</dd>
-            </div>
-            <div class="info-field">
-              <dt>{{ 'common.reactivatedBy' | t }}</dt>
-              <dd class="technical-value">
-                {{ doctor.reactivatedByApplicationUserId || uiLanguage.t('common.notRegistered') }}
-              </dd>
-            </div>
+            @if (doctor.approvedOnUtc) {
+              <div class="info-field">
+                <dt>{{ 'common.approvalDate' | t }}</dt>
+                <dd>{{ formatDate(doctor.approvedOnUtc) }}</dd>
+              </div>
+            }
+            @if (doctor.approvedByApplicationUserId) {
+              <div class="info-field">
+                <dt>{{ 'common.approvedBy' | t }}</dt>
+                <dd class="technical-value" [title]="doctor.approvedByApplicationUserId">
+                  <span class="guid-trunc">{{ doctor.approvedByApplicationUserId }}</span>
+                </dd>
+              </div>
+            }
+            @if (doctor.rejectedOnUtc) {
+              <div class="info-field">
+                <dt>{{ 'common.rejectedOn' | t }}</dt>
+                <dd>{{ formatDate(doctor.rejectedOnUtc) }}</dd>
+              </div>
+            }
+            @if (doctor.rejectedByApplicationUserId) {
+              <div class="info-field">
+                <dt>{{ 'common.rejectedBy' | t }}</dt>
+                <dd class="technical-value" [title]="doctor.rejectedByApplicationUserId">
+                  <span class="guid-trunc">{{ doctor.rejectedByApplicationUserId }}</span>
+                </dd>
+              </div>
+            }
+            @if (doctor.suspendedOnUtc) {
+              <div class="info-field">
+                <dt>{{ 'common.suspendedOn' | t }}</dt>
+                <dd>{{ formatDate(doctor.suspendedOnUtc) }}</dd>
+              </div>
+            }
+            @if (doctor.suspendedByApplicationUserId) {
+              <div class="info-field">
+                <dt>{{ 'common.suspendedBy' | t }}</dt>
+                <dd class="technical-value" [title]="doctor.suspendedByApplicationUserId">
+                  <span class="guid-trunc">{{ doctor.suspendedByApplicationUserId }}</span>
+                </dd>
+              </div>
+            }
+            @if (doctor.reactivatedOnUtc) {
+              <div class="info-field">
+                <dt>{{ 'common.reactivatedOn' | t }}</dt>
+                <dd>{{ formatDate(doctor.reactivatedOnUtc) }}</dd>
+              </div>
+            }
+            @if (doctor.reactivatedByApplicationUserId) {
+              <div class="info-field">
+                <dt>{{ 'common.reactivatedBy' | t }}</dt>
+                <dd class="technical-value" [title]="doctor.reactivatedByApplicationUserId">
+                  <span class="guid-trunc">{{ doctor.reactivatedByApplicationUserId }}</span>
+                </dd>
+              </div>
+            }
+            @if (!doctor.approvedOnUtc && !doctor.rejectedOnUtc && !doctor.suspendedOnUtc && !doctor.reactivatedOnUtc) {
+              <div class="info-field">
+                <dt>{{ 'doctor.onboardingStatus' | t }}</dt>
+                <dd>{{ statusLabel(doctor.approvalStatus) }}</dd>
+              </div>
+            }
           </dl>
 
           @if (doctor.rejectionReason) {

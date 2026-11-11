@@ -57,6 +57,27 @@ export class FamilyMedicalEligibilityReviewsComponent {
   protected readonly selectedReviewId = signal<string | null>(null);
   protected readonly selectedReviewTitle = signal<string>('');
 
+  protected readonly totalCount = computed(() => this.result()?.totalCount ?? 0);
+
+  protected readonly approvedCount = computed(() => {
+    const items = this.result()?.items ?? [];
+    return items.filter((x) => x.status === 'Approved').length;
+  });
+
+  protected readonly rejectedCount = computed(() => {
+    const items = this.result()?.items ?? [];
+    return items.filter((x) => x.status === 'Rejected').length;
+  });
+
+  protected readonly revokedCount = computed(() => {
+    const items = this.result()?.items ?? [];
+    return items.filter((x) => x.status === 'Revoked').length;
+  });
+
+  protected readonly hasActiveFilters = computed(
+    () => !!this.model().search.trim() || !!this.status(),
+  );
+
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.pageSize)),
   );
@@ -119,9 +140,28 @@ export class FamilyMedicalEligibilityReviewsComponent {
     void this.load();
   }
 
-  protected setStatusFilter(event: Event): void {
+  protected clearAllFilters(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.model.set({ search: '' });
+    this.searchForm().reset();
+    this.status.set('');
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected setFilter(type: 'status', event: Event): void {
     const value = (event.currentTarget as HTMLSelectElement).value;
     this.status.set(value);
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected setQuickFilter(filter: 'all' | 'Approved' | 'Rejected' | 'Revoked'): void {
+    if (filter === 'all') {
+      this.status.set('');
+    } else {
+      this.status.set(filter);
+    }
     this.pageNumber.set(1);
     void this.load();
   }
@@ -130,5 +170,36 @@ export class FamilyMedicalEligibilityReviewsComponent {
     if (page < 1 || page > this.totalPages() || page === this.pageNumber()) return;
     this.pageNumber.set(page);
     void this.load();
+  }
+
+  protected getStatusLabel(status: string): string {
+    const isAr = this.uiLanguage.currentLang() === 'ar';
+    switch (status) {
+      case 'Approved':
+        return isAr ? 'معتمد' : 'Approved';
+      case 'Rejected':
+        return isAr ? 'مرفوض' : 'Rejected';
+      case 'Revoked':
+        return isAr ? 'ملغى' : 'Revoked';
+      case 'Pending':
+      case 'PendingReview':
+        return isAr ? 'قيد المراجعة' : 'Pending Review';
+      default:
+        return status;
+    }
+  }
+
+  protected formatDate(utc?: string | null): string {
+    if (!utc) return '—';
+    try {
+      const d = new Date(utc);
+      return d.toLocaleDateString(this.uiLanguage.currentLang() === 'ar' ? 'ar-EG' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return utc;
+    }
   }
 }

@@ -21,7 +21,6 @@ import {
 import { DoctorApprovalStatus } from '../../../domains/doctors';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { firstValueFrom } from 'rxjs';
-import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { DoctorDetails } from '../doctor-details/doctor-details';
 
 export interface StatusOption {
@@ -40,7 +39,7 @@ export interface DoctorsMetrics {
 
 @Component({
   selector: 'app-doctors-list',
-  imports: [FormField, PageHeader, TranslatePipe, SideDrawer, DoctorDetails],
+  imports: [FormField, PageHeader, TranslatePipe, DoctorDetails],
   templateUrl: './doctors-list.html',
   styleUrls: ['../management-list.css', './doctors-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,6 +95,31 @@ export class DoctorsList {
     rejected: 0,
     suspended: 0,
     loaded: false,
+  });
+
+  protected readonly totalCount = computed(() => {
+    if (this.metrics().loaded) return this.metrics().total;
+    return this.result()?.totalCount ?? 0;
+  });
+
+  protected readonly approvedCount = computed(() => {
+    if (this.metrics().loaded) return this.metrics().approved;
+    return this.doctors().filter((d) => d.approvalStatus === 'Approved').length;
+  });
+
+  protected readonly pendingCount = computed(() => {
+    if (this.metrics().loaded) return this.metrics().pending;
+    return this.doctors().filter((d) => d.approvalStatus === 'Pending').length;
+  });
+
+  protected readonly rejectedCount = computed(() => {
+    if (this.metrics().loaded) return this.metrics().rejected;
+    return this.doctors().filter((d) => d.approvalStatus === 'Rejected').length;
+  });
+
+  protected readonly suspendedCount = computed(() => {
+    if (this.metrics().loaded) return this.metrics().suspended;
+    return this.doctors().filter((d) => d.approvalStatus === 'Suspended').length;
   });
 
   protected readonly totalPages = computed(() =>

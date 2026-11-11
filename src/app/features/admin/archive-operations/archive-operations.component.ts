@@ -16,7 +16,6 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { Phase18Part2Api } from '../../../domains/phase18';
 import type { componentsPart2 as components } from '../../../domains/phase18';
 import { firstValueFrom } from 'rxjs';
@@ -34,7 +33,7 @@ type PracticeOption = components['schemas']['PracticeOption'];
 @Component({
   selector: 'app-archive-operations',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, PageHeader, SideDrawer],
+  imports: [CommonModule, FormsModule, TranslatePipe, PageHeader],
   templateUrl: './archive-operations.component.html',
   styleUrl: './archive-operations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -438,6 +437,114 @@ export class ArchiveOperationsComponent implements OnInit {
     } catch {
       return utcStr;
     }
+  }
+
+  calculateDuration(startedAtUtc?: string | null, endedAtUtc?: string | null): string {
+    if (!startedAtUtc || !endedAtUtc) return '—';
+    const start = new Date(startedAtUtc).getTime();
+    const end = new Date(endedAtUtc).getTime();
+    if (isNaN(start) || isNaN(end) || end < start) return '—';
+
+    const diffMs = end - start;
+    const isAr = this.language.currentLang() === 'ar';
+
+    if (diffMs < 1000) {
+      return isAr ? '< 1 ثانية' : '< 1s';
+    }
+    const diffSec = Math.round(diffMs / 1000);
+    if (diffSec < 60) {
+      return isAr ? `${diffSec} ثانية` : `${diffSec}s`;
+    }
+    const mins = Math.floor(diffSec / 60);
+    const remSec = diffSec % 60;
+    if (remSec === 0) {
+      return isAr ? `${mins} دقيقة` : `${mins}m`;
+    }
+    return isAr ? `${mins} دقيقة و ${remSec} ثانية` : `${mins}m ${remSec}s`;
+  }
+
+  getOutcomeStatusClass(outcome?: string | null): string {
+    if (!outcome) return 'status-neutral';
+    switch (outcome) {
+      case 'Completed':
+      case 'Succeeded':
+      case 'Success':
+      case 'Active':
+        return 'status-success';
+      case 'CompletedWithExceptions':
+      case 'Pending':
+        return 'status-warning';
+      case 'Failed':
+      case 'Cancelled':
+        return 'status-failed';
+      default:
+        return 'status-neutral';
+    }
+  }
+
+  formatOutcome(outcome?: string | null): string {
+    if (!outcome) return '—';
+    const isAr = this.language.currentLang() === 'ar';
+    const map: Record<string, { ar: string; en: string }> = {
+      Succeeded: { ar: 'ناجح', en: 'Succeeded' },
+      Success: { ar: 'ناجح', en: 'Success' },
+      Completed: { ar: 'مكتمل', en: 'Completed' },
+      CompletedWithExceptions: { ar: 'مكتمل مع استثناءات', en: 'Completed with Exceptions' },
+      Cancelled: { ar: 'ملغى', en: 'Cancelled' },
+      Failed: { ar: 'فشل', en: 'Failed' },
+      Pending: { ar: 'قيد الانتظار', en: 'Pending' },
+      Active: { ar: 'نشط', en: 'Active' },
+      Paused: { ar: 'متوقف مؤقتاً', en: 'Paused' },
+    };
+    return map[outcome] ? (isAr ? map[outcome].ar : map[outcome].en) : outcome;
+  }
+
+  formatEntityType(entity?: string | null): string {
+    if (!entity) return '—';
+    const isAr = this.language.currentLang() === 'ar';
+    const map: Record<string, { ar: string; en: string }> = {
+      OperationalDay: { ar: 'اليوم التشغيلي', en: 'Operational Day' },
+      Ticket: { ar: 'تذكرة كشف', en: 'Ticket' },
+      Reservation: { ar: 'حجز عيادة', en: 'Reservation' },
+      Doctor: { ar: 'طبيب', en: 'Doctor' },
+      Practice: { ar: 'عيادة', en: 'Practice' },
+      Patient: { ar: 'مريض', en: 'Patient' },
+      Encounter: { ar: 'كشف طبي', en: 'Encounter' },
+      Subscription: { ar: 'اشتراك', en: 'Subscription' },
+    };
+    return map[entity] ? (isAr ? map[entity].ar : map[entity].en) : entity;
+  }
+
+  formatAction(action?: string | null): string {
+    if (!action) return '—';
+    const isAr = this.language.currentLang() === 'ar';
+    const map: Record<string, { ar: string; en: string }> = {
+      OperationalDayClosed: { ar: 'إغلاق اليوم التشغيلي', en: 'Operational Day Closed' },
+      OperationalDayOpened: { ar: 'فتح اليوم التشغيلي', en: 'Operational Day Opened' },
+      TicketArchived: { ar: 'أرشفة تذكرة كشف', en: 'Ticket Archived' },
+      ReservationArchived: { ar: 'أرشفة حجز', en: 'Reservation Archived' },
+      TicketCreated: { ar: 'إنشاء تذكرة كشف', en: 'Ticket Created' },
+      ReservationCreated: { ar: 'إنشاء حجز', en: 'Reservation Created' },
+      LoginSucceeded: { ar: 'تسجيل دخول ناجح', en: 'Login Succeeded' },
+      LoginFailed: { ar: 'فشل تسجيل الدخول', en: 'Login Failed' },
+      SensitiveAccessLogged: { ar: 'تسجيل وصول حساس', en: 'Sensitive Access Logged' },
+    };
+    if (map[action]) return isAr ? map[action].ar : map[action].en;
+    return action.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  formatActor(actor?: string | null): string {
+    if (!actor) return '—';
+    const isAr = this.language.currentLang() === 'ar';
+    const map: Record<string, { ar: string; en: string }> = {
+      System: { ar: 'النظام الآلي', en: 'System' },
+      SuperAdmin: { ar: 'المشرف العام', en: 'Super Admin' },
+      Admin: { ar: 'المسؤول', en: 'Admin' },
+      Doctor: { ar: 'طبيب', en: 'Doctor' },
+      Receptionist: { ar: 'موظف الاستقبال', en: 'Receptionist' },
+      Patient: { ar: 'مريض', en: 'Patient' },
+    };
+    return map[actor] ? (isAr ? map[actor].ar : map[actor].en) : actor;
   }
 
   private allowed(tab: 'operations' | 'archives' | 'audit'): boolean {

@@ -74,7 +74,10 @@
     </div>
   </app-page-header>
 
-  @if (apiMessages().length) {
+  <!-- Master-Detail Split Layout -->
+  <div class="specializations-split-layout" [class.has-active-detail]="isDrawerOpen()">
+    <div class="specializations-master-pane">
+      @if (apiMessages().length) {
     <div class="state error" role="alert">
       <img class="state-illustration" src="/SVG-AVATAR/Medicine-cuate.svg" alt="" loading="lazy" decoding="async" />
       <h2>{{ 'roles.specializationsLoadFailed' | t }}</h2>
@@ -86,9 +89,24 @@
       </button>
     </div>
   } @else if (isLoading() && !result()) {
-    <div class="state" role="status">
-      <span class="loading-indicator" aria-hidden="true"></span>
-      <h2>{{ 'roles.loadingSpecializations' | t }}</h2>
+    <!-- True Element-by-Element Skeleton Cards Grid -->
+    <div class="specializations-grid skeleton-surface" role="status" [attr.aria-label]="'roles.loadingSpecializations' | t">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="spec-card skeleton-spec-card">
+          <div class="spec-card__top">
+            <div class="skeleton-icon-shimmer"></div>
+            <div class="skeleton-pill-shimmer w-order"></div>
+          </div>
+          <div class="spec-card__body">
+            <div class="skeleton-line-shimmer w-title"></div>
+            <div class="skeleton-line-shimmer w-subtitle"></div>
+          </div>
+          <div class="spec-card__footer">
+            <div class="skeleton-pill-shimmer w-status"></div>
+            <div class="skeleton-btn-shimmer"></div>
+          </div>
+        </div>
+      }
     </div>
   } @else if (result(); as page) {
     @if (page.items.length) {
@@ -98,6 +116,7 @@
             class="spec-card"
             [class.is-deleted]="item.isDeleted"
             [class.is-inactive]="!item.isActive"
+            [class.is-selected-card]="selectedItem()?.id === item.id"
             (click)="openDrawer(item)"
             tabindex="0"
             (keydown.enter)="openDrawer(item)"
@@ -184,26 +203,41 @@
       </div>
     }
   }
+    </div>
 
-  <!-- Specialization Details Side Drawer -->
-  <app-side-drawer
-    [opened]="isDrawerOpen()"
-    [title]="selectedItem()?.id ? uiLanguage.t('ui.expressions.33') + ' ' + selectedItem()!.nameAr : uiLanguage.t('ui.expressions.34')"
-    [description]="
-      selectedItem()?.id
-        ? uiLanguage.t('ui.expressions.35')
-        : uiLanguage.t('ui.expressions.36')
-    "
-    width="640px"
-    (closed)="closeDrawer()"
-  >
+    <!-- Specialization Details Master-Detail Pane -->
     @if (isDrawerOpen()) {
-      <app-medical-specialization-details
-        [specIdInput]="selectedItem()?.id ?? null"
-        [isDrawer]="true"
-        (saved)="handleSaved()"
-        (closed)="closeDrawer()"
-      />
+      <aside class="specializations-detail-pane" [attr.aria-label]="drawerTitle()">
+        <header class="detail-pane-header">
+          <div class="detail-pane-title-wrap">
+            <span class="detail-pane-indicator" aria-hidden="true"></span>
+            <div class="detail-pane-titles">
+              <h2 class="detail-pane-heading">{{ drawerTitle() }}</h2>
+              <p class="detail-pane-sub">{{ drawerSubTitle() }}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-detail-close"
+            [attr.aria-label]="'common.close' | t"
+            (click)="closeDrawer()"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="detail-pane-body">
+          <app-medical-specialization-details
+            [specIdInput]="selectedItem()?.id ?? null"
+            [isDrawer]="true"
+            (saved)="handleSaved()"
+            (closed)="closeDrawer()"
+          />
+        </div>
+      </aside>
     }
-  </app-side-drawer>
+  </div>
 </section>

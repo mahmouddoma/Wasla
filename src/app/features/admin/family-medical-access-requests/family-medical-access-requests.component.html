@@ -3,6 +3,10 @@
     [heading]="'review.medicalAccessRequests' | t"
     [description]="'review.medicalAccessHelp' | t"
     icon="family-requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="loading()"
+    (actionClicked)="loadAll()"
   />
 
   <!-- Error Alerts -->
@@ -55,7 +59,7 @@
           <span class="filter-select-label">{{ 'common.statusLabel' | t }}</span>
           <div class="select-wrapper">
             <select [value]="status()" (change)="setFilter('status', $event)">
-              <option value="">{{ 'common.all' | t }}</option>
+              <option value="">{{ 'review.allStatuses' | t }}</option>
               <option value="Pending">{{ 'common.pendingReview' | t }}</option>
               <option value="ModificationRequested">{{ 'common.modificationRequested' | t }}</option>
               <option value="Approved">{{ 'common.approved' | t }}</option>
@@ -72,7 +76,7 @@
           <span class="filter-select-label">{{ 'review.requestType' | t }}</span>
           <div class="select-wrapper">
             <select [value]="requestType()" (change)="setFilter('requestType', $event)">
-              <option value="">{{ 'common.all' | t }}</option>
+              <option value="">{{ 'review.allTypes' | t }}</option>
               <option value="Restriction">{{ 'review.restriction' | t }}</option>
               <option value="Restoration">{{ 'review.restoration' | t }}</option>
             </select>
@@ -84,78 +88,97 @@
       </div>
     </div>
 
-    <!-- Summary Metrics Quick Filter Bar -->
-    @if (summary(); as s) {
-      <div class="summary-chips-row">
-        <button
-          type="button"
-          class="summary-chip"
-          [class.active]="status() === '' && requestType() === ''"
-          (click)="setQuickFilter('all')"
-        >
-          <span class="chip-label">{{ 'review.totalRequests' | t }}</span>
-          <span class="chip-value">{{ s.totalCount ?? result()?.totalCount ?? 0 }}</span>
-        </button>
+    <!-- Summary Metrics Quick Filter Bar (Rule 32.1: NO colored borders) -->
+    <div class="summary-chips-row" role="region" [attr.aria-label]="'review.quickFilters' | t">
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="status() === '' && requestType() === ''"
+        (click)="setQuickFilter('all')"
+      >
+        <span class="chip-label">{{ 'review.totalRequests' | t }}</span>
+        <span class="chip-value">{{ totalCount() }}</span>
+      </button>
 
-        <button
-          type="button"
-          class="summary-chip"
-          [class.active]="status() === 'Pending'"
-          (click)="setQuickFilter('pending')"
-        >
-          <span class="chip-label">{{ 'review.pendingRequests' | t }}</span>
-          <span class="chip-value">{{ s.pendingCount ?? '-' }}</span>
-        </button>
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="status() === 'Pending'"
+        (click)="setQuickFilter('pending')"
+      >
+        <span class="chip-dot dot-pending" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'review.pendingRequests' | t }}</span>
+        <span class="chip-value">{{ pendingCount() }}</span>
+      </button>
 
-        <button
-          type="button"
-          class="summary-chip"
-          [class.active]="requestType() === 'Restriction'"
-          (click)="setQuickFilter('restriction')"
-        >
-          <span class="chip-label">{{ 'review.restrictionRequests' | t }}</span>
-          <span class="chip-value">{{ s.restrictionCount ?? '-' }}</span>
-        </button>
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="requestType() === 'Restriction'"
+        (click)="setQuickFilter('restriction')"
+      >
+        <span class="chip-dot dot-restriction" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'review.restrictionRequests' | t }}</span>
+        <span class="chip-value">{{ restrictionCount() }}</span>
+      </button>
 
-        <button
-          type="button"
-          class="summary-chip"
-          [class.active]="requestType() === 'Restoration'"
-          (click)="setQuickFilter('restoration')"
-        >
-          <span class="chip-label">{{ 'review.restorationRequests' | t }}</span>
-          <span class="chip-value">{{ s.restorationCount ?? '-' }}</span>
-        </button>
-      </div>
-    }
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="requestType() === 'Restoration'"
+        (click)="setQuickFilter('restoration')"
+      >
+        <span class="chip-dot dot-restoration" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'review.restorationRequests' | t }}</span>
+        <span class="chip-value">{{ restorationCount() }}</span>
+      </button>
+    </div>
 
-    <!-- Table or State Container -->
+    <!-- Content: Loading / Empty / Data Views -->
     @if (loading()) {
-      <div class="state-container loading-state" role="status">
-        <div class="spinner-ring" aria-hidden="true"></div>
-        <p>{{ 'common.loading' | t }}</p>
+      <!-- Shimmer Loading Skeletons -->
+      <div class="skeleton-surface" role="status" [attr.aria-label]="'common.loading' | t">
+        <div class="skeleton-deck desktop-only">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="skeleton-row-shimmer"></div>
+          }
+        </div>
+        <div class="skeleton-deck mobile-only">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="skeleton-card-shimmer"></div>
+          }
+        </div>
       </div>
     } @else if (!result()?.items?.length) {
+      <!-- Empty State -->
       <div class="state-container empty-state">
-        <img
-          src="/SVG-AVATAR/Doctors-cuate.svg"
-          alt=""
-          class="state-empty-illustration"
-          aria-hidden="true"
-        />
-        <p class="empty-help-text">{{ 'common.nothingFound' | t }}</p>
-        @if (model().search || status() || requestType()) {
+        <div class="empty-icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+        </div>
+        <h3 class="empty-title">
+          {{ (hasActiveFilters() ? 'review.noMatchingRequests' : 'review.emptyTitle') | t }}
+        </h3>
+        <p class="empty-help-text">
+          {{ (hasActiveFilters() ? 'review.noMatchingRequestsHint' : 'review.emptyDesc') | t }}
+        </p>
+        @if (hasActiveFilters()) {
           <button
             type="button"
             class="btn-reset-filters"
-            (click)="clearSearch(); setQuickFilter('all')"
+            (click)="clearAllFilters()"
           >
-            {{ 'medications.resetSearch' | t }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>{{ 'medications.resetSearch' | t }}</span>
           </button>
         }
       </div>
     } @else {
-      <div class="table-container">
+      <!-- 1. Desktop Table View (>= 992px) -->
+      <div class="table-container desktop-only">
         <table class="directory-table">
           <thead>
             <tr>
@@ -177,38 +200,81 @@
                 (click)="openReviewDrawer(item.requestId, item.requestId)"
                 (keydown.enter)="openReviewDrawer(item.requestId, item.requestId)"
               >
+                <!-- Request Type -->
                 <td>
                   <span
                     class="request-type-pill"
                     [class.restriction]="item.requestType === 'Restriction'"
+                    [class.restoration]="item.requestType === 'Restoration'"
                   >
-                    {{
-                      (item.requestType === 'Restriction'
-                        ? 'review.restriction'
-                        : 'review.restoration'
-                      ) | t
-                    }}
+                    @if (item.requestType === 'Restriction') {
+                      <svg class="pill-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd" />
+                      </svg>
+                      {{ 'review.restriction' | t }}
+                    } @else {
+                      <svg class="pill-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                      </svg>
+                      {{ 'review.restoration' | t }}
+                    }
                   </span>
                 </td>
+
+                <!-- Status -->
                 <td>
                   <span class="status-pill status-{{ item.status.toLowerCase() }}">
-                    {{ item.status }}
+                    <span class="status-dot"></span>
+                    <span class="status-text">{{ getStatusLabel(item.status) }}</span>
                   </span>
                 </td>
-                <td class="code-font" dir="ltr">{{ item.childPatientId }}</td>
-                <td class="code-font" dir="ltr">{{ item.affectedAdultPatientId }}</td>
-                <td class="reason-preview-cell">{{ item.reason }}</td>
-                <td>#{{ item.revision }}</td>
-                <td class="date-cell" dir="ltr">{{ item.submittedAtUtc }}</td>
+
+                <!-- Child ID -->
+                <td>
+                  <span class="id-badge-code" dir="ltr">
+                    <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                    </svg>
+                    <span>{{ item.childPatientId }}</span>
+                  </span>
+                </td>
+
+                <!-- Affected Adult ID -->
+                <td>
+                  <span class="id-badge-code" dir="ltr">
+                    <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                    <span>{{ item.affectedAdultPatientId }}</span>
+                  </span>
+                </td>
+
+                <!-- Reason -->
+                <td class="reason-preview-cell" [title]="item.reason">
+                  {{ item.reason }}
+                </td>
+
+                <!-- Revision -->
+                <td>
+                  <span class="revision-pill">#{{ item.revision }}</span>
+                </td>
+
+                <!-- Submitted Date -->
+                <td class="date-cell" dir="ltr">
+                  {{ item.submittedAtUtc }}
+                </td>
+
+                <!-- Action Button -->
                 <td class="action-cell">
                   <button
                     type="button"
                     class="btn-inspect-row"
-                    (click)="
-                      $event.stopPropagation(); openReviewDrawer(item.requestId, item.requestId)
-                    "
+                    (click)="$event.stopPropagation(); openReviewDrawer(item.requestId, item.requestId)"
                   >
-                    {{ 'common.viewDetails' | t }}
+                    <span>{{ 'review.viewRequestDetails' | t }}</span>
+                    <svg class="action-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
                   </button>
                 </td>
               </tr>
@@ -217,10 +283,78 @@
         </table>
       </div>
 
+      <!-- 2. Mobile Responsive Cards View (< 992px) -->
+      <div class="mobile-cards-view mobile-only">
+        @for (item of result()?.items ?? []; track item.requestId) {
+          <article
+            class="mobile-request-card"
+            tabindex="0"
+            (click)="openReviewDrawer(item.requestId, item.requestId)"
+            (keydown.enter)="openReviewDrawer(item.requestId, item.requestId)"
+          >
+            <!-- Card Header: Type, Revision & Status -->
+            <div class="mobile-card-header">
+              <div class="mobile-card-type-tags">
+                <span
+                  class="request-type-pill"
+                  [class.restriction]="item.requestType === 'Restriction'"
+                  [class.restoration]="item.requestType === 'Restoration'"
+                >
+                  {{ (item.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}
+                </span>
+                <span class="revision-pill">#{{ item.revision }}</span>
+              </div>
+              <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                <span class="status-dot"></span>
+                <span class="status-text">{{ getStatusLabel(item.status) }}</span>
+              </span>
+            </div>
+
+            <!-- Card Body: IDs and Reason -->
+            <div class="mobile-card-body">
+              <div class="mobile-kv-row">
+                <span class="mobile-kv-label">{{ 'review.childPatientId' | t }}:</span>
+                <span class="id-badge-code" dir="ltr">{{ item.childPatientId }}</span>
+              </div>
+              <div class="mobile-kv-row">
+                <span class="mobile-kv-label">{{ 'review.affectedAdultPatientId' | t }}:</span>
+                <span class="id-badge-code" dir="ltr">{{ item.affectedAdultPatientId }}</span>
+              </div>
+              @if (item.reason) {
+                <div class="mobile-reason-box">
+                  <p class="mobile-reason-text">{{ item.reason }}</p>
+                </div>
+              }
+              <div class="mobile-date-row">
+                <svg class="date-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+                <span dir="ltr">{{ item.submittedAtUtc }}</span>
+              </div>
+            </div>
+
+            <!-- Card Footer: Full-Width Primary Action -->
+            <div class="mobile-card-footer">
+              <button
+                type="button"
+                class="btn-mobile-review"
+                (click)="$event.stopPropagation(); openReviewDrawer(item.requestId, item.requestId)"
+              >
+                <span>{{ 'review.viewRequestDetails' | t }}</span>
+                <svg class="action-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
       <!-- Pagination Deck -->
       <footer class="pagination-footer">
         <div class="pagination-meta">
-          <span>{{ 'common.page' | t }} {{ pageNumber() }} / {{ totalPages() }}</span>
+          <span>{{ 'common.page' | t }} <strong>{{ pageNumber() }}</strong> / {{ totalPages() }}</span>
+          <span class="meta-separator">•</span>
           <span>({{ result()?.totalCount ?? 0 }} {{ 'common.total' | t }})</span>
         </div>
         <div class="pagination-controls">
@@ -230,7 +364,10 @@
             [disabled]="pageNumber() <= 1 || loading()"
             (click)="goToPage(pageNumber() - 1)"
           >
-            {{ 'reservations.previous' | t }}
+            <svg class="nav-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span>{{ 'reservations.previous' | t }}</span>
           </button>
           <button
             type="button"
@@ -238,7 +375,10 @@
             [disabled]="pageNumber() >= totalPages() || loading()"
             (click)="goToPage(pageNumber() + 1)"
           >
-            {{ 'reservations.next' | t }}
+            <span>{{ 'reservations.next' | t }}</span>
+            <svg class="nav-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
           </button>
         </div>
       </footer>

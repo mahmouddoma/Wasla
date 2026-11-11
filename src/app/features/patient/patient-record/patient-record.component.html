@@ -4,29 +4,29 @@
     [description]="'patientRecord.description' | t"
     icon="requests"
   >
-    <nav pageHeaderActions class="record-header-actions">
-      <div class="header-action-row">
-        @if (session.hasPermission('MedicalDocuments.CreateOwn')) {
-          <button type="button" class="btn btn-primary btn-upload-header" (click)="openUpload()">
-            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-            <span>{{ 'patientRecord.uploadDocument' | t }}</span>
-          </button>
-        }
-        @if (activeView() === 'timeline') {
-          <button
-            type="button"
-            class="btn-refresh-icon"
-            (click)="load()"
-            [disabled]="loading()"
-            [title]="'common.refresh' | t"
-            [attr.aria-label]="'common.refresh' | t"
-          >
-            <i class="fa-solid fa-rotate" [class.fa-spin]="loading()" aria-hidden="true"></i>
-          </button>
-        }
-      </div>
+    <div pageHeaderActions class="record-header-actions">
+      @if (session.hasPermission('MedicalDocuments.CreateOwn')) {
+        <button type="button" class="btn btn-primary btn-upload-header" (click)="openUpload()">
+          <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+          <span>{{ 'patientRecord.uploadDocument' | t }}</span>
+        </button>
+      }
+      @if (activeView() === 'timeline') {
+        <button
+          type="button"
+          class="btn-refresh-icon"
+          (click)="load()"
+          [disabled]="loading()"
+          [title]="'common.refresh' | t"
+          [attr.aria-label]="'common.refresh' | t"
+        >
+          <i class="fa-solid fa-rotate" [class.fa-spin]="loading()" aria-hidden="true"></i>
+        </button>
+      }
+    </div>
 
-      <div class="view-switch-pills" role="tablist">
+    <div pageHeaderDeck class="record-header-deck">
+      <nav class="view-switch-pills" role="tablist" aria-label="أقسام السجل الطبي">
         @if (session.hasPermission('MedicalRecords.ViewOwn')) {
           <button
             type="button"
@@ -50,7 +50,7 @@
           >
             <i class="fa-solid fa-eye" aria-hidden="true"></i>
             <span class="tab-label-full">{{ 'recordAccess.title' | t }}</span>
-            <span class="tab-label-short">{{ language.isRtl() ? 'سجل الاطلاع' : 'Access Log' }}</span>
+            <span class="tab-label-short">{{ 'recordAccess.tabTitle' | t }}</span>
           </button>
         }
         @if (session.hasPermission('MedicalDocuments.ViewOwn') || session.hasPermission('MedicalDocuments.CreateOwn')) {
@@ -64,11 +64,11 @@
           >
             <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
             <span class="tab-label-full">{{ 'historical.title' | t }}</span>
-            <span class="tab-label-short">{{ language.isRtl() ? 'المستندات' : 'Documents' }}</span>
+            <span class="tab-label-short">{{ 'historical.tabTitle' | t }}</span>
           </button>
         }
-      </div>
-    </nav>
+      </nav>
+    </div>
   </app-page-header>
 
   <section class="record-surface">
@@ -126,7 +126,7 @@
           </button>
         </div>
       } @else if (!entries().length) {
-        <div class="empty-state-surface">
+        <div class="empty-state-surface empty-state">
           <img
             src="/SVG-AVATAR/Medical prescription-bro.svg"
             alt=""

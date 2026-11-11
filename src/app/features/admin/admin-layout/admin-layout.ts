@@ -15,6 +15,12 @@ import {
   HostListener,
 } from '@angular/core';
 
+export interface AdminNavSection {
+  readonly id: string;
+  readonly labelKey: string;
+  readonly items: readonly NavigationItem[];
+}
+
 @Component({
   selector: 'app-admin-layout',
   imports: [RouterLink, RouterLinkActive, RouterOutlet, AppHeader, TranslatePipe, MobileNavigation],
@@ -87,8 +93,20 @@ export class AdminLayout {
         icon: 'clipboard-list',
         permission: PERMISSIONS.archiveOperationsView,
       },
-      { id: 'archives', labelKey: 'archive.title', route: '/admin/archives', icon: 'clipboard-list', permission: PERMISSIONS.archivePlatformView },
-      { id: 'audit', labelKey: 'audit.events', route: '/admin/audit', icon: 'shield', permission: PERMISSIONS.auditEventsView },
+      {
+        id: 'archives',
+        labelKey: 'archive.title',
+        route: '/admin/archives',
+        icon: 'building',
+        permission: PERMISSIONS.archivePlatformView,
+      },
+      {
+        id: 'audit',
+        labelKey: 'audit.events',
+        route: '/admin/audit',
+        icon: 'clock',
+        permission: PERMISSIONS.auditEventsView,
+      },
       {
         id: 'doctors',
         labelKey: 'admin.navDoctors',
@@ -142,7 +160,7 @@ export class AdminLayout {
         id: 'family-requests',
         labelKey: 'family.requests',
         route: '/admin/family-relationship-requests',
-        icon: 'users',
+        icon: 'user-check',
         permission: PERMISSIONS.familyRelationshipRequestsViewAll,
       },
       {
@@ -160,8 +178,62 @@ export class AdminLayout {
         permission: PERMISSIONS.familyMedicalAccessEligibilityReview,
       },
     ];
-    return definitions.filter((item) => this.session.hasPermission(item.permission) ||
-      (item.id === 'archives' && this.session.hasPermission(PERMISSIONS.archiveReservationsPlatformView)));
+    return definitions.filter(
+      (item) =>
+        this.session.hasPermission(item.permission) ||
+        (item.id === 'archives' &&
+          this.session.hasPermission(PERMISSIONS.archiveReservationsPlatformView)),
+    );
+  });
+
+  protected readonly navSections = computed<AdminNavSection[]>(() => {
+    const items = this.navItems();
+    const itemMap = new Map(items.map((i) => [i.id, i]));
+
+    const groupDefs: { id: string; labelKey: string; itemIds: string[] }[] = [
+      {
+        id: 'medical-network',
+        labelKey: 'admin.group.medicalNetwork',
+        itemIds: ['doctors', 'requests', 'specializations', 'subscriptions'],
+      },
+      {
+        id: 'patients-family',
+        labelKey: 'admin.group.patientsFamily',
+        itemIds: [
+          'family-review',
+          'family-requests',
+          'family-medical-access',
+          'family-medical-eligibilities',
+          'patient-claims',
+          'patient-duplicates',
+        ],
+      },
+      {
+        id: 'operations-catalog',
+        labelKey: 'admin.group.operationsCatalog',
+        itemIds: ['reservations', 'drug-catalog-managers', 'medical-catalog-managers'],
+      },
+      {
+        id: 'finance-revenue',
+        labelKey: 'admin.group.financeRevenue',
+        itemIds: ['revenue'],
+      },
+      {
+        id: 'security-governance',
+        labelKey: 'admin.group.securityGovernance',
+        itemIds: ['superadmins', 'roles', 'audit', 'archive-operations', 'archives'],
+      },
+    ];
+
+    return groupDefs
+      .map((group) => ({
+        id: group.id,
+        labelKey: group.labelKey,
+        items: group.itemIds
+          .map((id) => itemMap.get(id))
+          .filter((item): item is NavigationItem => !!item),
+      }))
+      .filter((section) => section.items.length > 0);
   });
   protected readonly mobileNavItems = computed(() => {
     const priorities = [

@@ -21,8 +21,8 @@
     <div class="hero-brand-center">
       <img
         src="/images/wasla-mark.png"
-        width="64"
-        height="64"
+        width="60"
+        height="60"
         alt=""
         class="hero-brand-symbol"
         decoding="async"
@@ -40,22 +40,15 @@
       <a routerLink="/login" class="auth-logo-link" [title]="'changePassword.home' | t">
         <img
           src="/images/wasla-mark.png"
-          width="1254"
-          height="1254"
+          width="54"
+          height="54"
           [alt]="'common.appName' | t"
           class="auth-logo-img"
         />
       </a>
+      <h1 class="auth-brand-heading">{{ 'common.appName' | t }}</h1>
       <p class="auth-platform-tagline">{{ 'common.platformSubtitle' | t }}</p>
     </header>
-
-    <!-- Heading and Subheading -->
-    <div class="auth-form-heading">
-      <div class="auth-heading-content">
-        <h1>{{ 'login.title' | t }}</h1>
-        <p>{{ 'login.subtitle' | t }}</p>
-      </div>
-    </div>
 
     @if (successStatus === 'patient-registered' || successStatus === 'patient-activated') {
       <div class="form-notice success welcome-card" role="status">
@@ -139,231 +132,241 @@
         </div>
       </div>
     }
-    <form class="auth-form" (submit)="onSubmit($event)" novalidate>
-      <!-- Field 1: Username / Email -->
-      <div class="form-group">
-        <label class="form-label" for="login-identifier">{{ 'login.usernameLabel' | t }}</label>
-        <div class="input-control">
-          <input
-            id="login-identifier"
-            type="text"
-            autocomplete="username"
-            [formField]="loginForm.identifier"
-            [placeholder]="'login.usernamePlaceholder' | t"
-          />
-          <span class="input-trailing-icon" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </span>
-        </div>
-        @if (loginForm.identifier().touched() && loginForm.identifier().errors().length) {
-          <small class="field-error">{{
-            loginForm.identifier().errors()[0].message ?? '' | t
-          }}</small>
-        }
-        @if (serverError('identifier')) {
-          <small class="field-error">{{ serverError('identifier') }}</small>
-        }
-      </div>
 
-      <!-- Field 2: Password -->
-      <div class="form-group">
-        <label class="form-label" for="login-password">{{ 'login.passwordLabel' | t }}</label>
-        <div class="input-control password-control">
-          <input
-            id="login-password"
-            [type]="showPassword() ? 'text' : 'password'"
-            autocomplete="current-password"
-            [formField]="loginForm.password"
-            [placeholder]="'login.passwordPlaceholder' | t"
-          />
-          <span class="input-trailing-icon" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </span>
-          <button
-            type="button"
-            class="btn-toggle-pwd"
-            (click)="togglePassword()"
-            [attr.aria-pressed]="showPassword()"
-            [attr.aria-label]="
-              showPassword() ? ('login.hidePassword' | t) : ('register.showPasswords' | t)
-            "
-          >
-            @if (showPassword()) {
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-                />
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
-            } @else {
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            }
-          </button>
-        </div>
-        @if (loginForm.password().touched() && loginForm.password().errors().length) {
-          <small class="field-error">{{
-            loginForm.password().errors()[0].message ?? '' | t
-          }}</small>
-        }
-        @if (serverError('password')) {
-          <small class="field-error">{{ serverError('password') }}</small>
-        }
-      </div>
-
-      <a routerLink="/forgot-password" class="forgot-link">{{ 'login.forgotPassword' | t }}</a>
-
-      <!-- Submit Button -->
-      <button
-        id="login-submit-btn"
-        class="btn-login-submit"
-        type="submit"
-        [disabled]="isSubmitting()"
-      >
-        @if (isSubmitting()) {
-          <span>{{ 'login.submitting' | t }}</span>
-        } @else {
-          <span>{{ 'login.submit' | t }}</span>
-          <svg
-            class="login-arrow-icon"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        }
-      </button>
-    </form>
-
-    <!-- Divider: أو أنشئ حسابًا جديدًا -->
-    <div class="login-divider">
-      <span>{{ 'login.orCreate' | t }}</span>
-    </div>
-
-    <!-- Role Switcher Cards Grid -->
-    <div class="login-role-cards">
-      <!-- Card: Patient -->
-      <a id="register-patient-btn" routerLink="/register/patient" class="role-card patient-card">
-        <div class="role-avatar-circle patient-circle">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path
-              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-            />
-          </svg>
-        </div>
-        <div class="role-text">
-          <div class="role-title-row">
-            <strong>{{ 'login.patientAccount' | t }}</strong>
-            <span class="role-badge role-badge-free">{{ 'login.patientFreeBadge' | t }}</span>
-          </div>
-          <small>{{ 'login.patientDesc' | t }}</small>
-        </div>
-        <svg
-          class="role-chevron"
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </a>
-
-      <!-- Card: Doctor -->
-      <a id="register-doctor-btn" routerLink="/register/doctor" class="role-card doctor-card">
-        <div class="role-avatar-circle doctor-circle">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
-            />
-          </svg>
-        </div>
-        <div class="role-text">
-          <div class="role-title-row">
-            <strong>{{ 'login.doctorAccount' | t }}</strong>
-            <span class="role-badge role-badge-trial">{{ 'login.doctorTrialBadge' | t }}</span>
-          </div>
-          <small>{{ 'login.doctorDesc' | t }}</small>
-        </div>
-        <svg
-          class="role-chevron"
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </a>
-    </div>
-    <!-- Explore Wasla Subscription Plans Banner -->
-    <a routerLink="/pricing" class="pricing-explore-card" id="pricing-landing-link">
-      <div class="pricing-avatar-circle">
+    <!-- ═══ 1. Featured Pricing & Subscription Plans Banner (مُبرز في البداية) ═══ -->
+    <a routerLink="/pricing" class="pricing-explore-hero-card" id="pricing-landing-link">
+      <div class="pricing-hero-badge-circle">
         <i class="fa-solid fa-gem" aria-hidden="true"></i>
       </div>
-      <div class="pricing-text">
-        <div class="pricing-title-row">
+      <div class="pricing-hero-text">
+        <div class="pricing-hero-title-row">
           <strong>{{ 'pricing.explorePlansHeading' | t }}</strong>
           <span class="pricing-trial-chip">{{ 'pricing.trialBadge' | t }}</span>
         </div>
         <small>{{ 'pricing.explorePlansSub' | t }}</small>
       </div>
       <svg
-        class="role-chevron"
+        class="pricing-hero-arrow"
         viewBox="0 0 24 24"
-        width="16"
-        height="16"
+        width="18"
+        height="18"
         fill="none"
         stroke="currentColor"
         stroke-width="2.5"
       >
-        <polyline points="15 18 9 12 15 6" />
+        <path d="M19 12H5M12 19l-7-7 7-7" />
       </svg>
     </a>
+
+    <!-- ═══ 2. أنشئ حساباً جديداً (في الأول قبل تسجيل الدخول) ═══ -->
+    <div class="register-hero-section">
+      <div class="section-divider-tag">
+        <span>{{ 'login.createAccountNow' | t }}</span>
+      </div>
+
+      <div class="register-cards-row">
+        <!-- Card 1: Patient Registration -->
+        <a id="register-patient-btn" routerLink="/register/patient" class="reg-hero-card patient-hero-card">
+          <div class="reg-hero-icon patient-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+              />
+            </svg>
+          </div>
+          <div class="reg-hero-content">
+            <div class="reg-hero-title-row">
+              <strong>{{ 'register.patientTitle' | t }}</strong>
+              <span class="reg-badge badge-free">{{ 'login.patientFreeBadge' | t }}</span>
+            </div>
+            <small>{{ 'login.patientDesc' | t }}</small>
+          </div>
+          <svg
+            class="reg-hero-chevron"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </a>
+
+        <!-- Card 2: Doctor Registration -->
+        <a id="register-doctor-btn" routerLink="/register/doctor" class="reg-hero-card doctor-hero-card">
+          <div class="reg-hero-icon doctor-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4.5 3v5a3.5 3.5 0 0 0 7 0V3" />
+              <path d="M8 11.5v3.5a4.5 4.5 0 0 0 9 0v-2.5" />
+              <circle cx="17" cy="10" r="2" />
+            </svg>
+          </div>
+          <div class="reg-hero-content">
+            <div class="reg-hero-title-row">
+              <strong>{{ 'register.doctorTitle' | t }}</strong>
+              <span class="reg-badge badge-trial">{{ 'login.doctorTrialBadge' | t }}</span>
+            </div>
+            <small>{{ 'login.doctorDesc' | t }}</small>
+          </div>
+          <svg
+            class="reg-hero-chevron"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- ═══ 3. تسجيل الدخول إلى حسابك ═══ -->
+    <div class="login-form-section">
+      <div class="section-divider-tag">
+        <span>{{ 'login.orSignIn' | t }}</span>
+      </div>
+
+      <form class="auth-form" (submit)="onSubmit($event)" novalidate>
+        <!-- Field 1: Username / Email -->
+        <div class="form-group">
+          <label class="form-label" for="login-identifier">{{ 'login.usernameLabel' | t }}</label>
+          <div class="input-control">
+            <input
+              id="login-identifier"
+              type="text"
+              autocomplete="username"
+              [formField]="loginForm.identifier"
+              [placeholder]="'login.usernamePlaceholder' | t"
+            />
+            <span class="input-trailing-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </span>
+          </div>
+          @if (loginForm.identifier().touched() && loginForm.identifier().errors().length) {
+            <small class="field-error">{{
+              loginForm.identifier().errors()[0].message ?? '' | t
+            }}</small>
+          }
+          @if (serverError('identifier')) {
+            <small class="field-error">{{ serverError('identifier') }}</small>
+          }
+        </div>
+
+        <!-- Field 2: Password -->
+        <div class="form-group">
+          <label class="form-label" for="login-password">{{ 'login.passwordLabel' | t }}</label>
+          <div class="input-control password-control">
+            <input
+              id="login-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="current-password"
+              [formField]="loginForm.password"
+              [placeholder]="'login.passwordPlaceholder' | t"
+            />
+            <span class="input-trailing-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </span>
+            <button
+              type="button"
+              class="btn-toggle-pwd"
+              (click)="togglePassword()"
+              [attr.aria-pressed]="showPassword()"
+              [attr.aria-label]="
+                showPassword() ? ('login.hidePassword' | t) : ('register.showPasswords' | t)
+              "
+            >
+              @if (showPassword()) {
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+                  />
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              } @else {
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              }
+            </button>
+          </div>
+          @if (loginForm.password().touched() && loginForm.password().errors().length) {
+            <small class="field-error">{{
+              loginForm.password().errors()[0].message ?? '' | t
+            }}</small>
+          }
+          @if (serverError('password')) {
+            <small class="field-error">{{ serverError('password') }}</small>
+          }
+        </div>
+
+        <a routerLink="/forgot-password" class="forgot-link">{{ 'login.forgotPassword' | t }}</a>
+
+        <!-- Submit Button -->
+        <button
+          id="login-submit-btn"
+          class="btn-login-submit"
+          type="submit"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <span>{{ 'login.submitting' | t }}</span>
+          } @else {
+            <span>{{ 'login.submit' | t }}</span>
+            <svg
+              class="login-arrow-icon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          }
+        </button>
+      </form>
+    </div>
   </div>
 </div>

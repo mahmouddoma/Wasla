@@ -1,153 +1,462 @@
-<main class="health-workspace admin-claims-workspace" [dir]="uiLanguage.dir()">
+<main class="management-page admin-claims-workspace" [dir]="uiLanguage.dir()">
   <app-page-header
     [heading]="'adminClaims.title' | t"
     [description]="'adminClaims.subtitle' | t"
     icon="requests"
+    [actionLabel]="'common.refresh' | t"
+    actionIcon="refresh"
+    [actionLoading]="isLoadingList()"
+    (actionClicked)="loadClaims(pageNumber())"
   />
 
-  <section class="claims-panel">
-    <!-- Filter & Search Bar -->
-    <form class="claims-filters-bar" (submit)="onSearchSubmit($event)" novalidate>
-      <div class="form-field">
-        <label for="claimStatusFilter">{{ 'common.status' | t }}</label>
-        <select
-          id="claimStatusFilter"
-          [value]="statusFilter()"
-          (change)="onStatusFilterChange($event)"
-          data-testid="claims-status-select"
-        >
-          <option value="">{{ 'common.all' | t }}</option>
-          <option value="PendingReview">{{ 'onboarding.status.PendingReview' | t }}</option>
-          <option value="ModificationRequested">
-            {{ 'onboarding.status.ModificationRequested' | t }}
-          </option>
-          <option value="ApprovedPendingActivation">
-            {{ 'onboarding.status.ApprovedPendingActivation' | t }}
-          </option>
-          <option value="Linked">{{ 'onboarding.status.Linked' | t }}</option>
-          <option value="Rejected">{{ 'onboarding.status.Rejected' | t }}</option>
-          <option value="Expired">{{ 'onboarding.status.Expired' | t }}</option>
-        </select>
+  @if (listError()) {
+    <div class="error-banner" role="alert">
+      <p>{{ listError() | t }}</p>
+    </div>
+  }
+
+  <!-- Main Management Surface: Master-Detail Split Layout -->
+  <div class="claims-split-layout" [class.has-active-detail]="drawerOpen()">
+    <div class="claims-master-pane">
+      <div class="management-table-surface">
+    <!-- Integrated Toolbar (Search + Filters) -->
+    <form class="table-toolbar-deck" (submit)="onSearchSubmit($event)" novalidate>
+      <div class="search-box-wrap">
+        <div class="search-input-box-integrated">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            id="claimEmailSearch"
+            type="search"
+            dir="ltr"
+            [value]="emailSearch()"
+            (input)="onEmailSearchInput($event)"
+            [placeholder]="'adminClaims.emailSearchPlaceholder' | t"
+            data-testid="claims-email-search-input"
+          />
+          @if (emailSearch()) {
+            <button
+              type="button"
+              class="btn-clear-search-integrated"
+              [attr.aria-label]="'common.clearSearch' | t"
+              (click)="clearSearch()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          }
+        </div>
       </div>
 
-      <div class="form-field claims-email-search">
-        <label for="claimEmailSearch">{{ 'workspace.email' | t }}</label>
-        <input
-          id="claimEmailSearch"
-          type="search"
-          dir="ltr"
-          [value]="emailSearch()"
-          (input)="onEmailSearchInput($event)"
-          [placeholder]="'adminClaims.emailSearchPlaceholder' | t"
-          data-testid="claims-email-search-input"
-        />
-      </div>
+      <div class="filters-deck-integrated">
+        <label class="filter-select-integrated" for="claimStatusFilter">
+          <span class="filter-select-label">{{ 'common.status' | t }}</span>
+          <div class="select-wrapper">
+            <select
+              id="claimStatusFilter"
+              [value]="statusFilter()"
+              (change)="onStatusFilterChange($event)"
+              data-testid="claims-status-select"
+            >
+              <option value="">{{ 'common.all' | t }}</option>
+              <option value="PendingReview">{{ 'onboarding.status.PendingReview' | t }}</option>
+              <option value="ModificationRequested">
+                {{ 'onboarding.status.ModificationRequested' | t }}
+              </option>
+              <option value="ApprovedPendingActivation">
+                {{ 'onboarding.status.ApprovedPendingActivation' | t }}
+              </option>
+              <option value="Linked">{{ 'onboarding.status.Linked' | t }}</option>
+              <option value="Rejected">{{ 'onboarding.status.Rejected' | t }}</option>
+              <option value="Expired">{{ 'onboarding.status.Expired' | t }}</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </label>
 
-      <div class="claims-filter-actions">
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn-search-submit"
           [disabled]="isLoadingList()"
           data-testid="claims-search-btn"
         >
-          <span>{{
-            (isLoadingList() ? 'reservations.loading' : 'reception.patients.search') | t
-          }}</span>
+          <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          </svg>
+          <span>{{ (isLoadingList() ? 'reservations.loading' : 'reception.patients.search') | t }}</span>
         </button>
       </div>
     </form>
 
-    @if (listError()) {
-      <div class="notice" role="alert">
-        <p>{{ listError() | t }}</p>
-      </div>
-    }
+    <!-- Executive Quick Filter Chips Row (Rule 32.1: NO colored borders) -->
+    <div class="summary-chips-row" role="region" [attr.aria-label]="'review.quickFilters' | t">
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="statusFilter() === ''"
+        (click)="setQuickFilter('')"
+      >
+        <span class="chip-label">{{ 'common.all' | t }}</span>
+        <span class="chip-value">{{ statusFilter() === '' ? totalCount() : items().length }}</span>
+      </button>
 
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="statusFilter() === 'PendingReview'"
+        (click)="setQuickFilter('PendingReview')"
+      >
+        <span class="chip-dot dot-pending" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'onboarding.status.PendingReview' | t }}</span>
+        <span class="chip-value">{{ pendingReviewCount() }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="statusFilter() === 'ModificationRequested'"
+        (click)="setQuickFilter('ModificationRequested')"
+      >
+        <span class="chip-dot dot-modification" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'onboarding.status.ModificationRequested' | t }}</span>
+        <span class="chip-value">{{ modificationRequestedCount() }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="statusFilter() === 'ApprovedPendingActivation'"
+        (click)="setQuickFilter('ApprovedPendingActivation')"
+      >
+        <span class="chip-dot dot-approved" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'onboarding.status.ApprovedPendingActivation' | t }}</span>
+        <span class="chip-value">{{ approvedCount() }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="summary-chip"
+        [class.active]="statusFilter() === 'Rejected'"
+        (click)="setQuickFilter('Rejected')"
+      >
+        <span class="chip-dot dot-rejected" aria-hidden="true"></span>
+        <span class="chip-label">{{ 'onboarding.status.Rejected' | t }}</span>
+        <span class="chip-value">{{ rejectedCount() }}</span>
+      </button>
+    </div>
+
+    <!-- Content Area: Shimmer Element Loading / Data / Empty -->
     @if (isLoadingList()) {
-      <div class="loading-state" role="status">
-        <span class="spinner-inline"></span>
-        <p>{{ 'reservations.loading' | t }}</p>
+      <div class="skeleton-surface" role="status" [attr.aria-label]="'common.loading' | t">
+        <!-- Desktop Table Elements Loading Skeleton -->
+        <div class="skeleton-table desktop-only">
+          <div class="skeleton-table-header">
+            <span class="skeleton-th skeleton-th-email"></span>
+            <span class="skeleton-th skeleton-th-status"></span>
+            <span class="skeleton-th skeleton-th-evidence"></span>
+            <span class="skeleton-th skeleton-th-date"></span>
+            <span class="skeleton-th skeleton-th-action"></span>
+          </div>
+          <div class="skeleton-table-body">
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <div class="skeleton-row-item">
+                <div class="skeleton-cell skeleton-cell-email">
+                  <div class="skeleton-circle-shimmer"></div>
+                  <div class="skeleton-line-shimmer w-email"></div>
+                </div>
+                <div class="skeleton-cell skeleton-cell-status">
+                  <div class="skeleton-pill-shimmer"></div>
+                </div>
+                <div class="skeleton-cell skeleton-cell-evidence">
+                  <div class="skeleton-line-shimmer w-badge"></div>
+                </div>
+                <div class="skeleton-cell skeleton-cell-date">
+                  <div class="skeleton-line-shimmer w-date"></div>
+                </div>
+                <div class="skeleton-cell skeleton-cell-action">
+                  <div class="skeleton-btn-shimmer"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Mobile Cards Elements Loading Skeleton -->
+        <div class="skeleton-cards-deck mobile-only">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="skeleton-mobile-card">
+              <div class="skeleton-card-top">
+                <div class="skeleton-line-shimmer w-email"></div>
+                <div class="skeleton-pill-shimmer"></div>
+              </div>
+              <div class="skeleton-card-mid">
+                <div class="skeleton-line-shimmer w-meta"></div>
+                <div class="skeleton-line-shimmer w-meta-sm"></div>
+              </div>
+              <div class="skeleton-card-bottom">
+                <div class="skeleton-btn-full-shimmer"></div>
+              </div>
+            </div>
+          }
+        </div>
       </div>
     } @else if (items().length) {
-      <div class="claims-directory-list" role="list" data-testid="claims-list">
+      <!-- 1. Desktop Table View (>= 992px) -->
+      <div class="table-container desktop-only" data-testid="claims-list">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'workspace.email' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
+              <th scope="col">{{ 'adminClaims.evidenceCount' | t }}</th>
+              <th scope="col">{{ 'review.submittedAt' | t }}</th>
+              <th scope="col" class="action-column"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr
+                class="clickable-row"
+                [class.is-selected-row]="selectedClaimId() === item.id"
+                tabindex="0"
+                data-testid="claim-row"
+                (click)="openClaimDrawer(item.id)"
+                (keydown.enter)="openClaimDrawer(item.id)"
+              >
+                <!-- Claimant Email -->
+                <td>
+                  <span class="id-badge-code" dir="ltr">
+                    <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                    <strong>{{ item.claimantEmailMasked }}</strong>
+                  </span>
+                </td>
+
+                <!-- Status -->
+                <td>
+                  <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                    <span class="status-dot"></span>
+                    <span class="status-text">{{ getStatusLabel(item.status) }}</span>
+                  </span>
+                </td>
+
+                <!-- Evidence Files Count -->
+                <td>
+                  <span class="evidence-count-badge">
+                    <svg class="file-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                    </svg>
+                    <span>{{ item.evidenceCount }} {{ 'adminClaims.evidenceCount' | t }}</span>
+                  </span>
+                </td>
+
+                <!-- Submitted Date -->
+                <td class="date-cell" dir="ltr">
+                  {{ item.submittedOnUtc }}
+                </td>
+
+                <!-- Action Button -->
+                <td class="action-cell">
+                  @if (canViewDetails()) {
+                    <button
+                      type="button"
+                      class="btn-inspect-row"
+                      (click)="$event.stopPropagation(); openClaimDrawer(item.id)"
+                      data-testid="open-claim-details-btn"
+                    >
+                      <span>{{ 'adminClaims.reviewClaimAction' | t }}</span>
+                      <svg class="action-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 2. Mobile Responsive Cards View (< 992px) -->
+      <div class="mobile-cards-view mobile-only" data-testid="claims-list">
         @for (item of items(); track item.id) {
-          <div class="claim-row-item" role="listitem" data-testid="claim-row">
-            <div class="claim-row-main">
-              <div class="claim-title-line">
-                <strong dir="ltr">{{ item.claimantEmailMasked }}</strong>
-                <span class="claim-status-pill" [attr.data-status]="item.status">
-                  {{ 'onboarding.status.' + item.status | t }}
+          <article
+            class="mobile-request-card"
+            tabindex="0"
+            data-testid="claim-row"
+            (click)="openClaimDrawer(item.id)"
+            (keydown.enter)="openClaimDrawer(item.id)"
+          >
+            <!-- Card Header -->
+            <div class="mobile-card-header">
+              <span class="id-badge-code" dir="ltr">
+                <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                <strong>{{ item.claimantEmailMasked }}</strong>
+              </span>
+              <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                <span class="status-dot"></span>
+                <span class="status-text">{{ getStatusLabel(item.status) }}</span>
+              </span>
+            </div>
+
+            <!-- Card Body -->
+            <div class="mobile-card-body">
+              <div class="mobile-kv-row">
+                <span class="mobile-kv-label">{{ 'adminClaims.evidenceCount' | t }}:</span>
+                <span class="evidence-count-badge">
+                  <svg class="file-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ item.evidenceCount }}</span>
                 </span>
               </div>
-              <div class="claim-meta-line">
-                <span>{{ 'adminClaims.evidenceCount' | t }}: {{ item.evidenceCount }}</span>
-                <span>•</span>
+              <div class="mobile-date-row">
+                <svg class="date-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
                 <span dir="ltr">{{ item.submittedOnUtc }}</span>
               </div>
             </div>
-            <div class="claim-row-actions">
-              @if (canViewDetails()) {
+
+            <!-- Card Footer -->
+            @if (canViewDetails()) {
+              <div class="mobile-card-footer">
                 <button
                   type="button"
-                  class="btn btn-outline-primary btn-sm"
-                  (click)="openClaimDrawer(item.id)"
+                  class="btn-mobile-review"
+                  (click)="$event.stopPropagation(); openClaimDrawer(item.id)"
                   data-testid="open-claim-details-btn"
                 >
-                  {{ 'adminClaims.reviewClaimAction' | t }}
+                  <span>{{ 'adminClaims.reviewClaimAction' | t }}</span>
+                  <svg class="action-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
                 </button>
-              }
-            </div>
-          </div>
+              </div>
+            }
+          </article>
         }
       </div>
 
-      <footer class="claims-pagination-bar">
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          [disabled]="pageNumber() <= 1 || isLoadingList()"
-          (click)="loadClaims(pageNumber() - 1)"
-        >
-          {{ 'discovery.previous' | t }}
-        </button>
-        <span>
-          {{ 'discovery.page' | t }} <strong>{{ pageNumber() }}</strong> {{ 'discovery.of' | t }}
-          <strong>{{ totalPages() }}</strong>
-        </span>
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          [disabled]="pageNumber() >= totalPages() || isLoadingList()"
-          (click)="loadClaims(pageNumber() + 1)"
-        >
-          {{ 'discovery.next' | t }}
-        </button>
+      <!-- Pagination Bar -->
+      <footer class="pagination-footer">
+        <div class="pagination-meta">
+          <span>{{ 'common.page' | t }} <strong>{{ pageNumber() }}</strong> / {{ totalPages() }}</span>
+          <span class="meta-separator">•</span>
+          <span>({{ totalCount() }} {{ 'common.total' | t }})</span>
+        </div>
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="pageNumber() <= 1 || isLoadingList()"
+            (click)="loadClaims(pageNumber() - 1)"
+          >
+            <svg class="nav-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span>{{ 'discovery.previous' | t }}</span>
+          </button>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="pageNumber() >= totalPages() || isLoadingList()"
+            (click)="loadClaims(pageNumber() + 1)"
+          >
+            <span>{{ 'discovery.next' | t }}</span>
+            <svg class="nav-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
       </footer>
     } @else {
-      <div class="empty-state" data-testid="claims-empty-state">
-        <h2>{{ 'adminClaims.noClaimsTitle' | t }}</h2>
-        <p>{{ 'adminClaims.noClaimsDesc' | t }}</p>
+      <!-- Empty State -->
+      <div class="state-container empty-state" data-testid="claims-empty-state">
+        <div class="empty-icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+        </div>
+        <h3 class="empty-title">{{ 'adminClaims.noClaimsTitle' | t }}</h3>
+        <p class="empty-help-text">{{ 'adminClaims.noClaimsDesc' | t }}</p>
+        <div class="empty-actions-row">
+          @if (hasActiveFilters()) {
+            <button
+              type="button"
+              class="btn-reset-filters"
+              (click)="clearAllFilters()"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              <span>{{ 'medications.resetSearch' | t }}</span>
+            </button>
+          }
+          <button
+            type="button"
+            class="btn-demo-claims"
+            (click)="loadDemoClaims()"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon">
+              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+              <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+            </svg>
+            <span>{{ 'adminClaims.loadDemo' | t }}</span>
+          </button>
+        </div>
       </div>
     }
-  </section>
+      </div>
+    </div>
 
-  <!-- Slide-Over Review Drawer -->
-  @if (drawerOpen()) {
-    <app-side-drawer
-      [opened]="drawerOpen()"
-      [busy]="isLoadingDetails() || isSubmittingDecision()"
-      [title]="'adminClaims.drawerTitle' | t"
-      (closed)="closeDrawer()"
-    >
+    <!-- Master-Detail Side Pane (Side-by-side next to the table) -->
+    @if (drawerOpen()) {
+      <aside class="claims-detail-pane" [attr.aria-label]="'adminClaims.drawerTitle' | t">
+        <header class="detail-pane-header">
+          <div class="detail-pane-title-wrap">
+            <span class="detail-pane-indicator" aria-hidden="true"></span>
+            <div class="detail-pane-titles">
+              <h2 class="detail-pane-heading">{{ 'adminClaims.drawerTitle' | t }}</h2>
+              @if (claimDetails(); as details) {
+                <p class="detail-pane-sub" dir="ltr">{{ details.claimant.email }}</p>
+              }
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-detail-close"
+            [attr.aria-label]="'common.close' | t"
+            [disabled]="isSubmittingDecision()"
+            (click)="closeDrawer()"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </header>
+        <div class="detail-pane-body">
       @if (isLoadingDetails()) {
-        <div class="loading-state" role="status">
-          <span class="spinner-inline"></span>
-          <p>{{ 'reservations.loading' | t }}</p>
+        <div class="state-container loading-state" role="status">
+          <div class="spinner-ring" aria-hidden="true"></div>
+          <p>{{ 'common.loading' | t }}</p>
         </div>
       } @else if (claimDetails(); as details) {
         <div class="claim-drawer-body" data-testid="claim-details-drawer">
           @if (drawerError()) {
-            <div class="notice" role="alert" data-testid="claim-drawer-error">
+            <div class="error-banner" role="alert" data-testid="claim-drawer-error">
               <p>{{ drawerError() }}</p>
             </div>
           }
@@ -155,40 +464,39 @@
           <!-- Claimant Summary -->
           <section class="drawer-section">
             <div class="drawer-section-header">
-              <h3>{{ 'adminClaims.claimantInfoTitle' | t }}</h3>
-              <span class="claim-status-pill" [attr.data-status]="details.status">
-                {{ 'onboarding.status.' + details.status | t }}
+              <h3 class="section-title">{{ 'adminClaims.claimantInfoTitle' | t }}</h3>
+              <span class="status-pill status-{{ details.status.toLowerCase() }}">
+                <span class="status-dot"></span>
+                <span class="status-text">{{ getStatusLabel(details.status) }}</span>
               </span>
             </div>
             <dl class="claimant-data-grid">
-              <div>
-                <dt>{{ 'register.fullNameAr' | t }}</dt>
-                <dd>{{ details.claimant.nameAr }}</dd>
+              <div class="kv-item">
+                <dt class="kv-label">{{ 'register.fullNameAr' | t }}</dt>
+                <dd class="kv-value">{{ details.claimant.nameAr }}</dd>
               </div>
-              <div>
-                <dt>{{ 'register.dob' | t }}</dt>
-                <dd dir="ltr">{{ details.claimant.dateOfBirth }}</dd>
+              <div class="kv-item">
+                <dt class="kv-label">{{ 'register.dob' | t }}</dt>
+                <dd class="kv-value" dir="ltr">{{ details.claimant.dateOfBirth }}</dd>
               </div>
-              <div>
-                <dt>{{ 'register.gender' | t }}</dt>
-                <dd>
-                  {{
-                    (details.claimant.gender === 'Male' ? 'register.male' : 'register.female') | t
-                  }}
+              <div class="kv-item">
+                <dt class="kv-label">{{ 'register.gender' | t }}</dt>
+                <dd class="kv-value">
+                  {{ (details.claimant.gender === 'Male' ? 'register.male' : 'register.female') | t }}
                 </dd>
               </div>
-              <div>
-                <dt>{{ 'workspace.email' | t }}</dt>
-                <dd dir="ltr">{{ details.claimant.email }}</dd>
+              <div class="kv-item">
+                <dt class="kv-label">{{ 'workspace.email' | t }}</dt>
+                <dd class="kv-value id-badge-code" dir="ltr">{{ details.claimant.email }}</dd>
               </div>
-              <div>
-                <dt>{{ 'workspace.phone' | t }}</dt>
-                <dd dir="ltr">{{ details.claimant.phoneMasked || '—' }}</dd>
+              <div class="kv-item">
+                <dt class="kv-label">{{ 'workspace.phone' | t }}</dt>
+                <dd class="kv-value" dir="ltr">{{ details.claimant.phoneMasked || '—' }}</dd>
               </div>
               @if (details.patientReference) {
-                <div>
-                  <dt>{{ 'onboarding.patientReferenceLabel' | t }}</dt>
-                  <dd dir="ltr">{{ details.patientReference }}</dd>
+                <div class="kv-item">
+                  <dt class="kv-label">{{ 'onboarding.patientReferenceLabel' | t }}</dt>
+                  <dd class="kv-value id-badge-code" dir="ltr">{{ details.patientReference }}</dd>
                 </div>
               }
             </dl>
@@ -196,13 +504,13 @@
 
           <!-- Candidate Patients Selection -->
           <section class="drawer-section">
-            <h3>{{ 'adminClaims.candidatePatientsTitle' | t }}</h3>
+            <h3 class="section-title">{{ 'adminClaims.candidatePatientsTitle' | t }}</h3>
             <p class="section-help">{{ 'adminClaims.candidatePatientsHelp' | t }}</p>
 
             @if (details.candidatePatients.length) {
               <div class="candidates-list" role="radiogroup">
                 @for (cand of details.candidatePatients; track cand.patientId) {
-                  <label class="candidate-row">
+                  <label class="candidate-row" [class.selected]="selectedTargetPatientId() === cand.patientId">
                     <input
                       type="radio"
                       name="targetPatientId"
@@ -212,7 +520,7 @@
                       data-testid="candidate-patient-radio"
                     />
                     <div class="candidate-info">
-                      <strong>{{ cand.nameAr }}</strong>
+                      <strong class="candidate-name">{{ cand.nameAr }}</strong>
                       <span class="candidate-meta" dir="ltr">
                         {{ cand.dateOfBirth }} • {{ cand.gender }} • {{ cand.emailMasked || '—' }}
                       </span>
@@ -221,14 +529,15 @@
                 }
               </div>
             } @else {
-              <div class="form-field">
-                <label for="manualTargetPatientId">
+              <div class="form-field-integrated">
+                <label for="manualTargetPatientId" class="form-field-label">
                   {{ 'adminClaims.targetPatientIdLabel' | t }}
                 </label>
                 <input
                   id="manualTargetPatientId"
                   type="text"
                   dir="ltr"
+                  class="form-control-integrated"
                   [value]="selectedTargetPatientId()"
                   (input)="onTargetPatientInput($event)"
                   data-testid="manual-target-patient-input"
@@ -239,7 +548,7 @@
 
           <!-- Evidence Review Section -->
           <section class="drawer-section">
-            <h3>{{ 'adminClaims.evidenceTitle' | t }}</h3>
+            <h3 class="section-title">{{ 'adminClaims.evidenceTitle' | t }}</h3>
             <p class="section-help">{{ 'adminClaims.evidenceHelp' | t }}</p>
 
             <div class="evidence-list">
@@ -254,19 +563,23 @@
                     />
                     <span>
                       <strong>{{ ev.type }}</strong>
-                      <small> ({{ 'adminClaims.revision' | t }} #{{ ev.revisionNumber }}) </small>
+                      <small class="revision-tag"> ({{ 'adminClaims.revision' | t }} #{{ ev.revisionNumber }}) </small>
                     </span>
                   </label>
 
                   @if (canViewEvidence()) {
                     <button
                       type="button"
-                      class="btn btn-outline-secondary btn-sm"
+                      class="btn-inspect-evidence"
                       [disabled]="isLoadingEvidence()"
                       (click)="previewEvidence(ev.evidenceId)"
                       data-testid="preview-evidence-btn"
                     >
-                      {{ 'adminClaims.viewEvidenceAction' | t }}
+                      <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                      </svg>
+                      <span>{{ 'adminClaims.viewEvidenceAction' | t }}</span>
                     </button>
                   }
                 </div>
@@ -279,7 +592,7 @@
                   <strong>{{ 'adminClaims.evidencePreviewTitle' | t }}</strong>
                   <button
                     type="button"
-                    class="btn btn-outline-secondary btn-sm"
+                    class="btn-close-preview"
                     (click)="revokeEvidencePreview()"
                   >
                     {{ 'common.close' | t }}
@@ -294,33 +607,37 @@
             }
           </section>
 
-          <!-- Decision Actions (Gated by reviewCapabilities & Permissions) -->
+          <!-- Decision Actions -->
           @if (
             details.reviewCapabilities.canApprove ||
             details.reviewCapabilities.canRequestModification ||
             details.reviewCapabilities.canReject
           ) {
             <section class="drawer-section decision-section">
-              <h3>{{ 'adminClaims.decisionTitle' | t }}</h3>
+              <h3 class="section-title">{{ 'adminClaims.decisionTitle' | t }}</h3>
 
-              <div class="form-field">
-                <label for="adminReviewNote">{{ 'adminClaims.reviewNoteLabel' | t }}</label>
+              <div class="form-field-integrated">
+                <label for="adminReviewNote" class="form-field-label">
+                  {{ 'adminClaims.reviewNoteLabel' | t }}
+                </label>
                 <input
                   id="adminReviewNote"
                   type="text"
+                  class="form-control-integrated"
                   [value]="reviewNote()"
                   (input)="reviewNote.set($any($event.target).value)"
                   [placeholder]="'adminClaims.reviewNotePlaceholder' | t"
                 />
               </div>
 
-              <div class="form-field">
-                <label for="adminDecisionReason">
+              <div class="form-field-integrated">
+                <label for="adminDecisionReason" class="form-field-label">
                   {{ 'adminClaims.modOrRejectReasonLabel' | t }}
                 </label>
                 <textarea
                   id="adminDecisionReason"
                   rows="2"
+                  class="form-control-integrated textarea-integrated"
                   [value]="decisionReason()"
                   (input)="decisionReason.set($any($event.target).value)"
                   [placeholder]="'adminClaims.modOrRejectReasonPlaceholder' | t"
@@ -332,7 +649,7 @@
                 @if (details.reviewCapabilities.canApprove && canApprovePerm()) {
                   <button
                     type="button"
-                    class="btn btn-primary"
+                    class="btn-action btn-approve"
                     [disabled]="!canSubmitApprove()"
                     (click)="approveClaim()"
                     data-testid="approve-claim-btn"
@@ -344,7 +661,7 @@
                 @if (details.reviewCapabilities.canRequestModification && canRequestModPerm()) {
                   <button
                     type="button"
-                    class="btn btn-outline-primary"
+                    class="btn-action btn-modification"
                     [disabled]="!canSubmitModOrReject()"
                     (click)="requestModification()"
                     data-testid="request-mod-claim-btn"
@@ -356,7 +673,7 @@
                 @if (details.reviewCapabilities.canReject && canRejectPerm()) {
                   <button
                     type="button"
-                    class="btn btn-outline-secondary"
+                    class="btn-action btn-reject"
                     [disabled]="!canSubmitModOrReject()"
                     (click)="rejectClaim()"
                     data-testid="reject-claim-btn"
@@ -371,7 +688,7 @@
           <!-- Audit History -->
           @if (claimHistory().length) {
             <section class="drawer-section">
-              <h3>{{ 'adminClaims.historyTitle' | t }}</h3>
+              <h3 class="section-title">{{ 'adminClaims.historyTitle' | t }}</h3>
               <ul class="claim-history-list">
                 @for (entry of claimHistory(); track entry.id) {
                   <li>
@@ -381,7 +698,7 @@
                     }
                     <small dir="ltr">({{ entry.timestampUtc }})</small>
                     @if (entry.note) {
-                      <p>{{ entry.note }}</p>
+                      <p class="history-note">{{ entry.note }}</p>
                     }
                   </li>
                 }
@@ -390,6 +707,8 @@
           }
         </div>
       }
-    </app-side-drawer>
-  }
+    </div>
+  </aside>
+}
+  </div>
 </main>

@@ -226,5 +226,23 @@ describe('PatientClaimsComponent', () => {
     );
     expect(toast.success).toHaveBeenCalled();
   });
+
+  it('updates filter via setQuickFilter and resets all via clearAllFilters', () => {
+    component.setQuickFilter('Rejected');
+    expect(component.statusFilter()).toBe('Rejected');
+
+    component.emailSearch.set('test@example.com');
+    expect(component.hasActiveFilters()).toBe(true);
+
+    component.clearAllFilters();
+    expect(component.statusFilter()).toBe('');
+    expect(component.emailSearch()).toBe('');
+    expect(component.hasActiveFilters()).toBe(false);
+  });
+
+  it('translates status via getStatusLabel', () => {
+    expect(component.getStatusLabel('PendingReview')).toBeTruthy();
+    expect(component.getStatusLabel('Rejected')).toBeTruthy();
+  });
 });
 

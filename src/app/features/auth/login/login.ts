@@ -58,7 +58,8 @@ export class Login {
         }
         const user = await firstValueFrom(this.api.currentUser());
         this.session.complete(user);
-        if (user.userType === 'Doctor') await this.subscription.refresh(true).catch(() => undefined);
+        if (user.userType === 'Doctor')
+          await this.subscription.refresh(true).catch(() => undefined);
         let destination = this.session.requiresPasswordChange()
           ? '/change-password'
           : this.session.destinationFor(user);
@@ -66,12 +67,18 @@ export class Login {
           destination = '/doctor/onboarding';
           try {
             const status = await firstValueFrom(this.doctorApi.onboardingStatus());
-            if (status.approvalStatus === 'Approved') destination = this.subscription.needsReview() ? '/doctor/subscription' : '/workspace/doctor';
+            if (status.approvalStatus === 'Approved')
+              destination = this.subscription.needsReview()
+                ? '/doctor/subscription'
+                : '/workspace/doctor';
           } catch {
             this.toast.error(this.uiLanguage.t('common.failedToLoad'));
           }
         }
-        const returnUrl = resolveReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'), user.userType);
+        const returnUrl = resolveReturnUrl(
+          this.route.snapshot.queryParamMap.get('returnUrl'),
+          user.userType,
+        );
         if (
           !this.session.requiresPasswordChange() &&
           !['/doctor/onboarding', '/doctor/subscription'].includes(destination) &&

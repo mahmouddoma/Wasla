@@ -21,11 +21,10 @@ import {
   PatientIdentityApi,
 } from '../../../domains/patient-identity';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-patient-claims',
-  imports: [TranslatePipe, PageHeader, SideDrawer],
+  imports: [TranslatePipe, PageHeader],
   templateUrl: './patient-claims.component.html',
   styleUrl: './patient-claims.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,7 +63,7 @@ export class PatientClaimsComponent {
   readonly pageSize = signal<number>(20);
   readonly items = signal<readonly AdminPatientClaimSummaryItem[]>([]);
   readonly totalCount = signal<number>(0);
-  readonly isLoadingList = signal<boolean>(false);
+  readonly isLoadingList = signal<boolean>(true);
   readonly listError = signal<string>('');
 
   readonly totalPages = computed(() => {
@@ -72,6 +71,34 @@ export class PatientClaimsComponent {
     const size = this.pageSize() || 20;
     return Math.max(1, Math.ceil(total / size));
   });
+
+  readonly hasActiveFilters = computed(
+    () => !!this.emailSearch().trim() || !!this.statusFilter(),
+  );
+
+  readonly pendingReviewCount = computed(() =>
+    this.statusFilter() === 'PendingReview'
+      ? this.totalCount()
+      : this.items().filter((i) => i.status === 'PendingReview').length,
+  );
+
+  readonly modificationRequestedCount = computed(() =>
+    this.statusFilter() === 'ModificationRequested'
+      ? this.totalCount()
+      : this.items().filter((i) => i.status === 'ModificationRequested').length,
+  );
+
+  readonly approvedCount = computed(() =>
+    this.statusFilter() === 'ApprovedPendingActivation'
+      ? this.totalCount()
+      : this.items().filter((i) => i.status === 'ApprovedPendingActivation' || i.status === 'Linked').length,
+  );
+
+  readonly rejectedCount = computed(() =>
+    this.statusFilter() === 'Rejected'
+      ? this.totalCount()
+      : this.items().filter((i) => i.status === 'Rejected').length,
+  );
 
   // === Drawer & Claim Review State ===
   readonly drawerOpen = signal<boolean>(false);
@@ -147,6 +174,66 @@ export class PatientClaimsComponent {
   onStatusFilterChange(event: Event): void {
     this.statusFilter.set((event.target as HTMLSelectElement).value);
     void this.loadClaims(1);
+  }
+
+  setQuickFilter(status: string): void {
+    this.statusFilter.set(status);
+    void this.loadClaims(1);
+  }
+
+  clearSearch(): void {
+    this.emailSearch.set('');
+    void this.loadClaims(1);
+  }
+
+  clearAllFilters(): void {
+    this.statusFilter.set('');
+    this.emailSearch.set('');
+    void this.loadClaims(1);
+  }
+
+  getStatusLabel(status: string): string {
+    const key = `onboarding.status.${status}`;
+    const translated = this.uiLanguage.t(key);
+    return translated !== key ? translated : status;
+  }
+
+  loadDemoClaims(): void {
+    this.isLoadingList.set(true);
+    setTimeout(() => {
+      this.items.set([
+        {
+          id: 'claim-demo-1',
+          status: 'PendingReview',
+          claimantEmailMasked: 'ahmed.k***@gmail.com',
+          submittedOnUtc: '2026-11-10 14:30',
+          lastActivityOnUtc: '2026-11-10 14:30',
+          evidenceCount: 2,
+          rowVersion: 'rv-demo-1',
+        },
+        {
+          id: 'claim-demo-2',
+          status: 'ModificationRequested',
+          claimantEmailMasked: 'sara.m***@outlook.com',
+          submittedOnUtc: '2026-11-09 11:15',
+          lastActivityOnUtc: '2026-11-10 09:00',
+          evidenceCount: 1,
+          rowVersion: 'rv-demo-2',
+        },
+        {
+          id: 'claim-demo-3',
+          status: 'ApprovedPendingActivation',
+          claimantEmailMasked: 'khaled.o***@yahoo.com',
+          submittedOnUtc: '2026-11-08 18:45',
+          lastActivityOnUtc: '2026-11-09 10:20',
+          evidenceCount: 3,
+          rowVersion: 'rv-demo-3',
+        },
+      ]);
+      this.totalCount.set(3);
+      this.statusFilter.set('');
+      this.isLoadingList.set(false);
+    }, 700);
   }
 
   onEmailSearchInput(event: Event): void {

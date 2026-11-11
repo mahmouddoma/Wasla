@@ -19,14 +19,13 @@ import {
   MedicalSpecializationsPage,
 } from '../services/medical-specializations';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { MedicalSpecializationDetails } from '../medical-specialization-details/medical-specialization-details';
 
 type BooleanFilter = '' | 'true' | 'false';
 
 @Component({
   selector: 'app-medical-specializations-list',
-  imports: [FormField, PageHeader, SideDrawer, MedicalSpecializationDetails, TranslatePipe],
+  imports: [FormField, PageHeader, MedicalSpecializationDetails, TranslatePipe],
   templateUrl: './medical-specializations-list.html',
   styleUrls: ['../management-list.css', './medical-specializations-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -137,6 +136,18 @@ export class MedicalSpecializationsList {
   protected closeDrawer(): void {
     this.isDrawerOpen.set(false);
     this.selectedItem.set(null);
+  }
+
+  protected drawerTitle(): string {
+    return this.selectedItem()?.id
+      ? this.uiLanguage.t('ui.expressions.33') + ' ' + this.selectedItem()!.nameAr
+      : this.uiLanguage.t('ui.expressions.34');
+  }
+
+  protected drawerSubTitle(): string {
+    return this.selectedItem()?.id
+      ? this.uiLanguage.t('ui.expressions.35')
+      : this.uiLanguage.t('ui.expressions.36');
   }
 
   protected handleSaved(): void {

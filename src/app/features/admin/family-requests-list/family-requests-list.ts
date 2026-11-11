@@ -18,12 +18,11 @@ import {
   FamilyRequestType,
 } from '../../../domains/families';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 import { FamilyRequestDetailsPage } from '../family-request-details/family-request-details';
 
 @Component({
   selector: 'app-family-requests-list',
-  imports: [FormField, PageHeader, SideDrawer, FamilyRequestDetailsPage, TranslatePipe],
+  imports: [FormField, PageHeader, FamilyRequestDetailsPage, TranslatePipe],
   templateUrl: './family-requests-list.html',
   styleUrls: ['./family-requests-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +48,27 @@ export class FamilyRequestsList {
   protected readonly selectedRequestTitle = signal<string>('');
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.result()?.totalCount ?? 0) / this.pageSize)),
+  );
+  protected readonly hasActiveFilters = computed(
+    () => !!this.model().search.trim() || !!this.status() || !!this.requestType(),
+  );
+  protected readonly totalCount = computed(
+    () => this.result()?.totalCount ?? 0,
+  );
+  protected readonly pendingCount = computed(() =>
+    this.status() === 'Pending'
+      ? this.totalCount()
+      : this.result()?.items?.filter((i) => i.status === 'Pending').length ?? 0,
+  );
+  protected readonly createFamilyCount = computed(() =>
+    this.requestType() === 'CreateFamily'
+      ? this.totalCount()
+      : this.result()?.items?.filter((i) => i.requestType === 'CreateFamily').length ?? 0,
+  );
+  protected readonly addMemberCount = computed(() =>
+    this.requestType() === 'AddFamilyMember'
+      ? this.totalCount()
+      : this.result()?.items?.filter((i) => i.requestType === 'AddFamilyMember').length ?? 0,
   );
 
   constructor() {
@@ -86,6 +106,31 @@ export class FamilyRequestsList {
     this.searchForm().reset();
     this.pageNumber.set(1);
     void this.load();
+  }
+
+  protected clearAllFilters(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.model.set({ search: '' });
+    this.searchForm().reset();
+    this.status.set('');
+    this.requestType.set('');
+    this.pageNumber.set(1);
+    void this.load();
+  }
+
+  protected getStatusLabel(statusVal: string): string {
+    switch (statusVal) {
+      case 'Pending':
+        return this.uiLanguage.t('common.pendingReview');
+      case 'ModificationRequested':
+        return this.uiLanguage.t('common.modificationRequested');
+      case 'Approved':
+        return this.uiLanguage.t('common.approved');
+      case 'Rejected':
+        return this.uiLanguage.t('common.rejected');
+      default:
+        return statusVal;
+    }
   }
 
   protected setFilter(filter: 'status' | 'requestType', event: Event): void {
