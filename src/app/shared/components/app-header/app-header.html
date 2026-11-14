@@ -2,16 +2,18 @@
   <div class="header-row">
     <!-- Clean Brand (Zero Boxes, Zero Filler) -->
     <div class="header-start">
-      <button
-        type="button"
-        class="btn-mobile-menu"
-        (click)="menuToggle.emit()"
-        [attr.aria-controls]="menuId()"
-        [attr.aria-expanded]="menuExpanded()"
-        [attr.aria-label]="'common.openSidebar' | t"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-      </button>
+      @if (user() && showMenuToggle()) {
+        <button
+          type="button"
+          class="btn-mobile-menu"
+          (click)="menuToggle.emit()"
+          [attr.aria-controls]="menuId()"
+          [attr.aria-expanded]="menuExpanded()"
+          [attr.aria-label]="'common.openSidebar' | t"
+        >
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      }
       <a class="header-brand" [routerLink]="home()" [attr.aria-label]="'common.home' | t">
         <img src="/images/wasla-mark.png" width="30" height="30" alt="" decoding="async" />
         <span class="brand-title">{{ 'common.appName' | t }}</span>
@@ -19,10 +21,27 @@
       <ng-content select="[header-start-extra]" />
     </div>
 
-    <!-- Integrated Executive Control Bar (Pure Borderless Fluid Hierarchy) -->
+    <!-- Role & Permission-Aware Navigation (Desktop) -->
+    @if (roleNavLinks().length > 0) {
+      <nav class="header-role-nav d-none d-lg-flex" [attr.aria-label]="'sidebar.workspace' | t">
+        @for (item of roleNavLinks(); track item.route) {
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="is-active"
+            class="header-nav-link"
+          >
+            <i [class]="item.iconClass" aria-hidden="true"></i>
+            <span>{{ item.labelKey | t }}</span>
+          </a>
+        }
+      </nav>
+    }
+
+    <!-- Integrated Executive Control Bar -->
     <div class="header-actions">
-      <!-- 1. Seamless User Profile (Zero Border Capsule) -->
-      <div class="user-profile-wrapper">
+      @if (user()) {
+        <!-- 1. Seamless User Profile (Zero Border Capsule) -->
+        <div class="user-profile-wrapper">
         <button
           type="button"
           class="btn-user-avatar-trigger"
@@ -125,23 +144,34 @@
           </div>
         }
       </div>
+      }
 
       <!-- 2. Integrated Borderless Utilities -->
       <app-language-switcher variant="header" />
 
-      <!-- 3. Quiet Ghost Logout Action -->
-      <button
-        type="button"
-        class="btn-topbar-logout"
-        (click)="logout.emit()"
-        [attr.aria-label]="'common.logout' | t"
-        [title]="'common.logout' | t"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-        </svg>
-        <span class="logout-label">{{ 'common.logout' | t }}</span>
-      </button>
+      @if (user()) {
+        <!-- 3. Quiet Ghost Logout Action -->
+        <button
+          type="button"
+          class="btn-topbar-logout"
+          (click)="logout.emit()"
+          [attr.aria-label]="'common.logout' | t"
+          [title]="'common.logout' | t"
+        >
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+          <span class="logout-label">{{ 'common.logout' | t }}</span>
+        </button>
+      } @else {
+        <!-- Guest Actions (Unified Compact Style) -->
+        <a routerLink="/login" class="btn-header-login">
+          <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+          <span>{{ 'login.title' | t }}</span>
+        </a>
+        <a routerLink="/register/doctor" class="btn-header-register">
+          <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+          <span class="register-label">{{ 'pricing.trialBadge' | t }}</span>
+        </a>
+      }
     </div>
   </div>
 </header>

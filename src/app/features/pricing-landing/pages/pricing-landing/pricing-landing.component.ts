@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import gsap from 'gsap';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { CommercialCatalog, SubscriptionSelection, SubscriptionsApi } from '../../../../domains/subscriptions';
+import { AppHeader } from '../../../../shared/components/app-header/app-header';
 import { PlanSelectorComponent } from '../../../subscriptions/components/plan-selector/plan-selector.component';
 
 interface FaqItem {
@@ -18,15 +21,17 @@ interface FaqItem {
 @Component({
   selector: 'app-pricing-landing',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe, PlanSelectorComponent],
+  imports: [CommonModule, RouterModule, TranslatePipe, AppHeader, PlanSelectorComponent],
   templateUrl: './pricing-landing.component.html',
   styleUrl: './pricing-landing.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PricingLandingComponent {
   readonly language = inject(LanguageService);
+  readonly authSession = inject(AuthSession);
   private readonly router = inject(Router);
   private readonly api = inject(SubscriptionsApi);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
 
   readonly catalog = signal<CommercialCatalog | null>(null);
   readonly loading = signal(true);
@@ -73,6 +78,20 @@ export class PricingLandingComponent {
 
   constructor() {
     void this.loadCatalog();
+
+    afterNextRender(() => {
+      if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+      }
+      const heroItems = this.hostRef.nativeElement.querySelectorAll('.hero-stagger');
+      if (heroItems.length > 0) {
+        gsap.fromTo(
+          heroItems,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.45, stagger: 0.07, ease: 'power2.out', clearProps: 'transform' },
+        );
+      }
+    });
   }
 
   async loadCatalog(): Promise<void> {
@@ -97,6 +116,11 @@ export class PricingLandingComponent {
         cycle: selection.billingCycle,
       },
     });
+  }
+
+  logout(): void {
+    this.authSession.clear();
+    void this.router.navigate(['/login']);
   }
 
   toggleFaq(index: number): void {

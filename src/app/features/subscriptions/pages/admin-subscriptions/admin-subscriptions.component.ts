@@ -93,6 +93,22 @@ export class AdminSubscriptionsComponent implements OnDestroy {
   readonly isDesktop = signal(
     typeof window !== 'undefined' ? window.innerWidth >= 1025 : false,
   );
+  readonly filtersExpanded = signal(false);
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((open) => !open);
+  }
+
+  advancedFilterCount(): number {
+    let count = 0;
+    if (this.query.productCode) count++;
+    if (this.query.planCode) count++;
+    if (this.query.createdFromUtc) count++;
+    if (this.query.createdToUtc) count++;
+    if (this.query.endsFromUtc) count++;
+    if (this.query.endsToUtc) count++;
+    return count;
+  }
 
   readonly hasActiveDetail = computed(() => this.selectedId() !== null);
 

@@ -22,7 +22,6 @@ import {
 } from '../../../../domains/subscriptions';
 import { AllocationReceptionOption } from '../../../../domains/subscriptions/subscriptions-api';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { SideDrawer } from '../../../../shared/components/side-drawer/side-drawer';
 import { LocalizedDatePipe } from '../../../../shared/pipes/localized-date.pipe';
 import { PlanSelectorComponent } from '../../components/plan-selector/plan-selector.component';
 
@@ -34,7 +33,6 @@ import { PlanSelectorComponent } from '../../components/plan-selector/plan-selec
     TranslatePipe,
     LocalizedDatePipe,
     PageHeader,
-    SideDrawer,
     PlanSelectorComponent,
   ],
   templateUrl: './my-subscription.component.html',

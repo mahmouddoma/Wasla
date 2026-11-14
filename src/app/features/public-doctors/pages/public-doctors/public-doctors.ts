@@ -7,7 +7,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
 import { AuthSession } from '../../../../core/auth/auth-session';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
+import { AppHeader } from '../../../../shared/components/app-header/app-header';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
 import { PatientBookingState, PatientBookingDrawerComponent } from '../../../patient-booking';
 import { DoctorProfileApi, EgyptLocationOption } from '../../../../domains/doctor-profile';
@@ -21,7 +21,7 @@ import {
 
 @Component({
   selector: 'app-public-doctors',
-  imports: [RouterLink, TranslatePipe, LanguageSwitcher, PageHeader, PatientBookingDrawerComponent],
+  imports: [RouterLink, TranslatePipe, AppHeader, PageHeader, PatientBookingDrawerComponent],
   templateUrl: './public-doctors.html',
   styleUrl: './public-doctors.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,6 +40,11 @@ export class PublicDoctors {
   private readonly router = inject(Router);
   private readonly api = inject(PublicDiscoveryApi);
   private readonly locationsApi = inject(DoctorProfileApi);
+
+  protected logout(): void {
+    this.authSession.clear();
+    void this.router.navigate(['/login']);
+  }
   private searchSequence = 0;
   private citySequence = 0;
   private areaSequence = 0;

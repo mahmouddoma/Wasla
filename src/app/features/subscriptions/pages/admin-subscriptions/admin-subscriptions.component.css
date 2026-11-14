@@ -136,14 +136,88 @@
   padding: 20px;
 }
 
-/* ── Filters Card ─────────────────────────────────────────────────── */
+/* ── Filters Card (Compact Toolbar) ─────────────────────────────── */
 .filters-card {
   background: #ffffff;
   border: 1px solid var(--wasla-border-subtle, #edf1f5);
   border-radius: var(--radius-major, 16px);
-  padding: 18px 22px;
+  padding: 12px 16px;
   box-shadow: 0 2px 10px rgba(12, 39, 66, 0.02);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.filters-form-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filters-compact-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.filters-compact-search {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.filters-compact-status {
+  flex: 0 1 180px;
+  min-width: 140px;
+}
+
+.filters-compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--wasla-border, #e2e8f0);
+  background: #f8fafc;
+  color: var(--wasla-navy-800, #1e293b);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-filters-toggle:hover,
+.btn-filters-toggle.is-active {
+  background: #f1f5f9;
+  border-color: var(--wasla-border, #cbd5e1);
+}
+
+.filters-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--wasla-navy-900, #0f2744);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.filters-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--wasla-border-subtle, #edf1f5);
 }
 
 .filters-card-header {
@@ -1542,18 +1616,154 @@
   }
 }
 
-/* ── Responsive Split View ───────────────────────────────────────── */
+/* ── Responsive Split View & Adaptive Table ──────────────────────── */
 @media (max-width: 1024px) {
   .subscriptions-split-layout {
     flex-direction: column;
+    align-items: stretch;
+    margin-top: 16px;
   }
 
   .subscriptions-master-pane {
     flex: 1 1 100% !important;
     max-width: 100% !important;
+    width: 100% !important;
   }
 
   .subscriptions-detail-pane {
     display: none !important;
+  }
+
+  .wasla-table th,
+  .wasla-table td {
+    padding: 10px 12px;
+  }
+
+  .wasla-table th:nth-child(5),
+  .wasla-table td:nth-child(5) {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .filters-card {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .filters-compact-bar {
+    gap: 8px;
+  }
+
+  .filters-compact-search {
+    flex: 1 1 100%;
+  }
+
+  .filters-compact-status {
+    flex: 1 1 130px;
+    min-width: 0;
+  }
+
+  .filters-compact-actions {
+    flex: 0 0 auto;
+  }
+
+  .filters-compact-actions .btn-filter-submit span {
+    display: none;
+  }
+
+  .filters-compact-actions .btn-filter-submit,
+  .filters-compact-actions .btn-filter-clear {
+    height: 40px;
+    min-width: 40px;
+    padding: 0 12px;
+  }
+
+  .filters-advanced-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .table-responsive {
+    overflow: visible;
+  }
+
+  .wasla-table,
+  .wasla-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .wasla-table thead {
+    display: none;
+  }
+
+  .wasla-table tbody tr.table-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'doctor status'
+      'plan action';
+    align-items: center;
+    gap: 8px 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--wasla-border-subtle, #edf1f5);
+  }
+
+  .wasla-table tbody tr.table-row:last-child {
+    border-bottom: none;
+  }
+
+  .wasla-table tbody tr.table-row td {
+    display: block;
+    padding: 0;
+    border: none;
+    min-width: 0;
+  }
+
+  .wasla-table tbody tr.table-row td:nth-child(1) {
+    grid-area: doctor;
+  }
+
+  .wasla-table tbody tr.table-row td:nth-child(2) {
+    grid-area: plan;
+  }
+
+  .wasla-table tbody tr.table-row td:nth-child(3) {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .wasla-table tbody tr.table-row td:nth-child(4),
+  .wasla-table tbody tr.table-row td:nth-child(5) {
+    display: none;
+  }
+
+  .wasla-table tbody tr.table-row td:nth-child(6) {
+    grid-area: action;
+    justify-self: end;
+  }
+
+  .doctor-name {
+    font-size: 0.88rem;
+  }
+
+  .plan-cell-stack {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-inspect-sub {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+  }
+
+  .table-pagination-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
   }
 }

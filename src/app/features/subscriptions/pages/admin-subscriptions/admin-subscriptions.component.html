@@ -13,217 +13,235 @@
   <div class="subscriptions-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
     <!-- Master Pane -->
     <div class="subscriptions-master-pane">
-      <!-- ═══ Search & Filters Panel ═══ -->
-      <section class="filters-card" [attr.aria-label]="'subscriptions.search' | t">
-    <div class="filters-card-header">
-      <div class="filters-title-group">
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          aria-hidden="true"
-        >
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-        </svg>
-        <span class="filters-title-text">{{ 'subscriptions.search' | t }} &amp; {{ 'subscriptions.status' | t }}</span>
-      </div>
-      @if (
-        query.search ||
-        query.status ||
-        query.productCode ||
-        query.planCode ||
-        query.createdFromUtc ||
-        query.endsFromUtc
-      ) {
-        <button class="btn-clear-filters-link" type="button" (click)="clearFilters()">
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-          <span>{{ 'subscriptions.clear' | t }}</span>
-        </button>
-      }
-    </div>
+      <!-- ═══ Compact Search & Filters Bar ═══ -->
+      <section class="filters-card filters-card--compact" [attr.aria-label]="'subscriptions.search' | t">
+        <form class="filters-form-shell" (ngSubmit)="load(true)">
+          <div class="filters-compact-bar">
+            <!-- Search Input -->
+            <div class="input-with-icon filters-compact-search">
+              <svg
+                class="input-icon"
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                class="field-input"
+                name="search"
+                [placeholder]="'subscriptions.search' | t"
+                [(ngModel)]="query.search"
+              />
+            </div>
 
-    <form class="filters-grid" (ngSubmit)="load(true)">
-      <!-- Search Input -->
-      <label class="filter-field filter-field--search">
-        <span class="field-label">{{ 'subscriptions.search' | t }}</span>
-        <div class="input-with-icon">
-          <svg
-            class="input-icon"
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            class="field-input"
-            name="search"
-            [placeholder]="'subscriptions.search' | t"
-            [(ngModel)]="query.search"
-          />
-        </div>
-      </label>
+            <!-- Quick Status Select -->
+            <div class="select-with-arrow filters-compact-status">
+              <select
+                class="field-select"
+                name="status"
+                [attr.aria-label]="'subscriptions.status' | t"
+                [(ngModel)]="query.status"
+                (ngModelChange)="load(true)"
+              >
+                <option value="">{{ 'subscriptions.status' | t }}: {{ 'subscriptions.all' | t }}</option>
+                @for (
+                  status of ['Pending', 'Active', 'Expired', 'Cancelled', 'Scheduled'];
+                  track status
+                ) {
+                  <option [value]="status">{{ 'subscriptions.' + status | t }}</option>
+                }
+              </select>
+              <svg
+                class="select-arrow"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
 
-      <!-- Status -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.status' | t }}</span>
-        <div class="select-with-arrow">
-          <select class="field-select" name="status" [(ngModel)]="query.status">
-            <option value="">{{ 'subscriptions.all' | t }}</option>
-            @for (
-              status of ['Pending', 'Active', 'Expired', 'Cancelled', 'Scheduled'];
-              track status
-            ) {
-              <option [value]="status">{{ 'subscriptions.' + status | t }}</option>
-            }
-          </select>
-          <svg
-            class="select-arrow"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
-      </label>
+            <!-- Compact Actions -->
+            <div class="filters-compact-actions">
+              <button
+                type="button"
+                class="btn-filters-toggle"
+                [class.is-active]="filtersExpanded() || advancedFilterCount() > 0"
+                [attr.aria-expanded]="filtersExpanded()"
+                (click)="toggleFilters()"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                <span>{{ 'subscriptions.filters' | t }}</span>
+                @if (advancedFilterCount() > 0) {
+                  <span class="filters-count-badge">{{ advancedFilterCount() }}</span>
+                }
+              </button>
 
-      <!-- Product -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.product' | t }}</span>
-        <div class="select-with-arrow">
-          <select class="field-select" name="product" [(ngModel)]="query.productCode">
-            <option value="">{{ 'subscriptions.all' | t }}</option>
-            @for (product of catalog()?.products ?? []; track product.code) {
-              <option [value]="product.code">
-                {{ language.currentLang() === 'ar' ? product.nameAr : product.nameEn }}
-              </option>
-            }
-          </select>
-          <svg
-            class="select-arrow"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
-      </label>
+              <button class="btn-filter-submit" type="submit" [disabled]="loading()">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <span>{{ 'subscriptions.search' | t }}</span>
+              </button>
 
-      <!-- Plan Code -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.plan' | t }}</span>
-        <input
-          class="field-input"
-          name="plan"
-          [placeholder]="'subscriptions.plan' | t"
-          [(ngModel)]="query.planCode"
-        />
-      </label>
+              @if (
+                query.search ||
+                query.status ||
+                query.productCode ||
+                query.planCode ||
+                query.createdFromUtc ||
+                query.createdToUtc ||
+                query.endsFromUtc ||
+                query.endsToUtc
+              ) {
+                <button
+                  class="btn-filter-clear"
+                  type="button"
+                  [title]="'subscriptions.clear' | t"
+                  [attr.aria-label]="'subscriptions.clear' | t"
+                  (click)="clearFilters()"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    aria-hidden="true"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              }
+            </div>
+          </div>
 
-      <!-- Date: Created From -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.createdFrom' | t }}</span>
-        <input
-          class="field-input ltr-text"
-          type="datetime-local"
-          name="createdFrom"
-          dir="ltr"
-          [ngModel]="query.createdFromUtc?.slice(0, 16)"
-          (ngModelChange)="query.createdFromUtc = $event ? $event + ':00Z' : undefined"
-        />
-      </label>
+          @if (filtersExpanded()) {
+            <div class="filters-advanced-grid">
+              <!-- Product -->
+              <label class="filter-field">
+                <span class="field-label">{{ 'subscriptions.product' | t }}</span>
+                <div class="select-with-arrow">
+                  <select class="field-select" name="product" [(ngModel)]="query.productCode">
+                    <option value="">{{ 'subscriptions.all' | t }}</option>
+                    @for (product of catalog()?.products ?? []; track product.code) {
+                      <option [value]="product.code">
+                        {{ language.currentLang() === 'ar' ? product.nameAr : product.nameEn }}
+                      </option>
+                    }
+                  </select>
+                  <svg
+                    class="select-arrow"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </label>
 
-      <!-- Date: Created To -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.createdTo' | t }}</span>
-        <input
-          class="field-input ltr-text"
-          type="datetime-local"
-          name="createdTo"
-          dir="ltr"
-          [ngModel]="query.createdToUtc?.slice(0, 16)"
-          (ngModelChange)="query.createdToUtc = $event ? $event + ':00Z' : undefined"
-        />
-      </label>
+              <!-- Plan Code -->
+              <label class="filter-field">
+                <span class="field-label">{{ 'subscriptions.plan' | t }}</span>
+                <input
+                  class="field-input"
+                  name="plan"
+                  [placeholder]="'subscriptions.plan' | t"
+                  [(ngModel)]="query.planCode"
+                />
+              </label>
 
-      <!-- Date: Ends From -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.endsFrom' | t }}</span>
-        <input
-          class="field-input ltr-text"
-          type="datetime-local"
-          name="endsFrom"
-          dir="ltr"
-          [ngModel]="query.endsFromUtc?.slice(0, 16)"
-          (ngModelChange)="query.endsFromUtc = $event ? $event + ':00Z' : undefined"
-        />
-      </label>
+              <!-- Date: Created From -->
+              <label class="filter-field">
+                <span class="field-label">{{ 'subscriptions.createdFrom' | t }}</span>
+                <input
+                  class="field-input ltr-text"
+                  type="datetime-local"
+                  name="createdFrom"
+                  dir="ltr"
+                  [ngModel]="query.createdFromUtc?.slice(0, 16)"
+                  (ngModelChange)="query.createdFromUtc = $event ? $event + ':00Z' : undefined"
+                />
+              </label>
 
-      <!-- Date: Ends To -->
-      <label class="filter-field">
-        <span class="field-label">{{ 'subscriptions.endsTo' | t }}</span>
-        <input
-          class="field-input ltr-text"
-          type="datetime-local"
-          name="endsTo"
-          dir="ltr"
-          [ngModel]="query.endsToUtc?.slice(0, 16)"
-          (ngModelChange)="query.endsToUtc = $event ? $event + ':00Z' : undefined"
-        />
-      </label>
+              <!-- Date: Created To -->
+              <label class="filter-field">
+                <span class="field-label">{{ 'subscriptions.createdTo' | t }}</span>
+                <input
+                  class="field-input ltr-text"
+                  type="datetime-local"
+                  name="createdTo"
+                  dir="ltr"
+                  [ngModel]="query.createdToUtc?.slice(0, 16)"
+                  (ngModelChange)="query.createdToUtc = $event ? $event + ':00Z' : undefined"
+                />
+              </label>
 
-      <!-- Action Buttons -->
-      <div class="filters-action-group">
-        <button class="btn-filter-submit" type="submit" [disabled]="loading()">
-          <svg
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <span>{{ 'subscriptions.search' | t }}</span>
-        </button>
-        <button class="btn-filter-clear" type="button" (click)="clearFilters()">
-          <span>{{ 'subscriptions.clear' | t }}</span>
-        </button>
-      </div>
-    </form>
-  </section>
+              <!-- Date: Ends From -->
+              <label class="filter-field">
+                <span class="field-label">{{ 'subscriptions.endsFrom' | t }}</span>
+                <input
+                  class="field-input ltr-text"
+                  type="datetime-local"
+                  name="endsFrom"
+                  dir="ltr"
+                  [ngModel]="query.endsFromUtc?.slice(0, 16)"
+                  (ngModelChange)="query.endsFromUtc = $event ? $event + ':00Z' : undefined"
+                />
+              </label>
+
+              <!-- Date: Ends To -->
+              <label class="filter-field">
+                <span class="field-label">{{ 'subscriptions.endsTo' | t }}</span>
+                <input
+                  class="field-input ltr-text"
+                  type="datetime-local"
+                  name="endsTo"
+                  dir="ltr"
+                  [ngModel]="query.endsToUtc?.slice(0, 16)"
+                  (ngModelChange)="query.endsToUtc = $event ? $event + ':00Z' : undefined"
+                />
+              </label>
+            </div>
+          }
+        </form>
+      </section>
 
   <!-- ═══ Loading State: Element Shimmer Skeleton ═══ -->
   @if (loading()) {

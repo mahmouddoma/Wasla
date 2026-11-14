@@ -488,100 +488,138 @@
     }
   }
 
-  <app-side-drawer
-    [opened]="!!confirmation()"
-    [title]="'subscriptions.confirm' | t"
-    (closed)="!busy() && confirmation.set(null)"
-  >
-    @if (confirmation()) {
-      <div class="confirmation-flow">
-        <p class="confirmation-lead">
-          {{
-            (confirmation() === 'cancel'
-              ? 'subscriptions.cancelExplanation'
-              : confirmation() === 'trial'
-                ? 'subscriptions.trialStartExplanation'
-                : 'subscriptions.pendingExplanation'
-            ) | t
-          }}
-        </p>
-        @if (confirmation() !== 'selection' && confirmation() !== 'trial') {
-          <div class="confirmation-summary">
-            <strong>
-              {{ contractName() }} · <bdi>#{{ state.selectedContractId().slice(0, 8) }}</bdi>
-            </strong>
+  @if (confirmation()) {
+    <div
+      class="confirm-modal-backdrop"
+      role="presentation"
+      (click)="!busy() && confirmation.set(null)"
+      (keydown.escape)="!busy() && confirmation.set(null)"
+    >
+      <div
+        class="confirm-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'subscriptions.confirm' | t"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="confirm-modal-header">
+          <div class="confirm-modal-title-group">
+            <span
+              class="confirm-modal-icon"
+              [class.is-danger]="confirmation() === 'cancel'"
+              aria-hidden="true"
+            >
+              <i
+                [class]="
+                  confirmation() === 'cancel'
+                    ? 'fa-solid fa-triangle-exclamation'
+                    : 'fa-solid fa-circle-check'
+                "
+              ></i>
+            </span>
+            <h3 class="confirm-modal-title">{{ 'subscriptions.confirm' | t }}</h3>
           </div>
-        }
-        @if (selection() && confirmation() !== 'trial' && confirmation() !== 'cancel') {
-          <div class="confirmation-summary">
-            <p>
-              <strong>{{ getSelectedPlanName() }}</strong> ·
-              {{ 'subscriptions.' + selection()?.billingCycle | t }}
-            </p>
-          </div>
-        }
-        @if (confirmation() === 'change' || confirmation() === 'cancel') {
-          <div class="form-field">
-            <label for="contract-reason">{{ 'subscriptions.reason' | t }}</label>
-            <textarea
-              id="contract-reason"
-              class="field-input"
-              rows="3"
-              [(ngModel)]="reason"
-              [disabled]="busy()"
-            ></textarea>
-          </div>
-        }
-        @if (confirmation() === 'renewal' && renewal(); as preview) {
-          <div class="confirmation-summary">
-            <p>
-              {{ 'subscriptions.price' | t }}:
-              <strong>{{
-                preview.terms.priceAmount | currency: preview.terms.currency || undefined
-              }}</strong>
-              · {{ 'subscriptions.practiceLimit' | t }}:
-              <strong>{{ preview.terms.practiceLimit }}</strong>
-            </p>
-          </div>
-          <p class="retention-help">{{ 'subscriptions.retainHelp' | t }}</p>
-          @for (allocation of preview.allocations; track allocation.id) {
-            <div class="retention-row">
-              <label>
-                <input
-                  class="sr-only-chk"
-                  type="checkbox"
-                  [checked]="isRetained(allocation.doctorPracticeId)"
-                  (change)="retainPractice(allocation.doctorPracticeId, allocation.id, $event)"
-                  [disabled]="busy()"
-                />
-                <span class="check-box" aria-hidden="true"></span>
-                <span>{{ practiceName(allocation.doctorPracticeId) }}</span>
-              </label>
-              @if (isRetained(allocation.doctorPracticeId) && preview.terms.receptionLimit > 0) {
-                <div class="retention-staff-list">
-                  @for (member of assignedStaff(allocation.doctorPracticeId); track member.id) {
-                    <label>
-                      <input
-                        class="sr-only-chk"
-                        type="checkbox"
-                        (change)="retainStaff(allocation.doctorPracticeId, member.id, $event)"
-                        [disabled]="busy()"
-                      />
-                      <span class="check-box" aria-hidden="true"></span>
-                      <span>{{
-                        language.isRtl() ? member.nameAr : member.nameEn || member.nameAr
-                      }}</span>
-                    </label>
-                  }
-                </div>
-              }
+          <button
+            type="button"
+            class="confirm-modal-close"
+            [disabled]="busy()"
+            (click)="confirmation.set(null)"
+            [attr.aria-label]="'common.close' | t"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="confirm-modal-body confirmation-flow">
+          <p class="confirmation-lead">
+            {{
+              (confirmation() === 'cancel'
+                ? 'subscriptions.cancelExplanation'
+                : confirmation() === 'trial'
+                  ? 'subscriptions.trialStartExplanation'
+                  : 'subscriptions.pendingExplanation'
+              ) | t
+            }}
+          </p>
+          @if (confirmation() !== 'selection' && confirmation() !== 'trial') {
+            <div class="confirmation-summary">
+              <strong>
+                {{ contractName() }} · <bdi>#{{ state.selectedContractId().slice(0, 8) }}</bdi>
+              </strong>
             </div>
           }
-          @if (!renewalValid()) {
-            <p class="capacity-alert" role="alert">{{ 'subscriptions.capacityFull' | t }}</p>
+          @if (selection() && confirmation() !== 'trial' && confirmation() !== 'cancel') {
+            <div class="confirmation-summary">
+              <p>
+                <strong>{{ getSelectedPlanName() }}</strong> ·
+                {{ 'subscriptions.' + selection()?.billingCycle | t }}
+              </p>
+            </div>
           }
-        }
-        <div class="action-line drawer-actions">
+          @if (confirmation() === 'change' || confirmation() === 'cancel') {
+            <div class="form-field">
+              <label for="contract-reason">{{ 'subscriptions.reason' | t }}</label>
+              <textarea
+                id="contract-reason"
+                class="field-input"
+                rows="3"
+                [(ngModel)]="reason"
+                [disabled]="busy()"
+              ></textarea>
+            </div>
+          }
+          @if (confirmation() === 'renewal' && renewal(); as preview) {
+            <div class="confirmation-summary">
+              <p>
+                {{ 'subscriptions.price' | t }}:
+                <strong>{{
+                  preview.terms.priceAmount | currency: preview.terms.currency || undefined
+                }}</strong>
+                · {{ 'subscriptions.practiceLimit' | t }}:
+                <strong>{{ preview.terms.practiceLimit }}</strong>
+              </p>
+            </div>
+            <p class="retention-help">{{ 'subscriptions.retainHelp' | t }}</p>
+            @for (allocation of preview.allocations; track allocation.id) {
+              <div class="retention-row">
+                <label>
+                  <input
+                    class="sr-only-chk"
+                    type="checkbox"
+                    [checked]="isRetained(allocation.doctorPracticeId)"
+                    (change)="retainPractice(allocation.doctorPracticeId, allocation.id, $event)"
+                    [disabled]="busy()"
+                  />
+                  <span class="check-box" aria-hidden="true"></span>
+                  <span>{{ practiceName(allocation.doctorPracticeId) }}</span>
+                </label>
+                @if (isRetained(allocation.doctorPracticeId) && preview.terms.receptionLimit > 0) {
+                  <div class="retention-staff-list">
+                    @for (member of assignedStaff(allocation.doctorPracticeId); track member.id) {
+                      <label>
+                        <input
+                          class="sr-only-chk"
+                          type="checkbox"
+                          (change)="retainStaff(allocation.doctorPracticeId, member.id, $event)"
+                          [disabled]="busy()"
+                        />
+                        <span class="check-box" aria-hidden="true"></span>
+                        <span>{{
+                          language.isRtl() ? member.nameAr : member.nameEn || member.nameAr
+                        }}</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            @if (!renewalValid()) {
+              <p class="capacity-alert" role="alert">{{ 'subscriptions.capacityFull' | t }}</p>
+            }
+          }
+        </div>
+
+        <div class="confirm-modal-footer">
           <button
             type="button"
             class="btn btn-primary"
@@ -600,6 +638,6 @@
           </button>
         </div>
       </div>
-    }
-  </app-side-drawer>
+    </div>
+  }
 </main>

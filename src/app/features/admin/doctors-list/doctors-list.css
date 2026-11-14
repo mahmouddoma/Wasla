@@ -784,20 +784,112 @@
   display: none;
 }
 
-/* ── 7. Responsive Breakpoints ───────────────────────────── */
+/* ── 7. Responsive Breakpoints (Laptops, Tablets, Mobile) ── */
 
-/* Tablet: 768px – 991.98px */
+/* Small Laptops & Landscape Tablets (992px – 1240px): Fit all columns cleanly without 860px overflow */
+@media (max-width: 1240px) {
+  .medical-table-header,
+  .doctor-row-enterprise {
+    grid-template-columns: minmax(160px, 1.4fr) minmax(150px, 1.2fr) minmax(110px, 0.9fr) minmax(85px, 0.65fr) minmax(85px, 0.65fr) minmax(80px, 0.55fr);
+    min-width: 0;
+    gap: 10px;
+  }
 
-/* Mobile: < 768px */
+  .medical-table-header > :nth-child(6),
+  .doctor-row-enterprise > .col-date {
+    display: none;
+  }
+}
 
-/* Landscape Phones / Small Tablets (480px - 767px) */
+/* Tablets & Mobile (< 992px): Clean Adaptive Row Layout — ZERO Horizontal Clipping */
+@media (max-width: 991.98px) {
+  .medical-table-header {
+    display: none;
+  }
 
-/* Very Small Mobile (< 480px) */
+  .medical-table-card {
+    border-radius: 10px;
+    box-shadow: none;
+  }
 
-/* Compact Responsive Actions */
+  .doctor-row-enterprise {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'doctor action'
+      'contact status'
+      'license progress';
+    min-width: 0;
+    gap: 8px 12px;
+    padding: 12px 14px;
+    align-items: center;
+  }
+
+  .doctor-row-enterprise > .col-doctor {
+    grid-area: doctor;
+  }
+
+  .doctor-row-enterprise > .col-action {
+    grid-area: action;
+    justify-content: flex-end;
+  }
+
+  .doctor-row-enterprise > .col-contact {
+    grid-area: contact;
+    min-width: 0;
+  }
+
+  .doctor-row-enterprise > .col-status {
+    grid-area: status;
+    justify-content: flex-end;
+  }
+
+  .doctor-row-enterprise > .col-license {
+    grid-area: license;
+    min-width: 0;
+  }
+
+  .doctor-row-enterprise > .col-progress {
+    grid-area: progress;
+    min-width: 96px;
+  }
+
+  .doctors-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+/* Mobile (< 768px): Compact Flat Rows & Single-Column Grid */
 @media (max-width: 767.98px) {
   .btn-inspect-enterprise {
     min-height: 32px;
+    padding: 0 10px;
+  }
+
+  .doctor-row-enterprise {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'doctor status'
+      'contact contact'
+      'license action';
+    padding: 11px 12px;
+    gap: 6px 10px;
+  }
+
+  .doctor-row-enterprise > .col-progress {
+    display: none;
+  }
+
+  .doctors-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .doctor-card-item {
+    padding: 14px 12px;
+    border-radius: 10px;
+    box-shadow: none;
   }
 }
 
@@ -948,8 +1040,9 @@
 }
 
 .doctor-card-item.is-selected-row {
-  border-color: var(--wasla-teal-500, #0ba5a0) !important;
-  box-shadow: 0 0 0 1px var(--wasla-teal-500, #0ba5a0), 0 4px 14px rgba(11, 165, 160, 0.08) !important;
+  border-color: var(--wasla-border, #e3eaf0) !important;
+  background: rgba(11, 165, 160, 0.04) !important;
+  box-shadow: 0 2px 10px rgba(12, 39, 66, 0.06) !important;
 }
 
 /* Detail Pane (Master-Detail side-by-side next to the list/grid) */
@@ -1075,10 +1168,23 @@
   flex: 1 1 auto;
 }
 
-@media (max-width: 991px) {
+@media (max-width: 1200px) and (min-width: 992px) {
+  .doctors-split-layout.has-active-detail .doctors-master-pane {
+    flex: 1 1 calc(100% - 400px);
+    max-width: calc(100% - 400px);
+  }
+
+  .doctors-detail-pane {
+    width: 380px;
+    min-width: 340px;
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 991.98px) {
   .doctors-split-layout.has-active-detail {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
   .doctors-split-layout.has-active-detail .doctors-master-pane {
@@ -1086,13 +1192,37 @@
     max-width: 100% !important;
   }
 
+  /* Open Doctor Profile as a full-screen / slide-over overlay on Tablet & Mobile so it appears immediately */
   .doctors-detail-pane {
+    position: fixed !important;
+    inset: 0 !important;
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
-    position: static !important;
-    max-height: none !important;
-    overflow: visible !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    z-index: 1050 !important;
+    border-radius: 0 !important;
+    border: none !important;
     display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .detail-pane-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .card-item-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card-item-top .col-doctor,
+  .card-item-top .card-top-info {
+    min-width: 0;
+    flex: 1 1 180px;
   }
 }

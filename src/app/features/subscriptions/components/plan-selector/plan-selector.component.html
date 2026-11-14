@@ -81,8 +81,24 @@
     </label>
   }
 
-  <!-- Pricing Cards Grid (FeedHive Style across full width) -->
-  <div class="pricing-cards-grid">
+  <!-- Mobile/Tablet Horizontal Swipe Controls -->
+  <div class="mobile-carousel-bar">
+    <span class="mobile-swipe-hint">
+      <i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i>
+      <span>{{ 'pricing.swipeHint' | t }}</span>
+    </span>
+    <div class="carousel-nav-btns">
+      <button type="button" class="carousel-arrow-btn" (click)="scrollCards('prev')" [attr.aria-label]="'common.previous' | t">
+        <i [class]="language.isRtl() ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left'" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="carousel-arrow-btn" (click)="scrollCards('next')" [attr.aria-label]="'common.next' | t">
+        <i [class]="language.isRtl() ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pricing Cards Grid (Horizontal Swipe on Mobile/Tablet, 4-Col Grid on Desktop) -->
+  <div class="pricing-cards-grid" #cardsGrid>
     @for (option of displayedOptions(); track option.key) {
       <label
         class="feedhive-card"
@@ -125,19 +141,16 @@
           <span class="price-tenure">/ {{ 'subscriptions.' + option.cycle | t }}</span>
         </div>
 
-        <!-- Short Target Audience Description -->
-        <p class="plan-audience-desc">
-          {{ 'subscriptions.catalogDescription' | t }}
-        </p>
-
         <!-- Divider -->
         <hr class="card-separator" />
 
         <!-- Features Checklist with FontAwesome Icons -->
+        @let features = getPlanFeatures(option.plan);
+        @let expanded = isCardExpanded(option.key);
         <div class="card-checklist">
           <!-- Allowances -->
           <div class="feature-item">
-            <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+            <i class="fa-solid fa-hospital feature-check-icon" aria-hidden="true"></i>
             <span class="feature-label">
               <strong>{{ option.plan.pricing!.practiceLimit }}</strong>
               {{ 'subscriptions.practiceAllowance' | t }}
@@ -145,21 +158,35 @@
           </div>
 
           <div class="feature-item">
-            <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
+            <i class="fa-solid fa-user-check feature-check-icon" aria-hidden="true"></i>
             <span class="feature-label">
               <strong>{{ option.plan.pricing!.receptionLimit }}</strong>
               {{ 'subscriptions.receptionAllowance' | t }}
             </span>
           </div>
 
-          <!-- Key Features -->
-          @for (featureText of getPlanFeatures(option.plan); track $index) {
+          <!-- Key Features (Compact by default, expandable) -->
+          @for (featureText of (expanded ? features : features.slice(0, defaultVisibleFeatures - 2)); track $index) {
             <div class="feature-item">
               <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
               <span class="feature-label">{{ featureText }}</span>
             </div>
           }
         </div>
+
+        @if (features.length > defaultVisibleFeatures - 2) {
+          <button
+            type="button"
+            class="toggle-features-btn"
+            (click)="toggleCardFeatures(option.key, $event)"
+          >
+            <span>{{ (expanded ? 'subscriptions.showLessFeatures' : 'subscriptions.showMoreFeatures') | t }}</span>
+            @if (!expanded) {
+              <span class="more-count">+{{ features.length - (defaultVisibleFeatures - 2) }}</span>
+            }
+            <i [class]="expanded ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" aria-hidden="true"></i>
+          </button>
+        }
 
         <!-- Action CTA Button -->
         <div class="card-bottom-action">
@@ -244,11 +271,6 @@
           }
         </div>
 
-        <!-- Target Audience Description -->
-        <p class="plan-audience-desc">
-          {{ 'subscriptions.catalogDescription' | t }}
-        </p>
-
         <!-- Divider -->
         <hr class="card-separator" />
 
@@ -273,14 +295,30 @@
         }
 
         <!-- Features Checklist with FontAwesome Icons -->
+        @let bFeatures = getBookingFeatures();
+        @let bExpanded = isCardExpanded('BOOKING_ONLY');
         <div class="card-checklist">
-          @for (featureText of getBookingFeatures(); track $index) {
+          @for (featureText of (bExpanded ? bFeatures : bFeatures.slice(0, defaultVisibleFeatures - 1)); track $index) {
             <div class="feature-item">
               <i class="fa-solid fa-circle-check feature-check-icon" aria-hidden="true"></i>
               <span class="feature-label">{{ featureText }}</span>
             </div>
           }
         </div>
+
+        @if (bFeatures.length > defaultVisibleFeatures - 1) {
+          <button
+            type="button"
+            class="toggle-features-btn"
+            (click)="toggleCardFeatures('BOOKING_ONLY', $event)"
+          >
+            <span>{{ (bExpanded ? 'subscriptions.showLessFeatures' : 'subscriptions.showMoreFeatures') | t }}</span>
+            @if (!bExpanded) {
+              <span class="more-count">+{{ bFeatures.length - (defaultVisibleFeatures - 1) }}</span>
+            }
+            <i [class]="bExpanded ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" aria-hidden="true"></i>
+          </button>
+        }
 
         <!-- Action CTA Button -->
         <div class="card-bottom-action">
