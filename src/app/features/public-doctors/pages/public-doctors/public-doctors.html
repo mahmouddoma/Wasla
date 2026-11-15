@@ -1,4 +1,15 @@
-<main class="discovery-shell" [dir]="language.dir()">
+<div class="discovery-page-root" [dir]="language.dir()">
+  @if (!isInsidePortal()) {
+    <!-- Unified Full-Width Application Header (Role-Aware) -->
+    <app-header
+      [user]="authSession.user()"
+      [home]="'/'"
+      [showMenuToggle]="false"
+      (logout)="logout()"
+    />
+  }
+
+<main class="discovery-shell">
   @if (isInsidePortal()) {
     <!-- Portal Header with Back Button and Stats -->
     <app-page-header
@@ -40,14 +51,6 @@
       </div>
     </app-page-header>
   } @else {
-    <!-- Unified Application Header (Role-Aware) -->
-    <app-header
-      [user]="authSession.user()"
-      [home]="'/'"
-      [showMenuToggle]="false"
-      (logout)="logout()"
-    />
-
     <!-- Hero Section -->
     <section class="discovery-hero">
       <div class="hero-content">
@@ -843,7 +846,7 @@
                                   <button
                                     type="button"
                                     class="btn-wasla-book-cta"
-                                    (click)="openDoctorDrawer(doctor, practice.id, day.key, day.slots?.[0]); $event.stopPropagation()"
+                                    (click)="openDoctorDrawer(doctor, practice.id, day.key, (day.slots ?? [])[0]); $event.stopPropagation()"
                                   >
                                     <span>{{ 'discovery.quickBook' | t }}</span>
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -975,3 +978,4 @@
   <!-- Slide-Over Booking Drawer (Rule 32.3) -->
   <app-patient-booking-drawer />
 </main>
+</div>

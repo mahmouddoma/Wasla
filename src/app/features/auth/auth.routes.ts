@@ -15,8 +15,8 @@ export const AUTH_ROUTES: Routes = [
         path: 'register/patient',
         title: 'routes.registerPatient',
         canActivate: [anonymousGuard],
-        loadComponent: () =>
-          import('./patient-registration/patient-registration').then((m) => m.PatientRegistration),
+        data: { initialMode: 'patient' },
+        loadComponent: () => import('./login/login').then((m) => m.Login),
       },
       {
         path: 'patient-onboarding/activate',
@@ -38,8 +38,8 @@ export const AUTH_ROUTES: Routes = [
         path: 'register/doctor',
         title: 'routes.registerDoctor',
         canActivate: [anonymousGuard],
-        loadComponent: () =>
-          import('./doctor-registration/doctor-registration').then((m) => m.DoctorRegistration),
+        data: { initialMode: 'doctor' },
+        loadComponent: () => import('./login/login').then((m) => m.Login),
       },
       {
         path: 'forgot-password/otp',

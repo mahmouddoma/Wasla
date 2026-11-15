@@ -15,24 +15,51 @@
         </button>
       }
       <a class="header-brand" [routerLink]="home()" [attr.aria-label]="'common.home' | t">
-        <img src="/images/wasla-mark.png" width="30" height="30" alt="" decoding="async" />
-        <span class="brand-title">{{ 'common.appName' | t }}</span>
+        <img
+          src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+          width="34"
+          height="34"
+          alt=""
+          decoding="async"
+        />
+        <span class="brand-text-stack">
+          <strong class="brand-title">{{ 'common.appName' | t }}</strong>
+          @if (!user()) {
+            <small class="brand-subtitle">{{ 'common.platformSubtitle' | t }}</small>
+          }
+        </span>
       </a>
       <ng-content select="[header-start-extra]" />
     </div>
 
     <!-- Role & Permission-Aware Navigation (Desktop) -->
     @if (roleNavLinks().length > 0) {
-      <nav class="header-role-nav d-none d-lg-flex" [attr.aria-label]="'sidebar.workspace' | t">
+      <nav class="header-role-nav d-none d-lg-flex" [attr.aria-label]="(user() ? 'sidebar.workspace' : 'landing.nav.primaryAria') | t">
         @for (item of roleNavLinks(); track item.route) {
-          <a
-            [routerLink]="item.route"
-            routerLinkActive="is-active"
-            class="header-nav-link"
-          >
-            <i [class]="item.iconClass" aria-hidden="true"></i>
-            <span>{{ item.labelKey | t }}</span>
-          </a>
+          @if (item.isRoute) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+              class="header-nav-link"
+            >
+              @if (item.iconClass) {
+                <i [class]="item.iconClass" aria-hidden="true"></i>
+              }
+              <span>{{ item.labelKey | t }}</span>
+            </a>
+          } @else {
+            <a
+              [href]="item.route"
+              class="header-nav-link"
+              (click)="onNavigateSection(item, $event)"
+            >
+              @if (item.iconClass) {
+                <i [class]="item.iconClass" aria-hidden="true"></i>
+              }
+              <span>{{ item.labelKey | t }}</span>
+            </a>
+          }
         }
       </nav>
     }
@@ -162,16 +189,108 @@
           <span class="logout-label">{{ 'common.logout' | t }}</span>
         </button>
       } @else {
-        <!-- Guest Actions (Unified Compact Style) -->
-        <a routerLink="/login" class="btn-header-login">
+        <!-- Guest Actions (Unified With Landing Navbar) -->
+        <a
+          routerLink="/login"
+          (click)="navigateTo('/login', $event)"
+          routerLinkActive="is-active-cta"
+          class="btn-header-login d-none d-sm-inline-flex"
+          id="header-login-btn"
+        >
           <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
-          <span>{{ 'login.title' | t }}</span>
+          <span>{{ 'landing.nav.login' | t }}</span>
         </a>
-        <a routerLink="/register/doctor" class="btn-header-register">
+        <a
+          routerLink="/register/doctor"
+          (click)="navigateTo('/register/doctor', $event)"
+          routerLinkActive="is-active-cta"
+          class="btn-header-register"
+          id="header-start-cta"
+        >
           <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
-          <span class="register-label">{{ 'pricing.trialBadge' | t }}</span>
+          <span class="register-label">{{ 'landing.nav.startCta' | t }}</span>
         </a>
+        <button
+          type="button"
+          class="btn-guest-mobile-menu d-inline-flex d-lg-none"
+          (click)="toggleGuestMenu()"
+          [attr.aria-expanded]="isGuestMenuOpen()"
+          aria-controls="header-guest-mobile-drawer"
+          [attr.aria-label]="(isGuestMenuOpen() ? 'landing.nav.closeMenu' : 'landing.nav.openMenu') | t"
+        >
+          @if (isGuestMenuOpen()) {
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="4" y1="7" x2="20" y2="7" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="17" x2="20" y2="17" />
+            </svg>
+          }
+        </button>
       }
     </div>
   </div>
+
+  <!-- Unified Accessible Mobile Navigation Drawer for Guests -->
+  @if (!user() && isGuestMenuOpen()) {
+    <div
+      id="header-guest-mobile-drawer"
+      class="guest-mobile-nav-drawer d-lg-none"
+      role="dialog"
+      [attr.aria-label]="'landing.nav.primaryAria' | t"
+    >
+      <nav class="guest-mobile-nav-list">
+        @for (item of roleNavLinks(); track item.route) {
+          @if (item.isRoute) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+              class="guest-mobile-link"
+              (click)="closeGuestMenu()"
+            >
+              @if (item.iconClass) {
+                <i [class]="item.iconClass" aria-hidden="true"></i>
+              }
+              <span>{{ item.labelKey | t }}</span>
+            </a>
+          } @else {
+            <a
+              [href]="item.route"
+              class="guest-mobile-link"
+              (click)="onNavigateSection(item, $event)"
+            >
+              @if (item.iconClass) {
+                <i [class]="item.iconClass" aria-hidden="true"></i>
+              }
+              <span>{{ item.labelKey | t }}</span>
+            </a>
+          }
+        }
+      </nav>
+
+      <div class="guest-mobile-nav-ctas">
+        <a
+          routerLink="/register/doctor"
+          class="btn-header-register w-100"
+          (click)="navigateTo('/register/doctor', $event)"
+        >
+          <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.startCta' | t }}</span>
+        </a>
+        <a
+          routerLink="/login"
+          class="btn-header-login w-100"
+          (click)="navigateTo('/login', $event)"
+        >
+          <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.login' | t }}</span>
+        </a>
+      </div>
+    </div>
+  }
 </header>

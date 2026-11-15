@@ -12,7 +12,19 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'login',
+    title: 'routes.landing',
+    loadComponent: () =>
+      import('./features/landing/pages/wasla-landing/wasla-landing.component').then(
+        (m) => m.WaslaLandingComponent,
+      ),
+  },
+  {
+    path: 'for-doctors',
+    title: 'routes.forDoctors',
+    loadComponent: () =>
+      import('./features/landing/pages/wasla-landing/wasla-landing.component').then(
+        (m) => m.WaslaLandingComponent,
+      ),
   },
   // Public & Doctor Discovery (Anonymous)
   {
@@ -48,10 +60,36 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
 
-  // Public Legal & Support Pages
+  // Public Legal & Support Pages (Explicit paths so empty prefix does not shadow /login & /register)
+  {
+    path: 'privacy',
+    title: 'legal.tabPrivacy',
+    loadComponent: () =>
+      import('./features/legal/pages/privacy-policy/privacy-policy.component').then(
+        (m) => m.PrivacyPolicyComponent,
+      ),
+  },
+  {
+    path: 'terms',
+    title: 'legal.tabTerms',
+    loadComponent: () =>
+      import('./features/legal/pages/terms-of-service/terms-of-service.component').then(
+        (m) => m.TermsOfServiceComponent,
+      ),
+  },
+  {
+    path: 'help',
+    title: 'legal.tabHelp',
+    loadComponent: () =>
+      import('./features/legal/pages/help-support/help-support.component').then(
+        (m) => m.HelpSupportComponent,
+      ),
+  },
+
+  // Public Auth & Registration Flow (moved before PortalLayout so /login and /register/* resolve directly)
   {
     path: '',
-    loadChildren: () => import('./features/legal/legal.routes').then((m) => m.LEGAL_ROUTES),
+    loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
 
   // SuperAdmin Portal (wrapped with AdminLayout)
@@ -398,12 +436,6 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
     ],
-  },
-
-  // Auth & Anonymous Flow
-  {
-    path: '',
-    loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
 
   { path: '**', redirectTo: 'login' },

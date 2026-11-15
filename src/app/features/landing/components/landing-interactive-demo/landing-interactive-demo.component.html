@@ -1,0 +1,324 @@
+<div class="demo-workbench" [dir]="language.dir()">
+  <!-- Operational Mode Switcher -->
+  <div class="demo-mode-bar" role="tablist" [attr.aria-label]="'landing.demo.title' | t">
+    <button
+      type="button"
+      role="tab"
+      id="demo-mode-appointments"
+      class="demo-mode-btn"
+      [class.is-active]="activeMode() === 'appointments'"
+      [attr.aria-selected]="activeMode() === 'appointments'"
+      (click)="setMode('appointments')"
+    >
+      <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
+      <span>{{ 'landing.demo.tabAppointments' | t }}</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      id="demo-mode-queue"
+      class="demo-mode-btn"
+      [class.is-active]="activeMode() === 'queue'"
+      [attr.aria-selected]="activeMode() === 'queue'"
+      (click)="setMode('queue')"
+    >
+      <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+      <span>{{ 'landing.demo.tabQueue' | t }}</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      id="demo-mode-clinical"
+      class="demo-mode-btn"
+      [class.is-active]="activeMode() === 'clinical'"
+      [attr.aria-selected]="activeMode() === 'clinical'"
+      (click)="setMode('clinical')"
+    >
+      <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+      <span>{{ 'landing.demo.tabClinical' | t }}</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      id="demo-mode-finance"
+      class="demo-mode-btn"
+      [class.is-active]="activeMode() === 'finance'"
+      [attr.aria-selected]="activeMode() === 'finance'"
+      (click)="setMode('finance')"
+    >
+      <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+      <span>{{ 'landing.demo.tabFinance' | t }}</span>
+    </button>
+  </div>
+
+  <!-- Workbench Surface -->
+  <div class="demo-stage-surface" role="tabpanel">
+    @switch (activeMode()) {
+      <!-- Mode 1: Interactive Appointment Stage Inspector -->
+      @case ('appointments') {
+        <div class="appointments-demo-grid">
+          <div class="apt-list-pane">
+            <p class="demo-instruction">{{ 'landing.demo.selectHint' | t }}</p>
+            <div class="apt-selectable-list">
+              @for (apt of appointments; track apt.id) {
+                <button
+                  type="button"
+                  class="apt-select-row"
+                  [class.is-selected]="selectedAppointment().id === apt.id"
+                  [attr.id]="'demo-apt-' + apt.id"
+                  (click)="selectAppointment(apt.id)"
+                >
+                  <div class="apt-row-main">
+                    <span class="apt-ticket-badge">#{{ apt.ticketNumber }}</span>
+                    <div class="apt-row-info">
+                      <strong>{{ apt.patientNameKey | t }}</strong>
+                      <small>{{ apt.visitTypeKey | t }} • {{ apt.timeDisplay }}</small>
+                    </div>
+                  </div>
+                  <span class="apt-stage-chip" [attr.data-tone]="apt.stageTone">
+                    {{ apt.stageKey | t }}
+                  </span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="apt-inspector-pane">
+            <div class="inspector-header">
+              <div>
+                <span class="inspector-eyebrow">{{ 'landing.demo.inspectorTitle' | t }}</span>
+                <h4 class="inspector-patient">
+                  {{ selectedAppointment().patientNameKey | t }} (#{{
+                    selectedAppointment().ticketNumber
+                  }})
+                </h4>
+              </div>
+              <span class="apt-stage-chip" [attr.data-tone]="selectedAppointment().stageTone">
+                {{ selectedAppointment().stageKey | t }}
+              </span>
+            </div>
+
+            <div class="inspector-roles-list">
+              <div class="inspector-role-row">
+                <div class="role-row-label">
+                  <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+                  <span>{{ 'landing.demo.doctorSees' | t }}</span>
+                </div>
+                <p>{{ selectedAppointment().doctorViewKey | t }}</p>
+              </div>
+
+              <div class="inspector-role-row">
+                <div class="role-row-label">
+                  <i class="fa-solid fa-desktop" aria-hidden="true"></i>
+                  <span>{{ 'landing.demo.receptionSees' | t }}</span>
+                </div>
+                <p>{{ selectedAppointment().receptionViewKey | t }}</p>
+              </div>
+
+              <div class="inspector-role-row">
+                <div class="role-row-label">
+                  <i class="fa-solid fa-mobile-screen" aria-hidden="true"></i>
+                  <span>{{ 'landing.demo.patientSees' | t }}</span>
+                </div>
+                <p>{{ selectedAppointment().patientViewKey | t }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Mode 2: Interactive Queue Simulation -->
+      @case ('queue') {
+        <div class="queue-sim-layout">
+          <div class="queue-sim-header">
+            <div class="serving-banner">
+              <span class="serving-lbl">{{ 'landing.demo.queueNow' | t }}</span>
+              @if (currentServingTicket(); as serving) {
+                <strong class="serving-name">
+                  #{{ serving.ticketNumber }} — {{ serving.patientNameKey | t }}
+                </strong>
+              }
+            </div>
+
+            <div class="queue-sim-actions">
+              <button
+                type="button"
+                id="demo-call-next-btn"
+                class="demo-action-primary"
+                [disabled]="!hasWaitingTickets()"
+                (click)="callNextTicket()"
+              >
+                <i class="fa-solid fa-forward-step" aria-hidden="true"></i>
+                <span>{{ 'landing.demo.queueCallNextBtn' | t }}</span>
+              </button>
+              <button
+                type="button"
+                id="demo-reset-queue-btn"
+                class="demo-action-secondary"
+                (click)="resetQueue()"
+              >
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                <span>{{ 'landing.demo.queueResetBtn' | t }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="queue-sim-rows">
+            @for (ticket of queueTickets(); track ticket.id) {
+              <div class="queue-sim-row" [attr.data-state]="ticket.state">
+                <div class="queue-sim-id">
+                  <span class="ticket-num-box">#{{ ticket.ticketNumber }}</span>
+                  <div>
+                    <strong>{{ ticket.patientNameKey | t }}</strong>
+                    <small>{{ ticket.visitTypeKey | t }}</small>
+                  </div>
+                </div>
+                <span class="queue-state-badge" [attr.data-state]="ticket.state">
+                  @switch (ticket.state) {
+                    @case ('serving') {
+                      {{ 'landing.demo.queueServingBadge' | t }}
+                    }
+                    @case ('waiting') {
+                      {{ 'landing.demo.queueWaitingBadge' | t }}
+                    }
+                    @case ('done') {
+                      {{ 'landing.demo.queueDoneBadge' | t }}
+                    }
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Mode 3: Clinical Encounter & Permitted Records -->
+      @case ('clinical') {
+        <div class="clinical-sim-layout">
+          <div class="clinical-top-strip">
+            <div class="clinical-subtabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                class="subtab-btn"
+                [class.is-active]="clinicalTab() === 'notes'"
+                [attr.aria-selected]="clinicalTab() === 'notes'"
+                (click)="setClinicalTab('notes')"
+              >
+                {{ 'landing.demo.clinTabNotes' | t }}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="subtab-btn"
+                [class.is-active]="clinicalTab() === 'rx'"
+                [attr.aria-selected]="clinicalTab() === 'rx'"
+                (click)="setClinicalTab('rx')"
+              >
+                {{ 'landing.demo.clinTabRx' | t }}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="subtab-btn"
+                [class.is-active]="clinicalTab() === 'labs'"
+                [attr.aria-selected]="clinicalTab() === 'labs'"
+                (click)="setClinicalTab('labs')"
+              >
+                {{ 'landing.demo.clinTabLabs' | t }}
+              </button>
+            </div>
+
+            <span class="scope-chip">
+              <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+              <span>{{ 'landing.demo.clinScopeBadge' | t }}</span>
+            </span>
+          </div>
+
+          <div class="clinical-panel-body">
+            @switch (clinicalTab()) {
+              @case ('notes') {
+                <div class="clinical-doc-card">
+                  <h5>{{ 'landing.demo.clinComplaintTitle' | t }}</h5>
+                  <p>{{ 'landing.demo.clinComplaintBody' | t }}</p>
+                </div>
+              }
+              @case ('rx') {
+                <div class="clinical-doc-card">
+                  <h5>{{ 'landing.demo.clinTabRx' | t }}</h5>
+                  <p>{{ 'landing.demo.clinRxSummary' | t }}</p>
+                </div>
+              }
+              @case ('labs') {
+                <div class="clinical-doc-card">
+                  <h5>{{ 'landing.demo.clinTabLabs' | t }}</h5>
+                  <p>{{ 'landing.demo.clinLabSummary' | t }}</p>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Mode 4: Branch Finance Overview -->
+      @case ('finance') {
+        <div class="finance-sim-layout">
+          <div class="branch-switcher">
+            <button
+              type="button"
+              class="subtab-btn"
+              [class.is-active]="financeBranch() === 'all'"
+              (click)="setFinanceBranch('all')"
+            >
+              {{ 'landing.demo.finAllBranches' | t }}
+            </button>
+            <button
+              type="button"
+              class="subtab-btn"
+              [class.is-active]="financeBranch() === 'maadi'"
+              (click)="setFinanceBranch('maadi')"
+            >
+              {{ 'landing.demo.finMaadi' | t }}
+            </button>
+            <button
+              type="button"
+              class="subtab-btn"
+              [class.is-active]="financeBranch() === 'nasr'"
+              (click)="setFinanceBranch('nasr')"
+            >
+              {{ 'landing.demo.finNasr' | t }}
+            </button>
+          </div>
+
+          <div class="finance-metrics-row">
+            <div class="fin-metric">
+              <span>{{ 'landing.demo.finVisitsLbl' | t }}</span>
+              <strong>{{ financeSummary().visitsCount }}</strong>
+            </div>
+            <div class="fin-metric">
+              <span>{{ 'landing.demo.finRevenueLbl' | t }}</span>
+              <strong class="text-teal"
+                >{{ financeSummary().revenueAmount }} {{ 'landing.demo.currencyLabel' | t }}</strong
+              >
+            </div>
+            <div class="fin-metric">
+              <span>{{ 'landing.demo.finExpensesLbl' | t }}</span>
+              <strong
+                >{{ financeSummary().expenseAmount }} {{ 'landing.demo.currencyLabel' | t }}</strong
+              >
+            </div>
+            <div class="fin-metric">
+              <span>{{ 'landing.demo.finSalariesLbl' | t }}</span>
+              <strong class="fin-status-text">{{ 'landing.demo.finPayrollSynced' | t }}</strong>
+            </div>
+          </div>
+
+          <p class="fin-disclaimer">{{ 'landing.demo.finNote' | t }}</p>
+        </div>
+      }
+    }
+  </div>
+</div>

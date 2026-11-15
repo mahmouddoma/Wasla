@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
+import gsap from 'gsap';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
@@ -40,6 +41,7 @@ export class PublicDoctors {
   private readonly router = inject(Router);
   private readonly api = inject(PublicDiscoveryApi);
   private readonly locationsApi = inject(DoctorProfileApi);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
 
   protected logout(): void {
     this.authSession.clear();
@@ -210,8 +212,59 @@ export class PublicDoctors {
   });
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => { this.destroyed = true; ++this.searchSequence; ++this.citySequence; ++this.areaSequence; });
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+      this.animatePageShell();
+    });
+    effect(() => {
+      const loading = this.isLoading();
+      const doctors = this.filteredAndSortedDoctors();
+      if (!loading && doctors.length > 0) {
+        queueMicrotask(() => this.animateDoctorCards());
+      }
+    });
+    destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      ++this.searchSequence;
+      ++this.citySequence;
+      ++this.areaSequence;
+      const host = this.hostRef.nativeElement;
+      gsap.killTweensOf(host.querySelectorAll('.discovery-hero, .universal-search-deck, .refine-sidebar, .doctor-card'));
+    });
     void this.initialize();
+  }
+
+  private prefersReducedMotion(): boolean {
+    return (
+      typeof window === 'undefined' ||
+      Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+    );
+  }
+
+  private animatePageShell(): void {
+    if (this.prefersReducedMotion()) return;
+    const host = this.hostRef.nativeElement;
+    const targets = host.querySelectorAll('.discovery-hero, .universal-search-deck, .refine-sidebar');
+    if (!targets.length) return;
+    gsap.fromTo(
+      targets,
+      { y: 18, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.52, stagger: 0.08, ease: 'power3.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+    );
+  }
+
+  private animateDoctorCards(): void {
+    if (this.prefersReducedMotion()) return;
+    const cards = this.hostRef.nativeElement.querySelectorAll('.doctor-card');
+    if (!cards.length) return;
+    gsap.fromTo(
+      cards,
+      { y: 16, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.44, stagger: 0.055, ease: 'power2.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+    );
   }
 
   protected formatDateChip(dateStr: string): { dayName: string; dayNumber: string; monthName: string } {

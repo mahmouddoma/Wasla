@@ -1,14 +1,15 @@
 import { PatientBookingState, PatientBookingDrawerComponent } from '../../../patient-booking';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import gsap from 'gsap';
 import { firstValueFrom } from 'rxjs';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { parseApiErrors } from '../../../../core/auth/api-errors';
+import { AppHeader } from '../../../../shared/components/app-header/app-header';
 import { PageHeader } from '../../../../shared/components/page-header/page-header';
-import { LanguageSwitcher } from '../../../../shared/components/language-switcher/language-switcher';
 import {
   PublicDiscoveryApi,
   PublicDoctorDetails,
@@ -17,7 +18,7 @@ import {
 
 @Component({
   selector: 'app-public-doctor-details',
-  imports: [RouterLink, TranslatePipe, PageHeader, LanguageSwitcher, PatientBookingDrawerComponent],
+  imports: [RouterLink, TranslatePipe, AppHeader, PageHeader, PatientBookingDrawerComponent],
   templateUrl: './public-doctor-details.html',
   styleUrl: './public-doctor-details.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +28,9 @@ export class PublicDoctorDetailsPage {
   protected readonly authSession = inject(AuthSession);
   private readonly api = inject(PublicDiscoveryApi);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly doctorId = this.route.snapshot.paramMap.get('doctorId') ?? '';
 
   protected readonly booking = inject(PatientBookingState);
@@ -45,7 +49,54 @@ export class PublicDoctorDetailsPage {
   });
 
   constructor() {
+    afterNextRender(() => {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    });
+    effect(() => {
+      const doc = this.doctor();
+      const loading = this.isLoading();
+      if (!loading && doc) {
+        queueMicrotask(() => this.animateDetailsReveal());
+      }
+    });
+    this.destroyRef.onDestroy(() => {
+      const host = this.hostRef.nativeElement;
+      gsap.killTweensOf(host.querySelectorAll('.doctor-profile-card, .practices-surface, .practice-card-row'));
+    });
     void this.loadDoctor();
+  }
+
+  protected logout(): void {
+    this.authSession.clear();
+    void this.router.navigate(['/login']);
+  }
+
+  private animateDetailsReveal(): void {
+    if (
+      typeof window === 'undefined' ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+    const host = this.hostRef.nativeElement;
+    const surfaces = host.querySelectorAll('.doctor-profile-card, .practices-surface');
+    if (surfaces.length) {
+      gsap.fromTo(
+        surfaces,
+        { y: 18, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power3.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+      );
+    }
+    const rows = host.querySelectorAll('.practice-card-row');
+    if (rows.length) {
+      gsap.fromTo(
+        rows,
+        { y: 14, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.42, stagger: 0.06, delay: 0.08, ease: 'power2.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+      );
+    }
   }
 
   protected async choosePractice(practice: PublicPracticeSummary): Promise<void> {

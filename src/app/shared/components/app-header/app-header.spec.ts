@@ -98,4 +98,23 @@ describe('AppHeader', () => {
     expect(root().querySelector('header')?.getAttribute('dir')).toBe('ltr');
     expect(root().querySelector('.btn-topbar-logout')?.getAttribute('aria-label')).toBe('Sign Out');
   });
+
+  it('renders complete unified 7 guest links and guest auth buttons when user is null', () => {
+    fixture.componentRef.setInput('user', null);
+    fixture.detectChanges();
+
+    const links = root().querySelectorAll('.header-role-nav .header-nav-link');
+    expect(links.length).toBe(7);
+    expect(root().querySelector('#header-login-btn')).not.toBeNull();
+    expect(root().querySelector('#header-start-cta')).not.toBeNull();
+
+    // Test guest mobile drawer toggle
+    const mobileBtn = root().querySelector<HTMLButtonElement>('.btn-guest-mobile-menu');
+    expect(mobileBtn).not.toBeNull();
+    expect(root().querySelector('#header-guest-mobile-drawer')).toBeNull();
+
+    mobileBtn!.click();
+    fixture.detectChanges();
+    expect(root().querySelector('#header-guest-mobile-drawer')).not.toBeNull();
+  });
 });

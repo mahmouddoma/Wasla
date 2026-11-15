@@ -6,6 +6,7 @@ import {
   DestroyRef,
   computed,
   inject,
+  output,
   signal,
 } from '@angular/core';
 import {
@@ -54,6 +55,21 @@ export type PatientOnboardingStage =
 export class PatientRegistration {
   private readonly toast = inject(ToastService);
   readonly uiLanguage = inject(LanguageService);
+
+  readonly backToLogin = output<void>();
+  readonly switchRole = output<'patient' | 'doctor'>();
+
+  protected onBackToLogin(event: Event): void {
+    event.preventDefault();
+    this.backToLogin.emit();
+    void this.router.navigateByUrl('/login');
+  }
+
+  protected onSwitchRole(role: 'patient' | 'doctor', event: Event): void {
+    event.preventDefault();
+    this.switchRole.emit(role);
+    void this.router.navigateByUrl(role === 'doctor' ? '/register/doctor' : '/register/patient');
+  }
 
   private readonly api = inject(AuthApi);
   private readonly identityApi = inject(PatientIdentityApi);

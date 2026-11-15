@@ -1,0 +1,470 @@
+<div class="wasla-landing-page" [dir]="language.dir()">
+  <!-- ══════════════════════════════════════════
+       SECTION 01 — PREMIUM STICKY NAVIGATION
+       ══════════════════════════════════════════ -->
+  <app-header
+    [user]="authSession.user()"
+    [home]="'/'"
+    [showMenuToggle]="false"
+    (logout)="logout()"
+  />
+
+  <!-- ══════════════════════════════════════════
+       SECTION 02 — EDITORIAL HERO + PRODUCT PREVIEW
+       ══════════════════════════════════════════ -->
+  <section class="hero-section" aria-labelledby="landing-hero-title">
+    <div class="landing-container hero-grid">
+      <div class="hero-copy-col">
+        <div class="hero-eyebrow-pill">
+          <span class="hero-tag-emblem" aria-hidden="true">
+            <i class="fa-solid fa-stethoscope"></i>
+          </span>
+          <span class="hero-tag-pill">{{ 'common.appName' | t }}</span>
+          <span>{{ 'landing.hero.eyebrow' | t }}</span>
+        </div>
+        <h1 id="landing-hero-title" class="hero-headline">{{ 'landing.hero.title' | t }}</h1>
+        <p class="hero-lead">{{ 'landing.hero.subtitle' | t }}</p>
+
+        <div class="hero-cta-row">
+          @if (authSession.user()) {
+            <a [routerLink]="workspaceRoute()" class="btn-brand-primary" id="hero-workspace-cta">
+              <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+              <span>{{ 'landing.nav.workspaceCta' | t }}</span>
+            </a>
+          } @else {
+            <a routerLink="/register/doctor" class="btn-brand-primary" id="hero-primary-cta">
+              <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+              <span>{{ 'landing.hero.primaryCta' | t }}</span>
+            </a>
+          }
+
+          <button
+            type="button"
+            class="btn-brand-secondary"
+            id="hero-secondary-cta"
+            (click)="scrollToSection('clinic-journey')"
+          >
+            <i class="fa-regular fa-circle-play" aria-hidden="true"></i>
+            <span>{{ 'landing.hero.secondaryCta' | t }}</span>
+          </button>
+        </div>
+
+        <div class="hero-meta-links">
+          @if (!authSession.user()) {
+            <p class="hero-signin-line">
+              <span>{{ 'landing.hero.hasAccount' | t }}</span>
+              <a routerLink="/login" id="hero-login-link">{{ 'landing.hero.signInLink' | t }}</a>
+            </p>
+          }
+
+          <div class="hero-patient-strip">
+            <span>{{ 'landing.hero.patientPrompt' | t }}</span>
+            <a routerLink="/doctors" id="hero-doctors-link">{{ 'landing.hero.patientDirectoryLink' | t }}</a>
+            <span class="dot-sep" aria-hidden="true">•</span>
+            <a routerLink="/register/patient" id="hero-patient-register-link">
+              {{ 'landing.hero.patientRegisterLink' | t }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual-col">
+        <app-landing-hero-preview />
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 03 — THE PROBLEM WASLA SOLVES
+       ══════════════════════════════════════════ -->
+  <section id="problem-section" class="section-band surface-muted" aria-labelledby="problem-heading">
+    <div class="landing-container problem-editorial-layout">
+      <div class="problem-sticky-intro">
+        <span class="section-eyebrow">{{ 'landing.problem.eyebrow' | t }}</span>
+        <h2 id="problem-heading" class="section-title">{{ 'landing.problem.title' | t }}</h2>
+        <p class="section-desc">{{ 'landing.problem.subtitle' | t }}</p>
+      </div>
+
+      <div class="problem-ledger">
+        <div class="ledger-header-row" aria-hidden="true">
+          <span>{{ 'landing.problem.colBefore' | t }}</span>
+          <span>{{ 'landing.problem.colAfter' | t }}</span>
+        </div>
+
+        @for (item of problemItems; track item.id) {
+          <article class="ledger-row">
+            <div class="ledger-before">
+              <span class="ledger-index">{{ item.num }}</span>
+              <div>
+                <h3>{{ item.titleKey | t }}</h3>
+                <p>{{ item.painKey | t }}</p>
+              </div>
+            </div>
+
+            <div class="ledger-after">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              <p>{{ item.fixKey | t }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 04 — AN ACTUAL CLINIC JOURNEY (3 STAGES)
+       ══════════════════════════════════════════ -->
+  <section id="clinic-journey" class="section-band surface-white" aria-labelledby="journey-heading">
+    <div class="landing-container">
+      <div class="section-header-block">
+        <span class="section-eyebrow">{{ 'landing.journey.eyebrow' | t }}</span>
+        <h2 id="journey-heading" class="section-title">{{ 'landing.journey.title' | t }}</h2>
+        <p class="section-desc">{{ 'landing.journey.subtitle' | t }}</p>
+      </div>
+
+      <!-- Stage Selector Tabs -->
+      <div class="journey-tabs" role="tablist" [attr.aria-label]="'landing.journey.title' | t">
+        @for (stage of journeyStages; track stage.id) {
+          <button
+            type="button"
+            role="tab"
+            [attr.id]="'journey-tab-' + stage.id"
+            class="journey-tab-btn"
+            [class.is-active]="activeJourneyStageId() === stage.id"
+            [attr.aria-selected]="activeJourneyStageId() === stage.id"
+            (click)="selectJourneyStage(stage.id)"
+          >
+            <span class="stage-num-tag">{{ stage.numKey | t }}</span>
+            <strong class="stage-label">{{ stage.tabKey | t }}</strong>
+          </button>
+        }
+      </div>
+
+      <!-- Stage Panel -->
+      <div class="journey-stage-panel" role="tabpanel">
+        <div class="journey-copy">
+          <h3>{{ activeJourneyStage().titleKey | t }}</h3>
+          <p class="journey-desc">{{ activeJourneyStage().descKey | t }}</p>
+
+          <ul class="journey-bullets">
+            @for (bulletKey of activeJourneyStage().bulletKeys; track bulletKey) {
+              <li>
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span>{{ bulletKey | t }}</span>
+              </li>
+            }
+          </ul>
+
+          <p class="journey-demo-notice">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <span>{{ 'landing.journey.demoNotice' | t }}</span>
+          </p>
+        </div>
+
+        <div class="journey-mock-frame">
+          <div class="mock-frame-bar">
+            <span class="mock-bar-title">{{ activeJourneyStage().mockCardTitleKey | t }}</span>
+            <span class="mock-bar-pill">{{ 'landing.preview.demoTag' | t }}</span>
+          </div>
+
+          <div class="mock-frame-items">
+            @for (row of activeJourneyStage().mockItems; track row.code) {
+              <div class="mock-frame-row">
+                <span class="mock-row-code">{{ row.code }}</span>
+                <span class="mock-row-text">{{ row.labelKey | t }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 05 — POWERFUL FEATURE STORYTELLING
+       ══════════════════════════════════════════ -->
+  <section id="features" class="section-band surface-muted" aria-labelledby="features-heading">
+    <div class="landing-container">
+      <div class="section-header-block">
+        <span class="section-eyebrow">{{ 'landing.story.eyebrow' | t }}</span>
+        <h2 id="features-heading" class="section-title">{{ 'landing.story.title' | t }}</h2>
+      </div>
+
+      <div class="editorial-stories-stack">
+        @for (story of featureStories; track story.id) {
+          <article class="story-block" [class.is-reversed]="story.reversed">
+            <div class="story-text-col">
+              <span class="story-tag">{{ story.tagKey | t }}</span>
+              <h3 class="story-title">{{ story.titleKey | t }}</h3>
+
+              <div class="story-narrative">
+                <div class="narrative-row">
+                  <strong>{{ 'landing.story.problemLabel' | t }}</strong>
+                  <p>{{ story.problemKey | t }}</p>
+                </div>
+                <div class="narrative-row">
+                  <strong>{{ 'landing.story.solutionLabel' | t }}</strong>
+                  <p>{{ story.solutionKey | t }}</p>
+                </div>
+                <div class="narrative-row outcome-row">
+                  <strong>{{ 'landing.story.outcomeLabel' | t }}</strong>
+                  <p>{{ story.outcomeKey | t }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="story-preview-col">
+              <div class="story-ui-panel">
+                <div class="story-ui-head">
+                  <span class="story-ui-icon" aria-hidden="true">
+                    <i [class]="story.iconClass"></i>
+                  </span>
+                  <strong>{{ story.previewTitleKey | t }}</strong>
+                </div>
+
+                <ul class="story-ui-rows">
+                  @for (rowKey of story.previewRowKeys; track rowKey) {
+                    <li>
+                      <span class="ui-row-dot" aria-hidden="true"></span>
+                      <span>{{ rowKey | t }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 06 — ONE PLATFORM, CONNECTED ROLES
+       ══════════════════════════════════════════ -->
+  <section id="roles-overview" class="section-band surface-white" aria-labelledby="roles-heading">
+    <div class="landing-container">
+      <div class="section-header-block">
+        <span class="section-eyebrow">{{ 'landing.roles.eyebrow' | t }}</span>
+        <h2 id="roles-heading" class="section-title">{{ 'landing.roles.title' | t }}</h2>
+        <p class="section-desc">{{ 'landing.roles.subtitle' | t }}</p>
+      </div>
+
+      <div class="roles-shell">
+        <div class="roles-selector-rail" role="tablist" [attr.aria-label]="'landing.roles.title' | t">
+          @for (role of roleSummaries; track role.id) {
+            <button
+              type="button"
+              role="tab"
+              [attr.id]="'role-tab-' + role.id"
+              class="role-tab-card"
+              [class.is-active]="activeRoleId() === role.id"
+              [attr.aria-selected]="activeRoleId() === role.id"
+              (click)="selectRole(role.id)"
+            >
+              <div class="role-tab-top">
+                <i [class]="role.iconClass" aria-hidden="true"></i>
+                <strong>{{ role.titleKey | t }}</strong>
+              </div>
+              <small>{{ role.badgeKey | t }}</small>
+            </button>
+          }
+        </div>
+
+        <div class="role-detail-panel" role="tabpanel">
+          <div class="role-detail-header">
+            <div>
+              <span class="role-detail-badge">{{ activeRole().badgeKey | t }}</span>
+              <h3>{{ activeRole().titleKey | t }}</h3>
+            </div>
+            <i [class]="activeRole().iconClass + ' role-detail-emblem'" aria-hidden="true"></i>
+          </div>
+
+          <p class="role-scope-desc">{{ activeRole().scopeKey | t }}</p>
+
+          <ul class="role-capabilities-list">
+            @for (ptKey of activeRole().pointKeys; track ptKey) {
+              <li>
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                <span>{{ ptKey | t }}</span>
+              </li>
+            }
+          </ul>
+
+          <div class="role-privacy-note">
+            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+            <span>{{ 'landing.roles.privacyNote' | t }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 07 — INTERACTIVE PRODUCT PREVIEW
+       ══════════════════════════════════════════ -->
+  <section id="interactive-preview" class="section-band surface-muted" aria-labelledby="demo-heading">
+    <div class="landing-container">
+      <div class="section-header-block">
+        <span class="section-eyebrow">{{ 'landing.demo.eyebrow' | t }}</span>
+        <h2 id="demo-heading" class="section-title">{{ 'landing.demo.title' | t }}</h2>
+        <p class="section-desc">{{ 'landing.demo.subtitle' | t }}</p>
+      </div>
+
+      <app-landing-interactive-demo />
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 08 — PRICING AND GETTING STARTED
+       ══════════════════════════════════════════ -->
+  <section id="pricing-section" class="section-band surface-white" aria-labelledby="pricing-heading">
+    <div class="landing-container">
+      <div class="section-header-block">
+        <span class="section-eyebrow">{{ 'landing.pricing.eyebrow' | t }}</span>
+        <h2 id="pricing-heading" class="section-title">{{ 'landing.pricing.title' | t }}</h2>
+        <p class="section-desc">{{ 'landing.pricing.subtitle' | t }}</p>
+      </div>
+
+      @if (loadingCatalog()) {
+        <div class="pricing-loading-state" role="status">
+          <span class="pricing-spinner" aria-hidden="true"></span>
+          <span>{{ 'subscriptions.loading' | t }}</span>
+        </div>
+      } @else if (!catalogUnavailable() && catalog(); as availableCatalog) {
+        <div class="landing-plan-wrap">
+          <app-plan-selector
+            [catalog]="availableCatalog"
+            [allowTrial]="true"
+            [selection]="selection()"
+            (selectionChange)="onPlanSelected($event)"
+          />
+          <div class="pricing-full-link-row">
+            <a routerLink="/pricing" class="btn-brand-secondary" id="landing-full-pricing-link">
+              {{ 'landing.pricing.viewFullPricing' | t }}
+            </a>
+          </div>
+        </div>
+      } @else {
+        <div class="pricing-fallback-panel">
+          <p>{{ 'landing.pricing.fallbackText' | t }}</p>
+          <div class="pricing-fallback-actions">
+            <a routerLink="/pricing" class="btn-brand-primary" id="landing-pricing-fallback-btn">
+              {{ 'landing.pricing.viewFullPricing' | t }}
+            </a>
+            <a routerLink="/register/doctor" class="btn-brand-secondary">
+              {{ 'landing.hero.primaryCta' | t }}
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 09 — FAQ ACCORDION
+       ══════════════════════════════════════════ -->
+  <section id="faq-section" class="section-band surface-muted" aria-labelledby="faq-heading">
+    <div class="landing-container faq-wrapper">
+      <div class="section-header-block">
+        <span class="section-eyebrow">{{ 'landing.faq.eyebrow' | t }}</span>
+        <h2 id="faq-heading" class="section-title">{{ 'landing.faq.title' | t }}</h2>
+        <p class="section-desc">{{ 'landing.faq.subtitle' | t }}</p>
+      </div>
+
+      <div class="faq-list">
+        @for (item of faqItems; track item.id) {
+          <div class="faq-row" [class.is-open]="openFaqId() === item.id">
+            <button
+              type="button"
+              class="faq-trigger"
+              [attr.id]="'faq-btn-' + item.id"
+              [attr.aria-expanded]="openFaqId() === item.id"
+              [attr.aria-controls]="'faq-panel-' + item.id"
+              (click)="toggleFaq(item.id)"
+            >
+              <span>{{ item.questionKey | t }}</span>
+              <i
+                class="fa-solid fa-chevron-down faq-chevron"
+                aria-hidden="true"
+              ></i>
+            </button>
+
+            @if (openFaqId() === item.id) {
+              <div
+                class="faq-answer"
+                role="region"
+                [attr.id]="'faq-panel-' + item.id"
+                [attr.aria-labelledby]="'faq-btn-' + item.id"
+              >
+                <p>{{ item.answerKey | t }}</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 10 — FINAL CONVERSION CTA & SITEMAP
+       ══════════════════════════════════════════ -->
+  <section class="final-cta-band" aria-labelledby="final-cta-heading">
+    <div class="landing-container final-cta-box">
+      <div class="final-cta-copy">
+        <h2 id="final-cta-heading">{{ 'landing.finalCta.title' | t }}</h2>
+        <p>{{ 'landing.finalCta.subtitle' | t }}</p>
+      </div>
+
+      <div class="final-cta-buttons">
+        <a routerLink="/register/doctor" class="btn-cta-teal" id="final-cta-start-btn">
+          {{ 'landing.finalCta.primaryBtn' | t }}
+        </a>
+        <a routerLink="/pricing" class="btn-cta-outline-white" id="final-cta-pricing-btn">
+          {{ 'landing.finalCta.secondaryBtn' | t }}
+        </a>
+      </div>
+    </div>
+
+    <div class="landing-container landing-sitemap">
+      <div class="sitemap-brand">
+        <div class="sitemap-logo-pill">
+          <img
+            src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-logo-horizontal-no-tagline.png"
+            height="34"
+            [alt]="'common.appName' | t"
+          />
+        </div>
+        <p class="sitemap-desc">{{ 'landing.footer.description' | t }}</p>
+      </div>
+
+      <div class="sitemap-cols">
+        <div class="sitemap-col">
+          <h4>{{ 'landing.footer.platformCol' | t }}</h4>
+          <a href="#features" (click)="scrollToSection('features'); $event.preventDefault()">
+            {{ 'landing.nav.features' | t }}
+          </a>
+          <a href="#clinic-journey" (click)="scrollToSection('clinic-journey'); $event.preventDefault()">
+            {{ 'landing.nav.howItWorks' | t }}
+          </a>
+          <a routerLink="/pricing">{{ 'landing.nav.pricing' | t }}</a>
+          <a routerLink="/doctors">{{ 'landing.nav.doctorsDir' | t }}</a>
+        </div>
+
+        <div class="sitemap-col">
+          <h4>{{ 'landing.footer.usersCol' | t }}</h4>
+          <a routerLink="/login">{{ 'landing.nav.login' | t }}</a>
+          <a routerLink="/register/doctor">{{ 'register.doctorTitle' | t }}</a>
+          <a routerLink="/register/patient">{{ 'register.patientTitle' | t }}</a>
+          <a routerLink="/for-doctors">{{ 'landing.nav.forDoctors' | t }}</a>
+        </div>
+
+        <div class="sitemap-col">
+          <h4>{{ 'landing.footer.legalCol' | t }}</h4>
+          <a routerLink="/help">{{ 'landing.footer.help' | t }}</a>
+          <a routerLink="/privacy">{{ 'landing.footer.privacy' | t }}</a>
+          <a routerLink="/terms">{{ 'landing.footer.terms' | t }}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

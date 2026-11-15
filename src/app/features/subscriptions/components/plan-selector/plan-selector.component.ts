@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   inject,
   input,
@@ -33,6 +34,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 export class PlanSelectorComponent implements OnChanges {
   readonly language = inject(LanguageService);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly cardsGridRef = viewChild<ElementRef<HTMLElement>>('cardsGrid');
   readonly catalog = input.required<CommercialCatalog>();
   readonly selection = input<SubscriptionSelection | null>(null);
@@ -46,9 +48,29 @@ export class PlanSelectorComponent implements OnChanges {
   readonly defaultVisibleFeatures = 6;
 
   constructor() {
-    afterNextRender(() => {
-      this.animateCardsEntrance();
+    afterNextRender(() => this.animateCardsEntrance());
+    this.destroyRef.onDestroy(() => {
+      const host = this.hostRef.nativeElement;
+      gsap.killTweensOf(host.querySelectorAll('.feedhive-card, .price-amount'));
     });
+  }
+
+  private prefersReducedMotion(): boolean {
+    return (
+      typeof window === 'undefined' ||
+      Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+    );
+  }
+
+  private animateCardsEntrance(): void {
+    if (this.prefersReducedMotion()) return;
+    const cards = this.hostRef.nativeElement.querySelectorAll('.feedhive-card');
+    if (!cards.length) return;
+    gsap.fromTo(
+      cards,
+      { y: 18, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.48, stagger: 0.06, ease: 'power2.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+    );
   }
 
   isCardExpanded(key: string): boolean {
@@ -67,43 +89,6 @@ export class PlanSelectorComponent implements OnChanges {
       }
       return next;
     });
-  }
-
-  private prefersReducedMotion(): boolean {
-    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-
-  private animateCardsEntrance(): void {
-    if (this.prefersReducedMotion()) return;
-    const cards = this.hostRef.nativeElement.querySelectorAll('.feedhive-card');
-    if (cards.length === 0) return;
-    gsap.fromTo(
-      cards,
-      { opacity: 0, y: 24, scale: 0.96 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.08, ease: 'power3.out', clearProps: 'transform' },
-    );
-  }
-
-  private animatePriceSwitch(): void {
-    if (this.prefersReducedMotion()) return;
-    const prices = this.hostRef.nativeElement.querySelectorAll('.price-amount');
-    if (prices.length === 0) return;
-    gsap.fromTo(
-      prices,
-      { opacity: 0, y: -10, scale: 0.92 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.32, stagger: 0.05, ease: 'back.out(1.6)', clearProps: 'transform' },
-    );
-  }
-
-  animateCardSelect(planCode: string): void {
-    if (this.prefersReducedMotion()) return;
-    const card = this.hostRef.nativeElement.querySelector(`.feedhive-card[data-plan="${planCode}"]`);
-    if (!card) return;
-    gsap.fromTo(
-      card,
-      { scale: 0.975 },
-      { scale: 1, duration: 0.3, ease: 'back.out(2)', clearProps: 'transform' },
-    );
   }
 
   scrollCards(direction: 'prev' | 'next'): void {
@@ -132,7 +117,18 @@ export class PlanSelectorComponent implements OnChanges {
   setCycle(newCycle: 'Monthly' | 'Annual'): void {
     if (this.disabled()) return;
     this.cycle.set(newCycle);
-    this.animatePriceSwitch();
+    if (!this.prefersReducedMotion()) {
+      queueMicrotask(() => {
+        const prices = this.hostRef.nativeElement.querySelectorAll('.price-amount');
+        if (prices.length) {
+          gsap.fromTo(
+            prices,
+            { y: -8, opacity: 0.35 },
+            { y: 0, opacity: 1, duration: 0.3, stagger: 0.04, ease: 'power2.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+          );
+        }
+      });
+    }
     const sel = this.selection();
     if (sel && sel.productCode === 'FULL_PLATFORM' && sel.planCode) {
       this.choose(sel.productCode, sel.planCode, newCycle);
@@ -275,7 +271,6 @@ export class PlanSelectorComponent implements OnChanges {
 
   choose(productCode: string, planCode: string, billingCycle: 'Monthly' | 'Annual'): void {
     if (!this.disabled()) {
-      this.animateCardSelect(planCode);
       this.selectionChange.emit({ productCode, planCode, billingCycle });
     }
   }
@@ -303,7 +298,6 @@ export class PlanSelectorComponent implements OnChanges {
 
   chooseBooking(): void {
     if (!this.disabled() && this.isBookingEnabled() && this.bookingProduct() && this.bookingQuote()) {
-      this.animateCardSelect('BOOKING_ONLY');
       this.selectionChange.emit({
         productCode: 'ONLINE_BOOKING_ONLY',
         planCode: this.catalog().bookingOnly.planCode,

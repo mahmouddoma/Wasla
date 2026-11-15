@@ -10,7 +10,9 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs';
 import { CurrentUser } from '../../../core/auth/auth.models';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -21,6 +23,8 @@ export interface HeaderNavLink {
   labelKey: string;
   route: string;
   iconClass: string;
+  sectionId?: string;
+  isRoute?: boolean;
 }
 
 @Component({
@@ -39,10 +43,91 @@ export class AppHeader {
   readonly menuToggle = output<void>();
   readonly logout = output<void>();
   readonly langService = inject(LanguageService);
+  private readonly router = inject(Router);
   private readonly patientsApi = inject(PatientsApi, { optional: true });
   private readonly destroyRef = inject(DestroyRef);
   protected readonly isUserMenuOpen = signal(false);
+  protected readonly isGuestMenuOpen = signal(false);
   protected readonly avatarUrl = signal<string | null>(null);
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        this.closeGuestMenu();
+        this.isUserMenuOpen.set(false);
+      });
+
+    effect(() => {
+      const u = this.user();
+      if (u?.userType === 'Patient' && this.patientsApi) {
+        this.patientsApi.profileImage().subscribe({
+          next: (res) => {
+            if (res.body && res.body.size > 0) {
+              const url = URL.createObjectURL(res.body);
+              this.revokeAvatarUrl();
+              this.avatarUrl.set(url);
+            }
+          },
+          error: () => {
+            this.revokeAvatarUrl();
+            this.avatarUrl.set(null);
+          },
+        });
+      } else {
+        this.revokeAvatarUrl();
+        this.avatarUrl.set(null);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.revokeAvatarUrl());
+  }
+
+  protected toggleGuestMenu(): void {
+    this.isGuestMenuOpen.update((v) => !v);
+  }
+
+  protected closeGuestMenu(): void {
+    this.isGuestMenuOpen.set(false);
+  }
+
+  protected onNavigateSection(link: HeaderNavLink, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    this.closeGuestMenu();
+    if (link.sectionId) {
+      if (this.router.url === '/' || this.router.url.startsWith('/#')) {
+        const el = document.getElementById(link.sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        void this.router.navigate(['/'], { fragment: link.sectionId }).then(() => {
+          setTimeout(() => {
+            const el = document.getElementById(link.sectionId!);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        });
+      }
+    } else {
+      void this.router.navigateByUrl(link.route);
+    }
+  }
+
+  protected navigateTo(route: string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    this.closeGuestMenu();
+    this.router.navigateByUrl(route);
+  }
+
   protected readonly userInitial = computed(
     () => this.user()?.userName?.trim().charAt(0).toUpperCase() || '',
   );
@@ -54,8 +139,13 @@ export class AppHeader {
     const u = this.user();
     if (!u) {
       return [
-        { labelKey: 'pricing.navPricing', route: '/pricing', iconClass: 'fa-solid fa-tags' },
-        { labelKey: 'pricing.navFindDoctor', route: '/doctors', iconClass: 'fa-solid fa-user-doctor' },
+        { labelKey: 'landing.nav.home', route: '/', iconClass: 'fa-solid fa-house-medical', isRoute: true },
+        { labelKey: 'landing.nav.features', route: '/#features', iconClass: '', sectionId: 'features' },
+        { labelKey: 'landing.nav.howItWorks', route: '/#clinic-journey', iconClass: '', sectionId: 'clinic-journey' },
+        { labelKey: 'landing.nav.forDoctors', route: '/#roles-overview', iconClass: '', sectionId: 'roles-overview' },
+        { labelKey: 'pricing.navPricing', route: '/pricing', iconClass: 'fa-solid fa-tags', isRoute: true },
+        { labelKey: 'pricing.navFindDoctor', route: '/doctors', iconClass: 'fa-solid fa-user-doctor', isRoute: true },
+        { labelKey: 'landing.nav.faq', route: '/#faq-section', iconClass: '', sectionId: 'faq-section' },
       ];
     }
 
@@ -116,31 +206,6 @@ export class AppHeader {
     }
   });
 
-  constructor() {
-    effect(() => {
-      const u = this.user();
-      if (u?.userType === 'Patient' && this.patientsApi) {
-        this.patientsApi.profileImage().subscribe({
-          next: (res) => {
-            if (res.body && res.body.size > 0) {
-              const url = URL.createObjectURL(res.body);
-              this.revokeAvatarUrl();
-              this.avatarUrl.set(url);
-            }
-          },
-          error: () => {
-            this.revokeAvatarUrl();
-            this.avatarUrl.set(null);
-          },
-        });
-      } else {
-        this.revokeAvatarUrl();
-        this.avatarUrl.set(null);
-      }
-    });
-
-    this.destroyRef.onDestroy(() => this.revokeAvatarUrl());
-  }
 
   private revokeAvatarUrl(): void {
     const current = this.avatarUrl();

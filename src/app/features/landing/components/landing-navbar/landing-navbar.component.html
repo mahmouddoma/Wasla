@@ -1,0 +1,232 @@
+<header class="landing-navbar" [dir]="language.dir()">
+  <div class="navbar-inner">
+    <!-- Brand Lockup -->
+    <a
+      routerLink="/"
+      class="navbar-brand"
+      [attr.aria-label]="'common.appName' | t"
+      (click)="closeMobileMenu()"
+    >
+      <img
+        src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+        width="34"
+        height="34"
+        [alt]="'common.appName' | t"
+        class="navbar-logo-img"
+      />
+      <span class="navbar-brand-text">
+        <strong>{{ 'common.appName' | t }}</strong>
+        <small>{{ 'common.platformSubtitle' | t }}</small>
+      </span>
+    </a>
+
+    <!-- Desktop Navigation Links -->
+    <nav class="navbar-links d-none d-lg-flex" [attr.aria-label]="'landing.nav.primaryAria' | t">
+      <a
+        routerLink="/"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link-item nav-link-route"
+        id="nav-home-link"
+      >
+        <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+        <span>{{ 'landing.nav.home' | t }}</span>
+      </a>
+      <a href="#features" class="nav-link-item" (click)="onNavigateSection('features', $event)">
+        {{ 'landing.nav.features' | t }}
+      </a>
+      <a
+        href="#clinic-journey"
+        class="nav-link-item"
+        (click)="onNavigateSection('clinic-journey', $event)"
+      >
+        {{ 'landing.nav.howItWorks' | t }}
+      </a>
+      <a
+        href="#roles-overview"
+        class="nav-link-item"
+        (click)="onNavigateSection('roles-overview', $event)"
+      >
+        {{ 'landing.nav.forDoctors' | t }}
+      </a>
+      <a routerLink="/pricing" routerLinkActive="is-active" class="nav-link-item nav-link-route">
+        <i class="fa-solid fa-tags" aria-hidden="true"></i>
+        <span>{{ 'pricing.navPricing' | t }}</span>
+      </a>
+      <a routerLink="/doctors" routerLinkActive="is-active" class="nav-link-item nav-link-route">
+        <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+        <span>{{ 'pricing.navFindDoctor' | t }}</span>
+      </a>
+      <a
+        href="#faq-section"
+        class="nav-link-item"
+        (click)="onNavigateSection('faq-section', $event)"
+      >
+        {{ 'landing.nav.faq' | t }}
+      </a>
+    </nav>
+
+    <!-- Desktop Utility & Conversion Actions -->
+    <div class="navbar-actions d-none d-lg-flex">
+      <app-language-switcher variant="header" />
+      @if (user()) {
+        <a [routerLink]="workspaceRoute()" class="nav-btn-primary" id="nav-workspace-btn">
+          <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.workspaceCta' | t }}</span>
+        </a>
+      } @else {
+        <a
+          routerLink="/login"
+          (click)="navigateTo('/login', $event)"
+          class="nav-btn-login"
+          id="nav-login-btn"
+        >
+          <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.login' | t }}</span>
+        </a>
+        <a
+          routerLink="/register/doctor"
+          (click)="navigateTo('/register/doctor', $event)"
+          class="nav-btn-primary"
+          id="nav-start-cta"
+        >
+          <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.startCta' | t }}</span>
+        </a>
+      }
+    </div>
+
+    <!-- Mobile Controls -->
+    <div class="navbar-mobile-controls d-flex d-lg-none">
+      <app-language-switcher variant="header" />
+      <button
+        type="button"
+        class="mobile-menu-toggle"
+        (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="mobileMenuOpen()"
+        aria-controls="landing-mobile-drawer"
+        [attr.aria-label]="
+          (mobileMenuOpen() ? 'landing.nav.closeMenu' : 'landing.nav.openMenu') | t
+        "
+      >
+        @if (mobileMenuOpen()) {
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        } @else {
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
+          </svg>
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- Accessible Mobile Navigation Drawer -->
+  @if (mobileMenuOpen()) {
+    <div
+      id="landing-mobile-drawer"
+      class="mobile-nav-drawer d-lg-none"
+      role="dialog"
+      [attr.aria-label]="'landing.nav.primaryAria' | t"
+    >
+      <nav class="mobile-nav-list">
+        <a
+          routerLink="/"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="mobile-nav-link"
+          (click)="closeMobileMenu()"
+        >
+          {{ 'landing.nav.home' | t }}
+        </a>
+        <a href="#features" class="mobile-nav-link" (click)="onNavigateSection('features', $event)">
+          {{ 'landing.nav.features' | t }}
+        </a>
+        <a
+          href="#clinic-journey"
+          class="mobile-nav-link"
+          (click)="onNavigateSection('clinic-journey', $event)"
+        >
+          {{ 'landing.nav.howItWorks' | t }}
+        </a>
+        <a
+          href="#roles-overview"
+          class="mobile-nav-link"
+          (click)="onNavigateSection('roles-overview', $event)"
+        >
+          {{ 'landing.nav.forDoctors' | t }}
+        </a>
+        <a
+          routerLink="/pricing"
+          routerLinkActive="is-active"
+          class="mobile-nav-link"
+          (click)="closeMobileMenu()"
+        >
+          {{ 'pricing.navPricing' | t }}
+        </a>
+        <a
+          routerLink="/doctors"
+          routerLinkActive="is-active"
+          class="mobile-nav-link"
+          (click)="closeMobileMenu()"
+        >
+          {{ 'pricing.navFindDoctor' | t }}
+        </a>
+        <a
+          href="#faq-section"
+          class="mobile-nav-link"
+          (click)="onNavigateSection('faq-section', $event)"
+        >
+          {{ 'landing.nav.faq' | t }}
+        </a>
+      </nav>
+
+      <div class="mobile-nav-ctas">
+        @if (user()) {
+          <a
+            [routerLink]="workspaceRoute()"
+            class="nav-btn-primary w-100"
+            (click)="closeMobileMenu()"
+          >
+            {{ 'landing.nav.workspaceCta' | t }}
+          </a>
+        } @else {
+          <a
+            routerLink="/register/doctor"
+            class="nav-btn-primary w-100"
+            (click)="navigateTo('/register/doctor', $event)"
+          >
+            {{ 'landing.nav.startCta' | t }}
+          </a>
+          <a
+            routerLink="/login"
+            class="nav-btn-login w-100"
+            (click)="navigateTo('/login', $event)"
+          >
+            {{ 'landing.nav.login' | t }}
+          </a>
+        }
+      </div>
+    </div>
+  }
+</header>

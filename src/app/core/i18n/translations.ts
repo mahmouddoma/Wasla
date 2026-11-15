@@ -10,30 +10,60 @@ export interface TranslationDictionary {
 export const TRANSLATIONS: TranslationDictionary = {
   'patientRecord.title': { ar: 'سجلي الطبي', en: 'My medical record' },
   'patientRecord.uploadDocument': { ar: 'رفع مستند طبي', en: 'Upload a medical document' },
-  'readiness.reason.OnlineBookingDisabled': { ar: 'الحجز الإلكتروني غير مفعّل لهذه العيادة.', en: 'Online booking is disabled for this practice.' },
-  'readiness.reason.NoPricing': { ar: 'لم تتوفر تسعيرة الكشف الجديد العادي المطلوبة للحجز.', en: 'The standard new-consultation price required for booking is unavailable.' },
-  'readiness.reason.NoAvailableCapacity': { ar: 'لا توجد سعة حجز إلكتروني متاحة ضمن الفترة المعروضة.', en: 'No online booking capacity is available within the displayed period.' },
-  'readiness.reason.NoAvailableSchedule': { ar: 'لا توجد مواعيد عمل متاحة للحجز ضمن الفترة المعروضة.', en: 'No bookable working schedule is available within the displayed period.' },
+  'readiness.reason.OnlineBookingDisabled': {
+    ar: 'الحجز الإلكتروني غير مفعّل لهذه العيادة.',
+    en: 'Online booking is disabled for this practice.',
+  },
+  'readiness.reason.NoPricing': {
+    ar: 'لم تتوفر تسعيرة الكشف الجديد العادي المطلوبة للحجز.',
+    en: 'The standard new-consultation price required for booking is unavailable.',
+  },
+  'readiness.reason.NoAvailableCapacity': {
+    ar: 'لا توجد سعة حجز إلكتروني متاحة ضمن الفترة المعروضة.',
+    en: 'No online booking capacity is available within the displayed period.',
+  },
+  'readiness.reason.NoAvailableSchedule': {
+    ar: 'لا توجد مواعيد عمل متاحة للحجز ضمن الفترة المعروضة.',
+    en: 'No bookable working schedule is available within the displayed period.',
+  },
   'sharing.pendingCount': { ar: 'طلبات قيد المراجعة', en: 'Requests awaiting review' },
   'sharing.historyAction': { ar: 'تحديث على طلب الإذن', en: 'Access request update' },
   'sharing.changeVisibility': { ar: 'إتاحة الزيارة للمشاركة', en: 'Visit sharing visibility' },
   'sharing.confirmVisibility': { ar: 'تأكيد تغيير الإتاحة', en: 'Confirm visibility change' },
   'sharing.inbox': { ar: 'طلبات مشاركة السجل الطبي', en: 'Medical sharing requests' },
-  'sharing.description': { ar: 'تُتاح المشاركة فقط وفق سياسة المنصة والصلاحيات الموثقة، ولا تمنح عرضًا عامًا لسجلات المرضى.', en: 'Sharing follows platform policy and verified permissions; it does not grant general access to patient records.' },
-  'sharing.unavailable': { ar: 'المشاركة الطبية غير متاحة في هذا السياق', en: 'Medical sharing is unavailable in this context' },
-  'sharing.treating': { ar: 'السجل المسموح للطبيب المعالج', en: 'Authorized treating-doctor record' },
-  'sharing.context': { ar: 'هذا العرض مرتبط بالزيارة الجارية، وينتهي الوصول بانتهاء سياق العلاج أو إلغاء الصلاحية.', en: 'This view belongs to the current treatment context. Access ends when treatment ends or authorization is revoked.' },
+  'sharing.description': {
+    ar: 'تُتاح المشاركة فقط وفق سياسة المنصة والصلاحيات الموثقة، ولا تمنح عرضًا عامًا لسجلات المرضى.',
+    en: 'Sharing follows platform policy and verified permissions; it does not grant general access to patient records.',
+  },
+  'sharing.unavailable': {
+    ar: 'المشاركة الطبية غير متاحة في هذا السياق',
+    en: 'Medical sharing is unavailable in this context',
+  },
+  'sharing.treating': {
+    ar: 'السجل المسموح للطبيب المعالج',
+    en: 'Authorized treating-doctor record',
+  },
+  'sharing.context': {
+    ar: 'هذا العرض مرتبط بالزيارة الجارية، وينتهي الوصول بانتهاء سياق العلاج أو إلغاء الصلاحية.',
+    en: 'This view belongs to the current treatment context. Access ends when treatment ends or authorization is revoked.',
+  },
   'sharing.hidden': { ar: 'زيارة غير متاحة للعرض', en: 'Visit unavailable for viewing' },
   'sharing.requestAccess': { ar: 'طلب إذن للاطلاع', en: 'Request access' },
   'sharing.incoming': { ar: 'الطلبات الواردة', en: 'Incoming requests' },
   'sharing.sent': { ar: 'الطلبات المرسلة لهذه الزيارة', en: 'Requests sent for this visit' },
   'sharing.empty': { ar: 'لا توجد طلبات في هذا العرض', en: 'No requests in this view' },
   'sharing.requestDetails': { ar: 'مراجعة طلب المشاركة', en: 'Review sharing request' },
-  'sharing.confirmNotice': { ar: 'راجع سبب الطلب والطبيب الطالب قبل التأكيد. يظل الوصول مقصورًا على السياق الذي يسمح به الخادم.', en: 'Review the reason and requesting doctor before confirming. Access remains limited to the context authorized by the server.' },
+  'sharing.confirmNotice': {
+    ar: 'راجع سبب الطلب والطبيب الطالب قبل التأكيد. يظل الوصول مقصورًا على السياق الذي يسمح به الخادم.',
+    en: 'Review the reason and requesting doctor before confirming. Access remains limited to the context authorized by the server.',
+  },
   'sharing.confirmApproval': { ar: 'تأكيد الموافقة على الاطلاع', en: 'Confirm access approval' },
   'sharing.sendRequest': { ar: 'إرسال طلب الإذن', en: 'Send access request' },
   'sharing.visibilityHistory': { ar: 'سجل إتاحة الزيارة', en: 'Visit visibility history' },
-  'sharing.visibilityReadOnly': { ar: 'عرض تاريخ الإتاحة لا يغيّر صلاحيات المشاركة. تغيير الإتاحة يتطلب سماحًا صريحًا من الخادم.', en: 'Viewing visibility history does not change sharing permissions. Changing visibility requires explicit server authorization.' },
+  'sharing.visibilityReadOnly': {
+    ar: 'عرض تاريخ الإتاحة لا يغيّر صلاحيات المشاركة. تغيير الإتاحة يتطلب سماحًا صريحًا من الخادم.',
+    en: 'Viewing visibility history does not change sharing permissions. Changing visibility requires explicit server authorization.',
+  },
   'sharing.visibility.Visible': { ar: 'متاح وفق الصلاحية', en: 'Visible within authorized scope' },
   'sharing.visibility.Hidden': { ar: 'غير متاح للمشاركة', en: 'Hidden from sharing' },
   'sharing.status.Pending': { ar: 'قيد المراجعة', en: 'Pending review' },
@@ -41,15 +71,27 @@ export const TRANSLATIONS: TranslationDictionary = {
   'sharing.status.Rejected': { ar: 'مرفوض', en: 'Rejected' },
   'sharing.status.Revoked': { ar: 'تم إلغاء الإذن', en: 'Revoked' },
   'sharing.status.Expired': { ar: 'انتهى الإذن', en: 'Expired' },
-  'familyPolicy.approvalUnavailable': { ar: 'الاعتماد غير متاح حتى تتوفر بيانات السياسة والمستندات المرجعية المعتمدة من المنصة. يمكنك مراجعة الطلب دون منحه صلاحية طبية.', en: 'Approval is unavailable until the platform supplies approved policy and authority references. The request can be reviewed without granting medical access.' },
+  'familyPolicy.approvalUnavailable': {
+    ar: 'الاعتماد غير متاح حتى تتوفر بيانات السياسة والمستندات المرجعية المعتمدة من المنصة. يمكنك مراجعة الطلب دون منحه صلاحية طبية.',
+    en: 'Approval is unavailable until the platform supplies approved policy and authority references. The request can be reviewed without granting medical access.',
+  },
   'familyPolicy.version': { ar: 'نسخة السياسة المعتمدة', en: 'Approved policy version' },
   'familyPolicy.basis': { ar: 'مرجع الاعتماد', en: 'Approved basis reference' },
   'familyPolicy.authority': { ar: 'مرجع العلاقة الموثقة', en: 'Verified authority relationship' },
   'familyPolicy.child': { ar: 'الطفل', en: 'Child' },
   'familyPolicy.adult': { ar: 'فرد الأسرة المعني', en: 'Affected family member' },
-  'familyPolicy.memberUnavailable': { ar: 'فرد أسرة غير متاح للعرض', en: 'Family member unavailable' },
-  'familyPolicy.requestUnavailable': { ar: 'لا يمكن إرسال طلب لهذا الطفل حاليًا. راجع حالة الصلاحية أولًا، وتظل الطلبات السابقة متاحة للاستعراض.', en: 'A new request is currently unavailable for this child. Check access status first; existing requests remain available for review.' },
-  'familyPolicy.evidenceUnavailable': { ar: 'لم توفر المنصة قائمة أنواع المستندات المعتمدة لهذه الخدمة. لا يمكن إرسال مستندات بتصنيفات غير معتمدة.', en: 'The platform has not published the approved evidence types for this service. Documents cannot be sent with unapproved classifications.' },
+  'familyPolicy.memberUnavailable': {
+    ar: 'فرد أسرة غير متاح للعرض',
+    en: 'Family member unavailable',
+  },
+  'familyPolicy.requestUnavailable': {
+    ar: 'لا يمكن إرسال طلب لهذا الطفل حاليًا. راجع حالة الصلاحية أولًا، وتظل الطلبات السابقة متاحة للاستعراض.',
+    en: 'A new request is currently unavailable for this child. Check access status first; existing requests remain available for review.',
+  },
+  'familyPolicy.evidenceUnavailable': {
+    ar: 'لم توفر المنصة قائمة أنواع المستندات المعتمدة لهذه الخدمة. لا يمكن إرسال مستندات بتصنيفات غير معتمدة.',
+    en: 'The platform has not published the approved evidence types for this service. Documents cannot be sent with unapproved classifications.',
+  },
   'readiness.operational': { ar: 'تشغيل العيادة', en: 'Practice operation' },
   'readiness.online': { ar: 'الحجز الإلكتروني', en: 'Online booking' },
   'readiness.bookable': { ar: 'إمكانية الحجز الآن', en: 'Current bookability' },
@@ -58,25 +100,61 @@ export const TRANSLATIONS: TranslationDictionary = {
   'readiness.available': { ar: 'متاح', en: 'Available' },
   'readiness.unavailable': { ar: 'غير متاح', en: 'Unavailable' },
   'readiness.unknown': { ar: 'لم تتوفر بيانات الحالة', en: 'Status data unavailable' },
-  'readiness.noSlots': { ar: 'لا تظهر مواعيد متاحة حاليًا. راجع جدول العمل والأسعار وإعدادات الحجز.', en: 'No available appointments are currently listed. Review schedules, prices and booking settings.' },
+  'readiness.noSlots': {
+    ar: 'لا تظهر مواعيد متاحة حاليًا. راجع جدول العمل والأسعار وإعدادات الحجز.',
+    en: 'No available appointments are currently listed. Review schedules, prices and booking settings.',
+  },
   'readiness.schedule': { ar: 'مراجعة جدول العمل', en: 'Review schedule' },
   'readiness.pricing': { ar: 'مراجعة الفئات والأسعار', en: 'Review segments and prices' },
   'readiness.configuration': { ar: 'مراجعة إعدادات التشغيل', en: 'Review operation settings' },
-  'tickets.printBlocked': { ar: 'اسمح بفتح نافذة الطباعة من المتصفح ثم أعد المحاولة.', en: 'Allow the print popup in your browser, then try again.' },
-  'tickets.printInvalid': { ar: 'رقم التذكرة غير متاح للطباعة. أعد تحميل التفاصيل.', en: 'The ticket number is unavailable for printing. Reload its details.' },
-  'discovery.locationFailed': { ar: 'تعذر تحميل المدن أو المناطق. أعد اختيار المحافظة أو المدينة للمحاولة مرة أخرى.', en: 'Cities or areas could not be loaded. Select the governorate or city again to retry.' },
-  'practice.operationalOnlyGuide': { ar: 'العيادة مفعّلة للتشغيل. إتاحة الحجز الإلكتروني تعتمد أيضًا على إعدادات الحجز والمواعيد والأسعار والسعة المتاحة.', en: 'The practice is operationally active. Online booking also depends on booking settings, schedules, prices and available capacity.' },
+  'tickets.printBlocked': {
+    ar: 'اسمح بفتح نافذة الطباعة من المتصفح ثم أعد المحاولة.',
+    en: 'Allow the print popup in your browser, then try again.',
+  },
+  'tickets.printInvalid': {
+    ar: 'رقم التذكرة غير متاح للطباعة. أعد تحميل التفاصيل.',
+    en: 'The ticket number is unavailable for printing. Reload its details.',
+  },
+  'discovery.locationFailed': {
+    ar: 'تعذر تحميل المدن أو المناطق. أعد اختيار المحافظة أو المدينة للمحاولة مرة أخرى.',
+    en: 'Cities or areas could not be loaded. Select the governorate or city again to retry.',
+  },
+  'practice.operationalOnlyGuide': {
+    ar: 'العيادة مفعّلة للتشغيل. إتاحة الحجز الإلكتروني تعتمد أيضًا على إعدادات الحجز والمواعيد والأسعار والسعة المتاحة.',
+    en: 'The practice is operationally active. Online booking also depends on booking settings, schedules, prices and available capacity.',
+  },
   'patientBooking.doctor': { ar: 'الطبيب', en: 'Doctor' },
-  'booking.selectionExpired': { ar: 'الموعد الذي اخترته لم يعد متاحًا. اختر موعدًا آخر من الأوقات الحالية، ثم راجع الحجز قبل التأكيد.', en: 'Your selected appointment is no longer available. Choose another available time and review before confirming.' },
+  'booking.selectionExpired': {
+    ar: 'الموعد الذي اخترته لم يعد متاحًا. اختر موعدًا آخر من الأوقات الحالية، ثم راجع الحجز قبل التأكيد.',
+    en: 'Your selected appointment is no longer available. Choose another available time and review before confirming.',
+  },
   'segmentsHelp.noReservation': { ar: 'بدون سعة محجوزة', en: 'No reserved capacity' },
-  'segmentsHelp.priority': { ar: 'أولوية الفئة من ‎-1000 إلى 1000. لا تعني تأكيد موعد أو تغيير الدور تلقائيًا.', en: 'Segment priority ranges from -1000 to 1000. It does not confirm a booking or automatically change a patient’s turn.' },
-  'segmentsHelp.quota': { ar: 'عدد الأماكن المحمية لهذه الفئة يوميًا (1 إلى 10000). اترك الحقلين فارغين لعدم حجز سعة خاصة.', en: 'Places protected for this segment each day (1–10000). Leave both fields blank for no reserved capacity.' },
-  'segmentsHelp.release': { ar: 'تُتاح الأماكن المحمية غير المستخدمة لباقي الفئات قبل نهاية يوم العمل بهذا العدد من الدقائق (0 إلى 10080). الصفر يعني عند نهاية يوم العمل، وليس إلغاء الحماية.', en: 'Unused protected places become available to other segments this many minutes before the working day ends (0–10080). Zero means at the end of the day; it does not disable protection.' },
-  'segmentsHelp.active': { ar: 'تعطيل الفئة يوقف حجز سعة محمية لها. الفئة الافتراضية تظل مفعّلة.', en: 'An inactive segment does not protect capacity. The default segment stays active.' },
-  'segmentsHelp.invalidValues': { ar: 'استخدم أعدادًا صحيحة: الأولوية من ‎-1000 إلى 1000، والسعة من 1 إلى 10000، ودقائق الإتاحة من 0 إلى 10080.', en: 'Use whole numbers: priority -1000–1000, reserved places 1–10000, and release minutes 0–10080.' },
+  'segmentsHelp.priority': {
+    ar: 'أولوية الفئة من ‎-1000 إلى 1000. لا تعني تأكيد موعد أو تغيير الدور تلقائيًا.',
+    en: 'Segment priority ranges from -1000 to 1000. It does not confirm a booking or automatically change a patient’s turn.',
+  },
+  'segmentsHelp.quota': {
+    ar: 'عدد الأماكن المحمية لهذه الفئة يوميًا (1 إلى 10000). اترك الحقلين فارغين لعدم حجز سعة خاصة.',
+    en: 'Places protected for this segment each day (1–10000). Leave both fields blank for no reserved capacity.',
+  },
+  'segmentsHelp.release': {
+    ar: 'تُتاح الأماكن المحمية غير المستخدمة لباقي الفئات قبل نهاية يوم العمل بهذا العدد من الدقائق (0 إلى 10080). الصفر يعني عند نهاية يوم العمل، وليس إلغاء الحماية.',
+    en: 'Unused protected places become available to other segments this many minutes before the working day ends (0–10080). Zero means at the end of the day; it does not disable protection.',
+  },
+  'segmentsHelp.active': {
+    ar: 'تعطيل الفئة يوقف حجز سعة محمية لها. الفئة الافتراضية تظل مفعّلة.',
+    en: 'An inactive segment does not protect capacity. The default segment stays active.',
+  },
+  'segmentsHelp.invalidValues': {
+    ar: 'استخدم أعدادًا صحيحة: الأولوية من ‎-1000 إلى 1000، والسعة من 1 إلى 10000، ودقائق الإتاحة من 0 إلى 10080.',
+    en: 'Use whole numbers: priority -1000–1000, reserved places 1–10000, and release minutes 0–10080.',
+  },
   'segmentsHelp.nameExample': { ar: 'مثال: عادي، كبار السن', en: 'For example: Regular, Seniors' },
   'segmentsHelp.optionalQuota': { ar: 'فارغ: بدون سعة محجوزة', en: 'Blank: no reserved capacity' },
-  'segmentsHelp.minutesExample': { ar: 'مثال: 60 دقيقة قبل نهاية العمل', en: 'For example: 60 minutes before closing' },
+  'segmentsHelp.minutesExample': {
+    ar: 'مثال: 60 دقيقة قبل نهاية العمل',
+    en: 'For example: 60 minutes before closing',
+  },
   'familyFlow.relationshipRequests': {
     ar: 'طلبات القرابة السابقة',
     en: 'Relationship request history',
@@ -145,14 +223,29 @@ export const TRANSLATIONS: TranslationDictionary = {
   'common.birthDate': { ar: 'تاريخ الميلاد', en: 'Date of birth' },
   'common.gender': { ar: 'النوع', en: 'Gender' },
   'common.phone': { ar: 'رقم الهاتف', en: 'Phone number' },
-  'common.errorLoading': { ar: 'حدث خطأ أثناء تحميل البيانات', en: 'An error occurred while loading data' },
-  'common.actionFailed': { ar: 'تعذر تنفيذ الإجراء المطلوب', en: 'Failed to perform the requested action' },
-  'common.enterNotes': { ar: 'أدخل الملاحظات أو سبب القرار...', en: 'Enter notes or reason for decision...' },
-  'common.conflictState': { ar: 'تغيرت حالة السجل بواسطة مستخدم آخر. يرجى التحديث', en: 'Record was modified by another user. Please reload' },
+  'common.errorLoading': {
+    ar: 'حدث خطأ أثناء تحميل البيانات',
+    en: 'An error occurred while loading data',
+  },
+  'common.actionFailed': {
+    ar: 'تعذر تنفيذ الإجراء المطلوب',
+    en: 'Failed to perform the requested action',
+  },
+  'common.enterNotes': {
+    ar: 'أدخل الملاحظات أو سبب القرار...',
+    en: 'Enter notes or reason for decision...',
+  },
+  'common.conflictState': {
+    ar: 'تغيرت حالة السجل بواسطة مستخدم آخر. يرجى التحديث',
+    en: 'Record was modified by another user. Please reload',
+  },
   'family.requester': { ar: 'مقدّم الطلب', en: 'Requester' },
   'family.target': { ar: 'الطرف المعني', en: 'Subject' },
   'familyFlow.request': { ar: 'الطلب', en: 'Request' },
-  'review.relationshipVerification': { ar: 'التحقق من صلة القرابة', en: 'Relationship verification' },
+  'review.relationshipVerification': {
+    ar: 'التحقق من صلة القرابة',
+    en: 'Relationship verification',
+  },
   'review.primaryContact': { ar: 'جهة الاتصال الأساسية', en: 'Primary contact' },
   'common.completed': { ar: 'مكتمل', en: 'Completed' },
   'common.id': { ar: 'المرجع', en: 'Reference' },
@@ -7457,7 +7550,10 @@ export const TRANSLATIONS: TranslationDictionary = {
   'discovery.noSlotsThisDay': { ar: 'لا يوجد مواعيد متاحة', en: 'No slots available' },
   'discovery.quickBook': { ar: 'احجز', en: 'Book' },
   'discovery.moreSlots': { ar: 'المزيد', en: 'More' },
-  'discovery.waitingTime': { ar: 'مدة الانتظار تقريباً: 20 دقيقة', en: 'Est. waiting time: 20 mins' },
+  'discovery.waitingTime': {
+    ar: 'مدة الانتظار تقريباً: 20 دقيقة',
+    en: 'Est. waiting time: 20 mins',
+  },
   'discovery.consultationFee': { ar: 'الكشف', en: 'Fee' },
   'discovery.showFilters': { ar: 'تصفية النتائج', en: 'Filter results' },
   'discovery.resetAll': { ar: 'إعادة ضبط', en: 'Reset' },
@@ -8547,8 +8643,14 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Review medical history, encounters, prescriptions and diagnostic results for family dependents',
   },
   'family.selectDependent': { ar: 'اختر التابع:', en: 'Select dependent:' },
-  'family.dependentHistoricalDocuments': { ar: 'المستندات الطبية السابقة', en: 'Previous medical documents' },
-  'family.emptyDependentTimelineTitle': { ar: 'لا توجد سجلات طبية مسجلة', en: 'No medical records found' },
+  'family.dependentHistoricalDocuments': {
+    ar: 'المستندات الطبية السابقة',
+    en: 'Previous medical documents',
+  },
+  'family.emptyDependentTimelineTitle': {
+    ar: 'لا توجد سجلات طبية مسجلة',
+    en: 'No medical records found',
+  },
   'family.emptyDependentTimelineDesc': {
     ar: 'لم يتم تسجيل أي زيارات أو روشتات أو تحاليل طبية لهذا التابع حتى الآن. ستظهر السجلات تلقائياً فور اعتمادها من العيادات الطبية.',
     en: 'No encounters, prescriptions or lab results recorded for this dependent yet. Records will appear once issued by medical clinics.',
@@ -8958,74 +9060,176 @@ export const TRANSLATIONS: TranslationDictionary = {
   /* Phase 18 Part Two - Archive & Audit Trails */
   'archive.title': { ar: 'الأرشيف', en: 'Archive' },
   'duplicates.title': { ar: 'مراجعة ملفات المرضى المتشابهة', en: 'Review similar patient files' },
-  'duplicates.description': { ar: 'مراجعة التشابه بين ملفات المرضى وتوثيق القرار دون دمج الملفات.', en: 'Review similar patient files and record a decision without merging records.' },
+  'duplicates.description': {
+    ar: 'مراجعة التشابه بين ملفات المرضى وتوثيق القرار دون دمج الملفات.',
+    en: 'Review similar patient files and record a decision without merging records.',
+  },
   'duplicates.review': { ar: 'مراجعة الملفين', en: 'Review both files' },
-  'duplicates.unavailable': { ar: 'ليست لديك صلاحية مراجعة هذه الملفات.', en: 'You do not have permission to review these files.' },
+  'duplicates.unavailable': {
+    ar: 'ليست لديك صلاحية مراجعة هذه الملفات.',
+    en: 'You do not have permission to review these files.',
+  },
   'duplicates.created': { ar: 'تاريخ طلب المراجعة', en: 'Review created' },
   'duplicates.empty': { ar: 'لا توجد ملفات تحتاج للمراجعة', en: 'No files need review' },
-  'duplicates.emptyHelp': { ar: 'يمكنك تحديث القائمة أو تغيير الحالة لعرض المراجعات السابقة.', en: 'Refresh or change the status to view earlier reviews.' },
+  'duplicates.emptyHelp': {
+    ar: 'يمكنك تحديث القائمة أو تغيير الحالة لعرض المراجعات السابقة.',
+    en: 'Refresh or change the status to view earlier reviews.',
+  },
   'duplicates.first': { ar: 'الملف الأول', en: 'First file' },
   'duplicates.second': { ar: 'الملف الثاني', en: 'Second file' },
   'duplicates.unnamed': { ar: 'الاسم غير متاح', en: 'Name unavailable' },
   'duplicates.birthDate': { ar: 'تاريخ الميلاد', en: 'Date of birth' },
   'duplicates.emailUnavailable': { ar: 'البريد غير متاح', en: 'Email unavailable' },
-  'duplicates.noMerge': { ar: 'هذا القرار يصنّف التشابه فقط. لا يدمج الملفات ولا ينقل الزيارات أو يحذفها.', en: 'This decision classifies similarity only. It does not merge files, move visits or delete records.' },
-  'duplicates.demographicMatch': { ar: 'رصد النظام تشابهاً في الهاتف أو بيانات الهوية. راجع بيانات الملفين قبل تحديد القرار.', en: 'The system found similar phone or identity details. Review both files before deciding.' },
-  'duplicates.reviewEvidence': { ar: 'راجع البيانات المعروضة. إذا لم تكفِ للتأكد، اختر أن الحالة تحتاج معلومات إضافية.', en: 'Review the available details. If they are insufficient, choose that more information is needed.' },
+  'duplicates.noMerge': {
+    ar: 'هذا القرار يصنّف التشابه فقط. لا يدمج الملفات ولا ينقل الزيارات أو يحذفها.',
+    en: 'This decision classifies similarity only. It does not merge files, move visits or delete records.',
+  },
+  'duplicates.demographicMatch': {
+    ar: 'رصد النظام تشابهاً في الهاتف أو بيانات الهوية. راجع بيانات الملفين قبل تحديد القرار.',
+    en: 'The system found similar phone or identity details. Review both files before deciding.',
+  },
+  'duplicates.reviewEvidence': {
+    ar: 'راجع البيانات المعروضة. إذا لم تكفِ للتأكد، اختر أن الحالة تحتاج معلومات إضافية.',
+    en: 'Review the available details. If they are insufficient, choose that more information is needed.',
+  },
   'duplicates.classification': { ar: 'نتيجة المراجعة', en: 'Review decision' },
   'duplicates.reason': { ar: 'سبب القرار', en: 'Reason for the decision' },
   'duplicates.save': { ar: 'حفظ قرار المراجعة', en: 'Save review decision' },
   'duplicates.saved': { ar: 'تم حفظ قرار المراجعة بنجاح.', en: 'Review decision saved.' },
-  'duplicates.status.NeedsMoreEvidence': { ar: 'تحتاج معلومات إضافية', en: 'More information needed' },
-  'duplicates.status.ConfirmedDuplicate': { ar: 'الملفان لنفس المريض', en: 'Both files belong to the same patient' },
-  'duplicates.status.DistinctPatients': { ar: 'الملفان لشخصين مختلفين', en: 'Files belong to different people' },
+  'duplicates.status.NeedsMoreEvidence': {
+    ar: 'تحتاج معلومات إضافية',
+    en: 'More information needed',
+  },
+  'duplicates.status.ConfirmedDuplicate': {
+    ar: 'الملفان لنفس المريض',
+    en: 'Both files belong to the same patient',
+  },
+  'duplicates.status.DistinctPatients': {
+    ar: 'الملفان لشخصين مختلفين',
+    en: 'Files belong to different people',
+  },
   'identityReview.accountType': { ar: 'طريقة التسجيل', en: 'Registration type' },
   'identityReview.basic': { ar: 'ملف مريض فقط', en: 'Patient file only' },
   'identityReview.full': { ar: 'ملف وحساب للمريض', en: 'Patient file and account' },
   'identityReview.title': { ar: 'تأكيد هوية المريض', en: 'Confirm patient identity' },
-  'identityReview.help': { ar: 'راجع الملفات الموجودة لتجنب تسجيل المريض أكثر من مرة. لا يتم دمج أي ملفات تلقائياً.', en: 'Review existing files to avoid duplicate registration. Files are never merged automatically.' },
-  'identityReview.permissionRequired': { ar: 'تحتاج صلاحية مراجعة هوية المريض في هذه العيادة قبل التسجيل.', en: 'Patient identity review permission in this clinic is required before registration.' },
-  'identityReview.verifyRequired': { ar: 'أكد التحقق من هوية المريض حضورياً أولاً.', en: 'Confirm that patient identity was verified in person first.' },
-  'identityReview.reviewRequired': { ar: 'راجع التشابه وأكد أنه شخص مختلف، ثم اكتب سبباً واضحاً من 10 إلى 500 حرف.', en: 'Review the match, confirm a distinct person, and record a clear reason of 10–500 characters.' },
-  'identityReview.existingRecord': { ar: 'توجد ملفات تحتاج للمراجعة. تأكد من هوية المريض قبل المتابعة.', en: 'Existing files need review. Confirm patient identity before continuing.' },
-  'identityReview.noMatch': { ar: 'لم يُعثر على ملف مطابق للبيانات المدخلة.', en: 'No matching file was found for the entered details.' },
+  'identityReview.help': {
+    ar: 'راجع الملفات الموجودة لتجنب تسجيل المريض أكثر من مرة. لا يتم دمج أي ملفات تلقائياً.',
+    en: 'Review existing files to avoid duplicate registration. Files are never merged automatically.',
+  },
+  'identityReview.permissionRequired': {
+    ar: 'تحتاج صلاحية مراجعة هوية المريض في هذه العيادة قبل التسجيل.',
+    en: 'Patient identity review permission in this clinic is required before registration.',
+  },
+  'identityReview.verifyRequired': {
+    ar: 'أكد التحقق من هوية المريض حضورياً أولاً.',
+    en: 'Confirm that patient identity was verified in person first.',
+  },
+  'identityReview.reviewRequired': {
+    ar: 'راجع التشابه وأكد أنه شخص مختلف، ثم اكتب سبباً واضحاً من 10 إلى 500 حرف.',
+    en: 'Review the match, confirm a distinct person, and record a clear reason of 10–500 characters.',
+  },
+  'identityReview.existingRecord': {
+    ar: 'توجد ملفات تحتاج للمراجعة. تأكد من هوية المريض قبل المتابعة.',
+    en: 'Existing files need review. Confirm patient identity before continuing.',
+  },
+  'identityReview.noMatch': {
+    ar: 'لم يُعثر على ملف مطابق للبيانات المدخلة.',
+    en: 'No matching file was found for the entered details.',
+  },
   'identityReview.useExisting': { ar: 'تأكيد استخدام هذا الملف', en: 'Confirm use of this file' },
-  'identityReview.reuseSuccess': { ar: 'تم تأكيد استخدام ملف المريض الموجود.', en: 'Use of the existing patient file was confirmed.' },
+  'identityReview.reuseSuccess': {
+    ar: 'تم تأكيد استخدام ملف المريض الموجود.',
+    en: 'Use of the existing patient file was confirmed.',
+  },
   'identityReview.continueBooking': { ar: 'متابعة الحجز', en: 'Continue to booking' },
-  'identityReview.claimRequired': { ar: 'هذا المريض له ملف بالفعل. إنشاء حساب له يتطلب مسار تفعيل الملف الموجود، وليس تسجيل شخص جديد.', en: 'This patient already has a file. Account creation requires the existing-file claim process, not new-person registration.' },
-  'identityReview.distinct': { ar: 'راجعت البيانات وتأكدت أن المريض شخص مختلف عن الملفات المعروضة', en: 'I reviewed the details and confirmed a different person from the listed files' },
-  'identityReview.reason': { ar: 'سبب التأكد أنه شخص مختلف', en: 'Reason for confirming a distinct person' },
+  'identityReview.claimRequired': {
+    ar: 'هذا المريض له ملف بالفعل. إنشاء حساب له يتطلب مسار تفعيل الملف الموجود، وليس تسجيل شخص جديد.',
+    en: 'This patient already has a file. Account creation requires the existing-file claim process, not new-person registration.',
+  },
+  'identityReview.distinct': {
+    ar: 'راجعت البيانات وتأكدت أن المريض شخص مختلف عن الملفات المعروضة',
+    en: 'I reviewed the details and confirmed a different person from the listed files',
+  },
+  'identityReview.reason': {
+    ar: 'سبب التأكد أنه شخص مختلف',
+    en: 'Reason for confirming a distinct person',
+  },
   'identityReview.basis': { ar: 'كيف تحققت من الهوية؟', en: 'How was identity verified?' },
-  'identityReview.governmentId': { ar: 'الاطلاع على بطاقة الهوية الأصلية', en: 'Original government ID checked' },
-  'identityReview.alternateEvidence': { ar: 'مستند بديل معتمد', en: 'Approved alternative evidence' },
-  'identityReview.contactHelp': { ar: 'ابحث بالاسم وتاريخ الميلاد أو رقم الهاتف، ثم اختر الشخص الصحيح.', en: 'Search by name and birth date or phone number, then select the correct person.' },
+  'identityReview.governmentId': {
+    ar: 'الاطلاع على بطاقة الهوية الأصلية',
+    en: 'Original government ID checked',
+  },
+  'identityReview.alternateEvidence': {
+    ar: 'مستند بديل معتمد',
+    en: 'Approved alternative evidence',
+  },
+  'identityReview.contactHelp': {
+    ar: 'ابحث بالاسم وتاريخ الميلاد أو رقم الهاتف، ثم اختر الشخص الصحيح.',
+    en: 'Search by name and birth date or phone number, then select the correct person.',
+  },
   'identityReview.unlinkContact': { ar: 'إلغاء الربط', en: 'Remove selection' },
-  'sessionVerification.unavailable': { ar: 'تعذّر التحقق من حسابك مؤقتاً. تأكد من الاتصال وأعد المحاولة للمتابعة.', en: 'Your account could not be verified temporarily. Check your connection and retry to continue.' },
+  'sessionVerification.unavailable': {
+    ar: 'تعذّر التحقق من حسابك مؤقتاً. تأكد من الاتصال وأعد المحاولة للمتابعة.',
+    en: 'Your account could not be verified temporarily. Check your connection and retry to continue.',
+  },
   'activity.title': { ar: 'سجل نشاط العيادة', en: 'Clinic activity' },
-  'activity.description': { ar: 'عرض العمليات المسجلة في هذه العيادة للقراءة فقط، حسب صلاحيات حسابك.', en: 'Read-only activity in this clinic, within your account permissions.' },
-  'activity.emptyHelp': { ar: 'ستظهر العمليات المسجلة هنا. جرّب تحديث القائمة أو تغيير الفلاتر.', en: 'Recorded activities appear here. Try refreshing or changing the filters.' },
-  'activity.failed': { ar: 'تعذّر عرض النشاط. تأكد من صلاحياتك وحاول مرة أخرى.', en: 'Activity could not be loaded. Check your access and try again.' },
+  'activity.description': {
+    ar: 'عرض العمليات المسجلة في هذه العيادة للقراءة فقط، حسب صلاحيات حسابك.',
+    en: 'Read-only activity in this clinic, within your account permissions.',
+  },
+  'activity.emptyHelp': {
+    ar: 'ستظهر العمليات المسجلة هنا. جرّب تحديث القائمة أو تغيير الفلاتر.',
+    en: 'Recorded activities appear here. Try refreshing or changing the filters.',
+  },
+  'activity.failed': {
+    ar: 'تعذّر عرض النشاط. تأكد من صلاحياتك وحاول مرة أخرى.',
+    en: 'Activity could not be loaded. Check your access and try again.',
+  },
   'activity.recorded': { ar: 'مسجل في النظام', en: 'Recorded by the system' },
   'activity.resource': { ar: 'السجل المتعلق بالعملية', en: 'Related record' },
-  'booking.standardNewConsultation': { ar: 'سعر الكشف الجديد العادي', en: 'Standard new consultation' },
-  'archive.emptyHelp': { ar: 'ستظهر هنا السجلات بعد أرشفتها. يمكنك تحديث القائمة لاحقاً.', en: 'Records appear here once archived. You can refresh the list later.' },
+  'booking.standardNewConsultation': {
+    ar: 'سعر الكشف الجديد العادي',
+    en: 'Standard new consultation',
+  },
+  'archive.emptyHelp': {
+    ar: 'ستظهر هنا السجلات بعد أرشفتها. يمكنك تحديث القائمة لاحقاً.',
+    en: 'Records appear here once archived. You can refresh the list later.',
+  },
   'recordAccess.title': { ar: 'من اطلع على سجلي؟', en: 'Who accessed my record?' },
   'recordAccess.tabTitle': { ar: 'سجل الاطلاع', en: 'Access Log' },
-  'recordAccess.description': { ar: 'سجل الاطلاع يعرض نوع المستخدم والإجراء ووقته، دون كشف بيانات داخلية.', en: 'Access history shows the user category, activity and time, without internal details.' },
+  'recordAccess.description': {
+    ar: 'سجل الاطلاع يعرض نوع المستخدم والإجراء ووقته، دون كشف بيانات داخلية.',
+    en: 'Access history shows the user category, activity and time, without internal details.',
+  },
   'recordAccess.actor': { ar: 'نوع المستخدم', en: 'User category' },
   'recordAccess.action': { ar: 'الإجراء', en: 'Activity' },
   'recordAccess.time': { ar: 'التاريخ والوقت', en: 'Date and time' },
-  'recordAccess.unavailable': { ar: 'سجل الاطلاع غير متاح لحسابك حالياً.', en: 'Access history is currently unavailable for your account.' },
+  'recordAccess.unavailable': {
+    ar: 'سجل الاطلاع غير متاح لحسابك حالياً.',
+    en: 'Access history is currently unavailable for your account.',
+  },
   'recordAccess.empty': { ar: 'لا يوجد سجل اطلاع حتى الآن', en: 'No access history yet' },
-  'recordAccess.emptyHelp': { ar: 'ستظهر هنا الأنشطة التي يتيح النظام عرضها على سجلك الطبي.', en: 'Activities the system permits you to view will appear here.' },
-  'recordAccess.privacyShieldTitle': { ar: 'درع الشفافية والخصوصية الطبية', en: 'Medical Privacy & Transparency Shield' },
-  'recordAccess.privacyShieldDesc': { ar: 'جميع عمليات الوصول واستعراض سجلك الطبي من قِبل الأطباء أو مساعدي العيادات موثقة بالكامل لضمان سرية وأمان بياناتك الصحية.', en: 'All accesses and views of your medical record by doctors and clinic staff are fully audited to ensure confidentiality and safety.' },
+  'recordAccess.emptyHelp': {
+    ar: 'ستظهر هنا الأنشطة التي يتيح النظام عرضها على سجلك الطبي.',
+    en: 'Activities the system permits you to view will appear here.',
+  },
+  'recordAccess.privacyShieldTitle': {
+    ar: 'درع الشفافية والخصوصية الطبية',
+    en: 'Medical Privacy & Transparency Shield',
+  },
+  'recordAccess.privacyShieldDesc': {
+    ar: 'جميع عمليات الوصول واستعراض سجلك الطبي من قِبل الأطباء أو مساعدي العيادات موثقة بالكامل لضمان سرية وأمان بياناتك الصحية.',
+    en: 'All accesses and views of your medical record by doctors and clinic staff are fully audited to ensure confidentiality and safety.',
+  },
   'recordAccess.filterAll': { ar: 'جميع الأنشطة', en: 'All activities' },
   'recordAccess.filterDoctor': { ar: 'الأطباء', en: 'Doctors' },
   'recordAccess.filterReception': { ar: 'مساعدو العيادات', en: 'Clinic assistants' },
   'recordAccess.filterPatient': { ar: 'نشاطاتي', en: 'My activities' },
   'recordAccess.filterDownload': { ar: 'تنزيل المرفقات', en: 'Downloads' },
-  'recordAccess.filterEmpty': { ar: 'لا توجد عمليات مسجلة في هذا التصنيف', en: 'No activities recorded in this category' },
+  'recordAccess.filterEmpty': {
+    ar: 'لا توجد عمليات مسجلة في هذا التصنيف',
+    en: 'No activities recorded in this category',
+  },
   'recordAccess.statTotal': { ar: 'إجمالي العمليات', en: 'Total activities' },
   'recordAccess.statDoctors': { ar: 'الأطباء', en: 'Doctors' },
   'recordAccess.statClinics': { ar: 'العيادات', en: 'Clinics' },
@@ -9064,7 +9268,10 @@ export const TRANSLATIONS: TranslationDictionary = {
   'recordAccess.action.overview': { ar: 'معاينة النظرة العامة', en: 'Overview access' },
   'recordAccess.action.Download': { ar: 'تنزيل مرفق', en: 'Attachment download' },
   'recordAccess.action.download': { ar: 'تنزيل مرفق', en: 'Attachment download' },
-  'recordAccess.action.DocumentDownload': { ar: 'تنزيل مستند طبي', en: 'Download medical document' },
+  'recordAccess.action.DocumentDownload': {
+    ar: 'تنزيل مستند طبي',
+    en: 'Download medical document',
+  },
   'recordAccess.action.PrescriptionView': { ar: 'معاينة روشتة طبية', en: 'View prescription' },
   'recordAccess.action.LabView': { ar: 'معاينة نتيجة تحاليل', en: 'View lab result' },
   'recordAccess.action.RadiologyView': { ar: 'معاينة تقرير أشعة', en: 'View radiology report' },
@@ -10285,5 +10492,1105 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorDashboard.subscriptionRequired.cta': {
     ar: 'الذهاب إلى اشتراكي وتفعيل الباقة',
     en: 'Go to My Subscription & Activate Plan',
+  },
+  'auth.showcase.tag': {
+    ar: 'منظومة العيادات الذكية',
+    en: 'Smart Clinic Ecosystem',
+  },
+  'auth.showcase.pillar1': {
+    ar: 'إدارة سريرية وطبية متكاملة',
+    en: 'Unified Clinical & Practice Workflow',
+  },
+  'auth.showcase.pillar2': {
+    ar: 'روشتات إلكترونية وسجلات دقيقة',
+    en: 'E-Prescriptions & Accurate Records',
+  },
+  'auth.showcase.pillar3': {
+    ar: 'أمان وخصوصية طبية معتمدة',
+    en: 'Certified Healthcare Privacy & Security',
+  },
+  'auth.mode.login': {
+    ar: 'تسجيل الدخول',
+    en: 'Sign In',
+  },
+  'auth.mode.doctor': {
+    ar: 'حساب طبيب',
+    en: 'Doctor Account',
+  },
+  'auth.mode.patient': {
+    ar: 'حساب مريض',
+    en: 'Patient Account',
+  },
+  'login.backToHome': {
+    ar: 'العودة للرئيسية',
+    en: 'Back to Home',
+  },
+  'login.minimalTitle': {
+    ar: 'تسجيل الدخول إلى وصلة',
+    en: 'Sign in to Wasla',
+  },
+  'login.minimalSubtitle': {
+    ar: 'أهلاً بك مجدداً، سجّل دخولك لإدارة عيادتك أو متابعة كشوفاتك',
+    en: 'Welcome back, sign in to manage your practice or track your consultations',
+  },
+  'login.newToWasla': {
+    ar: 'جديد في منصة وصلة؟',
+    en: 'New to Wasla?',
+  },
+  'landing.nav.primaryAria': {
+    ar: 'التنقل الرئيسي لمنصة وصلة',
+    en: 'Wasla Main Navigation',
+  },
+  'landing.nav.home': {
+    ar: 'الرئيسية',
+    en: 'Home',
+  },
+  'landing.nav.features': {
+    ar: 'المميزات',
+    en: 'Features',
+  },
+  'landing.nav.howItWorks': {
+    ar: 'رحلة العيادة',
+    en: 'Clinic Journey',
+  },
+  'landing.nav.forDoctors': {
+    ar: 'للأطباء',
+    en: 'For Doctors',
+  },
+  'landing.nav.faq': {
+    ar: 'الأسئلة الشائعة',
+    en: 'FAQ',
+  },
+  'landing.nav.workspaceCta': {
+    ar: 'مساحة العمل',
+    en: 'Go to Workspace',
+  },
+  'landing.nav.login': {
+    ar: 'تسجيل الدخول',
+    en: 'Sign In',
+  },
+  'landing.nav.startCta': {
+    ar: 'ابدأ الآن مجاناً',
+    en: 'Start Free',
+  },
+  'landing.nav.pricing': {
+    ar: 'الأسعار والباقات',
+    en: 'Pricing & Plans',
+  },
+  'landing.nav.doctorsDir': {
+    ar: 'دليل الأطباء',
+    en: 'Doctors Directory',
+  },
+  'landing.nav.openMenu': {
+    ar: 'فتح القائمة',
+    en: 'Open navigation menu',
+  },
+  'landing.nav.closeMenu': {
+    ar: 'إغلاق القائمة',
+    en: 'Close navigation menu',
+  },
+  'landing.hero.eyebrow': {
+    ar: 'المنظومة السحابية المتكاملة للعيادات والمراكز الطبية في مصر',
+    en: 'Integrated Cloud Medical Platform for Egyptian Clinics',
+  },
+  'landing.hero.title': {
+    ar: 'عيادتك منظمة، ومريضك متابع.',
+    en: 'Your Clinic Organized, Your Patients Followed.',
+  },
+  'landing.hero.subtitle': {
+    ar: 'نظام سحابي ذكي يربط الحجوزات، طابور الانتظار، الكشف السريري، الروشتات الإلكترونية، والحسابات في منصة واحدة سهلة الاستخدام للطبيب ومساعد العيادة.',
+    en: 'A smart cloud ecosystem connecting reservations, live queue, clinical encounters, e-prescriptions, and practice finances in one intuitive workspace.',
+  },
+  'landing.hero.primaryCta': {
+    ar: 'ابدأ عيادتك مجاناً',
+    en: 'Start Your Clinic Free',
+  },
+  'landing.hero.secondaryCta': {
+    ar: 'شاهد رحلة العيادة',
+    en: 'Explore Clinic Journey',
+  },
+  'landing.hero.hasAccount': {
+    ar: 'لديك حساب بالفعل؟',
+    en: 'Already have an account?',
+  },
+  'landing.hero.signInLink': {
+    ar: 'تسجيل الدخول',
+    en: 'Sign in',
+  },
+  'landing.hero.patientPrompt': {
+    ar: 'أنت مريض وتبحث عن عيادة معتمدة؟',
+    en: 'Are you a patient seeking a clinic?',
+  },
+  'landing.hero.patientDirectoryLink': {
+    ar: 'دليل الأطباء',
+    en: 'Find Doctors',
+  },
+  'landing.hero.patientRegisterLink': {
+    ar: 'حساب مريض جديد',
+    en: 'New Patient Account',
+  },
+  'landing.preview.windowTitle': {
+    ar: 'مساحة العمل اليومية • عيادة الباطنة والجهاز الهضمي',
+    en: 'Daily Workspace • Internal Medicine Clinic',
+  },
+  'landing.preview.shiftStatus': {
+    ar: 'اليوم التشغيلي مفتوح',
+    en: 'Daily Shift Active',
+  },
+  'landing.preview.demoTag': {
+    ar: 'معاينة حية',
+    en: 'Live Preview',
+  },
+  'landing.preview.tabDashboard': {
+    ar: 'لوحة التحكم',
+    en: 'Dashboard',
+  },
+  'landing.preview.tabQueue': {
+    ar: 'طابور الانتظار',
+    en: 'Live Queue',
+  },
+  'landing.preview.tabEncounter': {
+    ar: 'الكشف السريري',
+    en: 'Clinical Encounter',
+  },
+  'landing.preview.kpiBooked': {
+    ar: 'حجوزات اليوم',
+    en: "Today's Bookings",
+  },
+  'landing.preview.kpiWaiting': {
+    ar: 'بالانتظار',
+    en: 'In Waiting',
+  },
+  'landing.preview.kpiCompleted': {
+    ar: 'تم كشفهم',
+    en: 'Completed',
+  },
+  'landing.preview.kpiBranch': {
+    ar: 'الفرع النشط',
+    en: 'Active Branch',
+  },
+  'landing.preview.branchMaadi': {
+    ar: 'فرع المعادي',
+    en: 'Maadi Branch',
+  },
+  'landing.preview.colPatient': {
+    ar: 'المريض',
+    en: 'Patient',
+  },
+  'landing.preview.colVisitType': {
+    ar: 'نوع الكشف',
+    en: 'Visit Type',
+  },
+  'landing.preview.colTime': {
+    ar: 'الموعد',
+    en: 'Time',
+  },
+  'landing.preview.colStatus': {
+    ar: 'الحالة',
+    en: 'Status',
+  },
+  'landing.preview.row1Name': {
+    ar: 'محمود عبد الرحمن',
+    en: 'Mahmoud Abdelrahman',
+  },
+  'landing.preview.row1Type': {
+    ar: 'كشف جديد',
+    en: 'New Consultation',
+  },
+  'landing.preview.row1Status': {
+    ar: 'بغرفة الطبيب',
+    en: 'In Consultation',
+  },
+  'landing.preview.row2Name': {
+    ar: 'سارة إبراهيم منصور',
+    en: 'Sara Ibrahim Mansour',
+  },
+  'landing.preview.row2Type': {
+    ar: 'متابعة وفحوصات',
+    en: 'Follow-up & Labs',
+  },
+  'landing.preview.row2Status': {
+    ar: 'تم الاستقبال',
+    en: 'Checked In',
+  },
+  'landing.preview.row3Name': {
+    ar: 'أحمد كمال الشناوي',
+    en: 'Ahmed Kamal El-Shinawy',
+  },
+  'landing.preview.row3Type': {
+    ar: 'استشارة دورية',
+    en: 'Routine Checkup',
+  },
+  'landing.preview.row3Status': {
+    ar: 'مؤكد بالهاتف',
+    en: 'Confirmed',
+  },
+  'landing.preview.queueNowCalling': {
+    ar: 'الرقم الحالي قيد الكشف',
+    en: 'Now Serving',
+  },
+  'landing.preview.queueTicket14': {
+    ar: '#14 — محمود عبد الرحمن',
+    en: '#14 — Mahmoud Abdelrahman',
+  },
+  'landing.preview.queueCalledNext': {
+    ar: 'سارة إبراهيم منصور',
+    en: 'Sara Ibrahim Mansour',
+  },
+  'landing.preview.queueWaitCount': {
+    ar: '3 مرضى في صالة الانتظار',
+    en: '3 patients in waiting room',
+  },
+  'landing.preview.queueSyncedReception': {
+    ar: 'متزامن لحظياً مع شاشة الاستقبال وتطبيق المريض',
+    en: 'Live-synced with reception and patient screen',
+  },
+  'landing.preview.encHeader': {
+    ar: 'كشف طبي وسجل إلكتروني',
+    en: 'Clinical Encounter Record',
+  },
+  'landing.preview.encVitals': {
+    ar: 'الضغط: 125/82 mmHg • النبض: 74 bpm • الحرارة: 37.1°C • الوزن: 78 kg',
+    en: 'BP: 125/82 mmHg • Pulse: 74 bpm • Temp: 37.1°C • Weight: 78 kg',
+  },
+  'landing.preview.encDiagnosis': {
+    ar: 'التشخيص: نزلة معوية حادة مصحوبة بتقلصات عضلية مستجيبة للعلاج',
+    en: 'Diagnosis: Acute gastroenteritis with mild abdominal spasms',
+  },
+  'landing.preview.encRxLabel': {
+    ar: 'الروشتة الإلكترونية المعتمدة (Wasla E-Rx):',
+    en: 'Official E-Prescription (Wasla E-Rx):',
+  },
+  'landing.preview.encRxItem1': {
+    ar: '• أقراص كولونا (Colona) — قرص قبل الوجبات بـ 20 دقيقة (3 مرات يومياً)',
+    en: '• Colona tablets — 1 tablet 20 mins before meals (TID)',
+  },
+  'landing.preview.encRxItem2': {
+    ar: '• بروبيوتيك لاكتيول فورت (Lactéol Fort) — كيس صباحاً ومساءً لمدة أسبوع',
+    en: '• Lacteol Fort sachet — 1 sachet morning and evening for 7 days',
+  },
+  'landing.preview.encFollowup': {
+    ar: 'إعادة الكشف والاستشارة: خلال 7 أيام من تاريخ اليوم',
+    en: 'Free Follow-up window: within 7 days from today',
+  },
+  'landing.problem.eyebrow': {
+    ar: 'الواقع اليومي في عياداتنا',
+    en: 'Everyday Reality in Private Clinics',
+  },
+  'landing.problem.title': {
+    ar: 'تحديات إدارة العيادة التقليدية وكيف تنهيها وصلة',
+    en: 'Traditional Practice Headaches & How Wasla Solves Them',
+  },
+  'landing.problem.subtitle': {
+    ar: 'بين دفاتر الورق، ورسائل واتساب المبعثرة، وتكدس صالة الانتظار، جاءت وصلة لتبسيط العمل وإعادة الهدوء لعيادتك.',
+    en: 'From lost paper slips and messy WhatsApp chats to crowded waiting rooms, Wasla brings clarity and peace to your clinic.',
+  },
+  'landing.problem.colBefore': {
+    ar: 'النظام التقليدي المجهد',
+    en: 'Traditional Way',
+  },
+  'landing.problem.colAfter': {
+    ar: 'مع منصة وصلة السحابية',
+    en: 'With Wasla Cloud',
+  },
+  'landing.problem.item1Title': {
+    ar: 'دفاتر المواعيد الورقية ورسائل واتساب المبعثرة',
+    en: 'Paper Appointment Books & Scattered WhatsApp',
+  },
+  'landing.problem.item1Pain': {
+    ar: 'تداخل مواعيد المرضى، حجوزات ملغاة بدون علم الطبيب، وضياع وقت المساعد في الرد المتكرر على استفسارات الأسعار وأرقام الدور.',
+    en: 'Double bookings, no-shows without notice, and clinic assistant hours lost repeating prices and queue positions.',
+  },
+  'landing.problem.item1Fix': {
+    ar: 'جدول مواعيد رقمي ذكي مع رابط حجز مخصص للعيادة، تأكيد فوري بالرسائل النصية وتحديث لحظي لجدول اليوم.',
+    en: 'Smart digital schedule with a custom clinic booking link, instant SMS confirmation, and live schedule sync.',
+  },
+  'landing.problem.item2Title': {
+    ar: 'تكدس المرضى والجدل المستمر حول أولوية الدخول',
+    en: 'Crowded Waiting Rooms & Queue Disputes',
+  },
+  'landing.problem.item2Pain': {
+    ar: 'غضب المرضى من طول الانتظار، احتكاك دائم مع سكرتارية العيادة، وعدم وضوح الفرق بين الكشف الجديد والاستشارة.',
+    en: 'Patient frustration with hours of waiting, arguments at the reception desk, and confusion between new visits and follow-ups.',
+  },
+  'landing.problem.item2Fix': {
+    ar: 'طابور انتظار إلكتروني بتذاكر رقمية وشاشة عيادة واضحة، مع إمكانية متابعة الدور من هاتف المريض قبل الحضور.',
+    en: 'Digital queue system with live ticketing, a clean waiting room display, and mobile queue tracking from home.',
+  },
+  'landing.problem.item3Title': {
+    ar: 'ضياع تاريخ المريض الصحي والروشتات السابقة',
+    en: 'Lost Medical History & Misplaced Prescriptions',
+  },
+  'landing.problem.item3Pain': {
+    ar: 'نسيان المريض لأسماء الأدوية وحساسياتها، روشتات ورقية تفقد مع الوقت، وصعوبة تذكر نتائج التحاليل السابقة عند كل استشارة.',
+    en: 'Patients forgetting medication names and allergies, lost paper prescriptions, and no quick access to previous lab results.',
+  },
+  'landing.problem.item3Fix': {
+    ar: 'ملف طبي سحابي موحد لكل مريض، روشتة رقمية مشفرة بـ QR Code تصل لهاتفه، وحفظ آمن للتحاليل والأشعة السابقة.',
+    en: 'Unified cloud medical record for every patient, encrypted QR e-prescriptions sent to their phone, and historical test storage.',
+  },
+  'landing.problem.item4Title': {
+    ar: 'تسرب الإيرادات وصعوبة تقفيل حسابات الشفت اليومي',
+    en: 'Revenue Leakage & Shift Reconciliation Pains',
+  },
+  'landing.problem.item4Pain': {
+    ar: 'عدم تطابق الكشوفات الفعلية مع المبالغ المحصلة في نهاية اليوم، وضبابية في حساب نسب الطبيب والمساعد والمصروفات النثرية.',
+    en: 'Mismatches between completed visits and collected cash at the end of the day, plus fuzzy expense logs.',
+  },
+  'landing.problem.item4Fix': {
+    ar: 'إغلاق وردية بضغطة زر واحدة (Shift Close)، تقارير مالية لحظية غير قابلة للتلاعب، وفصل كامل بين خزينة الفرع ومستحقات الطبيب.',
+    en: 'One-click daily shift reconciliation, tamper-proof revenue reports, and strict cash auditing for all clinics.',
+  },
+  'landing.problem.item5Title': {
+    ar: 'فوضى تشغيل أكثر من عيادة أو أكثر من فرع',
+    en: 'Multi-Branch & Multi-Clinic Management Chaos',
+  },
+  'landing.problem.item5Pain': {
+    ar: 'تشتت الطبيب بين عيادته في المعادي ومصر الجديدة، صعوبة متابعة السكرتارية عن بُعد، وتضارب أرقام الحسابات وسجلات المرضى.',
+    en: 'Doctor scattered across multiple clinics, inability to supervise staff remotely, and fragmented patient files across branches.',
+  },
+  'landing.problem.item5Fix': {
+    ar: 'منظومة سحابية واحدة تدير كل عياداتك وفروعك بصلاحيات محددة، تتيح للطبيب متابعة التشغيل من هاتفه أو لابتوبه أينما كان.',
+    en: 'One unified cloud system covering all branches with granular permissions, accessible from any mobile or laptop anywhere.',
+  },
+  'landing.journey.eyebrow': {
+    ar: 'التشغيل السلس خطوة بخطوة',
+    en: 'Seamless Practice Flow',
+  },
+  'landing.journey.title': {
+    ar: 'رحلة العيادة اليومية داخل منصة وصلة',
+    en: 'The Daily Clinic Journey in Wasla',
+  },
+  'landing.journey.subtitle': {
+    ar: 'كيف تتحول ساعات العمل المزدحمة إلى منظومة متناغمة من لحظة حجز المريض وحتى استلام الروشتة وإغلاق اليوم التشغيلي.',
+    en: 'How busy clinic hours turn into a calm, synchronized workflow from booking to consultation and financial closure.',
+  },
+  'landing.journey.stage1Num': {
+    ar: 'المرحلة 01',
+    en: 'Stage 01',
+  },
+  'landing.journey.stage1Tab': {
+    ar: 'الاستقبال والحجز',
+    en: 'Booking & Reception',
+  },
+  'landing.journey.stage1Title': {
+    ar: 'استقبال منظم وتأكيد فوري للحجوزات',
+    en: 'Organized Check-in & Instant Confirmations',
+  },
+  'landing.journey.stage1Desc': {
+    ar: 'يبدأ اليوم بفتح الوردية بضغطة واحدة من مساعد العيادة. يتلقى النظام الحجوزات القادمة عبر الإنترنت أو الهاتف، ويصدر رقم تذكرة فوري للمريض.',
+    en: 'The shift begins with a single click by the clinic assistant. The system processes online or walk-in bookings and issues an immediate digital queue ticket.',
+  },
+  'landing.journey.stage1Bullet1': {
+    ar: 'تسجيل سريع للمريض الجديد بالرقم القومي ورقم الهاتف دون تعقيدات ورقية.',
+    en: 'Fast patient registration by phone and national ID without paperwork.',
+  },
+  'landing.journey.stage1Bullet2': {
+    ar: 'إصدار تذكرة انتظار مرقمة تظهر فوراً على شاشة الاستقبال وتطبيق المريض.',
+    en: 'Numbered waiting ticket appearing on the reception screen and patient app.',
+  },
+  'landing.journey.stage1Bullet3': {
+    ar: 'تحصيل رسوم الكشف وتسجيلها آلياً في خزينة الوردية مع طباعة إيصال معتمد.',
+    en: 'Consultation fee collection logged directly into the shift register.',
+  },
+  'landing.journey.demoNotice': {
+    ar: 'بيانات تجريبية تحاكي سير العمل الواقعي في العيادات والمراكز الطبية المصرية.',
+    en: 'Realistic demo data simulating live operations in Egyptian private practices.',
+  },
+  'landing.journey.mockStage1Card': {
+    ar: 'تذكرة استلام العيادة الإلكترونية',
+    en: 'Electronic Reception Ticket',
+  },
+  'landing.journey.mockStage1Item1': {
+    ar: 'رقم التذكرة: #15 — كشف باطنة جديد',
+    en: 'Ticket: #15 — New Internal Consultation',
+  },
+  'landing.journey.mockStage1Item2': {
+    ar: 'الحالة: تم تسجيل الحضور بالانتظار',
+    en: 'Status: Checked In & Waiting',
+  },
+  'landing.journey.mockStage1Item3': {
+    ar: 'الرسوم المسددة: 350 ج.م نقداً (خزينة 1)',
+    en: 'Paid: 350 EGP Cash (Register 1)',
+  },
+  'landing.journey.stage2Num': {
+    ar: 'المرحلة 02',
+    en: 'Stage 02',
+  },
+  'landing.journey.stage2Tab': {
+    ar: 'مساحة الكشف السريري',
+    en: 'Clinical Consultation',
+  },
+  'landing.journey.stage2Title': {
+    ar: 'تركيز كامل للطبيب وسجل طبي فوري',
+    en: 'Undivided Doctor Focus & Rapid Medical Entry',
+  },
+  'landing.journey.stage2Desc': {
+    ar: 'يدخل المريض غرفة الكشف بضغطة واحدة من شاشة الطبيب (نداء التالي). يستعرض الطبيب التاريخ المرضي السابق، ويسجل الفحص والتشخيص بسهولة.',
+    en: 'Doctor calls the next patient with one click. Past visits and lab records open instantly, and diagnosis and prescriptions are typed in seconds.',
+  },
+  'landing.journey.stage2Bullet1': {
+    ar: 'استدعاء فوري لملف المريض التاريخي والروشتات السابقة والحساسيات الدوائية.',
+    en: 'Instant access to past records, previous prescriptions, and medication allergies.',
+  },
+  'landing.journey.stage2Bullet2': {
+    ar: 'محرك روشتة إلكتروني ذكي مع مكتبة الأدوية المصرية والجرعات الشائعة.',
+    en: 'Smart e-prescription engine with Egyptian drug catalog and standard doses.',
+  },
+  'landing.journey.stage2Bullet3': {
+    ar: 'حماية كاملة: خصوصية تامة للتشخيص والملاحظات السريرية دون اطلاع السكرتارية.',
+    en: 'Complete clinical privacy: assistant cannot view diagnostic or clinical notes.',
+  },
+  'landing.journey.mockStage2Card': {
+    ar: 'نموذج الكشف السريري النشط',
+    en: 'Active Clinical Encounter',
+  },
+  'landing.journey.mockStage2Item1': {
+    ar: 'الشكوى: آلام حادة بالمعدة وحموضة بعد الأكل',
+    en: 'Complaint: Epigastric pain & postprandial acidity',
+  },
+  'landing.journey.mockStage2Item2': {
+    ar: 'العلامات الحيوية: BP 120/80 • HR 72 • T 37.0°C',
+    en: 'Vitals: BP 120/80 • HR 72 • T 37.0°C',
+  },
+  'landing.journey.mockStage2Item3': {
+    ar: 'الإجراء: روشتة إلكترونية + طلب تحليل جرثومة معدة H.Pylori',
+    en: 'Action: E-Rx issued + H. Pylori stool antigen ordered',
+  },
+  'landing.journey.stage3Num': {
+    ar: 'المرحلة 03',
+    en: 'Stage 03',
+  },
+  'landing.journey.stage3Tab': {
+    ar: 'المتابعة وتقفيل اليوم',
+    en: 'Follow-up & Shift Close',
+  },
+  'landing.journey.stage3Title': {
+    ar: 'روشتة في هاتف المريض وحسابات منضبطة',
+    en: 'Patient Mobile Rx & Zero-Discrepancy Shift Close',
+  },
+  'landing.journey.stage3Desc': {
+    ar: 'يغادر المريض العيادة ومعه روشتته الرقمية برمز QR صالح للصيدلية. وفي نهاية اليوم، يُغلق الشفت بتقرير مالي شامل يطابق النقدية بالمليم.',
+    en: 'Patient receives an authenticated QR prescription right on their phone. At the end of the day, assistant closes the shift with balanced cash books.',
+  },
+  'landing.journey.stage3Bullet1': {
+    ar: 'روشتة إلكترونية مشفرة ومختومة باسم الطبيب ورقم نقابته وترخيصه.',
+    en: 'Encrypted e-prescription signed with doctor credentials and license number.',
+  },
+  'landing.journey.stage3Bullet2': {
+    ar: 'تحديد فترة الاستشارة المجانية آلياً وتذكير المريض بموعد المتابعة.',
+    en: 'Automated free follow-up window tracking and scheduled visit reminders.',
+  },
+  'landing.journey.stage3Bullet3': {
+    ar: 'تقفيل الحسابات اليومية وطباعة كشف إيرادات ومصروفات الوردية للطبيب.',
+    en: 'One-click daily financial reconciliation and audit report for the doctor.',
+  },
+  'landing.journey.mockStage3Card': {
+    ar: 'ملخص إغلاق الوردية المالية اليومية',
+    en: 'Daily Shift Financial Summary',
+  },
+  'landing.journey.mockStage3Item1': {
+    ar: 'إجمالي الحالات: 18 كشف جديد • 6 متابعات',
+    en: 'Total Visits: 18 Consultations • 6 Follow-ups',
+  },
+  'landing.journey.mockStage3Item2': {
+    ar: 'صافي التحصيل النقدي: 6,300 ج.م (مطابق بالكامل)',
+    en: 'Net Cash Collected: 6,300 EGP (100% Balanced)',
+  },
+  'landing.journey.mockStage3Item3': {
+    ar: 'حالة الوردية: أغلقت بنجاح بواسطة مروة حسن (18:45)',
+    en: 'Shift Status: Closed by Marwa Hassan (18:45)',
+  },
+  'landing.story.eyebrow': {
+    ar: 'مميزات صُممت لواقع العيادات الحقيقي',
+    en: 'Built for Real Practice Needs',
+  },
+  'landing.story.title': {
+    ar: 'أربع ركائز أساسية تنقل عيادتك لعصر الرقمنة الهادئة',
+    en: 'Four Essential Pillars for Modern Practice Management',
+  },
+  'landing.story.problemLabel': {
+    ar: 'المشكلة السابقة:',
+    en: 'Previous Problem:',
+  },
+  'landing.story.solutionLabel': {
+    ar: 'حل منصة وصلة:',
+    en: 'Wasla Solution:',
+  },
+  'landing.story.outcomeLabel': {
+    ar: 'النتيجة المباشرة:',
+    en: 'Immediate Impact:',
+  },
+  'landing.feat1.tag': {
+    ar: 'إدارة الطابور والمواعيد',
+    en: 'Queue & Scheduling',
+  },
+  'landing.feat1.title': {
+    ar: 'طابور انتظار ذكي ينهي الزحام وتكدس المرضى',
+    en: 'Smart Queue Management Eliminates Waiting Room Congestion',
+  },
+  'landing.feat1.problem': {
+    ar: 'جلوس المرضى لساعات في صالة انتظار ضيقة، وتوتر سكرتارية العيادة بسبب السؤال المستمر "دوري إمتى؟".',
+    en: 'Patients trapped for hours in crowded rooms and assistants fatigued by constant "When is my turn?" queries.',
+  },
+  'landing.feat1.solution': {
+    ar: 'تذاكر رقمية تسلسلية مع شاشة نداء صوتي ومرئي، ومتابعة لحظية لدور المريض من هاتفه المحمول.',
+    en: 'Sequential digital ticketing, visual queue display, and real-time mobile tracking from outside the clinic.',
+  },
+  'landing.feat1.outcome': {
+    ar: 'تقليل وقت التواجد في صالة الانتظار بنسبة 60% وزيادة رضا المرضى وسلاسة دخول الكشوفات.',
+    en: '60% reduction in crowded waiting time and significantly higher patient satisfaction.',
+  },
+  'landing.feat1.previewTitle': {
+    ar: 'لوحة التحكم اللحظية لطابور العيادة',
+    en: 'Live Practice Queue Console',
+  },
+  'landing.feat1.previewRow1': {
+    ar: 'نداء التالي بضغطة زر وتحديث فوري للشاشة الخارجية',
+    en: 'One-click next call syncing external waiting screen',
+  },
+  'landing.feat1.previewRow2': {
+    ar: 'تمييز الحالات الطارئة والاستشارات السريعة بمرونة',
+    en: 'Flexible prioritization for emergencies & follow-ups',
+  },
+  'landing.feat1.previewRow3': {
+    ar: 'إشعار بالرسائل النصية للمريض عندما يقترب دوره',
+    en: 'Automated SMS alerts when the turn is approaching',
+  },
+  'landing.feat2.tag': {
+    ar: 'سكرتارية واستقبال العيادة',
+    en: 'Reception & Assistant Desk',
+  },
+  'landing.feat2.title': {
+    ar: 'واجهة استقبال بسيطة صُممت خصيصاً لمساعد العيادة',
+    en: 'Intuitive Reception Interface Designed for Clinic Assistants',
+  },
+  'landing.feat2.problem': {
+    ar: 'صعوبة تدريب المساعدين الجدد على البرامج المعقدة وكثرة الأخطاء في تسجيل أرقام الهواتف أو تسعيرة الكشف.',
+    en: 'High turnover, complex software training burdens, and repeated errors in patient records and pricing.',
+  },
+  'landing.feat2.solution': {
+    ar: 'واجهة عربية مبسطة وخالية من المصطلحات التقنية المعقدة، بخطوط واضحة وأزرار إجراءات بديهية.',
+    en: 'Clean Arabic interface free of technical jargon, featuring large high-contrast buttons and guided workflows.',
+  },
+  'landing.feat2.outcome': {
+    ar: 'تدريب المساعد في أقل من 15 دقيقة، وانعدام أخطاء الحسابات وحجوزات المواعيد نهائياً.',
+    en: 'New assistant trained in under 15 minutes with zero record or cashier discrepancies.',
+  },
+  'landing.feat2.previewTitle': {
+    ar: 'مساحة عمل السكرتارية والاستقبال',
+    en: 'Receptionist Streamlined Workspace',
+  },
+  'landing.feat2.previewRow1': {
+    ar: 'حجز فوري بالاسم ورقم الموبايل بـ 3 خطوات فقط',
+    en: '3-step instant booking by name and mobile phone',
+  },
+  'landing.feat2.previewRow2': {
+    ar: 'تحصيل الكشف وإصدار الإيصال دون أي تعقيد محاسبي',
+    en: 'Instant fee checkout and receipt generation',
+  },
+  'landing.feat2.previewRow3': {
+    ar: 'حماية كاملة: خصوصية تامة للملف الطبي وملاحظات الطبيب',
+    en: 'Strict permission boundary: clinical records hidden',
+  },
+  'landing.feat3.tag': {
+    ar: 'الكشف والروشتة الإلكترونية',
+    en: 'Clinical EMR & E-Rx',
+  },
+  'landing.feat3.title': {
+    ar: 'سجل طبي سريع وروشتة معتمدة تغني عن الورق',
+    en: 'Rapid Clinical Records & Verified Paperless Prescriptions',
+  },
+  'landing.feat3.problem': {
+    ar: 'ضياع وقت الطبيب في الكتابة اليدوية، وخط الطبيب غير المقروء في الصيدلية، وفقدان المريض للروشتات السابقة.',
+    en: 'Time wasted on handwritten notes, pharmacy misinterpretations, and lost historical paper slips.',
+  },
+  'landing.feat3.solution': {
+    ar: 'كتابة روشتة بضغطة زر مع اقتراح الجرعات الذكية، وطباعتها أو إرسالها برمز QR مشفر لهاتف المريض.',
+    en: 'Rapid drug selection with dosage templates, printable or sent instantly via authenticated QR code.',
+  },
+  'landing.feat3.outcome': {
+    ar: 'توفير دقيقتين في كل كشف، دقة دوائية 100%، وحفظ دائم لتاريخ علاج كل مريض.',
+    en: 'Save 2 minutes per patient with 100% prescription legibility and permanent medication history.',
+  },
+  'landing.feat3.previewTitle': {
+    ar: 'محرر الكشف والروشتة السريرية',
+    en: 'Clinical Consultation & E-Prescription Desk',
+  },
+  'landing.feat3.previewRow1': {
+    ar: 'قائمة بأشهر الأدوية المصرية مصنفة حسب التخصص والجرعة',
+    en: 'Curated Egyptian drug catalog with dosing presets',
+  },
+  'landing.feat3.previewRow2': {
+    ar: 'تنبيه آلي لحساسيات المريض والأدوية المسجلة مسبقاً',
+    en: 'Automatic allergy alerts and chronic medication tracking',
+  },
+  'landing.feat3.previewRow3': {
+    ar: 'باركود مشفر للتحقق من صحة الروشتة ومنع تكرار صرفها',
+    en: 'Cryptographic QR code preventing fraudulent dispensing',
+  },
+  'landing.feat4.tag': {
+    ar: 'حسابات وإيرادات العيادة',
+    en: 'Finances & Cash Audit',
+  },
+  'landing.feat4.title': {
+    ar: 'إدارة مالية دقيقة لكل فرع وإغلاق وردية بضغطة زر',
+    en: 'Accurate Multi-Branch Practice Financials & Shift Reconciliation',
+  },
+  'landing.feat4.problem': {
+    ar: 'غموض الإيرادات اليومية، صعوبة حصر المصروفات النثرية للعيادة، وضياع مستحقات الطبيب أو مرتبات المساعدين.',
+    en: 'Uncertain daily revenue, unlogged petty expenses, and difficult partner/assistant compensation splits.',
+  },
+  'landing.feat4.solution': {
+    ar: 'تقارير مالية آلية تفصل الكشوفات والاستشارات والمصروفات، مع تقفيل الوردية اليومية بدقة المليم.',
+    en: 'Automated revenue ledger separating visits, procedures, and clinic expenses with exact shift closing.',
+  },
+  'landing.feat4.outcome': {
+    ar: 'رؤية مالية واضحة لأرباح العيادة، ومنع تسرب أي مبالغ نقدية، وإدارة رواتب ونسب الأطباء بكل نزاهة.',
+    en: 'Full clarity on clinic profits, zero cash leakages, and transparent payroll and commission accounting.',
+  },
+  'landing.feat4.previewTitle': {
+    ar: 'لوحة الحسابات والورديات المالية',
+    en: 'Financial Ledger & Shift Audit View',
+  },
+  'landing.feat4.previewRow1': {
+    ar: 'إغلاق شفت آلي بمطابقة الإيراد المحصل مع تذاكر الكشف',
+    en: 'Shift close matching collected cash to booked tickets',
+  },
+  'landing.feat4.previewRow2': {
+    ar: 'تسجيل المصروفات النثرية مع إرفاق صور الفواتير',
+    en: 'Petty cash expense logging with attached receipts',
+  },
+  'landing.feat4.previewRow3': {
+    ar: 'تقارير شهرية وسنوية لنمو الإيرادات وعدد المرضى',
+    en: 'Monthly and annual patient volume and growth metrics',
+  },
+  'landing.roles.eyebrow': {
+    ar: 'منظومة واحدة تربط الجميع',
+    en: 'Unified Clinical Ecosystem',
+  },
+  'landing.roles.title': {
+    ar: 'صلاحيات محكمة تناسب كل أفراد المنظومة الطبية',
+    en: 'Dedicated Workspaces for Every Role in the Practice',
+  },
+  'landing.roles.subtitle': {
+    ar: 'كل دور يرى بالضبط ما يحتاجه لإنجاز عمله دون فوضى ودون انتهاك خصوصية المريض أو أسرار العيادة.',
+    en: 'Each team member accesses exactly what they need to work smoothly, with zero clutter and complete medical privacy.',
+  },
+  'landing.roles.doctor.title': {
+    ar: 'الطبيب المعالج',
+    en: 'Practicing Doctor',
+  },
+  'landing.roles.doctor.badge': {
+    ar: 'تحكم سريري كامل',
+    en: 'Full Clinical Control',
+  },
+  'landing.roles.doctor.scope': {
+    ar: 'مساحة عمل متطورة تمنح الطبيب السيطرة التامة على الكشوفات، التاريخ المرضي، الروشتات، وتقارير العيادة المالية والتشغيلية.',
+    en: 'Dedicated clinical console giving the physician complete control over visits, medical history, prescriptions, and financials.',
+  },
+  'landing.roles.doctor.p1': {
+    ar: 'استدعاء المريض التالي بضغطة زر والاطلاع على الفحوصات والتحاليل.',
+    en: 'Call next patient with one click and review prior lab and diagnostic results.',
+  },
+  'landing.roles.doctor.p2': {
+    ar: 'إصدار روشتات إلكترونية معتمدة وإرسالها مباشرة لهاتف المريض.',
+    en: 'Issue authenticated e-prescriptions and deliver them directly to patient phones.',
+  },
+  'landing.roles.doctor.p3': {
+    ar: 'متابعة أداء العيادة والإيرادات وصافي الأرباح من أي مكان وفي أي وقت.',
+    en: 'Monitor clinic performance, daily revenue, and net profit remotely from anywhere.',
+  },
+  'landing.roles.reception.title': {
+    ar: 'مساعد وسكرتارية العيادة',
+    en: 'Clinic Assistant & Reception',
+  },
+  'landing.roles.reception.badge': {
+    ar: 'تشغيل يومي مبسط',
+    en: 'Streamlined Daily Operations',
+  },
+  'landing.roles.reception.scope': {
+    ar: 'واجهة مريحة ومباشرة تركز على تنظيم الحجوزات، طابور الانتظار، واستلام النقدية وإغلاق الوردية دون تعقيدات تقنية.',
+    en: 'Clear, uncluttered interface focused on booking, live queue check-in, fee collection, and daily shift balancing.',
+  },
+  'landing.roles.reception.p1': {
+    ar: 'تسجيل دخول المرضى وإصدار تذاكر الطابور وتأكيد الحجوزات الهاتفية.',
+    en: 'Check in arrivals, issue queue tickets, and confirm phone bookings.',
+  },
+  'landing.roles.reception.p2': {
+    ar: 'تحصيل الرسوم النقدية والإلكترونية وتسجيل المصروفات النثرية.',
+    en: 'Collect consultation fees and log clinic expenses in the shift register.',
+  },
+  'landing.roles.reception.p3': {
+    ar: 'حماية كاملة: لا يرى الملاحظات الطبية أو التشخيصات السريرية الخاصة بالمرضى.',
+    en: 'Complete privacy: cannot view private medical notes or diagnostic details.',
+  },
+  'landing.roles.patient.title': {
+    ar: 'المريض وأسرته',
+    en: 'Patient & Family',
+  },
+  'landing.roles.patient.badge': {
+    ar: 'متابعة صحية هادئة',
+    en: 'Peace of Mind Healthcare',
+  },
+  'landing.roles.patient.scope': {
+    ar: 'بوابة سهلة تتيح للمريض حجز موعده، معرفة موعد حضوره لتجنب الانتظار، والوصول لروشتاته وفحوصاته في أي لحظة.',
+    en: 'Accessible portal allowing patients to schedule visits, track waiting turns, and pull up past prescriptions anytime.',
+  },
+  'landing.roles.patient.p1': {
+    ar: 'حجز المواعيد مع الأطباء المعتمدين واختيار الوقت المناسب بسهولة.',
+    en: 'Book verified doctors and choose convenient clinic appointment slots.',
+  },
+  'landing.roles.patient.p2': {
+    ar: 'معرفة عدد المنتظرين أمامه في العيادة لتوفير وقت الانتظار.',
+    en: 'Check the real-time queue position before leaving home to save waiting time.',
+  },
+  'landing.roles.patient.p3': {
+    ar: 'سجل رقمي دائم لجميع الروشتات والتعليمات الطبية مع إمكانية مشاركتها مع الصيدلي.',
+    en: 'Permanent archive of e-prescriptions with easy pharmacy QR verification.',
+  },
+  'landing.roles.privacyNote': {
+    ar: 'تلتزم وصلة بأعلى معايير حماية البيانات والخصوصية الطبية المعمول بها في وزارة الصحة والجهات التنظيمية.',
+    en: 'Wasla enforces strict role-based data protection complying with national healthcare privacy standards.',
+  },
+  'landing.demo.eyebrow': {
+    ar: 'جرّب المنظومة الآن بنفسك',
+    en: 'Hands-On Interactive Experience',
+  },
+  'landing.demo.title': {
+    ar: 'محاكاة تفاعلية حية لتشغيل عيادتك على وصلة',
+    en: 'Live Practice Simulation: Test Wasla in Action',
+  },
+  'landing.demo.subtitle': {
+    ar: 'اختبر سهولة وسرعة النظام في الحجز، نداء الطابور، الكشف الطبي، وتقفيل الإيراد المالي.',
+    en: 'Experience how effortless it is to manage bookings, advance the queue, log consultations, and inspect revenue.',
+  },
+  'landing.demo.tabAppointments': {
+    ar: 'إدارة الحجوزات',
+    en: 'Appointments',
+  },
+  'landing.demo.tabQueue': {
+    ar: 'طابور الانتظار',
+    en: 'Live Queue',
+  },
+  'landing.demo.tabClinical': {
+    ar: 'الكشف السريري',
+    en: 'Clinical Record',
+  },
+  'landing.demo.tabFinance': {
+    ar: 'الحسابات والوردية',
+    en: 'Financial Shifts',
+  },
+  'landing.demo.selectHint': {
+    ar: 'اضغط على أي حجز لمعاينة كيف يراه كل من الطبيب والمساعد والمريض:',
+    en: 'Select any appointment to see how each role views the encounter:',
+  },
+  'landing.demo.inspectorTitle': {
+    ar: 'معاينة الصلاحيات المشتركة للحجز',
+    en: 'Multi-Role Permission Inspector',
+  },
+  'landing.demo.doctorSees': {
+    ar: 'ما يراه الطبيب:',
+    en: 'Doctor View:',
+  },
+  'landing.demo.receptionSees': {
+    ar: 'ما يراه مساعد العيادة:',
+    en: 'Receptionist View:',
+  },
+  'landing.demo.patientSees': {
+    ar: 'ما يراه المريض على هاتفه:',
+    en: 'Patient Mobile View:',
+  },
+  'landing.demo.pat4Name': {
+    ar: 'طارق عبد العزيز',
+    en: 'Tarek Abdelaziz',
+  },
+  'landing.demo.pat4Type': {
+    ar: 'كشف مستعجل',
+    en: 'Urgent Consultation',
+  },
+  'landing.demo.stageBooked': {
+    ar: 'محجوز بالجدول',
+    en: 'Scheduled',
+  },
+  'landing.demo.stageCheckedIn': {
+    ar: 'بالانتظار',
+    en: 'Checked In',
+  },
+  'landing.demo.stageInRoom': {
+    ar: 'داخل الكشف',
+    en: 'In Consultation',
+  },
+  'landing.demo.stageCompleted': {
+    ar: 'تم الانتهاء',
+    en: 'Completed',
+  },
+  'landing.demo.apt1Doc': {
+    ar: 'الملف الطبي كامل ومحرك الروشتة جاهز للاستدعاء الفوري.',
+    en: 'Full clinical chart and e-prescription engine ready for rapid entry.',
+  },
+  'landing.demo.apt1Rec': {
+    ar: 'تأكيد الحجز برقم الموبايل وإصدار تذكرة انتظار مرقمة.',
+    en: 'Phone confirmed booking with designated queue ticket ready.',
+  },
+  'landing.demo.apt1Pat': {
+    ar: 'إشعار تأكيد الموعد وخريطة العيادة ورابط تتبع الدور لحظياً.',
+    en: 'SMS booking confirmation with clinic location and live queue link.',
+  },
+  'landing.demo.apt2Doc': {
+    ar: 'المريض في صالة الانتظار منذ 10 دقائق، جاهز لنداء التالي.',
+    en: 'Patient waiting outside for 10 mins, ready for the next call.',
+  },
+  'landing.demo.apt2Rec': {
+    ar: 'تم تحصيل رسوم الكشف (350 ج.م) وطباعة إيصال النقدية.',
+    en: 'Consultation fee collected (350 EGP) and registered in cash drawer.',
+  },
+  'landing.demo.apt2Pat': {
+    ar: 'أمامك مريض واحد فقط، يرجى التواجد أمام غرفة الكشف.',
+    en: '1 patient ahead of you. Please be near the consultation room.',
+  },
+  'landing.demo.apt3Doc': {
+    ar: 'تسجيل التشخيص والضغط والنبض وإصدار الروشتة الإلكترونية.',
+    en: 'Entering diagnosis, vitals, and issuing authenticated e-prescription.',
+  },
+  'landing.demo.apt3Rec': {
+    ar: 'تحديث آلي: المريض داخل غرفة الكشف (لا يمكن إلغاء الحجز).',
+    en: 'Live indicator: patient inside consultation room (locked against changes).',
+  },
+  'landing.demo.apt3Pat': {
+    ar: 'أنت الآن بغرفة الكشف مع د. أحمد. روشتتك ستصلك فور اعتمادها.',
+    en: 'You are now in consultation. Your e-prescription will arrive shortly.',
+  },
+  'landing.demo.apt4Doc': {
+    ar: 'تم حفظ الكشف وإرسال الروشتة وتحديد موعد الاستشارة خلال أسبوع.',
+    en: 'Encounter saved, e-prescription dispatched, follow-up window set.',
+  },
+  'landing.demo.apt4Rec': {
+    ar: 'تم خروج المريض وتقفيل حسابه وإفساح الدور للحالة التالية.',
+    en: 'Encounter closed, receipt confirmed, queue advanced.',
+  },
+  'landing.demo.apt4Pat': {
+    ar: 'روشتتك الإلكترونية جاهزة برمز QR للصيدلية، واستشارتك سارية 7 أيام.',
+    en: 'Your QR e-prescription is ready on your phone with 7 days free follow-up.',
+  },
+  'landing.demo.queueNow': {
+    ar: 'الحالة الحالية في غرفة الكشف:',
+    en: 'Currently in Consultation Room:',
+  },
+  'landing.demo.queueCallNextBtn': {
+    ar: 'نداء الحالة التالية',
+    en: 'Call Next Patient',
+  },
+  'landing.demo.queueResetBtn': {
+    ar: 'إعادة ضبط المحاكاة',
+    en: 'Reset Simulation',
+  },
+  'landing.demo.queueServingBadge': {
+    ar: 'بالداخل',
+    en: 'In Room',
+  },
+  'landing.demo.queueWaitingBadge': {
+    ar: 'بالانتظار',
+    en: 'Waiting',
+  },
+  'landing.demo.queueDoneBadge': {
+    ar: 'اكتمل',
+    en: 'Done',
+  },
+  'landing.demo.clinTabNotes': {
+    ar: 'الملاحظات والشكوى',
+    en: 'Notes & Vitals',
+  },
+  'landing.demo.clinTabRx': {
+    ar: 'الروشتة الإلكترونية',
+    en: 'Prescription',
+  },
+  'landing.demo.clinTabLabs': {
+    ar: 'التحاليل والفحوصات',
+    en: 'Lab Orders',
+  },
+  'landing.demo.clinScopeBadge': {
+    ar: 'صلاحية خاصة بالطبيب فقط (مشفرة)',
+    en: 'Strict Doctor-Only Clearance (Encrypted)',
+  },
+  'landing.demo.clinComplaintTitle': {
+    ar: 'الشكوى السريرية وفحص الأعراض:',
+    en: 'Chief Clinical Complaint & Examination:',
+  },
+  'landing.demo.clinComplaintBody': {
+    ar: 'آلام متكررة بالبطن منذ 3 أيام مع انتفاخ مستمر بعد الوجبات الدسمة، مع استبعاد أي علامات جراحية حادة.',
+    en: 'Recurrent abdominal pain for 3 days with bloating after fatty meals; acute surgical abdomen ruled out.',
+  },
+  'landing.demo.clinRxSummary': {
+    ar: 'تم اعتماد صنفين علاجيين مع تحديد الجرعة ومواعيد الأكل بدقة.',
+    en: '2 therapeutic medications prescribed with timing and meal precautions.',
+  },
+  'landing.demo.clinLabSummary': {
+    ar: 'طلب تحليل صورة دم كاملة CBC وتحليل براز H.Pylori Ag.',
+    en: 'Ordered complete blood count (CBC) and stool H. Pylori antigen test.',
+  },
+  'landing.demo.finAllBranches': {
+    ar: 'جميع الفروع مجتمعة',
+    en: 'All Branches Combined',
+  },
+  'landing.demo.finMaadi': {
+    ar: 'فرع المعادي',
+    en: 'Maadi Branch',
+  },
+  'landing.demo.finNasr': {
+    ar: 'فرع مدينة نصر',
+    en: 'Nasr City Branch',
+  },
+  'landing.demo.finVisitsLbl': {
+    ar: 'إجمالي الكشوفات المسجلة',
+    en: 'Total Completed Visits',
+  },
+  'landing.demo.finRevenueLbl': {
+    ar: 'صافي التحصيل النقدي',
+    en: 'Net Cash Collected',
+  },
+  'landing.demo.currencyLabel': {
+    ar: 'ج.م',
+    en: 'EGP',
+  },
+  'landing.demo.finExpensesLbl': {
+    ar: 'مصروفات الوردية النثرية',
+    en: 'Logged Petty Expenses',
+  },
+  'landing.demo.finSalariesLbl': {
+    ar: 'مستحقات ورواتب الطاقم',
+    en: 'Staff & Assistant Payroll',
+  },
+  'landing.demo.finPayrollSynced': {
+    ar: 'محسوبة ومطابقة آلياً مع وردية اليوم',
+    en: 'Audited & synced with daily shift',
+  },
+  'landing.demo.finNote': {
+    ar: 'تُقفل الحسابات يومياً بتقرير غير قابل للتعديل يمنع أي تسرب مالي أو تضارب بين الطبيب والمساعد.',
+    en: 'Shifts lock into tamper-proof daily reconciliations preventing discrepancies between staff and doctor.',
+  },
+  'landing.pricing.eyebrow': {
+    ar: 'باقات واضحة وبسيطة',
+    en: 'Transparent & Simple Pricing',
+  },
+  'landing.pricing.title': {
+    ar: 'استثمر في هدوء عيادتك دون مصاريف خفية',
+    en: 'Invest in Clinic Peace of Mind with Zero Hidden Costs',
+  },
+  'landing.pricing.subtitle': {
+    ar: 'فترة تجريبية مجانية بالكامل تبدأ فور اعتماد حسابك. اختر الباقة المناسبة لحجم عيادتك وفروعك.',
+    en: 'Full free trial starting the moment your account is verified. Pick the plan suited to your practice volume.',
+  },
+  'landing.pricing.viewFullPricing': {
+    ar: 'عرض تفاصيل كافة الباقات والمقارنة الكاملة',
+    en: 'View Full Pricing Breakdown & Features',
+  },
+  'landing.pricing.fallbackText': {
+    ar: 'خطط اشتراك مرنة تبدأ من 200 ج.م شهرياً مع إمكانية إلغاء الاشتراك في أي وقت.',
+    en: 'Flexible subscription plans starting from 200 EGP/month with easy cancellation anytime.',
+  },
+  'landing.faq.eyebrow': {
+    ar: 'إجابات على تساؤلاتك',
+    en: 'Frequently Asked Questions',
+  },
+  'landing.faq.title': {
+    ar: 'الأسئلة الشائعة حول تشغيل منصة وصلة',
+    en: 'Common Questions About Running Wasla in Your Clinic',
+  },
+  'landing.faq.subtitle': {
+    ar: 'كل ما تحتاج معرفته عن بدء الاستخدام، تدريب المساعدين، وتأمين بيانات مرضاك.',
+    en: 'Everything you need to know about getting started, assistant onboarding, and medical data security.',
+  },
+  'landing.faq.q1': {
+    ar: 'هل يحتاج مساعد العيادة لخبرة تقنية مسبقة لتشغيل النظام؟',
+    en: 'Does my clinic assistant need prior technical skills to run the system?',
+  },
+  'landing.faq.a1': {
+    ar: 'إطلاقاً. صُممت واجهة الاستقبال لتكون في غاية البساطة والوضوح باللغة العربية، دون أي مصطلحات تقنية معقدة. يستطيع أي مساعد أو سكرتير البدء بالعمل وإصدار تذاكر الطابور بعد تدريب سريع لا يتجاوز 15 دقيقة.',
+    en: 'Not at all. The reception desk is built to be radically simple, clear, and in high-contrast Arabic without technical jargon. Any clinic assistant can master booking, ticketing, and shift close within 15 minutes.',
+  },
+  'landing.faq.q2': {
+    ar: 'هل يمكنني إدارة أكثر من عيادة أو أكثر من فرع بحساب واحد؟',
+    en: 'Can I manage multiple clinics or practice branches from one account?',
+  },
+  'landing.faq.a2': {
+    ar: 'نعم بكل تأكيد. تتيح لك وصلة إضافة فروعك المختلفة (مثل المعادي ومصر الجديدة) مع تعيين مساعدين مستقلين لكل فرع، ومتابعة جميع الحسابات والحجوزات من مكان واحد.',
+    en: 'Yes, seamlessly. Wasla allows you to manage multiple practice locations with dedicated receptionists per branch, while giving you unified clinical and financial control from your phone or computer.',
+  },
+  'landing.faq.q3': {
+    ar: 'كيف يرى المريض دوره في طابور العيادة دون الجلوس في الزحام؟',
+    en: 'How can patients track their queue position without waiting in a crowded room?',
+  },
+  'landing.faq.a3': {
+    ar: 'بمجرد تسجيل الحجز، يحصل المريض على تذكرة رقمية ورابط مباشر على هاتفه يوضح عدد المرضى المتبقين أمامه، مما يتيح له التواجد في العيادة قبل دوره مباشرة.',
+    en: 'Upon check-in, patients receive an instant digital ticket and mobile link displaying live remaining turns, allowing them to arrive right before their turn.',
+  },
+  'landing.faq.q4': {
+    ar: 'هل يمكن للصيدلي قراءة الروشتة والتأكد من صحتها؟',
+    en: 'How can pharmacists read and verify the e-prescription?',
+  },
+  'landing.faq.a4': {
+    ar: 'تحتوي كل روشتة إلكترونية صادرة من وصلة على رمز QR مشفر يمكن للصيدلي مسحه بكاميرا الهاتف للتحقق الفوري من اسم الطبيب وترخيصه وصحة الأدوية والجرعات دون أي لبس في قراءة الخط.',
+    en: 'Every prescription generated carries an authenticated QR code. Pharmacists can scan it with any camera to verify doctor credentials, medications, and doses with 100% legibility.',
+  },
+  'landing.faq.q5': {
+    ar: 'ما مدى أمان وسرية بيانات المرضى وسجلات العيادة؟',
+    en: 'How secure and confidential is patient medical data?',
+  },
+  'landing.faq.a5': {
+    ar: 'تُحفظ جميع البيانات في خوادم سحابية مشفرة بتشفير طبي صارم، مع عزل كامل لصلاحيات الوصول، بحيث لا يتمكن أي شخص من الاطلاع على الملاحظات والتشخيصات سوى الطبيب المعالج فقط.',
+    en: 'All clinical data is encrypted with enterprise-grade healthcare security. Strict role-based isolation guarantees only the treating physician can access confidential notes and diagnoses.',
+  },
+  'landing.faq.q6': {
+    ar: 'كيف تبدأ التجربة المجانية وماذا يحدث بعد انتهائها؟',
+    en: 'How does the free trial work and what happens when it ends?',
+  },
+  'landing.faq.a6': {
+    ar: 'تبدأ التجربة المجانية لمدة 20 يوماً فور اعتماد حساب الطبيب دون الحاجة لبطاقة بنكية. يمكنك تجربة كافة المميزات بحرية، ولن يتم خصم أي مبالغ ما لم تختر الاشتراك في باقة مدفوعة بنفسك.',
+    en: 'Your 20-day free trial activates automatically upon doctor verification with no credit card required. You can test all features freely with zero obligations.',
+  },
+  'landing.finalCta.title': {
+    ar: 'جاهز لتنظيم عيادتك وتوفير وقتك ووقت مرضاك؟',
+    en: 'Ready to Streamline Your Practice and Delight Your Patients?',
+  },
+  'landing.finalCta.subtitle': {
+    ar: 'انضم لمئات الأطباء والعيادات في مصر واستمتع بمنظومة طبية هادئة ومنضبطة تبدأ اليوم.',
+    en: 'Join leading physicians across Egypt and experience calm, disciplined practice management starting today.',
+  },
+  'landing.finalCta.primaryBtn': {
+    ar: 'أنشئ حساب طبيب مجاناً',
+    en: 'Create Free Doctor Account',
+  },
+  'landing.finalCta.secondaryBtn': {
+    ar: 'استكشف الباقات والأسعار',
+    en: 'Explore Pricing Plans',
+  },
+  'landing.footer.description': {
+    ar: 'المنظومة السحابية الطبية الذكية لإدارة العيادات، تنظيم طابور المرضى، الكشف السريري، والروشتات الإلكترونية في مصر.',
+    en: 'The smart cloud healthcare platform for clinic management, live patient queue, clinical records, and e-prescriptions in Egypt.',
+  },
+  'landing.footer.platformCol': {
+    ar: 'المنصة',
+    en: 'Platform',
+  },
+  'landing.footer.usersCol': {
+    ar: 'المستخدمون',
+    en: 'Portals',
+  },
+  'landing.footer.legalCol': {
+    ar: 'الدعم والقانوني',
+    en: 'Support & Legal',
+  },
+  'landing.footer.help': {
+    ar: 'مركز المساعدة والدعم',
+    en: 'Help & Support',
+  },
+  'landing.footer.privacy': {
+    ar: 'سياسة الخصوصية وحماية البيانات',
+    en: 'Privacy Policy',
+  },
+  'landing.footer.terms': {
+    ar: 'شروط وأحكام الاستخدام',
+    en: 'Terms of Service',
   },
 };

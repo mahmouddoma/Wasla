@@ -1,20 +1,18 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import gsap from 'gsap';
+import { firstValueFrom } from 'rxjs';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { CommercialCatalog, SubscriptionSelection, SubscriptionsApi } from '../../../../domains/subscriptions';
 import { AppHeader } from '../../../../shared/components/app-header/app-header';
-import { PlanSelectorComponent } from '../../../subscriptions/components/plan-selector/plan-selector.component';
+import { PlanSelectorComponent } from '../../../subscriptions';
 
 interface FaqItem {
-  questionAr: string;
-  questionEn: string;
-  answerAr: string;
-  answerEn: string;
+  questionKey: string;
+  answerKey: string;
   isOpen: boolean;
 }
 
@@ -32,6 +30,8 @@ export class PricingLandingComponent {
   private readonly router = inject(Router);
   private readonly api = inject(SubscriptionsApi);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
+  private observer: IntersectionObserver | null = null;
 
   readonly catalog = signal<CommercialCatalog | null>(null);
   readonly loading = signal(true);
@@ -39,59 +39,81 @@ export class PricingLandingComponent {
   readonly selection = signal<SubscriptionSelection | null>(null);
 
   readonly faqs = signal<FaqItem[]>([
-    {
-      questionAr: 'ما هي مدة التجربة المجانية للأطباء؟',
-      questionEn: 'How long is the doctor free trial?',
-      answerAr: 'توفر وصلة فترة تجربة مجانية كاملة مدتها 20 يوماً فور اعتماد بيانات الطبيب، تشمل كافة مميزات الباقة الأساسية من كشوفات وروشتات وسجلات مرضى بدون أي رسوم.',
-      answerEn: 'Wasla provides a 20-day full free trial upon doctor verification, covering all Starter clinical features including encounters, e-prescriptions, and patient charts with zero fees.',
-      isOpen: false,
-    },
-    {
-      questionAr: 'هل أحتاج إلى بطاقة بنكية للاشتراك أو بدء التجربة؟',
-      questionEn: 'Do I need a credit card to sign up or start the trial?',
-      answerAr: 'لا، المنصة لا تتطلب أي بطاقة ائتمانية. تفعيل الحسابات والتحصيل يتمان بالتنسيق المباشر مع إدارة وصلة وبدون أي خصم مالي تلقائي.',
-      answerEn: 'No credit card is required. Account activation and billing are coordinated directly with Wasla administration with zero automatic charges.',
-      isOpen: false,
-    },
-    {
-      questionAr: 'هل يمكنني تغيير الباقة أو الترقية في أي وقت؟',
-      questionEn: 'Can I upgrade or change my plan anytime?',
-      answerAr: 'نعم بكل تأكيد، يمكنك من خلال لوحة تحكم اشتراكك طلب ترقية باقتك أو تعديل دورة الدفع بالتنسيق المباشر مع فريق الدعم والإدارة.',
-      answerEn: 'Yes, you can request an upgrade or change your billing cycle anytime directly from your subscription workspace in coordination with our support team.',
-      isOpen: false,
-    },
-    {
-      questionAr: 'كيف يستفيد موظف الاستقبال أو مساعد العيادة من المنصة؟',
-      questionEn: 'How does clinic reception or staff use the platform?',
-      answerAr: 'توفر وصلة شاشات مبسطة وخالية من المصطلحات المعقدة مخصصة لمساعدي الأطباء لإدارة الحضور، تسجيل المرضى، وطباعة التذاكر دون الحاجة لأي خلفية تقنية سابقة.',
-      answerEn: 'Wasla offers radically simplified reception workspaces designed for clinic assistants to manage check-ins, queue tickets, and patient intake with zero tech jargon.',
-      isOpen: false,
-    },
-    {
-      questionAr: 'هل بيانات المرضى وسجلات العيادة مشفرة وآمنة؟',
-      questionEn: 'Are patient medical records encrypted and secure?',
-      answerAr: 'نعم، كافة البيانات السريرية والروشتات مشفرة بالكامل ومعزولة وفق أعلى معايير أمان البيانات الصحية HIPAA وحماية الخصوصية.',
-      answerEn: 'Yes, all clinical data, encounters, and prescriptions are strictly encrypted and isolated following international healthcare data protection and privacy standards.',
-      isOpen: false,
-    },
+    { questionKey: 'pricing.faqs.q1', answerKey: 'pricing.faqs.a1', isOpen: false },
+    { questionKey: 'pricing.faqs.q2', answerKey: 'pricing.faqs.a2', isOpen: false },
+    { questionKey: 'pricing.faqs.q3', answerKey: 'pricing.faqs.a3', isOpen: false },
+    { questionKey: 'pricing.faqs.q4', answerKey: 'pricing.faqs.a4', isOpen: false },
+    { questionKey: 'pricing.faqs.q5', answerKey: 'pricing.faqs.a5', isOpen: false },
   ]);
 
   constructor() {
-    void this.loadCatalog();
-
     afterNextRender(() => {
-      if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        return;
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       }
-      const heroItems = this.hostRef.nativeElement.querySelectorAll('.hero-stagger');
-      if (heroItems.length > 0) {
-        gsap.fromTo(
-          heroItems,
-          { opacity: 0, y: 16 },
-          { opacity: 1, y: 0, duration: 0.45, stagger: 0.07, ease: 'power2.out', clearProps: 'transform' },
-        );
-      }
+      this.animateHero();
+      this.setupScrollReveals();
     });
+    this.destroyRef.onDestroy(() => {
+      this.observer?.disconnect();
+      const host = this.hostRef.nativeElement;
+      gsap.killTweensOf(host.querySelectorAll('.hero-stagger, .hero-reassurance-row, .pillar-card, .faq-accordion-item, .cta-inner-container, .faq-answer-pane'));
+    });
+    void this.loadCatalog();
+  }
+
+  private prefersReducedMotion(): boolean {
+    return (
+      typeof window === 'undefined' ||
+      Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+    );
+  }
+
+  private animateHero(): void {
+    if (this.prefersReducedMotion()) return;
+    const host = this.hostRef.nativeElement;
+    const heroTargets = host.querySelectorAll('.hero-stagger, .hero-reassurance-row');
+    if (!heroTargets.length) return;
+    gsap.fromTo(
+      heroTargets,
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power3.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+    );
+  }
+
+  private setupScrollReveals(): void {
+    if (this.prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return;
+    const host = this.hostRef.nativeElement;
+    const targets: Array<{ el: Element; selector: string }> = [
+      { el: host.querySelector('#why-wasla')!, selector: '.pillar-card' },
+      { el: host.querySelector('#faq')!, selector: '.faq-accordion-item' },
+      { el: host.querySelector('.landing-bottom-cta')!, selector: '.cta-inner-container' },
+    ].filter((entry) => Boolean(entry.el));
+
+    if (!targets.length) return;
+    const revealed = new WeakSet<Element>();
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || revealed.has(entry.target)) continue;
+          revealed.add(entry.target);
+          this.observer?.unobserve(entry.target);
+          const match = targets.find((t) => t.el === entry.target);
+          if (!match) continue;
+          const children = entry.target.querySelectorAll(match.selector);
+          if (!children.length) continue;
+          gsap.fromTo(
+            children,
+            { y: 18, opacity: 0.92 },
+            { y: 0, opacity: 1, duration: 0.5, stagger: 0.07, ease: 'power2.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+          );
+        }
+      },
+      { threshold: 0.12 },
+    );
+    for (const target of targets) {
+      this.observer.observe(target.el);
+    }
   }
 
   async loadCatalog(): Promise<void> {
@@ -130,6 +152,18 @@ export class PricingLandingComponent {
         isOpen: idx === index ? !item.isOpen : false,
       })),
     );
+    if (!this.prefersReducedMotion()) {
+      queueMicrotask(() => {
+        const panes = this.hostRef.nativeElement.querySelectorAll('.faq-answer-pane');
+        if (panes.length) {
+          gsap.fromTo(
+            panes,
+            { y: -6, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.25, ease: 'power2.out', overwrite: 'auto', clearProps: 'transform,opacity' },
+          );
+        }
+      });
+    }
   }
 
   scrollToSection(id: string): void {

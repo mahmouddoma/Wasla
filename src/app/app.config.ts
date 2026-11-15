@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideRouter, TitleStrategy } from '@angular/router';
+import { provideRouter, TitleStrategy, withInMemoryScrolling } from '@angular/router';
 import { LocalizedTitleStrategy } from './core/i18n/localized-title-strategy';
 
 import { routes } from './app.routes';
@@ -14,7 +14,13 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authInterceptor, apiErrorToastInterceptor, subscriptionErrorInterceptor]),
     ),
-    provideRouter(routes),
+    provideRouter(
+      routes,
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'top',
+        anchorScrolling: 'enabled',
+      }),
+    ),
     { provide: TitleStrategy, useClass: LocalizedTitleStrategy },
   ],
 };

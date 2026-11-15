@@ -79,18 +79,54 @@ describe('Login', () => {
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
 
-  it('renders prominent registration cards for patient and doctor and pricing explore banner', async () => {
+  it('renders unified auth card with in-place mode switching and pricing links', async () => {
     const element: HTMLElement = fixture.nativeElement;
-    const patientReg = element.querySelector<HTMLAnchorElement>('#register-patient-btn');
-    const doctorReg = element.querySelector<HTMLAnchorElement>('#register-doctor-btn');
-    const pricingBanner = element.querySelector<HTMLAnchorElement>('#pricing-landing-link');
+    const patientReg = element.querySelector<HTMLElement>('#register-patient-btn');
+    const doctorReg = element.querySelector<HTMLElement>('#register-doctor-btn');
+    const pricingLink = element.querySelector<HTMLAnchorElement>('#pricing-landing-link');
 
+    expect(element.textContent).toContain('تسجيل الدخول إلى وصلة');
     expect(patientReg).not.toBeNull();
     expect(doctorReg).not.toBeNull();
-    expect(pricingBanner).not.toBeNull();
-    expect(patientReg?.getAttribute('href')).toBe('/register/patient');
-    expect(doctorReg?.getAttribute('href')).toBe('/register/doctor');
-    expect(pricingBanner?.getAttribute('href')).toBe('/pricing');
+    expect(pricingLink?.getAttribute('href')).toBe('/pricing');
+  });
+
+  it('switches between login, doctor registration, and patient registration in place without page reload', async () => {
+    expect(fixture.componentInstance.activeMode()).toBe('login');
+    expect(fixture.nativeElement.querySelector('app-doctor-registration')).toBeNull();
+
+    fixture.componentInstance.setMode('doctor');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.activeMode()).toBe('doctor');
+    expect(fixture.nativeElement.querySelector('app-doctor-registration')).not.toBeNull();
+
+    fixture.componentInstance.setMode('patient');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.activeMode()).toBe('patient');
+    expect(fixture.nativeElement.querySelector('app-patient-registration')).not.toBeNull();
+
+    fixture.componentInstance.setMode('login');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.activeMode()).toBe('login');
+    expect(fixture.nativeElement.querySelector('.auth-form')).not.toBeNull();
+  });
+
+  it('updates direction and copy when language changes', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.auth-unified-container')?.getAttribute('dir')).toBe('rtl');
+
+    TestBed.inject(LanguageService).setLanguage('en');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(element.querySelector('.auth-unified-container')?.getAttribute('dir')).toBe('ltr');
+    expect(element.textContent).toContain('Sign in to Wasla');
   });
 
   it('sends an approved doctor with a pending subscription to subscription review', async () => {
@@ -156,6 +192,7 @@ describe('Login', () => {
     expect(session.complete).toHaveBeenCalledWith(sampleUser);
     expect(navigateByUrl).toHaveBeenCalledWith(destination);
   });
+
   it('rejects an external return URL', async () => {
     route.snapshot.queryParamMap.get.mockImplementation((key) =>
       key === 'returnUrl' ? 'https://example.invalid/doctor/reservations' : null,
@@ -198,6 +235,7 @@ describe('Login', () => {
     expect(navigate).toHaveBeenCalledWith(['/workspace/doctor']);
     expect(session.clear).not.toHaveBeenCalled();
   });
+
   it('navigates to change-password when password change is required', async () => {
     session.requiresPasswordChange.mockReturnValue(true);
     fixture.componentInstance['model'].set({
@@ -246,6 +284,7 @@ describe('Login', () => {
     expect(toast.success).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
+
   it('routes a pending doctor to approval even when the session advertises operational permissions', async () => {
     doctorApi.onboardingStatus.mockReturnValue(of({ approvalStatus: 'Pending' }));
     fixture.componentInstance['model'].set({
