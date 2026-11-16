@@ -35,6 +35,7 @@ export type AuthMode = 'login' | 'doctor' | 'patient';
 })
 export class Login {
   protected readonly uiLanguage = inject(LanguageService);
+  readonly langService = this.uiLanguage;
   private readonly hostRef = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -47,6 +48,20 @@ export class Login {
   private readonly subscription = inject(SubscriptionState);
 
   readonly activeMode = signal<AuthMode>('login');
+  readonly showSignupSheet = signal(false);
+
+  openSignupSheet(): void {
+    this.showSignupSheet.set(true);
+  }
+
+  closeSignupSheet(): void {
+    this.showSignupSheet.set(false);
+  }
+
+  selectModeFromSheet(mode: AuthMode): void {
+    this.closeSignupSheet();
+    this.setMode(mode);
+  }
 
   constructor() {
     const initialMode = this.route.snapshot.data['initialMode'] as AuthMode | undefined;
@@ -209,5 +224,19 @@ export class Login {
 
   protected togglePassword(): void {
     this.showPassword.update((visible) => !visible);
+  }
+
+  protected fillDemo(role: 'doctor' | 'patient'): void {
+    if (role === 'doctor') {
+      this.model.set({
+        identifier: 'dr.mona@wasla-demo.invalid',
+        password: 'Password123!',
+      });
+    } else {
+      this.model.set({
+        identifier: 'patient.ahmed@wasla-demo.invalid',
+        password: 'Password123!',
+      });
+    }
   }
 }

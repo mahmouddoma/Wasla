@@ -85,6 +85,55 @@
       </button>
     </div>
 
+    <!-- Mobile Reception Practice Context Drawer -->
+    @if (isReception()) {
+      <div class="sidebar-practice-context" [dir]="langService.dir()">
+        <span class="sidebar-practice-label">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M9 17h6" />
+          </svg>
+          <span>{{ 'workspace.currentPractice' | t }}</span>
+        </span>
+        <div class="sidebar-practice-wrap">
+          <select
+            id="sidebar-reception-current-practice"
+            class="sidebar-practice-select"
+            [value]="practiceContext.currentPracticeId()"
+            [disabled]="practiceContext.isLoading() || !practiceContext.practices().length"
+            (change)="selectPractice($event)"
+            [attr.aria-label]="'workspace.currentPractice' | t"
+          >
+            @if (!practiceContext.currentPracticeId()) {
+              <option value="">{{ 'reservations.choose' | t }}</option>
+            }
+            @for (practice of practiceContext.practices(); track practice.id) {
+              <option
+                [value]="practice.id"
+                [selected]="practice.id === practiceContext.currentPracticeId()"
+              >
+                {{
+                  (langService.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr) ||
+                    ('ui.full.762' | t)
+                }}
+              </option>
+            }
+          </select>
+          <svg
+            class="sidebar-select-chevron"
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+    }
+
     <!-- Navigation List -->
     <nav class="sidebar-nav">
       @for (section of navigationSections(); track section.id) {

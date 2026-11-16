@@ -417,4 +417,15 @@ export class ReservationWorkspaceComponent implements OnInit {
   openArrival(reservation: Reservation | string): void {
     void this.store.openArrival(reservation);
   }
+
+  inspectReservation(reservation: Reservation): void {
+    const practiceId = reservation.doctorPracticeId || reservation.practice?.id;
+    if (this.store.scoped() && practiceId && this.store.practiceId() !== practiceId) {
+      void this.store.selectPractice(practiceId).then(() => {
+        void this.store.inspect(reservation.reservationId, reservation);
+      });
+      return;
+    }
+    void this.store.inspect(reservation.reservationId, reservation);
+  }
 }

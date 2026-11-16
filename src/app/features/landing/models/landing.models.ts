@@ -4,6 +4,22 @@ export type DemoModeId = 'appointments' | 'queue' | 'clinical' | 'finance';
 export type RoleTabId = 'doctor' | 'reception' | 'patient';
 export type ClinicalSubTabId = 'notes' | 'rx' | 'labs';
 
+export interface WhyWaslaBenefit {
+  readonly id: string;
+  readonly iconClass: string;
+  readonly titleKey: string;
+  readonly descKey: string;
+}
+
+export interface HowItWorksStep {
+  readonly num: string;
+  readonly titleKey: string;
+  readonly descKey: string;
+  readonly actionKey: string;
+  readonly outcomeKey: string;
+  readonly iconClass: string;
+}
+
 export interface JourneyStage {
   readonly id: JourneyStageId;
   readonly numKey: string;

@@ -33,7 +33,7 @@
     </div>
 
     <!-- Role & Permission-Aware Navigation (Desktop) -->
-    @if (roleNavLinks().length > 0) {
+    @if (!minimal() && roleNavLinks().length > 0) {
       <nav class="header-role-nav d-none d-lg-flex" [attr.aria-label]="(user() ? 'sidebar.workspace' : 'landing.nav.primaryAria') | t">
         @for (item of roleNavLinks(); track item.route) {
           @if (item.isRoute) {
@@ -188,6 +188,12 @@
           <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
           <span class="logout-label">{{ 'common.logout' | t }}</span>
         </button>
+      } @else if (minimal()) {
+        <!-- Minimal Auth Mode: Clean Home Link -->
+        <a routerLink="/" class="btn-header-back-home" [attr.aria-label]="'login.backToHome' | t">
+          <i class="fa-solid fa-house" aria-hidden="true"></i>
+          <span>{{ 'login.backToHome' | t }}</span>
+        </a>
       } @else {
         <!-- Guest Actions (Unified With Landing Navbar) -->
         <a
@@ -204,7 +210,7 @@
           routerLink="/register/doctor"
           (click)="navigateTo('/register/doctor', $event)"
           routerLinkActive="is-active-cta"
-          class="btn-header-register"
+          class="btn-header-register d-none d-lg-inline-flex"
           id="header-start-cta"
         >
           <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>

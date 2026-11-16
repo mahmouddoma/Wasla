@@ -3,12 +3,6 @@
   [class.reception]="store.actor() === 'Reception'"
   [dir]="language.dir()"
 >
-  @if (store.actor() !== 'Reception') {
-    <div class="ambient-glow-mesh" aria-hidden="true">
-      <div class="ambient-circle circle-teal"></div>
-      <div class="ambient-circle circle-navy"></div>
-    </div>
-  }
   <!-- ── Standardized Page Header ────────────────────────────────────── -->
   <app-page-header
     [heading]="
@@ -89,9 +83,6 @@
               <div class="table-header-meta">
                 @if (!store.loading() && !store.listFailed()) {
                   <span class="count-badge">
-                    @if (store.actor() !== 'Reception') {
-                      <span class="pulse-dot"></span>
-                    }
                     <span>{{ store.page().totalCount }} {{ 'reservations.count' | t }}</span>
                   </span>
                 }
@@ -124,7 +115,7 @@
                     >
                       <option value="">{{ 'reservations.choose' | t }}</option>
                       @for (p of store.practices(); track p.id) {
-                        <option [value]="p.id">{{ label(p) }}</option>
+                        <option [value]="p.id" [selected]="p.id === store.practiceId()">{{ label(p) }}</option>
                       }
                     </select>
                   </div>
@@ -269,33 +260,37 @@
                 @if (store.actor() === 'Patient' || store.actor() === 'Doctor') {
                   <div class="reservation-view-filters">
                     <div class="field-group">
-                      <label class="field-label"
-                        >{{ 'reservations.view' | t
-                        }}<select
-                          class="field-select"
-                          [value]="store.query().view ?? ''"
-                          (change)="setFilter('view', $event)"
-                        >
-                          @for (v of ['Upcoming', 'History', 'Archived', 'All']; track v) {
-                            <option [value]="v">{{ 'reservations.' + v | t }}</option>
-                          }
-                        </select></label
+                      <label class="field-label" for="filter-view">
+                        <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                        <span>{{ 'reservations.view' | t }}</span>
+                      </label>
+                      <select
+                        id="filter-view"
+                        class="field-select"
+                        [value]="store.query().view ?? ''"
+                        (change)="setFilter('view', $event)"
                       >
+                        @for (v of ['Upcoming', 'History', 'Archived', 'All']; track v) {
+                          <option [value]="v">{{ 'reservations.' + v | t }}</option>
+                        }
+                      </select>
                     </div>
                     <div class="field-group">
-                      <label class="field-label"
-                        >{{ 'reservations.patient' | t
-                        }}<select
-                          class="field-select"
-                          [value]="store.query().patientId ?? ''"
-                          (change)="setFilter('patientId', $event)"
-                        >
-                          <option value="">{{ 'reservations.All' | t }}</option>
-                          @for (p of viewPatients(); track p[0]) {
-                            <option [value]="p[0]">{{ label(p[1]) }}</option>
-                          }
-                        </select></label
+                      <label class="field-label" for="filter-patient">
+                        <i class="fa-solid fa-user-injured" aria-hidden="true"></i>
+                        <span>{{ 'reservations.patient' | t }}</span>
+                      </label>
+                      <select
+                        id="filter-patient"
+                        class="field-select"
+                        [value]="store.query().patientId ?? ''"
+                        (change)="setFilter('patientId', $event)"
                       >
+                        <option value="">{{ 'reservations.All' | t }}</option>
+                        @for (p of viewPatients(); track p[0]) {
+                          <option [value]="p[0]">{{ label(p[1]) }}</option>
+                        }
+                      </select>
                     </div>
                   </div>
                 } @else {
@@ -342,8 +337,12 @@
                 }
               </div>
 
-              @if (store.actor() === 'Reception') {
-                <details class="advanced-filters">
+              @if (store.actor() === 'Reception' || store.actor() === 'Doctor') {
+                <details
+                  class="advanced-filters"
+                  [class.advanced-filters-doctor]="store.actor() === 'Doctor'"
+                  [attr.open]="hasActiveFilters() ? '' : null"
+                >
                   <summary class="advanced-filters-summary">
                     <div class="summary-title-box">
                       <i class="fa-solid fa-sliders" aria-hidden="true"></i>
@@ -362,7 +361,7 @@
                   <div class="field-group">
                     <label class="field-label" for="filter-status">
                       <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
-                      {{ 'reservations.status' | t }}
+                      <span>{{ 'reservations.status' | t }}</span>
                     </label>
                     <select
                       id="filter-status"
@@ -380,41 +379,11 @@
                     </select>
                   </div>
 
-                  <div class="field-group">
-                    <label class="field-label" for="filter-from">
-                      <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                      {{ 'reservations.from' | t }}
-                    </label>
-                    <input
-                      id="filter-from"
-                      type="date"
-                      dir="ltr"
-                      class="field-input date-input"
-                      [value]="store.query().fromDate ?? ''"
-                      (change)="setFilter('fromDate', $event)"
-                    />
-                  </div>
-
-                  <div class="field-group">
-                    <label class="field-label" for="filter-to">
-                      <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                      {{ 'reservations.to' | t }}
-                    </label>
-                    <input
-                      id="filter-to"
-                      type="date"
-                      dir="ltr"
-                      class="field-input date-input"
-                      [value]="store.query().toDate ?? ''"
-                      (change)="setFilter('toDate', $event)"
-                    />
-                  </div>
-
                   @if (store.actor() !== 'Patient') {
                     <div class="field-group">
                       <label class="field-label" for="filter-source">
                         <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
-                        {{ 'reservations.source' | t }}
+                        <span>{{ 'reservations.source' | t }}</span>
                       </label>
                       <select
                         id="filter-source"
@@ -434,6 +403,38 @@
                       </select>
                     </div>
                   }
+
+                  <div class="filter-dates-pair">
+                    <div class="field-group">
+                      <label class="field-label" for="filter-from">
+                        <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                        <span>{{ 'reservations.from' | t }}</span>
+                      </label>
+                      <input
+                        id="filter-from"
+                        type="date"
+                        dir="ltr"
+                        class="field-input date-input"
+                        [value]="store.query().fromDate ?? ''"
+                        (change)="setFilter('fromDate', $event)"
+                      />
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="filter-to">
+                        <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                        <span>{{ 'reservations.to' | t }}</span>
+                      </label>
+                      <input
+                        id="filter-to"
+                        type="date"
+                        dir="ltr"
+                        class="field-input date-input"
+                        [value]="store.query().toDate ?? ''"
+                        (change)="setFilter('toDate', $event)"
+                      />
+                    </div>
+                  </div>
 
                   @if (store.scoped()) {
                     <div class="field-group">
@@ -651,13 +652,17 @@
                     <tr
                       class="table-row"
                       [class.is-selected-row]="store.detail()?.reservationId === r.reservationId"
+                      (click)="inspectReservation(r)"
                     >
                       @if (store.actor() !== 'Reception') {
                         <td class="td-ref">
                           <span class="mobile-cell-label" aria-hidden="true">{{
                             'reservations.reference' | t
                           }}</span>
-                          <span class="ref-badge" dir="ltr">{{ r.reference }}</span>
+                          <span class="ref-badge" dir="ltr">
+                            <i class="fa-solid fa-hashtag ref-hash-icon" aria-hidden="true"></i>
+                            <span>{{ r.reference }}</span>
+                          </span>
                         </td>
                       }
                       <td class="td-patient">
@@ -684,17 +689,20 @@
                           </div>
                         </td>
                       }
-                      <td class="td-appointment" dir="ltr">
+                      <td class="td-appointment">
                         <span class="mobile-cell-label" aria-hidden="true">{{
                           'reservations.appointment' | t
                         }}</span>
                         <div class="appointment-datetime-cell">
-                          <span class="cell-date">{{ r.appointment.businessDate }}</span>
-                          <span class="cell-time-tag">
+                          <span class="cell-time-tag" dir="ltr">
                             <i class="fa-regular fa-clock" aria-hidden="true"></i>
                             <span>{{
                               r.appointment.scheduledTime || r.appointment.slotStartTime
                             }}</span>
+                          </span>
+                          <span class="cell-date" dir="ltr">
+                            <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                            <span>{{ r.appointment.businessDate }}</span>
                           </span>
                         </div>
                       </td>
@@ -733,7 +741,7 @@
                           <button
                             type="button"
                             class="btn-arrival-action btn btn-primary"
-                            (click)="openArrival(r)"
+                            (click)="openArrival(r); $event.stopPropagation()"
                             [disabled]="store.busy()"
                           >
                             <i class="fa-solid fa-user-check" aria-hidden="true"></i>
@@ -743,7 +751,7 @@
                         <button
                           type="button"
                           class="btn-inspect-action"
-                          (click)="store.inspect(r.reservationId)"
+                          (click)="inspectReservation(r); $event.stopPropagation()"
                           [disabled]="store.busy()"
                           [title]="
                             (store.actor() === 'Reception'
@@ -915,6 +923,11 @@
 
       <!-- Detail Pane (Master-Detail side-by-side next to the table) -->
       @if (hasActiveDetail()) {
+        <div
+          class="reservations-detail-backdrop"
+          (click)="store.close()"
+          aria-hidden="true"
+        ></div>
         <aside class="reservations-detail-pane" [attr.aria-label]="drawerTitle()">
           <header class="detail-pane-header">
             <div class="detail-pane-title-wrap">

@@ -1,10 +1,49 @@
-<div class="auth-unified-container" [class.mode-register]="activeMode() !== 'login'" [dir]="uiLanguage.dir()">
-  <!-- Top Segmented Mode Bar -->
-  <div class="auth-mode-segmented-bar" role="tablist" [attr.aria-label]="'login.title' | t">
+<div
+  class="auth-right-container"
+  [class.mode-register]="activeMode() !== 'login'"
+  [dir]="langService.dir()"
+>
+  <!-- Top Utilities Bar (Brand on Right, Language & Home on Left in RTL) -->
+  <header class="auth-top-header">
+    <a routerLink="/" class="auth-brand-link" [title]="'common.appName' | t">
+      <img
+        src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+        width="36"
+        height="36"
+        alt=""
+        class="brand-icon-img"
+      />
+      <div class="brand-text-stack">
+        <strong class="brand-title-ar">{{ 'common.appName' | t }}</strong>
+        <small class="brand-subtitle-ar">{{ 'common.platformSubtitle' | t }}</small>
+      </div>
+    </a>
+
+    <div class="auth-top-nav-cluster">
+      <a routerLink="/" class="btn-nav-home" [attr.aria-label]="'common.home' | t">
+        <i class="fa-solid fa-house nav-icon" aria-hidden="true"></i>
+        <span>{{ 'common.home' | t }}</span>
+      </a>
+      <span class="nav-divider" aria-hidden="true"></span>
+      <button
+        type="button"
+        class="btn-nav-lang"
+        (click)="langService.toggleLanguage()"
+        [attr.aria-label]="langService.t('lang.switchLabel')"
+      >
+        <i class="fa-solid fa-globe nav-icon" aria-hidden="true"></i>
+        <span>{{ langService.isRtl() ? 'English' : 'العربية' }}</span>
+        <span class="lang-code-badge">{{ langService.isRtl() ? 'EN' : 'عربي' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Desktop Segmented Mode Switcher (Pill with 3 tabs) - Hidden on Mobile -->
+  <div class="auth-mode-pill-bar d-none d-md-flex" role="tablist" [attr.aria-label]="'login.title' | t">
     <button
       type="button"
       role="tab"
-      class="mode-switch-btn"
+      class="mode-pill-btn"
       [class.active]="activeMode() === 'login'"
       [attr.aria-selected]="activeMode() === 'login'"
       (click)="setMode('login')"
@@ -16,50 +55,59 @@
     <button
       type="button"
       role="tab"
-      class="mode-switch-btn"
+      class="mode-pill-btn"
       [class.active]="activeMode() === 'doctor'"
       [attr.aria-selected]="activeMode() === 'doctor'"
       (click)="setMode('doctor')"
       id="mode-tab-doctor"
     >
       <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
-      <span>{{ 'auth.mode.doctor' | t }}</span>
+      <span>{{ 'login.accountDoctor' | t }}</span>
     </button>
     <button
       type="button"
       role="tab"
-      class="mode-switch-btn"
+      class="mode-pill-btn"
       [class.active]="activeMode() === 'patient'"
       [attr.aria-selected]="activeMode() === 'patient'"
       (click)="setMode('patient')"
       id="mode-tab-patient"
     >
       <i class="fa-solid fa-user" aria-hidden="true"></i>
-      <span>{{ 'auth.mode.patient' | t }}</span>
+      <span>{{ 'login.accountPatient' | t }}</span>
     </button>
   </div>
 
   @if (activeMode() === 'login') {
-    <div class="auth-form-wrap">
-      <!-- Minimal Authentication Header -->
-      <header class="auth-login-header">
-        <a routerLink="/" class="login-brand-mark" [title]="'login.backToHome' | t">
-          <img
-            src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
-            width="46"
-            height="46"
-            [alt]="'common.appName' | t"
-          />
-        </a>
-        <h1 class="login-title">{{ 'login.minimalTitle' | t }}</h1>
-        <p class="login-subtitle">{{ 'login.minimalSubtitle' | t }}</p>
-      </header>
+    <div class="auth-form-card">
+      <!-- Centered Brand Emblem -->
+      <div class="form-center-brand" aria-hidden="true">
+        <img
+          src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+          width="48"
+          height="48"
+          alt=""
+        />
+      </div>
+
+      <!-- Form Heading & Subtitle -->
+      <div class="form-intro-header">
+        <h1 class="form-title">{{ 'login.minimalTitle' | t }}</h1>
+        <p class="form-subtitle">{{ 'login.subheading' | t }}</p>
+      </div>
 
       <!-- Status Notices -->
       @if (successStatus === 'patient-registered' || successStatus === 'patient-activated') {
         <div class="form-notice success welcome-card" role="status">
           <div class="welcome-card__icon-box" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
@@ -73,7 +121,14 @@
       @if (successStatus === 'doctor-registered') {
         <div class="form-notice success welcome-card" role="status">
           <div class="welcome-card__icon-box" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
@@ -84,49 +139,33 @@
           </div>
         </div>
       }
-      @if (successStatus === 'password-changed') {
-        <div class="form-notice success welcome-card" role="status">
-          <div class="welcome-card__icon-box" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </div>
-          <div class="welcome-card__body">
-            <p class="welcome-card__text">{{ 'ui.full.249' | t }}</p>
-          </div>
-        </div>
-      }
-      @if (successStatus === 'password-reset') {
-        <div class="form-notice success welcome-card" role="status">
-          <div class="welcome-card__icon-box" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </div>
-          <div class="welcome-card__body">
-            <p class="welcome-card__text">{{ 'ui.full.250' | t }}</p>
-          </div>
-        </div>
-      }
 
       <!-- Focused Authentication Form -->
       <form class="auth-form" (submit)="onSubmit($event)" novalidate>
+        <!-- Field 1: Email / Username -->
         <div class="form-group">
-          <label class="form-label" for="login-identifier">{{ 'login.usernameLabel' | t }}</label>
+          <label class="form-label" for="login-identifier">{{ 'login.emailLabel' | t }}</label>
           <div class="input-control">
             <input
               id="login-identifier"
               type="text"
               autocomplete="username"
               [formField]="loginForm.identifier"
-              [placeholder]="'login.usernamePlaceholder' | t"
+              placeholder="dr.mona@wasla-demo.com"
             />
-            <span class="input-trailing-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
+            <span class="input-icon-start" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
             </span>
           </div>
@@ -140,10 +179,13 @@
           }
         </div>
 
+        <!-- Field 2: Password -->
         <div class="form-group">
           <div class="label-row">
             <label class="form-label" for="login-password">{{ 'login.passwordLabel' | t }}</label>
-            <a routerLink="/forgot-password" class="forgot-link">{{ 'login.forgotPassword' | t }}</a>
+            <a routerLink="/forgot-password" class="forgot-link">{{
+              'login.forgotPassword' | t
+            }}</a>
           </div>
           <div class="input-control password-control">
             <input
@@ -151,17 +193,11 @@
               [type]="showPassword() ? 'text' : 'password'"
               autocomplete="current-password"
               [formField]="loginForm.password"
-              [placeholder]="'login.passwordPlaceholder' | t"
+              placeholder="••••••••••••••"
             />
-            <span class="input-trailing-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </span>
             <button
               type="button"
-              class="btn-toggle-pwd"
+              class="btn-toggle-visibility"
               (click)="togglePassword()"
               [attr.aria-pressed]="showPassword()"
               [attr.aria-label]="
@@ -169,13 +205,35 @@
               "
             >
               @if (showPassword()) {
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+                  />
+                  <path
+                    d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+                  />
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               } @else {
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
@@ -192,56 +250,54 @@
           }
         </div>
 
+        <!-- Submit Button -->
         <button
           id="login-submit-btn"
-          class="btn-login-submit"
+          class="btn-login-action"
           type="submit"
           [disabled]="isSubmitting()"
         >
           @if (isSubmitting()) {
             <span>{{ 'login.submitting' | t }}</span>
           } @else {
+            <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
             <span>{{ 'login.submit' | t }}</span>
-            <svg class="login-arrow-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
           }
         </button>
       </form>
 
-      <!-- Account Creation & Pricing Footer Links -->
-      <footer class="login-account-footer">
-        <p class="account-footer-label">{{ 'login.newToWasla' | t }}</p>
-        <div class="account-footer-links">
-          <button
-            type="button"
-            id="register-doctor-btn"
-            (click)="setMode('doctor')"
-            class="footer-reg-link"
-          >
-            <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
-            <span>{{ 'register.doctorTitle' | t }}</span>
-          </button>
-          <button
-            type="button"
-            id="register-patient-btn"
-            (click)="setMode('patient')"
-            class="footer-reg-link"
-          >
-            <i class="fa-solid fa-user" aria-hidden="true"></i>
-            <span>{{ 'register.patientTitle' | t }}</span>
-          </button>
-        </div>
-        <div class="footer-secondary-nav">
-          <a id="pricing-landing-link" routerLink="/pricing" class="footer-plain-link">
-            {{ 'pricing.navPricing' | t }}
-          </a>
-          <span class="footer-dot" aria-hidden="true">•</span>
-          <a routerLink="/" class="footer-plain-link">
-            {{ 'login.backToHome' | t }}
-          </a>
-        </div>
-      </footer>
+      <!-- Horizontal Divider -->
+      <div class="auth-or-separator" aria-hidden="true">
+        <span class="separator-line"></span>
+        <span class="separator-text">{{ 'login.orNewAccount' | t }}</span>
+        <span class="separator-line"></span>
+      </div>
+
+      <!-- Secondary Registration Buttons (Desktop Grid) -->
+      <div class="auth-signup-actions-grid d-none d-md-grid">
+        <button type="button" class="btn-signup-pill" (click)="setMode('doctor')">
+          <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+          <span>{{ 'register.doctorTitle' | t }}</span>
+        </button>
+        <button type="button" class="btn-signup-pill" (click)="setMode('patient')">
+          <i class="fa-solid fa-user" aria-hidden="true"></i>
+          <span>{{ 'register.patientTitle' | t }}</span>
+        </button>
+      </div>
+
+      <!-- Mobile Dedicated Account Creation Trigger (< 768px) -->
+      <div class="mobile-signup-cta-wrap d-md-none">
+        <button type="button" class="btn-mobile-open-sheet" (click)="openSignupSheet()">
+          <span class="cta-icon-box" aria-hidden="true">
+            <i class="fa-solid fa-user-plus"></i>
+          </span>
+          <span class="cta-text-group">
+            <strong class="cta-title">{{ 'auth.mobile.createNewTrigger' | t }}</strong>
+            <small class="cta-subtitle">{{ 'auth.mobile.sheetSubtitle' | t }}</small>
+          </span>
+          <i class="fa-solid fa-chevron-up cta-chevron" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
   } @else if (activeMode() === 'doctor') {
     <div class="auth-embedded-wrap">
@@ -250,6 +306,55 @@
   } @else if (activeMode() === 'patient') {
     <div class="auth-embedded-wrap">
       <app-patient-registration (backToLogin)="setMode('login')" (switchRole)="setMode($event)" />
+    </div>
+  }
+
+  <!-- Mobile Bottom Sheet for Role Selection -->
+  @if (showSignupSheet()) {
+    <div class="mobile-sheet-backdrop" (click)="closeSignupSheet()" aria-hidden="true"></div>
+    <div class="mobile-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="mobileSheetTitle">
+      <div class="sheet-drag-handle" aria-hidden="true"></div>
+      <div class="sheet-header">
+        <div class="sheet-title-group">
+          <h3 id="mobileSheetTitle" class="sheet-title">{{ 'auth.mobile.sheetTitle' | t }}</h3>
+          <p class="sheet-subtitle">{{ 'auth.mobile.sheetSubtitle' | t }}</p>
+        </div>
+        <button
+          type="button"
+          class="btn-sheet-close"
+          (click)="closeSignupSheet()"
+          [attr.aria-label]="'common.close' | t"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="sheet-options-list">
+        <button type="button" class="sheet-option-card doctor-option" (click)="selectModeFromSheet('doctor')">
+          <div class="option-icon-box doctor-icon" aria-hidden="true">
+            <i class="fa-solid fa-user-doctor"></i>
+          </div>
+          <div class="option-text-group">
+            <strong class="option-title">{{ 'auth.mobile.doctorTitle' | t }}</strong>
+            <span class="option-desc">{{ 'auth.mobile.doctorSub' | t }}</span>
+          </div>
+          <span class="option-arrow" aria-hidden="true">
+            <i class="fa-solid fa-chevron-left"></i>
+          </span>
+        </button>
+
+        <button type="button" class="sheet-option-card patient-option" (click)="selectModeFromSheet('patient')">
+          <div class="option-icon-box patient-icon" aria-hidden="true">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="option-text-group">
+            <strong class="option-title">{{ 'auth.mobile.patientTitle' | t }}</strong>
+            <span class="option-desc">{{ 'auth.mobile.patientSub' | t }}</span>
+          </div>
+          <span class="option-arrow" aria-hidden="true">
+            <i class="fa-solid fa-chevron-left"></i>
+          </span>
+        </button>
+      </div>
     </div>
   }
 </div>

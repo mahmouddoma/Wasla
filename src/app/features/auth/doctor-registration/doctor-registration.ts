@@ -1,6 +1,6 @@
 import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import {
   FormField,
   email,
@@ -115,6 +115,17 @@ export class DoctorRegistration {
   readonly personalIdBackImage = signal<File | undefined>(undefined);
   readonly syndicateCardFrontImage = signal<File | undefined>(undefined);
   readonly syndicateCardBackImage = signal<File | undefined>(undefined);
+
+  readonly requiredDocsUploadedCount = computed(() => {
+    let count = 0;
+    if (this.personalIdFrontImage()) count++;
+    if (this.personalIdBackImage()) count++;
+    if (this.syndicateCardFrontImage()) count++;
+    return count;
+  });
+
+  readonly allRequiredDocsUploaded = computed(() => this.requiredDocsUploadedCount() === 3);
+
   readonly isSubmitting = signal(false);
   readonly showPasswords = signal(false);
   readonly filesError = signal('');
@@ -153,22 +164,45 @@ export class DoctorRegistration {
     );
   }
 
+  private scrollToTop(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  private scrollToFirstInvalid(): void {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        const target = document.querySelector<HTMLElement>(
+          '.field-error, .registration-form input.ng-invalid, .registration-form select.ng-invalid',
+        );
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+    }
+  }
+
   nextStep(): void {
     this.stepNotice.set('');
     if (this.currentStep() === 1) {
       if (!this.isStep1Valid()) {
         this.step1Attempted.set(true);
         this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+        this.scrollToFirstInvalid();
         return;
       }
       this.currentStep.set(2);
+      this.scrollToTop();
     } else if (this.currentStep() === 2) {
       if (!this.isStep2Valid()) {
         this.step2Attempted.set(true);
         this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+        this.scrollToFirstInvalid();
         return;
       }
       this.currentStep.set(3);
+      this.scrollToTop();
     }
   }
 
@@ -176,8 +210,10 @@ export class DoctorRegistration {
     this.stepNotice.set('');
     if (this.currentStep() === 3) {
       this.currentStep.set(2);
+      this.scrollToTop();
     } else if (this.currentStep() === 2) {
       this.currentStep.set(1);
+      this.scrollToTop();
     }
   }
 
@@ -186,12 +222,15 @@ export class DoctorRegistration {
     this.stepNotice.set('');
     if (target < this.currentStep()) {
       this.currentStep.set(target);
+      this.scrollToTop();
       return;
     }
     if (target === 2 && this.isStep1Valid()) {
       this.currentStep.set(2);
+      this.scrollToTop();
     } else if (target === 3 && this.isStep1Valid() && this.isStep2Valid()) {
       this.currentStep.set(3);
+      this.scrollToTop();
     } else {
       if (!this.isStep1Valid()) {
         this.step1Attempted.set(true);
@@ -199,6 +238,7 @@ export class DoctorRegistration {
         this.step2Attempted.set(true);
       }
       this.stepNotice.set(this.uiLanguage.t('register.stepValidationNotice'));
+      this.scrollToFirstInvalid();
     }
   }
 

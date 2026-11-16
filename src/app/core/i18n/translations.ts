@@ -2558,6 +2558,17 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'The exam room is ready to receive the next patient',
   },
   'tickets.queue.statNow': { ar: 'في العيادة الآن', en: 'In clinic now' },
+  'tickets.tv.liveTag': { ar: 'مباشر', en: 'LIVE' },
+  'tickets.tv.pleaseEnter': { ar: 'تفضل بالدخول', en: 'Please enter' },
+  'tickets.tv.prepareToEnter': { ar: 'استعد للدخول', en: 'Prepare to enter' },
+  'tickets.tv.waitOutsideRoom': {
+    ar: 'يرجى التواجد أمام الغرفة',
+    en: 'Please wait outside the clinic room',
+  },
+  'tickets.tv.noWaitingPatients': {
+    ar: 'لا يوجد مرضى بانتظار الكشف حالياً',
+    en: 'No patients waiting for exam currently',
+  },
   'tickets.queue.statWaiting': { ar: 'في الانتظار', en: 'In waiting' },
   'tickets.queue.statNoShow': { ar: 'لم يحضروا', en: 'No-show' },
   'tickets.queue.statCompleted': { ar: 'تم الكشف', en: 'Completed' },
@@ -4713,6 +4724,14 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'This receptionist is already assigned to this practice.',
   },
   'common.brand': { ar: 'وصلة', en: 'Wasla' },
+  'routes.landing': {
+    ar: 'وصلة — منصة الرعاية الصحية المتصلة',
+    en: 'Wasla — Connected Healthcare Platform',
+  },
+  'routes.forDoctors': {
+    ar: 'للأطباء | وصلة',
+    en: 'For Doctors | Wasla',
+  },
   'routes.login': { ar: 'تسجيل الدخول | وصلة', en: 'Sign in | Wasla' },
   'routes.registerPatient': { ar: 'تسجيل مريض | وصلة', en: 'Patient registration | Wasla' },
   'routes.registerDoctor': { ar: 'تسجيل طبيب | وصلة', en: 'Doctor registration | Wasla' },
@@ -6908,6 +6927,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'common.profilePhoto': { ar: 'صورة الملف الشخصي', en: 'Profile photo' },
   'common.notRegistered': { ar: 'غير مسجل', en: 'Not registered' },
   'common.reset': { ar: 'إعادة تعيين', en: 'Reset' },
+  'common.clear': { ar: 'مسح', en: 'Clear' },
   'common.resetFilters': { ar: 'إعادة ضبط الفلاتر', en: 'Reset filters' },
   'common.refreshData': { ar: 'تحديث البيانات', en: 'Refresh data' },
   'common.doctor': { ar: 'طبيب', en: 'Doctor' },
@@ -7001,6 +7021,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'account.idFront': { ar: 'الهوية — الوجه الأمامي', en: 'Identity document — front' },
   'account.idBack': { ar: 'الهوية — الوجه الخلفي', en: 'Identity document — back' },
   'requests.submitting': { ar: 'جارٍ إرسال الطلب…', en: 'Submitting request…' },
+  'validation.required': { ar: 'هذا الحقل مطلوب.', en: 'This field is required.' },
   'validation.max100': { ar: 'الحد الأقصى 100 حرف.', en: 'Maximum 100 characters.' },
   'validation.phoneRequired': { ar: 'أدخل رقم الهاتف.', en: 'Enter your phone number.' },
   'validation.confirmPasswordRequired': { ar: 'أكّد كلمة المرور.', en: 'Confirm your password.' },
@@ -7853,6 +7874,139 @@ export const TRANSLATIONS: TranslationDictionary = {
   'login.doctorDesc': {
     ar: 'إدارة المرضى والاستشارات',
     en: 'Manage patients and consultations',
+  },
+
+  'login.emailLabel': { ar: 'البريد الإلكتروني', en: 'Email address' },
+  'login.subheading': {
+    ar: 'أهلاً بك مجدداً، سجّل دخولك لإدارة عيادتك أو متابعة كشوفاتك',
+    en: 'Welcome back, sign in to manage your practice or track your consultations',
+  },
+  'login.orNewAccount': { ar: 'أو إنشاء حساب جديد', en: 'Or create a new account' },
+  'auth.mobile.sheetTitle': {
+    ar: 'إنشاء حساب جديد على وصلة',
+    en: 'Create a new account on Wasla',
+  },
+  'auth.mobile.sheetSubtitle': {
+    ar: 'اختر نوع الحساب المناسب لك للمتابعة',
+    en: 'Choose your account type to continue',
+  },
+  'auth.mobile.doctorTitle': {
+    ar: 'حساب طبيب وعيادة',
+    en: 'Doctor & Clinic Account',
+  },
+  'auth.mobile.doctorSub': {
+    ar: 'إدارة المواعيد، الكشوفات، الروشتات، وملفات المرضى',
+    en: 'Manage appointments, consultations, prescriptions & patient records',
+  },
+  'auth.mobile.patientTitle': {
+    ar: 'حساب مريض وأفراد',
+    en: 'Patient & Individual Account',
+  },
+  'auth.mobile.patientSub': {
+    ar: 'حجز المواعيد، متابعة كشوفاتك، وملفك الصحي الموحد',
+    en: 'Book appointments, track consultations & unified health records',
+  },
+  'auth.mobile.createNewTrigger': {
+    ar: 'ليس لديك حساب؟ إنشاء حساب جديد',
+    en: "Don't have an account? Create a new one",
+  },
+  'auth.mobile.backToLogin': {
+    ar: 'العودة لتسجيل الدخول',
+    en: 'Back to Sign In',
+  },
+  'auth.mobile.step1Title': {
+    ar: 'بيانات الحساب',
+    en: 'Account Details',
+  },
+  'auth.mobile.step2Title': {
+    ar: 'البيانات الشخصية والمهنية',
+    en: 'Personal & Professional Details',
+  },
+  'auth.mobile.step3Title': {
+    ar: 'المستندات والتحقق',
+    en: 'Documents & Verification',
+  },
+  'auth.mobile.toStep2': {
+    ar: 'المتابعة للبيانات الشخصية',
+    en: 'Continue to Personal Details',
+  },
+  'auth.mobile.toStep3': {
+    ar: 'المتابعة لرفع المستندات',
+    en: 'Continue to Documents',
+  },
+  'auth.mobile.step1Of3': {
+    ar: 'الخطوة ١ من ٣',
+    en: 'Step 1 of 3',
+  },
+  'auth.mobile.step2Of3': {
+    ar: 'الخطوة ٢ من ٣',
+    en: 'Step 2 of 3',
+  },
+  'auth.mobile.step3Of3': {
+    ar: 'الخطوة ٣ من ٣',
+    en: 'Step 3 of 3',
+  },
+  'auth.mobile.privacyPromise': {
+    ar: 'بياناتك محمية ومشفرة وفق أعلى معايير الخصوصية الطبية',
+    en: 'Your data is encrypted & protected by medical-grade privacy standards',
+  },
+  'auth.docs.sectionIdentity': {
+    ar: 'إثبات الهوية الشخصية (مطلوب)',
+    en: 'Proof of Identity (Required)',
+  },
+  'auth.docs.sectionIdentitySub': {
+    ar: 'بطاقة الرقم القومي أو جواز السفر الساري (الوجهان الأمامي والخلفي)',
+    en: 'National ID or valid passport (front and back faces)',
+  },
+  'auth.docs.sectionSyndicate': {
+    ar: 'إثبات العضوية ومزاولة المهنة',
+    en: 'Syndicate Card & Medical License',
+  },
+  'auth.docs.sectionSyndicateSub': {
+    ar: 'كارنيه نقابة الأطباء أو ترخيص مزاولة المهنة المعتمد',
+    en: 'Medical syndicate card or certified practice license',
+  },
+  'auth.docs.sectionPhoto': {
+    ar: 'الصورة الشخصية للعيادة',
+    en: 'Profile Photo',
+  },
+  'auth.docs.sectionPhotoSub': {
+    ar: 'تظهر للمرضى في صفحة الحجز وعلى الروشتات الإلكترونية (اختياري)',
+    en: 'Visible to patients on booking page and e-prescriptions (optional)',
+  },
+  'auth.docs.summaryPartial': {
+    ar: 'تم رفع {count} من ٣ مستندات مطلوبة',
+    en: '{count} of 3 required documents uploaded',
+  },
+  'auth.docs.summaryComplete': {
+    ar: 'اكتملت المستندات المطلوبة (٣/٣) ✓',
+    en: 'All required documents uploaded (3/3) ✓',
+  },
+  'auth.docs.reviewNotice': {
+    ar: 'تُراجع المستندات من قِبل الإدارة الطبية خلال ٢٤ ساعة لضمان سلامة التراخيص.',
+    en: 'Documents are reviewed by medical administration within 24 hours to verify credentials.',
+  },
+  'login.accountDoctor': { ar: 'حساب طبيب', en: 'Doctor account' },
+  'login.accountPatient': { ar: 'حساب مريض', en: 'Patient account' },
+  'auth.showcase.headline': {
+    ar: 'عيادتك كلها في مكان واحد',
+    en: 'Your entire clinic in one place',
+  },
+  'auth.showcase.subtext': {
+    ar: 'إدارة المواعيد والمرضى وكافة عمليات العيادة بسهولة واحترافية.',
+    en: 'Manage appointments, patients, and all clinic operations with ease and professionalism.',
+  },
+  'auth.showcase.feature1': {
+    ar: 'طابور ذكي وروشتة إلكترونية',
+    en: 'Smart queue & e-prescriptions',
+  },
+  'auth.showcase.feature2': {
+    ar: 'أمان وخصوصية طبية معتمدة',
+    en: 'Certified medical security & privacy',
+  },
+  'auth.showcase.feature3': {
+    ar: 'إدارة سريرية وطبية متكاملة',
+    en: 'Integrated clinical management',
   },
 
   // Registration General
@@ -10594,20 +10748,152 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Integrated Cloud Medical Platform for Egyptian Clinics',
   },
   'landing.hero.title': {
-    ar: 'عيادتك منظمة، ومريضك متابع.',
-    en: 'Your Clinic Organized, Your Patients Followed.',
+    ar: 'عيادتك منظمة، ووقتك لمرضاك.',
+    en: 'Your clinic organized, your time for your patients.',
   },
   'landing.hero.subtitle': {
-    ar: 'نظام سحابي ذكي يربط الحجوزات، طابور الانتظار، الكشف السريري، الروشتات الإلكترونية، والحسابات في منصة واحدة سهلة الاستخدام للطبيب ومساعد العيادة.',
-    en: 'A smart cloud ecosystem connecting reservations, live queue, clinical encounters, e-prescriptions, and practice finances in one intuitive workspace.',
+    ar: 'إدارة المواعيد، ملفات المرضى، وطابور الانتظار من مكان واحد.',
+    en: 'Manage appointments, patient records, and waiting queue from one place.',
   },
   'landing.hero.primaryCta': {
-    ar: 'ابدأ عيادتك مجاناً',
-    en: 'Start Your Clinic Free',
+    ar: 'ابدأ مع وصلة',
+    en: 'Start with Wasla',
   },
   'landing.hero.secondaryCta': {
-    ar: 'شاهد رحلة العيادة',
-    en: 'Explore Clinic Journey',
+    ar: 'اكتشف المنصة',
+    en: 'Explore the platform',
+  },
+  'landing.why.eyebrow': {
+    ar: 'لماذا وصلة؟',
+    en: 'Why Wasla?',
+  },
+  'landing.why.title': {
+    ar: 'بساطة في الاستخدام، وانضباط في كل خطوة',
+    en: 'Simple to use, disciplined at every step',
+  },
+  'landing.why.b1Title': {
+    ar: 'مواعيد من غير لخبطة',
+    en: 'No-Chaos Scheduling',
+  },
+  'landing.why.b1Desc': {
+    ar: 'تنظيم فترات الكشف، الحجز المسبق، ومنع أي تداخل في المواعيد بين المرضى.',
+    en: 'Organized visit slots, advance booking, and zero scheduling clashes.',
+  },
+  'landing.why.b2Title': {
+    ar: 'متابعة أسهل لمرضاك',
+    en: 'Effortless Patient Follow-Up',
+  },
+  'landing.why.b2Desc': {
+    ar: 'سجل طبي إلكتروني لكل مريض يضم الكشوفات السابقة، التشخيص، والروشتات السابقة بضغطة زر.',
+    en: 'A unified digital record for every patient with past visits, diagnoses, and prescriptions.',
+  },
+  'landing.why.b3Title': {
+    ar: 'إدارة يوم العيادة بوضوح',
+    en: 'Clear Daily Operations',
+  },
+  'landing.why.b3Desc': {
+    ar: 'شاشة استقبال سهلة لسكرتارية العيادة، طابور انتظار بالدور، وتقارير حسابات فورية.',
+    en: 'An easy reception screen for clinic assistants, live queue by turn, and instant financial reports.',
+  },
+  'landing.showcase.eyebrow': {
+    ar: 'جولة في المنصة',
+    en: 'Platform Tour',
+  },
+  'landing.showcase.title': {
+    ar: 'شوف وصلة وهي بتنظم يوم عيادتك',
+    en: "See how Wasla organizes your clinic's day",
+  },
+  'landing.showcase.subtitle': {
+    ar: 'واجهة سريعة مصممة خصيصاً لطبيعة عمل العيادات والمراكز الطبية في مصر، بدون تعقيد تقني.',
+    en: 'A clean, fast workspace built for Egyptian clinics and medical practices, without tech complexity.',
+  },
+  'landing.steps.eyebrow': {
+    ar: 'رحلة العيادة',
+    en: 'Clinic Workflow',
+  },
+  'landing.steps.title': {
+    ar: 'من أول حجز لحد متابعة المريض',
+    en: 'From first booking to patient follow-up',
+  },
+  'landing.steps.subtitle': {
+    ar: 'ثلاث خطوات بسيطة ومترابطة تضمن انسيابية العمل بين الطبيب والسكرتارية والمريض.',
+    en: 'Three connected, effortless steps ensuring seamless clinic operations.',
+  },
+  'landing.steps.s1Title': {
+    ar: 'تنظيم المواعيد وجدول الحجز',
+    en: 'Organize Appointments & Slots',
+  },
+  'landing.steps.s1Desc': {
+    ar: 'تحديد فترات العمل وتسجيل الحجوزات مسبقاً وتأكيدها هاتفياً أو عبر النظام.',
+    en: 'Define working slots and record bookings in advance with instant status tracking.',
+  },
+  'landing.steps.s1Action': {
+    ar: 'الإجراء: جدولة المواعيد وتأكيد الحجز',
+    en: 'Action: Schedule slots and confirm bookings',
+  },
+  'landing.steps.s1Outcome': {
+    ar: 'النتيجة: جدول يومي منظم بدون أي تضارب',
+    en: 'Outcome: Clear conflict-free daily schedule',
+  },
+  'landing.steps.s2Title': {
+    ar: 'وصول المريض وتنظيم الدور',
+    en: 'Patient Arrival & Live Queue',
+  },
+  'landing.steps.s2Desc': {
+    ar: 'تأكيد الحضور بنقرة واحدة ليدخل المريض في قائمة الانتظار برقم تذكرة واضح بدون تزاحم.',
+    en: 'Reception confirms patient arrival with a single tap, issuing an orderly queue ticket.',
+  },
+  'landing.steps.s2Action': {
+    ar: 'الإجراء: تسجيل الحضور بالاستقبال بنقرة واحدة',
+    en: 'Action: Reception check-in with a single tap',
+  },
+  'landing.steps.s2Outcome': {
+    ar: 'النتيجة: طابور هادئ ومزامنة فورية بين الطبيب والمساعد',
+    en: 'Outcome: Orderly queue synced live with doctor and secretary',
+  },
+  'landing.steps.s3Title': {
+    ar: 'الكشف، الروشتة، والمتابعة',
+    en: 'Consultation, Rx & Follow-Up',
+  },
+  'landing.steps.s3Desc': {
+    ar: 'مراجعة التاريخ المرضي، تسجيل الفحص، وإصدار روشتة إلكترونية فورية قابلة للطباعة.',
+    en: 'The doctor reviews history, conducts consultation, and issues an instant printable e-prescription.',
+  },
+  'landing.steps.s3Action': {
+    ar: 'الإجراء: فحص المريض، توثيق الكشف، وإصدار الروشتة',
+    en: 'Action: Clinical examination, diagnosis & e-prescription',
+  },
+  'landing.steps.s3Outcome': {
+    ar: 'النتيجة: ملف طبي موثق وحسابات مكتملة فوراً',
+    en: 'Outcome: Documented clinical record & instant finance closure',
+  },
+  'landing.finalCta.headline': {
+    ar: 'جاهز تنظم شغل عيادتك؟',
+    en: 'Ready to organize your clinic?',
+  },
+  'landing.finalCta.sub': {
+    ar: 'ابدأ حسابك كطبيب اليوم في دقائق، واستمتع بتجربة إدارة سلسة وخالية من الفوضى لك ولفريقك.',
+    en: 'Start your doctor account today in minutes, and experience effortless clinic management.',
+  },
+  'landing.finalCta.btnDoctor': {
+    ar: 'ابدأ مع وصلة',
+    en: 'Start with Wasla',
+  },
+  'landing.finalCta.btnLogin': {
+    ar: 'تسجيل الدخول',
+    en: 'Sign In',
+  },
+  'landing.footer.desc': {
+    ar: 'المنظومة السحابية المتكاملة لإدارة العيادات، المواعيد، السجلات الطبية، وطابور الانتظار باحترافية.',
+    en: 'Integrated cloud medical platform for managing clinics, appointments, patient records, and live queue.',
+  },
+  'landing.footer.platform': {
+    ar: 'المنصة',
+    en: 'Platform',
+  },
+  'landing.footer.legal': {
+    ar: 'الدعم والخصوصية',
+    en: 'Support & Privacy',
   },
   'landing.hero.hasAccount': {
     ar: 'لديك حساب بالفعل؟',

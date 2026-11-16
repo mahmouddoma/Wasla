@@ -55,107 +55,151 @@
       </div>
     </div>
 
-    <!-- Heading -->
-    <header class="auth-form-heading">
-      <div class="auth-heading-eyebrow">
-        <span class="eyebrow-dot" aria-hidden="true"></span>
-        <span class="eyebrow-text">{{ 'ui.full.231' | t }}</span>
+    <!-- Mobile Dedicated Onboarding Header (< 768px) -->
+    <div class="mobile-wizard-header d-block d-md-none" role="region" aria-label="Step Progress">
+      <div class="wizard-top-meta">
+        <button
+          type="button"
+          class="btn-wizard-back"
+          (click)="currentStep() === 1 ? onBackToLogin($event) : prevStep()"
+          [attr.aria-label]="currentStep() === 1 ? ('auth.mobile.backToLogin' | t) : ('register.prev' | t)"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+          <span>{{ currentStep() === 1 ? ('auth.mobile.backToLogin' | t) : ('register.prev' | t) }}</span>
+        </button>
+        <span class="wizard-step-pill">
+          @if (currentStep() === 1) { {{ 'auth.mobile.step1Of3' | t }} }
+          @else if (currentStep() === 2) { {{ 'auth.mobile.step2Of3' | t }} }
+          @else { {{ 'auth.mobile.step3Of3' | t }} }
+        </span>
       </div>
-      <h1>{{ 'ui.full.232' | t }}</h1>
-      <p>{{ 'ui.full.233' | t }}</p>
-    </header>
 
-    <!-- Progress Stepper Header -->
-    <div class="registration-stepper" role="tablist" [attr.aria-label]="'register.stepProgress' | t">
-      <button type="button" class="stepper-tab" [class.active]="currentStep() === 1"
-        [class.completed]="currentStep() > 1" (click)="goToStep(1)" role="tab"
-        [attr.aria-selected]="currentStep() === 1">
-        <span class="stepper-tab-num">
-          @if (currentStep() > 1) {
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          } @else {
-          1
-          }
-        </span>
-        <span class="stepper-tab-text">
-          <small class="stepper-step-idx">{{ 'register.step1Badge' | t }}</small>
-          <strong class="stepper-step-title">{{ 'register.stepAccount' | t }}</strong>
-        </span>
-      </button>
+      <!-- Slim 3-segment progress track -->
+      <div class="wizard-progress-track" aria-hidden="true">
+        <div class="track-segment" [class.filled]="currentStep() >= 1"></div>
+        <div class="track-segment" [class.filled]="currentStep() >= 2"></div>
+        <div class="track-segment" [class.filled]="currentStep() >= 3"></div>
+      </div>
 
-      <div class="stepper-divider" [class.filled]="currentStep() > 1" aria-hidden="true"></div>
-
-      <button type="button" class="stepper-tab" [class.active]="currentStep() === 2"
-        [class.completed]="currentStep() > 2" (click)="goToStep(2)" role="tab"
-        [attr.aria-selected]="currentStep() === 2">
-        <span class="stepper-tab-num">
-          @if (currentStep() > 2) {
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          } @else {
-          2
-          }
-        </span>
-        <span class="stepper-tab-text">
-          <small class="stepper-step-idx">{{ 'register.step2Badge' | t }}</small>
-          <strong class="stepper-step-title">{{ 'register.stepPersonal' | t }}</strong>
-        </span>
-      </button>
-
-      <div class="stepper-divider" [class.filled]="currentStep() > 2" aria-hidden="true"></div>
-
-      <button type="button" class="stepper-tab" [class.active]="currentStep() === 3" (click)="goToStep(3)" role="tab"
-        [attr.aria-selected]="currentStep() === 3">
-        <span class="stepper-tab-num">3</span>
-        <span class="stepper-tab-text">
-          <small class="stepper-step-idx">{{ 'register.step3Badge' | t }}</small>
-          <strong class="stepper-step-title">{{ 'register.stepDocs' | t }}</strong>
-        </span>
-      </button>
+      <div class="wizard-step-text">
+        <h2 class="wizard-title">
+          @if (currentStep() === 1) { {{ 'auth.mobile.step1Title' | t }} }
+          @else if (currentStep() === 2) { {{ 'auth.mobile.step2Title' | t }} }
+          @else { {{ 'auth.mobile.step3Title' | t }} }
+        </h2>
+        <p class="wizard-subtitle">
+          @if (currentStep() === 1) { {{ 'register.step1Desc' | t }} }
+          @else if (currentStep() === 2) { {{ 'register.step2Desc' | t }} }
+          @else { {{ 'register.step3DescDoctor' | t }} }
+        </p>
+      </div>
     </div>
 
-    <!-- Step Context Guide -->
-    <div class="step-guide-banner">
-      <div class="step-guide-icon" aria-hidden="true">
-        @switch (currentStep()) {
-        @case (1) {
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-        }
-        @case (2) {
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-        </svg>
-        }
-        @case (3) {
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21 15 16 10 5 21" />
-        </svg>
-        }
-        }
+    <!-- Desktop Heading & Stepper (>= 768px) -->
+    <div class="desktop-wizard-header d-none d-md-block">
+      <header class="auth-form-heading">
+        <div class="auth-heading-eyebrow">
+          <span class="eyebrow-dot" aria-hidden="true"></span>
+          <span class="eyebrow-text">{{ 'ui.full.231' | t }}</span>
+        </div>
+        <h1>{{ 'ui.full.232' | t }}</h1>
+        <p>{{ 'ui.full.233' | t }}</p>
+      </header>
+
+      <!-- Progress Stepper Header -->
+      <div class="registration-stepper" role="tablist" [attr.aria-label]="'register.stepProgress' | t">
+        <button type="button" class="stepper-tab" [class.active]="currentStep() === 1"
+          [class.completed]="currentStep() > 1" (click)="goToStep(1)" role="tab"
+          [attr.aria-selected]="currentStep() === 1">
+          <span class="stepper-tab-num">
+            @if (currentStep() > 1) {
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            } @else {
+            1
+            }
+          </span>
+          <span class="stepper-tab-text">
+            <small class="stepper-step-idx">{{ 'register.step1Badge' | t }}</small>
+            <strong class="stepper-step-title">{{ 'register.stepAccount' | t }}</strong>
+          </span>
+        </button>
+
+        <div class="stepper-divider" [class.filled]="currentStep() > 1" aria-hidden="true"></div>
+
+        <button type="button" class="stepper-tab" [class.active]="currentStep() === 2"
+          [class.completed]="currentStep() > 2" (click)="goToStep(2)" role="tab"
+          [attr.aria-selected]="currentStep() === 2">
+          <span class="stepper-tab-num">
+            @if (currentStep() > 2) {
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            } @else {
+            2
+            }
+          </span>
+          <span class="stepper-tab-text">
+            <small class="stepper-step-idx">{{ 'register.step2Badge' | t }}</small>
+            <strong class="stepper-step-title">{{ 'register.stepPersonal' | t }}</strong>
+          </span>
+        </button>
+
+        <div class="stepper-divider" [class.filled]="currentStep() > 2" aria-hidden="true"></div>
+
+        <button type="button" class="stepper-tab" [class.active]="currentStep() === 3" (click)="goToStep(3)" role="tab"
+          [attr.aria-selected]="currentStep() === 3">
+          <span class="stepper-tab-num">3</span>
+          <span class="stepper-tab-text">
+            <small class="stepper-step-idx">{{ 'register.step3Badge' | t }}</small>
+            <strong class="stepper-step-title">{{ 'register.stepDocs' | t }}</strong>
+          </span>
+        </button>
       </div>
-      <div class="step-guide-content">
-        @if (currentStep() === 1) {
-        <span>{{ 'register.step1Desc' | t }}</span>
-        }
-        @if (currentStep() === 2) {
-        <span>{{ 'register.step2Desc' | t }}</span>
-        }
-        @if (currentStep() === 3) {
-        <span>{{ 'register.step3DescDoctor' | t }}</span>
-        }
+
+      <!-- Step Context Guide -->
+      <div class="step-guide-banner">
+        <div class="step-guide-icon" aria-hidden="true">
+          @switch (currentStep()) {
+          @case (1) {
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          }
+          @case (2) {
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          }
+          @case (3) {
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          }
+          }
+        </div>
+        <div class="step-guide-content">
+          @if (currentStep() === 1) {
+          <span>{{ 'register.step1Desc' | t }}</span>
+          }
+          @if (currentStep() === 2) {
+          <span>{{ 'register.step2Desc' | t }}</span>
+          }
+          @if (currentStep() === 3) {
+          <span>{{ 'register.step3DescDoctor' | t }}</span>
+          }
+        </div>
       </div>
     </div>
 
@@ -379,26 +423,79 @@
            STEP 3: المستندات والتحقق (Documents & Verification)
            ══════════════════════════════════════════════════ -->
       <div class="step-panel" [class.active]="currentStep() === 3" role="tabpanel">
-        <div class="registration-grid">
-          <div class="upload-field-col field-full">
-            <app-file-upload [label]="'common.profilePhoto' | t" [error]="serverError('ProfileImage')"
-              (fileChange)="profileImage.set($event)" />
+        <!-- Dynamic Document Upload Status Summary Banner -->
+        <div class="docs-summary-banner" [class.complete]="allRequiredDocsUploaded()">
+          <div class="summary-status-badge">
+            @if (allRequiredDocsUploaded()) {
+              <i class="fa-solid fa-circle-check text-emerald" aria-hidden="true"></i>
+              <span>{{ 'auth.docs.summaryComplete' | t }}</span>
+            } @else {
+              <i class="fa-solid fa-file-circle-check text-teal" aria-hidden="true"></i>
+              <span>{{ 'auth.docs.summaryPartial' | t : { count: requiredDocsUploadedCount() } }}</span>
+            }
           </div>
-          <div class="upload-field-col">
-            <app-file-upload [label]="'account.idFront' | t" [required]="true"
-              [error]="serverError('PersonalIdFrontImage')" (fileChange)="personalIdFrontImage.set($event)" />
+          <p class="summary-review-note">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <span>{{ 'auth.docs.reviewNotice' | t }}</span>
+          </p>
+        </div>
+
+        <!-- Section A: إثبات الهوية الشخصية (مطلوب) -->
+        <div class="docs-section-group">
+          <div class="docs-section-header">
+            <h3 class="docs-section-title">
+              <i class="fa-solid fa-id-card text-teal" aria-hidden="true"></i>
+              <span>{{ 'auth.docs.sectionIdentity' | t }}</span>
+            </h3>
+            <p class="docs-section-sub">{{ 'auth.docs.sectionIdentitySub' | t }}</p>
           </div>
-          <div class="upload-field-col">
-            <app-file-upload [label]="'account.idBack' | t" [required]="true"
-              [error]="serverError('PersonalIdBackImage')" (fileChange)="personalIdBackImage.set($event)" />
+          <div class="registration-grid">
+            <div class="upload-field-col">
+              <app-file-upload [label]="'account.idFront' | t" [required]="true"
+                [error]="serverError('PersonalIdFrontImage')" (fileChange)="personalIdFrontImage.set($event)" />
+            </div>
+            <div class="upload-field-col">
+              <app-file-upload [label]="'account.idBack' | t" [required]="true"
+                [error]="serverError('PersonalIdBackImage')" (fileChange)="personalIdBackImage.set($event)" />
+            </div>
           </div>
-          <div class="upload-field-col">
-            <app-file-upload [label]="'ui.full.237' | t" [required]="true"
-              [error]="serverError('SyndicateCardFrontImage')" (fileChange)="syndicateCardFrontImage.set($event)" />
+        </div>
+
+        <!-- Section B: إثبات العضوية ومزاولة المهنة -->
+        <div class="docs-section-group">
+          <div class="docs-section-header">
+            <h3 class="docs-section-title">
+              <i class="fa-solid fa-user-doctor text-teal" aria-hidden="true"></i>
+              <span>{{ 'auth.docs.sectionSyndicate' | t }}</span>
+            </h3>
+            <p class="docs-section-sub">{{ 'auth.docs.sectionSyndicateSub' | t }}</p>
           </div>
-          <div class="upload-field-col">
-            <app-file-upload [label]="'ui.full.238' | t"
-              [error]="serverError('SyndicateCardBackImage')" (fileChange)="syndicateCardBackImage.set($event)" />
+          <div class="registration-grid">
+            <div class="upload-field-col">
+              <app-file-upload [label]="'ui.full.237' | t" [required]="true"
+                [error]="serverError('SyndicateCardFrontImage')" (fileChange)="syndicateCardFrontImage.set($event)" />
+            </div>
+            <div class="upload-field-col">
+              <app-file-upload [label]="'ui.full.238' | t"
+                [error]="serverError('SyndicateCardBackImage')" (fileChange)="syndicateCardBackImage.set($event)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section C: الصورة الشخصية للعيادة (اختياري) -->
+        <div class="docs-section-group">
+          <div class="docs-section-header">
+            <h3 class="docs-section-title">
+              <i class="fa-solid fa-camera text-teal" aria-hidden="true"></i>
+              <span>{{ 'auth.docs.sectionPhoto' | t }}</span>
+            </h3>
+            <p class="docs-section-sub">{{ 'auth.docs.sectionPhotoSub' | t }}</p>
+          </div>
+          <div class="registration-grid">
+            <div class="upload-field-col field-full">
+              <app-file-upload [label]="'common.profilePhoto' | t" [error]="serverError('ProfileImage')"
+                (fileChange)="profileImage.set($event)" />
+            </div>
           </div>
         </div>
 

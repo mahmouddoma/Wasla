@@ -66,7 +66,7 @@ describe('WaslaLandingComponent', () => {
   it('renders official Arabic headline, primary CTA, and switches cleanly to English LTR', async () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('.wasla-landing-page')?.getAttribute('dir')).toBe('rtl');
-    expect(el.querySelector('#landing-hero-title')?.textContent).toContain('عيادتك منظمة، ومريضك متابع.');
+    expect(el.querySelector('#landing-hero-title')?.textContent).toContain('عيادتك منظمة، ووقتك لمرضاك.');
     expect(el.querySelector('#hero-primary-cta')?.getAttribute('href')).toBe('/register/doctor');
     expect(el.querySelector('#hero-login-link')?.getAttribute('href')).toBe('/login');
 
@@ -78,21 +78,13 @@ describe('WaslaLandingComponent', () => {
     expect(el.querySelector('#landing-hero-title')?.textContent).toContain('Your Clinic Organized');
   });
 
-  it('switches interactive clinic journey stages and role tabs', async () => {
+  it('renders Why Wasla benefits and How It Works steps', () => {
     const el: HTMLElement = fixture.nativeElement;
-    el.querySelector<HTMLButtonElement>('#journey-tab-during')?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const benefits = el.querySelectorAll('.benefit-item');
+    expect(benefits.length).toBe(3);
 
-    expect(el.querySelector('#journey-tab-during')?.getAttribute('aria-selected')).toBe('true');
-    expect(el.textContent).toContain('مساحة الكشف السريري');
-
-    el.querySelector<HTMLButtonElement>('#role-tab-reception')?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(el.querySelector('#role-tab-reception')?.getAttribute('aria-selected')).toBe('true');
-    expect(el.textContent).toContain('حماية كاملة: لا يرى الملاحظات الطبية');
+    const steps = el.querySelectorAll('.process-step-item');
+    expect(steps.length).toBe(3);
   });
 
   it('toggles FAQ accordion items accessibly', async () => {

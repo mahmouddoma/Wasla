@@ -40,6 +40,7 @@ export class AppHeader {
   readonly menuId = input<string>('sidebar');
   readonly menuExpanded = input(false);
   readonly showMenuToggle = input(true);
+  readonly minimal = input(false);
   readonly menuToggle = output<void>();
   readonly logout = output<void>();
   readonly langService = inject(LanguageService);
@@ -139,13 +140,10 @@ export class AppHeader {
     const u = this.user();
     if (!u) {
       return [
-        { labelKey: 'landing.nav.home', route: '/', iconClass: 'fa-solid fa-house-medical', isRoute: true },
-        { labelKey: 'landing.nav.features', route: '/#features', iconClass: '', sectionId: 'features' },
-        { labelKey: 'landing.nav.howItWorks', route: '/#clinic-journey', iconClass: '', sectionId: 'clinic-journey' },
-        { labelKey: 'landing.nav.forDoctors', route: '/#roles-overview', iconClass: '', sectionId: 'roles-overview' },
-        { labelKey: 'pricing.navPricing', route: '/pricing', iconClass: 'fa-solid fa-tags', isRoute: true },
+        { labelKey: 'landing.nav.features', route: '/#product-showcase', iconClass: 'fa-solid fa-sparkles', sectionId: 'product-showcase' },
+        { labelKey: 'landing.nav.howItWorks', route: '/#clinic-journey', iconClass: 'fa-solid fa-route', sectionId: 'clinic-journey' },
+        { labelKey: 'pricing.navPricing', route: '/#pricing-section', iconClass: 'fa-solid fa-tags', sectionId: 'pricing-section' },
         { labelKey: 'pricing.navFindDoctor', route: '/doctors', iconClass: 'fa-solid fa-user-doctor', isRoute: true },
-        { labelKey: 'landing.nav.faq', route: '/#faq-section', iconClass: '', sectionId: 'faq-section' },
       ];
     }
 

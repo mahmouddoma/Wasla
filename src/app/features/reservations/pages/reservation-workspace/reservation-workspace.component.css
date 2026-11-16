@@ -347,10 +347,24 @@ app-page-header {
   box-shadow: inset -3px 0 0 var(--wasla-teal-500, #0ba5a0);
 }
 
+.reservations-detail-backdrop {
+  display: none;
+}
+
 @media (max-width: 991px) {
-  .reservations-split-layout.has-active-detail {
-    flex-direction: column;
-    gap: 20px;
+  .reservations-detail-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(7, 28, 48, 0.5) !important;
+    backdrop-filter: blur(2px) !important;
+    z-index: 2000 !important;
+    animation: fadeInBackdrop 0.2s ease !important;
+  }
+
+  @keyframes fadeInBackdrop {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .reservations-split-layout.has-active-detail .reservations-master-pane {
@@ -359,13 +373,57 @@ app-page-header {
   }
 
   .reservations-detail-pane {
+    position: fixed !important;
+    inset-inline: 0 !important;
+    bottom: 0 !important;
+    top: 56px !important;
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
-    position: static !important;
-    max-height: none !important;
-    overflow: visible !important;
+    height: calc(100dvh - 56px) !important;
+    max-height: calc(100dvh - 56px) !important;
+    z-index: 2010 !important;
+    border-radius: 18px 18px 0 0 !important;
+    border: 1px solid var(--wasla-border-subtle, #edf1f5) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -8px 36px rgba(7, 28, 48, 0.28) !important;
+    background: #ffffff !important;
     display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    animation: slideUpDrawer 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  @keyframes slideUpDrawer {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .detail-pane-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    padding: 14px 18px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .detail-pane-body {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 16px !important;
+    padding-bottom: 96px !important;
+  }
+
+  .btn-detail-close {
+    width: 36px !important;
+    height: 36px !important;
   }
 }
 
@@ -623,6 +681,26 @@ app-page-header {
 }
 
 /* ── Filters Grid — clean, responsive, aligned ──────────────────── */
+.filter-dates-pair {
+  display: contents;
+}
+
+@media (min-width: 992px) {
+  .advanced-filters-doctor {
+    border: none;
+    margin-top: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .advanced-filters-doctor .advanced-filters-summary {
+    display: none;
+  }
+  .advanced-filters-doctor .filters-grid {
+    padding: 0;
+    display: grid;
+  }
+}
+
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
@@ -1604,10 +1682,30 @@ tbody tr:last-child td {
   }
   tr.table-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    padding: 20px;
-    border-bottom: 1px solid var(--wasla-border-subtle);
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "patient status"
+      "appointment practice"
+      "ref actions";
+    row-gap: 8px;
+    column-gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--wasla-border-subtle, #edf1f5);
+    background: #ffffff;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  tr.table-row:hover {
+    border-color: var(--wasla-border, #e2e8f0);
+    box-shadow: 0 4px 12px rgba(11, 165, 160, 0.08);
+  }
+  tr.table-row.is-selected-row {
+    border-color: var(--wasla-teal, #0d9488);
+    background: #fbfdfd;
+    box-shadow: 0 0 0 1px rgba(11, 165, 160, 0.25);
   }
   td {
     min-width: 0;
@@ -1617,20 +1715,164 @@ tbody tr:last-child td {
     overflow-wrap: anywhere;
   }
   .mobile-cell-label {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--wasla-slate);
-    font-size: 0.75rem;
-    font-weight: 700;
+    display: none !important;
   }
-  .td-appointment {
+  td.td-patient {
+    grid-area: patient;
+  }
+  td.td-patient .cell-entity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  td.td-patient .avatar-circle-sm {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--wasla-teal-50, #f0fdfa);
+    color: var(--wasla-teal, #0d9488);
+    border: 1px solid rgba(13, 148, 136, 0.2);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  td.td-patient .entity-name {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--wasla-navy-950, #071c30);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  td.td-status {
+    grid-area: status;
+    justify-self: end;
+    text-align: end;
+  }
+  td.td-status .status-cell-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  td.td-status .status-pill-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  td.td-appointment {
+    grid-area: appointment;
     text-align: start;
   }
-  .td-actions {
-    grid-column: 1 / -1;
+  td.td-appointment .appointment-datetime-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
   }
-  .btn-inspect-action {
-    min-height: 44px;
+  td.td-appointment .cell-time-tag {
+    background: var(--wasla-teal-50, #f0fdfa);
+    border: 1px solid rgba(13, 148, 136, 0.2);
+    color: var(--wasla-teal, #0d9488);
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    gap: 4px;
+    display: inline-flex;
+    align-items: center;
+  }
+  td.td-appointment .cell-date {
+    font-size: 0.76rem;
+    color: var(--wasla-slate, #64748b);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  td.td-practice {
+    grid-area: practice;
+    justify-self: end;
+    text-align: end;
+    max-width: 170px;
+  }
+  td.td-practice .cell-entity {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    color: var(--wasla-slate, #64748b);
+    font-weight: 600;
+    max-width: 100%;
+  }
+  td.td-practice .clinic-icon-sm {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: #f1f5f9;
+    color: var(--wasla-navy-700, #334155);
+    border: none;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+  }
+  td.td-practice span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  td.td-ref {
+    grid-area: ref;
+  }
+  td.td-ref .ref-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--wasla-slate, #64748b);
+    background: #f8fafc;
+    border: 1px solid var(--wasla-border-subtle, #edf1f5);
+    border-radius: 6px;
+    padding: 2px 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  td.td-ref .ref-hash-icon {
+    font-size: 0.62rem;
+    color: var(--wasla-teal, #0d9488);
+  }
+  td.td-actions {
+    grid-area: actions;
+    justify-self: end;
+    text-align: end;
+    width: auto;
+  }
+  td.td-actions .btn-inspect-action {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 7px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    background: #f8fafc;
+    border: 1px solid var(--wasla-border, #e2e8f0);
+    color: var(--wasla-navy-900, #0f2744);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: auto;
+    transition: all 0.15s ease;
+  }
+  td.td-actions .btn-inspect-action:hover {
+    background: var(--wasla-teal, #0d9488);
+    border-color: var(--wasla-teal, #0d9488);
+    color: #ffffff;
+  }
+  td.td-visit {
+    grid-column: 1 / -1;
+    padding: 2px 0 0;
+    font-size: 0.76rem;
   }
   .empty-row {
     display: block;
@@ -1642,34 +1884,62 @@ tbody tr:last-child td {
 
 @container reservation-workspace (max-width: 599px) {
   .reservations-shell {
-    padding: 16px;
-    gap: 20px;
+    padding: 14px 12px 88px;
+    gap: 16px;
   }
   .page-header-filters {
-    padding: 16px;
+    padding: 12px;
   }
   .filters-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
   .field-input,
   .field-select {
-    font-size: 1rem;
+    font-size: 0.8125rem;
+    height: 38px;
+    padding: 6px 10px;
   }
   .table-surface-header {
-    padding: 16px;
-    gap: 12px;
+    padding: 12px;
+    gap: 10px;
   }
   tr.table-row {
-    padding: 16px;
+    padding: 12px;
   }
   .pagination-bar {
-    padding: 16px;
+    padding: 12px;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
   }
   .btn-page {
-    min-height: 44px;
+    min-height: 40px;
+  }
+}
+
+@container reservation-workspace (max-width: 480px) {
+  .reservations-shell {
+    padding: 12px 10px 88px;
+    gap: 12px;
+  }
+  .table-surface-panel {
+    border-radius: 10px;
+    border: 1px solid var(--wasla-border-subtle);
+  }
+  tr.table-row {
+    padding: 10px 12px;
+    row-gap: 6px;
+  }
+  .reception-day-stepper {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .date-stepper-display {
+    order: -1;
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -2149,16 +2419,106 @@ summary:focus-visible {
    Responsive Mobile Refinements
    ========================================================================== */
 @media (max-width: 767.98px) {
+  .reservations-shell {
+    padding: 12px 10px 88px !important;
+    gap: 12px;
+  }
+
+  .reservations-stats-deck {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+    padding: 4px 0 6px;
+    width: 100%;
+  }
+
+  .reservations-stats-deck::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stat-pill {
+    flex-shrink: 0;
+    padding: 3px 8px;
+    border-radius: 8px;
+  }
+
+  .stat-num {
+    font-size: 0.95rem;
+  }
+
+  .stat-lbl {
+    font-size: 0.68rem;
+  }
+
   .table-surface-panel {
     border-radius: 10px;
     box-shadow: none;
   }
 
   .table-surface-header {
-    padding: 12px;
-    gap: 10px;
+    padding: 10px 12px;
+    gap: 8px;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .workspace-header-controls {
+    width: 100%;
+  }
+
+  .practice-selector-row {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+    padding: 4px 10px;
+  }
+
+  .practice-selector-input-wrap {
+    min-width: 0;
+    flex: 1;
+    max-width: none;
+  }
+
+  .surface-filters-section {
+    padding: 10px 12px 14px;
+    gap: 8px;
+  }
+
+  .reservation-view-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+
+  .filter-dates-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .field-input,
+  .field-select {
+    height: 38px;
+    padding: 6px 10px;
+    font-size: 0.8125rem;
+    border-radius: 8px;
+  }
+
+  .field-label {
+    font-size: 0.72rem;
+    gap: 4px;
+    margin-bottom: 2px;
   }
 
   .table-title-wrap {
@@ -2166,12 +2526,63 @@ summary:focus-visible {
   }
 
   .table-icon-circle {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+
+  .table-title {
+    font-size: 0.95rem;
+  }
+
+  .count-badge {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+  }
+
+  .advanced-filters {
+    margin-top: 8px;
+    border-radius: 10px;
+  }
+
+  .advanced-filters-summary {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  .advanced-filters .filters-grid {
+    padding: 10px;
   }
 
   .reservations-split-layout.has-active-detail {
     gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    tr.table-row {
+      grid-template-areas:
+        "patient status"
+        "appointment practice"
+        "ref actions";
+      padding: 11px 12px;
+      gap: 6px 10px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    tr.table-row {
+      grid-template-areas:
+        "patient status"
+        "appointment appointment"
+        "practice practice"
+        "ref actions";
+    }
+    td.td-practice {
+      justify-self: start;
+      text-align: start;
+      max-width: none;
+    }
   }
 }
 

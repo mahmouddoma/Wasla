@@ -159,7 +159,7 @@ export class Workspace {
     if (practice) {
       const name = this.langService.isRtl() ? practice.nameAr : practice.nameEn || practice.nameAr;
       this.toast.success(
-        this.langService.isRtl() ? `تم التبديل إلى: ${name}` : `Switched to: ${name}`,
+        `${this.langService.t('workspace.switchTo')}: ${name}`,
       );
     }
   }

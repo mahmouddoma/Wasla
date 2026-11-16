@@ -45,7 +45,7 @@ export class PlanSelectorComponent implements OnChanges {
 
   readonly cycle = signal<'Monthly' | 'Annual'>('Monthly');
   readonly expandedCards = signal<ReadonlySet<string>>(new Set());
-  readonly defaultVisibleFeatures = 6;
+  readonly defaultVisibleFeatures = 5;
 
   constructor() {
     afterNextRender(() => this.animateCardsEntrance());
