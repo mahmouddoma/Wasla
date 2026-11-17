@@ -79,6 +79,25 @@ export const TRANSLATIONS: TranslationDictionary = {
   'familyPolicy.basis': { ar: 'مرجع الاعتماد', en: 'Approved basis reference' },
   'familyPolicy.authority': { ar: 'مرجع العلاقة الموثقة', en: 'Verified authority relationship' },
   'familyPolicy.child': { ar: 'الطفل', en: 'Child' },
+  'familyPolicy.accessAllowed': {
+    ar: 'الاطلاع الطبي متاح للأطراف المعتمدة وفق صلاحيات المنصة.',
+    en: 'Medical access is available to authorized family members within platform permissions.',
+  },
+  'familyPolicy.accessRestricted': {
+    ar: 'الاطلاع على السجلات الطبية لهذا الطفل غير متاح حاليًا.',
+    en: 'Medical records for this child are currently unavailable.',
+  },
+  'familyPolicy.noChildren': {
+    ar: 'لا يوجد أطفال في أسرتك لعرض حالة الاطلاع الطبي. يمكنك مراجعة أفراد أسرتك من صفحة أسرتي.',
+    en: 'There are no children in your family to check. Review your family members on My Family.',
+  },
+  'familyPolicy.historyUpdate': { ar: 'تحديث حالة الطلب', en: 'Request status update' },
+  'familyPolicy.status.Allowed': { ar: 'متاح وفق الصلاحية', en: 'Available within permissions' },
+  'familyPolicy.status.Restricted': { ar: 'اطلاع مقيّد', en: 'Restricted access' },
+  'familyPolicy.status.AgeNotEligible': { ar: 'العمر غير مؤهل', en: 'Age not eligible' },
+  'familyPolicy.status.RelationshipNotEligible': { ar: 'العلاقة غير مؤهلة', en: 'Relationship not eligible' },
+  'familyPolicy.status.Unavailable': { ar: 'غير متاح حاليًا', en: 'Currently unavailable' },
+  'familyFlow.status.Withdrawn': { ar: 'تم سحب الطلب', en: 'Withdrawn' },
   'familyPolicy.adult': { ar: 'فرد الأسرة المعني', en: 'Affected family member' },
   'familyPolicy.memberUnavailable': {
     ar: 'فرد أسرة غير متاح للعرض',
@@ -2096,8 +2115,8 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Check Dependent Access Status',
   },
   'review.checkDependentHelp': {
-    ar: 'أدخل الرقم التعريفي للتابع للتحقق من أهليته الطبية وحالة حظر أو استعادة الوصول',
-    en: 'Enter dependent patient ID to verify medical eligibility and access status',
+    ar: 'اختر الطفل من أفراد أسرتك لعرض حالة الاطلاع الطبي والطلبات المتاحة.',
+    en: 'Choose a child from your family to check medical access and available requests.',
   },
   'review.childIdPlaceholder': {
     ar: 'أدخل الرقم التعريفي للطفل...',
@@ -10011,10 +10030,6 @@ export const TRANSLATIONS: TranslationDictionary = {
   },
   'adminClaims.evidenceCount': { ar: 'عدد المستندات', en: 'Evidence Files' },
   'adminClaims.reviewClaimAction': { ar: 'مراجعة الطلب', en: 'Review Claim' },
-  'adminClaims.loadDemo': {
-    ar: 'عرض طلبات تجريبية للمعاينة',
-    en: 'Load Demo Claims for Preview',
-  },
   'adminClaims.noClaimsTitle': { ar: 'لا توجد طلبات مطابقة', en: 'No Matching Claims Found' },
   'adminClaims.noClaimsDesc': {
     ar: 'لا توجد طلبات إثبات ملكية ملفات مرضى في هذه الحالة حاليًا.',

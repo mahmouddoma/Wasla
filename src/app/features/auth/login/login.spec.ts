@@ -79,53 +79,52 @@ describe('Login', () => {
 
   afterEach(() => localStorage.removeItem('wasla_lang'));
 
-  it('renders unified auth card with in-place mode switching and pricing links', async () => {
+  it('renders the auth form, registration mode tabs and home link', async () => {
     const element: HTMLElement = fixture.nativeElement;
-    const patientReg = element.querySelector<HTMLElement>('#register-patient-btn');
-    const doctorReg = element.querySelector<HTMLElement>('#register-doctor-btn');
-    const pricingLink = element.querySelector<HTMLAnchorElement>('#pricing-landing-link');
+    const patientReg = element.querySelector<HTMLElement>('#mode-tab-patient');
+    const doctorReg = element.querySelector<HTMLElement>('#mode-tab-doctor');
 
     expect(element.textContent).toContain('تسجيل الدخول إلى وصلة');
     expect(patientReg).not.toBeNull();
     expect(doctorReg).not.toBeNull();
-    expect(pricingLink?.getAttribute('href')).toBe('/pricing');
+    expect(element.querySelector('a[routerLink="/"]')).not.toBeNull();
   });
 
-  it('switches between login, doctor registration, and patient registration in place without page reload', async () => {
+  it('delegates mode changes to the Router and waits for successful navigation before changing the view', async () => {
     expect(fixture.componentInstance.activeMode()).toBe('login');
     expect(fixture.nativeElement.querySelector('app-doctor-registration')).toBeNull();
 
     fixture.componentInstance.setMode('doctor');
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(fixture.componentInstance.activeMode()).toBe('doctor');
-    expect(fixture.nativeElement.querySelector('app-doctor-registration')).not.toBeNull();
-
+    expect(navigate).toHaveBeenLastCalledWith(['/register/doctor'], { queryParams: {} });
     fixture.componentInstance.setMode('patient');
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(fixture.componentInstance.activeMode()).toBe('patient');
-    expect(fixture.nativeElement.querySelector('app-patient-registration')).not.toBeNull();
-
-    fixture.componentInstance.setMode('login');
-    fixture.detectChanges();
-    await fixture.whenStable();
-
+    expect(navigate).toHaveBeenLastCalledWith(['/register/patient'], { queryParams: {} });
     expect(fixture.componentInstance.activeMode()).toBe('login');
     expect(fixture.nativeElement.querySelector('.auth-form')).not.toBeNull();
   });
 
+  it('preserves only the validated return target and identifier when switching modes', () => {
+    route.snapshot.queryParamMap.get.mockImplementation(key => ({
+      returnUrl: '/doctors?search=Ahmed&password=secret', identifier: 'patient@example.invalid',
+      password: 'secret',
+    })[key as 'returnUrl'] ?? null);
+    fixture.componentInstance.setMode('patient');
+    expect(navigate).toHaveBeenLastCalledWith(['/register/patient'], {
+      queryParams: { returnUrl: '/doctors?search=Ahmed', identifier: 'patient@example.invalid' },
+    });
+    route.snapshot.queryParamMap.get.mockImplementation(key => key === 'returnUrl' ? '//evil.invalid' : null);
+    fixture.componentInstance.setMode('doctor');
+    expect(navigate).toHaveBeenLastCalledWith(['/register/doctor'], { queryParams: {} });
+  });
+
   it('updates direction and copy when language changes', async () => {
     const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('.auth-unified-container')?.getAttribute('dir')).toBe('rtl');
+    expect(element.querySelector('.auth-right-container')?.getAttribute('dir')).toBe('rtl');
 
     TestBed.inject(LanguageService).setLanguage('en');
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(element.querySelector('.auth-unified-container')?.getAttribute('dir')).toBe('ltr');
+    expect(element.querySelector('.auth-right-container')?.getAttribute('dir')).toBe('ltr');
     expect(element.textContent).toContain('Sign in to Wasla');
   });
 
@@ -142,7 +141,7 @@ describe('Login', () => {
     const pwdInput = element.querySelector<HTMLInputElement>('input[type="password"]');
     expect(pwdInput).not.toBeNull();
 
-    const toggleBtn = element.querySelector<HTMLButtonElement>('.btn-toggle-pwd');
+    const toggleBtn = element.querySelector<HTMLButtonElement>('.btn-toggle-visibility');
     expect(toggleBtn?.getAttribute('aria-pressed')).toBe('false');
     toggleBtn?.click();
     fixture.detectChanges();

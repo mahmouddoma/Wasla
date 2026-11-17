@@ -289,8 +289,8 @@ describe('FamiliesApi', () => {
         childPatientId: 'child',
         affectedAdultPatientId: 'adult',
         reason: 'Consent was withdrawn.',
-        evidenceFiles: [new File(['proof'], 'proof.pdf')],
-        documentTypes: ['ConsentWithdrawal'],
+        evidenceFiles: [new File(['proof'], 'proof.pdf'), new File(['authority'], 'authority.pdf')],
+        documentTypes: ['BirthCertificate', 'GuardianshipDocument'],
         idempotencyKey: 'create-key',
       }),
     );
@@ -298,6 +298,13 @@ describe('FamiliesApi', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('Idempotency-Key')).toBe('create-key');
     expect((request.request.body as FormData).get('ChildPatientId')).toBe('child');
+    expect((request.request.body as FormData).getAll('DocumentTypes')).toEqual([
+      'BirthCertificate',
+      'GuardianshipDocument',
+    ]);
+    expect(
+      (request.request.body as FormData).getAll('EvidenceFiles').map((file) => (file as File).name),
+    ).toEqual(['proof.pdf', 'authority.pdf']);
     request.flush({ requestId: 'case-1' });
     await result;
   });
@@ -342,14 +349,22 @@ describe('FamiliesApi', () => {
       api.resubmitMedicalAccessRequest('case', {
         rowVersion: 'version',
         reason: 'Updated proof',
-        evidenceFiles: [],
-        documentTypes: [],
+        evidenceFiles: [new File(['updated'], 'updated.pdf')],
+        documentTypes: ['BirthCertificate'],
         idempotencyKey: 'resubmit-key',
       }),
     );
     const resubmitRequest = http.expectOne(`${baseUrl}/case/resubmit`);
     expect(resubmitRequest.request.headers.get('Idempotency-Key')).toBe('resubmit-key');
     expect((resubmitRequest.request.body as FormData).get('RowVersion')).toBe('version');
+    expect((resubmitRequest.request.body as FormData).getAll('DocumentTypes')).toEqual([
+      'BirthCertificate',
+    ]);
+    expect(
+      (resubmitRequest.request.body as FormData)
+        .getAll('EvidenceFiles')
+        .map((file) => (file as File).name),
+    ).toEqual(['updated.pdf']);
     resubmitRequest.flush({ requestId: 'case' });
     await resubmission;
   });
@@ -414,14 +429,18 @@ describe('FamiliesApi', () => {
     async (requestType) => {
       const query = { pageNumber: 1, pageSize: 20, requestType };
       const admin = firstValueFrom(api.adminMedicalAccessRequests(query));
-      const adminRequest = http.expectOne((request) => request.url.endsWith('/admin/family-medical-access-requests'));
+      const adminRequest = http.expectOne((request) =>
+        request.url.endsWith('/admin/family-medical-access-requests'),
+      );
       expect(adminRequest.request.params.get('type')).toBe(requestType);
       expect(adminRequest.request.params.has('requestType')).toBe(false);
       adminRequest.flush({ items: [] });
       await admin;
 
       const patient = firstValueFrom(api.myMedicalAccessRequests(query));
-      const patientRequest = http.expectOne((request) => request.url.endsWith('/families/mine/medical-access-requests/mine'));
+      const patientRequest = http.expectOne((request) =>
+        request.url.endsWith('/families/mine/medical-access-requests/mine'),
+      );
       expect(patientRequest.request.params.get('requestType')).toBe(requestType);
       expect(patientRequest.request.params.has('type')).toBe(false);
       patientRequest.flush({ items: [] });
@@ -431,7 +450,9 @@ describe('FamiliesApi', () => {
 
   it('omits both type filter parameters when all admin request types are selected', async () => {
     const result = firstValueFrom(api.adminMedicalAccessRequests({ pageNumber: 1, pageSize: 20 }));
-    const request = http.expectOne((request) => request.url.endsWith('/admin/family-medical-access-requests'));
+    const request = http.expectOne((request) =>
+      request.url.endsWith('/admin/family-medical-access-requests'),
+    );
     expect(request.request.params.has('type')).toBe(false);
     expect(request.request.params.has('requestType')).toBe(false);
     request.flush({ items: [] });
@@ -496,7 +517,12 @@ describe('FamiliesApi', () => {
     for (const action of ['approve', 'reject', 'revoke'] as const) {
       const decision =
         action === 'approve'
-          ? api.approveMedicalEligibility('review', { rowVersion: 'version' })
+          ? api.approveMedicalEligibility('review', {
+              rowVersion: 'version',
+              policyVersion: 'test-policy',
+              basisReference: 'test-basis',
+              authorityRelationshipRequestId: 'test-authority',
+            })
           : action === 'reject'
             ? api.rejectMedicalEligibility('review', { rowVersion: 'version', reason: 'Reason' })
             : api.revokeMedicalEligibility('review', { rowVersion: 'version' });

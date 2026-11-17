@@ -6,6 +6,7 @@ import {
   DestroyRef,
   computed,
   inject,
+  input,
   output,
   signal,
 } from '@angular/core';
@@ -58,17 +59,18 @@ export class PatientRegistration {
 
   readonly backToLogin = output<void>();
   readonly switchRole = output<'patient' | 'doctor'>();
+  readonly embedded = input(false);
 
   protected onBackToLogin(event: Event): void {
     event.preventDefault();
     this.backToLogin.emit();
-    void this.router.navigateByUrl('/login');
+    if (!this.embedded()) void this.router.navigateByUrl('/login');
   }
 
   protected onSwitchRole(role: 'patient' | 'doctor', event: Event): void {
     event.preventDefault();
     this.switchRole.emit(role);
-    void this.router.navigateByUrl(role === 'doctor' ? '/register/doctor' : '/register/patient');
+    if (!this.embedded()) void this.router.navigateByUrl(role === 'doctor' ? '/register/doctor' : '/register/patient');
   }
 
   private readonly api = inject(AuthApi);

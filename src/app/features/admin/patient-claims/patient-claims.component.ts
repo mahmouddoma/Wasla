@@ -30,6 +30,10 @@ import { PageHeader } from '../../../shared/components/page-header/page-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientClaimsComponent {
+  private listGeneration = 0;
+  private detailsGeneration = 0;
+  private decisionGeneration = 0;
+  private evidenceGeneration = 0;
   readonly uiLanguage = inject(LanguageService);
   private readonly api = inject(PatientIdentityApi);
   private readonly session = inject(AuthSession);
@@ -141,14 +145,20 @@ export class PatientClaimsComponent {
   });
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.revokeEvidencePreview());
+    this.destroyRef.onDestroy(() => {
+      ++this.listGeneration;
+      ++this.detailsGeneration;
+      this.revokeEvidencePreview();
+    });
     if (this.canViewAll()) {
       void this.loadClaims(1);
     }
   }
 
   async loadClaims(page = this.pageNumber()): Promise<void> {
-    if (!this.canViewAll()) return;
+    const generation = ++this.listGeneration;
+    const isCurrent = () => generation === this.listGeneration && !this.destroyRef.destroyed && this.canViewAll();
+    if (!isCurrent()) return;
     this.isLoadingList.set(true);
     this.listError.set('');
     this.pageNumber.set(page);
@@ -161,13 +171,15 @@ export class PatientClaimsComponent {
           this.emailSearch().trim() || undefined,
         ),
       );
+      if (!isCurrent()) return;
       this.items.set(response.items);
       this.totalCount.set(response.totalCount);
     } catch (error) {
+      if (!isCurrent()) return;
       const parsed = parseApiErrors(error);
       this.listError.set(parsed.messages[0] || 'common.requestFailed');
     } finally {
-      this.isLoadingList.set(false);
+      if (isCurrent()) this.isLoadingList.set(false);
     }
   }
 
@@ -198,44 +210,6 @@ export class PatientClaimsComponent {
     return translated !== key ? translated : status;
   }
 
-  loadDemoClaims(): void {
-    this.isLoadingList.set(true);
-    setTimeout(() => {
-      this.items.set([
-        {
-          id: 'claim-demo-1',
-          status: 'PendingReview',
-          claimantEmailMasked: 'ahmed.k***@gmail.com',
-          submittedOnUtc: '2026-11-10 14:30',
-          lastActivityOnUtc: '2026-11-10 14:30',
-          evidenceCount: 2,
-          rowVersion: 'rv-demo-1',
-        },
-        {
-          id: 'claim-demo-2',
-          status: 'ModificationRequested',
-          claimantEmailMasked: 'sara.m***@outlook.com',
-          submittedOnUtc: '2026-11-09 11:15',
-          lastActivityOnUtc: '2026-11-10 09:00',
-          evidenceCount: 1,
-          rowVersion: 'rv-demo-2',
-        },
-        {
-          id: 'claim-demo-3',
-          status: 'ApprovedPendingActivation',
-          claimantEmailMasked: 'khaled.o***@yahoo.com',
-          submittedOnUtc: '2026-11-08 18:45',
-          lastActivityOnUtc: '2026-11-09 10:20',
-          evidenceCount: 3,
-          rowVersion: 'rv-demo-3',
-        },
-      ]);
-      this.totalCount.set(3);
-      this.statusFilter.set('');
-      this.isLoadingList.set(false);
-    }, 700);
-  }
-
   onEmailSearchInput(event: Event): void {
     this.emailSearch.set((event.target as HTMLInputElement).value);
   }
@@ -246,7 +220,10 @@ export class PatientClaimsComponent {
   }
 
   async openClaimDrawer(claimId: string): Promise<void> {
-    if (!this.canViewDetails()) return;
+    if (!this.canViewDetails() || this.destroyRef.destroyed) return;
+    this.revokeEvidencePreview();
+    this.claimDetails.set(null);
+    this.claimHistory.set([]);
     this.selectedClaimId.set(claimId);
     this.drawerOpen.set(true);
     this.resetDecisionInputs();
@@ -254,19 +231,25 @@ export class PatientClaimsComponent {
   }
 
   closeDrawer(): void {
+    ++this.detailsGeneration;
     this.drawerOpen.set(false);
     this.selectedClaimId.set('');
     this.claimDetails.set(null);
     this.claimHistory.set([]);
+    this.isLoadingDetails.set(false);
     this.resetDecisionInputs();
     this.revokeEvidencePreview();
   }
 
   async loadClaimDetails(claimId: string): Promise<void> {
+    const generation = ++this.detailsGeneration;
+    const isCurrent = () => generation === this.detailsGeneration && this.isCurrentClaim(claimId);
+    if (!isCurrent()) return;
     this.isLoadingDetails.set(true);
     this.drawerError.set('');
     try {
       const details = await firstValueFrom(this.api.adminClaimDetails(claimId));
+      if (!isCurrent()) return;
       this.claimDetails.set(details);
       if (details.candidatePatients.length === 1) {
         this.selectedTargetPatientId.set(details.candidatePatients[0].patientId);
@@ -275,15 +258,16 @@ export class PatientClaimsComponent {
       }
       try {
         const history = await firstValueFrom(this.api.claimHistory(claimId));
-        this.claimHistory.set(history);
+        if (isCurrent()) this.claimHistory.set(history);
       } catch {
-        this.claimHistory.set([]);
+        if (isCurrent()) this.claimHistory.set([]);
       }
     } catch (error) {
+      if (!isCurrent()) return;
       const parsed = parseApiErrors(error);
       this.drawerError.set(parsed.messages[0] || 'common.requestFailed');
     } finally {
-      this.isLoadingDetails.set(false);
+      if (isCurrent()) this.isLoadingDetails.set(false);
     }
   }
 
@@ -312,29 +296,47 @@ export class PatientClaimsComponent {
 
   async previewEvidence(evidenceId: string): Promise<void> {
     const claimId = this.selectedClaimId();
-    if (!claimId || !this.canViewEvidence()) return;
+    if (!this.isCurrentClaim(claimId) || !this.canViewEvidence()) return;
     this.revokeEvidencePreview();
+    const generation = this.evidenceGeneration;
+    const isCurrent = () => generation === this.evidenceGeneration && this.isCurrentClaim(claimId) &&
+      this.canViewEvidence() && this.previewEvidenceId() === evidenceId;
     this.isLoadingEvidence.set(true);
     this.previewEvidenceId.set(evidenceId);
     try {
       const response = await firstValueFrom(this.api.adminClaimEvidence(claimId, evidenceId));
+      if (!isCurrent()) return;
       const blob = response.body;
       if (blob && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
         this.previewContentType.set(blob.type || 'image/jpeg');
         this.previewBlobUrl.set(URL.createObjectURL(blob));
       }
-      if (!this.isEvidenceReviewed(evidenceId)) {
-        this.reviewedEvidenceIds.update((list) => [...list, evidenceId]);
-      }
     } catch (error) {
+      if (!isCurrent()) return;
       const parsed = parseApiErrors(error);
       this.toast.error(this.uiLanguage.t(parsed.messages[0] || 'common.requestFailed'));
     } finally {
-      this.isLoadingEvidence.set(false);
+      if (isCurrent()) this.isLoadingEvidence.set(false);
     }
   }
 
+  onEvidencePreviewLoaded(url: string): void {
+    const evidenceId = this.previewEvidenceId();
+    if (!url || url !== this.previewBlobUrl() || !evidenceId ||
+      !this.isCurrentClaim(this.selectedClaimId()) || !this.canViewEvidence()) return;
+    if (!this.isEvidenceReviewed(evidenceId)) {
+      this.reviewedEvidenceIds.update((list) => [...list, evidenceId]);
+    }
+  }
+
+  private isCurrentClaim(claimId: string): boolean {
+    return !this.destroyRef.destroyed && this.drawerOpen() && !!claimId &&
+      this.selectedClaimId() === claimId && this.canViewDetails();
+  }
+
   revokeEvidencePreview(): void {
+    ++this.evidenceGeneration;
+    this.isLoadingEvidence.set(false);
     const currentUrl = this.previewBlobUrl();
     if (currentUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
       URL.revokeObjectURL(currentUrl);
@@ -348,6 +350,8 @@ export class PatientClaimsComponent {
     const details = this.claimDetails();
     if (!details || !this.canSubmitApprove()) return;
 
+    const generation = this.decisionGeneration;
+    const isCurrent = () => generation === this.decisionGeneration && this.isCurrentClaim(details.claimRequestId);
     this.isSubmittingDecision.set(true);
     this.drawerError.set('');
     const idempotencyKey = this.generateUuid();
@@ -365,6 +369,10 @@ export class PatientClaimsComponent {
         ),
       );
       this.toast.success(this.uiLanguage.t('adminClaims.approvedToast'));
+      if (!isCurrent()) {
+        if (!this.destroyRef.destroyed) await this.loadClaims();
+        return;
+      }
       this.claimDetails.update((prev) =>
         prev
           ? {
@@ -381,9 +389,9 @@ export class PatientClaimsComponent {
       );
       await this.loadClaims(this.pageNumber());
     } catch (error) {
-      await this.handleDecisionError(error, details.claimRequestId);
+      if (isCurrent()) await this.handleDecisionError(error, details.claimRequestId);
     } finally {
-      this.isSubmittingDecision.set(false);
+      if (isCurrent()) this.isSubmittingDecision.set(false);
     }
   }
 
@@ -397,6 +405,8 @@ export class PatientClaimsComponent {
     )
       return;
 
+    const generation = this.decisionGeneration;
+    const isCurrent = () => generation === this.decisionGeneration && this.isCurrentClaim(details.claimRequestId);
     this.isSubmittingDecision.set(true);
     this.drawerError.set('');
     const idempotencyKey = this.generateUuid();
@@ -412,6 +422,10 @@ export class PatientClaimsComponent {
         ),
       );
       this.toast.success(this.uiLanguage.t('adminClaims.modificationRequestedToast'));
+      if (!isCurrent()) {
+        if (!this.destroyRef.destroyed) await this.loadClaims();
+        return;
+      }
       this.claimDetails.update((prev) =>
         prev
           ? {
@@ -428,9 +442,9 @@ export class PatientClaimsComponent {
       );
       await this.loadClaims(this.pageNumber());
     } catch (error) {
-      await this.handleDecisionError(error, details.claimRequestId);
+      if (isCurrent()) await this.handleDecisionError(error, details.claimRequestId);
     } finally {
-      this.isSubmittingDecision.set(false);
+      if (isCurrent()) this.isSubmittingDecision.set(false);
     }
   }
 
@@ -444,6 +458,8 @@ export class PatientClaimsComponent {
     )
       return;
 
+    const generation = this.decisionGeneration;
+    const isCurrent = () => generation === this.decisionGeneration && this.isCurrentClaim(details.claimRequestId);
     this.isSubmittingDecision.set(true);
     this.drawerError.set('');
     const idempotencyKey = this.generateUuid();
@@ -459,6 +475,10 @@ export class PatientClaimsComponent {
         ),
       );
       this.toast.success(this.uiLanguage.t('adminClaims.rejectedToast'));
+      if (!isCurrent()) {
+        if (!this.destroyRef.destroyed) await this.loadClaims();
+        return;
+      }
       this.claimDetails.update((prev) =>
         prev
           ? {
@@ -475,9 +495,9 @@ export class PatientClaimsComponent {
       );
       await this.loadClaims(this.pageNumber());
     } catch (error) {
-      await this.handleDecisionError(error, details.claimRequestId);
+      if (isCurrent()) await this.handleDecisionError(error, details.claimRequestId);
     } finally {
-      this.isSubmittingDecision.set(false);
+      if (isCurrent()) this.isSubmittingDecision.set(false);
     }
   }
 
@@ -499,6 +519,8 @@ export class PatientClaimsComponent {
   }
 
   private resetDecisionInputs(): void {
+    ++this.decisionGeneration;
+    this.isSubmittingDecision.set(false);
     this.selectedTargetPatientId.set('');
     this.reviewedEvidenceIds.set([]);
     this.reviewNote.set('');

@@ -1,7 +1,8 @@
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../core/notifications/toast.service';
@@ -118,8 +119,9 @@ describe('PatientClaimsComponent', () => {
     ),
   };
 
+  const hasPermission = signal(true);
   const session = {
-    hasPermission: vi.fn(() => true),
+    hasPermission: vi.fn(() => hasPermission()),
   };
 
   const toast = {
@@ -130,6 +132,11 @@ describe('PatientClaimsComponent', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     identityApi.adminClaimDetails.mockReturnValue(of(sampleClaimDetails));
+    hasPermission.set(true);
+    vi.stubGlobal('URL', class extends URL {
+      static override createObjectURL = vi.fn(() => 'blob:preview');
+      static override revokeObjectURL = vi.fn();
+    });
 
     TestBed.configureTestingModule({
       imports: [PatientClaimsComponent],
@@ -147,13 +154,16 @@ describe('PatientClaimsComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => localStorage.removeItem('wasla_lang'));
+  afterEach(() => {
+    localStorage.removeItem('wasla_lang');
+    vi.unstubAllGlobals();
+  });
 
   it('loads pending claims on initialization and renders claim rows', () => {
     expect(component).toBeTruthy();
     expect(identityApi.adminClaims).toHaveBeenCalledWith('PendingReview', 1, 20, undefined);
     expect(component.items().length).toBe(1);
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="claim-row"]').length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('m***@example.com');
   });
 
   it('opens slide-over drawer with claim details and requires explicit candidate + evidence selection before approval', async () => {
@@ -169,6 +179,8 @@ describe('PatientClaimsComponent', () => {
     // Select candidate patient and mark evidence as reviewed
     component.selectCandidatePatient('pat-101');
     await component.previewEvidence('ev-1');
+    expect(component.isEvidenceReviewed('ev-1')).toBe(false);
+    component.onEvidencePreviewLoaded(component.previewBlobUrl());
     expect(component.isEvidenceReviewed('ev-1')).toBe(true);
     expect(component.canSubmitApprove()).toBe(true);
 
@@ -209,6 +221,8 @@ describe('PatientClaimsComponent', () => {
 
     expect(toast.error).toHaveBeenCalled();
     expect(component.claimDetails()?.rowVersion).toBe('rv-updated-99');
+    expect(component.isSubmittingDecision()).toBe(false);
+    expect(identityApi.approveClaim).toHaveBeenCalledOnce();
   });
 
   it('submits request modification and rejection with reason and rowVersion', async () => {
@@ -243,6 +257,113 @@ describe('PatientClaimsComponent', () => {
   it('translates status via getStatusLabel', () => {
     expect(component.getStatusLabel('PendingReview')).toBeTruthy();
     expect(component.getStatusLabel('Rejected')).toBeTruthy();
+  });
+
+  it('ignores claim A details after opening B, including errors and loading state', async () => {
+    const pending = new Subject<AdminClaimDetails>();
+    identityApi.adminClaimDetails.mockReturnValueOnce(pending);
+    const openingA = component.openClaimDrawer('claim-A');
+    const b = { ...sampleClaimDetails, claimRequestId: 'claim-B', patientReference: 'patient-B' };
+    identityApi.adminClaimDetails.mockReturnValueOnce(of(b));
+    await component.openClaimDrawer('claim-B');
+    pending.next(sampleClaimDetails);
+    await openingA;
+    expect(component.claimDetails()).toBe(b);
+    expect(component.selectedTargetPatientId()).toBe('patient-B');
+  });
+
+  it('ignores late history after closing the drawer', async () => {
+    const history = new Subject<import('../../../domains/patient-identity').ClaimHistoryItem[]>();
+    identityApi.claimHistory.mockReturnValueOnce(history);
+    const opening = component.openClaimDrawer('claim-1');
+    await Promise.resolve();
+    component.closeDrawer();
+    history.next([]);
+    await opening;
+    expect(component.claimDetails()).toBeNull();
+    expect(component.claimHistory()).toEqual([]);
+    expect(component.isLoadingDetails()).toBe(false);
+  });
+
+  it.each(['switch', 'close', 'destroy', 'permission'] as const)(
+    'ignores pending evidence on %s without creating a blob URL or marking reviewed', async (action) => {
+      await component.openClaimDrawer('claim-1');
+      const evidence = new Subject<HttpResponse<Blob>>();
+      identityApi.adminClaimEvidence.mockReturnValueOnce(evidence);
+      const preview = component.previewEvidence('ev-1');
+      if (action === 'switch') await component.openClaimDrawer('claim-2');
+      if (action === 'close') component.closeDrawer();
+      if (action === 'destroy') fixture.destroy();
+      if (action === 'permission') hasPermission.set(false);
+      evidence.next(new HttpResponse({ body: new Blob(['old']) }));
+      await preview;
+      expect(URL.createObjectURL).not.toHaveBeenCalled();
+      expect(component.previewBlobUrl()).toBe('');
+      expect(component.reviewedEvidenceIds()).toEqual([]);
+    },
+  );
+
+  it('retains the newest evidence when an older response or load event arrives last', async () => {
+    await component.openClaimDrawer('claim-1');
+    const older = new Subject<HttpResponse<Blob>>();
+    identityApi.adminClaimEvidence.mockReturnValueOnce(older);
+    const oldPreview = component.previewEvidence('old');
+    await component.previewEvidence('ev-1');
+    const current = component.previewBlobUrl();
+    component.onEvidencePreviewLoaded('blob:old');
+    expect(component.reviewedEvidenceIds()).toEqual([]);
+    component.onEvidencePreviewLoaded(current);
+    older.next(new HttpResponse({ body: new Blob(['old']) }));
+    await oldPreview;
+    expect(component.previewBlobUrl()).toBe(current);
+    expect(component.reviewedEvidenceIds()).toEqual(['ev-1']);
+    component.closeDrawer();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(current);
+  });
+
+  it.each([403, 404])('reports a current evidence HTTP %s without marking reviewed', async (status) => {
+    await component.openClaimDrawer('claim-1');
+    identityApi.adminClaimEvidence.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status })));
+    await component.previewEvidence('ev-1');
+    expect(toast.error).toHaveBeenCalled();
+    expect(component.reviewedEvidenceIds()).toEqual([]);
+    expect(component.isLoadingEvidence()).toBe(false);
+  });
+
+  it('does not apply a decision response for A to the newly opened B drawer', async () => {
+    await component.openClaimDrawer('claim-1');
+    component.selectCandidatePatient('pat-101');
+    component.reviewedEvidenceIds.set(['ev-1']);
+    const response = new Subject<{
+      claimRequestId: string; status: string; targetPatientId: string;
+      rowVersion: string; invitationExpiresOnUtc: string;
+    }>();
+    identityApi.approveClaim.mockReturnValueOnce(response);
+    const approving = component.approveClaim();
+    const b = { ...sampleClaimDetails, claimRequestId: 'claim-2' };
+    identityApi.adminClaimDetails.mockReturnValueOnce(of(b));
+    await component.openClaimDrawer('claim-2');
+    response.next({ claimRequestId: 'claim-1', status: 'ApprovedPendingActivation',
+      targetPatientId: 'pat-101', rowVersion: 'old-decision', invitationExpiresOnUtc: '' });
+    await approving;
+    expect(component.claimDetails()).toBe(b);
+    expect(component.isSubmittingDecision()).toBe(false);
+  });
+
+  it('ignores image load events from a replaced preview element', async () => {
+    vi.mocked(URL.createObjectURL).mockReturnValueOnce('blob:old').mockReturnValueOnce('blob:new');
+    await component.openClaimDrawer('claim-1');
+    await component.previewEvidence('ev-1');
+    fixture.detectChanges();
+    const older = fixture.nativeElement.querySelector('.evidence-preview-img') as HTMLImageElement;
+    await component.previewEvidence('ev-1');
+    fixture.detectChanges();
+    const current = fixture.nativeElement.querySelector('.evidence-preview-img') as HTMLImageElement;
+    expect(current).not.toBe(older);
+    older.dispatchEvent(new Event('load'));
+    expect(component.reviewedEvidenceIds()).toEqual([]);
+    current.dispatchEvent(new Event('load'));
+    expect(component.reviewedEvidenceIds()).toEqual(['ev-1']);
   });
 });
 

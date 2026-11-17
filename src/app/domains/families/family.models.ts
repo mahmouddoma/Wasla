@@ -158,13 +158,23 @@ export interface FamilyMedicalCase {
   documents: FamilyMedicalDocument[];
 }
 
+// Wire enum values only; the server's approved policy must further restrict these.
+export type FamilyMedicalEvidenceType =
+  | 'RequesterNationalIdFront'
+  | 'RequesterNationalIdBack'
+  | 'TargetNationalIdFront'
+  | 'TargetNationalIdBack'
+  | 'BirthCertificate'
+  | 'GuardianshipDocument'
+  | 'Other';
+
 export interface CreateFamilyMedicalAccessRequest {
   requestType: FamilyMedicalAccessRequestType;
   childPatientId: string;
   affectedAdultPatientId: string;
   reason: string;
   evidenceFiles: File[];
-  documentTypes: string[];
+  documentTypes: FamilyMedicalEvidenceType[];
   idempotencyKey: string;
 }
 
@@ -172,7 +182,7 @@ export interface ResubmitFamilyMedicalAccessRequest {
   rowVersion: string;
   reason: string;
   evidenceFiles: File[];
-  documentTypes: string[];
+  documentTypes: FamilyMedicalEvidenceType[];
   idempotencyKey?: string;
 }
 

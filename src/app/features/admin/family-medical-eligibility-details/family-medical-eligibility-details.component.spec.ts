@@ -1,7 +1,7 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { FamiliesApi, FamilyMedicalEligibilityReview } from '../../../domains/families';
@@ -25,6 +25,20 @@ describe('FamilyMedicalEligibilityDetailsComponent', () => {
     reviewedAtUtc: null,
     createdAtUtc: '2026-10-10T12:00:00Z',
     rowVersion: 'ver-1',
+    canApprove: true,
+    policyVersion: 'test-policy',
+    basisReference: 'test-basis',
+    authorityRelationshipRequestId: 'test-authority',
+    adultVerification: {
+      familyMemberId: 'adult',
+      relationshipRequestId: 'adult-proof',
+      verifiedOnUtc: '2026-10-10T00:00:00Z',
+    },
+    childVerification: {
+      familyMemberId: 'child',
+      relationshipRequestId: 'child-proof',
+      verifiedOnUtc: '2026-10-10T00:00:00Z',
+    },
     capabilities: {
       canApprove: true,
       canReject: true,
@@ -90,8 +104,46 @@ describe('FamilyMedicalEligibilityDetailsComponent', () => {
     component['noteModel'].set({ text: 'Eligibility confirmed' });
     await component['submitAction']();
 
-    expect(mockApi.approveMedicalEligibility).toHaveBeenCalled();
+    expect(mockApi.approveMedicalEligibility).toHaveBeenCalledWith('rev-123', {
+      rowVersion: 'ver-1',
+      policyVersion: 'test-policy',
+      basisReference: 'test-basis',
+      authorityRelationshipRequestId: 'test-authority',
+      reason: 'Eligibility confirmed',
+      idempotencyKey: expect.any(String),
+    });
     expect(mockToast.success).toHaveBeenCalled();
+  });
+
+  it.each([
+    'policyVersion',
+    'basisReference',
+    'authorityRelationshipRequestId',
+    'adultVerification',
+    'childVerification',
+  ] as const)('blocks approval without %s', async (field) => {
+    mockApi.medicalEligibilityReview.mockReturnValueOnce(of({ ...mockReview, [field]: null }));
+    fixture.componentRef.setInput('reviewIdInput', 'rev-123');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await component['submitAction']();
+    expect(mockApi.approveMedicalEligibility).not.toHaveBeenCalled();
+    expect(component['messages']().length).toBeGreaterThan(0);
+  });
+
+  it.each([409, 422])('handles eligibility approval HTTP %s without retrying', async (status) => {
+    mockApi.approveMedicalEligibility.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status, error: { detail: 'Policy unavailable' } })),
+    );
+    fixture.componentRef.setInput('reviewIdInput', 'rev-123');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await component['submitAction']();
+    expect(mockApi.approveMedicalEligibility).toHaveBeenCalledTimes(1);
+    expect(mockToast.success).not.toHaveBeenCalled();
+    expect(mockToast.error).toHaveBeenCalled();
+    if (status === 409) expect(mockApi.medicalEligibilityReview).toHaveBeenCalledTimes(2);
+    else expect(component['messages']()).toContain('Policy unavailable');
   });
 
   it('should call rejectMedicalEligibility and toast on reject', async () => {

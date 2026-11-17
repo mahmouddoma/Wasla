@@ -1,6 +1,6 @@
 import { ToastService } from '../../../core/notifications/toast.service';
 import { LanguageService } from '../../../core/i18n/language.service';
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import {
   FormField,
   email,
@@ -10,7 +10,7 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { AuthApi } from '../../../core/auth/auth-api';
@@ -23,7 +23,7 @@ import { PlanSelectorComponent } from '../../subscriptions';
 
 @Component({
   selector: 'app-doctor-registration',
-  imports: [FormField, RouterLink, FileUpload, NoFutureDate, TranslatePipe, PlanSelectorComponent],
+  imports: [FormField, FileUpload, NoFutureDate, TranslatePipe, PlanSelectorComponent],
   templateUrl: './doctor-registration.html',
   styleUrls: ['../registration.css', './doctor-registration.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,17 +34,18 @@ export class DoctorRegistration {
 
   readonly backToLogin = output<void>();
   readonly switchRole = output<'patient' | 'doctor'>();
+  readonly embedded = input(false);
 
   protected onBackToLogin(event: Event): void {
     event.preventDefault();
     this.backToLogin.emit();
-    void this.router.navigateByUrl('/login');
+    if (!this.embedded()) void this.router.navigateByUrl('/login');
   }
 
   protected onSwitchRole(role: 'patient' | 'doctor', event: Event): void {
     event.preventDefault();
     this.switchRole.emit(role);
-    void this.router.navigateByUrl(role === 'doctor' ? '/register/doctor' : '/register/patient');
+    if (!this.embedded()) void this.router.navigateByUrl(role === 'doctor' ? '/register/doctor' : '/register/patient');
   }
 
   private readonly api = inject(AuthApi);

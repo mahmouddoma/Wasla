@@ -3,9 +3,13 @@ import { provideRouter } from '@angular/router';
 import { CurrentUser } from '../../../core/auth/auth.models';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { AppHeader } from './app-header';
+import { HttpResponse } from '@angular/common/http';
+import { Subject } from 'rxjs';
+import { PatientsApi } from '../../../domains/patients/patients-api';
 
 describe('AppHeader', () => {
   let fixture: ComponentFixture<AppHeader>;
+  const patientsApi = { profileImage: vi.fn(() => new Subject<HttpResponse<Blob>>()) };
   const user: CurrentUser = {
     applicationUserId: 'user-1',
     userName: 'منى أحمد',
@@ -21,7 +25,7 @@ describe('AppHeader', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppHeader],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: PatientsApi, useValue: patientsApi }],
     }).compileComponents();
     TestBed.inject(LanguageService).setLanguage('ar');
     fixture = TestBed.createComponent(AppHeader);
@@ -99,12 +103,12 @@ describe('AppHeader', () => {
     expect(root().querySelector('.btn-topbar-logout')?.getAttribute('aria-label')).toBe('Sign Out');
   });
 
-  it('renders complete unified 7 guest links and guest auth buttons when user is null', () => {
+  it('renders the guest navigation and auth actions when user is null', () => {
     fixture.componentRef.setInput('user', null);
     fixture.detectChanges();
 
     const links = root().querySelectorAll('.header-role-nav .header-nav-link');
-    expect(links.length).toBe(7);
+    expect(links.length).toBe(4);
     expect(root().querySelector('#header-login-btn')).not.toBeNull();
     expect(root().querySelector('#header-start-cta')).not.toBeNull();
 
@@ -116,5 +120,53 @@ describe('AppHeader', () => {
     mobileBtn!.click();
     fixture.detectChanges();
     expect(root().querySelector('#header-guest-mobile-drawer')).not.toBeNull();
+  });
+
+  describe('patient avatar lifetime', () => {
+    let pending: Subject<HttpResponse<Blob>>;
+    const patient = { ...user, userType: 'Patient' as const, patientId: 'patient-A' };
+    const image = () => new HttpResponse({ body: new Blob(['image'], { type: 'image/png' }) });
+    beforeEach(() => {
+      vi.stubGlobal('URL', class extends URL {
+        static override createObjectURL = vi.fn(() => 'blob:current-avatar');
+        static override revokeObjectURL = vi.fn();
+      });
+      pending = new Subject<HttpResponse<Blob>>();
+      patientsApi.profileImage.mockReturnValueOnce(pending);
+      fixture.componentRef.setInput('user', patient);
+      fixture.detectChanges();
+    });
+
+    it.each(['patient', 'anonymous', 'destroy'] as const)('cancels old requests on %s', (change) => {
+      if (change === 'destroy') fixture.destroy();
+      else {
+        fixture.componentRef.setInput('user', change === 'anonymous' ? null : { ...patient, patientId: 'B', applicationUserId: 'B' });
+        fixture.detectChanges();
+      }
+      expect(pending.observed).toBe(false);
+      pending.next(image());
+      expect(URL.createObjectURL).not.toHaveBeenCalled();
+      expect(fixture.componentInstance['avatarUrl']()).toBeNull();
+    });
+
+    it('clears the old avatar immediately, preserves the newer success on an old error, and revokes on destroy', () => {
+      const calls = patientsApi.profileImage.mock.calls.length;
+      pending.next(image());
+      fixture.detectChanges();
+      expect(patientsApi.profileImage.mock.calls.length).toBe(calls);
+      expect(fixture.componentInstance['avatarUrl']()).toBe('blob:current-avatar');
+      const next = new Subject<HttpResponse<Blob>>();
+      patientsApi.profileImage.mockReturnValueOnce(next);
+      fixture.componentRef.setInput('user', { ...patient, patientId: 'B', applicationUserId: 'B' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance['avatarUrl']()).toBeNull();
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:current-avatar');
+      next.next(image());
+      pending.error(new Error('old failure'));
+      expect(fixture.componentInstance['avatarUrl']()).toBe('blob:current-avatar');
+      fixture.destroy();
+      expect(next.observed).toBe(false);
+      expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2);
+    });
   });
 });

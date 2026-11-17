@@ -12,7 +12,7 @@
       <button
         type="button"
         class="btn btn-primary btn-create-header"
-        [disabled]="checkingChild() || !canRequestAny()" (click)="openNewRequestModal()"
+        (click)="showEvidenceUnavailable()"
       >
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         <span>{{ 'common.createRequest' | t }}</span>
@@ -20,660 +20,551 @@
     </div>
   </app-page-header>
 
-  @if (checkChildId() && !checkingChild() && !canRequestAny()) { <p role="status">{{ 'familyPolicy.requestUnavailable' | t }}</p> }
-  <!-- Master-Detail Split Layout -->
-  <div class="medical-access-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
-    <!-- Master Pane: Child Inspector & Requests Directory -->
-    <div class="medical-access-master-pane">
-      <!-- 1. Check Child Dependent Medical Access Status Surface -->
-      <section class="child-check-surface" aria-labelledby="child-check-title">
-        <div class="check-surface-header">
-          <div class="header-title-wrap">
-            <span class="header-dot" aria-hidden="true"></span>
-            <h3 id="child-check-title" class="check-surface-title">{{ 'review.checkDependentTitle' | t }}</h3>
-          </div>
-          <p class="check-surface-subtitle">{{ 'review.checkDependentHelp' | t }}</p>
+  @if (checkChildId() && !checkingChild() && !canRequestAny()) {
+    <p role="status">{{ 'familyPolicy.requestUnavailable' | t }}</p>
+  }
+
+  <div class="medical-access-master-pane">
+    <section class="child-check-surface" aria-labelledby="child-check-title">
+      <div class="check-surface-header">
+        <div class="header-title-wrap">
+          <h3 id="child-check-title" class="check-surface-title">
+            {{ 'review.checkDependentTitle' | t }}
+          </h3>
         </div>
+        <p class="check-surface-subtitle">{{ 'review.checkDependentHelp' | t }}</p>
+      </div>
 
-        <div class="child-check-form-row">
-          <div class="check-input-group">
-            <label for="check-child-input" class="check-label">{{ 'familyPolicy.child' | t }}</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-id-card input-icon" aria-hidden="true"></i>
-              <select id="check-child-input" class="family-member-select" [value]="checkChildId()" (change)="selectCheckChild($event)">
-                <option value="">{{ 'common.choose' | t }}</option>
-                @for (child of children(); track child.patientId) { <option [value]="child.patientId">{{ memberName(child.patientId) }}</option> }
-              </select>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="btn-check-child"
-            [disabled]="checkingChild() || !checkChildId()"
-            (click)="checkDependentAccess(checkChildId())"
-          >
-            @if (checkingChild()) {
-              <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-              <span>{{ 'common.loading' | t }}</span>
-            } @else {
-              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-              <span>{{ 'common.check' | t }}</span>
-            }
-          </button>
-        </div>
-
-        @if (childStatus(); as cs) {
-          <div class="child-status-card" [class.allowed]="cs.canView" [class.restricted]="!cs.canView">
-            <div class="status-summary-side">
-              <div class="status-icon-wrap" aria-hidden="true">
-                <i [class]="cs.canView ? 'fa-solid fa-shield-check' : 'fa-solid fa-shield-halved'"></i>
-              </div>
-              <div class="status-texts">
-                <div class="status-main-line">
-                  <span class="status-indicator-title">{{ 'review.eligibilityStatus' | t }}:</span>
-                  <span class="status-badge" [class.badge-allowed]="cs.canView" [class.badge-restricted]="!cs.canView">
-                    <span class="badge-dot" aria-hidden="true"></span>
-                    <span>{{ cs.canView ? ('common.allowed' | t) : ('common.restricted' | t) }}</span>
-                  </span>
-                  <span class="raw-status-tag">{{ cs.status }}</span>
-                </div>
-                <p class="status-explanation">
-                  {{ cs.canView ? 'الوصول الطبي لهذا التابع مصرح به حالياً للأطراف المعتمدة.' : 'الوصول الطبي مقيد ولا يمكن استعراض السجلات الطبية لهذا التابع.' }}
-                </p>
-              </div>
-            </div>
-
-            <div class="status-actions-side">
-              @if (cs.canRequestRestriction) {
-                <button
-                  type="button"
-                  class="btn-status-action btn-action-restrict"
-                  (click)="openNewRequestModalWith('Restriction', checkChildId())"
-                >
-                  <i class="fa-solid fa-ban" aria-hidden="true"></i>
-                  <span>{{ 'review.restriction' | t }}</span>
-                </button>
+      @if (membersLoading()) {
+        <p role="status">{{ 'common.loading' | t }}</p>
+      } @else if (membersFailed()) {
+        <p role="alert">{{ 'common.failedToLoad' | t }}</p>
+        <button type="button" class="btn btn-outline-secondary" (click)="loadMembers()">
+          {{ 'common.refresh' | t }}
+        </button>
+      } @else if (!children().length) {
+        <p role="status">{{ 'familyPolicy.noChildren' | t }}</p>
+      }
+      <div class="child-check-form-row">
+        <div class="check-input-group">
+          <label for="check-child-input" class="check-label">{{ 'familyPolicy.child' | t }}</label>
+          <div class="input-with-icon select-wrap">
+            <i class="fa-solid fa-id-card input-icon" aria-hidden="true"></i>
+            <select
+              [disabled]="membersLoading() || membersFailed() || !children().length"
+              id="check-child-input"
+              class="family-member-select"
+              [value]="checkChildId()"
+              (change)="selectCheckChild($event)"
+            >
+              <option value="">{{ 'common.choose' | t }}</option>
+              @for (child of children(); track child.patientId) {
+                <option [value]="child.patientId">{{ memberName(child.patientId) }}</option>
               }
-              @if (cs.canRequestRestoration) {
-                <button
-                  type="button"
-                  class="btn-status-action btn-action-restore"
-                  (click)="openNewRequestModalWith('Restoration', checkChildId())"
-                >
-                  <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                  <span>{{ 'review.restoration' | t }}</span>
-                </button>
-              }
-            </div>
-          </div>
-        }
-      </section>
-
-      <!-- 2. Medical Access Requests Directory -->
-      <section class="requests-surface surface-block" aria-labelledby="requests-table-title">
-        <div class="section-top-bar">
-          <div class="section-title-wrap">
-            <span class="section-badge-dot" aria-hidden="true"></span>
-            <h2 id="requests-table-title" class="section-title">{{ 'review.medicalAccessRequests' | t }}</h2>
-            @if (listResult()?.totalCount; as total) {
-              <span class="count-chip">{{ total }}</span>
-            }
-          </div>
-
-          <!-- Filters Deck with Custom Selects -->
-          <div class="filter-controls-wrap">
-            <div class="filter-control-item">
-              <span class="filter-label">{{ 'common.statusLabel' | t }}</span>
-              <div class="select-wrap">
-                <select class="form-select filter-select" [value]="status()" (change)="setFilter('status', $event)">
-                  <option value="">{{ 'common.all' | t }}</option>
-                  <option value="Pending">{{ 'common.pendingReview' | t }}</option>
-                  <option value="ModificationRequested">{{ 'common.modificationRequested' | t }}</option>
-                  <option value="Approved">{{ 'common.approved' | t }}</option>
-                  <option value="Rejected">{{ 'common.rejected' | t }}</option>
-                  <option value="Withdrawn">{{ 'common.withdrawn' | t }}</option>
-                </select>
-                <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                </svg>
-              </div>
-            </div>
-
-            <div class="filter-control-item">
-              <span class="filter-label">{{ 'review.requestType' | t }}</span>
-              <div class="select-wrap">
-                <select class="form-select filter-select" [value]="requestType()" (change)="setFilter('requestType', $event)">
-                  <option value="">{{ 'common.all' | t }}</option>
-                  <option value="Restriction">{{ 'review.restriction' | t }}</option>
-                  <option value="Restoration">{{ 'review.restoration' | t }}</option>
-                </select>
-                <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                </svg>
-              </div>
-            </div>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" />
+            </svg>
           </div>
         </div>
 
-        @if (messages().length > 0 && detailMode() === null) {
-          <div class="error-banner" role="alert">
-            @for (msg of messages(); track msg) {
-              <p><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ msg }}</p>
-            }
-          </div>
-        }
-
-        <!-- Table & States -->
-        @if (loading()) {
-          <div class="table-skeleton-wrap p-4" role="status" [attr.aria-label]="'common.loading' | t">
-            <span class="visually-hidden">{{ 'common.loading' | t }}</span>
-            <div class="skeleton-shimmer w-full h-44 rounded-md mb-3"></div>
-            @for (row of [1, 2, 3]; track row) {
-              <div class="skeleton-shimmer w-full h-36 rounded-md mb-2"></div>
-            }
-          </div>
-        } @else if (!listResult()?.items?.length) {
-          <div class="empty-requests-state">
-            <img
-              src="/SVG-AVATAR/Medical prescription-amico.svg"
-              alt=""
-              loading="lazy"
-              decoding="async"
-              class="empty-state-illustration"
-            />
-            <h3 class="empty-state-title">{{ 'review.emptyTitle' | t }}</h3>
-            <p class="empty-state-desc">{{ 'review.emptyDesc' | t }}</p>
-            <button type="button" class="btn btn-primary" (click)="openNewRequestModal()">
-              <i class="fa-solid fa-plus" aria-hidden="true"></i>
-              <span>{{ 'common.createRequest' | t }}</span>
-            </button>
-          </div>
-        } @else {
-          <div class="table-container">
-            <table class="directory-table">
-              <thead>
-                <tr>
-                  <th scope="col">{{ 'review.requestType' | t }}</th>
-                  <th scope="col">{{ 'common.statusLabel' | t }}</th>
-                  <th scope="col">{{ 'familyPolicy.child' | t }}</th>
-                  <th scope="col">{{ 'familyPolicy.adult' | t }}</th>
-                  <th scope="col">{{ 'review.reason' | t }}</th>
-                  <th scope="col">{{ 'review.submittedAt' | t }}</th>
-                  <th scope="col" class="action-column"></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of listResult()?.items ?? []; track item.requestId) {
-                  <tr
-                    class="clickable-row"
-                    [class.is-selected]="selectedCase()?.requestId === item.requestId"
-                    tabindex="0"
-                    (click)="openDetailsDrawer(item)"
-                    (keydown.enter)="openDetailsDrawer(item)"
-                  >
-                    <td>
-                      <span class="request-type-pill" [class.restriction]="item.requestType === 'Restriction'" [class.restoration]="item.requestType === 'Restoration'">
-                        <i [class]="item.requestType === 'Restriction' ? 'fa-solid fa-ban' : 'fa-solid fa-rotate-left'" aria-hidden="true"></i>
-                        <span>{{ (item.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}</span>
-                      </span>
-                    </td>
-                    <td>
-                      <span class="status-pill status-{{ item.status.toLowerCase() }}">
-                        <span class="pill-dot" aria-hidden="true"></span>
-                        <span>{{ 'familyFlow.status.' + item.status | t }}</span>
-                      </span>
-                    </td>
-                    <td>
-                      <span class="id-ref-chip code-font" >
-                        <i class="fa-solid fa-fingerprint" aria-hidden="true"></i>
-                        <span>{{ memberName(item.childPatientId) }}</span>
-                      </span>
-                    </td>
-                    <td>
-                      <span class="id-ref-chip code-font" >
-                        <i class="fa-solid fa-user" aria-hidden="true"></i>
-                        <span>{{ memberName(item.affectedAdultPatientId) }}</span>
-                      </span>
-                    </td>
-                    <td class="reason-preview-cell" [title]="item.reason">{{ item.reason }}</td>
-                    <td class="date-cell">{{ item.submittedAtUtc | date:'shortDate' }}</td>
-                    <td class="action-cell">
-                      <button
-                        type="button"
-                        class="btn-open-review"
-                        (click)="$event.stopPropagation(); openDetailsDrawer(item)"
-                      >
-                        <span>{{ 'common.viewDetails' | t }}</span>
-                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-
-          @if (totalPages() > 1) {
-            <footer class="pagination-footer">
-              <div class="pagination-meta">
-                <span>{{ 'common.page' | t }} {{ pageNumber() }} / {{ totalPages() }}</span>
-                <span class="total-count-meta">({{ listResult()?.totalCount ?? 0 }} {{ 'common.total' | t }})</span>
-              </div>
-              <div class="pagination-controls">
-                <button
-                  type="button"
-                  class="btn-page-nav"
-                  [disabled]="pageNumber() <= 1"
-                  (click)="goToPage(pageNumber() - 1)"
-                >
-                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                  <span>{{ 'common.previous' | t }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-page-nav"
-                  [disabled]="pageNumber() >= totalPages()"
-                  (click)="goToPage(pageNumber() + 1)"
-                >
-                  <span>{{ 'common.next' | t }}</span>
-                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                </button>
-              </div>
-            </footer>
+        <button
+          type="button"
+          class="btn-check-child"
+          [disabled]="checkingChild() || !checkChildId()"
+          (click)="checkDependentAccess(checkChildId())"
+        >
+          @if (checkingChild()) {
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>{{ 'common.loading' | t }}</span>
+          } @else {
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span>{{ 'common.check' | t }}</span>
           }
-        }
-      </section>
-    </div>
+        </button>
+      </div>
 
-    <!-- Detail Pane (Inline Split View on Desktop >= 1025px) -->
-    @if (isDesktop() && hasActiveDetail()) {
-      <aside class="medical-access-detail-pane" [attr.aria-label]="detailTitle()">
-        <header class="detail-pane-header">
-          <div class="detail-pane-title-wrap">
-            <span class="detail-pane-indicator" aria-hidden="true"></span>
-            <h2 class="detail-pane-heading">{{ detailTitle() }}</h2>
+      @if (childStatus(); as cs) {
+        <div
+          class="child-status-card"
+          [class.allowed]="cs.canView"
+          [class.restricted]="!cs.canView"
+        >
+          <div class="status-summary-side">
+            <div class="status-icon-wrap" aria-hidden="true">
+              <i
+                [class]="cs.canView ? 'fa-solid fa-shield-check' : 'fa-solid fa-shield-halved'"
+              ></i>
+            </div>
+            <div class="status-texts">
+              <div class="status-main-line">
+                <span class="status-indicator-title">{{ 'review.eligibilityStatus' | t }}:</span>
+                <span
+                  class="status-badge"
+                  [class.badge-allowed]="cs.canView"
+                  [class.badge-restricted]="!cs.canView"
+                >
+                  <span>{{ cs.canView ? ('common.allowed' | t) : ('common.restricted' | t) }}</span>
+                </span>
+                <span class="raw-status-tag">{{ 'familyPolicy.status.' + cs.status | t }}</span>
+              </div>
+              <p class="status-explanation">
+                {{
+                  (cs.canView ? 'familyPolicy.accessAllowed' : 'familyPolicy.accessRestricted') | t
+                }}
+              </p>
+            </div>
           </div>
-          <button
-            type="button"
-            class="btn-detail-close"
-            (click)="closeDetail()"
-            [attr.aria-label]="'common.close' | t"
-            [title]="'common.close' | t"
-          >
-            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-          </button>
-        </header>
 
-        <div class="detail-pane-body">
-          <ng-container *ngTemplateOutlet="detailContentTemplate" />
+          <div class="status-actions-side">
+            @if (cs.canRequestRestriction) {
+              <button
+                type="button"
+                class="btn-status-action btn-action-restrict"
+                (click)="showEvidenceUnavailable()"
+              >
+                <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                <span>{{ 'review.restriction' | t }}</span>
+              </button>
+            }
+            @if (cs.canRequestRestoration) {
+              <button
+                type="button"
+                class="btn-status-action btn-action-restore"
+                (click)="showEvidenceUnavailable()"
+              >
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                <span>{{ 'review.restoration' | t }}</span>
+              </button>
+            }
+          </div>
         </div>
-      </aside>
-    }
+      }
+    </section>
+
+    <section class="requests-surface surface-block" aria-labelledby="requests-table-title">
+      <div class="section-top-bar">
+        <div class="section-title-wrap">
+          <h2 id="requests-table-title" class="section-title">
+            {{ 'review.medicalAccessRequests' | t }}
+          </h2>
+          @if (listResult()?.totalCount; as total) {
+            <span class="count-chip">{{ total }}</span>
+          }
+        </div>
+
+        <div class="filter-controls-wrap">
+          <div class="filter-control-item">
+            <label for="medical-access-status" class="filter-label">{{
+              'common.statusLabel' | t
+            }}</label>
+            <div class="select-wrap">
+              <select
+                id="medical-access-status"
+                class="form-select filter-select"
+                [value]="status()"
+                (change)="setFilter('status', $event)"
+              >
+                <option value="">{{ 'common.all' | t }}</option>
+                <option value="Pending">{{ 'common.pendingReview' | t }}</option>
+                <option value="ModificationRequested">
+                  {{ 'common.modificationRequested' | t }}
+                </option>
+                <option value="Approved">{{ 'common.approved' | t }}</option>
+                <option value="Rejected">{{ 'common.rejected' | t }}</option>
+                <option value="Withdrawn">{{ 'common.withdrawn' | t }}</option>
+              </select>
+              <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m6 9 6 6 6-6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div class="filter-control-item">
+            <label for="medical-access-type" class="filter-label">{{
+              'review.requestType' | t
+            }}</label>
+            <div class="select-wrap">
+              <select
+                id="medical-access-type"
+                class="form-select filter-select"
+                [value]="requestType()"
+                (change)="setFilter('requestType', $event)"
+              >
+                <option value="">{{ 'common.all' | t }}</option>
+                <option value="Restriction">{{ 'review.restriction' | t }}</option>
+                <option value="Restoration">{{ 'review.restoration' | t }}</option>
+              </select>
+              <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m6 9 6 6 6-6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      @if (messages().length > 0 && detailMode() === null) {
+        <div class="error-banner" role="alert">
+          @for (msg of messages(); track msg) {
+            <p><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ msg | t }}</p>
+          }
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="table-skeleton-wrap p-4" role="status" [attr.aria-label]="'common.loading' | t">
+          <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+          <div class="skeleton-shimmer w-full h-44 rounded-md mb-3"></div>
+          @for (row of [1, 2, 3]; track row) {
+            <div class="skeleton-shimmer w-full h-36 rounded-md mb-2"></div>
+          }
+        </div>
+      } @else if (messages().length) {
+        <button type="button" class="btn btn-outline-secondary m-4" (click)="load()">
+          {{ 'common.refresh' | t }}
+        </button>
+      } @else if (!listResult()?.items?.length) {
+        <div class="empty-requests-state">
+          <img
+            src="/SVG-AVATAR/Medical prescription-amico.svg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            class="empty-state-illustration"
+          />
+          <h3 class="empty-state-title">{{ 'review.emptyTitle' | t }}</h3>
+          <p class="empty-state-desc">{{ 'review.emptyDesc' | t }}</p>
+          <button type="button" class="btn btn-primary" (click)="showEvidenceUnavailable()">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span>{{ 'common.createRequest' | t }}</span>
+          </button>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'review.requestType' | t }}</th>
+                <th scope="col">{{ 'common.statusLabel' | t }}</th>
+                <th scope="col">{{ 'familyPolicy.child' | t }}</th>
+                <th scope="col">{{ 'familyPolicy.adult' | t }}</th>
+                <th scope="col">{{ 'review.reason' | t }}</th>
+                <th scope="col">{{ 'review.submittedAt' | t }}</th>
+                <th scope="col" class="action-column"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of listResult()?.items ?? []; track item.requestId) {
+                <tr
+                  class="clickable-row"
+                  [class.is-selected]="selectedCase()?.requestId === item.requestId"
+                  tabindex="0"
+                  (click)="openDetailsDrawer(item)"
+                  (keydown.enter)="openDetailsDrawer(item)"
+                >
+                  <td [attr.data-label]="'review.requestType' | t">
+                    <span
+                      class="request-type-pill"
+                      [class.restriction]="item.requestType === 'Restriction'"
+                      [class.restoration]="item.requestType === 'Restoration'"
+                    >
+                      <i
+                        [class]="
+                          item.requestType === 'Restriction'
+                            ? 'fa-solid fa-ban'
+                            : 'fa-solid fa-rotate-left'
+                        "
+                        aria-hidden="true"
+                      ></i>
+                      <span>{{
+                        (item.requestType === 'Restriction'
+                          ? 'review.restriction'
+                          : 'review.restoration'
+                        ) | t
+                      }}</span>
+                    </span>
+                  </td>
+                  <td [attr.data-label]="'common.statusLabel' | t">
+                    <span class="status-pill status-{{ item.status.toLowerCase() }}">
+                      <span>{{ 'familyFlow.status.' + item.status | t }}</span>
+                    </span>
+                  </td>
+                  <td [attr.data-label]="'familyPolicy.child' | t">
+                    <span class="id-ref-chip">
+                      <span>{{ memberName(item.childPatientId) }}</span>
+                    </span>
+                  </td>
+                  <td [attr.data-label]="'familyPolicy.adult' | t">
+                    <span class="id-ref-chip">
+                      <i class="fa-solid fa-user" aria-hidden="true"></i>
+                      <span>{{ memberName(item.affectedAdultPatientId) }}</span>
+                    </span>
+                  </td>
+                  <td
+                    class="reason-preview-cell"
+                    [attr.data-label]="'review.reason' | t"
+                    [title]="item.reason"
+                  >
+                    {{ item.reason }}
+                  </td>
+                  <td class="date-cell" [attr.data-label]="'review.submittedAt' | t">
+                    {{
+                      item.submittedAtUtc | date: 'shortDate' : undefined : uiLanguage.currentLang()
+                    }}
+                  </td>
+                  <td class="action-cell">
+                    <button
+                      type="button"
+                      class="btn-open-review"
+                      (click)="$event.stopPropagation(); openDetailsDrawer(item)"
+                    >
+                      <span>{{ 'common.viewDetails' | t }}</span>
+                      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (totalPages() > 1) {
+          <footer class="pagination-footer">
+            <div class="pagination-meta">
+              <span>{{ 'common.page' | t }} {{ pageNumber() }} / {{ totalPages() }}</span>
+              <span class="total-count-meta"
+                >({{ listResult()?.totalCount ?? 0 }} {{ 'common.total' | t }})</span
+              >
+            </div>
+            <div class="pagination-controls">
+              <button
+                type="button"
+                class="btn-page-nav"
+                [disabled]="pageNumber() <= 1"
+                (click)="goToPage(pageNumber() - 1)"
+              >
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                <span>{{ 'common.previous' | t }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-page-nav"
+                [disabled]="pageNumber() >= totalPages()"
+                (click)="goToPage(pageNumber() + 1)"
+              >
+                <span>{{ 'common.next' | t }}</span>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              </button>
+            </div>
+          </footer>
+        }
+      }
+    </section>
   </div>
 
-  <!-- Slide-Over Drawer for Mobile / Tablet View (< 1025px) -->
-  @if (!isDesktop()) {
-    <app-side-drawer
-      [opened]="drawerOpen()"
-      [title]="detailTitle()"
-      (closed)="closeDetail()"
-    >
-      <div class="drawer-scrollable-body">
-        <ng-container *ngTemplateOutlet="detailContentTemplate" />
-      </div>
-    </app-side-drawer>
-  }
-</section>
-
-<!-- Shared Detail Content Template -->
-<ng-template #detailContentTemplate>
-  @if (detailMode() === 'create') {
-    <!-- 1. Create New Request Form -->
-    <div class="detail-form-container">
-      <p class="detail-form-intro">
-        قم بملء البيانات المطلوبة لإنشاء طلب حظر أو استعادة وصول طبي جديد لأحد التابعين.
-      </p>
-
-      @if (messages().length > 0) {
-        <div class="error-banner mb-3" role="alert">
-          @for (msg of messages(); track msg) {
-            <p><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ msg }}</p>
-          }
-        </div>
+  <app-side-drawer
+    [opened]="drawerOpen()"
+    [title]="detailTitle()"
+    [busy]="submitting()"
+    (closed)="closeDetail()"
+  >
+    <div class="drawer-scrollable-body">
+      @if (detailLoading()) {
+        <p role="status">{{ 'common.loading' | t }}</p>
+      }
+      @for (message of detailMessages(); track message) {
+        <p role="alert">{{ message | t }}</p>
       }
 
-      <div class="form-field-group">
-        <label class="form-label" for="detail-req-type">{{ 'review.requestType' | t }}</label>
-        <div class="select-wrap">
-          <select
-            id="detail-req-type"
-            class="form-select"
-            [value]="newRequestModel().requestType"
-            (change)="newRequestModel.set({ ...newRequestModel(), requestType: $any($event.target).value })"
-          >
-            <option value="Restriction">{{ 'review.restriction' | t }}</option>
-            <option value="Restoration">{{ 'review.restoration' | t }}</option>
-          </select>
-          <svg class="select-arrow" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-          </svg>
+      @if (detailMode() === 'create') {
+        <div class="d-flex flex-column align-items-start gap-3 py-4" role="status">
+          <p class="mb-0">{{ 'familyPolicy.evidenceUnavailable' | t }}</p>
+          <button type="button" class="btn btn-primary" (click)="closeDetail()">
+            {{ 'common.close' | t }}
+          </button>
         </div>
-      </div>
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-child-id">{{ 'familyPolicy.child' | t }} *</label>
-        <div class="input-with-icon">
-          <i class="fa-solid fa-fingerprint input-icon" aria-hidden="true"></i>
-          <select id="detail-child-id" class="family-member-select" [formField]="newRequestForm.childPatientId" (change)="selectCheckChild($event)">
-            <option value="">{{ 'common.choose' | t }}</option>
-            @for (member of children(); track member.patientId) { <option [value]="member.patientId">{{ memberName(member.patientId) }}</option> }
-          </select>
-        </div>
-      </div>
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-adult-id">{{ 'familyPolicy.adult' | t }} *</label>
-        <div class="input-with-icon">
-          <i class="fa-solid fa-user input-icon" aria-hidden="true"></i>
-          <select id="detail-adult-id" class="family-member-select" [formField]="newRequestForm.affectedAdultPatientId">
-            <option value="">{{ 'common.choose' | t }}</option>
-            @for (member of adults(); track member.patientId) { <option [value]="member.patientId">{{ memberName(member.patientId) }}</option> }
-          </select>
-        </div>
-      </div>
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-reason">{{ 'review.reason' | t }} *</label>
-        <textarea
-          id="detail-reason"
-          class="form-control form-textarea"
-          rows="4"
-          [formField]="newRequestForm.reason"
-          placeholder="وضح سبب الطلب بالتفصيل..."
-        ></textarea>
-      </div>
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-file-upload">{{ 'review.documents' | t }}</label>
-        <input
-          id="detail-file-upload"
-          type="file"
-          class="form-control form-file-input"
-          multiple
-          [accept]="evidenceFileAccept"
-          (change)="onNewFilesSelected($event)"
-        />
-        @if (newRequestFiles().length > 0) {
-          <div class="selected-files-list">
-            @for (f of newRequestFiles(); track f.name) {
-              <span class="file-chip">
-                <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
-                <span>{{ f.name }}</span>
+      } @else if (selectedCase(); as cur) {
+        <div class="case-detail-view">
+          <header class="detail-header-card">
+            <div class="badge-deck">
+              <span
+                class="request-type-pill"
+                [class.restriction]="cur.requestType === 'Restriction'"
+                [class.restoration]="cur.requestType === 'Restoration'"
+              >
+                <i
+                  [class]="
+                    cur.requestType === 'Restriction'
+                      ? 'fa-solid fa-ban'
+                      : 'fa-solid fa-rotate-left'
+                  "
+                  aria-hidden="true"
+                ></i>
+                <span>{{
+                  (cur.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration')
+                    | t
+                }}</span>
               </span>
-            }
-          </div>
-        }
-      </div>
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-doc-types">{{ 'family.documentTypesHelp' | t }}</label>
-        <input
-          id="detail-doc-types"
-          type="text"
-          class="form-control"
-          placeholder="BirthCertificate, LegalDocument"
-          [formField]="newRequestForm.documentTypes"
-        />
-      </div>
-
-      <div class="detail-form-actions">
-        <button type="button" class="btn btn-outline-secondary" (click)="closeDetail()">
-          {{ 'common.cancel' | t }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="submitting() || !canCreateRequest()"
-          (click)="submitNewRequest()"
-        >
-          @if (submitting()) {
-            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-            <span>{{ 'common.loading' | t }}</span>
-          } @else {
-            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
-            <span>{{ 'common.submit' | t }}</span>
-          }
-        </button>
-      </div>
-    </div>
-  } @else if (detailMode() === 'resubmit') {
-    <!-- 2. Resubmit Request Form -->
-    <div class="detail-form-container">
-      <p class="detail-form-intro">
-        قم بتحديث سبب الطلب أو إرفاق مستندات توضيحية إضافية لإعادة تقديم الطلب للمراجعة.
-      </p>
-
-      @if (messages().length > 0) {
-        <div class="error-banner mb-3" role="alert">
-          @for (msg of messages(); track msg) {
-            <p><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ msg }}</p>
-          }
-        </div>
-      }
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-resubmit-reason">{{ 'review.reason' | t }} *</label>
-        <textarea
-          id="detail-resubmit-reason"
-          class="form-control form-textarea"
-          rows="4"
-          [formField]="resubmitForm.reason"
-          placeholder="السبب المعدل أو التوضيح الجديد..."
-        ></textarea>
-      </div>
-
-      <div class="form-field-group">
-        <label class="form-label" for="detail-resubmit-files">{{ 'review.documents' | t }}</label>
-        <input
-          id="detail-resubmit-files"
-          type="file"
-          class="form-control form-file-input"
-          multiple
-          [accept]="evidenceFileAccept"
-          (change)="onResubmitFilesSelected($event)"
-        />
-        @if (resubmitFiles().length > 0) {
-          <div class="selected-files-list">
-            @for (f of resubmitFiles(); track f.name) {
-              <span class="file-chip">
-                <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
-                <span>{{ f.name }}</span>
+              <span class="status-pill status-{{ cur.status.toLowerCase() }}">
+                <span>{{ 'familyFlow.status.' + cur.status | t }}</span>
               </span>
-            }
-          </div>
-        }
-      </div>
+              <span class="revision-tag">#{{ cur.revision }}</span>
+            </div>
 
-      <div class="form-field-group">
-        <label class="form-label" for="detail-resubmit-types">{{ 'family.documentTypesHelp' | t }}</label>
-        <input
-          id="detail-resubmit-types"
-          type="text"
-          class="form-control"
-          placeholder="UpdatedDocument, LegalDocument"
-          [formField]="resubmitForm.documentTypes"
-        />
-      </div>
+            <div class="parent-actions-deck">
+              @if (cur.capabilities.canWithdraw) {
+                <button
+                  type="button"
+                  class="btn-detail-action btn-withdraw"
+                  [disabled]="submitting()"
+                  (click)="withdrawRequest(cur)"
+                >
+                  <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+                  <span>{{ 'common.withdraw' | t }}</span>
+                </button>
+              }
+              @if (cur.capabilities.canResubmit) {
+                <button
+                  type="button"
+                  class="btn-detail-action btn-resubmit"
+                  [disabled]="submitting()"
+                  (click)="showEvidenceUnavailable()"
+                >
+                  <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                  <span>{{ 'common.resubmit' | t }}</span>
+                </button>
+              }
+            </div>
+          </header>
 
-      <div class="detail-form-actions">
-        <button type="button" class="btn btn-outline-secondary" (click)="closeDetail()">
-          {{ 'common.cancel' | t }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="submitting()"
-          (click)="submitResubmit()"
-        >
-          @if (submitting()) {
-            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-            <span>{{ 'common.loading' | t }}</span>
-          } @else {
-            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-            <span>{{ 'common.resubmit' | t }}</span>
+          <section class="detail-sub-section">
+            <h4 class="sub-section-title">
+              <i class="fa-solid fa-id-card-clip" aria-hidden="true"></i>
+              <span>{{ 'family.relationshipVerification' | t }}</span>
+            </h4>
+            <div class="key-value-grid">
+              <div class="kv-item">
+                <span class="kv-label">{{ 'familyPolicy.child' | t }}</span>
+                <span class="kv-value">{{ memberName(cur.childPatientId) }}</span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">{{ 'familyPolicy.adult' | t }}</span>
+                <span class="kv-value">{{ memberName(cur.affectedAdultPatientId) }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="detail-sub-section">
+            <h4 class="sub-section-title">
+              <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+              <span>{{ 'review.reason' | t }}</span>
+            </h4>
+            <div class="text-content-box">
+              <p>{{ cur.reason }}</p>
+            </div>
+          </section>
+
+          @if (cur.reviewMessage) {
+            <section class="detail-sub-section">
+              <h4 class="sub-section-title">
+                <i class="fa-solid fa-comment-medical" aria-hidden="true"></i>
+                <span>{{ 'review.reviewMessage' | t }}</span>
+              </h4>
+              <div class="text-content-box alert-note">
+                <p>{{ cur.reviewMessage }}</p>
+              </div>
+            </section>
           }
-        </button>
-      </div>
-    </div>
-  } @else if (selectedCase(); as cur) {
-    <!-- 3. Case Inspection Details View -->
-    <div class="case-detail-view">
-      <header class="detail-header-card">
-        <div class="badge-deck">
-          <span class="request-type-pill" [class.restriction]="cur.requestType === 'Restriction'" [class.restoration]="cur.requestType === 'Restoration'">
-            <i [class]="cur.requestType === 'Restriction' ? 'fa-solid fa-ban' : 'fa-solid fa-rotate-left'" aria-hidden="true"></i>
-            <span>{{ (cur.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}</span>
-          </span>
-          <span class="status-pill status-{{ cur.status.toLowerCase() }}">
-            <span class="pill-dot" aria-hidden="true"></span>
-            <span>{{ cur.status }}</span>
-          </span>
-          <span class="revision-tag">#{{ cur.revision }}</span>
-        </div>
 
-        <div class="parent-actions-deck">
-          @if (cur.capabilities.canWithdraw) {
-            <button
-              type="button"
-              class="btn-detail-action btn-withdraw"
-              [disabled]="submitting()"
-              (click)="withdrawRequest(cur)"
-            >
-              <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
-              <span>{{ 'common.withdraw' | t }}</span>
-            </button>
-          }
-          @if (cur.capabilities.canResubmit) {
-            <button
-              type="button"
-              class="btn-detail-action btn-resubmit"
-              [disabled]="submitting()"
-              (click)="openResubmitModal(cur)"
-            >
-              <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-              <span>{{ 'common.resubmit' | t }}</span>
-            </button>
-          }
-        </div>
-      </header>
-
-      <section class="detail-sub-section">
-        <h4 class="sub-section-title">
-          <i class="fa-solid fa-id-card-clip" aria-hidden="true"></i>
-          <span>{{ 'family.relationshipVerification' | t }}</span>
-        </h4>
-        <div class="key-value-grid">
-          <div class="kv-item">
-            <span class="kv-label">{{ 'familyPolicy.child' | t }}</span>
-            <span class="kv-value code-font">{{ memberName(cur.childPatientId) }}</span>
-          </div>
-          <div class="kv-item">
-            <span class="kv-label">{{ 'familyPolicy.adult' | t }}</span>
-            <span class="kv-value code-font">{{ memberName(cur.affectedAdultPatientId) }}</span>
-          </div>
-          <div class="kv-item">
-            <span class="kv-label">{{ 'review.familyId' | t }}</span>
-            <span class="kv-value code-font">{{ cur.familyId }}</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="detail-sub-section">
-        <h4 class="sub-section-title">
-          <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
-          <span>{{ 'review.reason' | t }}</span>
-        </h4>
-        <div class="text-content-box"><p>{{ cur.reason }}</p></div>
-      </section>
-
-      @if (cur.reviewMessage) {
-        <section class="detail-sub-section">
-          <h4 class="sub-section-title">
-            <i class="fa-solid fa-comment-medical" aria-hidden="true"></i>
-            <span>{{ 'review.reviewMessage' | t }}</span>
-          </h4>
-          <div class="text-content-box alert-note"><p>{{ cur.reviewMessage }}</p></div>
-        </section>
-      }
-
-      <!-- Documents -->
-      <section class="detail-sub-section">
-        <h4 class="sub-section-title">
-          <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
-          <span>{{ 'review.documents' | t }}</span>
-        </h4>
-        @if (cur.documents.length === 0) {
-          <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
-        } @else {
-          <div class="documents-list">
-            @for (doc of cur.documents; track doc.documentId) {
-              <div class="document-row">
-                <div class="doc-info">
-                  <span class="doc-icon" aria-hidden="true">📄</span>
-                  <div class="doc-texts">
-                    <span class="doc-name">{{ doc.fileName }}</span>
-                    <span class="doc-type">{{ doc.documentType }}</span>
-                  </div>
-                </div>
-                @if (doc.canDownload) {
-                  <button
-                    type="button"
-                    class="btn-download"
-                    [disabled]="documentLoadingId() === doc.documentId"
-                    (click)="downloadDoc(doc)"
-                  >
-                    @if (documentLoadingId() === doc.documentId) {
-                      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-                    } @else {
-                      <i class="fa-solid fa-download" aria-hidden="true"></i>
+          <section class="detail-sub-section">
+            <h4 class="sub-section-title">
+              <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+              <span>{{ 'review.documents' | t }}</span>
+            </h4>
+            @if (cur.documents.length === 0) {
+              <p class="empty-hint">{{ 'review.noDocuments' | t }}</p>
+            } @else {
+              <div class="documents-list">
+                @for (doc of cur.documents; track doc.documentId) {
+                  <div class="document-row">
+                    <div class="doc-info">
+                      <span class="doc-icon" aria-hidden="true"
+                        ><i class="fa-regular fa-file" aria-hidden="true"></i
+                      ></span>
+                      <div class="doc-texts">
+                        <span class="doc-name">{{ doc.fileName }}</span>
+                        <span class="doc-type">{{
+                          uiLanguage.label('familyFlow.evidence', doc.documentType)
+                        }}</span>
+                      </div>
+                    </div>
+                    @if (doc.canDownload) {
+                      <button
+                        type="button"
+                        class="btn-download"
+                        [disabled]="documentLoadingId() === doc.documentId"
+                        (click)="downloadDoc(doc)"
+                      >
+                        @if (documentLoadingId() === doc.documentId) {
+                          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                        } @else {
+                          <i class="fa-solid fa-download" aria-hidden="true"></i>
+                        }
+                        <span>{{ 'review.downloadDocument' | t }}</span>
+                      </button>
                     }
-                    <span>{{ 'review.downloadDocument' | t }}</span>
-                  </button>
+                  </div>
                 }
               </div>
             }
-          </div>
-        }
-      </section>
+          </section>
 
-      <!-- Audit History Timeline -->
-      <section class="detail-sub-section">
-        <h4 class="sub-section-title">
-          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-          <span>{{ 'review.auditHistory' | t }}</span>
-        </h4>
-        @if (selectedHistory().length === 0) {
-          <p class="empty-hint">{{ 'review.noHistory' | t }}</p>
-        } @else {
-          <div class="timeline-list">
-            @for (h of selectedHistory(); track h.historyId) {
-              <div class="timeline-entry">
-                <div class="timeline-marker" aria-hidden="true"></div>
-                <div class="timeline-content">
-                  <div class="timeline-meta">
-                    <span class="timeline-action">{{ h.action }}</span>
-                    <span class="timeline-time">{{ h.occurredAtUtc | date:'short' }}</span>
+          <section class="detail-sub-section">
+            <h4 class="sub-section-title">
+              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+              <span>{{ 'review.auditHistory' | t }}</span>
+            </h4>
+            @if (historyFailed()) {
+              <p role="alert">{{ 'common.failedToLoad' | t }}</p>
+            } @else if (selectedHistory().length === 0) {
+              <p class="empty-hint">{{ 'review.noHistory' | t }}</p>
+            } @else {
+              <div class="timeline-list">
+                @for (h of selectedHistory(); track h.historyId) {
+                  <div class="timeline-entry">
+                    <div class="timeline-marker" aria-hidden="true"></div>
+                    <div class="timeline-content">
+                      <div class="timeline-meta">
+                        <span class="timeline-action">{{ 'familyPolicy.historyUpdate' | t }}</span>
+                        <span class="timeline-time">{{
+                          h.occurredAtUtc | date: 'short' : undefined : uiLanguage.currentLang()
+                        }}</span>
+                      </div>
+                      @if (h.message) {
+                        <p class="timeline-message">{{ h.message }}</p>
+                      }
+                    </div>
                   </div>
-                  @if (h.message) {
-                    <p class="timeline-message">{{ h.message }}</p>
-                  }
-                </div>
+                }
               </div>
             }
-          </div>
-        }
-      </section>
+          </section>
+        </div>
+      }
     </div>
-  }
-</ng-template>
+  </app-side-drawer>
+</section>

@@ -6,18 +6,14 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
-import { FormField, form, maxLength, required } from '@angular/forms/signals';
+import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { parseApiErrors } from '../../../core/auth/api-errors';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { openPrivateMedia } from '../../../core/media/private-media';
 import { ToastService } from '../../../core/notifications/toast.service';
-import {
-  EVIDENCE_FILE_ACCEPT,
-  getEvidenceFileValidationError,
-} from '../../../core/validation/evidence-files';
 import {
   FamiliesApi,
   FamilyMedicalAccessRequestStatus,
@@ -34,49 +30,61 @@ import { SideDrawer } from '../../../shared/components/side-drawer/side-drawer';
 
 @Component({
   selector: 'app-patient-medical-access',
-  imports: [FormField, DatePipe, NgTemplateOutlet, PageHeader, SideDrawer, TranslatePipe],
+  imports: [DatePipe, PageHeader, SideDrawer, TranslatePipe],
   templateUrl: './patient-medical-access.component.html',
   styleUrls: ['./patient-medical-access.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientMedicalAccessComponent implements OnDestroy {
   protected readonly uiLanguage = inject(LanguageService);
-  protected readonly evidenceFileAccept = EVIDENCE_FILE_ACCEPT;
 
   private readonly api = inject(FamiliesApi);
   private readonly toast = inject(ToastService);
   protected readonly members = signal<FamilyMember[]>([]);
-  protected readonly children = computed(() => this.members().filter(member => member.role === 'Child'));
-  protected readonly adults = computed(() => this.members().filter(member => member.role !== 'Child'));
-  protected readonly canRequestAny = computed(() => !!this.childStatus()?.canRequestRestriction || !!this.childStatus()?.canRequestRestoration);
+  protected readonly children = computed(() =>
+    this.members().filter((member) => member.role === 'Child'),
+  );
+  protected readonly canRequestAny = computed(
+    () =>
+      !!this.childStatus()?.canRequestRestriction || !!this.childStatus()?.canRequestRestoration,
+  );
   private accessSequence = 0;
+  private listSequence = 0;
+  private detailSequence = 0;
   private membersSequence = 0;
   protected memberName(id: string): string {
-    const member = this.members().find(item => item.patientId === id);
-    return member ? (this.uiLanguage.isRtl() ? member.nameAr : member.nameEn || member.nameAr) : this.uiLanguage.t('familyPolicy.memberUnavailable');
+    const member = this.members().find((item) => item.patientId === id);
+    return member
+      ? this.uiLanguage.isRtl()
+        ? member.nameAr
+        : member.nameEn || member.nameAr
+      : this.uiLanguage.t('familyPolicy.memberUnavailable');
   }
   protected selectCheckChild(event: Event): void {
     const id = (event.target as HTMLSelectElement).value;
-    this.checkChildId.set(id);
     void this.checkDependentAccess(id);
   }
-  private async loadMembers(): Promise<void> {
+  protected async loadMembers(): Promise<void> {
     const sequence = ++this.membersSequence;
+    this.membersLoading.set(true);
+    this.membersFailed.set(false);
+    this.members.set([]);
+    this.checkChildId.set('');
+    this.childStatus.set(null);
+    this.checkingChild.set(false);
+    ++this.accessSequence;
     try {
       const family = await firstValueFrom(this.api.mine());
       if (sequence === this.membersSequence) this.members.set(family.members ?? []);
-    } catch { if (sequence === this.membersSequence) this.members.set([]); }
-  }
-
-  // Responsive Master-Detail detection
-  private readonly resizeListener = () => {
-    if (typeof window !== 'undefined') {
-      this.isDesktop.set(window.innerWidth >= 1025);
+    } catch {
+      if (sequence === this.membersSequence) {
+        this.members.set([]);
+        this.membersFailed.set(true);
+      }
+    } finally {
+      if (sequence === this.membersSequence) this.membersLoading.set(false);
     }
-  };
-  protected readonly isDesktop = signal(
-    typeof window !== 'undefined' ? window.innerWidth >= 1025 : true,
-  );
+  }
 
   // Filters & Pagination
   protected readonly status = signal<FamilyMedicalAccessRequestStatus | ''>('');
@@ -91,10 +99,15 @@ export class PatientMedicalAccessComponent implements OnDestroy {
   protected readonly messages = signal<string[]>([]);
 
   // Master-Detail Active View / Form Mode
-  protected readonly detailMode = signal<'view' | 'create' | 'resubmit' | null>(null);
+  protected readonly detailMode = signal<'view' | 'create' | null>(null);
   protected readonly selectedCase = signal<FamilyMedicalCase | null>(null);
   protected readonly selectedHistory = signal<FamilyMedicalHistoryItem[]>([]);
   protected readonly drawerOpen = signal(false);
+  protected readonly detailLoading = signal(false);
+  protected readonly historyFailed = signal(false);
+  protected readonly detailMessages = signal<string[]>([]);
+  protected readonly membersLoading = signal(true);
+  protected readonly membersFailed = signal(false);
   protected readonly documentLoadingId = signal('');
 
   // Child Quick Status Check
@@ -102,57 +115,15 @@ export class PatientMedicalAccessComponent implements OnDestroy {
   protected readonly childStatus = signal<FamilyMedicalAccessStatus | null>(null);
   protected readonly checkingChild = signal(false);
 
-  // New Request Form
-  protected readonly newRequestModel = signal({
-    requestType: 'Restriction' as FamilyMedicalAccessRequestType,
-    childPatientId: '',
-    affectedAdultPatientId: '',
-    reason: '',
-    documentTypes: '',
-  });
-  protected readonly newRequestForm = form(this.newRequestModel, (field) => {
-    required(field.childPatientId, { message: 'validation.required' });
-    required(field.affectedAdultPatientId, { message: 'validation.required' });
-    required(field.reason, { message: 'review.reasonRequired' });
-    maxLength(field.reason, 2000, { message: 'validation.max2000' });
-  });
-  protected readonly newRequestFiles = signal<File[]>([]);
-  protected readonly canCreateRequest = computed(() => {
-    const model = this.newRequestModel();
-    const access = this.childStatus();
-    return !this.checkingChild() && model.childPatientId === this.checkChildId() &&
-      this.children().some(child => child.patientId === model.childPatientId) &&
-      this.adults().some(adult => adult.patientId === model.affectedAdultPatientId) &&
-      (model.requestType === 'Restoration' ? access?.canRequestRestoration === true : access?.canRequestRestriction === true);
-  });
-
-  // Resubmit Form
-  protected readonly resubmitModel = signal({
-    reason: '',
-    documentTypes: '',
-  });
-  protected readonly resubmitForm = form(this.resubmitModel, (field) => {
-    required(field.reason, { message: 'review.reasonRequired' });
-    maxLength(field.reason, 2000, { message: 'validation.max2000' });
-  });
-  protected readonly resubmitFiles = signal<File[]>([]);
-
   // Computed Properties
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil((this.listResult()?.totalCount ?? 0) / this.pageSize)),
-  );
-
-  protected readonly hasActiveDetail = computed(
-    () => this.detailMode() !== null && (this.detailMode() === 'create' || !!this.selectedCase()),
   );
 
   protected readonly detailTitle = computed(() => {
     const mode = this.detailMode();
     if (mode === 'create') {
       return this.uiLanguage.t('common.createRequest');
-    }
-    if (mode === 'resubmit') {
-      return this.uiLanguage.t('common.resubmit');
     }
     const current = this.selectedCase();
     if (current) {
@@ -166,9 +137,6 @@ export class PatientMedicalAccessComponent implements OnDestroy {
   });
 
   constructor() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.resizeListener);
-    }
     void this.load();
     void this.loadMembers();
   }
@@ -176,12 +144,12 @@ export class PatientMedicalAccessComponent implements OnDestroy {
   ngOnDestroy(): void {
     ++this.accessSequence;
     ++this.membersSequence;
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.resizeListener);
-    }
+    ++this.listSequence;
+    ++this.detailSequence;
   }
 
   protected async load(): Promise<void> {
+    const sequence = ++this.listSequence;
     this.loading.set(true);
     this.messages.set([]);
     try {
@@ -193,217 +161,108 @@ export class PatientMedicalAccessComponent implements OnDestroy {
           pageSize: this.pageSize,
         }),
       );
-      this.listResult.set(page);
+      if (sequence === this.listSequence) this.listResult.set(page);
     } catch (error) {
-      this.messages.set(parseApiErrors(error).messages);
-      this.listResult.set(null);
+      if (sequence === this.listSequence) {
+        this.messages.set(parseApiErrors(error).messages);
+        this.listResult.set(null);
+      }
     } finally {
-      this.loading.set(false);
+      if (sequence === this.listSequence) this.loading.set(false);
     }
   }
 
   protected async openDetailsDrawer(item: FamilyMedicalCase): Promise<void> {
-    this.selectedCase.set(item);
+    if (this.submitting()) return;
+    const sequence = ++this.detailSequence;
+    this.selectedCase.set(null);
+    this.selectedHistory.set([]);
+    this.detailMessages.set([]);
+    this.historyFailed.set(false);
     this.detailMode.set('view');
     this.drawerOpen.set(true);
-    try {
-      const [fullCase, historyRes] = await Promise.all([
-        firstValueFrom(this.api.myMedicalAccessRequest(item.requestId)),
-        firstValueFrom(this.api.myMedicalAccessHistory(item.requestId)),
-      ]);
-      this.selectedCase.set(fullCase);
-      this.selectedHistory.set(historyRes.items ?? []);
-    } catch {
-      // Keep item fallback
-    }
+    this.detailLoading.set(true);
+    const [details, history] = await Promise.allSettled([
+      firstValueFrom(this.api.myMedicalAccessRequest(item.requestId)),
+      firstValueFrom(this.api.myMedicalAccessHistory(item.requestId)),
+    ]);
+    if (sequence !== this.detailSequence) return;
+    if (details.status === 'fulfilled') this.selectedCase.set(details.value);
+    else this.detailMessages.set(parseApiErrors(details.reason).messages);
+    if (history.status === 'fulfilled') this.selectedHistory.set(history.value.items ?? []);
+    else this.historyFailed.set(true);
+    this.detailLoading.set(false);
   }
 
   protected closeDetail(): void {
+    if (this.submitting()) return;
+    ++this.detailSequence;
+    this.detailLoading.set(false);
+    this.detailMessages.set([]);
     this.detailMode.set(null);
     this.drawerOpen.set(false);
     this.selectedCase.set(null);
     this.selectedHistory.set([]);
   }
 
-  protected closeDrawer(): void {
-    this.closeDetail();
-  }
-
   protected async checkDependentAccess(childId: string): Promise<void> {
     const sequence = ++this.accessSequence;
+    const child = this.children().find((member) => member.patientId === childId);
+    this.checkChildId.set(child?.patientId ?? '');
     this.childStatus.set(null);
     this.checkingChild.set(false);
-    if (!this.children().some(child => child.patientId === childId)) return;
+    if (!child) return;
     this.checkingChild.set(true);
     try {
       const res = await firstValueFrom(this.api.childMedicalAccess(childId.trim()));
       if (sequence === this.accessSequence) this.childStatus.set(res);
     } catch {
-      if (sequence === this.accessSequence) { this.childStatus.set(null); this.toast.error(this.uiLanguage.t('common.failedToLoad')); }
+      if (sequence === this.accessSequence) {
+        this.childStatus.set(null);
+        this.toast.error(this.uiLanguage.t('common.failedToLoad'));
+      }
     } finally {
       if (sequence === this.accessSequence) this.checkingChild.set(false);
     }
   }
 
-  protected openNewRequestModal(): void {
-    this.openNewRequestModalWith(this.childStatus()?.canRequestRestriction ? 'Restriction' : 'Restoration', this.checkChildId());
-  }
-
-  protected openNewRequestModalWith(type?: 'Restriction' | 'Restoration', childId?: string): void {
-    const id = childId ?? this.checkChildId();
-    const allowed = type === 'Restoration' ? this.childStatus()?.canRequestRestoration : this.childStatus()?.canRequestRestriction;
-    if (id !== this.checkChildId() || !this.children().some(child => child.patientId === id) || !allowed) {
-      this.toast.error(this.uiLanguage.t('familyPolicy.requestUnavailable'));
-      return;
-    }
-    this.newRequestModel.set({
-      requestType: type ?? 'Restriction',
-      childPatientId: childId ?? this.checkChildId(),
-      affectedAdultPatientId: '',
-      reason: '',
-      documentTypes: '',
-    });
-    this.newRequestForm().reset();
-    this.newRequestFiles.set([]);
-    this.messages.set([]);
+  protected showEvidenceUnavailable(): void {
+    if (this.submitting()) return;
+    this.closeDetail();
+    // Approved evidence options are not published by the current backend contract.
+    // Do not collect documents or submit create/resubmit using guessed policy values.
     this.detailMode.set('create');
     this.drawerOpen.set(true);
   }
 
-  protected closeNewRequestModal(): void {
-    this.closeDetail();
-  }
-
-  protected onNewFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files?.length) return;
-    const files = Array.from(input.files);
-    const err = getEvidenceFileValidationError(files, this.uiLanguage.currentLang());
-    if (err) {
-      this.toast.error(err);
-      return;
-    }
-    this.newRequestFiles.set(files);
-  }
-
-  protected async submitNewRequest(): Promise<void> {
-    const model = this.newRequestModel();
-    const allowed = model.requestType === 'Restoration' ? this.childStatus()?.canRequestRestoration : this.childStatus()?.canRequestRestriction;
-    if (this.submitting() || !allowed || model.childPatientId !== this.checkChildId() || !this.children().some(child => child.patientId === model.childPatientId) || !this.adults().some(adult => adult.patientId === model.affectedAdultPatientId)) return;
-    if (!model.childPatientId || !model.affectedAdultPatientId || !model.reason.trim()) {
-      this.messages.set([this.uiLanguage.t('validation.required')]);
-      return;
-    }
-
-    this.submitting.set(true);
-    this.messages.set([]);
-    try {
-      const docTypes = model.documentTypes
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (docTypes.length !== this.newRequestFiles().length || docTypes.some(type => type === 'Evidence' || type === 'UpdatedEvidence')) {
-        this.messages.set([this.uiLanguage.t('familyPolicy.evidenceUnavailable')]);
-        return;
-      }
-      await firstValueFrom(
-        this.api.createMedicalAccessRequest({
-          requestType: model.requestType,
-          childPatientId: model.childPatientId.trim(),
-          affectedAdultPatientId: model.affectedAdultPatientId.trim(),
-          reason: model.reason.trim(),
-          evidenceFiles: this.newRequestFiles(),
-          documentTypes: docTypes,
-          idempotencyKey: crypto.randomUUID(),
-        }),
-      );
-      this.toast.success(this.uiLanguage.t('common.savedSuccessfully'));
-      this.closeDetail();
-      await this.load();
-    } catch (error) {
-      this.messages.set(parseApiErrors(error).messages);
-      this.toast.error(this.uiLanguage.t('common.actionFailed'));
-    } finally {
-      this.submitting.set(false);
-    }
-  }
-
   protected async withdrawRequest(item: FamilyMedicalCase): Promise<void> {
-    if (!confirm(this.uiLanguage.t('common.confirmAction'))) return;
+    if (
+      this.submitting() ||
+      this.detailLoading() ||
+      !item.capabilities.canWithdraw ||
+      !item.rowVersion ||
+      this.selectedCase()?.requestId !== item.requestId ||
+      !confirm(this.uiLanguage.t('common.confirmAction'))
+    )
+      return;
     this.submitting.set(true);
     try {
       await firstValueFrom(
         this.api.withdrawMedicalAccessRequest(item.requestId, item.rowVersion, crypto.randomUUID()),
       );
       this.toast.success(this.uiLanguage.t('common.savedSuccessfully'));
-      this.closeDetail();
-      await this.load();
-    } catch {
-      this.toast.error(this.uiLanguage.t('common.actionFailed'));
-    } finally {
       this.submitting.set(false);
-    }
-  }
-
-  protected openResubmitModal(item: FamilyMedicalCase): void {
-    this.selectedCase.set(item);
-    this.resubmitModel.set({
-      reason: item.reason,
-      documentTypes: '',
-    });
-    this.resubmitForm().reset();
-    this.resubmitFiles.set([]);
-    this.messages.set([]);
-    this.detailMode.set('resubmit');
-    this.drawerOpen.set(true);
-  }
-
-  protected closeResubmitModal(): void {
-    this.closeDetail();
-  }
-
-  protected onResubmitFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files?.length) return;
-    const files = Array.from(input.files);
-    const err = getEvidenceFileValidationError(files, this.uiLanguage.currentLang());
-    if (err) {
-      this.toast.error(err);
-      return;
-    }
-    this.resubmitFiles.set(files);
-  }
-
-  protected async submitResubmit(): Promise<void> {
-    const current = this.selectedCase();
-    if (!current || !current.capabilities.canResubmit || this.submitting()) return;
-    const model = this.resubmitModel();
-
-    this.submitting.set(true);
-    try {
-      const docTypes = model.documentTypes
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (docTypes.length !== this.resubmitFiles().length || docTypes.some(type => type === 'Evidence' || type === 'UpdatedEvidence')) {
-        this.messages.set([this.uiLanguage.t('familyPolicy.evidenceUnavailable')]);
-        return;
-      }
-      await firstValueFrom(
-        this.api.resubmitMedicalAccessRequest(current.requestId, {
-          rowVersion: current.rowVersion,
-          reason: model.reason.trim(),
-          evidenceFiles: this.resubmitFiles(),
-          documentTypes: docTypes,
-          idempotencyKey: crypto.randomUUID(),
-        }),
-      );
-      this.toast.success(this.uiLanguage.t('common.savedSuccessfully'));
       this.closeDetail();
       await this.load();
     } catch (error) {
-      this.messages.set(parseApiErrors(error).messages);
-      this.toast.error(this.uiLanguage.t('common.actionFailed'));
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        this.toast.error(this.uiLanguage.t('common.conflictState'));
+        this.submitting.set(false);
+        await Promise.all([this.openDetailsDrawer(item), this.load()]);
+      } else {
+        this.detailMessages.set(parseApiErrors(error).messages);
+        this.toast.error(this.uiLanguage.t('common.actionFailed'));
+      }
     } finally {
       this.submitting.set(false);
     }
@@ -411,13 +270,19 @@ export class PatientMedicalAccessComponent implements OnDestroy {
 
   protected async downloadDoc(doc: FamilyMedicalDocument): Promise<void> {
     const current = this.selectedCase();
-    if (!current) return;
+    if (
+      !current ||
+      this.documentLoadingId() ||
+      !doc.canDownload ||
+      !current.documents.some((item) => item.documentId === doc.documentId && item.canDownload)
+    )
+      return;
     this.documentLoadingId.set(doc.documentId);
     try {
       const res = await firstValueFrom(
         this.api.myMedicalAccessDocument(current.requestId, doc.documentId),
       );
-      if (res.body) {
+      if (res.body && this.selectedCase()?.requestId === current.requestId) {
         openPrivateMedia(res);
       }
     } catch {

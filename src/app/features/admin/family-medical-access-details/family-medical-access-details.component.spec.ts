@@ -1,7 +1,7 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { FamiliesApi, FamilyMedicalCase } from '../../../domains/families';
@@ -99,6 +99,9 @@ describe('FamilyMedicalAccessDetailsComponent', () => {
   });
 
   it('should call approveMedicalAccessRequest and show toast on approve', async () => {
+    mockApi.adminMedicalAccessRequest.mockReturnValue(
+      of({ ...mockCase, requestType: 'Restoration' }),
+    );
     fixture.componentRef.setInput('requestIdInput', 'req-123');
     fixture.detectChanges();
     await fixture.whenStable();
@@ -109,6 +112,34 @@ describe('FamilyMedicalAccessDetailsComponent', () => {
 
     expect(mockApi.approveMedicalAccessRequest).toHaveBeenCalled();
     expect(mockToast.success).toHaveBeenCalled();
+  });
+
+  it('blocks restriction approval without published signed grounds', async () => {
+    fixture.componentRef.setInput('requestIdInput', 'req-123');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await component['submitDecision']();
+    expect(mockApi.approveMedicalAccessRequest).not.toHaveBeenCalled();
+    expect(component['messages']().length).toBeGreaterThan(0);
+  });
+
+  it.each([409, 422])('handles restoration approval HTTP %s without retrying', async (status) => {
+    mockApi.adminMedicalAccessRequest.mockReturnValue(
+      of({ ...mockCase, requestType: 'Restoration' }),
+    );
+    mockApi.approveMedicalAccessRequest.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status, error: { detail: 'Policy unavailable' } })),
+    );
+    fixture.componentRef.setInput('requestIdInput', 'req-123');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await component['submitDecision']();
+    expect(mockApi.approveMedicalAccessRequest).toHaveBeenCalledTimes(1);
+    expect(mockToast.success).not.toHaveBeenCalled();
+    expect(mockToast.error).toHaveBeenCalled();
+    expect(component['submitting']()).toBe(false);
+    if (status === 409) expect(mockApi.adminMedicalAccessRequest).toHaveBeenCalledTimes(2);
+    else expect(component['messages']()).toContain('Policy unavailable');
   });
 
   it('should call rejectMedicalAccessRequest and show toast on reject', async () => {

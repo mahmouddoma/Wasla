@@ -9,6 +9,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -62,11 +63,18 @@ export class AppHeader {
         this.isUserMenuOpen.set(false);
       });
 
-    effect(() => {
+    effect((onCleanup) => {
       const u = this.user();
+      let active = true;
+      this.revokeAvatarUrl();
+      onCleanup(() => {
+        active = false;
+        this.revokeAvatarUrl();
+      });
       if (u?.userType === 'Patient' && this.patientsApi) {
-        this.patientsApi.profileImage().subscribe({
+        const request = this.patientsApi.profileImage().subscribe({
           next: (res) => {
+            if (!active || this.destroyRef.destroyed || this.user() !== u) return;
             if (res.body && res.body.size > 0) {
               const url = URL.createObjectURL(res.body);
               this.revokeAvatarUrl();
@@ -74,17 +82,14 @@ export class AppHeader {
             }
           },
           error: () => {
+            if (!active || this.destroyRef.destroyed || this.user() !== u) return;
             this.revokeAvatarUrl();
-            this.avatarUrl.set(null);
           },
         });
-      } else {
-        this.revokeAvatarUrl();
-        this.avatarUrl.set(null);
+        onCleanup(() => request.unsubscribe());
       }
     });
 
-    this.destroyRef.onDestroy(() => this.revokeAvatarUrl());
   }
 
   protected toggleGuestMenu(): void {
@@ -206,7 +211,8 @@ export class AppHeader {
 
 
   private revokeAvatarUrl(): void {
-    const current = this.avatarUrl();
+    const current = untracked(this.avatarUrl);
+    this.avatarUrl.set(null);
     if (current && current.startsWith('blob:')) {
       URL.revokeObjectURL(current);
     }

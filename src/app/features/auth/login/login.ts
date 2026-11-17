@@ -64,7 +64,7 @@ export class Login {
   }
 
   constructor() {
-    const initialMode = this.route.snapshot.data['initialMode'] as AuthMode | undefined;
+    const initialMode = this.route.snapshot.data?.['initialMode'] as AuthMode | undefined;
     if (initialMode) {
       this.activeMode.set(initialMode);
     } else if (this.router.url.includes('/register/doctor')) {
@@ -107,15 +107,18 @@ export class Login {
 
   setMode(mode: AuthMode): void {
     if (this.activeMode() === mode) return;
-    this.activeMode.set(mode);
     const targetUrl =
       mode === 'login' ? '/login' : mode === 'doctor' ? '/register/doctor' : '/register/patient';
-    if (typeof window !== 'undefined' && window.history?.replaceState) {
-      window.history.replaceState(null, '', targetUrl);
-    }
-    if (mode === 'login') {
-      setTimeout(() => this.runEntranceAnimation(), 20);
-    }
+    const returnUrl = resolveReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+    const identifier = this.route.snapshot.queryParamMap.get('identifier');
+    void this.router.navigate([targetUrl], {
+      queryParams: {
+        ...(returnUrl ? { returnUrl } : {}),
+        ...(identifier && identifier.length <= 200 && !/[\u0000-\u001f\u007f]/.test(identifier)
+          ? { identifier }
+          : {}),
+      },
+    });
   }
 
   private runEntranceAnimation(): void {
