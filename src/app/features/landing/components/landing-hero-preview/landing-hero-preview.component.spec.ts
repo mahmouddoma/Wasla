@@ -15,25 +15,20 @@ describe('LandingHeroPreviewComponent', () => {
     await fixture.whenStable();
   });
 
-  afterEach(() => localStorage.removeItem('wasla_lang'));
+  afterEach(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('wasla_lang');
+    }
+  });
 
-  it('switches between dashboard, queue, and encounter preview tabs', async () => {
+  it('renders realistic Wasla clinic dashboard with clinic header, KPIs, and appointment rows', async () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('#hero-preview-tab-dashboard')?.getAttribute('aria-selected')).toBe('true');
-    expect(el.textContent).toContain('مريم عادل حسن');
-
-    el.querySelector<HTMLButtonElement>('#hero-preview-tab-queue')?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(el.querySelector('#hero-preview-tab-queue')?.getAttribute('aria-selected')).toBe('true');
-    expect(el.textContent).toContain('تذكرة #14');
-
-    el.querySelector<HTMLButtonElement>('#hero-preview-tab-encounter')?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(el.querySelector('#hero-preview-tab-encounter')?.getAttribute('aria-selected')).toBe('true');
-    expect(el.textContent).toContain('روشتة إلكترونية');
+    expect(el.textContent).toContain('عيادة النور الطبية');
+    expect(el.textContent).toContain('18');
+    expect(el.textContent).toContain('4');
+    expect(el.textContent).toContain('11');
+    expect(el.textContent).toContain('محمود عبد الرحمن');
+    expect(el.textContent).toContain('آية إبراهيم منصور');
+    expect(el.textContent).toContain('أحمد علي الشافعي');
   });
 });

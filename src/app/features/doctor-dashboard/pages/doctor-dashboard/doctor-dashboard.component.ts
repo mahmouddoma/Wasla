@@ -6,7 +6,12 @@ import {
   computed,
   inject,
   signal,
+  ElementRef,
+  DestroyRef,
+  afterNextRender,
+  effect,
 } from '@angular/core';
+import gsap from 'gsap';
 
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -67,8 +72,51 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   private readonly navigation = inject(PortalNavigation);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly language = inject(LanguageService);
+
+  constructor() {
+    afterNextRender(() => {
+      if (!this.prefersReducedMotion()) {
+        const host = this.hostRef.nativeElement;
+        const filterCard = host.querySelector('.dashboard-filters-card');
+        if (filterCard) {
+          gsap.fromTo(
+            filterCard,
+            { opacity: 0, y: -10 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.45,
+              ease: 'power2.out',
+              clearProps: 'transform,opacity',
+            },
+          );
+        }
+      }
+    });
+
+    effect(() => {
+      const report = this.model();
+      const loading = this.loading();
+      if (report && !loading) {
+        setTimeout(() => {
+          if (!this.destroyed) {
+            this.initScrollAnimations();
+          }
+        }, 50);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.scrollObserver) {
+        this.scrollObserver.disconnect();
+      }
+      this.killAllAnimations();
+    });
+  }
 
   // ========================================
   // State
@@ -85,6 +133,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   readonly subscriptionRequired = signal(false);
 
   readonly activePreset = signal<'today' | 'last7' | 'month' | null>(null);
+  readonly periodSelection = computed<'today' | 'last7' | 'month' | 'custom'>(() => {
+    return this.activePreset() ?? 'custom';
+  });
 
   readonly measuredValue = measuredValue;
   readonly financeCodes = FINANCE_CODES;
@@ -96,20 +147,32 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         (!FINANCE_CODES.includes(metric.metricCode ?? '') && metric.unit?.toLowerCase() !== 'egp'),
     ),
   );
-  readonly highlights = computed(() =>
-    OVERVIEW_KPIS.filter(
-      (code) =>
-        code !== 'NetCollected' ||
-        (this.canViewFinance() &&
-          this.visibleMetrics().some((metric) => metric.metricCode === code)),
-    ).map(
+  readonly highlights = computed(() => {
+    const defaultCodes = [
+      'AppointmentsScheduled',
+      'CheckIns',
+      'ReservationToTicketConversion',
+      'ReservationNoShowRate',
+      this.metricByCode('PatientRetention90d')
+        ? 'PatientRetention90d'
+        : this.metricByCode('ReturningDoctorPatients')
+          ? 'ReturningDoctorPatients'
+          : 'CancellationRateScheduledCohort',
+    ];
+    if (
+      this.canViewFinance() &&
+      this.visibleMetrics().some((m) => m.metricCode === 'NetCollected')
+    ) {
+      defaultCodes.push('NetCollected');
+    }
+    return defaultCodes.map(
       (code) =>
         this.visibleMetrics().find((metric) => metric.metricCode === code) ?? {
           metricCode: code,
           value: null,
         },
-    ),
-  );
+    );
+  });
   readonly chartPoints = computed(() => activityTrend(this.model()));
   readonly chartMaximum = computed(() => this.chartPoints()[0]?.maximum ?? 1);
   readonly selectedDay = signal('');
@@ -166,6 +229,22 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
           p.key !== 'BookingCreationCohortFunnel'),
     ),
   );
+  readonly clinicBreakdowns = computed(() => {
+    const list = (this.model()?.breakdowns ?? []).filter((p) => p.key?.startsWith('Practice:'));
+    return list.length ? list : this.practiceBreakdowns();
+  });
+  readonly channelBreakdowns = computed(() => {
+    const hasPractices = (this.model()?.breakdowns ?? []).some((p) => p.key?.startsWith('Practice:'));
+    if (!hasPractices) return [];
+    return (this.model()?.breakdowns ?? []).filter(
+      (p) =>
+        !p.key?.startsWith('Practice:') &&
+        !p.key?.startsWith('BookingWeekday:') &&
+        !p.key?.startsWith('BookingHour:') &&
+        !p.key?.startsWith('SegmentPriority:') &&
+        p.key !== 'BookingCreationCohortFunnel',
+    );
+  });
   readonly weekdayBreakdownPoints = computed(() => {
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return (this.model()?.breakdowns ?? [])
@@ -225,6 +304,196 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     ]),
   ]);
 
+  readonly activePatternTab = signal<'weekday' | 'hour'>('weekday');
+
+  setActivePatternTab(tab: 'weekday' | 'hour'): void {
+    this.activePatternTab.set(tab);
+    setTimeout(() => {
+      const host = this.hostRef.nativeElement;
+      this.animatePatternBarsInContainer(host);
+    }, 30);
+  }
+
+  metricByCode(code: string): ReportMetric | undefined {
+    return this.visibleMetrics().find((m) => m.metricCode === code);
+  }
+
+  metricValue(code: string): number | null {
+    const metric = this.metricByCode(code);
+    return metric ? measuredValue(metric) : null;
+  }
+
+  openDrilldownForCode(code: string): void {
+    const metric = this.metricByCode(code);
+    if (metric && this.canDrilldown(metric)) {
+      void this.openDrilldown(metric);
+    }
+  }
+
+  readonly doctorGreeting = computed(() => {
+    const isAr = this.language.isRtl();
+    const user = this.session.user();
+    const rawName = user?.userName ?? '';
+    let doctorName = '';
+    if (rawName.includes('dr.')) {
+      doctorName = rawName.split('dr.')[1]?.replace(/\./g, ' ');
+    } else if (rawName.includes('dr_')) {
+      doctorName = rawName.split('dr_')[1]?.replace(/_/g, ' ');
+    } else {
+      doctorName = rawName;
+    }
+    doctorName = doctorName ? doctorName.charAt(0).toUpperCase() + doctorName.slice(1).trim() : '';
+    if (isAr) {
+      const arNameMap: Record<string, string> = {
+        Mona: 'منى',
+        Ahmed: 'أحمد',
+        Mohamed: 'محمد',
+        Sara: 'سارة',
+        Mahmoud: 'محمود',
+      };
+      const display = arNameMap[doctorName] || doctorName;
+      return display ? `مرحباً د. ${display}` : this.language.t('doctorRemediation.dashboard');
+    }
+    return doctorName ? `Welcome Dr. ${doctorName}` : this.language.t('doctorRemediation.dashboard');
+  });
+
+  readonly ticketSummary = computed(() => {
+    const completed = this.metricValue('TicketsCompleted') ?? 0;
+    const inProgress = (this.metricValue('InProgress') ?? 0) + (this.metricValue('Called') ?? 0);
+    const waiting = this.metricValue('Waiting') ?? 0;
+    const cancelled =
+      (this.metricValue('TicketsCancelled') ?? 0) + (this.metricValue('TicketsNoShow') ?? 0);
+    const total = completed + inProgress + waiting + cancelled;
+    const pct = (val: number) => (total > 0 ? Math.round((val / total) * 1000) / 10 : 0);
+    return {
+      total,
+      completed,
+      completedPct: pct(completed),
+      inProgress,
+      inProgressPct: pct(inProgress),
+      waiting,
+      waitingPct: pct(waiting),
+      cancelled,
+      cancelledPct: pct(cancelled),
+    };
+  });
+
+  readonly cancellationSummary = computed(() => {
+    const scheduled = this.metricValue('AppointmentsScheduled') ?? 0;
+    const attended = this.metricValue('CheckIns') ?? 0;
+    const round1 = (val: number) => Math.round(val * 10) / 10;
+    const noShowRate = round1(this.metricValue('ReservationNoShowRate') ?? 0);
+    const cancelRate = round1(this.metricValue('CancellationRateScheduledCohort') ?? 0);
+    const noShowCount =
+      this.metricValue('TicketsNoShow') ??
+      (noShowRate > 0 && scheduled > 0 ? Math.round((scheduled * noShowRate) / 100) : 0);
+    const cancelCount =
+      this.metricValue('CancellationsByEvent') ??
+      (cancelRate > 0 && scheduled > 0 ? Math.round((scheduled * cancelRate) / 100) : 0);
+    const attendedPct = scheduled > 0 ? round1((attended / scheduled) * 100) : 0;
+    return {
+      attended,
+      attendedPct,
+      noShowCount,
+      noShowRate,
+      cancelCount,
+      cancelRate,
+    };
+  });
+
+  readonly topPriorities = computed(() => {
+    const points = this.priorityBreakdownPoints();
+    if (points.length) {
+      const items = points
+        .map((p) => {
+          const metric = p.metrics?.find(
+            (m) => m.metricCode === 'BookingsCreated' || m.metricCode === 'CheckIns',
+          );
+          const val = measuredValue(metric) ?? 0;
+          return {
+            key: p.key ?? '',
+            title: this.breakdownTitle(p),
+            count: val,
+          };
+        })
+        .sort((a, b) => b.count - a.count);
+      const maxVal = Math.max(1, ...items.map((i) => i.count));
+      return items.slice(0, 5).map((item) => ({
+        ...item,
+        pct: Math.round((item.count / maxVal) * 100),
+      }));
+    }
+    const weekdays = this.weekdayBreakdownPoints();
+    const maxW = Math.max(1, ...weekdays.map((w) => w.bookingsCount));
+    return weekdays.slice(0, 5).map((w) => ({
+      key: w.day,
+      title: w.arabicDay,
+      count: w.bookingsCount,
+      pct: Math.round((w.bookingsCount / maxW) * 100),
+    }));
+  });
+
+  readonly performanceSummary = computed(() => {
+    const round1 = (val: number | null) => (val !== null ? Math.round(val * 10) / 10 : null);
+    const waitTime = round1(
+      this.metricValue('WaitToServiceStart') ?? this.metricValue('WaitToFirstCall') ?? null,
+    );
+    const consultTime = round1(this.metricValue('ServiceDuration') ?? null);
+    const utilization = round1(
+      this.metricValue('ActualServiceUtilization') ?? this.metricValue('PunctualArrival') ?? null,
+    );
+    return {
+      waitTime,
+      consultTime,
+      utilization,
+    };
+  });
+
+  readonly cancellationDonutStyle = computed(() => {
+    const summary = this.cancellationSummary();
+    if (summary.attended === 0 && summary.noShowCount === 0 && summary.cancelCount === 0) {
+      return 'conic-gradient(#e2e8f0 0deg 360deg)';
+    }
+    const attended = Math.min(100, Math.max(0, summary.attendedPct));
+    const noShow = Math.min(100 - attended, Math.max(0, summary.noShowRate));
+
+    const degAttended = Math.round((attended / 100) * 360);
+    const degNoShow = Math.round(degAttended + (noShow / 100) * 360);
+
+    return `conic-gradient(var(--wasla-teal-500, #0d9488) 0deg ${degAttended}deg, #f43f5e ${degAttended}deg ${degNoShow}deg, #94a3b8 ${degNoShow}deg 360deg)`;
+  });
+
+  readonly ticketDonutStyle = computed(() => {
+    const summary = this.ticketSummary();
+    const total = summary.total;
+    if (total === 0) {
+      return 'conic-gradient(#e2e8f0 0deg 360deg)';
+    }
+    const completed = summary.completedPct;
+    const inProgress = summary.inProgressPct;
+    const waiting = summary.waitingPct;
+
+    const deg1 = Math.round((completed / 100) * 360);
+    const deg2 = Math.round(deg1 + (inProgress / 100) * 360);
+    const deg3 = Math.round(deg2 + (waiting / 100) * 360);
+
+    return `conic-gradient(#0d9488 0deg ${deg1}deg, #0284c7 ${deg1}deg ${deg2}deg, #f59e0b ${deg2}deg ${deg3}deg, #f43f5e ${deg3}deg 360deg)`;
+  });
+
+  readonly searchQuery = signal('');
+
+  onSearchSubmit(): void {
+    const q = this.searchQuery().trim();
+    if (q) {
+      if (/\d/.test(q)) {
+        void this.router.navigate(['/doctor/reservations'], { queryParams: { search: q } });
+        return;
+      }
+      this.metricSearch.set(q);
+    }
+    void this.refresh();
+  }
+
   metricLabel(metric: ReportMetric): string {
     const key = 'doctorOverview.metric.' + metric.metricCode;
     return TRANSLATIONS[key] ? this.language.t(key) : this.text(metric.nameAr, metric.nameEn);
@@ -242,6 +511,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         return 'fa-solid fa-calendar-xmark';
       case 'ReservationNoShowRate':
         return 'fa-solid fa-user-slash';
+      case 'ReturningDoctorPatients':
+      case 'PatientRetention90d':
+        return 'fa-solid fa-arrows-rotate';
       case 'NetCollected':
         return 'fa-solid fa-wallet';
       case 'WaitToFirstCall':
@@ -266,6 +538,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         return 'kpi-bubble--amber';
       case 'ReservationNoShowRate':
         return 'kpi-bubble--rose';
+      case 'ReturningDoctorPatients':
+      case 'PatientRetention90d':
+        return 'kpi-bubble--teal';
       case 'NetCollected':
         return 'kpi-bubble--teal-dark';
       default:
@@ -449,9 +724,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       }
       if (point.key?.startsWith('SegmentPriority:')) {
         const p = point.key.split(':')[1];
-        if (p === '0') return isAr ? 'شريحة المواعيد العادية (أولوية 0)' : 'Standard appointments (Priority 0)';
-        if (p === '10') return isAr ? 'شريحة الحالات الطارئة / ذات الأولوية (10)' : 'High priority / Urgent care (Priority 10)';
-        return isAr ? `شريحة الأولوية: ${p}` : `Priority segment: ${p}`;
+        if (p === '0') return isAr ? 'المواعيد العادية / فحص روتيني' : 'Standard Routine Care';
+        if (p === '10') return isAr ? 'الحالات العاجلة / ذات أولوية' : 'High Priority / Urgent Care';
+        return isAr ? `شريحة الأولوية (${p})` : `Priority Segment (${p})`;
       }
       if (point.key === 'BookingCreationCohortFunnel') {
         return isAr ? 'مسار الحجوزات المكتملة' : 'Booking completion funnel';
@@ -493,6 +768,18 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       Saturday: 'السبت',
     };
     return map[day] || day;
+  }
+
+  channelIcon(key: string | null | undefined): string {
+    if (!key) return 'fa-solid fa-chart-pie';
+    const lower = key.toLowerCase();
+    if (lower.includes('creator') || lower.includes('creation') || lower.includes('منشئ')) {
+      return 'fa-solid fa-user-pen';
+    }
+    if (lower.includes('cancel') || lower.includes('إلغاء')) {
+      return 'fa-solid fa-calendar-xmark';
+    }
+    return 'fa-solid fa-sliders';
   }
 
   statusColorClass(status: string | null | undefined): string {
@@ -721,6 +1008,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     void this.refresh();
   }
 
+  onPeriodSelectChange(val: string): void {
+    if (val === 'today' || val === 'last7' || val === 'month') {
+      this.setPreset(val);
+    } else {
+      this.activePreset.set(null);
+    }
+  }
+
   onDateChange(): void {
     this.activePreset.set(null);
   }
@@ -753,11 +1048,284 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.scrollObserver) {
+      this.scrollObserver.disconnect();
+    }
+    this.killAllAnimations();
     this.closeDrilldown();
     this.destroyed = true;
     this.sequence++;
 
     this.model.set(null);
+  }
+
+  // ========================================
+  // GSAP Scroll-Triggered Animations
+  // ========================================
+
+  private scrollObserver?: IntersectionObserver;
+
+  private prefersReducedMotion(): boolean {
+    return (
+      typeof window === 'undefined' ||
+      Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+    );
+  }
+
+  private killAllAnimations(): void {
+    try {
+      const host = this.hostRef.nativeElement;
+      gsap.killTweensOf(host.querySelectorAll('*'));
+    } catch {
+      // Ignore if unmounted
+    }
+  }
+
+  private parseLocaleNumber(str: string): number | null {
+    if (!str || str === '—' || str === '-' || str.includes('—')) return null;
+    const normalized = str
+      .replace(/[٠-٩]/g, (d) => (d.charCodeAt(0) - 1632).toString())
+      .replace(/[۰-۹]/g, (d) => (d.charCodeAt(0) - 1776).toString())
+      .replace(/٫/g, '.')
+      .replace(/٬/g, '');
+    const match = normalized.match(/[\d.]+/);
+    if (!match) return null;
+    const val = parseFloat(match[0]);
+    return isNaN(val) ? null : val;
+  }
+
+  private initScrollAnimations(): void {
+    if (this.prefersReducedMotion() || this.destroyed) return;
+
+    if (this.scrollObserver) {
+      this.scrollObserver.disconnect();
+    }
+
+    const host = this.hostRef.nativeElement;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      const kpis = host.querySelector('.primary-kpi-strip') as HTMLElement | null;
+      if (kpis) this.animatePrimaryKpis(kpis);
+      const chart = host.querySelector('.activity-surface') as HTMLElement | null;
+      if (chart) this.animateChartSurface(chart);
+      const cards = host.querySelectorAll('.analytics-card');
+      for (let i = 0; i < cards.length; i++) {
+        this.animateAnalyticsCard(cards[i] as HTMLElement);
+      }
+      return;
+    }
+
+    this.scrollObserver = new IntersectionObserver(
+      (entries) => {
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i];
+          if (entry.isIntersecting) {
+            const target = entry.target as HTMLElement;
+            this.scrollObserver?.unobserve(target);
+            this.animateSectionOnScroll(target);
+          }
+        }
+      },
+      {
+        root: null,
+        rootMargin: '0px 0px -30px 0px',
+        threshold: 0.08,
+      },
+    );
+
+    const sections = host.querySelectorAll('.primary-kpi-strip, .activity-surface, .analytics-card');
+    for (let i = 0; i < sections.length; i++) {
+      this.scrollObserver.observe(sections[i]);
+    }
+  }
+
+  private animateSectionOnScroll(target: HTMLElement): void {
+    if (this.destroyed) return;
+    if (target.classList.contains('primary-kpi-strip')) {
+      this.animatePrimaryKpis(target);
+    } else if (target.classList.contains('activity-surface')) {
+      this.animateChartSurface(target);
+    } else if (target.classList.contains('analytics-card')) {
+      this.animateAnalyticsCard(target);
+    }
+  }
+
+  private animatePrimaryKpis(stripEl: HTMLElement): void {
+    const cards = stripEl.querySelectorAll('.primary-kpi-card');
+    if (cards.length) {
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 16, scale: 0.97 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.45,
+          stagger: 0.07,
+          ease: 'power2.out',
+          overwrite: 'auto',
+          clearProps: 'transform,opacity',
+        },
+      );
+    }
+    this.animateCountUpInContainer(stripEl);
+  }
+
+  private animateChartSurface(surfaceEl: HTMLElement): void {
+    gsap.fromTo(
+      surfaceEl,
+      { opacity: 0, y: 20 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+        overwrite: 'auto',
+        clearProps: 'transform,opacity',
+      },
+    );
+    this.animateChartBars(surfaceEl);
+  }
+
+  private animateAnalyticsCard(cardEl: HTMLElement): void {
+    gsap.fromTo(
+      cardEl,
+      { opacity: 0, y: 18 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.45,
+        ease: 'power2.out',
+        overwrite: 'auto',
+        clearProps: 'transform,opacity',
+      },
+    );
+    this.animateCountUpInContainer(cardEl);
+    this.animateDonutsInContainer(cardEl);
+    this.animatePatternBarsInContainer(cardEl);
+  }
+
+  private animateCountUpInContainer(container: HTMLElement): void {
+    if (this.prefersReducedMotion()) return;
+    const numberNodes = container.querySelectorAll(
+      '.kpi-card-value:not(.kpi-card-value--empty), .sub-stat-value:not(.sub-stat-value--empty), .donut-value',
+    );
+
+    for (let i = 0; i < numberNodes.length; i++) {
+      const node = numberNodes[i] as HTMLElement;
+      const originalText = node.textContent?.trim() || '';
+      const targetVal = this.parseLocaleNumber(originalText);
+      if (targetVal === null || targetVal === 0) continue;
+
+      const isPercent = originalText.includes('%') || originalText.includes('٪');
+      const hasDecimal = originalText.includes('.') || originalText.includes('٫');
+      const counter = { val: 0 };
+
+      gsap.to(counter, {
+        val: targetVal,
+        duration: 1.15,
+        ease: 'power2.out',
+        overwrite: 'auto',
+        onUpdate: () => {
+          const formatted = this.formatNumber(
+            hasDecimal ? Math.round(counter.val * 10) / 10 : Math.round(counter.val),
+          );
+          if (isPercent) {
+            node.textContent =
+              originalText.startsWith('%') || originalText.startsWith('٪')
+                ? `${originalText[0]}${formatted}`
+                : `${formatted}%`;
+          } else {
+            const parts = originalText.split(/\s+/);
+            if (parts.length > 1) {
+              node.textContent = `${formatted} ${parts.slice(1).join(' ')}`;
+            } else {
+              node.textContent = formatted;
+            }
+          }
+        },
+        onComplete: () => {
+          node.textContent = originalText;
+        },
+      });
+    }
+  }
+
+  private animateChartBars(container: HTMLElement): void {
+    if (this.prefersReducedMotion()) return;
+    const bars = container.querySelectorAll('.series-scheduled, .series-checkins');
+    if (!bars.length) return;
+
+    for (let idx = 0; idx < bars.length; idx++) {
+      const bar = bars[idx] as SVGRectElement;
+      const origHeight = parseFloat(bar.getAttribute('height') || '0');
+      const origY = parseFloat(bar.getAttribute('y') || '0');
+      if (origHeight <= 0) continue;
+
+      const baseY = 200;
+      bar.setAttribute('height', '0');
+      bar.setAttribute('y', baseY.toString());
+
+      const anim = { h: 0, y: baseY };
+      gsap.to(anim, {
+        h: origHeight,
+        y: origY,
+        duration: 0.8,
+        delay: 0.1 + (idx % 15) * 0.02,
+        ease: 'power2.out',
+        overwrite: 'auto',
+        onUpdate: () => {
+          bar.setAttribute('height', anim.h.toFixed(1));
+          bar.setAttribute('y', anim.y.toFixed(1));
+        },
+        onComplete: () => {
+          bar.setAttribute('height', origHeight.toString());
+          bar.setAttribute('y', origY.toString());
+        },
+      });
+    }
+  }
+
+  private animateDonutsInContainer(container: HTMLElement): void {
+    if (this.prefersReducedMotion()) return;
+    const donuts = container.querySelectorAll('.donut-chart-container');
+    if (donuts.length) {
+      gsap.fromTo(
+        donuts,
+        { scale: 0.65, opacity: 0, rotate: -45 },
+        {
+          scale: 1,
+          opacity: 1,
+          rotate: 0,
+          duration: 0.85,
+          ease: 'back.out(1.4)',
+          delay: 0.12,
+          overwrite: 'auto',
+          clearProps: 'transform,opacity',
+        },
+      );
+    }
+  }
+
+  private animatePatternBarsInContainer(container: HTMLElement): void {
+    if (this.prefersReducedMotion()) return;
+    const fills = container.querySelectorAll('.pattern-bar-fill');
+    for (let idx = 0; idx < fills.length; idx++) {
+      const fill = fills[idx] as HTMLElement;
+      const targetWidth = fill.style.width;
+      if (!targetWidth) continue;
+      gsap.fromTo(
+        fill,
+        { width: '0%' },
+        {
+          width: targetWidth,
+          duration: 0.75,
+          delay: 0.12 + idx * 0.035,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        },
+      );
+    }
   }
 
   // ========================================
@@ -990,9 +1558,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatNumber(value: number): string {
-    const locale = this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-GB';
-
-    return new Intl.NumberFormat(locale, {
+    return new Intl.NumberFormat('en-US', {
       maximumFractionDigits: 2,
     }).format(value);
   }

@@ -44,10 +44,60 @@
   overflow: hidden;
   box-shadow: 2px 0 16px rgba(7, 28, 48, 0.08);
   box-sizing: border-box;
-  transition:
-    width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    flex-basis 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    padding 0.25s ease;
+}
+
+/* ==========================================================================
+   SMOOTH GSAP SIDEBAR ANIMATION COORDINATION
+   Eliminates choppiness/frame-fighting and enables directional cascading
+   ========================================================================== */
+.portal-sidebar.is-animating,
+.portal-sidebar.is-animating ~ .portal-main-wrapper,
+:host:has(.portal-sidebar.is-animating) .portal-main-wrapper {
+  transition: none !important;
+  will-change: width, margin-inline-start;
+}
+
+.portal-sidebar.is-animating * {
+  transition: none !important;
+}
+
+.portal-sidebar.is-animating .sidebar-nav {
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.portal-sidebar.is-animating .sidebar-nav::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* While collapsing animation is actively running, prevent text containers from prematurely collapsing */
+.portal-sidebar.collapsed.is-animating .brand-text-block,
+.portal-sidebar.collapsed.is-animating .sidebar-nav-item .nav-text,
+.portal-sidebar.collapsed.is-animating .btn-sidebar-logout .nav-text {
+  max-width: 180px;
+  pointer-events: none;
+}
+
+.portal-sidebar.collapsed.is-animating .sidebar-brand-header {
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.portal-sidebar.collapsed.is-animating .sidebar-nav-item {
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  padding: 10px 14px;
+  justify-content: flex-start;
+}
+
+.portal-sidebar.collapsed.is-animating .sidebar-group-title {
+  height: auto;
+  width: auto;
+  margin: 16px 0 4px;
+  padding-inline: 14px;
+  font-size: 0.75rem;
+  opacity: 1;
 }
 .sidebar-brand-header {
   display: flex;
@@ -100,8 +150,34 @@
   flex: 0 0 80px;
   padding: 24px 12px 20px;
 }
-.portal-sidebar.collapsed .brand-text-block {
-  display: none;
+.brand-text-block,
+.sidebar-nav-item .nav-text,
+.btn-sidebar-logout .nav-text {
+  display: inline-flex;
+  flex-direction: column;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  max-width: 180px;
+  transition:
+    opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.portal-sidebar.collapsed .brand-text-block,
+.portal-sidebar.collapsed .sidebar-nav-item .nav-text,
+.portal-sidebar.collapsed .btn-sidebar-logout .nav-text {
+  opacity: 0;
+  max-width: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  transform: translateX(10px);
+}
+[dir='ltr'] .portal-sidebar.collapsed .brand-text-block,
+[dir='ltr'] .portal-sidebar.collapsed .sidebar-nav-item .nav-text,
+[dir='ltr'] .portal-sidebar.collapsed .btn-sidebar-logout .nav-text {
+  transform: translateX(-10px);
 }
 .portal-sidebar.collapsed .sidebar-brand-header {
   flex-direction: column;
@@ -126,16 +202,17 @@
   justify-content: center;
   border-radius: 12px;
 }
-.portal-sidebar.collapsed .sidebar-nav-item .nav-text {
-  display: none;
+.portal-sidebar.collapsed .sidebar-nav-item.active {
+  box-shadow: 0 0 16px rgba(0, 143, 150, 0.5), 0 2px 8px rgba(7, 28, 48, 0.3);
 }
 .portal-sidebar.collapsed .sidebar-group-title {
   height: 1px;
-  width: 100%;
-  margin: 12px 0 4px;
+  width: 36px;
+  margin: 14px auto 6px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   font-size: 0;
+  opacity: 0.7;
 }
 .portal-sidebar.collapsed .sidebar-nav-icon {
   width: 22px;
@@ -154,9 +231,6 @@
   padding: 0;
   justify-content: center;
   border-radius: 12px;
-}
-.portal-sidebar.collapsed .btn-sidebar-logout .nav-text {
-  display: none;
 }
 .portal-sidebar.collapsed .btn-sidebar-logout svg {
   width: 20px;
@@ -322,9 +396,6 @@
   width: calc(100% - var(--portal-sidebar-w, 248px));
   max-width: calc(100% - var(--portal-sidebar-w, 248px));
   box-sizing: border-box;
-  transition:
-    margin-inline-start 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 :host:has(.portal-sidebar.collapsed) .portal-main-wrapper,
 .portal-sidebar.collapsed + .portal-main-wrapper {

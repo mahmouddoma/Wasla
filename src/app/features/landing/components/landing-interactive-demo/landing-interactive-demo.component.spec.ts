@@ -15,32 +15,45 @@ describe('LandingInteractiveDemoComponent', () => {
     await fixture.whenStable();
   });
 
-  afterEach(() => localStorage.removeItem('wasla_lang'));
+  afterEach(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('wasla_lang');
+    }
+  });
 
-  it('updates synchronized role inspector when selecting an appointment', async () => {
+  it('switches between interactive tabs and updates benefits content', async () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('مريم عادل حسن');
+    expect(el.textContent).toContain('إدارة الحجوزات بكل سهولة');
 
-    el.querySelector<HTMLButtonElement>('#demo-apt-apt-2')?.click();
+    el.querySelector<HTMLButtonElement>('#demo-mode-clinical')?.click();
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(el.textContent).toContain('محمود سامي إبراهيم (#15)');
-    expect(el.textContent).toContain('تم تأكيد الحضور وتحصيل رسم الاستشارة');
+    expect(el.textContent).toContain('سجل طبي وكشف متكامل');
+
+    el.querySelector<HTMLButtonElement>('#demo-mode-finance')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(el.textContent).toContain('متابعة دقيقة لحسابات العيادة');
   });
 
-  it('advances queue simulation when calling the next ticket', async () => {
+  it('advances queue simulation when calling the next ticket in queue tab', async () => {
     const el: HTMLElement = fixture.nativeElement;
     el.querySelector<HTMLButtonElement>('#demo-mode-queue')?.click();
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(el.textContent).toContain('#14 — مريم عادل حسن');
+    expect(el.textContent).toContain('#14');
+    expect(el.textContent).toContain('محمود عبد الرحمن');
 
-    el.querySelector<HTMLButtonElement>('#demo-call-next-btn')?.click();
+    const callNextBtn = el.querySelector<HTMLButtonElement>('#demo-call-next-btn');
+    expect(callNextBtn).not.toBeNull();
+    callNextBtn?.click();
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(el.textContent).toContain('#15 — محمود سامي إبراهيم');
+    expect(el.textContent).toContain('#15');
+    expect(el.textContent).toContain('آية إبراهيم منصور');
   });
 });

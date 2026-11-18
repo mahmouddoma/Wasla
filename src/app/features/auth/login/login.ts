@@ -49,6 +49,11 @@ export class Login {
 
   readonly activeMode = signal<AuthMode>('login');
   readonly showSignupSheet = signal(false);
+  readonly showSignupMenu = signal(false);
+  readonly showDemoShortcuts = signal(
+    typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.search.includes('demo=true')),
+  );
 
   openSignupSheet(): void {
     this.showSignupSheet.set(true);
@@ -58,8 +63,23 @@ export class Login {
     this.showSignupSheet.set(false);
   }
 
+  toggleSignupMenu(): void {
+    this.showSignupMenu.update((open) => !open);
+  }
+
+  closeSignupMenu(): void {
+    this.showSignupMenu.set(false);
+  }
+
+  selectRegisterRole(mode: 'doctor' | 'patient'): void {
+    this.closeSignupMenu();
+    this.closeSignupSheet();
+    this.setMode(mode);
+  }
+
   selectModeFromSheet(mode: AuthMode): void {
     this.closeSignupSheet();
+    this.closeSignupMenu();
     this.setMode(mode);
   }
 
@@ -99,7 +119,7 @@ export class Login {
       const host = this.hostRef.nativeElement;
       gsap.killTweensOf(
         host.querySelectorAll(
-          '.auth-login-header, .auth-form .form-group, .btn-login-submit, .login-account-footer',
+          '.product-presentation-col, .login-card-surface, .login-form .form-field-group, .btn-login-submit, .create-account-wrap',
         ),
       );
     });
@@ -130,7 +150,7 @@ export class Login {
     }
     const host = this.hostRef.nativeElement;
     const targets = host.querySelectorAll(
-      '.auth-login-header, .auth-form .form-group, .btn-login-submit, .login-account-footer',
+      '.product-presentation-col, .login-card-surface, .login-form .form-field-group, .btn-login-submit, .create-account-wrap',
     );
     if (!targets.length) return;
     gsap.fromTo(
@@ -229,10 +249,15 @@ export class Login {
     this.showPassword.update((visible) => !visible);
   }
 
-  protected fillDemo(role: 'doctor' | 'patient'): void {
+  protected fillDemo(role: 'doctor' | 'patient' | 'reception'): void {
     if (role === 'doctor') {
       this.model.set({
         identifier: 'dr.mona@wasla-demo.invalid',
+        password: 'Password123!',
+      });
+    } else if (role === 'reception') {
+      this.model.set({
+        identifier: 'reception.sara@wasla-demo.invalid',
         password: 'Password123!',
       });
     } else {

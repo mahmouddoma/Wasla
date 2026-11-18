@@ -1,4 +1,4 @@
-<div class="directory-page container-fluid" [class.has-active-detail]="drawerOpened() && inspectedPatientId()">
+<div class="directory-page" [class.has-active-detail]="drawerOpened() && inspectedPatientId()">
   <app-page-header
     [heading]="'doctorPatients.title' | t"
     [description]="'doctorPatients.subtitle' | t"
@@ -282,14 +282,32 @@
                         </div>
                         <div class="mobile-patient-context">
                           @if (item.phoneNumber) {
-                            <bdi dir="ltr">{{ item.phoneNumber }}</bdi>
+                            <span class="mobile-ctx-item">
+                              <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                              <bdi dir="ltr" class="ltr-text">{{ item.phoneNumber }}</bdi>
+                            </span>
                           }
-                          <span
-                            >{{ 'doctorPatients.col.lastAttendance' | t }}:
+                          <span class="mobile-ctx-item">
+                            <i class="fa-solid fa-hospital" aria-hidden="true"></i>
+                            <span>{{
+                              language.isRtl()
+                                ? item.lastPractice.nameAr || item.lastPractice.nameEn
+                                : item.lastPractice.nameEn || item.lastPractice.nameAr
+                            }}</span>
+                          </span>
+                          <span class="mobile-ctx-item">
+                            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                            <span>{{ 'doctorPatients.col.lastAttendance' | t }}:</span>
                             <bdi>{{
                               item.lastAttendanceAtUtc | localizedDate: language.currentLang()
-                            }}</bdi></span
-                          >
+                            }}</bdi>
+                          </span>
+                          <span class="mobile-ctx-item">
+                            <span class="count-badge">
+                              <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                              <span>{{ item.attendanceCount }}</span>
+                            </span>
+                          </span>
                         </div>
                       </div>
                     </div>

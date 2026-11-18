@@ -61,12 +61,16 @@ describe('WaslaLandingComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => localStorage.removeItem('wasla_lang'));
+  afterEach(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('wasla_lang');
+    }
+  });
 
   it('renders official Arabic headline, primary CTA, and switches cleanly to English LTR', async () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('.wasla-landing-page')?.getAttribute('dir')).toBe('rtl');
-    expect(el.querySelector('#landing-hero-title')?.textContent).toContain('عيادتك منظمة، ووقتك لمرضاك.');
+    expect(el.querySelector('#landing-hero-title')?.textContent).toContain('عيادتك كلها');
     expect(el.querySelector('#hero-primary-cta')?.getAttribute('href')).toBe('/register/doctor');
     expect(el.querySelector('#hero-login-link')?.getAttribute('href')).toBe('/login');
 
@@ -75,16 +79,16 @@ describe('WaslaLandingComponent', () => {
     await fixture.whenStable();
 
     expect(el.querySelector('.wasla-landing-page')?.getAttribute('dir')).toBe('ltr');
-    expect(el.querySelector('#landing-hero-title')?.textContent).toContain('Your Clinic Organized');
+    expect(el.querySelector('#landing-hero-title')?.textContent).toContain('clinic');
   });
 
-  it('renders Why Wasla benefits and How It Works steps', () => {
+  it('renders 3 main benefits without clutter and renders product showcase', () => {
     const el: HTMLElement = fixture.nativeElement;
     const benefits = el.querySelectorAll('.benefit-item');
     expect(benefits.length).toBe(3);
 
-    const steps = el.querySelectorAll('.process-step-item');
-    expect(steps.length).toBe(3);
+    const showcase = el.querySelector('#product-showcase');
+    expect(showcase).not.toBeNull();
   });
 
   it('toggles FAQ accordion items accessibly', async () => {

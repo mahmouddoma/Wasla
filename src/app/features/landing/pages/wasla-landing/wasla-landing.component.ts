@@ -20,12 +20,10 @@ import {
   SubscriptionsApi,
 } from '../../../../domains/subscriptions';
 import { PlanSelectorComponent } from '../../../subscriptions';
-import { LandingHeroPreviewComponent } from '../../components/landing-hero-preview/landing-hero-preview.component';
+import { LandingNavbarComponent } from '../../components/landing-navbar/landing-navbar.component';
 import { LandingInteractiveDemoComponent } from '../../components/landing-interactive-demo/landing-interactive-demo.component';
-import { AppHeader } from '../../../../shared/components/app-header/app-header';
 import {
   FaqAccordionItem,
-  HowItWorksStep,
   WhyWaslaBenefit,
 } from '../../models/landing.models';
 
@@ -35,8 +33,7 @@ import {
   imports: [
     RouterLink,
     TranslatePipe,
-    AppHeader,
-    LandingHeroPreviewComponent,
+    LandingNavbarComponent,
     LandingInteractiveDemoComponent,
     PlanSelectorComponent,
   ],
@@ -65,51 +62,24 @@ export class WaslaLandingComponent {
     return currentUser ? this.authSession.destinationFor(currentUser) : '/login';
   });
 
-  protected readonly whyWaslaBenefits: readonly WhyWaslaBenefit[] = [
+  protected readonly mainBenefits: readonly WhyWaslaBenefit[] = [
     {
       id: 'benefit-scheduling',
-      iconClass: 'fa-solid fa-calendar-check',
-      titleKey: 'landing.why.b1Title',
-      descKey: 'landing.why.b1Desc',
+      iconClass: 'fa-regular fa-calendar-check',
+      titleKey: 'landing.benefits.b1Title',
+      descKey: 'landing.benefits.b1Desc',
+    },
+    {
+      id: 'benefit-queue',
+      iconClass: 'fa-solid fa-users',
+      titleKey: 'landing.benefits.b2Title',
+      descKey: 'landing.benefits.b2Desc',
     },
     {
       id: 'benefit-records',
-      iconClass: 'fa-solid fa-folder-medical',
-      titleKey: 'landing.why.b2Title',
-      descKey: 'landing.why.b2Desc',
-    },
-    {
-      id: 'benefit-operations',
-      iconClass: 'fa-solid fa-list-check',
-      titleKey: 'landing.why.b3Title',
-      descKey: 'landing.why.b3Desc',
-    },
-  ];
-
-  protected readonly howItWorksSteps: readonly HowItWorksStep[] = [
-    {
-      num: '01',
-      iconClass: 'fa-solid fa-calendar-plus',
-      titleKey: 'landing.steps.s1Title',
-      descKey: 'landing.steps.s1Desc',
-      actionKey: 'landing.steps.s1Action',
-      outcomeKey: 'landing.steps.s1Outcome',
-    },
-    {
-      num: '02',
-      iconClass: 'fa-solid fa-users-line',
-      titleKey: 'landing.steps.s2Title',
-      descKey: 'landing.steps.s2Desc',
-      actionKey: 'landing.steps.s2Action',
-      outcomeKey: 'landing.steps.s2Outcome',
-    },
-    {
-      num: '03',
-      iconClass: 'fa-solid fa-prescription-bottle-medical',
-      titleKey: 'landing.steps.s3Title',
-      descKey: 'landing.steps.s3Desc',
-      actionKey: 'landing.steps.s3Action',
-      outcomeKey: 'landing.steps.s3Outcome',
+      iconClass: 'fa-solid fa-clipboard-list',
+      titleKey: 'landing.benefits.b3Title',
+      descKey: 'landing.benefits.b3Desc',
     },
   ];
 
@@ -126,13 +96,8 @@ export class WaslaLandingComponent {
     },
     {
       id: 'faq-3',
-      questionKey: 'landing.faq.q5',
-      answerKey: 'landing.faq.a5',
-    },
-    {
-      id: 'faq-4',
-      questionKey: 'landing.faq.q6',
-      answerKey: 'landing.faq.a6',
+      questionKey: 'landing.faq.q3',
+      answerKey: 'landing.faq.a3',
     },
   ];
 
@@ -182,7 +147,7 @@ export class WaslaLandingComponent {
 
     const root = this.elementRef.nativeElement;
     const heroTargets = root.querySelectorAll(
-      '.hero-eyebrow-pill, .hero-headline, .hero-lead, .hero-cta-row, .hero-meta-links, .hero-visual-col',
+      '.hero-headline, .hero-lead, .hero-cta-row',
     );
     if (heroTargets.length) {
       gsap.fromTo(
@@ -192,7 +157,7 @@ export class WaslaLandingComponent {
           opacity: 1,
           y: 0,
           duration: 0.45,
-          stagger: 0.05,
+          stagger: 0.06,
           ease: 'power2.out',
           overwrite: 'auto',
           clearProps: 'transform,opacity',
@@ -203,8 +168,8 @@ export class WaslaLandingComponent {
     if (!('IntersectionObserver' in window)) return;
 
     const sectionGroups = [
-      { targetId: 'why-wasla', itemSelector: '#why-wasla .benefit-item', stagger: 0.08 },
-      { targetId: 'clinic-journey', itemSelector: '#clinic-journey .process-step-item', stagger: 0.08 },
+      { targetId: 'benefits-section', itemSelector: '#benefits-section .benefit-item', stagger: 0.08 },
+      { targetId: 'pricing-section', itemSelector: '#pricing-section .pricing-card', stagger: 0.08 },
       { targetId: 'faq-section', itemSelector: '#faq-section .faq-row', stagger: 0.05 },
     ] as const;
 
@@ -274,6 +239,15 @@ export class WaslaLandingComponent {
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+
+  protected selectPlan(planCode: string): void {
+    void this.router.navigate(['/register/doctor'], {
+      queryParams: {
+        plan: planCode,
+        cycle: 'Monthly',
+      },
+    });
   }
 
   protected onPlanSelected(selection: SubscriptionSelection): void {

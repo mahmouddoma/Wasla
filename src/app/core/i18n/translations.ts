@@ -1370,6 +1370,12 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorOverview.cohort.BookingsCreated': { ar: 'حجوزات منشأة', en: 'Bookings created' },
   'doctorOverview.cohort.CheckIns': { ar: 'تم تسجيل حضورها', en: 'Checked in' },
   'doctorOverview.cohort.TicketsCompleted': { ar: 'تذاكر مكتملة', en: 'Tickets completed' },
+  'doctorOverview.cohort.UniqueDoctorPatients': { ar: 'إجمالي المرضى', en: 'Unique Patients' },
+  'doctorOverview.cohort.NewToDoctorPatients': { ar: 'مرضى جدد', en: 'New Patients' },
+  'doctorOverview.cohort.ReturningDoctorPatients': { ar: 'مرضى عائدون', en: 'Returning Patients' },
+  'doctorOverview.cohort.PatientRetention90d': { ar: 'عودة المرضى خلال 90 يومًا', en: '90-Day Retention' },
+  'doctorOverview.cohort.FollowUpActivity': { ar: 'نشاط المتابعة', en: 'Follow-up Activity' },
+  'doctorOverview.cohort.ClinicalWorkflowCompleted': { ar: 'مسارات الكشف المكتملة', en: 'Completed Encounters' },
   'doctorOverview.metric.AppointmentsScheduled': {
     ar: 'المواعيد المجدولة',
     en: 'Scheduled appointments',
@@ -1411,6 +1417,30 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorOverview.help.NetCollected': {
     ar: 'بعد المبالغ المستردة، وليس صافي الربح',
     en: 'After refunds; not net profit',
+  },
+  'doctorOverview.help.PatientRetention90d': {
+    ar: 'نسبة مراجعة المرضى خلال 90 يومًا',
+    en: 'Patients returning to clinic within 90 days',
+  },
+  'doctorOverview.help.ReturningDoctorPatients': {
+    ar: 'المرضى العائدون لمتابعة حالتهم',
+    en: 'Patients returning for recurring clinical care',
+  },
+  'doctorOverview.help.NewToDoctorPatients': {
+    ar: 'المرضى الذين يزورون العيادة لأول مرة',
+    en: 'Patients visiting this doctor for the first time',
+  },
+  'doctorOverview.help.UniqueDoctorPatients': {
+    ar: 'إجمالي المرضى الفريدين دون تكرار',
+    en: 'Distinct individual patients seen in this period',
+  },
+  'doctorOverview.help.FollowUpActivity': {
+    ar: 'إجمالي أنشطة واستشارات المتابعة',
+    en: 'Recorded clinical follow-ups and consults',
+  },
+  'doctorOverview.help.ClinicalWorkflowCompleted': {
+    ar: 'مسارات الكشف الطبي الموثقة بالكامل',
+    en: 'Fully documented clinical encounters',
   },
   'doctorOverview.section.operations': {
     ar: 'تجربة الانتظار والخدمة',
@@ -1472,6 +1502,38 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorOverview.calculation': { ar: 'كيف يُحسب؟', en: 'How is this calculated?' },
   'doctorOverview.excluded': { ar: 'العينات المستبعدة', en: 'Excluded samples' },
   'doctorOverview.breakdowns': { ar: 'تفاصيل تقسيم البيانات', en: 'Detailed data breakdowns' },
+  'doctorOverview.cancellationsAndNoShow': {
+    ar: 'الإلغاءات وعدم الحضور',
+    en: 'Cancellations and No-show',
+  },
+  'doctorOverview.ticketStatus': { ar: 'حالات التذاكر', en: 'Ticket Status' },
+  'doctorOverview.bookingPatterns': { ar: 'إنشاء الحجوزات', en: 'Reservation Creation' },
+  'doctorOverview.clinicPerformance': { ar: 'أداء العيادة', en: 'Clinic Performance' },
+  'doctorOverview.topReasons': {
+    ar: 'أعلى 5 أسباب للزيارة والشرائح',
+    en: 'Top 5 Visit Reasons & Segments',
+  },
+  'doctorOverview.attended': { ar: 'تم الحضور', en: 'Attended' },
+  'doctorOverview.noShow': { ar: 'عدم حضور', en: 'No-show' },
+  'doctorOverview.cancelledByPatient': { ar: 'إلغاء من المريض', en: 'Cancelled by patient' },
+  'doctorOverview.cancelledByClinic': { ar: 'إلغاء من العيادة', en: 'Cancelled by clinic' },
+  'doctorOverview.byDay': { ar: 'حسب اليوم', en: 'By day' },
+  'doctorOverview.byHour': { ar: 'حسب الساعة', en: 'By hour' },
+  'doctorOverview.avgWaitTime': { ar: 'متوسط زمن الانتظار', en: 'Average wait time' },
+  'doctorOverview.avgConsultTime': { ar: 'متوسط مدة الكشف', en: 'Average consultation duration' },
+  'doctorOverview.patientSatisfaction': {
+    ar: 'رضا المرضى والالتزام',
+    en: 'Patient satisfaction & punctuality',
+  },
+  'doctorOverview.presetMonth': { ar: 'آخر 30 يوماً', en: 'Last 30 days' },
+  'doctorOverview.searchPlaceholder': {
+    ar: 'البحث عن مريض، رقم حجز أو هاتف...',
+    en: 'Search patient, reservation # or phone...',
+  },
+  'doctorOverview.allMetricsDirectory': {
+    ar: 'دليل كافة مؤشرات الأداء',
+    en: 'All metrics directory',
+  },
   'reception.access.worklist': {
     ar: 'لم يُفعّل عرض قائمة العمل لهذه العيادة',
     en: 'Worklist access is not enabled for this clinic',
@@ -1628,12 +1690,17 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorDashboard.filter.today': { ar: 'اليوم', en: 'Today' },
   'doctorDashboard.filter.last7Days': { ar: 'آخر 7 أيام', en: 'Last 7 days' },
   'doctorDashboard.filter.thisMonth': { ar: 'هذا الشهر', en: 'This month' },
+  'doctorDashboard.filter.customRange': { ar: 'تحديد فترة مخصصة...', en: 'Custom date range...' },
   'doctorDashboard.searchMetrics': { ar: 'بحث في المؤشرات...', en: 'Search metrics...' },
   'doctorDashboard.allMetrics': { ar: 'جميع المؤشرات', en: 'All metrics' },
   'doctorDashboard.activeOnly': { ar: 'المؤشرات النشطة فقط', en: 'Active metrics only' },
   'doctorDashboard.practicesSummary': {
     ar: 'أداء الفروع والعيادات',
     en: 'Clinics & Practices Performance',
+  },
+  'doctorDashboard.operationalChannels': {
+    ar: 'قنوات الحجز وجهات الإلغاء',
+    en: 'Booking Channels & Cancellation Actors',
   },
   'doctorDashboard.weeklySummary': {
     ar: 'توزيع الحجوزات أسبوعياً',
@@ -1765,6 +1832,18 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorDashboard.group.finance': { ar: 'التحصيل والمصروفات', en: 'Collections & expenses' },
   'doctorDashboard.group.handovers': { ar: 'تسليم العمل', en: 'Handovers' },
   'doctorDashboard.group.other': { ar: 'مؤشرات أخرى', en: 'Other metrics' },
+  'doctorDashboard.group.exceptions': { ar: 'الاستثناءات والإلغاء', en: 'Exceptions & Cancellations' },
+  'doctorDashboard.group.patients': { ar: 'المرضى والمتابعة', en: 'Patients & Follow-up' },
+  'doctorDashboard.group.operations': { ar: 'العمليات والانتظار', en: 'Operations & Waiting' },
+  'doctorDashboard.group.timing': { ar: 'الأوقات والخدمة', en: 'Timing & Service' },
+  'doctorDashboard.group.cohort': { ar: 'مسارات الحجوزات', en: 'Booking Cohorts' },
+  'doctorDashboard.timingSummary': { ar: 'متوسط انتظار المرضى', en: 'Average patient wait' },
+  'doctorDashboard.serviceSummary': { ar: 'متوسط مدة الكشف السريري', en: 'Average clinical consultation' },
+  'doctorDashboard.utilizationSummary': { ar: 'معدل استغلال الوقت والرضا', en: 'Time utilization & satisfaction' },
+  'doctorDashboard.status.completed': { ar: 'مكتملة', en: 'Completed' },
+  'doctorDashboard.status.inProgress': { ar: 'قيد المعالجة', en: 'In progress' },
+  'doctorDashboard.status.waiting': { ar: 'في الانتظار', en: 'Waiting' },
+  'doctorDashboard.status.cancelled': { ar: 'ملغاة / لم يحضر', en: 'Cancelled / No-show' },
   'doctorDashboard.notEnoughData': {
     ar: 'لا توجد بيانات كافية لحساب المؤشر',
     en: 'Not enough data to calculate this metric',
@@ -4495,6 +4574,7 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Ask an administrator for permission to view this clinic queue.',
   },
   'tickets.callNext': { ar: 'نداء التالي', en: 'Call next' },
+  'tickets.call': { ar: 'نداء', en: 'Call' },
   'tickets.manualCall': { ar: 'نداء استثنائي', en: 'Manual call' },
   'tickets.recall': { ar: 'إعادة النداء', en: 'Recall' },
   'tickets.noResponse': { ar: 'تأكيد عدم الرد', en: 'Confirm no response' },
@@ -10165,10 +10245,43 @@ export const TRANSLATIONS: TranslationDictionary = {
   'tickets.workstation.optionalBadge': { ar: 'اختياري', en: 'Optional' },
   'tickets.workstation.doneBadge': { ar: 'تم الإدخال', en: 'Entered' },
   'tickets.workstation.readyToComplete': { ar: 'جاهز لإنهاء الكشف', en: 'Ready to complete visit' },
-  'tickets.workstation.tabAssessment': { ar: 'الشكوى والتشخيص', en: 'Notes & Diagnosis' },
-  'tickets.workstation.tabPrescription': { ar: 'الروشتة والعلاج', en: 'Prescription & Rx' },
+  'tickets.workstation.tabAssessment': { ar: 'الكشف والتشخيص', en: 'Assessment & Diagnosis' },
+  'tickets.workstation.tabPrescription': { ar: 'الروشتة', en: 'Prescription' },
+  'tickets.workstation.tabLabs': { ar: 'التحاليل', en: 'Lab Tests' },
+  'tickets.workstation.tabRadiology': { ar: 'الأشعة', en: 'Radiology' },
   'tickets.workstation.tabDiagnostics': { ar: 'التحاليل والأشعة', en: 'Labs & Radiology' },
   'tickets.workstation.tabAll': { ar: 'عرض شامل (الكل)', en: 'All-in-One View' },
+  'tickets.workstation.roomReadyTitle': { ar: 'غرفة الكشف جاهزة ومتاحة', en: 'Consultation Room Ready' },
+  'tickets.workstation.roomReadyDesc': { ar: 'لا يوجد مريض تحت الكشف حالياً. يمكنك استدعاء المريض التالي في الطابور.', en: 'No active patient. You can call the next patient in queue.' },
+  'tickets.workstation.calledPatientTitle': { ar: 'المريض تم نداؤه وفي انتظار الدخول', en: 'Patient Called — Awaiting Entry' },
+  'tickets.workstation.callAttemptsCount': { ar: 'محاولات النداء', en: 'Call attempts' },
+  'tickets.workstation.startExam': { ar: 'بدء الكشف الطبي', en: 'Start Examination' },
+  'tickets.workstation.confirmNoShow': { ar: 'تأكيد عدم الحضور', en: 'Confirm No-Show' },
+  'tickets.workstation.recallPatient': { ar: 'إعادة النداء', en: 'Recall' },
+  'tickets.workstation.currentPatientHeader': { ar: 'المريض الحالي تحت الكشف', en: 'Current Patient in Consultation' },
+  'tickets.workstation.patientRecord': { ar: 'ملف المريض', en: 'Patient File' },
+  'tickets.workstation.notesTitle': { ar: 'الملاحظات والتقييم السريري', en: 'Clinical Notes & Assessment' },
+  'tickets.workstation.notesPlaceholder': { ar: 'اكتب شكوى المريض، الأعراض، الفحص السريري، والخطة العلاجية هنا...', en: 'Enter chief complaint, symptoms, physical examination, and plan...' },
+  'tickets.workstation.diagnosesTitle': { ar: 'التشخيصات الطبية', en: 'Diagnoses' },
+  'tickets.workstation.addDiagnosis': { ar: 'إضافة تشخيص', en: 'Add Diagnosis' },
+  'tickets.workstation.editDiagnosis': { ar: 'تعديل التشخيص', en: 'Edit Diagnosis' },
+  'tickets.workstation.primaryDiagnosis': { ar: 'تشخيص أولي', en: 'Primary' },
+  'tickets.workstation.secondaryDiagnosis': { ar: 'تشخيص ثانوي', en: 'Secondary' },
+  'tickets.workstation.diagnosisText': { ar: 'نص التشخيص أو الحالة', en: 'Diagnosis Description' },
+  'tickets.workstation.diagnosisNotes': { ar: 'ملاحظات إضافية (اختياري)', en: 'Notes (Optional)' },
+  'tickets.workstation.saveDiagnosis': { ar: 'حفظ التشخيص', en: 'Save Diagnosis' },
+  'tickets.workstation.followUpSchedule': { ar: 'موعد الإعادة / الاستشارة', en: 'Follow-up Consultation' },
+  'tickets.workstation.afterWeek': { ar: 'بعد أسبوع (+7 أيام)', en: 'After 1 week (+7d)' },
+  'tickets.workstation.afterTwoWeeks': { ar: 'بعد أسبوعين (+14 يوماً)', en: 'After 2 weeks (+14d)' },
+  'tickets.workstation.afterMonth': { ar: 'بعد شهر (+30 يوماً)', en: 'After 1 month (+30d)' },
+  'tickets.workstation.clearDate': { ar: 'إلغاء الموعد', en: 'Clear Date' },
+  'tickets.workstation.saveNotesBtn': { ar: 'حفظ الملاحظات', en: 'Save Notes' },
+  'tickets.workstation.completeAndNext': { ar: 'إنهاء ونداء التالي', en: 'Complete & Call Next' },
+  'tickets.workstation.waitingQueueTitle': { ar: 'قائمة الانتظار الحالية', en: 'Current Waiting Queue' },
+  'tickets.workstation.viewEncounter': { ar: 'الكشف الحالي', en: 'Current Encounter' },
+  'tickets.workstation.viewQueue': { ar: 'طابور الانتظار', en: 'Waiting Queue' },
+  'tickets.workstation.moreActions': { ar: 'خيارات إضافية', en: 'More options' },
+  'tickets.workstation.noDiagnosesYet': { ar: 'لم يتم تسجيل تشخيص بعد', en: 'No diagnoses recorded yet' },
   'tickets.workstation.nextTabPrescription': {
     ar: 'المتابعة إلى الروشتة والأدوية ←',
     en: 'Proceed to Prescription →',
@@ -10181,12 +10294,79 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: '→ العودة للشكوى والتشخيص',
     en: '← Back to Notes & Diagnosis',
   },
+  'tickets.sync.synced': { ar: 'متزامن لحظياً', en: 'Live Synced' },
+  'tickets.sync.syncing': { ar: 'جارٍ التحديث...', en: 'Updating...' },
+  'tickets.sync.stale': { ar: 'البيانات قد تكون قديمة', en: 'Data may be stale' },
+  'tickets.sync.error': { ar: 'مشكلة في التحديث التلقائي', en: 'Auto-sync issue' },
+  'tickets.sync.offline': { ar: 'غير متصل بالإنترنت', en: 'Offline' },
+  'tickets.sync.lastSynced': { ar: 'آخر تحديث: {time}', en: 'Last synced: {time}' },
+  'tickets.sync.newWaitingPatient': {
+    ar: 'مريض جديد في قائمة الانتظار: {name} (#{number})',
+    en: 'New patient in waiting queue: {name} (#{number})',
+  },
+  'tickets.sync.queueUpdated': { ar: 'تم تحديث حالة الطابور', en: 'Queue state updated' },
+  'tickets.sync.conflictTitle': { ar: 'تنبيه تعارض في حالة المريض', en: 'Patient State Conflict Alert' },
+  'tickets.sync.conflictDesc': {
+    ar: 'تم تعديل حالة هذا المريض من جلسة أخرى أو من شاشة الاستقبال. تم الحفاظ على مسوداتك السريرية دون فقدان.',
+    en: 'This patient status was updated from another session or reception. Your clinical drafts were preserved.'
+  },
+  'tickets.sync.refreshReview': { ar: 'مراجعة وتحديث', en: 'Review & Refresh' },
+  'tickets.sync.dismiss': { ar: 'إغلاق', en: 'Dismiss' },
+  'tickets.save.saved': { ar: 'تم الحفظ', en: 'Saved' },
+  'tickets.save.saving': { ar: 'جارٍ الحفظ...', en: 'Saving...' },
+  'tickets.save.unsaved': { ar: 'مسودة غير محفوظة', en: 'Unsaved draft' },
+  'tickets.save.error': { ar: 'تعذر الحفظ التلقائي', en: 'Save failed' },
+  'tickets.save.autoSavedNotes': { ar: 'تم حفظ الملاحظات تلقائياً', en: 'Notes auto-saved' },
+  'tickets.assistant.checklistTitle': { ar: 'مساعد إنهاء الكشف السريري', en: 'Encounter Completion Assistant' },
+  'tickets.assistant.notesStatus': { ar: 'الملاحظات السريرية والشكوى', en: 'Clinical notes' },
+  'tickets.assistant.diagnosesStatus': { ar: 'التشخيص الطبي', en: 'Medical diagnosis' },
+  'tickets.assistant.prescriptionStatus': { ar: 'الروشتة والأدوية', en: 'Prescription & meds' },
+  'tickets.assistant.labsStatus': { ar: 'فحوصات التحاليل', en: 'Lab requests' },
+  'tickets.assistant.radiologyStatus': { ar: 'فحوصات الأشعة', en: 'Radiology requests' },
+  'tickets.assistant.statusRequired': { ar: 'مطلوب للإغلاق', en: 'Required' },
+  'tickets.assistant.statusOptional': { ar: 'اختياري', en: 'Optional' },
+  'tickets.assistant.statusCompleted': { ar: 'جاهز ومكتمل ✓', en: 'Ready ✓' },
+  'tickets.assistant.statusBlocked': { ar: 'يتطلب استكمال بيانات', en: 'Requires action' },
+  'tickets.assistant.fixBlocker': { ar: 'الانتقال للحل ←', en: 'Fix now →' },
+  'tickets.assistant.partialCallFailed': {
+    ar: 'تم إنهاء الكشف واعتماده بنجاح، لكن تعذر نداء المريض التالي تلقائياً.',
+    en: 'Encounter completed successfully, but next patient could not be called automatically.'
+  },
   'tickets.workstation.prevTabPrescription': {
     ar: '→ العودة للروشتة والأدوية',
     en: '← Back to Prescription',
   },
   'tickets.workstation.medsCount': { ar: 'أدوية', en: 'Meds' },
   'tickets.workstation.testsCount': { ar: 'فحوصات', en: 'Tests' },
+
+  // Login Rebuild
+  'login.welcomeBack': { ar: 'أهلاً برجوعك', en: 'Welcome back' },
+  'login.welcomeBackDesc': { ar: 'سجل دخولك للوصول إلى مساحة عملك.', en: 'Sign in to access your workspace.' },
+  'login.showcase.label': { ar: 'مساحة عملك الطبية', en: 'Your Medical Workspace' },
+  'login.showcase.heading': { ar: 'كل شغلك من مكان واحد.', en: 'All your work in one place.' },
+  'login.showcase.subtext': {
+    ar: 'إدارة المواعيد، الطابور، والكشوفات بواجهة واحدة منظمة واحترافية.',
+    en: 'Manage appointments, queue, and consultations in one organized, professional interface.'
+  },
+  'login.showcase.feature1.title': { ar: 'واجهة موحدة', en: 'Unified Interface' },
+  'login.showcase.feature1.sub': { ar: 'لجميع عملياتك اليومية', en: 'For all your daily operations' },
+  'login.showcase.feature2.title': { ar: 'إدارة طابور ذكي', en: 'Smart Queue Management' },
+  'login.showcase.feature2.sub': { ar: 'تنظيم سلس وسريع للعيادة', en: 'Smooth, fast clinic flow' },
+  'login.showcase.feature3.title': { ar: 'أمان وخصوصية معتمدة', en: 'Certified Security & Privacy' },
+  'login.showcase.feature3.sub': { ar: 'حماية كاملة لبيانات مرضاك', en: 'Complete protection for patient records' },
+  'login.createAccount': { ar: 'إنشاء حساب', en: 'Create account' },
+  'login.createAccountDoctor': { ar: 'إنشاء حساب طبيب', en: 'Create Doctor Account' },
+  'login.createAccountDoctorDesc': { ar: 'للأطباء والمراكز والعيادات الطبية', en: 'For doctors, clinics, and medical centers' },
+  'login.createAccountPatient': { ar: 'إنشاء حساب مريض', en: 'Create Patient Account' },
+  'login.createAccountPatientDesc': { ar: 'للمرضى وحجز الكشوفات ومتابعة السجلات', en: 'For patients, appointments, and records' },
+  'login.demoQuickFill': { ar: 'حسابات تجريبية سريعة', en: 'Quick Demo Accounts' },
+  'login.demoShortcutsLabel': { ar: 'حسابات تجريبية سريعة', en: 'Quick Demo Accounts' },
+  'login.demoDoctor': { ar: 'طبيب تجريبي', en: 'Demo Doctor' },
+  'login.demoDoctorBtn': { ar: 'طبيب تجريبي', en: 'Demo Doctor' },
+  'login.demoReception': { ar: 'استقبال تجريبي', en: 'Demo Reception' },
+  'login.demoReceptionBtn': { ar: 'استقبال تجريبي', en: 'Demo Reception' },
+  'login.demoPatient': { ar: 'مريض تجريبي', en: 'Demo Patient' },
+  'login.demoPatientBtn': { ar: 'مريض تجريبي', en: 'Demo Patient' },
   'tickets.workstation.waitingQueueDoctor': {
     ar: 'مرضى قائمة الانتظار بالخارج',
     en: 'Waiting Patients Outside',
@@ -10703,7 +10883,7 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Welcome back, sign in to manage your practice or track your consultations',
   },
   'login.newToWasla': {
-    ar: 'جديد في منصة وصلة؟',
+    ar: 'جديد في وصلة؟',
     en: 'New to Wasla?',
   },
   'landing.nav.primaryAria': {
@@ -10763,20 +10943,56 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Integrated Cloud Medical Platform for Egyptian Clinics',
   },
   'landing.hero.title': {
-    ar: 'عيادتك منظمة، ووقتك لمرضاك.',
-    en: 'Your clinic organized, your time for your patients.',
+    ar: 'عيادتك كلها في مكان واحد.',
+    en: 'Your entire clinic in one place.',
+  },
+  'landing.hero.titlePart1': {
+    ar: 'عيادتك كلها',
+    en: 'Your entire clinic',
+  },
+  'landing.hero.titlePart2': {
+    ar: 'في مكان واحد.',
+    en: 'in one place.',
   },
   'landing.hero.subtitle': {
-    ar: 'إدارة المواعيد، ملفات المرضى، وطابور الانتظار من مكان واحد.',
-    en: 'Manage appointments, patient records, and waiting queue from one place.',
+    ar: 'نظّم الحجوزات، تابع طابور الانتظار، وأدر شغل عيادتك بسهولة واحترافية.',
+    en: 'Organize bookings, monitor patient queues, and manage your clinic operations with ease and professionalism.',
   },
   'landing.hero.primaryCta': {
     ar: 'ابدأ مع وصلة',
     en: 'Start with Wasla',
   },
   'landing.hero.secondaryCta': {
-    ar: 'اكتشف المنصة',
-    en: 'Explore the platform',
+    ar: 'شاهد المعاينة',
+    en: 'Watch Preview',
+  },
+  'landing.benefits.title': {
+    ar: 'كل اللي محتاجه لإدارة يومك في العيادة',
+    en: 'Everything you need to manage your day at the clinic',
+  },
+  'landing.benefits.b1Title': {
+    ar: 'حجوزات منظمة',
+    en: 'Organized Bookings',
+  },
+  'landing.benefits.b1Desc': {
+    ar: 'احجز المواعيد، وعدّلها، وقلل التزاحم في العيادة.',
+    en: 'Book and adjust appointments, reducing clinic crowding.',
+  },
+  'landing.benefits.b2Title': {
+    ar: 'انتظار أوضح',
+    en: 'Clearer Waiting',
+  },
+  'landing.benefits.b2Desc': {
+    ar: 'تابع طابور الانتظار لحظة بلحظة ونظّم دخول المرضى.',
+    en: 'Monitor the waiting queue in real time and organize patient entry.',
+  },
+  'landing.benefits.b3Title': {
+    ar: 'متابعة أسهل للمرضى',
+    en: 'Easier Patient Follow-up',
+  },
+  'landing.benefits.b3Desc': {
+    ar: 'سجّل زيارات المرضى وتابع تاريخهم الطبي في مكان واحد.',
+    en: 'Record patient visits and track their medical history in one place.',
   },
   'landing.why.eyebrow': {
     ar: 'لماذا وصلة؟',
@@ -10811,16 +11027,120 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'An easy reception screen for clinic assistants, live queue by turn, and instant financial reports.',
   },
   'landing.showcase.eyebrow': {
-    ar: 'جولة في المنصة',
-    en: 'Platform Tour',
+    ar: 'معاينة حية',
+    en: 'Live Preview',
   },
   'landing.showcase.title': {
-    ar: 'شوف وصلة وهي بتنظم يوم عيادتك',
-    en: "See how Wasla organizes your clinic's day",
+    ar: 'شوف وصلة أثناء الشغل',
+    en: 'See Wasla in Action',
   },
   'landing.showcase.subtitle': {
-    ar: 'واجهة سريعة مصممة خصيصاً لطبيعة عمل العيادات والمراكز الطبية في مصر، بدون تعقيد تقني.',
-    en: 'A clean, fast workspace built for Egyptian clinics and medical practices, without tech complexity.',
+    ar: 'معاينة حقيقية لواجهة النظام وكيف بتنظم يوم العيادة.',
+    en: 'A real preview of the system interface and how it streamlines your clinic day.',
+  },
+  'landing.showcase.tabAppointments': {
+    ar: 'الحجوزات',
+    en: 'Appointments',
+  },
+  'landing.showcase.tabQueue': {
+    ar: 'طابور الانتظار',
+    en: 'Queue',
+  },
+  'landing.showcase.tabClinical': {
+    ar: 'الكشف',
+    en: 'Consultation',
+  },
+  'landing.showcase.tabFinance': {
+    ar: 'الحسابات',
+    en: 'Finance',
+  },
+  'landing.showcase.apptsTitle': {
+    ar: 'إدارة الحجوزات بكل سهولة',
+    en: 'Effortless Appointment Management',
+  },
+  'landing.showcase.apptsSub': {
+    ar: 'نظام متكامل لتنظيم الحجوزات وتقليل فترات الانتظار بدقة وسرعة.',
+    en: 'Integrated system to organize appointments and reduce waiting periods accurately.',
+  },
+  'landing.showcase.apptsPoint1': {
+    ar: 'حجز وتعديل المواعيد بسرعة.',
+    en: 'Book and adjust appointments quickly.',
+  },
+  'landing.showcase.apptsPoint2': {
+    ar: 'عرض مواعيد اليوم بشكل واضح.',
+    en: 'Clear display of today’s appointments.',
+  },
+  'landing.showcase.apptsPoint3': {
+    ar: 'تقليل التزاحم وتنظيم وقت الكشف.',
+    en: 'Reduce crowding and optimize examination times.',
+  },
+  'landing.showcase.queueTitle': {
+    ar: 'تنظيم طابور الانتظار بذكاء',
+    en: 'Smart Queue Management',
+  },
+  'landing.showcase.queueSub': {
+    ar: 'شاشة ذكية وتحديث حي يمنح المرضى وفريق الاستقبال وضوحاً كاملاً.',
+    en: 'Smart display and live sync giving patients and reception total clarity.',
+  },
+  'landing.showcase.queuePoint1': {
+    ar: 'متابعة تسلسل دخول المرضى لحظة بلحظة.',
+    en: 'Real-time monitoring of patient entry sequence.',
+  },
+  'landing.showcase.queuePoint2': {
+    ar: 'نداء المريض التالي بضغطة واحدة وتحديث الشاشة.',
+    en: 'One-click call next patient with instant screen sync.',
+  },
+  'landing.showcase.queuePoint3': {
+    ar: 'تقليل وقت الانتظار وتجنب التزاحم أمام العيادة.',
+    en: 'Reduce waiting time and prevent clinic crowding.',
+  },
+  'landing.showcase.clinicalTitle': {
+    ar: 'سجل طبي وكشف متكامل',
+    en: 'Integrated Medical Record & Consultation',
+  },
+  'landing.showcase.clinicalSub': {
+    ar: 'كل ما يحتاجه الطبيب في كشف واحد: التاريخ، التشخيص والروشتة.',
+    en: 'Everything a doctor needs in one consultation: history, diagnosis, prescription.',
+  },
+  'landing.showcase.clinicalPoint1': {
+    ar: 'تدوين التشخيص والأعراض والملف الطبي.',
+    en: 'Record diagnosis, symptoms, and medical notes.',
+  },
+  'landing.showcase.clinicalPoint2': {
+    ar: 'كتابة الروشتة الإلكترونية وطباعتها بسهولة.',
+    en: 'Issue and print digital prescriptions instantly.',
+  },
+  'landing.showcase.clinicalPoint3': {
+    ar: 'الوصول السريع للتاريخ المرضي والزيارات السابقة.',
+    en: 'Quick access to patient medical history and past visits.',
+  },
+  'landing.showcase.financeTitle': {
+    ar: 'متابعة دقيقة لحسابات العيادة',
+    en: 'Precise Clinic Financial Management',
+  },
+  'landing.showcase.financeSub': {
+    ar: 'رؤية مالية واضحة ومباشرة لكل دخل العيادة ومصروفاتها.',
+    en: 'Clear and direct financial view of all clinic income and expenses.',
+  },
+  'landing.showcase.financePoint1': {
+    ar: 'تسجيل الإيرادات والمصروفات اليومية تلقائياً.',
+    en: 'Automated daily revenue and expense logging.',
+  },
+  'landing.showcase.financePoint2': {
+    ar: 'تقارير مالية واضحة ومفصلة لأرباح العيادة.',
+    en: 'Clear, detailed financial reports on practice profits.',
+  },
+  'landing.showcase.financePoint3': {
+    ar: 'تفاصيل طرق الدفع (نقدي، فيزا، محفظة إلكترونية).',
+    en: 'Payment breakdown (cash, card, digital wallet).',
+  },
+  'landing.demo.servingNow': {
+    ar: 'يُكشف عليه الآن',
+    en: 'Currently consulting',
+  },
+  'landing.demo.callNext': {
+    ar: 'نداء المريض التالي',
+    en: 'Call next patient',
   },
   'landing.steps.eyebrow': {
     ar: 'رحلة العيادة',
@@ -10887,8 +11207,8 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Ready to organize your clinic?',
   },
   'landing.finalCta.sub': {
-    ar: 'ابدأ حسابك كطبيب اليوم في دقائق، واستمتع بتجربة إدارة سلسة وخالية من الفوضى لك ولفريقك.',
-    en: 'Start your doctor account today in minutes, and experience effortless clinic management.',
+    ar: 'ابدأ استخدام وصلة وخلي إدارة يومك أبسط وأكثر كفاءة.',
+    en: 'Start using Wasla and make your daily clinic management simpler and more efficient.',
   },
   'landing.finalCta.btnDoctor': {
     ar: 'ابدأ مع وصلة',
@@ -10955,16 +11275,48 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Clinical Encounter',
   },
   'landing.preview.kpiBooked': {
-    ar: 'حجوزات اليوم',
-    en: "Today's Bookings",
+    ar: 'مواعيد اليوم',
+    en: "Today's Appointments",
   },
   'landing.preview.kpiWaiting': {
-    ar: 'بالانتظار',
-    en: 'In Waiting',
+    ar: 'في الانتظار',
+    en: 'Waiting',
   },
   'landing.preview.kpiCompleted': {
-    ar: 'تم كشفهم',
-    en: 'Completed',
+    ar: 'تم الكشف',
+    en: 'Examined',
+  },
+  'landing.preview.kpiCancelled': {
+    ar: 'الإلغاءات',
+    en: 'Cancellations',
+  },
+  'landing.preview.clinicName': {
+    ar: 'عيادة النور الطبية',
+    en: 'Al-Noor Medical Clinic',
+  },
+  'landing.preview.todayDate': {
+    ar: 'اليوم: الإثنين 18 نوفمبر',
+    en: 'Today: Monday 18 November',
+  },
+  'landing.preview.todayDateShort': {
+    ar: 'الإثنين 18 نوفمبر',
+    en: 'Mon 18 Nov',
+  },
+  'landing.preview.todayApptsHeading': {
+    ar: 'مواعيد اليوم',
+    en: "Today's Appointments",
+  },
+  'landing.preview.viewAll': {
+    ar: 'عرض الكل',
+    en: 'View All',
+  },
+  'landing.preview.btnNewAppt': {
+    ar: 'حجز موعد جديد',
+    en: 'Book New Appointment',
+  },
+  'landing.preview.apptsTitle': {
+    ar: 'المواعيد',
+    en: 'Appointments',
   },
   'landing.preview.kpiBranch': {
     ar: 'الفرع النشط',
@@ -10995,36 +11347,36 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Mahmoud Abdelrahman',
   },
   'landing.preview.row1Type': {
-    ar: 'كشف جديد',
-    en: 'New Consultation',
+    ar: 'كشف أول',
+    en: 'First Visit',
   },
   'landing.preview.row1Status': {
-    ar: 'بغرفة الطبيب',
-    en: 'In Consultation',
+    ar: 'في الانتظار',
+    en: 'Waiting',
   },
   'landing.preview.row2Name': {
-    ar: 'سارة إبراهيم منصور',
-    en: 'Sara Ibrahim Mansour',
+    ar: 'آية إبراهيم منصور',
+    en: 'Aya Ibrahim Mansour',
   },
   'landing.preview.row2Type': {
-    ar: 'متابعة وفحوصات',
-    en: 'Follow-up & Labs',
+    ar: 'متابعة',
+    en: 'Follow-up',
   },
   'landing.preview.row2Status': {
-    ar: 'تم الاستقبال',
-    en: 'Checked In',
+    ar: 'قيد الكشف',
+    en: 'In Examination',
   },
   'landing.preview.row3Name': {
-    ar: 'أحمد كمال الشناوي',
-    en: 'Ahmed Kamal El-Shinawy',
+    ar: 'أحمد علي الشافعي',
+    en: 'Ahmed Ali El-Shafei',
   },
   'landing.preview.row3Type': {
-    ar: 'استشارة دورية',
-    en: 'Routine Checkup',
+    ar: 'استشارة',
+    en: 'Consultation',
   },
   'landing.preview.row3Status': {
-    ar: 'مؤكد بالهاتف',
-    en: 'Confirmed',
+    ar: 'قادم قريباً',
+    en: 'Arriving Soon',
   },
   'landing.preview.queueNowCalling': {
     ar: 'الرقم الحالي قيد الكشف',
@@ -11771,16 +12123,72 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Shifts lock into tamper-proof daily reconciliations preventing discrepancies between staff and doctor.',
   },
   'landing.pricing.eyebrow': {
-    ar: 'باقات واضحة وبسيطة',
-    en: 'Transparent & Simple Pricing',
+    ar: 'الأسعار',
+    en: 'Pricing',
   },
   'landing.pricing.title': {
-    ar: 'استثمر في هدوء عيادتك دون مصاريف خفية',
-    en: 'Invest in Clinic Peace of Mind with Zero Hidden Costs',
+    ar: 'خطط مرنة تناسب عيادتك',
+    en: 'Flexible plans tailored to your clinic',
   },
   'landing.pricing.subtitle': {
-    ar: 'فترة تجريبية مجانية بالكامل تبدأ فور اعتماد حسابك. اختر الباقة المناسبة لحجم عيادتك وفروعك.',
-    en: 'Full free trial starting the moment your account is verified. Pick the plan suited to your practice volume.',
+    ar: 'اختر الخطة المناسبة لحجم عيادتك وابدأ اليوم.',
+    en: 'Choose the right plan for your clinic size and start today.',
+  },
+  'landing.pricing.planStarter': {
+    ar: 'الأساسية',
+    en: 'Starter',
+  },
+  'landing.pricing.planStarterSub': {
+    ar: 'مناسبة للعيادات الصغيرة.',
+    en: 'Ideal for small clinics.',
+  },
+  'landing.pricing.planStarterPrice': {
+    ar: '450 جنية / شهرياً',
+    en: '450 EGP / month',
+  },
+  'landing.pricing.planStarterF1': {
+    ar: 'إدارة المواعيد والحجوزات',
+    en: 'Appointment and booking management',
+  },
+  'landing.pricing.planStarterF2': {
+    ar: 'طابور الانتظار',
+    en: 'Live waiting queue',
+  },
+  'landing.pricing.planStarterF3': {
+    ar: 'سجل المرضى',
+    en: 'Patient medical records',
+  },
+  'landing.pricing.planPro': {
+    ar: 'الاحترافية',
+    en: 'Professional',
+  },
+  'landing.pricing.planProBadge': {
+    ar: 'الأكثر شيوعاً',
+    en: 'Most Popular',
+  },
+  'landing.pricing.planProSub': {
+    ar: 'لكل العيادات المتوسطة والكبيرة.',
+    en: 'For medium and large clinics.',
+  },
+  'landing.pricing.planProPrice': {
+    ar: '750 جنية / شهرياً',
+    en: '750 EGP / month',
+  },
+  'landing.pricing.planProF1': {
+    ar: 'كل مميزات الخطة الأساسية',
+    en: 'All Starter plan features',
+  },
+  'landing.pricing.planProF2': {
+    ar: 'إدارة الحسابات والإيرادات',
+    en: 'Accounts and revenue management',
+  },
+  'landing.pricing.planProF3': {
+    ar: 'تقارير وإحصائيات',
+    en: 'Reports & practice analytics',
+  },
+  'landing.pricing.startNow': {
+    ar: 'ابدأ الآن',
+    en: 'Start Now',
   },
   'landing.pricing.viewFullPricing': {
     ar: 'عرض تفاصيل كافة الباقات والمقارنة الكاملة',
@@ -11795,36 +12203,52 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Frequently Asked Questions',
   },
   'landing.faq.title': {
-    ar: 'الأسئلة الشائعة حول تشغيل منصة وصلة',
-    en: 'Common Questions About Running Wasla in Your Clinic',
+    ar: 'الأسئلة الشائعة',
+    en: 'Frequently Asked Questions',
   },
   'landing.faq.subtitle': {
-    ar: 'كل ما تحتاج معرفته عن بدء الاستخدام، تدريب المساعدين، وتأمين بيانات مرضاك.',
-    en: 'Everything you need to know about getting started, assistant onboarding, and medical data security.',
+    ar: 'كل ما تحتاج معرفته عن بدء استخدام وصلة وتأمين بيانات عيادتك.',
+    en: 'Everything you need to know about getting started with Wasla.',
   },
   'landing.faq.q1': {
-    ar: 'هل يحتاج مساعد العيادة لخبرة تقنية مسبقة لتشغيل النظام؟',
-    en: 'Does my clinic assistant need prior technical skills to run the system?',
+    ar: 'هل يمكنني تجربة وصلة قبل الاشتراك؟',
+    en: 'Can I try Wasla before subscribing?',
   },
   'landing.faq.a1': {
-    ar: 'إطلاقاً. صُممت واجهة الاستقبال لتكون في غاية البساطة والوضوح باللغة العربية، دون أي مصطلحات تقنية معقدة. يستطيع أي مساعد أو سكرتير البدء بالعمل وإصدار تذاكر الطابور بعد تدريب سريع لا يتجاوز 15 دقيقة.',
-    en: 'Not at all. The reception desk is built to be radically simple, clear, and in high-contrast Arabic without technical jargon. Any clinic assistant can master booking, ticketing, and shift close within 15 minutes.',
+    ar: 'نعم، نوفر لك تجربة مجانية كاملة للمنصة لمدة محددة لتتعرف على جميع المميزات.',
+    en: 'Yes, we provide a full free trial for a limited period so you can explore all features.',
   },
   'landing.faq.q2': {
-    ar: 'هل يمكنني إدارة أكثر من عيادة أو أكثر من فرع بحساب واحد؟',
-    en: 'Can I manage multiple clinics or practice branches from one account?',
+    ar: 'هل يعمل النظام علي الموبايل؟',
+    en: 'Does the system work on mobile?',
   },
   'landing.faq.a2': {
-    ar: 'نعم بكل تأكيد. تتيح لك وصلة إضافة فروعك المختلفة (مثل المعادي ومصر الجديدة) مع تعيين مساعدين مستقلين لكل فرع، ومتابعة جميع الحسابات والحجوزات من مكان واحد.',
-    en: 'Yes, seamlessly. Wasla allows you to manage multiple practice locations with dedicated receptionists per branch, while giving you unified clinical and financial control from your phone or computer.',
+    ar: 'نعم، يعمل وصلة بسلاسة تامة على جميع أجهزة الموبايل والتابلت والكمبيوتر دون الحاجة لتحميل تطبيقات.',
+    en: 'Yes, Wasla runs smoothly on all mobile phones, tablets, and computers without downloading apps.',
   },
   'landing.faq.q3': {
-    ar: 'كيف يرى المريض دوره في طابور العيادة دون الجلوس في الزحام؟',
-    en: 'How can patients track their queue position without waiting in a crowded room?',
+    ar: 'هل بيانات العيادة آمنة؟',
+    en: 'Is clinic data secure?',
   },
   'landing.faq.a3': {
-    ar: 'بمجرد تسجيل الحجز، يحصل المريض على تذكرة رقمية ورابط مباشر على هاتفه يوضح عدد المرضى المتبقين أمامه، مما يتيح له التواجد في العيادة قبل دوره مباشرة.',
-    en: 'Upon check-in, patients receive an instant digital ticket and mobile link displaying live remaining turns, allowing them to arrive right before their turn.',
+    ar: 'نعم، نستخدم أعلى معايير التشفير والنسخ الاحتياطي لحماية بيانات عيادتك ومرضاك بسرية وأمان تام.',
+    en: 'Yes, we use the highest encryption standards and backups to keep your clinic and patient data secure.',
+  },
+  'landing.footer.privacy': {
+    ar: 'سياسة الخصوصية',
+    en: 'Privacy Policy',
+  },
+  'landing.footer.terms': {
+    ar: 'شروط الاستخدام',
+    en: 'Terms of Use',
+  },
+  'landing.footer.contact': {
+    ar: 'تواصل معنا',
+    en: 'Contact Us',
+  },
+  'landing.footer.copyright': {
+    ar: '© 2026 وصلة — جميع الحقوق محفوظة',
+    en: '© 2026 Wasla — All Rights Reserved',
   },
   'landing.faq.q4': {
     ar: 'هل يمكن للصيدلي قراءة الروشتة والتأكد من صحتها؟',
@@ -11885,13 +12309,5 @@ export const TRANSLATIONS: TranslationDictionary = {
   'landing.footer.help': {
     ar: 'مركز المساعدة والدعم',
     en: 'Help & Support',
-  },
-  'landing.footer.privacy': {
-    ar: 'سياسة الخصوصية وحماية البيانات',
-    en: 'Privacy Policy',
-  },
-  'landing.footer.terms': {
-    ar: 'شروط وأحكام الاستخدام',
-    en: 'Terms of Service',
   },
 };

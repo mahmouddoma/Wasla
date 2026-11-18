@@ -1,46 +1,42 @@
 <div class="wasla-landing-page" [dir]="language.dir()">
   <!-- ══════════════════════════════════════════
-       SECTION 00 — STICKY NAVIGATION (AppHeader)
+       SECTION 00 — STICKY NAVIGATION
        ══════════════════════════════════════════ -->
-  <app-header
+  <app-landing-navbar
     [user]="authSession.user()"
-    [home]="'/'"
-    [showMenuToggle]="false"
-    (logout)="logout()"
+    [workspaceRoute]="workspaceRoute()"
+    (sectionNavigate)="scrollToSection($event)"
   />
 
   <!-- ══════════════════════════════════════════
-       SECTION 01 — EDITORIAL HERO + PRODUCT PREVIEW
+       SECTION 01 — HERO
        ══════════════════════════════════════════ -->
   <section class="hero-section" aria-labelledby="landing-hero-title">
-    <div class="landing-container hero-grid">
-      <div class="hero-copy-col">
-        <div class="hero-eyebrow-pill">
-          <span class="hero-tag-emblem" aria-hidden="true">
-            <i class="fa-solid fa-stethoscope"></i>
-          </span>
-          <span class="hero-tag-pill">{{ 'common.appName' | t }}</span>
-          <span>{{ 'landing.hero.eyebrow' | t }}</span>
-        </div>
-        <h1 id="landing-hero-title" class="hero-headline">{{ 'landing.hero.title' | t }}</h1>
+    <div class="landing-container">
+      <div class="hero-content-wrap">
+        <h1 id="landing-hero-title" class="hero-headline">
+          {{ 'landing.hero.titlePart1' | t }}<br />
+          <span class="hero-teal-accent">{{ 'landing.hero.titlePart2' | t }}</span>
+        </h1>
+
         <p class="hero-lead">{{ 'landing.hero.subtitle' | t }}</p>
 
         <div class="hero-cta-row">
           @if (authSession.user()) {
-            <a [routerLink]="workspaceRoute()" class="btn-brand-primary" id="hero-workspace-cta">
+            <a [routerLink]="workspaceRoute()" class="btn-hero-primary" id="hero-workspace-cta">
               <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
               <span>{{ 'landing.nav.workspaceCta' | t }}</span>
             </a>
           } @else {
-            <a routerLink="/register/doctor" class="btn-brand-primary" id="hero-primary-cta">
-              <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+            <a routerLink="/register/doctor" class="btn-hero-primary" id="hero-primary-cta">
+              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
               <span>{{ 'landing.hero.primaryCta' | t }}</span>
             </a>
           }
 
           <button
             type="button"
-            class="btn-brand-secondary"
+            class="btn-hero-secondary"
             id="hero-secondary-cta"
             (click)="scrollToSection('product-showcase')"
           >
@@ -49,46 +45,34 @@
           </button>
         </div>
 
-        <div class="hero-meta-links">
-          @if (!authSession.user()) {
-            <p class="hero-signin-line">
-              <span>{{ 'landing.hero.hasAccount' | t }}</span>
-              <a routerLink="/login" id="hero-login-link">{{ 'landing.hero.signInLink' | t }}</a>
-            </p>
-          }
-
-          <div class="hero-patient-strip">
-            <span>{{ 'landing.hero.patientPrompt' | t }}</span>
-            <a routerLink="/doctors" id="hero-doctors-link">{{ 'landing.hero.patientDirectoryLink' | t }}</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-visual-col">
-        <app-landing-hero-preview />
+        @if (!authSession.user()) {
+          <p class="hero-login-hint">
+            <span>{{ 'landing.hero.hasAccount' | t }}</span>
+            <a routerLink="/login" id="hero-login-link">{{ 'landing.hero.signInLink' | t }}</a>
+          </p>
+        }
       </div>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════
-       SECTION 02 — WHY WASLA (3 Core Benefits)
+       SECTION 02 — MAIN BENEFITS (3 Clean Benefits)
        ══════════════════════════════════════════ -->
-  <section id="why-wasla" class="section-band surface-white section-divider-bottom" aria-labelledby="why-heading">
+  <section id="benefits-section" class="section-band surface-white" aria-labelledby="benefits-heading">
     <div class="landing-container">
-      <div class="section-header-block">
-        <span class="section-eyebrow">{{ 'landing.why.eyebrow' | t }}</span>
-        <h2 id="why-heading" class="section-title">{{ 'landing.why.title' | t }}</h2>
+      <div class="section-header-block text-center mx-auto">
+        <h2 id="benefits-heading" class="section-title">{{ 'landing.benefits.title' | t }}</h2>
       </div>
 
-      <div class="why-benefits-composition">
-        @for (benefit of whyWaslaBenefits; track benefit.id) {
-          <div class="benefit-item">
+      <div class="benefits-grid">
+        @for (b of mainBenefits; track b.id; let idx = $index) {
+          <div class="benefit-item" [class.is-third]="idx === 2">
             <div class="benefit-icon-box" aria-hidden="true">
-              <i [class]="benefit.iconClass"></i>
+              <i [class]="b.iconClass"></i>
             </div>
-            <div class="benefit-content">
-              <h3 class="benefit-title">{{ benefit.titleKey | t }}</h3>
-              <p class="benefit-desc">{{ benefit.descKey | t }}</p>
+            <div class="benefit-text-wrap">
+              <h3 class="benefit-title">{{ b.titleKey | t }}</h3>
+              <p class="benefit-desc">{{ b.descKey | t }}</p>
             </div>
           </div>
         }
@@ -97,15 +81,14 @@
   </section>
 
   <!-- ══════════════════════════════════════════
-       SECTION 03 — PRODUCT SHOWCASE
+       SECTION 03 — INTERACTIVE PRODUCT SHOWCASE
        ══════════════════════════════════════════ -->
   <span id="features" class="sr-only"></span>
-  <section id="product-showcase" class="section-band surface-white section-divider-bottom" aria-labelledby="showcase-heading">
+  <section id="product-showcase" class="section-band surface-white" aria-labelledby="showcase-heading">
     <div class="landing-container">
-      <div class="section-header-block">
-        <span class="section-eyebrow">{{ 'landing.showcase.eyebrow' | t }}</span>
+      <div class="section-header-block text-center mx-auto">
         <h2 id="showcase-heading" class="section-title">{{ 'landing.showcase.title' | t }}</h2>
-        <p class="section-desc">{{ 'landing.showcase.subtitle' | t }}</p>
+        <p class="section-desc mx-auto">{{ 'landing.showcase.subtitle' | t }}</p>
       </div>
 
       <div class="showcase-workbench-wrap">
@@ -115,72 +98,102 @@
   </section>
 
   <!-- ══════════════════════════════════════════
-       SECTION 04 — HOW IT WORKS (3 Simple Steps Timeline)
+       SECTION 04 — PRICING (Conditional)
        ══════════════════════════════════════════ -->
-  <section id="clinic-journey" class="section-band surface-white section-divider-bottom" aria-labelledby="how-heading">
+  <section id="pricing-section" class="section-band surface-white" aria-labelledby="pricing-heading">
     <div class="landing-container">
-      <div class="section-header-block">
-        <span class="section-eyebrow">{{ 'landing.steps.eyebrow' | t }}</span>
-        <h2 id="how-heading" class="section-title">{{ 'landing.steps.title' | t }}</h2>
-        <p class="section-desc">{{ 'landing.steps.subtitle' | t }}</p>
+      <div class="section-header-block text-center mx-auto">
+        <h2 id="pricing-heading" class="section-title">{{ 'landing.pricing.title' | t }}</h2>
+        <p class="section-desc mx-auto">{{ 'landing.pricing.subtitle' | t }}</p>
       </div>
 
-      <div class="timeline-process-track">
-        @for (step of howItWorksSteps; track step.num) {
-          <div class="process-step-item">
-            <div class="step-indicator-col">
-              <span class="step-num-node">{{ step.num }}</span>
-              <div class="step-line-connector" aria-hidden="true"></div>
-            </div>
-            <div class="step-body">
-              <div class="step-title-row">
-                <i [class]="step.iconClass + ' step-lead-icon'" aria-hidden="true"></i>
-                <h3 class="step-title">{{ step.titleKey | t }}</h3>
+      @if (!catalogUnavailable() && catalog(); as availableCatalog) {
+        @if (availableCatalog.products.length && availableCatalog.products[0].plans.length) {
+          <div class="landing-plan-wrap">
+            <app-plan-selector
+              [catalog]="availableCatalog"
+              [allowTrial]="true"
+              [selection]="selection()"
+              (selectionChange)="onPlanSelected($event)"
+            />
+          </div>
+        } @else {
+          <!-- Two Clean Plans Matching Reference Mockup -->
+          <div class="pricing-cards-grid">
+            <!-- Plan 1: Starter (الأساسية) -->
+            <div class="pricing-card card-starter">
+              <div class="card-header-area">
+                <h3 class="plan-name">{{ 'landing.pricing.planStarter' | t }}</h3>
+                <p class="plan-sub">{{ 'landing.pricing.planStarterSub' | t }}</p>
+                <div class="plan-price-wrap">
+                  <span class="plan-price">{{ 'landing.pricing.planStarterPrice' | t }}</span>
+                </div>
               </div>
-              <p class="step-desc">{{ step.descKey | t }}</p>
-              <div class="step-action-outcome">
-                <span class="step-action-pill">
-                  <i class="fa-solid fa-play" aria-hidden="true"></i>
-                  <span>{{ step.actionKey | t }}</span>
-                </span>
-                <span class="step-outcome-pill">
-                  <i class="fa-solid fa-check" aria-hidden="true"></i>
-                  <span>{{ step.outcomeKey | t }}</span>
-                </span>
+              <ul class="plan-features-list">
+                <li>
+                  <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                  <span>{{ 'landing.pricing.planStarterF1' | t }}</span>
+                </li>
+                <li>
+                  <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                  <span>{{ 'landing.pricing.planStarterF2' | t }}</span>
+                </li>
+                <li>
+                  <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                  <span>{{ 'landing.pricing.planStarterF3' | t }}</span>
+                </li>
+              </ul>
+              <div class="card-action">
+                <button
+                  type="button"
+                  class="btn-plan-outline"
+                  (click)="selectPlan('STARTER')"
+                >
+                  {{ 'landing.pricing.startNow' | t }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Plan 2: Professional (الاحترافية) -->
+            <div class="pricing-card card-pro is-popular">
+              <div class="popular-badge">
+                <i class="fa-solid fa-star" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planProBadge' | t }}</span>
+              </div>
+              <div class="card-header-area">
+                <h3 class="plan-name">{{ 'landing.pricing.planPro' | t }}</h3>
+                <p class="plan-sub">{{ 'landing.pricing.planProSub' | t }}</p>
+                <div class="plan-price-wrap">
+                  <span class="plan-price">{{ 'landing.pricing.planProPrice' | t }}</span>
+                </div>
+              </div>
+              <ul class="plan-features-list">
+                <li>
+                  <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                  <span>{{ 'landing.pricing.planProF1' | t }}</span>
+                </li>
+                <li>
+                  <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                  <span>{{ 'landing.pricing.planProF2' | t }}</span>
+                </li>
+                <li>
+                  <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                  <span>{{ 'landing.pricing.planProF3' | t }}</span>
+                </li>
+              </ul>
+              <div class="card-action">
+                <button
+                  type="button"
+                  class="btn-plan-filled"
+                  (click)="selectPlan('PROFESSIONAL')"
+                >
+                  {{ 'landing.pricing.startNow' | t }}
+                </button>
               </div>
             </div>
           </div>
         }
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════
-       SECTION 05 — PRICING
-       ══════════════════════════════════════════ -->
-  <section id="pricing-section" class="section-band surface-white section-divider-bottom" aria-labelledby="pricing-heading">
-    <div class="landing-container">
-      <div class="section-header-block">
-        <span class="section-eyebrow">{{ 'landing.pricing.eyebrow' | t }}</span>
-        <h2 id="pricing-heading" class="section-title">{{ 'landing.pricing.title' | t }}</h2>
-        <p class="section-desc">{{ 'landing.pricing.subtitle' | t }}</p>
-      </div>
-
-      @if (loadingCatalog()) {
-        <div class="pricing-loading-state" role="status">
-          <span class="pricing-spinner" aria-hidden="true"></span>
-          <span>{{ 'subscriptions.loading' | t }}</span>
-        </div>
-      } @else if (!catalogUnavailable() && catalog(); as availableCatalog) {
-        <div class="landing-plan-wrap">
-          <app-plan-selector
-            [catalog]="availableCatalog"
-            [allowTrial]="true"
-            [selection]="selection()"
-            (selectionChange)="onPlanSelected($event)"
-          />
-        </div>
-      } @else {
+      } @else if (catalogUnavailable()) {
         <div class="pricing-fallback-panel">
           <p>{{ 'landing.pricing.fallbackText' | t }}</p>
           <div class="pricing-fallback-actions">
@@ -189,19 +202,92 @@
             </a>
           </div>
         </div>
+      } @else {
+        <!-- Display Verified Plans Directly -->
+        <div class="pricing-cards-grid">
+          <!-- Plan 1: Starter (الأساسية) -->
+          <div class="pricing-card card-starter">
+            <div class="card-header-area">
+              <h3 class="plan-name">{{ 'landing.pricing.planStarter' | t }}</h3>
+              <p class="plan-sub">{{ 'landing.pricing.planStarterSub' | t }}</p>
+              <div class="plan-price-wrap">
+                <span class="plan-price">{{ 'landing.pricing.planStarterPrice' | t }}</span>
+              </div>
+            </div>
+            <ul class="plan-features-list">
+              <li>
+                <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planStarterF1' | t }}</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planStarterF2' | t }}</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planStarterF3' | t }}</span>
+              </li>
+            </ul>
+            <div class="card-action">
+              <button
+                type="button"
+                class="btn-plan-outline"
+                (click)="selectPlan('STARTER')"
+              >
+                {{ 'landing.pricing.startNow' | t }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Plan 2: Professional (الاحترافية) -->
+          <div class="pricing-card card-pro is-popular">
+            <div class="popular-badge">
+              <i class="fa-solid fa-star" aria-hidden="true"></i>
+              <span>{{ 'landing.pricing.planProBadge' | t }}</span>
+            </div>
+            <div class="card-header-area">
+              <h3 class="plan-name">{{ 'landing.pricing.planPro' | t }}</h3>
+              <p class="plan-sub">{{ 'landing.pricing.planProSub' | t }}</p>
+              <div class="plan-price-wrap">
+                <span class="plan-price">{{ 'landing.pricing.planProPrice' | t }}</span>
+              </div>
+            </div>
+            <ul class="plan-features-list">
+              <li>
+                <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planProF1' | t }}</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planProF2' | t }}</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check check-icon" aria-hidden="true"></i>
+                <span>{{ 'landing.pricing.planProF3' | t }}</span>
+              </li>
+            </ul>
+            <div class="card-action">
+              <button
+                type="button"
+                class="btn-plan-filled"
+                (click)="selectPlan('PROFESSIONAL')"
+              >
+                {{ 'landing.pricing.startNow' | t }}
+              </button>
+            </div>
+          </div>
+        </div>
       }
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════
-       SECTION 06 — FAQ + FINAL CONVERSION CTA
+       SECTION 05 — FAQ (3 Verified Questions)
        ══════════════════════════════════════════ -->
   <section id="faq-section" class="section-band surface-white" aria-labelledby="faq-heading">
     <div class="landing-container faq-wrapper">
-      <div class="section-header-block">
-        <span class="section-eyebrow">{{ 'landing.faq.eyebrow' | t }}</span>
+      <div class="section-header-block text-center mx-auto">
         <h2 id="faq-heading" class="section-title">{{ 'landing.faq.title' | t }}</h2>
-        <p class="section-desc">{{ 'landing.faq.subtitle' | t }}</p>
       </div>
 
       <div class="faq-list">
@@ -232,68 +318,32 @@
           </div>
         }
       </div>
+    </div>
+  </section>
 
-      <!-- Integrated Final Conversion CTA Banner -->
+  <!-- ══════════════════════════════════════════
+       SECTION 06 — FINAL CTA BANNER
+       ══════════════════════════════════════════ -->
+  <section class="final-cta-section" aria-labelledby="final-cta-heading">
+    <div class="landing-container">
       <div class="final-cta-box">
+        <div class="final-cta-circles" aria-hidden="true">
+          <span class="circle-ring circle-1"></span>
+          <span class="circle-ring circle-2"></span>
+        </div>
+
         <div class="final-cta-copy">
           <h2 id="final-cta-heading">{{ 'landing.finalCta.headline' | t }}</h2>
           <p>{{ 'landing.finalCta.sub' | t }}</p>
         </div>
 
-        <div class="final-cta-buttons">
-          <a routerLink="/register/doctor" class="btn-cta-teal" id="final-cta-start-btn">
-            <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+        <div class="final-cta-action">
+          <a routerLink="/register/doctor" class="btn-final-cta-teal" id="final-cta-start-btn">
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
             <span>{{ 'landing.finalCta.btnDoctor' | t }}</span>
-          </a>
-          <a routerLink="/login" class="btn-cta-outline-white" id="final-cta-login-btn">
-            <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
-            <span>{{ 'landing.finalCta.btnLogin' | t }}</span>
           </a>
         </div>
       </div>
     </div>
   </section>
-
-  <!-- ══════════════════════════════════════════
-       COMPACT CLEAN SITEMAP & FOOTER
-       ══════════════════════════════════════════ -->
-  <footer class="landing-footer-band" role="contentinfo">
-    <div class="landing-container landing-sitemap">
-      <div class="sitemap-brand">
-        <a routerLink="/" class="footer-brand-lockup">
-          <img
-            src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
-            width="34"
-            height="34"
-            alt=""
-          />
-          <span class="footer-brand-title">{{ 'common.appName' | t }}</span>
-        </a>
-        <p class="sitemap-desc">{{ 'landing.footer.desc' | t }}</p>
-      </div>
-
-      <div class="sitemap-cols">
-        <div class="sitemap-col">
-          <h4>{{ 'landing.footer.platform' | t }}</h4>
-          <a href="#product-showcase" (click)="scrollToSection('product-showcase'); $event.preventDefault()">
-            {{ 'landing.nav.features' | t }}
-          </a>
-          <a href="#clinic-journey" (click)="scrollToSection('clinic-journey'); $event.preventDefault()">
-            {{ 'landing.nav.howItWorks' | t }}
-          </a>
-          <a href="#pricing-section" (click)="scrollToSection('pricing-section'); $event.preventDefault()">
-            {{ 'pricing.navPricing' | t }}
-          </a>
-          <a routerLink="/doctors">{{ 'pricing.navFindDoctor' | t }}</a>
-        </div>
-
-        <div class="sitemap-col">
-          <h4>{{ 'landing.footer.legal' | t }}</h4>
-          <a routerLink="/terms">{{ 'landing.footer.terms' | t }}</a>
-          <a routerLink="/privacy">{{ 'landing.footer.privacy' | t }}</a>
-          <a routerLink="/help">{{ 'landing.footer.help' | t }}</a>
-        </div>
-      </div>
-    </div>
-  </footer>
 </div>

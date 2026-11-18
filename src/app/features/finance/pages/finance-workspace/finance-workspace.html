@@ -572,13 +572,47 @@
               <summary>{{ 'finance.revenue.fullBreakdown' | t }}</summary>
               @for (group of revenueDetails(); track group.key) {
                 @if (group.rows.length) {
-                  <section><h3>{{ group.key | t }}</h3>
-                    <div class="revenue-data-scroll"><table>
-                      <thead><tr><th>{{ 'doctorRemediation.title' | t }}</th><th>{{ 'finance.revenue.gross' | t }}</th><th>{{ 'finance.revenue.refunds' | t }}</th><th>{{ 'finance.revenue.net' | t }}</th><th>{{ 'finance.payments' | t }}</th><th>{{ 'finance.refunds' | t }}</th></tr></thead>
-                      <tbody>@for (row of group.rows; track $index) {
-                        <tr><th scope="row">{{ label({nameAr: row.practiceNameAr || row.segmentNameAr || row.visitTypeNameAr, nameEn: row.practiceNameEn || row.segmentNameEn || row.visitTypeNameEn}) }}</th><td>{{ formatAmount(row.grossRevenue) }}</td><td>{{ formatAmount(row.refunds) }}</td><td>{{ formatAmount(row.netRevenue) }}</td><td>{{ formatAmount(row.paymentCount) }}</td><td>{{ formatAmount(row.refundCount) }}</td></tr>
-                      }</tbody>
-                    </table></div>
+                  <section>
+                    <h3>{{ group.key | t }}</h3>
+                    <div class="revenue-data-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>{{ 'doctorRemediation.title' | t }}</th>
+                            <th>{{ 'finance.revenue.gross' | t }}</th>
+                            <th>{{ 'finance.revenue.refunds' | t }}</th>
+                            <th>{{ 'finance.revenue.net' | t }}</th>
+                            <th>{{ 'finance.payments' | t }}</th>
+                            <th>{{ 'finance.refunds' | t }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (row of group.rows; track $index) {
+                            <tr>
+                              <th scope="row">
+                                {{
+                                  label({
+                                    nameAr:
+                                      row.practiceNameAr ||
+                                      row.segmentNameAr ||
+                                      row.visitTypeNameAr,
+                                    nameEn:
+                                      row.practiceNameEn ||
+                                      row.segmentNameEn ||
+                                      row.visitTypeNameEn,
+                                  })
+                                }}
+                              </th>
+                              <td>{{ formatAmount(row.grossRevenue) }}</td>
+                              <td>{{ formatAmount(row.refunds) }}</td>
+                              <td>{{ formatAmount(row.netRevenue) }}</td>
+                              <td>{{ formatAmount(row.paymentCount) }}</td>
+                              <td>{{ formatAmount(row.refundCount) }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
                   </section>
                 }
               }
@@ -1797,25 +1831,89 @@
             </div>
 
             <dl class="payment-business-context">
-              <div><dt>{{ 'finance.recordedAt' | t }}</dt><dd><bdi>{{ value.payment.collectedOnUtc }}</bdi></dd></div>
-              @if (value.payment.notes) {<div><dt>{{ 'finance.audit.field.notes' | t }}</dt><dd>{{ value.payment.notes }}</dd></div>}
-              <div><dt>{{ 'finance.doctor' | t }}</dt><dd>{{ label(value.doctor) }}</dd></div>
-              @if (value.segment?.nameAr || value.segment?.nameEn || value.segmentSnapshot) {<div><dt>{{ 'finance.segmentLabel' | t }}</dt><dd>{{ value.segment ? label(value.segment) : value.segmentSnapshot }}</dd></div>}
-              @if (value.visitType?.nameAr || value.visitType?.nameEn || value.visitTypeSnapshot) {<div><dt>{{ 'finance.visitTypeLabel' | t }}</dt><dd>{{ value.visitType ? label(value.visitType) : value.visitTypeSnapshot }}</dd></div>}
+              <div>
+                <dt>{{ 'finance.recordedAt' | t }}</dt>
+                <dd>
+                  <bdi>{{ value.payment.collectedOnUtc }}</bdi>
+                </dd>
+              </div>
+              @if (value.payment.notes) {
+                <div>
+                  <dt>{{ 'finance.audit.field.notes' | t }}</dt>
+                  <dd>{{ value.payment.notes }}</dd>
+                </div>
+              }
+              <div>
+                <dt>{{ 'finance.doctor' | t }}</dt>
+                <dd>{{ label(value.doctor) }}</dd>
+              </div>
+              @if (value.segment?.nameAr || value.segment?.nameEn || value.segmentSnapshot) {
+                <div>
+                  <dt>{{ 'finance.segmentLabel' | t }}</dt>
+                  <dd>{{ value.segment ? label(value.segment) : value.segmentSnapshot }}</dd>
+                </div>
+              }
+              @if (value.visitType?.nameAr || value.visitType?.nameEn || value.visitTypeSnapshot) {
+                <div>
+                  <dt>{{ 'finance.visitTypeLabel' | t }}</dt>
+                  <dd>{{ value.visitType ? label(value.visitType) : value.visitTypeSnapshot }}</dd>
+                </div>
+              }
             </dl>
             @if (value.refund; as refund) {
               <details class="revenue-data-details">
                 <summary>{{ 'finance.refunds' | t }}</summary>
                 <dl class="payment-business-context">
-                  <div><dt>{{ 'finance.referenceLabel' | t }}</dt><dd><bdi>{{ refund.transactionNumber }}</bdi></dd></div>
-                  <div><dt>{{ 'finance.amount' | t }}</dt><dd>{{ formatAmount(refund.amount) }} {{ refund.currencyCode }}</dd></div>
-                  <div><dt>{{ 'finance.method' | t }}</dt><dd>{{ 'finance.method.' + refund.refundMethod | t }}</dd></div>
-                  <div><dt>{{ 'finance.refund.reasonCode' | t }}</dt><dd>{{ 'finance.reason.' + refund.refundReasonCode | t }}</dd></div>
-                  <div><dt>{{ 'finance.recordedAt' | t }}</dt><dd><bdi>{{ refund.refundedOnUtc }}</bdi></dd></div>
-                  @if (refund.reason) {<div><dt>{{ 'finance.refund.reasonCode' | t }}</dt><dd>{{ refund.reason }}</dd></div>}
-                  @if (refund.notes) {<div><dt>{{ 'finance.audit.field.notes' | t }}</dt><dd>{{ refund.notes }}</dd></div>}
-                  @if (refund.referenceNumber) {<div><dt>{{ 'finance.referenceNumber' | t }}</dt><dd><bdi>{{ refund.referenceNumber }}</bdi></dd></div>}
-                  @if (refund.refundedByDisplayName) {<div><dt>{{ 'finance.recordedBy' | t }}</dt><dd>{{ refund.refundedByDisplayName }}</dd></div>}
+                  <div>
+                    <dt>{{ 'finance.referenceLabel' | t }}</dt>
+                    <dd>
+                      <bdi>{{ refund.transactionNumber }}</bdi>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'finance.amount' | t }}</dt>
+                    <dd>{{ formatAmount(refund.amount) }} {{ refund.currencyCode }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'finance.method' | t }}</dt>
+                    <dd>{{ 'finance.method.' + refund.refundMethod | t }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'finance.refund.reasonCode' | t }}</dt>
+                    <dd>{{ 'finance.reason.' + refund.refundReasonCode | t }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'finance.recordedAt' | t }}</dt>
+                    <dd>
+                      <bdi>{{ refund.refundedOnUtc }}</bdi>
+                    </dd>
+                  </div>
+                  @if (refund.reason) {
+                    <div>
+                      <dt>{{ 'finance.refund.reasonCode' | t }}</dt>
+                      <dd>{{ refund.reason }}</dd>
+                    </div>
+                  }
+                  @if (refund.notes) {
+                    <div>
+                      <dt>{{ 'finance.audit.field.notes' | t }}</dt>
+                      <dd>{{ refund.notes }}</dd>
+                    </div>
+                  }
+                  @if (refund.referenceNumber) {
+                    <div>
+                      <dt>{{ 'finance.referenceNumber' | t }}</dt>
+                      <dd>
+                        <bdi>{{ refund.referenceNumber }}</bdi>
+                      </dd>
+                    </div>
+                  }
+                  @if (refund.refundedByDisplayName) {
+                    <div>
+                      <dt>{{ 'finance.recordedBy' | t }}</dt>
+                      <dd>{{ refund.refundedByDisplayName }}</dd>
+                    </div>
+                  }
                 </dl>
               </details>
             }
@@ -2056,4 +2154,3 @@
     </app-side-drawer>
   }
 </main>
-

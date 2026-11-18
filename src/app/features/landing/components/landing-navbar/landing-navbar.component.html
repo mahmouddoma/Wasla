@@ -1,232 +1,163 @@
-<header class="landing-navbar" [dir]="language.dir()">
-  <div class="navbar-inner">
-    <!-- Brand Lockup -->
-    <a
-      routerLink="/"
-      class="navbar-brand"
-      [attr.aria-label]="'common.appName' | t"
-      (click)="closeMobileMenu()"
-    >
-      <img
-        src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
-        width="34"
-        height="34"
-        [alt]="'common.appName' | t"
-        class="navbar-logo-img"
-      />
-      <span class="navbar-brand-text">
-        <strong>{{ 'common.appName' | t }}</strong>
-        <small>{{ 'common.platformSubtitle' | t }}</small>
-      </span>
-    </a>
+<header class="landing-navbar-wrapper" [dir]="language.dir()">
+  <!-- ════════════════════════════════════════════════════════
+       DESKTOP TOP NAVBAR (Visible on lg screens and up)
+       ════════════════════════════════════════════════════════ -->
+  <div class="landing-navbar desktop-navbar d-none d-lg-block">
+    <div class="navbar-inner">
+      <!-- Brand Lockup -->
+      <a routerLink="/" class="navbar-brand" [attr.aria-label]="'common.appName' | t">
+        <img
+          src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+          width="34"
+          height="34"
+          [alt]="'common.appName' | t"
+          class="navbar-logo-img"
+        />
+        <span class="navbar-brand-text">
+          <strong>{{ 'common.appName' | t }}</strong>
+          <small>{{ 'common.platformSubtitle' | t }}</small>
+        </span>
+      </a>
 
-    <!-- Desktop Navigation Links -->
-    <nav class="navbar-links d-none d-lg-flex" [attr.aria-label]="'landing.nav.primaryAria' | t">
-      <a
-        routerLink="/"
-        routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link-item nav-link-route"
-        id="nav-home-link"
-      >
-        <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
-        <span>{{ 'landing.nav.home' | t }}</span>
-      </a>
-      <a href="#features" class="nav-link-item" (click)="onNavigateSection('features', $event)">
-        {{ 'landing.nav.features' | t }}
-      </a>
-      <a
-        href="#clinic-journey"
-        class="nav-link-item"
-        (click)="onNavigateSection('clinic-journey', $event)"
-      >
-        {{ 'landing.nav.howItWorks' | t }}
-      </a>
-      <a
-        href="#roles-overview"
-        class="nav-link-item"
-        (click)="onNavigateSection('roles-overview', $event)"
-      >
-        {{ 'landing.nav.forDoctors' | t }}
-      </a>
-      <a routerLink="/pricing" routerLinkActive="is-active" class="nav-link-item nav-link-route">
-        <i class="fa-solid fa-tags" aria-hidden="true"></i>
-        <span>{{ 'pricing.navPricing' | t }}</span>
-      </a>
-      <a routerLink="/doctors" routerLinkActive="is-active" class="nav-link-item nav-link-route">
-        <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
-        <span>{{ 'pricing.navFindDoctor' | t }}</span>
-      </a>
-      <a
-        href="#faq-section"
-        class="nav-link-item"
-        (click)="onNavigateSection('faq-section', $event)"
-      >
-        {{ 'landing.nav.faq' | t }}
-      </a>
-    </nav>
-
-    <!-- Desktop Utility & Conversion Actions -->
-    <div class="navbar-actions d-none d-lg-flex">
-      <app-language-switcher variant="header" />
-      @if (user()) {
-        <a [routerLink]="workspaceRoute()" class="nav-btn-primary" id="nav-workspace-btn">
-          <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
-          <span>{{ 'landing.nav.workspaceCta' | t }}</span>
-        </a>
-      } @else {
-        <a
-          routerLink="/login"
-          (click)="navigateTo('/login', $event)"
-          class="nav-btn-login"
-          id="nav-login-btn"
-        >
-          <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
-          <span>{{ 'landing.nav.login' | t }}</span>
+      <!-- Desktop Navigation Links -->
+      <nav class="navbar-links" [attr.aria-label]="'landing.nav.primaryAria' | t">
+        <a href="#features" class="nav-link-item" (click)="onNavigateSection('features', $event)">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.features' | t }}</span>
         </a>
         <a
-          routerLink="/register/doctor"
-          (click)="navigateTo('/register/doctor', $event)"
-          class="nav-btn-primary"
-          id="nav-start-cta"
+          href="#pricing-section"
+          class="nav-link-item"
+          (click)="onNavigateSection('pricing-section', $event)"
         >
-          <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
-          <span>{{ 'landing.nav.startCta' | t }}</span>
-        </a>
-      }
-    </div>
-
-    <!-- Mobile Controls -->
-    <div class="navbar-mobile-controls d-flex d-lg-none">
-      <app-language-switcher variant="header" />
-      <button
-        type="button"
-        class="mobile-menu-toggle"
-        (click)="toggleMobileMenu()"
-        [attr.aria-expanded]="mobileMenuOpen()"
-        aria-controls="landing-mobile-drawer"
-        [attr.aria-label]="
-          (mobileMenuOpen() ? 'landing.nav.closeMenu' : 'landing.nav.openMenu') | t
-        "
-      >
-        @if (mobileMenuOpen()) {
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        } @else {
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <line x1="4" y1="7" x2="20" y2="7" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="17" x2="20" y2="17" />
-          </svg>
-        }
-      </button>
-    </div>
-  </div>
-
-  <!-- Accessible Mobile Navigation Drawer -->
-  @if (mobileMenuOpen()) {
-    <div
-      id="landing-mobile-drawer"
-      class="mobile-nav-drawer d-lg-none"
-      role="dialog"
-      [attr.aria-label]="'landing.nav.primaryAria' | t"
-    >
-      <nav class="mobile-nav-list">
-        <a
-          routerLink="/"
-          routerLinkActive="is-active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="mobile-nav-link"
-          (click)="closeMobileMenu()"
-        >
-          {{ 'landing.nav.home' | t }}
-        </a>
-        <a href="#features" class="mobile-nav-link" (click)="onNavigateSection('features', $event)">
-          {{ 'landing.nav.features' | t }}
-        </a>
-        <a
-          href="#clinic-journey"
-          class="mobile-nav-link"
-          (click)="onNavigateSection('clinic-journey', $event)"
-        >
-          {{ 'landing.nav.howItWorks' | t }}
-        </a>
-        <a
-          href="#roles-overview"
-          class="mobile-nav-link"
-          (click)="onNavigateSection('roles-overview', $event)"
-        >
-          {{ 'landing.nav.forDoctors' | t }}
-        </a>
-        <a
-          routerLink="/pricing"
-          routerLinkActive="is-active"
-          class="mobile-nav-link"
-          (click)="closeMobileMenu()"
-        >
-          {{ 'pricing.navPricing' | t }}
-        </a>
-        <a
-          routerLink="/doctors"
-          routerLinkActive="is-active"
-          class="mobile-nav-link"
-          (click)="closeMobileMenu()"
-        >
-          {{ 'pricing.navFindDoctor' | t }}
+          <i class="fa-solid fa-tags" aria-hidden="true"></i>
+          <span>{{ 'landing.pricing.eyebrow' | t }}</span>
         </a>
         <a
           href="#faq-section"
-          class="mobile-nav-link"
+          class="nav-link-item"
           (click)="onNavigateSection('faq-section', $event)"
         >
-          {{ 'landing.nav.faq' | t }}
+          <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+          <span>{{ 'landing.faq.title' | t }}</span>
         </a>
       </nav>
 
-      <div class="mobile-nav-ctas">
+      <!-- Desktop Utility & Conversion Actions -->
+      <div class="navbar-actions">
+        <app-language-switcher variant="header" />
         @if (user()) {
-          <a
-            [routerLink]="workspaceRoute()"
-            class="nav-btn-primary w-100"
-            (click)="closeMobileMenu()"
-          >
-            {{ 'landing.nav.workspaceCta' | t }}
+          <a [routerLink]="workspaceRoute()" class="nav-btn-primary" id="nav-workspace-btn">
+            <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+            <span>{{ 'landing.nav.workspaceCta' | t }}</span>
           </a>
         } @else {
           <a
-            routerLink="/register/doctor"
-            class="nav-btn-primary w-100"
-            (click)="navigateTo('/register/doctor', $event)"
+            routerLink="/login"
+            (click)="navigateTo('/login', $event)"
+            class="nav-btn-login"
+            id="nav-login-btn"
           >
-            {{ 'landing.nav.startCta' | t }}
+            <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+            <span>{{ 'landing.nav.login' | t }}</span>
           </a>
           <a
-            routerLink="/login"
-            class="nav-btn-login w-100"
-            (click)="navigateTo('/login', $event)"
+            routerLink="/register/doctor"
+            (click)="navigateTo('/register/doctor', $event)"
+            class="nav-btn-primary"
+            id="nav-start-cta"
           >
-            {{ 'landing.nav.login' | t }}
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+            <span>{{ 'landing.hero.primaryCta' | t }}</span>
           </a>
         }
       </div>
     </div>
-  }
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       MOBILE TOP BRAND BAR (Completely static, non-sticky)
+       ════════════════════════════════════════════════════════ -->
+  <div class="mobile-top-bar d-lg-none">
+    <div class="mobile-top-inner">
+      <a routerLink="/" class="navbar-brand" [attr.aria-label]="'common.appName' | t">
+        <img
+          src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+          width="34"
+          height="34"
+          [alt]="'common.appName' | t"
+          class="navbar-logo-img"
+        />
+        <span class="navbar-brand-text">
+          <strong>{{ 'common.appName' | t }}</strong>
+          <small>{{ 'common.platformSubtitle' | t }}</small>
+        </span>
+      </a>
+      <app-language-switcher variant="header" />
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       MOBILE FIXED BOTTOM HEADER / DOCK
+       Catchy themed icons, squircle micro-badges, animations
+       ════════════════════════════════════════════════════════ -->
+  <div
+    class="mobile-bottom-header d-lg-none"
+    [class.is-scrolled]="isScrolled()"
+    role="navigation"
+    [attr.aria-label]="'landing.nav.primaryAria' | t"
+  >
+    <div class="mobile-bottom-inner">
+      <!-- 1. المميزات -->
+      <a
+        href="#features"
+        class="mobile-bottom-link nav-features-item"
+        [class.is-active]="activeSection() === 'features'"
+        (click)="onNavigateSection('features', $event)"
+      >
+        <i class="fa-solid fa-wand-magic-sparkles nav-icon-features" aria-hidden="true"></i>
+        <span class="mobile-link-text">{{ 'landing.nav.features' | t }}</span>
+      </a>
+
+      <!-- 2. الأسعار -->
+      <a
+        href="#pricing-section"
+        class="mobile-bottom-link nav-pricing-item"
+        [class.is-active]="activeSection() === 'pricing-section'"
+        (click)="onNavigateSection('pricing-section', $event)"
+      >
+        <i class="fa-solid fa-tags nav-icon-pricing" aria-hidden="true"></i>
+        <span class="mobile-link-text">{{ 'landing.pricing.eyebrow' | t }}</span>
+      </a>
+
+      <!-- 3. الأسئلة الشائعة -->
+      <a
+        href="#faq-section"
+        class="mobile-bottom-link nav-faq-item"
+        [class.is-active]="activeSection() === 'faq-section'"
+        (click)="onNavigateSection('faq-section', $event)"
+      >
+        <i class="fa-solid fa-circle-question nav-icon-faq" aria-hidden="true"></i>
+        <span class="mobile-link-text">{{ 'landing.faq.title' | t }}</span>
+      </a>
+
+      <!-- 4. ابدأ مع وصلة (Primary Animated CTA) -->
+      @if (user()) {
+        <a [routerLink]="workspaceRoute()" class="mobile-bottom-cta" id="nav-workspace-btn-mobile">
+          <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+          <span>{{ 'landing.nav.workspaceCta' | t }}</span>
+        </a>
+      } @else {
+        <a
+          routerLink="/register/doctor"
+          class="mobile-bottom-cta cta-animated"
+          id="nav-start-cta-mobile"
+          (click)="navigateTo('/register/doctor', $event)"
+        >
+          <i class="fa-solid fa-user-plus cta-icon" aria-hidden="true"></i>
+          <span class="cta-text">{{ 'landing.hero.primaryCta' | t }}</span>
+        </a>
+      }
+    </div>
+  </div>
 </header>

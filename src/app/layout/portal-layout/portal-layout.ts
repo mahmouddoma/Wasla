@@ -8,10 +8,12 @@ import {
   computed,
   DestroyRef,
   effect,
+  ElementRef,
   inject,
   signal,
   HostListener,
 } from '@angular/core';
+import gsap from 'gsap';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -60,6 +62,7 @@ export class PortalLayout {
       .subscribe((event) => {
         const nextUrl = event.urlAfterRedirects || event.url;
         this.currentUrl.set(nextUrl);
+        this.closeSidebar();
       });
     inject(DestroyRef).onDestroy(() => sub.unsubscribe());
 
@@ -130,6 +133,8 @@ export class PortalLayout {
     }
   }
 
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
   protected readonly isSidebarOpen = signal(false);
   protected readonly isSidebarCollapsed = signal<boolean>(
     typeof localStorage !== 'undefined' &&
@@ -144,6 +149,13 @@ export class PortalLayout {
     return user ? this.session.destinationFor(user) : '/login';
   });
 
+  private prefersReducedMotion(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    );
+  }
+
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.closeSidebar();
@@ -155,20 +167,237 @@ export class PortalLayout {
   }
 
   protected toggleSidebar(): void {
-    this.isSidebarOpen.update((open) => !open);
+    if (this.isSidebarOpen()) {
+      this.closeSidebar();
+    } else {
+      this.openSidebar();
+    }
   }
 
-  protected toggleSidebarCollapse(): void {
-    this.isSidebarCollapsed.update((collapsed) => {
-      const next = !collapsed;
-      try {
-        localStorage.setItem('wasla_portal_sidebar_collapsed', String(next));
-      } catch {}
-      return next;
+  protected openSidebar(): void {
+    this.isSidebarOpen.set(true);
+    if (this.prefersReducedMotion() || typeof window === 'undefined') return;
+
+    requestAnimationFrame(() => {
+      const root = this.elementRef.nativeElement;
+      const sidebar = root.querySelector<HTMLElement>('.portal-sidebar');
+      const backdrop = root.querySelector<HTMLElement>('.sidebar-backdrop');
+      const brandLogo = root.querySelector<HTMLElement>('.brand-logo-icon');
+      const isRtl = this.langService.isRtl();
+      const dirX = isRtl ? 32 : -32;
+
+      const cascadeItems = root.querySelectorAll<HTMLElement>(
+        '.portal-sidebar .brand-text-block, .portal-sidebar .sidebar-group-title, .portal-sidebar .sidebar-nav-item, .portal-sidebar .btn-sidebar-logout',
+      );
+
+      gsap.killTweensOf([sidebar, backdrop, brandLogo, ...Array.from(cascadeItems)]);
+
+      if (backdrop) {
+        gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.28, ease: 'power2.out' });
+      }
+
+      if (sidebar) {
+        sidebar.classList.add('is-animating');
+        gsap.fromTo(
+          sidebar,
+          { x: isRtl ? '100%' : '-100%' },
+          {
+            x: '0%',
+            duration: 0.36,
+            ease: 'power3.out',
+            clearProps: 'transform',
+            onComplete: () => sidebar.classList.remove('is-animating'),
+          },
+        );
+      }
+
+      if (brandLogo) {
+        gsap.fromTo(
+          brandLogo,
+          { scale: 0.88, rotate: isRtl ? -6 : 6 },
+          { scale: 1, rotate: 0, duration: 0.35, ease: 'back.out(1.5)', clearProps: 'transform' },
+        );
+      }
+
+      if (cascadeItems.length) {
+        gsap.fromTo(
+          cascadeItems,
+          { opacity: 0, x: dirX },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.28,
+            stagger: 0.022,
+            delay: 0.06,
+            ease: 'power2.out',
+            clearProps: 'all',
+          },
+        );
+      }
     });
   }
 
   protected closeSidebar(): void {
     this.isSidebarOpen.set(false);
+  }
+
+  protected toggleSidebarCollapse(): void {
+    const next = !this.isSidebarCollapsed();
+    this.isSidebarCollapsed.set(next);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('wasla_portal_sidebar_collapsed', String(next));
+      }
+    } catch {}
+
+    if (this.prefersReducedMotion() || typeof window === 'undefined') return;
+
+    this.animateSidebarCollapse(next);
+  }
+
+  private animateSidebarCollapse(collapsed: boolean): void {
+    const root = this.elementRef.nativeElement;
+    const sidebar = root.querySelector<HTMLElement>('.portal-sidebar');
+    if (!sidebar) return;
+
+    const mainWrapper = root.querySelector<HTMLElement>('.portal-main-wrapper');
+    const chevron = root.querySelector<HTMLElement>('.collapse-chevron');
+    const isRtl = this.langService.isRtl();
+    const dirX = isRtl ? 28 : -28;
+
+    const cascadeItems = root.querySelectorAll<HTMLElement>(
+      '.portal-sidebar .brand-text-block, .portal-sidebar .sidebar-group-title, .portal-sidebar .sidebar-nav-item, .portal-sidebar .btn-sidebar-logout',
+    );
+    const textElements = root.querySelectorAll<HTMLElement>(
+      '.portal-sidebar .brand-text-block, .portal-sidebar .sidebar-group-title, .portal-sidebar .sidebar-nav-item .nav-text, .portal-sidebar .btn-sidebar-logout .nav-text',
+    );
+
+    gsap.killTweensOf([
+      sidebar,
+      mainWrapper,
+      chevron,
+      ...Array.from(cascadeItems),
+      ...Array.from(textElements),
+    ]);
+    sidebar.classList.add('is-animating');
+
+    if (collapsed) {
+      // ── Smooth Collapsing Choreography ──
+      // 1. Text elements gracefully fade and slide towards the language edge
+      gsap.to(textElements, {
+        x: dirX * 0.6,
+        opacity: 0,
+        duration: 0.16,
+        ease: 'power2.in',
+      });
+
+      // 2. Sidebar width and main content margin contract synchronously
+      const collapseTl = gsap.timeline({
+        onComplete: () => {
+          sidebar.classList.remove('is-animating');
+          gsap.set([sidebar, mainWrapper, chevron, ...Array.from(textElements)], {
+            clearProps: 'all',
+          });
+        },
+      });
+
+      collapseTl.fromTo(
+        sidebar,
+        { width: 248 },
+        {
+          width: 80,
+          duration: 0.34,
+          ease: 'power3.inOut',
+        },
+        0,
+      );
+
+      if (mainWrapper && window.innerWidth > 992) {
+        collapseTl.fromTo(
+          mainWrapper,
+          { marginInlineStart: 248 },
+          {
+            marginInlineStart: 80,
+            duration: 0.34,
+            ease: 'power3.inOut',
+          },
+          0,
+        );
+      }
+
+      if (chevron) {
+        collapseTl.to(
+          chevron,
+          {
+            rotate: isRtl ? 180 : 0,
+            duration: 0.28,
+            ease: 'back.out(1.4)',
+          },
+          0,
+        );
+      }
+    } else {
+      // ── Smooth Expanding Choreography (Directional Staggered Waterfall) ──
+      const expandTl = gsap.timeline({
+        onComplete: () => {
+          sidebar.classList.remove('is-animating');
+          gsap.set([sidebar, mainWrapper, chevron, ...Array.from(cascadeItems)], {
+            clearProps: 'all',
+          });
+        },
+      });
+
+      expandTl.fromTo(
+        sidebar,
+        { width: 80 },
+        {
+          width: 248,
+          duration: 0.36,
+          ease: 'power3.out',
+        },
+        0,
+      );
+
+      if (mainWrapper && window.innerWidth > 992) {
+        expandTl.fromTo(
+          mainWrapper,
+          { marginInlineStart: 80 },
+          {
+            marginInlineStart: 248,
+            duration: 0.36,
+            ease: 'power3.out',
+          },
+          0,
+        );
+      }
+
+      if (chevron) {
+        expandTl.to(
+          chevron,
+          {
+            rotate: isRtl ? 0 : 180,
+            duration: 0.28,
+            ease: 'back.out(1.4)',
+          },
+          0,
+        );
+      }
+
+      // Smooth cascade: Stagger items sequentially from the language direction (from right in RTL)
+      if (cascadeItems.length) {
+        expandTl.fromTo(
+          cascadeItems,
+          { x: dirX, opacity: 0 },
+          {
+            x: 0,
+            opacity: 1,
+            duration: 0.28,
+            stagger: 0.02,
+            ease: 'power2.out',
+          },
+          0.06,
+        );
+      }
+    }
   }
 }

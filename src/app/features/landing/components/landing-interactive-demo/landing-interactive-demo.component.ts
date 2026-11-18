@@ -11,21 +11,7 @@ import {
 import gsap from 'gsap';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
-import {
-  ClinicalSubTabId,
-  DemoAppointment,
-  DemoModeId,
-  DemoQueueTicket,
-} from '../../models/landing.models';
-
-type FinanceBranchId = 'all' | 'maadi' | 'nasr';
-
-interface FinanceSummaryView {
-  readonly branchNameKey: string;
-  readonly visitsCount: number;
-  readonly revenueAmount: string;
-  readonly expenseAmount: string;
-}
+import { DemoModeId, DemoQueueTicket } from '../../models/landing.models';
 
 const INITIAL_QUEUE: readonly DemoQueueTicket[] = [
   {
@@ -72,12 +58,18 @@ export class LandingInteractiveDemoComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    afterNextRender(() => this.animateTargets('.demo-workbench', 14, 0.42));
+    afterNextRender(() => {
+      if (typeof window !== 'undefined' && !this.prefersReducedMotion()) {
+        const root = this.elementRef.nativeElement;
+        const targets = root.querySelectorAll('.showcase-tabs-bar, .browser-mockup-frame, .showcase-info-col');
+        if (targets.length) {
+          gsap.fromTo(targets, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.08, ease: 'power2.out' });
+        }
+      }
+    });
 
     this.destroyRef.onDestroy(() => {
-      const nodes = this.elementRef.nativeElement.querySelectorAll(
-        '.demo-workbench, .demo-stage-surface, .apt-inspector-pane, .serving-banner, .queue-sim-row',
-      );
+      const nodes = this.elementRef.nativeElement.querySelectorAll('.real-showcase-image, .browser-mockup-frame');
       if (nodes.length) {
         gsap.killTweensOf(nodes);
       }
@@ -85,167 +77,86 @@ export class LandingInteractiveDemoComponent {
   }
 
   protected readonly activeMode = signal<DemoModeId>('appointments');
-  protected readonly selectedAppointmentId = signal<string>('apt-3');
   protected readonly queueTickets = signal<readonly DemoQueueTicket[]>(INITIAL_QUEUE);
-  protected readonly clinicalTab = signal<ClinicalSubTabId>('notes');
-  protected readonly financeBranch = signal<FinanceBranchId>('all');
 
-  protected readonly appointments: readonly DemoAppointment[] = [
-    {
-      id: 'apt-1',
-      ticketNumber: 18,
-      timeDisplay: '18:00',
-      patientNameKey: 'landing.demo.pat4Name',
-      visitTypeKey: 'landing.demo.pat4Type',
-      stageKey: 'landing.demo.stageBooked',
-      stageTone: 'neutral',
-      doctorViewKey: 'landing.demo.apt1Doc',
-      receptionViewKey: 'landing.demo.apt1Rec',
-      patientViewKey: 'landing.demo.apt1Pat',
-    },
-    {
-      id: 'apt-2',
-      ticketNumber: 15,
-      timeDisplay: '17:20',
-      patientNameKey: 'landing.preview.row2Name',
-      visitTypeKey: 'landing.preview.row2Type',
-      stageKey: 'landing.demo.stageCheckedIn',
-      stageTone: 'teal',
-      doctorViewKey: 'landing.demo.apt2Doc',
-      receptionViewKey: 'landing.demo.apt2Rec',
-      patientViewKey: 'landing.demo.apt2Pat',
-    },
-    {
-      id: 'apt-3',
-      ticketNumber: 14,
-      timeDisplay: '17:00',
-      patientNameKey: 'landing.preview.row1Name',
-      visitTypeKey: 'landing.preview.row1Type',
-      stageKey: 'landing.demo.stageInRoom',
-      stageTone: 'navy',
-      doctorViewKey: 'landing.demo.apt3Doc',
-      receptionViewKey: 'landing.demo.apt3Rec',
-      patientViewKey: 'landing.demo.apt3Pat',
-    },
-    {
-      id: 'apt-4',
-      ticketNumber: 13,
-      timeDisplay: '16:30',
-      patientNameKey: 'landing.preview.row3Name',
-      visitTypeKey: 'landing.preview.row3Type',
-      stageKey: 'landing.demo.stageCompleted',
-      stageTone: 'success',
-      doctorViewKey: 'landing.demo.apt4Doc',
-      receptionViewKey: 'landing.demo.apt4Rec',
-      patientViewKey: 'landing.demo.apt4Pat',
-    },
-  ];
-
-  protected readonly selectedAppointment = computed(
-    () =>
-      this.appointments.find((apt) => apt.id === this.selectedAppointmentId()) ??
-      this.appointments[0],
-  );
-
-  protected readonly currentServingTicket = computed(
-    () => this.queueTickets().find((t) => t.state === 'serving') ?? null,
-  );
-
-  protected readonly hasWaitingTickets = computed(() =>
-    this.queueTickets().some((t) => t.state === 'waiting'),
-  );
-
-  protected readonly financeSummary = computed<FinanceSummaryView>(() => {
-    switch (this.financeBranch()) {
-      case 'maadi':
-        return {
-          branchNameKey: 'landing.demo.finMaadi',
-          visitsCount: 16,
-          revenueAmount: '7,400',
-          expenseAmount: '1,850',
-        };
-      case 'nasr':
-        return {
-          branchNameKey: 'landing.demo.finNasr',
-          visitsCount: 11,
-          revenueAmount: '5,200',
-          expenseAmount: '1,300',
-        };
-      default:
-        return {
-          branchNameKey: 'landing.demo.finAllBranches',
-          visitsCount: 27,
-          revenueAmount: '12,600',
-          expenseAmount: '3,150',
-        };
-    }
+  protected readonly servingTicket = computed(() => {
+    return this.queueTickets().find((t) => t.state === 'serving') ?? this.queueTickets()[0];
   });
 
-  protected setMode(mode: DemoModeId): void {
+  protected readonly showcaseScreens = {
+    appointments: {
+      image: '/showcase/showcase-appointments.png',
+      routePath: 'doctor/reservations',
+      headingKey: 'landing.showcase.apptsTitle',
+      subKey: 'landing.showcase.apptsSub',
+      f1Key: 'landing.showcase.apptsPoint1',
+      f2Key: 'landing.showcase.apptsPoint2',
+      f3Key: 'landing.showcase.apptsPoint3',
+      icon: 'fa-regular fa-calendar-check',
+    },
+    queue: {
+      image: '/showcase/showcase-queue.png',
+      routePath: 'doctor/queue',
+      headingKey: 'landing.showcase.queueTitle',
+      subKey: 'landing.showcase.queueSub',
+      f1Key: 'landing.showcase.queuePoint1',
+      f2Key: 'landing.showcase.queuePoint2',
+      f3Key: 'landing.showcase.queuePoint3',
+      icon: 'fa-solid fa-users',
+    },
+    clinical: {
+      image: '/showcase/showcase-patients.png',
+      routePath: 'doctor/patients',
+      headingKey: 'landing.showcase.clinicalTitle',
+      subKey: 'landing.showcase.clinicalSub',
+      f1Key: 'landing.showcase.clinicalPoint1',
+      f2Key: 'landing.showcase.clinicalPoint2',
+      f3Key: 'landing.showcase.clinicalPoint3',
+      icon: 'fa-solid fa-stethoscope',
+    },
+    finance: {
+      image: '/showcase/showcase-finance.png',
+      routePath: 'doctor/finance',
+      headingKey: 'landing.showcase.financeTitle',
+      subKey: 'landing.showcase.financeSub',
+      f1Key: 'landing.showcase.financePoint1',
+      f2Key: 'landing.showcase.financePoint2',
+      f3Key: 'landing.showcase.financePoint3',
+      icon: 'fa-solid fa-wallet',
+    },
+  } as const;
+
+  protected readonly currentScreen = computed(() => {
+    return this.showcaseScreens[this.activeMode()] || this.showcaseScreens.appointments;
+  });
+
+  setMode(mode: DemoModeId): void {
     this.activeMode.set(mode);
-    this.animateTargets('.demo-stage-surface', 10, 0.28);
+    if (typeof window !== 'undefined' && !this.prefersReducedMotion()) {
+      const img = this.elementRef.nativeElement.querySelector('.real-showcase-image');
+      if (img) {
+        gsap.fromTo(img, { opacity: 0.35, scale: 0.985 }, { opacity: 1, scale: 1, duration: 0.32, ease: 'power2.out' });
+      }
+    }
   }
 
-  protected selectAppointment(id: string): void {
-    this.selectedAppointmentId.set(id);
-    this.animateTargets('.apt-inspector-pane', 8, 0.24);
-  }
-
-  protected setClinicalTab(tab: ClinicalSubTabId): void {
-    this.clinicalTab.set(tab);
-  }
-
-  protected setFinanceBranch(branch: FinanceBranchId): void {
-    this.financeBranch.set(branch);
-  }
-
-  protected callNextTicket(): void {
-    this.queueTickets.update((tickets) => {
-      const firstWaitingIdx = tickets.findIndex((t) => t.state === 'waiting');
-      if (firstWaitingIdx === -1) return tickets;
-      return tickets.map((ticket, idx) => {
-        if (ticket.state === 'serving') return { ...ticket, state: 'done' as const };
-        if (idx === firstWaitingIdx) return { ...ticket, state: 'serving' as const };
-        return ticket;
+  callNextTicket(): void {
+    const list = this.queueTickets();
+    const servingIdx = list.findIndex((t) => t.state === 'serving');
+    if (servingIdx >= 0 && servingIdx + 1 < list.length) {
+      const updated = list.map((t, idx) => {
+        if (idx === servingIdx) return { ...t, state: 'done' as const };
+        if (idx === servingIdx + 1) return { ...t, state: 'serving' as const };
+        return t;
       });
-    });
-    this.animateTargets('.serving-banner, .queue-sim-row', 6, 0.24, 0.03);
-  }
-
-  protected resetQueue(): void {
-    this.queueTickets.set(INITIAL_QUEUE);
-    this.animateTargets('.serving-banner, .queue-sim-row', 6, 0.24, 0.03);
+      this.queueTickets.set(updated);
+    }
   }
 
   private prefersReducedMotion(): boolean {
     return (
-      typeof window === 'undefined' ||
+      typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
     );
-  }
-
-  private animateTargets(
-    selector: string,
-    yOffset = 10,
-    duration = 0.28,
-    stagger = 0,
-  ): void {
-    if (this.prefersReducedMotion()) return;
-    queueMicrotask(() => {
-      const targets = this.elementRef.nativeElement.querySelectorAll(selector);
-      if (!targets.length) return;
-      gsap.fromTo(
-        targets,
-        { opacity: 0, y: yOffset },
-        {
-          opacity: 1,
-          y: 0,
-          duration,
-          stagger,
-          ease: 'power2.out',
-          clearProps: 'transform,opacity',
-        },
-      );
-    });
   }
 }

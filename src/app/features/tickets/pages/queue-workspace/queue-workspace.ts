@@ -58,6 +58,7 @@ import { Phase18Part2Api } from '../../../../domains/phase18';
 import type { componentsPart2 as components } from '../../../../domains/phase18';
 import { ArchivedTicketListComponent } from '../../components/archived-ticket-list/archived-ticket-list.component';
 import { PracticeActivityComponent } from '../../../practice-activity';
+import { PatientDetailDrawerComponent } from '../../../doctor-patients/components/patient-detail-drawer/patient-detail-drawer.component';
 
 type ArchivedTicketItem = components['schemas']['ArchivedTicketItem'];
 type QueueAction = 'manual-call' | 'recall' | 'no-response' | 'restore' | 'start' | 'cancel';
@@ -82,6 +83,7 @@ type CompletionBlocker = {
     DiagnosticDraftComponent,
     ArchivedTicketListComponent,
     PracticeActivityComponent,
+    PatientDetailDrawerComponent,
   ],
   templateUrl: './queue-workspace.html',
   styleUrl: './queue-workspace.css',
@@ -128,8 +130,30 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     () => this.clinicalSaving() || this.prescriptionBusy() || this.diagnosticBusy(),
   );
   protected readonly removeDiagnosisId = signal('');
-  protected readonly clinicalTab = signal<'assessment' | 'prescription' | 'diagnostics' | 'all'>('assessment');
+  protected readonly clinicalTab = signal<
+    'assessment' | 'prescription' | 'labs' | 'radiology' | 'diagnostics' | 'all'
+  >('assessment');
   protected readonly doctorShowWaitingList = signal(false);
+
+  protected readonly labDraftCount = computed(
+    () => this.activeEncounter()?.labRequestDraft?.items?.length ?? 0,
+  );
+  protected readonly radiologyDraftCount = computed(
+    () => this.activeEncounter()?.radiologyRequestDraft?.items?.length ?? 0,
+  );
+  protected readonly patientHistoryOpen = signal(false);
+  protected readonly headerMenuOpen = signal(false);
+  protected readonly mobileView = signal<'encounter' | 'queue'>('encounter');
+  protected readonly activePatientId = computed(() => {
+    return (
+      this.activeEncounter()?.patient?.id ||
+      this.queue().inProgress?.patientId ||
+      this.queue().inProgress?.patient?.id ||
+      this.queue().called?.patientId ||
+      this.queue().called?.patient?.id ||
+      null
+    );
+  });
 
   protected readonly prescriptionItemsCount = computed(() => {
     const enc = this.activeEncounter();
@@ -171,6 +195,137 @@ export class QueueWorkspace implements OnInit, OnDestroy {
         (this.activeEncounter()?.clinicalNotes ?? '').trim()
       ),
   );
+
+  // ═══ Real-Time Adaptive Polling & Clinical State Protection (Phase 2) ═══
+  private pollTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  private currentPollIntervalMs = 15000;
+  private readonly minPollIntervalMs = 15000;
+  private readonly maxPollIntervalMs = 60000;
+  private isWindowVisible = true;
+  private pollSequence = 0;
+  private boundVisibilityHandler?: () => void;
+  private boundOnlineHandler?: () => void;
+  private boundOfflineHandler?: () => void;
+  private boundFocusHandler?: () => void;
+
+  protected readonly syncStatus = signal<'synced' | 'syncing' | 'error' | 'stale' | 'offline'>('synced');
+  protected readonly lastSyncedAt = signal<Date | null>(null);
+  protected readonly isOnline = signal<boolean>(
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  );
+  protected readonly queueNotice = signal<string | null>(null);
+  private queueNoticeTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly activeEncounterConflict = signal(false);
+  protected readonly clinicalSaveState = signal<'saved' | 'unsaved' | 'saving' | 'error'>('saved');
+  private autoSaveNotesTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly completingVisit = signal(false);
+
+  protected readonly lastSyncedFormatted = computed(() => {
+    const d = this.lastSyncedAt();
+    if (!d) return '';
+    return d.toLocaleTimeString(this.language.currentLang() === 'ar' ? 'ar-EG' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  });
+
+  protected readonly isStaleQueue = computed(() => {
+    const last = this.lastSyncedAt();
+    if (!last) return false;
+    return Date.now() - last.getTime() > 90000;
+  });
+
+  protected readonly completionChecklist = computed(() => {
+    const enc = this.activeEncounter();
+    const m = this.clinicalModel();
+    const notesFilled = !!(m.clinicalNotes.trim() || enc?.clinicalNotes?.trim());
+    const diags = this.activeDiagnoses();
+    const primaryDiag = diags.find((d) => d.type === 'Primary');
+    const rxCount = this.prescriptionItemsCount();
+    const labCount = this.labDraftCount();
+    const radCount = this.radiologyDraftCount();
+    const blockers = this.clinicalBlockers();
+
+    const hasPrescriptionBlocker = blockers.some(
+      (b) => b.toLowerCase().includes('prescription') || b.includes('\u0631\u0648\u0634\u062A'),
+    );
+    const hasDiagnosticBlocker = blockers.some(
+      (b) =>
+        b.toLowerCase().includes('lab') ||
+        b.includes('\u062A\u062D\u0644\u064A\u0644') ||
+        b.toLowerCase().includes('radiology') ||
+        b.includes('\u0623\u0634\u0639'),
+    );
+
+    return [
+      {
+        id: 'notes',
+        label: 'tickets.assistant.notesStatus',
+        isRequired: true,
+        isComplete: notesFilled,
+        isBlocked: !notesFilled,
+        tab: 'assessment' as const,
+        focusId: 'ws-clinical-notes-main',
+        badge: notesFilled
+          ? 'tickets.assistant.statusCompleted'
+          : 'tickets.assistant.statusRequired',
+      },
+      {
+        id: 'diagnoses',
+        label: 'tickets.assistant.diagnosesStatus',
+        isRequired: false,
+        isComplete: diags.length > 0 && !!primaryDiag,
+        isBlocked: false,
+        tab: 'assessment' as const,
+        focusId: 'ws-clinical-notes-main',
+        badge: diags.length > 0
+          ? 'tickets.assistant.statusCompleted'
+          : 'tickets.assistant.statusOptional',
+      },
+      {
+        id: 'prescription',
+        label: 'tickets.assistant.prescriptionStatus',
+        isRequired: false,
+        isComplete: rxCount > 0 && !hasPrescriptionBlocker,
+        isBlocked: hasPrescriptionBlocker,
+        tab: 'prescription' as const,
+        focusId: undefined,
+        badge: hasPrescriptionBlocker
+          ? 'tickets.assistant.statusBlocked'
+          : rxCount > 0
+            ? 'tickets.assistant.statusCompleted'
+            : 'tickets.assistant.statusOptional',
+      },
+      {
+        id: 'labs',
+        label: 'tickets.assistant.labsStatus',
+        isRequired: false,
+        isComplete: labCount > 0 && !hasDiagnosticBlocker,
+        isBlocked: hasDiagnosticBlocker,
+        tab: 'labs' as const,
+        focusId: undefined,
+        badge: hasDiagnosticBlocker
+          ? 'tickets.assistant.statusBlocked'
+          : labCount > 0
+            ? 'tickets.assistant.statusCompleted'
+            : 'tickets.assistant.statusOptional',
+      },
+      {
+        id: 'radiology',
+        label: 'tickets.assistant.radiologyStatus',
+        isRequired: false,
+        isComplete: radCount > 0 && !hasDiagnosticBlocker,
+        isBlocked: hasDiagnosticBlocker,
+        tab: 'radiology' as const,
+        focusId: undefined,
+        badge: hasDiagnosticBlocker
+          ? 'tickets.assistant.statusBlocked'
+          : radCount > 0
+            ? 'tickets.assistant.statusCompleted'
+            : 'tickets.assistant.statusOptional',
+      },
+    ];
+  });
   private readonly writableClinicalSource = computed(
     () =>
       this.isDoctor() &&
@@ -520,6 +675,12 @@ export class QueueWorkspace implements OnInit, OnDestroy {
             void this.syncActiveEncounter(pracId, inProgTicket.ticketId);
           }
         } else {
+          // PROTECTION: If doctor is currently editing a patient and has unsaved clinical notes/diagnoses,
+          // do NOT wipe drafts if inProgress momentarily disappears during background queue refresh!
+          if (this.activeEncounterTicketId && this.hasUnsavedClinicalDraft()) {
+            this.activeEncounterConflict.set(true);
+            return;
+          }
           this.activeEncounterTicketId = '';
           this.encounterSequence++;
           this.activeEncounter.set(null);
@@ -552,6 +713,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.closeArchive();
     this.stopExamTimer();
+    this.stopPolling();
+    this.teardownListeners();
   }
 
   openTvMode(): void {
@@ -606,6 +769,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
         await this.choosePatient(patient.patientId);
       }
       this.initialized = true;
+      this.initListeners();
+      this.startPolling();
     } catch (error) {
       await this.failure(error);
     } finally {
@@ -743,6 +908,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       typeof idOrEvent === 'string' ? idOrEvent : (idOrEvent.target as HTMLSelectElement).value;
     if (id && !this.practices().some((item) => item.id === id)) return;
     const generation = ++this.generation;
+    this.stopPolling();
     this.activityOpen.set(false);
     this.closeArchive();
     this.queueSequence++;
@@ -760,7 +926,10 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.messages.set([]);
     this.resetWalkIn();
     this.intents.clear();
-    if (id && this.canViewQueue()) await this.loadQueue();
+    if (id && this.canViewQueue()) {
+      await this.loadQueue();
+      this.startPolling();
+    }
     if (generation === this.generation && this.canWalkIn()) await this.loadWalkInOptions();
   }
 
@@ -774,8 +943,11 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.messages.set([]);
     try {
       const queue = await firstValueFrom(this.api.queue(id));
-      if (this.current(id, generation) && sequence === this.queueSequence && this.canViewQueue())
+      if (this.current(id, generation) && sequence === this.queueSequence && this.canViewQueue()) {
         this.queue.set(queue);
+        this.lastSyncedAt.set(new Date());
+        this.syncStatus.set('synced');
+      }
     } catch (error) {
       if (this.current(id, generation) && sequence === this.queueSequence) {
         this.loadFailed.set(true);
@@ -924,10 +1096,13 @@ export class QueueWorkspace implements OnInit, OnDestroy {
 
   protected async callNext(): Promise<void> {
     if (!this.canCallNext() || !this.practiceId() || this.busy() || this.queueOccupied()) return;
-    await this.runMutation(
+    const succeeded = await this.runMutation(
       'call-next',
       this.api.callNext(this.practiceId(), this.intentKey('call-next')),
     );
+    if (succeeded) {
+      this.refreshNow();
+    }
   }
 
   protected submitWalkIn(): void {
@@ -1322,8 +1497,34 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     });
   }
 
-  protected setClinicalTab(tab: 'assessment' | 'prescription' | 'diagnostics' | 'all'): void {
+  protected setClinicalTab(
+    tab: 'assessment' | 'prescription' | 'labs' | 'radiology' | 'diagnostics' | 'all',
+  ): void {
     this.clinicalTab.set(tab);
+  }
+
+  protected openPatientHistory(): void {
+    if (this.activePatientId()) {
+      this.patientHistoryOpen.set(true);
+    } else {
+      this.toast.error('patients.patientNotFound');
+    }
+  }
+
+  protected closePatientHistory(): void {
+    this.patientHistoryOpen.set(false);
+  }
+
+  protected toggleHeaderMenu(): void {
+    this.headerMenuOpen.update((v) => !v);
+  }
+
+  protected closeHeaderMenu(): void {
+    this.headerMenuOpen.set(false);
+  }
+
+  protected setMobileView(view: 'encounter' | 'queue'): void {
+    this.mobileView.set(view);
   }
 
   protected toggleDoctorWaitingList(): void {
@@ -1336,6 +1537,263 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   ): void {
     const val = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
     this.clinicalModel.update((m) => ({ ...m, [field]: val }));
+    this.clinicalSaveState.set('unsaved');
+    if (field === 'clinicalNotes') {
+      this.scheduleNotesAutoSave();
+    }
+  }
+
+  // ═══ Real-Time Adaptive Polling Implementation ═══
+  protected startPolling(): void {
+    this.stopPolling();
+    this.scheduleNextPoll();
+  }
+
+  protected stopPolling(): void {
+    if (this.pollTimeoutHandle !== null) {
+      clearTimeout(this.pollTimeoutHandle);
+      this.pollTimeoutHandle = null;
+    }
+    this.pollSequence++;
+    this.currentPollIntervalMs = this.minPollIntervalMs;
+  }
+
+  private scheduleNextPoll(): void {
+    if (this.pollTimeoutHandle !== null) {
+      clearTimeout(this.pollTimeoutHandle);
+      this.pollTimeoutHandle = null;
+    }
+    if (!this.practiceId() || !this.canViewQueue()) return;
+
+    const delay = this.isWindowVisible ? this.currentPollIntervalMs : this.maxPollIntervalMs;
+    this.pollTimeoutHandle = setTimeout(() => {
+      void this.syncQueueSilently();
+    }, delay);
+  }
+
+  protected async syncQueueSilently(): Promise<void> {
+    const id = this.practiceId();
+    const generation = this.generation;
+    if (
+      !id ||
+      !this.canViewQueue() ||
+      this.busy() ||
+      this.clinicalBusy() ||
+      this.completingVisit()
+    ) {
+      this.scheduleNextPoll();
+      return;
+    }
+
+    const sequence = ++this.pollSequence;
+    this.syncStatus.set('syncing');
+
+    try {
+      let newQueue = await firstValueFrom(this.api.queue(id));
+      if (!this.current(id, generation) || sequence !== this.pollSequence || !this.canViewQueue()) {
+        return;
+      }
+
+      const oldQueue = this.queue();
+
+      // Detect newly arrived waiting tickets
+      if (this.isDoctor()) {
+        const oldWaitingIds = new Set(oldQueue.waiting.map((t) => t.ticketId));
+        const newTickets = newQueue.waiting.filter((t) => !oldWaitingIds.has(t.ticketId));
+        if (newTickets.length > 0 && oldQueue.waiting.length > 0) {
+          const first = newTickets[0];
+          this.showQueueNotice(
+            this.language.t('tickets.sync.newWaitingPatient', {
+              name: this.patientLabel(first),
+              number: first.ticketNumber,
+            }),
+          );
+        } else if (
+          oldQueue.called?.ticketId !== newQueue.called?.ticketId &&
+          newQueue.called &&
+          !oldQueue.inProgress &&
+          !newQueue.inProgress
+        ) {
+          this.showQueueNotice(this.language.t('tickets.sync.queueUpdated'));
+        }
+      }
+
+      // Active encounter protection
+      if (this.isDoctor() && oldQueue.inProgress) {
+        if (!newQueue.inProgress || newQueue.inProgress.ticketId !== oldQueue.inProgress.ticketId) {
+          if (this.hasUnsavedClinicalDraft()) {
+            this.activeEncounterConflict.set(true);
+            newQueue = { ...newQueue, inProgress: oldQueue.inProgress };
+          }
+        }
+      }
+
+      this.queue.set(newQueue);
+      this.lastSyncedAt.set(new Date());
+      this.syncStatus.set('synced');
+      this.currentPollIntervalMs = this.minPollIntervalMs;
+    } catch {
+      if (this.current(id, generation) && sequence === this.pollSequence) {
+        this.syncStatus.set('error');
+        this.currentPollIntervalMs = Math.min(
+          this.maxPollIntervalMs,
+          Math.floor(this.currentPollIntervalMs * 1.5),
+        );
+      }
+    } finally {
+      this.scheduleNextPoll();
+    }
+  }
+
+  protected refreshNow(): void {
+    if (this.pollTimeoutHandle !== null) {
+      clearTimeout(this.pollTimeoutHandle);
+      this.pollTimeoutHandle = null;
+    }
+    void this.syncQueueSilently();
+  }
+
+  private initListeners(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    this.boundVisibilityHandler = () => {
+      this.isWindowVisible = document.visibilityState === 'visible';
+      if (this.isWindowVisible) {
+        this.refreshNow();
+      }
+    };
+    document.addEventListener('visibilitychange', this.boundVisibilityHandler);
+
+    this.boundFocusHandler = () => {
+      this.refreshNow();
+    };
+    window.addEventListener('focus', this.boundFocusHandler);
+
+    this.boundOnlineHandler = () => {
+      this.isOnline.set(true);
+      this.syncStatus.set('synced');
+      this.refreshNow();
+    };
+    window.addEventListener('online', this.boundOnlineHandler);
+
+    this.boundOfflineHandler = () => {
+      this.isOnline.set(false);
+      this.syncStatus.set('offline');
+    };
+    window.addEventListener('offline', this.boundOfflineHandler);
+  }
+
+  private teardownListeners(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (this.boundVisibilityHandler) {
+      document.removeEventListener('visibilitychange', this.boundVisibilityHandler);
+    }
+    if (this.boundFocusHandler) {
+      window.removeEventListener('focus', this.boundFocusHandler);
+    }
+    if (this.boundOnlineHandler) {
+      window.removeEventListener('online', this.boundOnlineHandler);
+    }
+    if (this.boundOfflineHandler) {
+      window.removeEventListener('offline', this.boundOfflineHandler);
+    }
+    if (this.queueNoticeTimer) {
+      clearTimeout(this.queueNoticeTimer);
+    }
+    if (this.autoSaveNotesTimer) {
+      clearTimeout(this.autoSaveNotesTimer);
+    }
+  }
+
+  private showQueueNotice(text: string): void {
+    this.queueNotice.set(text);
+    if (this.queueNoticeTimer) clearTimeout(this.queueNoticeTimer);
+    this.queueNoticeTimer = setTimeout(() => {
+      this.queueNotice.set(null);
+    }, 4500);
+  }
+
+  protected dismissQueueNotice(): void {
+    this.queueNotice.set(null);
+    if (this.queueNoticeTimer) clearTimeout(this.queueNoticeTimer);
+  }
+
+  protected resolveEncounterConflict(reload: boolean): void {
+    this.activeEncounterConflict.set(false);
+    if (reload) {
+      void this.loadQueue();
+    }
+  }
+
+  protected hasUnsavedClinicalDraft(): boolean {
+    const enc = this.activeEncounter();
+    const m = this.clinicalModel();
+    const notesChanged = m.clinicalNotes.trim() !== (enc?.clinicalNotes ?? '').trim();
+    const diagDraft = !!m.displayText.trim();
+    return (!!m.clinicalNotes.trim() && notesChanged) || diagDraft;
+  }
+
+  private scheduleNotesAutoSave(): void {
+    if (this.autoSaveNotesTimer) {
+      clearTimeout(this.autoSaveNotesTimer);
+    }
+    this.autoSaveNotesTimer = setTimeout(() => {
+      void this.autoSaveNotesDebounced();
+    }, 2000);
+  }
+
+  private async autoSaveNotesDebounced(): Promise<void> {
+    const enc = this.activeEncounter();
+    const text = this.clinicalModel().clinicalNotes.trim();
+    const pracId = this.practiceId();
+    if (
+      !pracId ||
+      !enc ||
+      enc.status !== 'InProgress' ||
+      !this.canEditClinicalNotes() ||
+      this.busy() ||
+      this.clinicalBusy() ||
+      this.completingVisit()
+    ) {
+      return;
+    }
+
+    if (text === (enc.clinicalNotes ?? '').trim()) {
+      this.clinicalSaveState.set('saved');
+      return;
+    }
+
+    this.clinicalSaveState.set('saving');
+    try {
+      const updated = await firstValueFrom(
+        this.encountersApi.updateNotes(
+          pracId,
+          enc.encounterId,
+          this.clinicalModel().clinicalNotes,
+          enc.rowVersion,
+        ),
+      );
+      this.activeEncounter.set(updated);
+      this.clinicalSaveState.set('saved');
+    } catch {
+      this.clinicalSaveState.set('error');
+    }
+  }
+
+  protected navigateToAssistantSection(
+    tab: 'assessment' | 'prescription' | 'labs' | 'radiology',
+    focusElementId?: string,
+  ): void {
+    this.setClinicalTab(tab);
+    if (focusElementId && typeof document !== 'undefined') {
+      setTimeout(() => {
+        const el = document.getElementById(focusElementId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.focus();
+        }
+      }, 50);
+    }
   }
 
   protected updateClinicalDiagnosisType(event: Event): void {
@@ -1417,7 +1875,9 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       return;
     const practiceId = this.practiceId(),
       generation = this.generation;
+    if (this.autoSaveNotesTimer) clearTimeout(this.autoSaveNotesTimer);
     this.clinicalSaving.set(true);
+    this.clinicalSaveState.set('saving');
     this.messages.set([]);
     this.clinicalBlockers.set([]);
     try {
@@ -1432,12 +1892,14 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       );
       if (this.current(practiceId, generation)) {
         this.applyActiveEncounter(updated, false);
-        this.toast.success('encounters.saved');
-      this.sessionCompletedCount.update((c) => c + 1);
+        this.clinicalSaveState.set('saved');
+        this.toast.success('tickets.save.autoSavedNotes');
       }
     } catch (error) {
+      this.clinicalSaveState.set('error');
       await this.failure(error, practiceId, generation);
       if (error instanceof HttpErrorResponse && error.status === 409) {
+        this.activeEncounterConflict.set(true);
         await this.syncActiveEncounter(practiceId, this.queue().inProgress?.ticketId || '', true);
       }
     } finally {
@@ -1536,7 +1998,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   protected async completeClinicalVisit(callNextAfter = false): Promise<void> {
-    if (this.busy() || this.clinicalBusy() || !this.canCompleteVisit()) return;
+    if (this.busy() || this.clinicalBusy() || !this.canCompleteVisit() || this.completingVisit()) return;
     const inProgTicket = this.queue().inProgress;
     if (!inProgTicket?.ticketId || !this.practiceId()) return;
     const practiceId = this.practiceId(),
@@ -1546,12 +2008,11 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       m.clinicalNotes.trim() || (this.activeEncounter()?.clinicalNotes ?? '').trim();
     if (!effectiveNotes) {
       this.toast.error('encounters.completeHint');
-      if (typeof document !== 'undefined') {
-        document.getElementById('ws-clinical-notes')?.focus();
-      }
+      this.navigateToAssistantSection('assessment', 'ws-clinical-notes-main');
       return;
     }
 
+    this.completingVisit.set(true);
     this.clinicalSaving.set(true);
     this.messages.set([]);
     this.clinicalBlockers.set([]);
@@ -1720,15 +2181,21 @@ export class QueueWorkspace implements OnInit, OnDestroy {
         this.queue().waiting.length > 0
       ) {
         this.clinicalSaving.set(false);
-        await this.callNext();
+        try {
+          await this.callNext();
+        } catch {
+          this.showQueueNotice(this.language.t('tickets.assistant.partialCallFailed'));
+        }
       }
     } catch (error) {
       await this.failure(error, practiceId, generation);
       if (error instanceof HttpErrorResponse && error.status === 409) {
+        this.activeEncounterConflict.set(true);
         await this.syncActiveEncounter(practiceId, inProgTicket.ticketId, true);
       }
     } finally {
       this.clinicalSaving.set(false);
+      this.completingVisit.set(false);
     }
   }
 

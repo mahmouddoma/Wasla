@@ -21,7 +21,11 @@ describe('LandingNavbarComponent', () => {
     await fixture.whenStable();
   });
 
-  afterEach(() => localStorage.removeItem('wasla_lang'));
+  afterEach(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('wasla_lang');
+    }
+  });
 
   it('creates navbar with brand, navigation links, language switcher, and CTAs', () => {
     const el: HTMLElement = fixture.nativeElement;
@@ -30,21 +34,15 @@ describe('LandingNavbarComponent', () => {
     expect(el.querySelector('#nav-start-cta')?.getAttribute('href')).toBe('/register/doctor');
   });
 
-  it('toggles mobile navigation drawer cleanly', async () => {
+  it('renders mobile top brand bar with logo and language switcher without sticky header', () => {
     const el: HTMLElement = fixture.nativeElement;
-    const toggle = el.querySelector<HTMLButtonElement>('.mobile-menu-toggle')!;
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(el.querySelector('#landing-mobile-drawer')).toBeNull();
-
-    toggle.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(el.querySelector('#landing-mobile-drawer')).not.toBeNull();
+    const topBar = el.querySelector('.mobile-top-bar');
+    expect(topBar).not.toBeNull();
+    expect(topBar?.querySelector('.navbar-brand')).not.toBeNull();
+    expect(topBar?.querySelector('app-language-switcher')).not.toBeNull();
   });
 
-  it('emits sectionNavigate and closes drawer when section link is clicked', async () => {
+  it('emits sectionNavigate when section link is clicked', async () => {
     const spy = vi.fn();
     fixture.componentInstance.sectionNavigate.subscribe(spy);
 
@@ -54,12 +52,45 @@ describe('LandingNavbarComponent', () => {
 
     expect(spy).toHaveBeenCalledWith('features');
   });
+
+  it('renders clean route links in mobile bottom dock without burger menu or redundant login icon', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    const mobileDock = el.querySelector('.mobile-bottom-header');
+    expect(mobileDock).not.toBeNull();
+
+    expect(mobileDock?.querySelector('a[href="#features"]')).not.toBeNull();
+    expect(mobileDock?.querySelector('a[href="#pricing-section"]')).not.toBeNull();
+    expect(mobileDock?.querySelector('a[href="#faq-section"]')).not.toBeNull();
+    expect(mobileDock?.querySelector('#nav-start-cta-mobile')).not.toBeNull();
+
+    // Redundant login icon and burger menu removed as requested
+    expect(mobileDock?.querySelector('#nav-login-btn-mobile')).toBeNull();
+    expect(mobileDock?.querySelector('.mobile-menu-toggle')).toBeNull();
+  });
+
+  it('activates is-scrolled state when user scrolls page', () => {
+    const component = fixture.componentInstance as any;
+    expect(component.isScrolled()).toBe(false);
+
+    // Mock scroll
+    Object.defineProperty(window, 'scrollY', { value: 150, writable: true });
+    window.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(component.isScrolled()).toBe(true);
+    const dock = fixture.nativeElement.querySelector('.mobile-bottom-header');
+    expect(dock?.classList.contains('is-scrolled')).toBe(true);
+  });
 });
 
 describe('LandingNavbarComponent real router navigation', () => {
   afterEach(() => {
-    localStorage.removeItem('wasla_lang');
-    sessionStorage.clear();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('wasla_lang');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.clear();
+    }
   });
 
   it('navigates directly to /login and /register/doctor when header CTAs are clicked', async () => {
@@ -68,7 +99,9 @@ describe('LandingNavbarComponent real router navigation', () => {
       providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
-    sessionStorage.clear();
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.clear();
+    }
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(App);
     await router.navigateByUrl('/');
@@ -84,7 +117,9 @@ describe('LandingNavbarComponent real router navigation', () => {
     expect(router.url).toBe('/login');
     expect(el.querySelector('app-login')).not.toBeNull();
 
-    const startBtn = el.querySelector<HTMLAnchorElement>('#header-start-cta');
+    const startBtn =
+      el.querySelector<HTMLAnchorElement>('#nav-start-cta') ??
+      el.querySelector<HTMLAnchorElement>('#header-start-cta');
     expect(startBtn).not.toBeNull();
     startBtn!.click();
     await fixture.whenStable();
