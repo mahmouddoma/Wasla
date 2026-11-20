@@ -725,7 +725,7 @@ export const TRANSLATIONS: TranslationDictionary = {
   'subscriptions.feature.PUBLIC_DISCOVERY': { ar: 'الظهور في البحث', en: 'Public discovery' },
   'subscriptions.feature.PATIENT_MANAGEMENT': { ar: 'إدارة المرضى', en: 'Patient management' },
   'subscriptions.feature.DOCTOR_PROFILE': { ar: 'ملف الطبيب', en: 'Doctor profile' },
-  'subscriptions.choosePlan': { ar: 'اختار الباقة المناسبة', en: 'Choose a plan' },
+  'subscriptions.choosePlan': { ar: 'اختر الباقة المناسبة', en: 'Choose a plan' },
   'subscriptions.manualOnly': {
     ar: 'اختيار الباقة لا يخصم أي مبلغ. التفعيل والتحصيل يتمان بواسطة الإدارة.',
     en: 'Selecting a plan does not charge you. Activation and payment collection are handled by the administrator.',
@@ -891,7 +891,7 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'تعذر تحميل الباقات والأسعار. حاول مرة أخرى.',
     en: 'Could not load plans and prices. Please retry.',
   },
-  'subscriptions.loading': { ar: 'جاري التحميل…', en: 'Loading?' },
+  'subscriptions.loading': { ar: 'جاري التحميل…', en: 'Loading…' },
   'subscriptions.retry': { ar: 'إعادة المحاولة', en: 'Retry' },
   'subscriptions.registrationPending': {
     ar: 'تم إرسال طلبك. اعتماد الطبيب والاشتراك كلاهما في انتظار مراجعة الإدارة.',
@@ -8222,14 +8222,20 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Specialty & Practice Location',
   },
   'doctor.apiReviewNotice': {
-    ar: 'البيانات هنا تأتي من Wasla API وتظل قابلة للمراجعة.',
-    en: 'Data is synchronized with Wasla API and remains open for review.',
+    ar: 'تظهر هذه البيانات في ملفك المهني وتخضع للمراجعة عند التعديل.',
+    en: 'This information appears in your professional profile and is reviewed when updated.',
   },
   'doctor.approvedSpecializations': {
     ar: 'التخصصات المعتمدة',
     en: 'Approved Specializations',
   },
-  'doctor.activeSet': { ar: 'هذه هي المجموعة الفعالة حاليًا.', en: 'Currently active set.' },
+  'doctor.activeSet': { ar: 'التخصصات المفعّلة حالياً', en: 'Currently active specializations' },
+  'practice.openInGoogleMaps': { ar: 'فتح في خرائط جوجل', en: 'Open in Google Maps' },
+  'profile.publicVisibilityBadge': { ar: 'عام للزوار والمرضى', en: 'Public to visitors & patients' },
+  'profile.bioVisibilityHint': {
+    ar: 'تظهر هذه النبذة للمرضى في صفحة حجز المواعيد وملفك التعريفي.',
+    en: 'This bio is shown to patients on your booking page and public profile.',
+  },
   'doctor.checkingStatus': {
     ar: 'جارٍ تحميل حالة الاعتماد…',
     en: 'Loading onboarding status…',
@@ -12205,6 +12211,10 @@ export const TRANSLATIONS: TranslationDictionary = {
   'landing.faq.title': {
     ar: 'الأسئلة الشائعة',
     en: 'Frequently Asked Questions',
+  },
+  'landing.faq.shortTitle': {
+    ar: 'الأسئلة',
+    en: 'FAQ',
   },
   'landing.faq.subtitle': {
     ar: 'كل ما تحتاج معرفته عن بدء استخدام وصلة وتأمين بيانات عيادتك.',

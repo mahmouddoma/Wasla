@@ -593,7 +593,7 @@
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 991px) {
   .wasla-landing-page {
-    padding-bottom: 78px; /* Breathing room so fixed mobile bottom dock never overlaps footer */
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); /* Breathing room so fixed mobile bottom dock never overlaps footer */
   }
 
   .hero-cta-row {
@@ -606,13 +606,26 @@
   }
 
   .pricing-cards-grid {
-    flex-direction: column-reverse; /* Pro on top on mobile! */
-    align-items: center;
+    flex-direction: row-reverse; /* Pro first in horizontal swipe */
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 14px;
+    padding: 10px 4px 16px;
+  }
+
+  .pricing-cards-grid::-webkit-scrollbar {
+    display: none;
   }
 
   .pricing-card {
-    width: 100%;
-    max-width: 440px;
+    flex: 0 0 84%;
+    max-width: 340px;
+    scroll-snap-align: center;
   }
 }
 
@@ -637,7 +650,7 @@
 
   /* In mobile reference: 2 benefit cards on top, 3rd spans full width! */
   .benefits-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 
