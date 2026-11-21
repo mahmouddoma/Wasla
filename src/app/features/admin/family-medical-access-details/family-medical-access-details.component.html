@@ -14,11 +14,11 @@
               {{ (item.requestType === 'Restriction' ? 'review.restriction' : 'review.restoration') | t }}
             </span>
             <span class="status-pill status-{{ item.status.toLowerCase() }}">
-              {{ item.status }}
+              {{ formatStatus(item.status) }}
             </span>
             <span class="revision-tag">{{ 'review.revision' | t }} #{{ item.revision }}</span>
           </div>
-          <h2 class="request-id-title">{{ item.requestId }}</h2>
+          <h2 class="request-id-title" dir="ltr">{{ item.requestId }}</h2>
         </div>
 
         @if (isPending() && canDecide) {
@@ -67,19 +67,19 @@
           <div class="key-value-grid">
             <div class="kv-item">
               <span class="kv-label">{{ 'review.childPatientId' | t }}</span>
-              <span class="kv-value code-font">{{ item.childPatientId }}</span>
+              <span class="kv-value code-font" dir="ltr">{{ item.childPatientId }}</span>
             </div>
             <div class="kv-item">
               <span class="kv-label">{{ 'review.affectedAdultPatientId' | t }}</span>
-              <span class="kv-value code-font">{{ item.affectedAdultPatientId }}</span>
+              <span class="kv-value code-font" dir="ltr">{{ item.affectedAdultPatientId }}</span>
             </div>
             <div class="kv-item">
               <span class="kv-label">{{ 'review.familyId' | t }}</span>
-              <span class="kv-value code-font">{{ item.familyId }}</span>
+              <span class="kv-value code-font" dir="ltr">{{ item.familyId }}</span>
             </div>
             <div class="kv-item">
               <span class="kv-label">{{ 'review.submittedAt' | t }}</span>
-              <span class="kv-value">{{ item.submittedAtUtc }}</span>
+              <span class="kv-value">{{ formatDate(item.submittedAtUtc) }}</span>
             </div>
           </div>
         </section>
@@ -113,8 +113,8 @@
                   <div class="doc-info">
                     <span class="doc-icon" aria-hidden="true">📄</span>
                     <div class="doc-texts">
-                      <span class="doc-name">{{ doc.fileName }}</span>
-                      <span class="doc-type">{{ doc.documentType }}</span>
+                      <span class="doc-name" dir="ltr">{{ doc.fileName }}</span>
+                      <span class="doc-type">{{ formatDocumentType(doc.documentType) }}</span>
                     </div>
                   </div>
                   @if (canViewDocuments && doc.canDownload) {
@@ -151,17 +151,17 @@
                   <div class="timeline-marker" aria-hidden="true"></div>
                   <div class="timeline-content">
                     <div class="timeline-meta">
-                      <span class="timeline-action">{{ entry.action }}</span>
-                      <span class="timeline-time">{{ entry.occurredAtUtc }}</span>
+                      <span class="timeline-action">{{ formatAction(entry.action) }}</span>
+                      <span class="timeline-time">{{ formatDate(entry.occurredAtUtc) }}</span>
                     </div>
                     @if (entry.message) {
                       <p class="timeline-message">{{ entry.message }}</p>
                     }
                     @if (entry.oldStatus || entry.newStatus) {
                       <div class="timeline-status-change">
-                        <span>{{ entry.oldStatus ?? '-' }}</span>
-                        <span aria-hidden="true">→</span>
-                        <span>{{ entry.newStatus ?? '-' }}</span>
+                        <span>{{ formatStatus(entry.oldStatus) }}</span>
+                        <span aria-hidden="true">{{ uiLanguage.isRtl() ? '←' : '→' }}</span>
+                        <span>{{ formatStatus(entry.newStatus) }}</span>
                       </div>
                     }
                   </div>

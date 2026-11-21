@@ -1840,6 +1840,34 @@ export const TRANSLATIONS: TranslationDictionary = {
   'doctorDashboard.timingSummary': { ar: 'متوسط انتظار المرضى', en: 'Average patient wait' },
   'doctorDashboard.serviceSummary': { ar: 'متوسط مدة الكشف السريري', en: 'Average clinical consultation' },
   'doctorDashboard.utilizationSummary': { ar: 'معدل استغلال الوقت والرضا', en: 'Time utilization & satisfaction' },
+  'doctorDashboard.chart.volumeFunnel': {
+    ar: 'مسار الحجوزات والطابور (بالعدد)',
+    en: 'Bookings & Queue Volume Funnel',
+  },
+  'doctorDashboard.chart.ratesAndUtilization': {
+    ar: 'نسب التحويل واستغلال السعة (٪)',
+    en: 'Conversion & Capacity Rates (%)',
+  },
+  'doctorDashboard.chart.timingAndPatients': {
+    ar: 'متوسط الأزمنة وحركة المرضى',
+    en: 'Timing & Patient Flow',
+  },
+  'doctorDashboard.chart.groupComparison': {
+    ar: 'الرسم البياني لمقارنة مؤشرات القسم',
+    en: 'Section Metrics Comparison Chart',
+  },
+  'doctorDashboard.chart.cancellationMetrics': {
+    ar: 'مؤشرات الإلغاء وعدم الحضور والاستثناءات',
+    en: 'Cancellation, No-Show & Exception Metrics',
+  },
+  'doctorDashboard.chart.cancellationSources': {
+    ar: 'توزيع الإلغاءات والحجوزات حسب القناة والسبب',
+    en: 'Cancellations & Bookings by Channel & Reason',
+  },
+  'doctorDashboard.chart.relativeShare': {
+    ar: 'المؤشر البصري المقارن',
+    en: 'Visual comparative indicator',
+  },
   'doctorDashboard.status.completed': { ar: 'مكتملة', en: 'Completed' },
   'doctorDashboard.status.inProgress': { ar: 'قيد المعالجة', en: 'In progress' },
   'doctorDashboard.status.waiting': { ar: 'في الانتظار', en: 'Waiting' },
@@ -4573,6 +4601,18 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'اطلب صلاحية عرض طابور هذه العيادة من المسؤول.',
     en: 'Ask an administrator for permission to view this clinic queue.',
   },
+  'Ticket.AccessDenied': {
+    ar: 'لا تملك صلاحية الوصول لطابور هذه العيادة حالياً. تأكد من ربط العيادة باشتراك نشط وتفويض صلاحيات الاستقبال مع الطبيب.',
+    en: 'You are not authorized to access this clinic queue. Verify that the clinic is allocated to an active subscription and reception permissions are granted.',
+  },
+  'tickets.accessDeniedTitle': {
+    ar: 'الطابور غير متاح لهذه العيادة حالياً',
+    en: 'Queue access is currently unavailable for this clinic',
+  },
+  'tickets.accessDeniedHelp': {
+    ar: 'هذه العيادة غير مرتبطة بعقد اشتراك نشط حالياً أو لم يتم تفويض صلاحية الطابور لحسابك فيها. تواصل مع الطبيب لتخصيص العيادة في الاشتراك أو مراجعة صلاحياتك.',
+    en: 'This clinic is not allocated to an active subscription contract or queue permission is not active for your assignment. Contact the doctor to allocate the clinic or review your permissions.',
+  },
   'tickets.callNext': { ar: 'نداء التالي', en: 'Call next' },
   'tickets.call': { ar: 'نداء', en: 'Call' },
   'tickets.manualCall': { ar: 'نداء استثنائي', en: 'Manual call' },
@@ -6454,9 +6494,9 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: "Approve or reject the doctor's medical specialization proposal and send feedback.",
   },
   'ui.full.126': { ar: 'تغيير', en: 'Change' },
-  'ui.full.127': { ar: 'إنشاء SuperAdmin', en: 'Create SuperAdmin' },
+  'ui.full.127': { ar: 'إنشاء حساب مشرف عام', en: 'Create Master Admin' },
   'ui.full.128': {
-    ar: 'أنشئ حساب مشرف عادي بكلمة مرور أولية. لا يمكن إنشاء Root من هذه الشاشة.',
+    ar: 'أنشئ حساب مشرف عادي بكلمة مرور أولية. لا يمكن إنشاء حساب مشرف رئيسي من هذه الشاشة.',
     en: 'Create a standard administrator with an initial password. Root accounts cannot be created here.',
   },
   'ui.full.129': { ar: 'تعذر تحميل بيانات المشرف', en: 'Unable to load administrator details' },
@@ -6903,6 +6943,8 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Doctor profile is unavailable',
   },
   'booking.drawerTitle': { ar: 'حجز موعد عيادة', en: 'Book Clinic Appointment' },
+  'booking.selectedAppointment': { ar: 'الموعد المختار', en: 'Selected Appointment' },
+  'booking.changeSlot': { ar: 'تغيير الموعد', en: 'Change time' },
   'booking.availableClinics': { ar: 'العيادات المتاحة', en: 'Available Clinics' },
   'booking.instantBooking': { ar: 'احجز موعدك بالعيادة', en: 'Book Clinic Appointment' },
   'booking.selectBranch': { ar: 'العيادات المتاحة للطبيب:', en: 'Available Doctor Clinics:' },
@@ -7676,6 +7718,15 @@ export const TRANSLATIONS: TranslationDictionary = {
   },
   'discovery.consultationFee': { ar: 'الكشف', en: 'Fee' },
   'discovery.showFilters': { ar: 'تصفية النتائج', en: 'Filter results' },
+  'discovery.viewAppointments': { ar: 'عرض المواعيد', en: 'View appointments' },
+  'discovery.hideAppointments': { ar: 'إخفاء المواعيد', en: 'Hide appointments' },
+  'discovery.continueBooking': { ar: 'متابعة التأكيد', en: 'Continue booking' },
+  'discovery.chooseTimeSlot': { ar: 'اختر الوقت المناسب', en: 'Choose a time slot' },
+  'discovery.availabilityFailed': {
+    ar: 'تعذر تحميل المواعيد المتاحة. حاول مرة أخرى.',
+    en: 'Could not load available appointments. Please try again.',
+  },
+  'discovery.onlineBookingTag': { ar: 'حجز أونلاين', en: 'Online booking' },
   'discovery.resetAll': { ar: 'إعادة ضبط', en: 'Reset' },
   'discovery.instantBookingNotice': {
     ar: 'احجز أونلاين مجاناً وادفع بالعيادة',
@@ -9767,6 +9818,21 @@ export const TRANSLATIONS: TranslationDictionary = {
   'onboarding.resendOtpIn': { ar: 'إعادة إرسال الرمز خلال', en: 'Resend code in' },
   'onboarding.resendOtpAction': { ar: 'إعادة إرسال الرمز', en: 'Resend Code' },
   'onboarding.verifyOtpAction': { ar: 'تأكيد الرمز والمتابعة', en: 'Verify & Continue' },
+  'onboarding.changeEmail': { ar: 'تغيير البريد', en: 'Change email' },
+  'onboarding.verifyEmailHeading': { ar: 'تأكيد بريدك الإلكتروني', en: 'Verify your email' },
+  'onboarding.verifyEmailPrompt': {
+    ar: 'أدخل رمز التحقق المرسل إلى',
+    en: 'Enter the verification code sent to',
+  },
+  'onboarding.verifyEmailCta': { ar: 'تأكيد البريد', en: 'Verify email' },
+  'onboarding.didntReceiveCode': { ar: 'لم يصلك الرمز؟', en: "Didn't receive the code?" },
+  'onboarding.resendShort': { ar: 'إعادة الإرسال', en: 'Resend' },
+  'onboarding.otpAriaLabel': {
+    ar: 'رمز التحقق المكون من 6 أرقام',
+    en: '6-digit verification code',
+  },
+  'onboarding.otpVerifying': { ar: 'جارٍ التحقق…', en: 'Verifying…' },
+  'onboarding.otpVerified': { ar: 'تم التحقق بنجاح', en: 'Verified successfully' },
   'onboarding.claimFormTitle': {
     ar: 'بيانات إثبات ملكية الملف الطبي',
     en: 'Medical Profile Ownership Claim',
@@ -10953,16 +11019,16 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Your entire clinic in one place.',
   },
   'landing.hero.titlePart1': {
-    ar: 'عيادتك كلها',
-    en: 'Your entire clinic',
+    ar: 'كل تفاصيل عيادتك.',
+    en: 'Every detail of your clinic.',
   },
   'landing.hero.titlePart2': {
-    ar: 'في مكان واحد.',
-    en: 'in one place.',
+    ar: 'تحت سيطرتك.',
+    en: 'Under your control.',
   },
   'landing.hero.subtitle': {
-    ar: 'نظّم الحجوزات، تابع طابور الانتظار، وأدر شغل عيادتك بسهولة واحترافية.',
-    en: 'Organize bookings, monitor patient queues, and manage your clinic operations with ease and professionalism.',
+    ar: 'نظّم الحجوزات، تابع طابور الانتظار، وأدر ملفات المرضى من مكان واحد بسهولة واحترافية.',
+    en: 'Organize appointments, track waiting queues, and manage patient records from one place with ease and professionalism.',
   },
   'landing.hero.primaryCta': {
     ar: 'ابدأ مع وصلة',
@@ -10973,7 +11039,7 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Watch Preview',
   },
   'landing.benefits.title': {
-    ar: 'كل اللي محتاجه لإدارة يومك في العيادة',
+    ar: 'كل ما تحتاجه لإدارة يومك في العيادة',
     en: 'Everything you need to manage your day at the clinic',
   },
   'landing.benefits.b1Title': {
@@ -11037,11 +11103,11 @@ export const TRANSLATIONS: TranslationDictionary = {
     en: 'Live Preview',
   },
   'landing.showcase.title': {
-    ar: 'شوف وصلة أثناء الشغل',
+    ar: 'شاهد وصلة أثناء العمل',
     en: 'See Wasla in Action',
   },
   'landing.showcase.subtitle': {
-    ar: 'معاينة حقيقية لواجهة النظام وكيف بتنظم يوم العيادة.',
+    ar: 'معاينة حقيقية لواجهة النظام وكيف تنظم يوم العيادة.',
     en: 'A real preview of the system interface and how it streamlines your clinic day.',
   },
   'landing.showcase.tabAppointments': {
@@ -12216,6 +12282,14 @@ export const TRANSLATIONS: TranslationDictionary = {
     ar: 'الأسئلة',
     en: 'FAQ',
   },
+  'landing.hero.replayIntro': {
+    ar: 'إعادة التشغيل',
+    en: 'Replay intro',
+  },
+  'landing.hero.toggleSound': {
+    ar: 'تشغيل أو كتم الصوت',
+    en: 'Toggle sound',
+  },
   'landing.faq.subtitle': {
     ar: 'كل ما تحتاج معرفته عن بدء استخدام وصلة وتأمين بيانات عيادتك.',
     en: 'Everything you need to know about getting started with Wasla.',
@@ -12319,5 +12393,549 @@ export const TRANSLATIONS: TranslationDictionary = {
   'landing.footer.help': {
     ar: 'مركز المساعدة والدعم',
     en: 'Help & Support',
+  },
+  'userRole.SuperAdmin': {
+    ar: 'المشرف العام',
+    en: 'Master Admin',
+  },
+  'userRole.Doctor': {
+    ar: 'طبيب',
+    en: 'Doctor',
+  },
+  'userRole.Reception': {
+    ar: 'الاستقبال',
+    en: 'Reception',
+  },
+  'userRole.Patient': {
+    ar: 'مريض',
+    en: 'Patient',
+  },
+  'userRole.DrugCatalogManager': {
+    ar: 'مدير دليل الأدوية',
+    en: 'Drug Catalog Manager',
+  },
+  'userRole.MedicalCatalogManager': {
+    ar: 'مدير الدليل الطبي',
+    en: 'Medical Catalog Manager',
+  },
+  'common.nameAr': {
+    ar: 'الاسم بالعربية',
+    en: 'Name (Arabic)',
+  },
+  'common.revoked': {
+    ar: 'ملغى',
+    en: 'Revoked',
+  },
+  'common.currency.egp': {
+    ar: 'ج.م',
+    en: 'EGP',
+  },
+  'common.doctorsPlural': {
+    ar: 'أطباء',
+    en: 'Doctors',
+  },
+  'common.unknown': {
+    ar: 'غير محدد',
+    en: 'Unspecified',
+  },
+  'common.passwordMismatch': {
+    ar: 'كلمتا المرور غير متطابقتين',
+    en: 'Passwords do not match',
+  },
+  'common.fillRequiredFields': {
+    ar: 'يرجى استكمال جميع الحقول المطلوبة بشكل صحيح',
+    en: 'Please complete all required fields correctly',
+  },
+  'common.openDetails': {
+    ar: 'انقر لفتح التفاصيل',
+    en: 'Click to open details',
+  },
+  'roles.type': {
+    ar: 'نوع الدور',
+    en: 'Role type',
+  },
+  'subscriptions.adminSubtitle': {
+    ar: 'إدارة اشتراكات الأطباء والباقات والدفعات والتجديدات اليدوية على مستوى المنصة',
+    en: 'Manage doctor subscriptions, plans, payments, and manual renewals across the platform',
+  },
+  'familyReview.reasonPlaceholder': {
+    ar: 'اكتب سبب القرار هنا...',
+    en: 'Enter the decision reason here...',
+  },
+  'familyReview.revokeReasonPlaceholder': {
+    ar: 'اكتب سبب إلغاء التفويض هنا...',
+    en: 'Enter the revocation reason here...',
+  },
+  'familyEligibility.status.pending': {
+    ar: 'قيد المراجعة',
+    en: 'Pending Review',
+  },
+  'familyEligibility.status.approved': {
+    ar: 'معتمد',
+    en: 'Approved',
+  },
+  'familyEligibility.status.rejected': {
+    ar: 'مرفوض',
+    en: 'Rejected',
+  },
+  'familyEligibility.status.revoked': {
+    ar: 'ملغى',
+    en: 'Revoked',
+  },
+  'familyMedical.docType.nationalId': {
+    ar: 'بطاقة الرقم القومي',
+    en: 'National ID',
+  },
+  'familyMedical.docType.birthCertificate': {
+    ar: 'شهادة الميلاد',
+    en: 'Birth Certificate',
+  },
+  'familyMedical.docType.guardianship': {
+    ar: 'وثيقة الوصاية / الولاية',
+    en: 'Guardianship Document',
+  },
+  'familyMedical.docType.medicalReport': {
+    ar: 'تقرير طبي',
+    en: 'Medical Report',
+  },
+  'familyMedical.docType.other': {
+    ar: 'مستند داعم',
+    en: 'Supporting Document',
+  },
+  'familyMedical.action.submitted': {
+    ar: 'تم تقديم الطلب',
+    en: 'Request Submitted',
+  },
+  'familyMedical.action.approved': {
+    ar: 'تمت الموافقة',
+    en: 'Approved',
+  },
+  'familyMedical.action.rejected': {
+    ar: 'تم الرفض',
+    en: 'Rejected',
+  },
+  'familyMedical.action.modificationRequested': {
+    ar: 'طلب تعديل',
+    en: 'Modification Requested',
+  },
+  'familyMedical.action.resubmitted': {
+    ar: 'تمت إعادة التقديم',
+    en: 'Resubmitted',
+  },
+  'familyMedical.action.cancelled': {
+    ar: 'تم الإلغاء',
+    en: 'Cancelled',
+  },
+  'familyMedical.action.revoked': {
+    ar: 'تم سحب الصلاحية',
+    en: 'Revoked',
+  },
+  'investigations.caseColumn': {
+    ar: 'القضية',
+    en: 'Case',
+  },
+  'investigations.emptyTitle': {
+    ar: 'لا توجد حالات تحقيق حالياً',
+    en: 'No investigation cases yet',
+  },
+  'investigations.emptySubtitle': {
+    ar: 'عند فتح حالة تحقيق جديدة أو تعديل الفلاتر ستظهر النتائج هنا.',
+    en: 'Open a new investigation case or adjust filters to see results here.',
+  },
+  'investigations.category.operational': {
+    ar: 'تشغيلي',
+    en: 'Operational',
+  },
+  'investigations.category.financial': {
+    ar: 'مالي',
+    en: 'Financial',
+  },
+  'investigations.category.clinical': {
+    ar: 'سريري',
+    en: 'Clinical',
+  },
+  'investigations.category.security': {
+    ar: 'أمني',
+    en: 'Security',
+  },
+  'investigations.category.compliance': {
+    ar: 'امتثال وحوكمة',
+    en: 'Compliance',
+  },
+  'investigations.priority.low': {
+    ar: 'منخفضة',
+    en: 'Low',
+  },
+  'investigations.priority.medium': {
+    ar: 'متوسطة',
+    en: 'Medium',
+  },
+  'investigations.priority.high': {
+    ar: 'عالية',
+    en: 'High',
+  },
+  'investigations.priority.urgent': {
+    ar: 'عاجلة',
+    en: 'Urgent',
+  },
+  'investigations.status.open': {
+    ar: 'مفتوحة',
+    en: 'Open',
+  },
+  'investigations.status.underReview': {
+    ar: 'قيد المراجعة',
+    en: 'Under Review',
+  },
+  'investigations.status.resolved': {
+    ar: 'تم الحل',
+    en: 'Resolved',
+  },
+  'investigations.status.closed': {
+    ar: 'مغلقة',
+    en: 'Closed',
+  },
+  'investigations.status.reopened': {
+    ar: 'أعيد فتحها',
+    en: 'Reopened',
+  },
+  'investigations.createdSuccess': {
+    ar: 'تم فتح حالة التحقيق بنجاح',
+    en: 'Investigation case opened successfully',
+  },
+  'investigations.reviewStartedSuccess': {
+    ar: 'تم بدء مراجعة الحالة بنجاح',
+    en: 'Case review started successfully',
+  },
+  'investigations.resolvedSuccess': {
+    ar: 'تم تسجيل حل الحالة بنجاح',
+    en: 'Case resolved successfully',
+  },
+  'investigations.closedSuccess': {
+    ar: 'تم إغلاق الحالة بنجاح',
+    en: 'Case closed successfully',
+  },
+  'investigations.reopenedSuccess': {
+    ar: 'تمت إعادة فتح الحالة بنجاح',
+    en: 'Case reopened successfully',
+  },
+  'investigations.defaultResolveNote': {
+    ar: 'تمت المراجعة وحل الحالة عبر لوحة المشرف العام',
+    en: 'Reviewed and resolved via Master Admin console',
+  },
+  'investigations.defaultCloseNote': {
+    ar: 'تم إغلاق الحالة بعد التحقق واستكمال المراجعة',
+    en: 'Closed after verification and completed review',
+  },
+  'investigations.defaultReopenNote': {
+    ar: 'تمت إعادة فتح الحالة للمتابعة والمراجعة الإضافية',
+    en: 'Reopened for additional follow-up and review',
+  },
+  'investigations.validationTitleSummary': {
+    ar: 'يرجى إدخال عنوان وملخص حالة التحقيق',
+    en: 'Please enter both the case title and summary',
+  },
+  'archiveOps.duration.underMinute': {
+    ar: 'أقل من دقيقة',
+    en: '< 1 min',
+  },
+  'archiveOps.duration.minutes': {
+    ar: 'دقيقة',
+    en: 'min',
+  },
+  'archiveOps.duration.hours': {
+    ar: 'ساعة',
+    en: 'hr',
+  },
+  'archiveOps.outcome.completed': {
+    ar: 'مكتمل',
+    en: 'Completed',
+  },
+  'archiveOps.outcome.success': {
+    ar: 'ناجح',
+    en: 'Success',
+  },
+  'archiveOps.outcome.failed': {
+    ar: 'فاشل',
+    en: 'Failed',
+  },
+  'archiveOps.outcome.running': {
+    ar: 'قيد التنفيذ',
+    en: 'Running',
+  },
+  'archiveOps.outcome.skipped': {
+    ar: 'تم التخطي',
+    en: 'Skipped',
+  },
+  'archiveOps.outcome.partial': {
+    ar: 'مكتمل جزئياً',
+    en: 'Partial',
+  },
+  'archiveOps.entity.prescription': {
+    ar: 'وصفة طبية',
+    en: 'Prescription',
+  },
+  'archiveOps.entity.medicalRecord': {
+    ar: 'سجل طبي',
+    en: 'Medical Record',
+  },
+  'archiveOps.entity.reservation': {
+    ar: 'حجز موعد',
+    en: 'Reservation',
+  },
+  'archiveOps.entity.ticket': {
+    ar: 'تذكرة كشف',
+    en: 'Queue Ticket',
+  },
+  'archiveOps.entity.patient': {
+    ar: 'ملف مريض',
+    en: 'Patient Profile',
+  },
+  'archiveOps.entity.doctor': {
+    ar: 'حساب طبيب',
+    en: 'Doctor Profile',
+  },
+  'archiveOps.entity.user': {
+    ar: 'حساب مستخدم',
+    en: 'User Account',
+  },
+  'archiveOps.entity.subscription': {
+    ar: 'اشتراك',
+    en: 'Subscription',
+  },
+  'archiveOps.entity.archive': {
+    ar: 'أرشيف',
+    en: 'Archive',
+  },
+  'archiveOps.entity.auditEvent': {
+    ar: 'حدث تدقيق',
+    en: 'Audit Event',
+  },
+  'archiveOps.action.created': {
+    ar: 'إنشاء سجل',
+    en: 'Created',
+  },
+  'archiveOps.action.updated': {
+    ar: 'تحديث بيانات',
+    en: 'Updated',
+  },
+  'archiveOps.action.deleted': {
+    ar: 'حذف سجل',
+    en: 'Deleted',
+  },
+  'archiveOps.action.archived': {
+    ar: 'أرشفة سجل',
+    en: 'Archived',
+  },
+  'archiveOps.action.restored': {
+    ar: 'استعادة سجل',
+    en: 'Restored',
+  },
+  'archiveOps.action.viewed': {
+    ar: 'استعراض بيانات',
+    en: 'Viewed',
+  },
+  'archiveOps.action.login': {
+    ar: 'تسجيل دخول',
+    en: 'Login',
+  },
+  'archiveOps.action.logout': {
+    ar: 'تسجيل خروج',
+    en: 'Logout',
+  },
+  'archiveOps.action.paused': {
+    ar: 'إيقاف مؤقت',
+    en: 'Paused',
+  },
+  'archiveOps.action.resumed': {
+    ar: 'استئناف العمل',
+    en: 'Resumed',
+  },
+  'archiveOps.action.approved': {
+    ar: 'اعتماد',
+    en: 'Approved',
+  },
+  'archiveOps.action.rejected': {
+    ar: 'رفض',
+    en: 'Rejected',
+  },
+  'archiveOps.action.cancelled': {
+    ar: 'إلغاء',
+    en: 'Cancelled',
+  },
+  'archiveOps.action.exported': {
+    ar: 'تصدير بيانات',
+    en: 'Exported',
+  },
+  'archiveOps.actor.system': {
+    ar: 'النظام الآلي',
+    en: 'System',
+  },
+  'archiveOps.actor.superAdmin': {
+    ar: 'المشرف العام',
+    en: 'Master Admin',
+  },
+  'archiveOps.actor.doctor': {
+    ar: 'الطبيب',
+    en: 'Doctor',
+  },
+  'archiveOps.actor.reception': {
+    ar: 'موظف الاستقبال',
+    en: 'Reception',
+  },
+  'archiveOps.actor.patient': {
+    ar: 'المريض',
+    en: 'Patient',
+  },
+  'archiveOps.actor.worker': {
+    ar: 'خدمة الخلفية',
+    en: 'Background Worker',
+  },
+  'archiveOps.actor.admin': {
+    ar: 'المسؤول',
+    en: 'Admin',
+  },
+  'archiveOps.duration.underSecond': {
+    ar: '< 1 ثانية',
+    en: '< 1s',
+  },
+  'archiveOps.duration.seconds': {
+    ar: 'ثانية',
+    en: 's',
+  },
+  'archiveOps.duration.and': {
+    ar: 'و',
+    en: 'and',
+  },
+  'archiveOps.outcome.completedWithExceptions': {
+    ar: 'مكتمل مع استثناءات',
+    en: 'Completed with Exceptions',
+  },
+  'archiveOps.outcome.cancelled': {
+    ar: 'ملغى',
+    en: 'Cancelled',
+  },
+  'archiveOps.outcome.pending': {
+    ar: 'قيد الانتظار',
+    en: 'Pending',
+  },
+  'archiveOps.outcome.active': {
+    ar: 'نشط',
+    en: 'Active',
+  },
+  'archiveOps.outcome.paused': {
+    ar: 'متوقف مؤقتاً',
+    en: 'Paused',
+  },
+  'archiveOps.outcome.expired': {
+    ar: 'منتهي',
+    en: 'Expired',
+  },
+  'archiveOps.entity.operationalDay': {
+    ar: 'اليوم التشغيلي',
+    en: 'Operational Day',
+  },
+  'archiveOps.entity.practice': {
+    ar: 'عيادة',
+    en: 'Practice',
+  },
+  'archiveOps.entity.encounter': {
+    ar: 'كشف طبي',
+    en: 'Encounter',
+  },
+  'archiveOps.action.operationalDayClosed': {
+    ar: 'إغلاق اليوم التشغيلي',
+    en: 'Operational Day Closed',
+  },
+  'archiveOps.action.operationalDayOpened': {
+    ar: 'فتح اليوم التشغيلي',
+    en: 'Operational Day Opened',
+  },
+  'archiveOps.action.ticketArchived': {
+    ar: 'أرشفة تذكرة كشف',
+    en: 'Ticket Archived',
+  },
+  'archiveOps.action.reservationArchived': {
+    ar: 'أرشفة حجز',
+    en: 'Reservation Archived',
+  },
+  'archiveOps.action.ticketCreated': {
+    ar: 'إنشاء تذكرة كشف',
+    en: 'Ticket Created',
+  },
+  'archiveOps.action.reservationCreated': {
+    ar: 'إنشاء حجز',
+    en: 'Reservation Created',
+  },
+  'archiveOps.action.loginSucceeded': {
+    ar: 'تسجيل دخول ناجح',
+    en: 'Login Succeeded',
+  },
+  'archiveOps.action.loginFailed': {
+    ar: 'فشل تسجيل الدخول',
+    en: 'Login Failed',
+  },
+  'archiveOps.action.sensitiveAccessLogged': {
+    ar: 'تسجيل وصول حساس',
+    en: 'Sensitive Access Logged',
+  },
+  'archiveOps.action.operationalDayObserved': {
+    ar: 'رصد اليوم التشغيلي',
+    en: 'Operational Day Observed',
+  },
+  'archiveOps.action.patientRedacted': {
+    ar: 'إخفاء بيانات المريض',
+    en: 'Patient Data Redacted',
+  },
+  'permissions.label.PatientDuplicates.View': {
+    ar: 'استعراض حالات تكرار المرضى',
+    en: 'View duplicate patient cases',
+  },
+  'permissions.label.PatientDuplicates.Resolve': {
+    ar: 'البت في حالات تكرار المرضى',
+    en: 'Resolve duplicate patient cases',
+  },
+  'permissions.label.Archives.Operations.ViewHealth': {
+    ar: 'عرض صحة خدمة الأرشفة',
+    en: 'View archive worker health',
+  },
+  'permissions.label.Archives.Operations.ViewRuns': {
+    ar: 'استعراض دورات تشغيل الأرشفة',
+    en: 'View archive operation runs',
+  },
+  'permissions.label.Archives.Operations.ViewFailures': {
+    ar: 'استعراض استثناءات وأخطاء الأرشفة',
+    en: 'View archive operation exceptions',
+  },
+  'permissions.label.Archives.Operations.Pause': {
+    ar: 'إيقاف خدمة الأرشفة مؤقتاً',
+    en: 'Pause archive worker',
+  },
+  'permissions.label.Archives.Operations.Resume': {
+    ar: 'استئناف خدمة الأرشفة',
+    en: 'Resume archive worker',
+  },
+  'permissions.label.Archives.Tickets.ViewPlatformMetadata': {
+    ar: 'استعراض أرشيف التذاكر على مستوى المنصة',
+    en: 'View platform archived tickets metadata',
+  },
+  'permissions.label.Archives.Reservations.ViewPlatformMetadata': {
+    ar: 'استعراض أرشيف الحجوزات على مستوى المنصة',
+    en: 'View platform archived reservations metadata',
+  },
+  'permissions.label.Audit.Events.ViewPlatform': {
+    ar: 'استعراض سجل تدقيق المنصة',
+    en: 'View platform audit events',
+  },
+  'permissions.label.Audit.Events.ViewPractice': {
+    ar: 'استعراض سجل تدقيق العيادة',
+    en: 'View practice audit events',
+  },
+  'permissions.label.Audit.Events.ViewOwnActivity': {
+    ar: 'استعراض سجل النشاط الشخصي',
+    en: 'View own activity audit log',
+  },
+  'permissions.label.Audit.SensitiveAccess.ViewRestrictedMetadata': {
+    ar: 'استعراض سجلات الوصول الحساس المقيدة',
+    en: 'View restricted sensitive-access metadata',
   },
 };

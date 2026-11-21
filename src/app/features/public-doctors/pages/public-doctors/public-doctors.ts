@@ -13,6 +13,8 @@ import { PageHeader } from '../../../../shared/components/page-header/page-heade
 import { PatientBookingState, PatientBookingDrawerComponent } from '../../../patient-booking';
 import { DoctorProfileApi, EgyptLocationOption } from '../../../../domains/doctor-profile';
 import {
+  AvailableDate,
+  AvailableSlot,
   PublicDiscoveryApi,
   PublicDoctorSearchItem,
   PublicDoctorSearchResponse,
@@ -101,17 +103,34 @@ export class PublicDoctors {
   protected readonly selectedPriceRange = signal<'all' | 'under300' | '300to500' | 'over500'>('all');
   protected readonly selectedTitle = signal<string>('all');
   protected readonly mobileFilterOpen = signal(false);
+  protected readonly mobileSheetOpen = signal(false);
   protected readonly scheduleOffsets = signal<Record<string, number>>({});
+  protected readonly scheduleSlideDir = signal<Record<string, 'next' | 'prev'>>({});
+  protected readonly practiceDatesCache = signal<Record<string, AvailableDate[]>>({});
+  protected readonly practiceSlotsCache = signal<Record<string, AvailableSlot[]>>({});
+  private readonly fetchedPracticeDates = new Set<string>();
+  private readonly fetchedPracticeSlots = new Set<string>();
 
   protected getDoctorOffset(doctorId: string): number {
     return this.scheduleOffsets()[doctorId] || 0;
+  }
+
+  protected getScheduleSlideDir(doctorId: string): 'next' | 'prev' {
+    return this.scheduleSlideDir()[doctorId] || 'next';
   }
 
   protected navigateSchedule(doctorId: string, delta: number, event?: Event): void {
     event?.stopPropagation();
     const cur = this.getDoctorOffset(doctorId);
     const next = Math.max(0, Math.min(12, cur + delta));
+    if (next === cur) return;
+    this.scheduleSlideDir.update((map) => ({ ...map, [doctorId]: delta > 0 ? 'next' : 'prev' }));
     this.scheduleOffsets.update((map) => ({ ...map, [doctorId]: next }));
+    const doctor = this.result().items.find((d) => d.doctorId === doctorId);
+    const practice = doctor ? this.getActivePractice(doctor) : undefined;
+    if (practice) {
+      void this.prefetchPracticeSchedule(practice, next);
+    }
   }
 
   protected setSort(sort: 'relevant' | 'earliest' | 'priceAsc' | 'priceDesc'): void {
@@ -384,7 +403,15 @@ export class PublicDoctors {
             pageSize: this.result().pageSize,
           }),
       );
-      if (sequence === this.searchSequence) this.result.set(result);
+      if (sequence === this.searchSequence) {
+        this.result.set(result);
+        for (const doc of result.items) {
+          const activePractice = this.getActivePractice(doc);
+          if (activePractice) {
+            void this.prefetchPracticeSchedule(activePractice, this.getDoctorOffset(doc.doctorId));
+          }
+        }
+      }
     } catch (error) {
       if (sequence === this.searchSequence) this.messages.set(this.mapDrawerError(error));
     } finally {
@@ -400,7 +427,29 @@ export class PublicDoctors {
     doctor: PublicDoctorSearchItem, practiceId?: string,
     businessDate?: string | null, slotStartTime?: string | null,
   ): Promise<void> {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (!isMobile) {
+      this.mobileSheetOpen.set(false);
+    }
     await this.booking.open({ doctorId: doctor.doctorId, doctorPracticeId: practiceId, businessDate, slotStartTime });
+  }
+
+  protected isSlotSelected(practiceId: string, date: string, rawTime: string): boolean {
+    return (
+      this.booking.opened() &&
+      this.booking.practice()?.id === practiceId &&
+      this.booking.date() === date &&
+      this.booking.time().slice(0, 5) === rawTime.slice(0, 5)
+    );
+  }
+
+  protected openMobileBookingSheet(): void {
+    this.mobileSheetOpen.set(true);
+  }
+
+  protected closeMobileBookingSheet(): void {
+    this.mobileSheetOpen.set(false);
+    this.booking.close();
   }
 
   protected doctorCountLabel(count: number): string {
@@ -485,6 +534,46 @@ export class PublicDoctors {
 
   protected selectDoctorPractice(doctorId: string, practiceId: string): void {
     this.selectedDoctorPracticeId.update((map) => ({ ...map, [doctorId]: practiceId }));
+    const doctor = this.result().items.find((d) => d.doctorId === doctorId);
+    const practice = doctor?.practices.find((p) => p.id === practiceId);
+    if (practice) {
+      void this.prefetchPracticeSchedule(practice, this.getDoctorOffset(doctorId));
+    }
+  }
+
+  private async prefetchPracticeSchedule(
+    practice: PublicPracticeSummary,
+    offset = 0,
+  ): Promise<void> {
+    if (this.destroyed || !practice.isBookable || practice.onlineBookingEnabled === false) return;
+    const practiceId = practice.id;
+    let dates = this.practiceDatesCache()[practiceId];
+    if (!dates && !this.fetchedPracticeDates.has(practiceId)) {
+      this.fetchedPracticeDates.add(practiceId);
+      try {
+        dates = await firstValueFrom(this.api.availableDates(practiceId));
+        if (this.destroyed) return;
+        this.practiceDatesCache.update((map) => ({ ...map, [practiceId]: dates! }));
+      } catch {
+        return;
+      }
+    }
+    const availableDates = (dates ?? []).filter((d) => d.isAvailable);
+    const visibleDates = availableDates.slice(offset, offset + 3);
+    await Promise.all(
+      visibleDates.map(async (d) => {
+        const slotKey = `${practiceId}:${d.date}`;
+        if (this.fetchedPracticeSlots.has(slotKey)) return;
+        this.fetchedPracticeSlots.add(slotKey);
+        try {
+          const slots = await firstValueFrom(this.api.availableSlots(practiceId, d.date));
+          if (this.destroyed) return;
+          this.practiceSlotsCache.update((map) => ({ ...map, [slotKey]: slots }));
+        } catch {
+          // Ignore individual slot fetch errors; never show fake slots.
+        }
+      }),
+    );
   }
 
   protected getScheduleDays(
@@ -496,74 +585,61 @@ export class PublicDoctors {
     subLabel: string;
     isAvailable: boolean;
     isToday: boolean;
-    slotTime?: string;
-    slots?: string[];
+    slots: Array<{ rawTime: string; label: string }>;
   }> {
-    if (!practice) return [];
+    if (!practice || !practice.isBookable || practice.onlineBookingEnabled === false) return [];
     const isAr = this.language.isRtl();
     const today = new Date();
-    const days: Array<{
-      key: string;
-      label: string;
-      subLabel: string;
-      isAvailable: boolean;
-      isToday: boolean;
-      slotTime?: string;
-      slots?: string[];
-    }> = [];
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
-    for (let i = 0; i < 3; i++) {
-      const d = new Date(today);
-      const dayIndex = offset + i;
-      d.setDate(today.getDate() + dayIndex);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const dayNum = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${dayNum}`;
-
-      let label = '';
-      if (dayIndex === 0) label = isAr ? 'اليوم' : 'Today';
-      else if (dayIndex === 1) label = isAr ? 'غداً' : 'Tomorrow';
-      else {
-        label = d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'short' });
-      }
-
-      const subLabel = d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+    const buildDay = (dateStr: string, rawSlots: Array<{ rawTime: string; label: string }>) => {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, (m || 1) - 1, d || 1);
+      let label = dt.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'short' });
+      if (dateStr === todayKey) label = isAr ? 'اليوم' : 'Today';
+      else if (dateStr === tomorrowKey) label = isAr ? 'غداً' : 'Tomorrow';
+      const subLabel = dt.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
         day: 'numeric',
         month: 'short',
       });
-
-      let isAvailable = false;
-      let slotTime: string | undefined = undefined;
-      let slots: string[] = [];
-
-      if (practice.isBookable && practice.onlineBookingEnabled !== false) {
-        if (practice.nextAvailableSlotDate === dateStr) {
-          isAvailable = true;
-          slotTime = this.formatSlotTime(practice.nextAvailableSlotTime);
-          slots = slotTime ? [slotTime] : [isAr ? '02:00 م' : '02:00 PM'];
-        } else if (dayIndex === 0 && practice.isToday && practice.nextAvailableSlotTime) {
-          isAvailable = true;
-          slotTime = this.formatSlotTime(practice.nextAvailableSlotTime);
-          slots = slotTime ? [slotTime] : [isAr ? '02:00 م' : '02:00 PM'];
-        } else if (dayIndex >= 0 && dayIndex < 14) {
-          isAvailable = true;
-          slots = isAr ? ['02:00 م', '03:00 م', '04:00 م'] : ['02:00 PM', '03:00 PM', '04:00 PM'];
-        }
-      }
-
-      days.push({
+      return {
         key: dateStr,
         label,
         subLabel,
-        isAvailable,
-        isToday: dayIndex === 0,
-        slotTime,
-        slots,
+        isAvailable: rawSlots.length > 0,
+        isToday: dateStr === todayKey,
+        slots: rawSlots,
+      };
+    };
+
+    const cachedDates = this.practiceDatesCache()[practice.id];
+    if (cachedDates) {
+      const availableDates = cachedDates.filter((d) => d.isAvailable);
+      return availableDates.slice(offset, offset + 3).map((d) => {
+        const loadedSlots = this.practiceSlotsCache()[`${practice.id}:${d.date}`];
+        const slots = (loadedSlots ?? []).slice(0, 3).map((s) => ({
+          rawTime: s.time,
+          label: this.formatSlotTime(s.time),
+        }));
+        return buildDay(d.date, slots);
       });
     }
 
-    return days;
+    if (practice.nextAvailableSlotDate && practice.nextAvailableSlotTime) {
+      return [
+        buildDay(practice.nextAvailableSlotDate, [
+          {
+            rawTime: practice.nextAvailableSlotTime,
+            label: this.formatSlotTime(practice.nextAvailableSlotTime),
+          },
+        ]),
+      ];
+    }
+
+    return [];
   }
 
   private mapDrawerError(error: unknown): string[] {

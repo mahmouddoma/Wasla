@@ -279,12 +279,12 @@
       } @else if (model(); as report) {
         @if (report.metrics?.length) {
           <!-- ======================================== -->
-          <!-- 4. PRIMARY 5-KPI STRIP                   -->
+          <!-- 4. PRIMARY KPI STRIP                     -->
           <!-- ======================================== -->
-          <dl class="primary-kpi-strip" role="list">
+          <dl class="primary-kpi-strip metric-strip" role="list">
             @for (metric of highlights(); track metric.metricCode) {
               <div
-                class="primary-kpi-card"
+                class="primary-kpi-card metric-item"
                 [attr.data-metric]="metric.metricCode"
                 [class]="metricColorClass(metric.metricCode)"
                 (click)="canDrilldown(metric) ? openDrilldown(metric) : null"
@@ -360,8 +360,8 @@
               <div class="chart-scroll" tabindex="0" [attr.aria-label]="'doctorOverview.trend' | t">
                 <svg
                   class="activity-chart"
-                  [style.min-width.px]="chartPoints().length * 40 + 40"
-                  [attr.viewBox]="'0 0 ' + (chartPoints().length * 40 + 40) + ' 250'"
+                  [style.min-width.px]="chartPoints().length * 28 + 36"
+                  [attr.viewBox]="'0 0 ' + (chartPoints().length * 28 + 36) + ' 245'"
                   role="group"
                   aria-labelledby="overview-trend-title overview-trend-desc"
                 >
@@ -376,21 +376,21 @@
                   <line
                     x1="20"
                     y1="20"
-                    [attr.x2]="chartPoints().length * 40 + 20"
+                    [attr.x2]="chartPoints().length * 28 + 24"
                     y2="20"
                     class="chart-axis"
                   />
                   <line
                     x1="20"
                     y1="110"
-                    [attr.x2]="chartPoints().length * 40 + 20"
+                    [attr.x2]="chartPoints().length * 28 + 24"
                     y2="110"
                     class="chart-axis"
                   />
                   <line
                     x1="20"
                     y1="200"
-                    [attr.x2]="chartPoints().length * 40 + 20"
+                    [attr.x2]="chartPoints().length * 28 + 24"
                     y2="200"
                     class="chart-axis"
                   />
@@ -409,25 +409,25 @@
                       @if (measuredValue(point.scheduled) !== null) {
                         <rect
                           class="series-scheduled"
-                          [attr.x]="index * 40 + 22"
+                          [attr.x]="index * 28 + 22"
                           [attr.y]="200 - point.scheduledHeight"
-                          width="12"
+                          width="9"
                           [attr.height]="point.scheduledHeight"
-                          rx="4"
+                          rx="3"
                         />
                       }
                       @if (measuredValue(point.checkIns) !== null) {
                         <rect
                           class="series-checkins"
-                          [attr.x]="index * 40 + 36"
+                          [attr.x]="index * 28 + 33"
                           [attr.y]="200 - point.checkInsHeight"
-                          width="12"
+                          width="9"
                           [attr.height]="point.checkInsHeight"
-                          rx="4"
+                          rx="3"
                         />
                       }
                       <text
-                        [attr.x]="index * 40 + 34"
+                        [attr.x]="index * 28 + 32"
                         y="222"
                         text-anchor="middle"
                         class="chart-day-label"
@@ -436,7 +436,7 @@
                       </text>
                       <text
                         class="chart-tooltip"
-                        [attr.x]="index * 40 + 34"
+                        [attr.x]="index * 28 + 32"
                         y="14"
                         text-anchor="middle"
                       >
@@ -527,10 +527,10 @@
           </section>
 
           <!-- ======================================== -->
-          <!-- 6. 2-COLUMN ANALYTICS GRID               -->
+          <!-- 6. 2-COLUMN ANALYTICS GRID (ALL CHARTS)  -->
           <!-- ======================================== -->
           <div class="analytics-grid-two-col">
-            <!-- 6.1 Patients & Follow-up Card -->
+            <!-- 6.1 Patients & Follow-up Chart Card (Donut + Progress Bars) -->
             <article class="analytics-card">
               <header class="analytics-card__header">
                 <div class="analytics-card__title-wrap">
@@ -549,95 +549,126 @@
                 </button>
               </header>
 
-              <div class="analytics-card__body">
-                <div class="sub-stat-grid sub-stat-grid--3">
-                  <!-- Unique Patients -->
-                  <div class="sub-stat-box">
-                    <span class="sub-stat-label">
-                      <i class="fa-solid fa-users stat-chip-icon" aria-hidden="true"></i>
-                      <span>{{ 'doctorOverview.cohort.UniqueDoctorPatients' | t }}</span>
-                    </span>
-                    <strong class="sub-stat-value">
-                      @if (measuredValue(metricByCode('UniqueDoctorPatients')) !== null) {
-                        {{ format(metricByCode('UniqueDoctorPatients')) }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
-                  </div>
-
-                  <!-- New Patients -->
-                  <div class="sub-stat-box">
-                    <span class="sub-stat-label">
-                      <i class="fa-solid fa-user-plus stat-chip-icon" aria-hidden="true"></i>
-                      <span>{{ 'doctorOverview.cohort.NewToDoctorPatients' | t }}</span>
-                    </span>
-                    <strong class="sub-stat-value">
-                      @if (measuredValue(metricByCode('NewToDoctorPatients')) !== null) {
-                        {{ format(metricByCode('NewToDoctorPatients')) }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
-                  </div>
-
-                  <!-- Returning Patients -->
-                  <div class="sub-stat-box">
-                    <span class="sub-stat-label">
-                      <i class="fa-solid fa-user-clock stat-chip-icon" aria-hidden="true"></i>
-                      <span>{{ 'doctorOverview.cohort.ReturningDoctorPatients' | t }}</span>
-                    </span>
-                    <strong class="sub-stat-value">
-                      @if (measuredValue(metricByCode('ReturningDoctorPatients')) !== null) {
-                        {{ format(metricByCode('ReturningDoctorPatients')) }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
+              <div class="analytics-card__body analytics-card__body--flex">
+                <!-- Patients Donut Chart -->
+                <div
+                  class="donut-chart-container"
+                  [style.background]="patientDonutStyle()"
+                  role="img"
+                  [attr.aria-label]="'doctorOverview.section.patients' | t"
+                >
+                  <div class="donut-chart-hole">
+                    <strong class="donut-value" dir="ltr">{{
+                      formatNumber(patientChartSummary().unique)
+                    }}</strong>
+                    <span class="donut-label">{{
+                      'doctorOverview.cohort.UniqueDoctorPatients' | t
+                    }}</span>
                   </div>
                 </div>
 
-                <div class="sub-stat-grid sub-stat-grid--3 sub-stat-grid--secondary">
-                  <!-- Retention 90d -->
-                  <div class="sub-stat-box sub-stat-box--pill">
-                    <span class="sub-stat-label">{{
-                      'doctorOverview.cohort.PatientRetention90d' | t
-                    }}</span>
-                    @if (measuredValue(metricByCode('PatientRetention90d')) !== null) {
-                      <strong class="sub-stat-value sub-stat-value--pct" dir="ltr">
-                        %{{ format(metricByCode('PatientRetention90d')) }}
-                      </strong>
-                    } @else {
-                      <strong class="sub-stat-value sub-stat-value--empty">&mdash;</strong>
-                    }
+                <!-- Patients Visual Bar & Progress Breakdown -->
+                <div class="donut-breakdown-list donut-breakdown-list--wide">
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--teal" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorOverview.cohort.NewToDoctorPatients' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(patientChartSummary().newPatients)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(patientChartSummary().newPct) }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill"
+                        [style.width.%]="patientChartSummary().newPct"
+                      ></div>
+                    </div>
                   </div>
 
-                  <!-- FollowUp Activity -->
-                  <div class="sub-stat-box sub-stat-box--pill">
-                    <span class="sub-stat-label">{{
-                      'doctorOverview.cohort.FollowUpActivity' | t
-                    }}</span>
-                    <strong class="sub-stat-value">
-                      @if (measuredValue(metricByCode('FollowUpActivity')) !== null) {
-                        {{ format(metricByCode('FollowUpActivity')) }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--blue" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorOverview.cohort.ReturningDoctorPatients' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(patientChartSummary().returningPatients)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(patientChartSummary().returningPct) }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--blue"
+                        [style.width.%]="patientChartSummary().returningPct"
+                      ></div>
+                    </div>
                   </div>
 
-                  <!-- Clinical Workflow Completed -->
-                  <div class="sub-stat-box sub-stat-box--pill">
-                    <span class="sub-stat-label">{{
-                      'doctorOverview.cohort.ClinicalWorkflowCompleted' | t
-                    }}</span>
-                    @if (measuredValue(metricByCode('ClinicalWorkflowCompleted')) !== null) {
-                      <strong class="sub-stat-value sub-stat-value--pct" dir="ltr">
-                        %{{ format(metricByCode('ClinicalWorkflowCompleted')) }}
-                      </strong>
-                    } @else {
-                      <strong class="sub-stat-value sub-stat-value--empty">&mdash;</strong>
-                    }
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--emerald" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorOverview.cohort.PatientRetention90d' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        @if (patientChartSummary().retention90d !== null) {
+                          <strong class="breakdown-count"
+                            >%{{ formatNumber(patientChartSummary().retentionPct) }}</strong
+                          >
+                        } @else {
+                          <strong class="breakdown-count">&mdash;</strong>
+                        }
+                      </div>
+                    </div>
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--emerald"
+                        [style.width.%]="patientChartSummary().retentionPct"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--amber" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorOverview.cohort.ClinicalWorkflowCompleted' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        @if (patientChartSummary().workflow !== null) {
+                          <strong class="breakdown-count">{{
+                            format(metricByCode('ClinicalWorkflowCompleted'))
+                          }}</strong>
+                        } @else {
+                          <strong class="breakdown-count">&mdash;</strong>
+                        }
+                      </div>
+                    </div>
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--amber"
+                        [style.width.%]="patientChartSummary().workflowPct"
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -680,52 +711,76 @@
                   </div>
                 </div>
 
-                <!-- Breakdown List -->
-                <div class="donut-breakdown-list">
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--teal" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{ 'doctorOverview.attended' | t }}</span>
+                <!-- Breakdown List with Visual Proportional Bars -->
+                <div class="donut-breakdown-list donut-breakdown-list--wide">
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--teal" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{ 'doctorOverview.attended' | t }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(cancellationSummary().attended)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(cancellationSummary().attendedPct) }}</span
+                        >
+                      </div>
                     </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(cancellationSummary().attended)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(cancellationSummary().attendedPct) }}</span
-                      >
-                    </div>
-                  </div>
-
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--rose" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{ 'doctorOverview.noShow' | t }}</span>
-                    </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(cancellationSummary().noShowCount)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(cancellationSummary().noShowRate) }}</span
-                      >
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill"
+                        [style.width.%]="cancellationSummary().attendedPct"
+                      ></div>
                     </div>
                   </div>
 
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--slate" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{
-                        'doctorOverview.cancelledByPatient' | t
-                      }}</span>
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--rose" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{ 'doctorOverview.noShow' | t }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(cancellationSummary().noShowCount)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(cancellationSummary().noShowRate) }}</span
+                        >
+                      </div>
                     </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(cancellationSummary().cancelCount)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(cancellationSummary().cancelRate) }}</span
-                      >
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--rose"
+                        [style.width.%]="cancellationSummary().noShowRate"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--slate" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorOverview.cancelledByPatient' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(cancellationSummary().cancelCount)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(cancellationSummary().cancelRate) }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--slate"
+                        [style.width.%]="cancellationSummary().cancelRate"
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -830,80 +885,112 @@
                   </div>
                 </div>
 
-                <!-- Breakdown List -->
-                <div class="donut-breakdown-list">
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--teal" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{
-                        'doctorDashboard.status.completed' | t
-                      }}</span>
+                <!-- Breakdown List with Visual Proportional Bars -->
+                <div class="donut-breakdown-list donut-breakdown-list--wide">
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--teal" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorDashboard.status.completed' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(ticketSummary().completed)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(ticketSummary().completedPct) }}</span
+                        >
+                      </div>
                     </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(ticketSummary().completed)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(ticketSummary().completedPct) }}</span
-                      >
-                    </div>
-                  </div>
-
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--blue" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{
-                        'doctorDashboard.status.inProgress' | t
-                      }}</span>
-                    </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(ticketSummary().inProgress)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(ticketSummary().inProgressPct) }}</span
-                      >
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill"
+                        [style.width.%]="ticketSummary().completedPct"
+                      ></div>
                     </div>
                   </div>
 
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--amber" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{
-                        'doctorDashboard.status.waiting' | t
-                      }}</span>
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--blue" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorDashboard.status.inProgress' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(ticketSummary().inProgress)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(ticketSummary().inProgressPct) }}</span
+                        >
+                      </div>
                     </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(ticketSummary().waiting)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(ticketSummary().waitingPct) }}</span
-                      >
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--blue"
+                        [style.width.%]="ticketSummary().inProgressPct"
+                      ></div>
                     </div>
                   </div>
 
-                  <div class="breakdown-row">
-                    <div class="breakdown-label-wrap">
-                      <span class="bullet-dot bullet-dot--rose" aria-hidden="true"></span>
-                      <span class="breakdown-label">{{
-                        'doctorDashboard.status.cancelled' | t
-                      }}</span>
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--amber" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorDashboard.status.waiting' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(ticketSummary().waiting)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(ticketSummary().waitingPct) }}</span
+                        >
+                      </div>
                     </div>
-                    <div class="breakdown-values" dir="ltr">
-                      <strong class="breakdown-count">{{
-                        formatNumber(ticketSummary().cancelled)
-                      }}</strong>
-                      <span class="breakdown-pct"
-                        >%{{ formatNumber(ticketSummary().cancelledPct) }}</span
-                      >
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--amber"
+                        [style.width.%]="ticketSummary().waitingPct"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div class="breakdown-bar-item">
+                    <div class="breakdown-row">
+                      <div class="breakdown-label-wrap">
+                        <span class="bullet-dot bullet-dot--rose" aria-hidden="true"></span>
+                        <span class="breakdown-label">{{
+                          'doctorDashboard.status.cancelled' | t
+                        }}</span>
+                      </div>
+                      <div class="breakdown-values" dir="ltr">
+                        <strong class="breakdown-count">{{
+                          formatNumber(ticketSummary().cancelled)
+                        }}</strong>
+                        <span class="breakdown-pct"
+                          >%{{ formatNumber(ticketSummary().cancelledPct) }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="mini-bar-track">
+                      <div
+                        class="mini-bar-fill pattern-bar-fill pattern-bar-fill--rose"
+                        [style.width.%]="ticketSummary().cancelledPct"
+                      ></div>
                     </div>
                   </div>
                 </div>
               </div>
             </article>
 
-            <!-- 6.5 Clinic Performance Card -->
+            <!-- 6.5 Clinic Performance & Timing Comparison Chart Card -->
             <article class="analytics-card">
               <header class="analytics-card__header">
                 <div class="analytics-card__title-wrap">
@@ -925,61 +1012,64 @@
               </header>
 
               <div class="analytics-card__body">
-                <div class="sub-stat-grid sub-stat-grid--3">
-                  <!-- Avg Wait Time -->
-                  <div class="sub-stat-box sub-stat-box--clinic">
-                    <span class="sub-stat-icon-wrap" aria-hidden="true">
-                      <i class="fa-regular fa-clock"></i>
-                    </span>
-                    <span class="sub-stat-label">{{ 'doctorOverview.avgWaitTime' | t }}</span>
-                    <strong class="sub-stat-value" dir="ltr">
-                      @if (performanceSummary().waitTime !== null) {
-                        {{ formatNumber(performanceSummary().waitTime!) }}
-                        {{ 'doctorWorkspace.unit.minutes' | t }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
-                    <small class="sub-stat-note">{{ 'doctorDashboard.timingSummary' | t }}</small>
-                  </div>
-
-                  <!-- Avg Consult Duration -->
-                  <div class="sub-stat-box sub-stat-box--clinic">
-                    <span class="sub-stat-icon-wrap" aria-hidden="true">
-                      <i class="fa-solid fa-user-doctor"></i>
-                    </span>
-                    <span class="sub-stat-label">{{ 'doctorOverview.avgConsultTime' | t }}</span>
-                    <strong class="sub-stat-value" dir="ltr">
-                      @if (performanceSummary().consultTime !== null) {
-                        {{ formatNumber(performanceSummary().consultTime!) }}
-                        {{ 'doctorWorkspace.unit.minutes' | t }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
-                    <small class="sub-stat-note">{{ 'doctorDashboard.serviceSummary' | t }}</small>
-                  </div>
-
-                  <!-- Patient Satisfaction / Utilization -->
-                  <div class="sub-stat-box sub-stat-box--clinic">
-                    <span class="sub-stat-icon-wrap" aria-hidden="true">
-                      <i class="fa-regular fa-face-smile"></i>
-                    </span>
-                    <span class="sub-stat-label">{{
-                      'doctorOverview.patientSatisfaction' | t
-                    }}</span>
-                    <strong class="sub-stat-value sub-stat-value--pct" dir="ltr">
-                      @if (performanceSummary().utilization !== null) {
-                        %{{ formatNumber(performanceSummary().utilization!) }}
-                      } @else {
-                        &mdash;
-                      }
-                    </strong>
-                    <small class="sub-stat-note">{{
-                      'doctorDashboard.utilizationSummary' | t
-                    }}</small>
-                  </div>
+                <!-- Comparative Duration Bar Chart (Minutes) -->
+                <div class="horizontal-bars-list">
+                  @for (row of timingChartRows(); track row.code) {
+                    <div class="chart-metric-bar-row">
+                      <div class="chart-metric-bar-head">
+                        <span class="chart-metric-bar-label">
+                          <span
+                            class="bullet-dot"
+                            [class]="'bullet-dot--' + row.color"
+                            aria-hidden="true"
+                          ></span>
+                          <span>{{ row.label }}</span>
+                        </span>
+                        <strong class="chart-metric-bar-val" dir="ltr">
+                          @if (row.value !== null) {
+                            {{ formatNumber(row.value) }} {{ 'doctorWorkspace.unit.minutes' | t }}
+                          } @else {
+                            &mdash;
+                          }
+                        </strong>
+                      </div>
+                      <div class="pattern-bar-track">
+                        <div
+                          class="pattern-bar-fill"
+                          [class]="'pattern-bar-fill--' + row.color"
+                          [style.width.%]="row.widthPct"
+                        ></div>
+                      </div>
+                    </div>
+                  }
                 </div>
+
+                <!-- Utilization & Punctuality Gauge Progress Bars (%) -->
+                @if (utilizationGaugeRows().length) {
+                  <div class="utilization-gauges-strip">
+                    @for (gauge of utilizationGaugeRows(); track gauge.code) {
+                      <div class="gauge-bar-card">
+                        <div class="gauge-bar-head">
+                          <span class="gauge-bar-title">{{ gauge.label }}</span>
+                          <strong class="gauge-bar-pct" dir="ltr">
+                            @if (gauge.value !== null) {
+                              %{{ formatNumber(gauge.value) }}
+                            } @else {
+                              &mdash;
+                            }
+                          </strong>
+                        </div>
+                        <div class="pattern-bar-track">
+                          <div
+                            class="pattern-bar-fill"
+                            [class]="'pattern-bar-fill--' + gauge.color"
+                            [style.width.%]="gauge.widthPct"
+                          ></div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             </article>
 
@@ -1016,11 +1106,11 @@
           </div>
 
           <!-- ======================================== -->
-          <!-- 7. COMPACT BOTTOM ACCORDIONS             -->
+          <!-- 7. DETAILED CHART ACCORDIONS             -->
           <!-- ======================================== -->
           <div class="dashboard-accordions-group">
-            <!-- 7.1 Tickets & Queue Detailed Accordion -->
-            <details class="clean-accordion">
+            <!-- 7.1 Tickets, Queue & Operations Chart Accordion -->
+            <details class="clean-accordion overview-detail" open>
               <summary class="clean-accordion__summary">
                 <div class="clean-accordion__title-wrap">
                   <i
@@ -1042,7 +1132,39 @@
               </summary>
 
               <div class="clean-accordion__content">
-                <div class="module-metrics-grid">
+                <!-- Booking Creation Cohort Stepped Funnel Chart -->
+                @if (cohort().length) {
+                  <div class="module-block">
+                    <h4 class="module-block-title">
+                      <i class="fa-solid fa-filter-circle-dollar" aria-hidden="true"></i>
+                      <span>{{ 'doctorOverview.cohort' | t }}</span>
+                    </h4>
+                    <ol class="cohort-flow">
+                      @for (step of cohort(); track step.metricCode; let idx = $index) {
+                        <li class="cohort-step">
+                          <div class="cohort-step-header">
+                            <span class="step-badge">{{ idx + 1 }}</span>
+                            <span class="step-label">{{
+                              'doctorOverview.cohort.' + step.metricCode | t
+                            }}</span>
+                          </div>
+                          <strong class="step-value" dir="ltr">{{ format(step) }}</strong>
+                          <span class="cohort-track">
+                            <span
+                              class="pattern-bar-fill"
+                              [style.width.%]="
+                                ((measuredValue(step) ?? 0) / cohortMaximum()) * 100
+                              "
+                            ></span>
+                          </span>
+                        </li>
+                      }
+                    </ol>
+                  </div>
+                }
+
+                <!-- Operations & Queue Comparative Horizontal Bar Charts -->
+                <div class="module-metrics-grid summary-list">
                   @for (module of modules(); track module.id) {
                     @if (['operations', 'queue'].includes(module.id)) {
                       <div class="module-block">
@@ -1052,23 +1174,43 @@
                         </h4>
                         <div class="module-block-table">
                           @for (metric of module.metrics; track metric.metricCode) {
-                            <div class="module-metric-row">
-                              <span class="module-metric-label">{{ metricLabel(metric) }}</span>
-                              <div class="module-metric-action-wrap">
-                                <strong class="module-metric-val">{{ format(metric) }}</strong>
-                                @if (canDrilldown(metric)) {
-                                  <button
-                                    type="button"
-                                    class="metric-link"
-                                    (click)="openDrilldown(metric)"
-                                  >
-                                    <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
-                                    <i
-                                      class="fa-solid fa-arrow-left metric-link-icon"
-                                      aria-hidden="true"
-                                    ></i>
-                                  </button>
-                                }
+                            <div class="module-chart-row">
+                              <div class="module-metric-row">
+                                <span class="module-metric-label">{{ metricLabel(metric) }}</span>
+                                <div class="module-metric-action-wrap">
+                                  <strong class="module-metric-val" dir="ltr">
+                                    {{ format(metric) }}
+                                    @if (
+                                      measuredValue(metric) !== null &&
+                                      metric.unit &&
+                                      metric.unit.toLowerCase() !== 'count'
+                                    ) {
+                                      <small class="chart-unit-inline">{{
+                                        metricUnit(metric.unit)
+                                      }}</small>
+                                    }
+                                  </strong>
+                                  @if (canDrilldown(metric)) {
+                                    <button
+                                      type="button"
+                                      class="metric-link"
+                                      (click)="openDrilldown(metric)"
+                                    >
+                                      <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                                      <i
+                                        class="fa-solid fa-arrow-left metric-link-icon"
+                                        aria-hidden="true"
+                                      ></i>
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                              <div class="pattern-bar-track">
+                                <div
+                                  class="pattern-bar-fill"
+                                  [class]="metricBarColorClass(metric.metricCode)"
+                                  [style.width.%]="moduleMetricBarWidth(module.metrics, metric)"
+                                ></div>
                               </div>
                             </div>
                           }
@@ -1080,7 +1222,7 @@
               </div>
             </details>
 
-            <!-- 7.2 Cancellations & Exceptions Accordion -->
+            <!-- 7.2 Cancellations & Exceptions Visual Chart Accordion -->
             <details class="clean-accordion">
               <summary class="clean-accordion__summary">
                 <div class="clean-accordion__title-wrap">
@@ -1103,27 +1245,96 @@
               </summary>
 
               <div class="clean-accordion__content">
-                <div class="cancellation-breakdowns-grid">
-                  @for (point of priorityBreakdownPoints(); track point.key) {
-                    @if (point.key?.includes('Cancellation') || point.key?.includes('Exception')) {
-                      <div class="breakdown-tile-card">
-                        <h5 class="breakdown-tile-title">{{ breakdownTitle(point) }}</h5>
-                        <div class="breakdown-tile-metrics">
-                          @for (metric of point.metrics; track $index) {
-                            <div class="tile-metric-row">
-                              <span>{{ metricLabel(metric) }}</span>
-                              <strong>{{ format(metric) }}</strong>
+                <div class="module-metrics-grid">
+                  <!-- Exceptions & Cancellations Metrics Bar Chart -->
+                  <div class="module-block">
+                    <h4 class="module-block-title">
+                      <i class="fa-solid fa-chart-bar" aria-hidden="true"></i>
+                      <span>{{ 'doctorDashboard.chart.cancellationMetrics' | t }}</span>
+                    </h4>
+                    <div class="module-block-table">
+                      @for (item of exceptionChartMetrics(); track item.metric.metricCode) {
+                        <div class="module-chart-row">
+                          <div class="module-metric-row">
+                            <span class="module-metric-label">{{
+                              metricLabel(item.metric)
+                            }}</span>
+                            <div class="module-metric-action-wrap">
+                              <strong class="module-metric-val" dir="ltr">
+                                @if (measuredValue(item.metric) !== null) {
+                                  @if (item.isPct) {
+                                    %{{ format(item.metric) }}
+                                  } @else {
+                                    {{ format(item.metric) }}
+                                  }
+                                } @else {
+                                  &mdash;
+                                }
+                              </strong>
+                              @if (canDrilldown(item.metric)) {
+                                <button
+                                  type="button"
+                                  class="metric-link"
+                                  (click)="openDrilldown(item.metric)"
+                                >
+                                  <span>{{ 'doctorDashboard.viewDetails' | t }}</span>
+                                  <i
+                                    class="fa-solid fa-arrow-left metric-link-icon"
+                                    aria-hidden="true"
+                                  ></i>
+                                </button>
+                              }
                             </div>
-                          }
+                          </div>
+                          <div class="pattern-bar-track">
+                            <div
+                              class="pattern-bar-fill"
+                              [class]="item.colorClass"
+                              [style.width.%]="item.widthPct"
+                            ></div>
+                          </div>
                         </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Cancellation Sources & Channels Horizontal Bar Chart -->
+                  @if (cancellationSourceBars().length) {
+                    <div class="module-block">
+                      <h4 class="module-block-title">
+                        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                        <span>{{ 'doctorDashboard.chart.cancellationSources' | t }}</span>
+                      </h4>
+                      <div class="module-block-table">
+                        @for (src of cancellationSourceBars(); track src.key) {
+                          <div class="module-chart-row">
+                            <div class="module-metric-row">
+                              <span class="module-metric-label">
+                                <strong>{{ src.title }}</strong>
+                                <small class="chart-sub-label">({{ src.metricLabel }})</small>
+                              </span>
+                              <strong class="module-metric-val" dir="ltr">{{
+                                formatNumber(src.value)
+                              }}</strong>
+                            </div>
+                            <div class="pattern-bar-track">
+                              <div
+                                class="pattern-bar-fill"
+                                [class.pattern-bar-fill--rose]="src.isCancel"
+                                [class.pattern-bar-fill--blue]="!src.isCancel"
+                                [style.width.%]="src.widthPct"
+                              ></div>
+                            </div>
+                          </div>
+                        }
                       </div>
-                    }
+                    </div>
                   }
                 </div>
               </div>
             </details>
 
-            <!-- 7.3 Practice Breakdown Details Accordion -->
+            <!-- 7.3 Practice Breakdown Details Chart Accordion -->
             @if (practiceBreakdowns().length) {
               <details class="clean-accordion">
                 <summary class="clean-accordion__summary">
@@ -1143,7 +1354,7 @@
                 </summary>
 
                 <div class="clean-accordion__content">
-                  <!-- Main Clinics Grid -->
+                  <!-- Main Clinics Visual Charts Grid -->
                   <div class="practice-cards-grid">
                     @for (point of clinicBreakdowns(); track $index) {
                       <section class="practice-card">
@@ -1162,68 +1373,195 @@
                           </div>
                         </div>
 
-                        <div class="practice-card__metrics">
-                          @for (metric of point.metrics ?? []; track $index) {
-                            @if (
-                              canViewFinance() ||
-                              (!financeCodes.includes(metric.metricCode ?? '') &&
-                                metric.unit?.toLowerCase() !== 'egp')
-                            ) {
-                              <div class="practice-metric-item">
-                                <span class="practice-metric-name">{{ metricLabel(metric) }}</span>
-                                <div class="practice-metric-val-wrap" dir="ltr">
-                                  @if (measuredValue(metric) !== null) {
-                                    @if (metric.unit?.toLowerCase() === 'percent') {
-                                      <span class="practice-metric-unit">%</span>
-                                      <strong class="practice-metric-num">{{
-                                        format(metric)
-                                      }}</strong>
-                                    } @else {
-                                      <strong class="practice-metric-num">{{
-                                        format(metric)
-                                      }}</strong>
-                                      @if (
-                                        metric.unit &&
-                                        !['count', 'percent'].includes(metric.unit.toLowerCase())
-                                      ) {
-                                        <span class="practice-metric-unit">{{
-                                          metricUnit(metric.unit)
-                                        }}</span>
-                                      }
-                                    }
-                                  } @else {
-                                    <strong class="practice-metric-num practice-metric-num--empty"
-                                      >&mdash;</strong
-                                    >
-                                  }
-
-                                  @if (
-                                    canDrilldown(metric) &&
-                                    measuredValue(metric) !== null &&
-                                    (measuredValue(metric) ?? 0) > 0
-                                  ) {
-                                    <button
-                                      type="button"
-                                      class="metric-link"
-                                      (click)="openDrilldown(metric)"
-                                      [title]="'doctorDashboard.viewDetails' | t"
-                                    >
-                                      <i
-                                        class="fa-solid fa-arrow-left metric-link-icon"
-                                        aria-hidden="true"
-                                      ></i>
-                                    </button>
-                                  }
-                                </div>
+                        <!-- 3-Column Visual Charts per Clinic (Replaces the 36-box wall!) -->
+                        <div class="practice-charts-grid">
+                          <!-- Chart Column 1: Bookings & Queue Volume Funnel Bar Chart -->
+                          @if (practiceVolumeChart(point).length) {
+                            <div class="practice-chart-panel">
+                              <h6 class="practice-chart-panel__title">
+                                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                                <span>{{ 'doctorDashboard.chart.volumeFunnel' | t }}</span>
+                              </h6>
+                              <div class="practice-chart-bars">
+                                @for (item of practiceVolumeChart(point); track $index) {
+                                  <div class="module-chart-row">
+                                    <div class="module-metric-row">
+                                      <span class="practice-metric-name">{{
+                                        metricLabel(item.metric)
+                                      }}</span>
+                                      <div class="practice-metric-val-wrap" dir="ltr">
+                                        @if (measuredValue(item.metric) !== null) {
+                                          <strong class="practice-metric-num">{{
+                                            format(item.metric)
+                                          }}</strong>
+                                        } @else {
+                                          <strong
+                                            class="practice-metric-num practice-metric-num--empty"
+                                            >&mdash;</strong
+                                          >
+                                        }
+                                        @if (
+                                          canDrilldown(item.metric) &&
+                                          measuredValue(item.metric) !== null &&
+                                          (measuredValue(item.metric) ?? 0) > 0
+                                        ) {
+                                          <button
+                                            type="button"
+                                            class="metric-link"
+                                            (click)="openDrilldown(item.metric)"
+                                            [title]="'doctorDashboard.viewDetails' | t"
+                                          >
+                                            <i
+                                              class="fa-solid fa-arrow-left metric-link-icon"
+                                              aria-hidden="true"
+                                            ></i>
+                                          </button>
+                                        }
+                                      </div>
+                                    </div>
+                                    <div class="pattern-bar-track">
+                                      <div
+                                        class="pattern-bar-fill"
+                                        [class]="item.colorClass"
+                                        [style.width.%]="item.widthPct"
+                                      ></div>
+                                    </div>
+                                  </div>
+                                }
                               </div>
-                            }
+                            </div>
+                          }
+
+                          <!-- Chart Column 2: Conversion & Utilization Rates (0% - 100% Gauge Bars) -->
+                          @if (practiceRateChart(point).length) {
+                            <div class="practice-chart-panel">
+                              <h6 class="practice-chart-panel__title">
+                                <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+                                <span>{{ 'doctorDashboard.chart.ratesAndUtilization' | t }}</span>
+                              </h6>
+                              <div class="practice-chart-bars">
+                                @for (item of practiceRateChart(point); track $index) {
+                                  <div class="module-chart-row">
+                                    <div class="module-metric-row">
+                                      <span class="practice-metric-name">{{
+                                        metricLabel(item.metric)
+                                      }}</span>
+                                      <div class="practice-metric-val-wrap" dir="ltr">
+                                        @if (measuredValue(item.metric) !== null) {
+                                          <span class="practice-metric-unit">%</span>
+                                          <strong class="practice-metric-num">{{
+                                            format(item.metric)
+                                          }}</strong>
+                                        } @else {
+                                          <strong
+                                            class="practice-metric-num practice-metric-num--empty"
+                                            >&mdash;</strong
+                                          >
+                                        }
+                                        @if (
+                                          canDrilldown(item.metric) &&
+                                          measuredValue(item.metric) !== null &&
+                                          (measuredValue(item.metric) ?? 0) > 0
+                                        ) {
+                                          <button
+                                            type="button"
+                                            class="metric-link"
+                                            (click)="openDrilldown(item.metric)"
+                                            [title]="'doctorDashboard.viewDetails' | t"
+                                          >
+                                            <i
+                                              class="fa-solid fa-arrow-left metric-link-icon"
+                                              aria-hidden="true"
+                                            ></i>
+                                          </button>
+                                        }
+                                      </div>
+                                    </div>
+                                    <div class="pattern-bar-track">
+                                      <div
+                                        class="pattern-bar-fill"
+                                        [class]="item.colorClass"
+                                        [style.width.%]="item.widthPct"
+                                      ></div>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+
+                          <!-- Chart Column 3: Timing Durations & Patient Flow Bar Chart -->
+                          @if (practiceTimingPatientChart(point).length) {
+                            <div class="practice-chart-panel">
+                              <h6 class="practice-chart-panel__title">
+                                <i class="fa-solid fa-stopwatch" aria-hidden="true"></i>
+                                <span>{{ 'doctorDashboard.chart.timingAndPatients' | t }}</span>
+                              </h6>
+                              <div class="practice-chart-bars">
+                                @for (item of practiceTimingPatientChart(point); track $index) {
+                                  <div class="module-chart-row">
+                                    <div class="module-metric-row">
+                                      <span class="practice-metric-name">{{
+                                        metricLabel(item.metric)
+                                      }}</span>
+                                      <div class="practice-metric-val-wrap" dir="ltr">
+                                        @if (measuredValue(item.metric) !== null) {
+                                          <strong class="practice-metric-num">{{
+                                            format(item.metric)
+                                          }}</strong>
+                                          @if (
+                                            item.metric.unit &&
+                                            !['count', 'percent'].includes(
+                                              item.metric.unit.toLowerCase()
+                                            )
+                                          ) {
+                                            <span class="practice-metric-unit">{{
+                                              metricUnit(item.metric.unit)
+                                            }}</span>
+                                          }
+                                        } @else {
+                                          <strong
+                                            class="practice-metric-num practice-metric-num--empty"
+                                            >&mdash;</strong
+                                          >
+                                        }
+                                        @if (
+                                          canDrilldown(item.metric) &&
+                                          measuredValue(item.metric) !== null &&
+                                          (measuredValue(item.metric) ?? 0) > 0
+                                        ) {
+                                          <button
+                                            type="button"
+                                            class="metric-link"
+                                            (click)="openDrilldown(item.metric)"
+                                            [title]="'doctorDashboard.viewDetails' | t"
+                                          >
+                                            <i
+                                              class="fa-solid fa-arrow-left metric-link-icon"
+                                              aria-hidden="true"
+                                            ></i>
+                                          </button>
+                                        }
+                                      </div>
+                                    </div>
+                                    <div class="pattern-bar-track">
+                                      <div
+                                        class="pattern-bar-fill"
+                                        [class]="item.colorClass"
+                                        [style.width.%]="item.widthPct"
+                                      ></div>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                            </div>
                           }
                         </div>
                       </section>
                     }
                   </div>
 
-                  <!-- Operational & Channel Breakdown Dimensions -->
+                  <!-- Operational & Channel Breakdown Dimensions (Visual Bar Charts) -->
                   @if (channelBreakdowns().length) {
                     <div class="operational-channels-section">
                       <div class="channels-section-header">
@@ -1246,17 +1584,26 @@
 
                             <div class="channel-card__metrics">
                               @for (metric of point.metrics ?? []; track $index) {
-                                <div class="channel-metric-row">
-                                  <span class="channel-metric-label">{{
-                                    metricLabel(metric)
-                                  }}</span>
-                                  <strong class="channel-metric-val" dir="ltr">
-                                    @if (measuredValue(metric) !== null) {
-                                      {{ format(metric) }}
-                                    } @else {
-                                      &mdash;
-                                    }
-                                  </strong>
+                                <div class="module-chart-row">
+                                  <div class="channel-metric-row">
+                                    <span class="channel-metric-label">{{
+                                      metricLabel(metric)
+                                    }}</span>
+                                    <strong class="channel-metric-val" dir="ltr">
+                                      @if (measuredValue(metric) !== null) {
+                                        {{ format(metric) }}
+                                      } @else {
+                                        &mdash;
+                                      }
+                                    </strong>
+                                  </div>
+                                  <div class="pattern-bar-track">
+                                    <div
+                                      class="pattern-bar-fill"
+                                      [class]="metricBarColorClass(metric.metricCode)"
+                                      [style.width.%]="channelMetricBarWidth(metric)"
+                                    ></div>
+                                  </div>
                                 </div>
                               }
                             </div>
@@ -1269,8 +1616,8 @@
               </details>
             }
 
-            <!-- 7.4 All Metrics Directory Accordion -->
-            <details class="clean-accordion">
+            <!-- 7.4 All Metrics Directory & Section Chart Accordion -->
+            <details class="clean-accordion metrics-details">
               <summary class="clean-accordion__summary">
                 <div class="clean-accordion__title-wrap">
                   <i class="fa-solid fa-folder-tree clean-accordion__icon" aria-hidden="true"></i>
@@ -1340,8 +1687,51 @@
                   </div>
                 </div>
 
-                <!-- Metrics Directory Multi-Column Grid -->
                 @if (displayedGroupMetrics().length) {
+                  <!-- Visual Comparative Bar Chart for Selected Section -->
+                  <div class="group-comparison-chart-box">
+                    <div class="group-comparison-chart-header">
+                      <i class="fa-solid fa-chart-bar" aria-hidden="true"></i>
+                      <h4>{{ 'doctorDashboard.chart.groupComparison' | t }}</h4>
+                    </div>
+                    <div class="group-comparison-bars-grid">
+                      @for (metric of displayedGroupMetrics(); track $index) {
+                        <div class="module-chart-row">
+                          <div class="module-metric-row">
+                            <span class="module-metric-label">{{ metricLabel(metric) }}</span>
+                            <strong class="module-metric-val" dir="ltr">
+                              @if (measuredValue(metric) !== null) {
+                                @if (metric.unit?.toLowerCase() === 'percent') {
+                                  %{{ format(metric) }}
+                                } @else {
+                                  {{ format(metric) }}
+                                  @if (
+                                    metric.unit &&
+                                    !['count', 'percent'].includes(metric.unit.toLowerCase())
+                                  ) {
+                                    <small class="chart-unit-inline">{{
+                                      metricUnit(metric.unit)
+                                    }}</small>
+                                  }
+                                }
+                              } @else {
+                                &mdash;
+                              }
+                            </strong>
+                          </div>
+                          <div class="pattern-bar-track">
+                            <div
+                              class="pattern-bar-fill"
+                              [class]="metricBarColorClass(metric.metricCode)"
+                              [style.width.%]="groupMetricBarWidth(metric)"
+                            ></div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Metrics Directory Multi-Column Grid with Visual Bar Gauges -->
                   <div class="metric-directory">
                     @for (metric of displayedGroupMetrics(); track $index) {
                       <article class="metric-row metric-card">
@@ -1382,6 +1772,17 @@
                                 'doctorRemediation.unavailable' | t
                               }}</span>
                             }
+                          </div>
+
+                          <!-- Visual Progress / Proportion Bar inside Card -->
+                          <div class="metric-card__visual-gauge">
+                            <div class="pattern-bar-track">
+                              <div
+                                class="pattern-bar-fill"
+                                [class]="metricBarColorClass(metric.metricCode)"
+                                [style.width.%]="groupMetricBarWidth(metric)"
+                              ></div>
+                            </div>
                           </div>
                         </div>
 

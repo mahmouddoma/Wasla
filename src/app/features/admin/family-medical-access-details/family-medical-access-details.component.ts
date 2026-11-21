@@ -226,4 +226,59 @@ export class FamilyMedicalAccessDetailsComponent {
       this.documentLoadingId.set('');
     }
   }
+
+  protected formatStatus(status?: string | null): string {
+    if (!status) return '—';
+    const map: Record<string, string> = {
+      Pending: 'familyEligibility.status.pending',
+      PendingReview: 'familyEligibility.status.pending',
+      Approved: 'familyEligibility.status.approved',
+      Rejected: 'familyEligibility.status.rejected',
+      Revoked: 'familyEligibility.status.revoked',
+      ModificationRequested: 'familyMedical.action.modificationRequested',
+      Withdrawn: 'familyMedical.action.cancelled',
+    };
+    const key = map[status];
+    return key ? this.uiLanguage.t(key) : status;
+  }
+
+  protected formatDocumentType(docType?: string | null): string {
+    if (!docType) return '—';
+    const map: Record<string, string> = {
+      NationalId: 'familyMedical.docType.nationalId',
+      BirthCertificate: 'familyMedical.docType.birthCertificate',
+      Guardianship: 'familyMedical.docType.guardianship',
+      GuardianshipDocument: 'familyMedical.docType.guardianship',
+      MedicalReport: 'familyMedical.docType.medicalReport',
+      Other: 'familyMedical.docType.other',
+    };
+    const key = map[docType];
+    return key ? this.uiLanguage.t(key) : docType;
+  }
+
+  protected formatAction(action?: string | null): string {
+    if (!action) return '—';
+    const map: Record<string, string> = {
+      Submitted: 'familyMedical.action.submitted',
+      Approved: 'familyMedical.action.approved',
+      Rejected: 'familyMedical.action.rejected',
+      ModificationRequested: 'familyMedical.action.modificationRequested',
+      Resubmitted: 'familyMedical.action.resubmitted',
+      Cancelled: 'familyMedical.action.cancelled',
+      Withdrawn: 'familyMedical.action.cancelled',
+      Revoked: 'familyMedical.action.revoked',
+    };
+    const key = map[action];
+    return key ? this.uiLanguage.t(key) : action;
+  }
+
+  protected formatDate(utc?: string | null): string {
+    if (!utc) return '—';
+    const d = new Date(utc);
+    if (Number.isNaN(d.getTime())) return utc;
+    return new Intl.DateTimeFormat(this.uiLanguage.isRtl() ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(d);
+  }
 }

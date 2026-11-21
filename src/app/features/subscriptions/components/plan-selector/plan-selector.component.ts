@@ -39,6 +39,7 @@ export class PlanSelectorComponent implements OnChanges {
   readonly catalog = input.required<CommercialCatalog>();
   readonly selection = input<SubscriptionSelection | null>(null);
   readonly allowTrial = input(false);
+  readonly showHeader = input(true);
   readonly productCode = input<string | null>(null);
   readonly disabled = input(false);
   readonly selectionChange = output<SubscriptionSelection>();

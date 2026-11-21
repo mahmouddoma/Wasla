@@ -173,17 +173,16 @@ export class FamilyMedicalEligibilityReviewsComponent {
   }
 
   protected getStatusLabel(status: string): string {
-    const isAr = this.uiLanguage.currentLang() === 'ar';
     switch (status) {
       case 'Approved':
-        return isAr ? 'معتمد' : 'Approved';
+        return this.uiLanguage.t('familyEligibility.status.approved');
       case 'Rejected':
-        return isAr ? 'مرفوض' : 'Rejected';
+        return this.uiLanguage.t('familyEligibility.status.rejected');
       case 'Revoked':
-        return isAr ? 'ملغى' : 'Revoked';
+        return this.uiLanguage.t('familyEligibility.status.revoked');
       case 'Pending':
       case 'PendingReview':
-        return isAr ? 'قيد المراجعة' : 'Pending Review';
+        return this.uiLanguage.t('familyEligibility.status.pending');
       default:
         return status;
     }

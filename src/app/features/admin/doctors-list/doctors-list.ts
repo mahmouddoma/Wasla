@@ -193,13 +193,15 @@ export class DoctorsList {
   }
 
   protected doctorInitials(doctor: AdminDoctorListItem): string {
-    const name = doctor.nameAr?.trim() || doctor.nameEn?.trim() || '';
+    const name = this.uiLanguage.isRtl()
+      ? doctor.nameAr?.trim() || doctor.nameEn?.trim() || ''
+      : doctor.nameEn?.trim() || doctor.nameAr?.trim() || '';
     if (!name) return this.uiLanguage.t('ui.full.6');
     const parts = name.split(/\s+/);
     if (parts.length >= 2) {
-      return parts[0].charAt(0) + ' ' + parts[1].charAt(0);
+      return (parts[0].charAt(0) + ' ' + parts[1].charAt(0)).toUpperCase();
     }
-    return parts[0].substring(0, 2);
+    return parts[0].substring(0, 2).toUpperCase();
   }
 
   protected doctorCode(doctor: AdminDoctorListItem): string {

@@ -86,7 +86,9 @@ export class SubscriptionState {
     () => this.details()?.subscription ?? this.details()?.pendingSubscription ?? null,
   );
   readonly needsReview = computed(
-    () => !['Active', 'Expired'].includes(this.terms()?.status ?? ''),
+    () =>
+      !this.hasActiveSubscription() &&
+      !this.contracts().some((c) => c.periods.some((p) => p.subscription?.status === 'Expired')),
   );
   readonly availableContracts = computed(() =>
     this.contracts().filter((c) => c.availablePracticeSeats > 0 && this.currentDetails(c)),

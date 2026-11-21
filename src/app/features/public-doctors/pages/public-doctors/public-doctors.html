@@ -595,6 +595,9 @@
         </div>
       </div>
 
+      <!-- Split Layout: Doctor Cards + Left Sticky Booking Summary (1440px+) / Drawer (768-1439px) / Sheet (<768px) -->
+      <div class="directory-results-split" [class.has-inline-booking]="booking.opened()">
+        <div class="directory-cards-column">
       <!-- Skeletons during Loading -->
       @if (isLoading()) {
         <div class="doctors-cards-list skeletons-grid" aria-hidden="true">
@@ -818,7 +821,13 @@
                         <!-- 3 Days Grid -->
                         <div class="wasla-schedule-grid">
                           @for (day of getScheduleDays(practice, docOffset); track day.key) {
-                            <div class="wasla-day-column" [class.is-available]="day.isAvailable" [class.is-today]="day.isToday">
+                            <div
+                              class="wasla-day-column"
+                              [class.is-available]="day.isAvailable"
+                              [class.is-today]="day.isToday"
+                              [class.slide-from-next]="getScheduleSlideDir(doctor.doctorId) === 'next'"
+                              [class.slide-from-prev]="getScheduleSlideDir(doctor.doctorId) === 'prev'"
+                            >
                               <!-- Column Header -->
                               <div class="wasla-day-header">
                                 <span class="wasla-day-name">{{ day.label }}</span>
@@ -830,23 +839,25 @@
 
                               <!-- Column Slots Body -->
                               <div class="wasla-day-body">
-                                @if (day.isAvailable && day.slots?.length) {
+                                @if (day.isAvailable && day.slots.length) {
                                   <div class="wasla-slots-list">
-                                    @for (timeSlot of day.slots; track timeSlot) {
+                                    @for (timeSlot of day.slots; track timeSlot.rawTime) {
                                       <button
                                         type="button"
                                         class="wasla-slot-chip"
-                                        (click)="openDoctorDrawer(doctor, practice.id, day.key, timeSlot); $event.stopPropagation()"
+                                        [class.is-selected]="isSlotSelected(practice.id, day.key, timeSlot.rawTime)"
+                                        [attr.aria-pressed]="isSlotSelected(practice.id, day.key, timeSlot.rawTime)"
+                                        (click)="openDoctorDrawer(doctor, practice.id, day.key, timeSlot.rawTime); $event.stopPropagation()"
                                         [title]="'booking.bookNow' | t"
                                       >
-                                        {{ timeSlot }}
+                                        {{ timeSlot.label }}
                                       </button>
                                     }
                                   </div>
                                   <button
                                     type="button"
                                     class="btn-wasla-book-cta"
-                                    (click)="openDoctorDrawer(doctor, practice.id, day.key, (day.slots ?? [])[0]); $event.stopPropagation()"
+                                    (click)="openDoctorDrawer(doctor, practice.id, day.key, day.slots[0]?.rawTime); $event.stopPropagation()"
                                   >
                                     <span>{{ 'discovery.quickBook' | t }}</span>
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -972,10 +983,58 @@
           </button>
         </nav>
       }
+        </div>
+
+        @if (booking.opened()) {
+          <aside
+            class="inline-booking-column"
+            [class.is-mobile-sheet-open]="mobileSheetOpen() || !!booking.receipt()"
+            [attr.aria-label]="'booking.drawerTitle' | t"
+          >
+            <app-patient-booking-drawer [inline]="true" />
+          </aside>
+        }
+      </div>
     </div>
   </section>
 
-  <!-- Slide-Over Booking Drawer (Rule 32.3) -->
-  <app-patient-booking-drawer />
+  <!-- Mobile Sticky Bottom Booking Action Bar (< 768px) -->
+  @if (booking.opened() && !mobileSheetOpen() && !booking.receipt()) {
+    <div class="mobile-sticky-booking-bar" role="region" [attr.aria-label]="'booking.selectedAppointment' | t">
+      <div class="mobile-bar-info">
+        @if (booking.doctor(); as doc) {
+          <strong class="mobile-bar-doctor">{{ language.isRtl() ? doc.nameAr : doc.nameEn || doc.nameAr }}</strong>
+        }
+        <div class="mobile-bar-meta">
+          @if (booking.date() && booking.time()) {
+            @let dc = formatDateChip(booking.date());
+            <span>{{ dc.dayName }} {{ dc.dayNumber }} {{ dc.monthName }} · {{ formatSlotTime(booking.time()) }}</span>
+          }
+          @if (booking.segment(); as seg) {
+            <span class="mobile-bar-price">
+              <bdi>{{ seg.price }} {{ 'discovery.currency' | t }}</bdi>
+            </span>
+          }
+        </div>
+      </div>
+      <div class="mobile-bar-actions">
+        <button
+          type="button"
+          class="btn-mobile-bar-continue"
+          (click)="openMobileBookingSheet()"
+        >
+          {{ 'discovery.continueBooking' | t }}
+        </button>
+        <button
+          type="button"
+          class="btn-mobile-bar-close"
+          (click)="closeMobileBookingSheet()"
+          [attr.aria-label]="'common.close' | t"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  }
 </main>
 </div>

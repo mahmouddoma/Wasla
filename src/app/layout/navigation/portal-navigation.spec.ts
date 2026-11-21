@@ -110,6 +110,12 @@ describe('PortalNavigation', () => {
     grants.set([]);
     expect(nav.items().map((i) => i.id)).not.toContain('reservations');
     expect(nav.items().map((i) => i.id)).not.toContain('finance');
+    expect(nav.items().map((i) => i.id)).not.toContain('worklist');
+    expect(nav.items().map((i) => i.id)).not.toContain('handovers');
+
+    grants.set(['Dashboards.Reception.ViewAssigned', 'Handovers.ViewAssigned']);
+    expect(nav.items().map((i) => i.id)).toContain('worklist');
+    expect(nav.items().map((i) => i.id)).toContain('handovers');
   });
   it('only shows patient health and account items with the required permissions', () => {
     setUser('Patient');

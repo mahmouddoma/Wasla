@@ -1,23 +1,49 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LanguageService } from '../../core/i18n/language.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
-import { SideDrawer } from '../../shared/components/side-drawer/side-drawer';
 import { PatientBookingState } from './patient-booking.state';
 
 @Component({
   selector: 'app-patient-booking-drawer',
-  imports: [RouterLink, TranslatePipe, SideDrawer],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './patient-booking-drawer.component.html',
   styleUrl: './patient-booking-drawer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientBookingDrawerComponent {
+  readonly inline = input(false);
   readonly booking = inject(PatientBookingState);
   readonly language = inject(LanguageService);
+  readonly editingSchedule = signal(false);
+  readonly hasPreselectedSlot = computed(
+    () => !!this.booking.date() && !!this.booking.time() && !!this.booking.options(),
+  );
+  readonly showSchedulePicker = computed(
+    () => this.editingSchedule() || !this.hasPreselectedSlot(),
+  );
 
   constructor() {
+    effect(() => {
+      if (!this.booking.opened()) {
+        this.editingSchedule.set(false);
+      }
+    });
     inject(DestroyRef).onDestroy(() => this.booking.close());
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.booking.opened() && !this.booking.submitting()) {
+      this.booking.close();
+    }
+  }
+
+  async pickTime(time: string): Promise<void> {
+    await this.booking.chooseTime(time);
+    if (this.booking.time() && this.booking.options()) {
+      this.editingSchedule.set(false);
+    }
   }
 
   name(item: { nameAr: string; nameEn?: string | null }): string {

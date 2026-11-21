@@ -278,14 +278,23 @@
                     <button
                       type="button"
                       class="doctor-title-btn"
-                      (click)="openReviewDrawer(item.requestId, item.doctorNameAr)"
+                      (click)="
+                        openReviewDrawer(
+                          item.requestId,
+                          uiLanguage.isRtl() ? item.doctorNameAr : item.doctorNameEn || item.doctorNameAr
+                        )
+                      "
                     >
-                      {{ item.doctorNameAr }}
+                      {{ uiLanguage.isRtl() ? item.doctorNameAr : item.doctorNameEn || item.doctorNameAr }}
                     </button>
 
-                    @if (item.doctorNameEn) {
+                    @if (uiLanguage.isRtl() && item.doctorNameEn) {
                       <span class="doctor-name-en" lang="en" dir="ltr">{{
                         item.doctorNameEn
+                      }}</span>
+                    } @else if (!uiLanguage.isRtl() && item.doctorNameAr && item.doctorNameEn) {
+                      <span class="doctor-name-en" lang="ar" dir="rtl">{{
+                        item.doctorNameAr
                       }}</span>
                     }
 

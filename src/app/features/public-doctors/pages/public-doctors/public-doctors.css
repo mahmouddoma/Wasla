@@ -23,11 +23,11 @@
 .discovery-shell {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.15rem;
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%;
   margin-inline: auto;
-  padding: 28px 24px 64px;
+  padding: 18px clamp(14px, 2vw, 28px) 56px;
   min-width: 0;
   box-sizing: border-box;
 }
@@ -439,18 +439,16 @@
   min-width: 0;
 }
 
-/* ── Refine Search Sidebar ("حدد بحثك") ── */
+/* ── Refine Search Sidebar ("حدد بحثك") — Clean, Lightweight, Zero Nested Scroll on Desktop ── */
 .refine-sidebar {
-  width: 280px;
-  flex: 0 0 280px;
+  width: 232px;
+  flex: 0 0 232px;
   background: #ffffff;
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-major, 16px);
-  padding: 18px;
+  border-radius: 12px;
+  padding: 16px;
   position: sticky;
-  top: 85px;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
+  top: 20px;
   box-sizing: border-box;
 }
 
@@ -674,38 +672,83 @@
   border-radius: 50%;
 }
 
+/* ── Split Layout: Doctor Cards + Contextual Sticky Booking Summary (1440px+) ── */
+.directory-results-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.directory-cards-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  container-type: inline-size;
+  container-name: doctor-cards;
+}
+
+.inline-booking-column {
+  min-width: 0;
+}
+
+@media (min-width: 1440px) {
+  .directory-results-split.has-inline-booking {
+    grid-template-columns: minmax(0, 1fr) 370px;
+  }
+
+  .inline-booking-column {
+    position: sticky;
+    top: 20px;
+  }
+}
+
+/* Prevent timetable compression whenever the card column is narrower than 760px */
+@container doctor-cards (max-width: 760px) {
+  .doctor-card {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 14px;
+  }
+}
+
 /* ── Doctor Cards List ── */
 .doctors-cards-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
 }
 
-/* ── The Vezeeta-Pattern Doctor Card ── */
+/* ── Refined Vezeeta-Pattern Doctor Card (Compact, Clean, Consistent) ── */
 .doctor-card {
   display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(355px, 1fr);
+  gap: 18px;
   align-items: stretch;
-  padding: 22px;
+  padding: 18px 20px;
   background: #ffffff;
-  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-major, 16px);
-  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.04);
-  transition: all 0.2s ease;
+  border: 1px solid var(--wasla-border-subtle, #dce5e8);
+  border-inline-start: 3px solid transparent;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
   cursor: pointer;
 }
 
 .doctor-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px -4px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 4px 14px -3px rgba(15, 23, 42, 0.06);
   border-color: #cbd5e1;
 }
 
 .doctor-card.is-selected {
-  border-color: var(--wasla-border, #e2e8f0);
-  box-shadow: 0 0 0 2px var(--wasla-teal-500, #0ba5a0), 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+  border-color: var(--wasla-border, #dce5e8);
+  border-inline-start: 3px solid var(--wasla-teal-600, #078c88);
+  background: #fafefe;
+  box-shadow: 0 4px 16px -4px rgba(11, 165, 160, 0.1);
 }
 
 /* Right Side: Doctor Profile Info */
@@ -993,8 +1036,8 @@
   height: 100%;
   background: #f8fafc;
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: var(--radius-major, 16px);
-  padding: 14px;
+  border-radius: 12px;
+  padding: 12px 10px;
   box-sizing: border-box;
   transition: all 0.2s ease;
 }
@@ -1003,14 +1046,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-bottom: 10px;
+  padding-inline: 2px;
 }
 
 .schedule-title-cluster {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  min-width: 0;
+}
+
+.schedule-heading {
+  white-space: nowrap;
+  font-size: 0.84rem;
+}
+
+.schedule-tag-pill {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  white-space: nowrap;
 }
 
 .schedule-icon-badge {
@@ -1054,15 +1111,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   background: #ffffff;
   border: 1px solid var(--wasla-border, #e2e8f0);
   border-radius: 50%;
   color: var(--wasla-navy-900, #0f172a);
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1109,11 +1166,33 @@
   transform: translateX(2px);
 }
 
-/* 3-Day Grid */
+/* 3-Day Grid with Subtle Slide Transition */
+@keyframes scheduleSlideNext {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scheduleSlidePrev {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .wasla-schedule-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   flex: 1;
   min-width: 0;
 }
@@ -1121,12 +1200,28 @@
 .wasla-day-column {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   background: #ffffff;
   border: 1px solid var(--wasla-border-subtle, #edf2f7);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  min-height: 145px;
-  transition: all 0.18s ease;
+  min-height: 140px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wasla-day-column.slide-from-next {
+  animation: scheduleSlideNext 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wasla-day-column.slide-from-prev {
+  animation: scheduleSlidePrev 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wasla-day-column.slide-from-next,
+  .wasla-day-column.slide-from-prev {
+    animation: none;
+  }
 }
 
 .wasla-day-column:hover {
@@ -1180,62 +1275,77 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 8px 6px;
+  padding: 6px 5px;
   flex: 1;
-  gap: 6px;
+  gap: 5px;
+  min-width: 0;
 }
 
 .wasla-slots-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .wasla-slot-chip {
   width: 100%;
+  min-width: 0;
   height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 6px;
+  padding: 0 4px;
+  box-sizing: border-box;
   background: #ffffff;
-  border: 1px solid var(--wasla-border, #e2e8f0);
+  border: 1px solid var(--wasla-border, #dce5e8);
   border-radius: 7px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--wasla-navy-950, #071c30);
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
 
 .wasla-slot-chip:hover {
   background: var(--wasla-teal-50, #f0fbfa);
-  border-color: #cbd5e1;
+  border-color: var(--wasla-teal-500, #0ba5a0);
   color: var(--wasla-teal-700, #0f766e);
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 2px rgba(11, 165, 160, 0.2), 0 2px 5px rgba(11, 165, 160, 0.12);
+}
+
+.wasla-slot-chip.is-selected {
+  background: var(--wasla-teal-600, #078c88);
+  border-color: var(--wasla-teal-600, #078c88);
+  color: #ffffff;
+  font-weight: 800;
 }
 
 .btn-wasla-book-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
-  height: 36px;
-  padding: 0 10px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 6px;
+  box-sizing: border-box;
   background: linear-gradient(135deg, var(--wasla-teal-500, #0ba5a0), var(--wasla-teal-600, #078c88));
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #ffffff;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: auto;
-  box-shadow: 0 2px 6px rgba(11, 165, 160, 0.22);
+  box-shadow: 0 2px 6px rgba(11, 165, 160, 0.2);
 }
 
 .btn-wasla-book-cta:hover:not(:disabled) {
@@ -1724,6 +1834,115 @@
     padding: 6px 10px;
     font-size: 0.76rem;
     white-space: nowrap;
+  }
+}
+
+/* Mobile Sticky Bottom Booking Action Bar (Hidden on >= 768px) */
+.mobile-sticky-booking-bar {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .discovery-shell {
+    padding: 12px 12px 92px;
+    gap: 0.85rem;
+  }
+
+  .inline-booking-column:not(.is-mobile-sheet-open) {
+    display: none;
+  }
+
+  .wasla-schedule-grid {
+    gap: 6px;
+  }
+
+  .wasla-slot-chip {
+    min-height: 36px;
+    font-size: 0.72rem;
+    padding: 0 4px;
+  }
+
+  .btn-wasla-book-cta {
+    min-height: 38px;
+    font-size: 0.76rem;
+  }
+
+  .mobile-sticky-booking-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: #ffffff;
+    border-top: 1px solid var(--wasla-border, #dce5e8);
+    box-shadow: 0 -6px 20px rgba(7, 28, 48, 0.1);
+  }
+
+  .mobile-bar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .mobile-bar-doctor {
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: var(--wasla-navy-950, #071c30);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-bar-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--wasla-slate, #64748b);
+  }
+
+  .mobile-bar-price {
+    color: var(--wasla-teal-700, #078c88);
+    font-weight: 800;
+  }
+
+  .mobile-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .btn-mobile-bar-continue {
+    height: 44px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 10px;
+    background: var(--wasla-teal-600, #078c88);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn-mobile-bar-close {
+    width: 38px;
+    height: 44px;
+    border: 1px solid var(--wasla-border-subtle, #dce5e8);
+    border-radius: 10px;
+    background: #f8fafc;
+    color: var(--wasla-slate, #64748b);
+    cursor: pointer;
   }
 }
 

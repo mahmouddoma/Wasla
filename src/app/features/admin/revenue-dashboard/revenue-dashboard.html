@@ -62,9 +62,11 @@
           <span class="kpi-tag-badge badge-teal">{{ 'finance.revenue.net' | t }}</span>
         </div>
         <div class="kpi-card-body">
-          <div class="kpi-metric-row" dir="ltr">
-            <span class="kpi-currency">{{ summary.currencyCode }}</span>
-            <span class="kpi-number">{{ summary.netRevenue }}</span>
+          <div class="kpi-metric-row">
+            <span class="kpi-number" dir="ltr">{{ summary.netRevenue }}</span>
+            <span class="kpi-currency">{{
+              summary.currencyCode === 'EGP' ? ('common.currency.egp' | t) : summary.currencyCode
+            }}</span>
           </div>
           <p class="kpi-metric-subtext">{{ 'finance.netSubtitle' | t }}</p>
         </div>
@@ -82,9 +84,11 @@
           <span class="kpi-tag-badge badge-rose">{{ 'finance.revenue.refunds' | t }}</span>
         </div>
         <div class="kpi-card-body">
-          <div class="kpi-metric-row is-negative" dir="ltr">
-            <span class="kpi-currency">{{ summary.currencyCode }}</span>
-            <span class="kpi-number">{{ summary.totalRefunds }}</span>
+          <div class="kpi-metric-row is-negative">
+            <span class="kpi-number" dir="ltr">{{ summary.totalRefunds }}</span>
+            <span class="kpi-currency">{{
+              summary.currencyCode === 'EGP' ? ('common.currency.egp' | t) : summary.currencyCode
+            }}</span>
           </div>
           <p class="kpi-metric-subtext">
             {{ summary.refundCount }} {{ 'finance.refunds' | t }}
@@ -106,9 +110,11 @@
           <span class="kpi-tag-badge badge-navy">{{ 'finance.revenue.gross' | t }}</span>
         </div>
         <div class="kpi-card-body">
-          <div class="kpi-metric-row" dir="ltr">
-            <span class="kpi-currency">{{ summary.currencyCode }}</span>
-            <span class="kpi-number">{{ summary.grossRevenue }}</span>
+          <div class="kpi-metric-row">
+            <span class="kpi-number" dir="ltr">{{ summary.grossRevenue }}</span>
+            <span class="kpi-currency">{{
+              summary.currencyCode === 'EGP' ? ('common.currency.egp' | t) : summary.currencyCode
+            }}</span>
           </div>
           <p class="kpi-metric-subtext">
             {{ summary.paymentCount }} {{ 'finance.payments' | t }}
@@ -328,27 +334,39 @@
               </td>
               <td class="num-col text-slate" dir="ltr">
                 <span class="num-value">{{ row.grossRevenue }}</span>
-                <span class="currency-sub">{{ data()?.summary?.currencyCode || 'EGP' }}</span>
+                <span class="currency-sub">{{
+                  (data()?.summary?.currencyCode || 'EGP') === 'EGP'
+                    ? ('common.currency.egp' | t)
+                    : data()?.summary?.currencyCode
+                }}</span>
               </td>
               <td class="num-col text-rose" dir="ltr">
                 <span class="num-value">{{ row.refunds }}</span>
-                <span class="currency-sub">{{ data()?.summary?.currencyCode || 'EGP' }}</span>
+                <span class="currency-sub">{{
+                  (data()?.summary?.currencyCode || 'EGP') === 'EGP'
+                    ? ('common.currency.egp' | t)
+                    : data()?.summary?.currencyCode
+                }}</span>
               </td>
               <td class="num-col text-teal font-bold" dir="ltr">
                 <span class="num-value">{{ row.netRevenue }}</span>
-                <span class="currency-sub">{{ data()?.summary?.currencyCode || 'EGP' }}</span>
+                <span class="currency-sub">{{
+                  (data()?.summary?.currencyCode || 'EGP') === 'EGP'
+                    ? ('common.currency.egp' | t)
+                    : data()?.summary?.currencyCode
+                }}</span>
               </td>
             </tr>
           } @empty {
             <tr>
               <td colspan="5" class="empty-table-cell">
                 <div class="state-container empty-state">
-                  <div class="empty-icon-wrap" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="8" y1="12" x2="16" y2="12" />
-                    </svg>
-                  </div>
+                  <img
+                    src="/SVG-AVATAR/Payment Information-bro.svg"
+                    [alt]="'finance.empty' | t"
+                    style="width: 150px; height: auto; margin-bottom: 0.75rem;"
+                    loading="lazy"
+                  />
                   <h3 class="empty-title">{{ 'finance.empty' | t }}</h3>
                   <p class="empty-help-text">{{ 'finance.emptySub' | t }}</p>
                   @if (hasActiveFilters()) {
@@ -382,7 +400,11 @@
               <strong class="entity-name">{{ label(row.doctorNameAr, row.doctorNameEn) }}</strong>
             </div>
             <span class="status-pill status-approved">
-              <span class="status-text text-teal font-bold" dir="ltr">{{ row.netRevenue }} {{ data()?.summary?.currencyCode || 'EGP' }}</span>
+              <span class="status-text text-teal font-bold" dir="ltr">{{ row.netRevenue }} {{
+                (data()?.summary?.currencyCode || 'EGP') === 'EGP'
+                  ? ('common.currency.egp' | t)
+                  : data()?.summary?.currencyCode
+              }}</span>
             </span>
           </div>
 
@@ -394,23 +416,31 @@
             <div class="mobile-revenue-stats-grid">
               <div class="mobile-rev-stat">
                 <span class="stat-caption">{{ 'finance.revenue.gross' | t }}</span>
-                <span class="stat-value text-slate" dir="ltr">{{ row.grossRevenue }} {{ data()?.summary?.currencyCode || 'EGP' }}</span>
+                <span class="stat-value text-slate" dir="ltr">{{ row.grossRevenue }} {{
+                  (data()?.summary?.currencyCode || 'EGP') === 'EGP'
+                    ? ('common.currency.egp' | t)
+                    : data()?.summary?.currencyCode
+                }}</span>
               </div>
               <div class="mobile-rev-stat">
                 <span class="stat-caption">{{ 'finance.revenue.refunds' | t }}</span>
-                <span class="stat-value text-rose" dir="ltr">{{ row.refunds }} {{ data()?.summary?.currencyCode || 'EGP' }}</span>
+                <span class="stat-value text-rose" dir="ltr">{{ row.refunds }} {{
+                  (data()?.summary?.currencyCode || 'EGP') === 'EGP'
+                    ? ('common.currency.egp' | t)
+                    : data()?.summary?.currencyCode
+                }}</span>
               </div>
             </div>
           </div>
         </article>
       } @empty {
         <div class="state-container empty-state">
-          <div class="empty-icon-wrap" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
-          </div>
+          <img
+            src="/SVG-AVATAR/Payment Information-bro.svg"
+            [alt]="'finance.empty' | t"
+            style="width: 150px; height: auto; margin-bottom: 0.75rem;"
+            loading="lazy"
+          />
           <h3 class="empty-title">{{ 'finance.empty' | t }}</h3>
           <p class="empty-help-text">{{ 'finance.emptySub' | t }}</p>
           @if (hasActiveFilters()) {

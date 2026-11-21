@@ -9,48 +9,119 @@
   />
 
   <!-- ══════════════════════════════════════════
-       SECTION 01 — HERO
+       SECTION 01 — CINEMATIC VIDEO HERO
+       Desktop: RTL 2-col (Right Text + Left Video)
+       Mobile: 1-col (Headline -> Desc -> CTAs -> Video)
        ══════════════════════════════════════════ -->
   <section class="hero-section" aria-labelledby="landing-hero-title">
     <div class="landing-container">
-      <div class="hero-content-wrap">
-        <h1 id="landing-hero-title" class="hero-headline">
-          {{ 'landing.hero.titlePart1' | t }}<br />
-          <span class="hero-teal-accent">{{ 'landing.hero.titlePart2' | t }}</span>
-        </h1>
+      <div class="hero-cinematic-grid">
+        <!-- Text & CTA Column (Right in RTL / Top on Mobile) -->
+        <div class="hero-text-col">
+          <h1 id="landing-hero-title" class="hero-headline">
+            {{ 'landing.hero.titlePart1' | t }}<br />
+            <span class="hero-teal-accent">{{ 'landing.hero.titlePart2' | t }}</span>
+          </h1>
 
-        <p class="hero-lead">{{ 'landing.hero.subtitle' | t }}</p>
+          <p class="hero-lead">{{ 'landing.hero.subtitle' | t }}</p>
 
-        <div class="hero-cta-row">
-          @if (authSession.user()) {
-            <a [routerLink]="workspaceRoute()" class="btn-hero-primary" id="hero-workspace-cta">
-              <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
-              <span>{{ 'landing.nav.workspaceCta' | t }}</span>
-            </a>
-          } @else {
-            <a routerLink="/register/doctor" class="btn-hero-primary" id="hero-primary-cta">
-              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-              <span>{{ 'landing.hero.primaryCta' | t }}</span>
-            </a>
+          <div class="hero-cta-row">
+            @if (authSession.user()) {
+              <a [routerLink]="workspaceRoute()" class="btn-hero-primary" id="hero-workspace-cta">
+                <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+                <span>{{ 'landing.nav.workspaceCta' | t }}</span>
+              </a>
+            } @else {
+              <a routerLink="/register/doctor" class="btn-hero-primary" id="hero-primary-cta">
+                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                <span>{{ 'landing.hero.primaryCta' | t }}</span>
+              </a>
+            }
+
+            <button
+              type="button"
+              class="btn-hero-secondary"
+              id="hero-secondary-cta"
+              (click)="scrollToSection('product-showcase')"
+            >
+              <i class="fa-regular fa-circle-play" aria-hidden="true"></i>
+              <span>{{ 'landing.hero.secondaryCta' | t }}</span>
+            </button>
+          </div>
+
+          @if (!authSession.user()) {
+            <p class="hero-login-hint">
+              <span>{{ 'landing.hero.hasAccount' | t }}</span>
+              <a routerLink="/login" id="hero-login-link">{{ 'landing.hero.signInLink' | t }}</a>
+            </p>
           }
-
-          <button
-            type="button"
-            class="btn-hero-secondary"
-            id="hero-secondary-cta"
-            (click)="scrollToSection('product-showcase')"
-          >
-            <i class="fa-regular fa-circle-play" aria-hidden="true"></i>
-            <span>{{ 'landing.hero.secondaryCta' | t }}</span>
-          </button>
         </div>
 
-        @if (!authSession.user()) {
-          <p class="hero-login-hint">
-            <span>{{ 'landing.hero.hasAccount' | t }}</span>
-            <a routerLink="/login" id="hero-login-link">{{ 'landing.hero.signInLink' | t }}</a>
-          </p>
-        }
+        <!-- Frameless Brand Animation Video Column (Left in RTL / Below CTAs on Mobile) -->
+        <div class="hero-media-col">
+          <div class="hero-video-stage">
+            @if (introReducedMotion() || introVideoFailed()) {
+              <img
+                src="/assets/images/wasla-hero-poster.webp"
+                [alt]="'common.appName' | t"
+                class="hero-poster-fallback"
+                width="1280"
+                height="720"
+                decoding="async"
+              />
+            } @else {
+              <video
+                #heroIntroVideo
+                id="hero-brand-video"
+                class="hero-brand-video"
+                src="/assets/videos/wasla-brand-reveal.mp4"
+                poster="/assets/images/wasla-hero-poster.webp"
+                autoplay
+                muted
+                loop
+                playsinline
+                [muted]="introMuted()"
+                preload="auto"
+                (play)="onIntroPlay()"
+                (ended)="onIntroEnded()"
+                (error)="onIntroError()"
+                [attr.aria-label]="'common.appName' | t"
+              ></video>
+
+              <div class="hero-video-controls">
+                <button
+                  type="button"
+                  class="hero-video-ctrl-btn"
+                  [attr.aria-label]="'landing.hero.toggleSound' | t"
+                  [title]="'landing.hero.toggleSound' | t"
+                  (click)="toggleIntroSound(heroIntroVideo)"
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-volume-xmark]="introMuted()"
+                    [class.fa-volume-high]="!introMuted()"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+                <button
+                  type="button"
+                  class="hero-video-ctrl-btn"
+                  [class.is-prominent]="introEnded() || introAutoplayBlocked()"
+                  [attr.aria-label]="'landing.hero.replayIntro' | t"
+                  [title]="'landing.hero.replayIntro' | t"
+                  (click)="replayIntro(heroIntroVideo)"
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-play]="introAutoplayBlocked()"
+                    [class.fa-rotate-right]="!introAutoplayBlocked()"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -58,7 +129,11 @@
   <!-- ══════════════════════════════════════════
        SECTION 02 — MAIN BENEFITS (3 Clean Benefits)
        ══════════════════════════════════════════ -->
-  <section id="benefits-section" class="section-band surface-white" aria-labelledby="benefits-heading">
+  <section
+    id="benefits-section"
+    class="section-band surface-white"
+    aria-labelledby="benefits-heading"
+  >
     <div class="landing-container">
       <div class="section-header-block text-center mx-auto">
         <h2 id="benefits-heading" class="section-title">{{ 'landing.benefits.title' | t }}</h2>
@@ -84,7 +159,11 @@
        SECTION 03 — INTERACTIVE PRODUCT SHOWCASE
        ══════════════════════════════════════════ -->
   <span id="features" class="sr-only"></span>
-  <section id="product-showcase" class="section-band surface-white" aria-labelledby="showcase-heading">
+  <section
+    id="product-showcase"
+    class="section-band surface-white"
+    aria-labelledby="showcase-heading"
+  >
     <div class="landing-container">
       <div class="section-header-block text-center mx-auto">
         <h2 id="showcase-heading" class="section-title">{{ 'landing.showcase.title' | t }}</h2>
@@ -100,7 +179,11 @@
   <!-- ══════════════════════════════════════════
        SECTION 04 — PRICING (Conditional)
        ══════════════════════════════════════════ -->
-  <section id="pricing-section" class="section-band surface-white" aria-labelledby="pricing-heading">
+  <section
+    id="pricing-section"
+    class="section-band surface-white"
+    aria-labelledby="pricing-heading"
+  >
     <div class="landing-container">
       <div class="section-header-block text-center mx-auto">
         <h2 id="pricing-heading" class="section-title">{{ 'landing.pricing.title' | t }}</h2>
@@ -113,6 +196,7 @@
             <app-plan-selector
               [catalog]="availableCatalog"
               [allowTrial]="true"
+              [showHeader]="false"
               [selection]="selection()"
               (selectionChange)="onPlanSelected($event)"
             />
@@ -144,11 +228,7 @@
                 </li>
               </ul>
               <div class="card-action">
-                <button
-                  type="button"
-                  class="btn-plan-outline"
-                  (click)="selectPlan('STARTER')"
-                >
+                <button type="button" class="btn-plan-outline" (click)="selectPlan('STARTER')">
                   {{ 'landing.pricing.startNow' | t }}
                 </button>
               </div>
@@ -182,11 +262,7 @@
                 </li>
               </ul>
               <div class="card-action">
-                <button
-                  type="button"
-                  class="btn-plan-filled"
-                  (click)="selectPlan('PROFESSIONAL')"
-                >
+                <button type="button" class="btn-plan-filled" (click)="selectPlan('PROFESSIONAL')">
                   {{ 'landing.pricing.startNow' | t }}
                 </button>
               </div>
@@ -229,11 +305,7 @@
               </li>
             </ul>
             <div class="card-action">
-              <button
-                type="button"
-                class="btn-plan-outline"
-                (click)="selectPlan('STARTER')"
-              >
+              <button type="button" class="btn-plan-outline" (click)="selectPlan('STARTER')">
                 {{ 'landing.pricing.startNow' | t }}
               </button>
             </div>
@@ -267,11 +339,7 @@
               </li>
             </ul>
             <div class="card-action">
-              <button
-                type="button"
-                class="btn-plan-filled"
-                (click)="selectPlan('PROFESSIONAL')"
-              >
+              <button type="button" class="btn-plan-filled" (click)="selectPlan('PROFESSIONAL')">
                 {{ 'landing.pricing.startNow' | t }}
               </button>
             </div>

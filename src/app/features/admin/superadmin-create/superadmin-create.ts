@@ -39,8 +39,13 @@ export class SuperAdminCreate {
       const parsed = parseApiErrors(error);
       this.apiMessages.set(parsed.messages);
       this.fieldErrors.set(parsed.fields);
+      this.toast.error(this.uiLanguage.t(parsed.messages[0] || 'common.actionFailed'));
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  protected cancel(): void {
+    void this.router.navigate(['/admin/superadmins']);
   }
 }

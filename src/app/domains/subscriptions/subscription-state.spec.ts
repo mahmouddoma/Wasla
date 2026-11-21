@@ -6,7 +6,7 @@ import { AuthSessionState } from '../../core/auth/auth.models';
 import { SubscriptionsApi } from './subscriptions-api';
 import { SubscriptionState } from './subscription-state';
 import { SubscriptionContract, PracticeAllocationDetails } from './subscription.models';
-import { contractFixture, detailsFixture } from '../../../testing/subscriptions';
+import { contractFixture } from '../../../testing/subscriptions';
 describe('practice-scoped SubscriptionState', () => {
   const session = signal<AuthSessionState | null>(null);
   const api = { contracts: vi.fn(), allocation: vi.fn() };
@@ -178,5 +178,18 @@ describe('practice-scoped SubscriptionState', () => {
     response.complete();
     await read;
     expect(state.contracts()).toEqual([]);
+  });
+  it('marks needsReview false when an active contract exists even before manual selection', async () => {
+    api.contracts.mockReturnValue(of([contractFixture('active-1')]));
+    const state = TestBed.inject(SubscriptionState);
+    await state.refresh();
+    expect(state.selectedContractId()).toBe('');
+    expect(state.hasActiveSubscription()).toBe(true);
+    expect(state.needsReview()).toBe(false);
+
+    api.contracts.mockReturnValue(of([]));
+    await state.refresh(true);
+    expect(state.hasActiveSubscription()).toBe(false);
+    expect(state.needsReview()).toBe(true);
   });
 });

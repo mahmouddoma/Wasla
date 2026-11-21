@@ -374,6 +374,8 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   protected readonly ticketDetailOpen = signal(false);
   protected readonly loading = signal(false);
   protected readonly loadFailed = signal(false);
+  protected readonly queueAccessDenied = signal(false);
+  protected readonly walkInAccessDenied = signal(false);
   protected readonly detailLoading = signal(false);
   protected readonly busy = signal(false);
   protected readonly messages = signal<readonly string[]>([]);
@@ -619,25 +621,30 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     );
   }
 
+  private computeAccessStamp(): string {
+    return (
+      [
+        PERMISSIONS.practiceTicketsView,
+        PERMISSIONS.practiceTicketsCall,
+        PERMISSIONS.practiceTicketsManualCall,
+        PERMISSIONS.practiceTicketsCancel,
+        PERMISSIONS.practiceTicketsRestoreNoShow,
+        PERMISSIONS.practiceTicketsCreateWalkIn,
+        PERMISSIONS.practiceTicketsRecordPayment,
+        PERMISSIONS.patientsSearchBasic,
+        PERMISSIONS.followUpEligibilityViewBookingEligibility,
+      ]
+        .map((code) => this.reception.allows(code))
+        .join(':') +
+      ':' +
+      this.session.hasPermission(PERMISSIONS.patientsSearchBasic)
+    );
+  }
+
   constructor() {
     effect(() => {
       const id = this.reception.currentPracticeId();
-      const stamp =
-        [
-          PERMISSIONS.practiceTicketsView,
-          PERMISSIONS.practiceTicketsCall,
-          PERMISSIONS.practiceTicketsManualCall,
-          PERMISSIONS.practiceTicketsCancel,
-          PERMISSIONS.practiceTicketsRestoreNoShow,
-          PERMISSIONS.practiceTicketsCreateWalkIn,
-          PERMISSIONS.practiceTicketsRecordPayment,
-          PERMISSIONS.patientsSearchBasic,
-          PERMISSIONS.followUpEligibilityViewBookingEligibility,
-        ]
-          .map((code) => this.reception.allows(code))
-          .join(':') +
-        ':' +
-        this.session.hasPermission(PERMISSIONS.patientsSearchBasic);
+      const stamp = this.computeAccessStamp();
       if (
         this.initialized &&
         this.actor() === 'Reception' &&
@@ -770,7 +777,9 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       }
       this.initialized = true;
       this.initListeners();
-      this.startPolling();
+      if (this.practiceId() && this.canViewQueue() && !this.queueAccessDenied() && !this.loadFailed()) {
+        this.startPolling();
+      }
     } catch (error) {
       await this.failure(error);
     } finally {
@@ -915,7 +924,10 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.detailSequence++;
     this.eligibilitySequence++;
     this.practiceId.set(id);
-    if (this.actor() === 'Reception') this.reception.select(id);
+    if (this.actor() === 'Reception') {
+      this.reception.select(id);
+      this.accessStamp = this.computeAccessStamp();
+    }
     this.ticketDetailOpen.set(false);
     this.selected.set(null);
     this.pendingAction.set(null);
@@ -923,14 +935,25 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     this.queue.set(this.emptyQueue());
     this.loading.set(false);
     this.loadFailed.set(false);
+    this.queueAccessDenied.set(false);
+    this.walkInAccessDenied.set(false);
     this.messages.set([]);
     this.resetWalkIn();
     this.intents.clear();
     if (id && this.canViewQueue()) {
       await this.loadQueue();
-      this.startPolling();
+      if (!this.queueAccessDenied() && !this.loadFailed()) {
+        this.startPolling();
+      }
     }
-    if (generation === this.generation && this.canWalkIn()) await this.loadWalkInOptions();
+    if (
+      generation === this.generation &&
+      !this.queueAccessDenied() &&
+      !this.walkInAccessDenied() &&
+      this.canWalkIn()
+    ) {
+      await this.loadWalkInOptions();
+    }
   }
 
   protected async loadQueue(): Promise<void> {
@@ -940,10 +963,12 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       sequence = ++this.queueSequence;
     this.loading.set(true);
     this.loadFailed.set(false);
+    this.queueAccessDenied.set(false);
     this.messages.set([]);
     try {
       const queue = await firstValueFrom(this.api.queue(id));
       if (this.current(id, generation) && sequence === this.queueSequence && this.canViewQueue()) {
+        this.queueAccessDenied.set(false);
         this.queue.set(queue);
         this.lastSyncedAt.set(new Date());
         this.syncStatus.set('synced');
@@ -951,6 +976,11 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     } catch (error) {
       if (this.current(id, generation) && sequence === this.queueSequence) {
         this.loadFailed.set(true);
+        if (error instanceof HttpErrorResponse && error.status === 403) {
+          this.queueAccessDenied.set(true);
+          this.walkInAccessDenied.set(true);
+          this.stopPolling();
+        }
         await this.failure(error, id, generation);
       }
     } finally {
@@ -1227,7 +1257,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   protected async openWalkIn(): Promise<void> {
-    if (!this.canWalkIn() || this.busy()) return;
+    if (!this.canWalkIn() || this.queueAccessDenied() || this.walkInAccessDenied() || this.busy()) return;
     this.detailSequence++;
     this.ticketDetailOpen.set(false);
     this.selected.set(null);
@@ -1308,6 +1338,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
 
   protected async refreshChoices(): Promise<void> {
     if (this.busy()) return;
+    this.walkInAccessDenied.set(false);
     this.walkInModel.update((model) => ({
       ...model,
       segmentId: '',
@@ -1318,8 +1349,11 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   protected selectChoice(event: Event): void {
+    this.selectChoiceByKey((event.target as HTMLSelectElement).value);
+  }
+
+  protected selectChoiceByKey(key: string): void {
     if (this.busy() || this.optionsLoading()) return;
-    const key = (event.target as HTMLSelectElement).value;
     const choice = this.walkInChoices().find((item) => item.key === key);
     if (choice)
       this.walkInModel.update((model) => ({
@@ -1563,7 +1597,9 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       clearTimeout(this.pollTimeoutHandle);
       this.pollTimeoutHandle = null;
     }
-    if (!this.practiceId() || !this.canViewQueue()) return;
+    if (!this.practiceId() || !this.canViewQueue() || this.queueAccessDenied() || this.loadFailed()) {
+      return;
+    }
 
     const delay = this.isWindowVisible ? this.currentPollIntervalMs : this.maxPollIntervalMs;
     this.pollTimeoutHandle = setTimeout(() => {
@@ -1577,11 +1613,15 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     if (
       !id ||
       !this.canViewQueue() ||
+      this.queueAccessDenied() ||
+      this.loadFailed() ||
       this.busy() ||
       this.clinicalBusy() ||
       this.completingVisit()
     ) {
-      this.scheduleNextPoll();
+      if (!this.queueAccessDenied() && !this.loadFailed()) {
+        this.scheduleNextPoll();
+      }
       return;
     }
 
@@ -1632,8 +1672,16 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       this.lastSyncedAt.set(new Date());
       this.syncStatus.set('synced');
       this.currentPollIntervalMs = this.minPollIntervalMs;
-    } catch {
+    } catch (error) {
       if (this.current(id, generation) && sequence === this.pollSequence) {
+        if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
+          this.queueAccessDenied.set(true);
+          this.walkInAccessDenied.set(true);
+          this.loadFailed.set(true);
+          this.stopPolling();
+          await this.failure(error, id, generation);
+          return;
+        }
         this.syncStatus.set('error');
         this.currentPollIntervalMs = Math.min(
           this.maxPollIntervalMs,
@@ -1641,11 +1689,16 @@ export class QueueWorkspace implements OnInit, OnDestroy {
         );
       }
     } finally {
-      this.scheduleNextPoll();
+      if (!this.queueAccessDenied() && !this.loadFailed()) {
+        this.scheduleNextPoll();
+      }
     }
   }
 
   protected refreshNow(): void {
+    if (this.queueAccessDenied() || this.loadFailed()) {
+      return;
+    }
     if (this.pollTimeoutHandle !== null) {
       clearTimeout(this.pollTimeoutHandle);
       this.pollTimeoutHandle = null;
@@ -2328,7 +2381,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
   }
 
   private async loadWalkInOptions(): Promise<void> {
-    if (!this.canWalkIn()) return;
+    if (!this.canWalkIn() || this.queueAccessDenied() || this.walkInAccessDenied()) return;
     const sequence = ++this.optionsSequence;
     this.optionsLoading.set(true);
     this.optionsFailed.set(false);
@@ -2356,6 +2409,10 @@ export class QueueWorkspace implements OnInit, OnDestroy {
     } catch (error) {
       if (this.current(id, generation) && sequence === this.optionsSequence) {
         this.optionsFailed.set(true);
+        if (error instanceof HttpErrorResponse && error.status === 403) {
+          this.walkInAccessDenied.set(true);
+          this.walkInOpen.set(false);
+        }
         await this.failure(error, id, generation);
       }
     } finally {
@@ -2479,6 +2536,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       error.status === 403 &&
       this.actor() === 'Reception'
     ) {
+      this.stopPolling();
       await this.reception.refresh();
       if (!this.current(id, generation)) return;
       this.practices.set(this.reception.practices());
@@ -2496,6 +2554,7 @@ export class QueueWorkspace implements OnInit, OnDestroy {
       return;
     }
     if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
+      this.stopPolling();
       this.generation++;
       this.queue.set(this.emptyQueue());
       this.selected.set(null);

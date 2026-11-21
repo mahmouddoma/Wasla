@@ -137,9 +137,19 @@ export class AppHeader {
   protected readonly userInitial = computed(
     () => this.user()?.userName?.trim().charAt(0).toUpperCase() || '',
   );
-  protected readonly userRole = computed(
-    () => this.user()?.roles?.join(this.langService.t('ui.full.0')) || this.user()?.userType || '',
-  );
+  protected readonly userRole = computed(() => {
+    const u = this.user();
+    if (!u) return '';
+    const translateRole = (role: string): string => {
+      const key = `userRole.${role}`;
+      const translated = this.langService.t(key);
+      return translated === key ? role : translated;
+    };
+    if (u.roles?.length) {
+      return u.roles.map(translateRole).join(this.langService.t('ui.full.0'));
+    }
+    return u.userType ? translateRole(u.userType) : '';
+  });
 
   protected readonly roleNavLinks = computed<HeaderNavLink[]>(() => {
     const u = this.user();
@@ -158,51 +168,51 @@ export class AppHeader {
     switch (u.userType) {
       case 'SuperAdmin':
         return [
-          { labelKey: 'common.workspace', route: '/admin', iconClass: 'fa-solid fa-gauge-high' },
-          { labelKey: 'sidebar.patients', route: '/admin/doctors', iconClass: 'fa-solid fa-user-doctor' },
-          { labelKey: 'subscriptions.mine', route: '/admin/subscriptions', iconClass: 'fa-solid fa-credit-card' },
+          { labelKey: 'common.workspace', route: '/admin', iconClass: 'fa-solid fa-gauge-high', isRoute: true },
+          { labelKey: 'admin.navDoctors', route: '/admin/doctors', iconClass: 'fa-solid fa-user-doctor', isRoute: true },
+          { labelKey: 'subscriptions.admin', route: '/admin/subscriptions', iconClass: 'fa-solid fa-credit-card', isRoute: true },
         ];
       case 'Doctor': {
         const links: HeaderNavLink[] = [
-          { labelKey: 'common.workspace', route: '/doctor/dashboard', iconClass: 'fa-solid fa-gauge-high' },
+          { labelKey: 'common.workspace', route: '/doctor/dashboard', iconClass: 'fa-solid fa-gauge-high', isRoute: true },
         ];
         if (has('Reservations.View')) {
-          links.push({ labelKey: 'sidebar.reservations', route: '/reservations', iconClass: 'fa-solid fa-calendar-check' });
+          links.push({ labelKey: 'sidebar.reservations', route: '/reservations', iconClass: 'fa-solid fa-calendar-check', isRoute: true });
         }
         if (has('Patients.View')) {
-          links.push({ labelKey: 'sidebar.myPatients', route: '/doctor/patients', iconClass: 'fa-solid fa-users' });
+          links.push({ labelKey: 'sidebar.myPatients', route: '/doctor/patients', iconClass: 'fa-solid fa-users', isRoute: true });
         }
         if (has('Subscriptions.ViewOwn')) {
-          links.push({ labelKey: 'subscriptions.mine', route: '/doctor/subscription', iconClass: 'fa-solid fa-crown' });
+          links.push({ labelKey: 'subscriptions.mine', route: '/doctor/subscription', iconClass: 'fa-solid fa-crown', isRoute: true });
         }
         return links;
       }
       case 'Reception': {
         const links: HeaderNavLink[] = [];
         if (has('Reservations.View')) {
-          links.push({ labelKey: 'sidebar.reservations', route: '/reservations', iconClass: 'fa-solid fa-calendar-check' });
+          links.push({ labelKey: 'sidebar.reservations', route: '/reservations', iconClass: 'fa-solid fa-calendar-check', isRoute: true });
         }
         if (has('Tickets.View')) {
-          links.push({ labelKey: 'sidebar.queue', route: '/tickets/queue', iconClass: 'fa-solid fa-list-ol' });
+          links.push({ labelKey: 'sidebar.queue', route: '/tickets/queue', iconClass: 'fa-solid fa-list-ol', isRoute: true });
         }
         if (has('Payments.View')) {
-          links.push({ labelKey: 'sidebar.finance', route: '/finance', iconClass: 'fa-solid fa-wallet' });
+          links.push({ labelKey: 'sidebar.finance', route: '/finance', iconClass: 'fa-solid fa-wallet', isRoute: true });
         }
         return links;
       }
       case 'Patient':
         return [
-          { labelKey: 'sidebar.tickets', route: '/patient/tickets', iconClass: 'fa-solid fa-ticket' },
-          { labelKey: 'patientRecord.title', route: '/patient/record', iconClass: 'fa-solid fa-file-medical' },
-          { labelKey: 'pricing.navFindDoctor', route: '/doctors', iconClass: 'fa-solid fa-user-doctor' },
+          { labelKey: 'sidebar.tickets', route: '/patient/tickets', iconClass: 'fa-solid fa-ticket', isRoute: true },
+          { labelKey: 'patientRecord.title', route: '/patient/record', iconClass: 'fa-solid fa-file-medical', isRoute: true },
+          { labelKey: 'pricing.navFindDoctor', route: '/doctors', iconClass: 'fa-solid fa-user-doctor', isRoute: true },
         ];
       case 'DrugCatalogManager':
         return [
-          { labelKey: 'common.workspace', route: '/drug-catalog', iconClass: 'fa-solid fa-pills' },
+          { labelKey: 'common.workspace', route: '/drug-catalog', iconClass: 'fa-solid fa-pills', isRoute: true },
         ];
       case 'MedicalCatalogManager':
         return [
-          { labelKey: 'common.workspace', route: '/medical-catalog', iconClass: 'fa-solid fa-stethoscope' },
+          { labelKey: 'common.workspace', route: '/medical-catalog', iconClass: 'fa-solid fa-stethoscope', isRoute: true },
         ];
       default:
         return [];

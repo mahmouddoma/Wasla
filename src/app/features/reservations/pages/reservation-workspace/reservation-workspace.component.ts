@@ -367,18 +367,27 @@ export class ReservationWorkspaceComponent implements OnInit {
     )
       await this.store.chooseDate(date);
   }
-  readonly hasActiveFilters = computed(() => {
+  readonly hasAdvancedFilters = computed(() => {
     const q = this.store.query();
+    const isDefaultReceptionToday =
+      this.store.actor() === 'Reception' && this.store.receptionView() === 'Today';
+    const hasCustomDates = !isDefaultReceptionToday && !!(q.fromDate || q.toDate);
     return !!(
-      (q.search && q.search.trim().length > 0) ||
       q.status ||
-      q.fromDate ||
-      q.toDate ||
+      hasCustomDates ||
       q.bookingSource ||
       q.segmentId ||
       q.isLate !== undefined ||
       q.patientId ||
-      q.doctorId ||
+      q.doctorId
+    );
+  });
+
+  readonly hasActiveFilters = computed(() => {
+    const q = this.store.query();
+    return !!(
+      (q.search && q.search.trim().length > 0) ||
+      this.hasAdvancedFilters() ||
       (this.store.actor() === 'Patient' && q.view && q.view !== 'Upcoming')
     );
   });

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { ArchiveOperationsComponent } from './archive-operations.component';
 import { Phase18Part2Api } from '../../../domains/phase18';
 import { ToastService } from '../../../core/notifications/toast.service';
@@ -19,10 +20,21 @@ describe('ArchiveOperationsComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([
+          { path: 'admin/archive-operations', component: ArchiveOperationsComponent },
+          { path: 'admin/archives', component: ArchiveOperationsComponent },
+          { path: 'admin/audit', component: ArchiveOperationsComponent },
+        ]),
         Phase18Part2Api,
         ToastService,
         LanguageService,
-        AuthSession,
+        {
+          provide: AuthSession,
+          useValue: {
+            hasPermission: () => true,
+            user: () => ({ userType: 'SuperAdmin', permissions: [] }),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -32,8 +44,8 @@ describe('ArchiveOperationsComponent', () => {
   });
 
   afterEach(() => {
-    httpTesting.verify();
-    fixture.destroy();
+    httpTesting?.verify();
+    fixture?.destroy();
     TestBed.resetTestingModule();
   });
 
@@ -136,15 +148,15 @@ describe('ArchiveOperationsComponent', () => {
     await fixture.whenStable();
 
     // Switch to archives tab
-    void component.setTab('archives');
-    await Promise.resolve();
+    const tabSwitch = component.setTab('archives');
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     // Flush practice options
     const reqPractices = httpTesting.expectOne((req) =>
       req.url.includes('/api/v1/admin/archives/practices/options'),
     );
     reqPractices.flush({ items: [] });
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     // Flush platform tickets
     const reqTickets = httpTesting.expectOne((req) =>
@@ -169,7 +181,7 @@ describe('ArchiveOperationsComponent', () => {
       hasMore: false,
     });
 
-    await Promise.resolve();
+    await tabSwitch;
     await fixture.whenStable();
     fixture.detectChanges();
     expect(component.activeTab()).toBe('archives');

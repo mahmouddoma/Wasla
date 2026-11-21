@@ -268,6 +268,18 @@ export class PortalNavigation {
           icon: 'clock',
         },
         {
+          id: 'worklist',
+          labelKey: 'worklist.title',
+          route: '/reception/worklist',
+          icon: 'clipboard-list',
+        },
+        {
+          id: 'handovers',
+          labelKey: 'handovers.title',
+          route: '/reception/handovers',
+          icon: 'clipboard-list',
+        },
+        {
           id: 'patients',
           labelKey: 'sidebar.patients',
           route: '/reception/patients',
@@ -297,6 +309,12 @@ export class PortalNavigation {
             return this.practiceContext.hasAnyPracticeWithPermission(
               PERMISSIONS.practiceTicketsView,
             );
+          case 'worklist':
+            return this.practiceContext.hasAnyPracticeWithPermission(
+              'Dashboards.Reception.ViewAssigned',
+            );
+          case 'handovers':
+            return this.practiceContext.hasAnyPracticeWithPermission('Handovers.ViewAssigned');
           case 'finance':
             return this.practiceContext.hasAnyPracticeWithPermission(
               PERMISSIONS.practicePaymentsView,
@@ -521,7 +539,7 @@ export class PortalNavigation {
   readonly sections = computed<NavigationSection[]>(() => {
     const groupIds: Record<NavigationGroup, readonly string[]> = {
       daily: this.isReception()
-        ? ['workspace', 'reservations', 'patients', 'queue']
+        ? ['workspace', 'reservations', 'patients', 'queue', 'worklist', 'handovers']
         : [
             'workspace',
             'reservations',

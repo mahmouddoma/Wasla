@@ -48,12 +48,21 @@ export class Login {
   private readonly subscription = inject(SubscriptionState);
 
   readonly activeMode = signal<AuthMode>('login');
+  readonly isOtpVerificationActive = signal(false);
   readonly showSignupSheet = signal(false);
   readonly showSignupMenu = signal(false);
+  readonly brandRevealPlaying = signal(
+    typeof window !== 'undefined' &&
+      !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  );
   readonly showDemoShortcuts = signal(
     typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.search.includes('demo=true')),
   );
+
+  protected onBrandRevealEnded(): void {
+    this.brandRevealPlaying.set(false);
+  }
 
   openSignupSheet(): void {
     this.showSignupSheet.set(true);
@@ -113,6 +122,7 @@ export class Login {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       }
       this.runEntranceAnimation();
+      this.startBrandRevealVideo();
     });
 
     this.destroyRef.onDestroy(() => {
@@ -139,6 +149,24 @@ export class Login {
           : {}),
       },
     });
+  }
+
+  private startBrandRevealVideo(): void {
+    if (!this.brandRevealPlaying()) return;
+    const video = this.hostRef.nativeElement.querySelector(
+      '.laptop-screen-video',
+    ) as HTMLVideoElement | null;
+    if (!video) {
+      this.brandRevealPlaying.set(false);
+      return;
+    }
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        this.brandRevealPlaying.set(false);
+      });
+    }
   }
 
   private runEntranceAnimation(): void {

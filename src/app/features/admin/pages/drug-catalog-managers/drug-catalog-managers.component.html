@@ -1,4 +1,4 @@
-<main class="management-page" [dir]="language.dir()">
+<section class="management-page" [dir]="language.dir()">
   <app-page-header
     [heading]="managerTitle | t"
     [description]="managerHelp | t"
@@ -53,150 +53,182 @@
   }
 
   <!-- Master-Detail Split Layout -->
-  <div class="catalog-managers-split-layout" [class.has-active-detail]="isDesktop() && hasActiveDetail()">
+  <div
+    class="catalog-managers-split-layout"
+    [class.has-active-detail]="isDesktop() && hasActiveDetail()"
+  >
     <!-- Master Pane: Directory Section -->
     <div class="catalog-managers-master-pane">
       <section class="management-table-surface" [attr.aria-busy]="loading()">
-    @if (loading()) {
-      <!-- Element-by-Element Skeleton Shimmer Loader -->
-      <div class="table-container skeleton-table-container" aria-busy="true" [attr.aria-label]="'common.loading' | t">
-        <table class="directory-table">
-          <thead>
-            <tr>
-              <th scope="col">{{ 'medications.userName' | t }}</th>
-              <th scope="col">{{ 'medications.email' | t }}</th>
-              <th scope="col">{{ 'medications.phone' | t }}</th>
-              <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col" class="action-column"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of [1, 2, 3, 4, 5]; track item) {
-              <tr class="skeleton-row">
-                <td class="user-cell">
-                  <div class="user-identity-deck">
-                    <div class="skeleton-shimmer skeleton-avatar-dot"></div>
-                    <div class="skeleton-text-meta">
-                      <div class="skeleton-shimmer skeleton-line skeleton-line--name"></div>
-                    </div>
-                  </div>
-                </td>
-                <td><div class="skeleton-shimmer skeleton-line" style="width: 140px; height: 16px;"></div></td>
-                <td><div class="skeleton-shimmer skeleton-line" style="width: 100px; height: 16px;"></div></td>
-                <td><div class="skeleton-shimmer skeleton-status-pill"></div></td>
-                <td class="action-cell"><div class="skeleton-shimmer skeleton-btn-inspect"></div></td>
-              </tr>
+        @if (loading()) {
+          <!-- Element-by-Element Skeleton Shimmer Loader -->
+          <div
+            class="table-container skeleton-table-container"
+            aria-busy="true"
+            [attr.aria-label]="'common.loading' | t"
+          >
+            <table class="directory-table">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'medications.userName' | t }}</th>
+                  <th scope="col">{{ 'medications.email' | t }}</th>
+                  <th scope="col">{{ 'medications.phone' | t }}</th>
+                  <th scope="col">{{ 'reservations.status' | t }}</th>
+                  <th scope="col" class="action-column"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of [1, 2, 3, 4, 5]; track item) {
+                  <tr class="skeleton-row">
+                    <td class="user-cell">
+                      <div class="user-identity-deck">
+                        <div class="skeleton-shimmer skeleton-avatar-dot"></div>
+                        <div class="skeleton-text-meta">
+                          <div class="skeleton-shimmer skeleton-line skeleton-line--name"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div
+                        class="skeleton-shimmer skeleton-line"
+                        style="width: 140px; height: 16px"
+                      ></div>
+                    </td>
+                    <td>
+                      <div
+                        class="skeleton-shimmer skeleton-line"
+                        style="width: 100px; height: 16px"
+                      ></div>
+                    </td>
+                    <td><div class="skeleton-shimmer skeleton-status-pill"></div></td>
+                    <td class="action-cell">
+                      <div class="skeleton-shimmer skeleton-btn-inspect"></div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else if (failed()) {
+          <div class="state-container empty-state">
+            <h2>{{ 'medications.failed' | t }}</h2>
+            <button type="button" class="btn-retry" (click)="load()">
+              {{ 'common.retry' | t }}
+            </button>
+          </div>
+        } @else if (!page().items.length) {
+          <div class="state-container empty-state">
+            <img
+              class="state-empty-illustration"
+              src="/SVG-AVATAR/Doctors-cuate.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <h2>{{ 'medications.noManagers' | t }}</h2>
+            <p class="empty-help-text">{{ managerHelp | t }}</p>
+            @if (search()) {
+              <button type="button" class="btn-reset-search" (click)="search.set(''); load()">
+                {{ 'medications.resetSearch' | t }}
+              </button>
+            } @else if (allowed('Create')) {
+              <button type="button" class="btn-reset-search" (click)="create()">
+                {{ 'medications.addManager' | t }}
+              </button>
             }
-          </tbody>
-        </table>
-      </div>
-    } @else if (failed()) {
-      <div class="state-container empty-state">
-        <h2>{{ 'medications.failed' | t }}</h2>
-        <button type="button" class="btn-retry" (click)="load()">{{ 'common.retry' | t }}</button>
-      </div>
-    } @else if (!page().items.length) {
-      <div class="state-container empty-state">
-        <img
-          class="state-empty-illustration"
-          src="/SVG-AVATAR/Doctors-cuate.svg"
-          alt=""
-          loading="lazy"
-          decoding="async"
-        />
-        <h2>{{ 'medications.noManagers' | t }}</h2>
-        <p class="empty-help-text">{{ managerHelp | t }}</p>
-        <button type="button" class="btn-reset-search" (click)="search.set(''); load()">
-          {{ 'medications.resetSearch' | t }}
-        </button>
-      </div>
-    } @else {
-      <div class="table-container">
-        <table class="directory-table">
-          <caption class="visually-hidden">
-            {{ managerTitle | t }}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">{{ 'medications.userName' | t }}</th>
-              <th scope="col">{{ 'medications.email' | t }}</th>
-              <th scope="col">{{ 'medications.phone' | t }}</th>
-              <th scope="col">{{ 'reservations.status' | t }}</th>
-              <th scope="col" class="action-column"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of page().items; track item.id) {
-              <tr
-                class="clickable-row"
-                [class.is-selected]="selectedId() === item.id"
-                tabindex="0"
-                (click)="inspect(item.id)"
-                (keydown.enter)="inspect(item.id)"
-              >
-                <td class="user-cell">
-                  <div class="user-identity-deck">
-                    <div class="user-avatar-dot" aria-hidden="true">
-                      {{ item.userName.charAt(0).toUpperCase() }}
-                    </div>
-                    <div class="user-text-meta">
-                      <span class="user-name">{{ item.userName }}</span>
-                      @if (item.isFirstLogin) {
-                        <span class="first-login-pill">{{ 'medications.firstLogin' | t }}</span>
-                      }
-                    </div>
-                  </div>
-                </td>
-                <td dir="ltr" class="ltr-text">{{ item.email }}</td>
-                <td dir="ltr" class="ltr-text">{{ item.phoneNumber || '—' }}</td>
-                <td>
-                  <span class="status-pill" [class.status-active]="item.isActive" [class.status-inactive]="!item.isActive">
-                    {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
-                  </span>
-                </td>
-                <td class="action-cell">
-                  <button
-                    type="button"
-                    class="btn-inspect-row"
-                    [disabled]="!allowed('ViewDetails') || busy()"
-                    (click)="$event.stopPropagation(); inspect(item.id)"
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="directory-table">
+              <caption class="visually-hidden">
+                {{
+                  managerTitle | t
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'medications.userName' | t }}</th>
+                  <th scope="col">{{ 'medications.email' | t }}</th>
+                  <th scope="col">{{ 'medications.phone' | t }}</th>
+                  <th scope="col">{{ 'reservations.status' | t }}</th>
+                  <th scope="col" class="action-column"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of page().items; track item.id) {
+                  <tr
+                    class="clickable-row"
+                    [class.is-selected]="selectedId() === item.id"
+                    tabindex="0"
+                    (click)="inspect(item.id)"
+                    (keydown.enter)="inspect(item.id)"
                   >
-                    {{ 'common.viewDetails' | t }}
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+                    <td class="user-cell">
+                      <div class="user-identity-deck">
+                        <div class="user-avatar-dot" aria-hidden="true">
+                          {{ item.userName.charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="user-text-meta">
+                          <span class="user-name">{{ item.userName }}</span>
+                          @if (item.isFirstLogin) {
+                            <span class="first-login-pill">{{ 'medications.firstLogin' | t }}</span>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td dir="ltr" class="ltr-text">{{ item.email }}</td>
+                    <td dir="ltr" class="ltr-text">{{ item.phoneNumber || '—' }}</td>
+                    <td>
+                      <span
+                        class="status-pill"
+                        [class.status-active]="item.isActive"
+                        [class.status-inactive]="!item.isActive"
+                      >
+                        {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
+                      </span>
+                    </td>
+                    <td class="action-cell">
+                      <button
+                        type="button"
+                        class="btn-inspect-row"
+                        [disabled]="!allowed('ViewDetails') || busy()"
+                        (click)="$event.stopPropagation(); inspect(item.id)"
+                      >
+                        {{ 'common.viewDetails' | t }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
 
-      <footer class="pagination-footer" [attr.aria-label]="'reservations.pagination' | t">
-        <div class="pagination-meta">
-          <span>{{ 'common.page' | t }} {{ page().pageNumber }} / {{ totalPages() }}</span>
-          <span>({{ page().totalCount }} {{ 'common.total' | t }})</span>
-        </div>
-        <div class="pagination-controls">
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="page().pageNumber <= 1 || busy()"
-            (click)="load(page().pageNumber - 1)"
-          >
-            {{ 'reservations.previous' | t }}
-          </button>
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="page().pageNumber >= totalPages() || busy()"
-            (click)="load(page().pageNumber + 1)"
-          >
-            {{ 'reservations.next' | t }}
-          </button>
-        </div>
-      </footer>
-    }
-  </section>
-
+          <footer class="pagination-footer" [attr.aria-label]="'reservations.pagination' | t">
+            <div class="pagination-meta">
+              <span>{{ 'common.page' | t }} {{ page().pageNumber }} / {{ totalPages() }}</span>
+              <span>({{ page().totalCount }} {{ 'common.total' | t }})</span>
+            </div>
+            <div class="pagination-controls">
+              <button
+                type="button"
+                class="btn-page-nav"
+                [disabled]="page().pageNumber <= 1 || busy()"
+                (click)="load(page().pageNumber - 1)"
+              >
+                {{ 'reservations.previous' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn-page-nav"
+                [disabled]="page().pageNumber >= totalPages() || busy()"
+                (click)="load(page().pageNumber + 1)"
+              >
+                {{ 'reservations.next' | t }}
+              </button>
+            </div>
+          </footer>
+        }
+      </section>
     </div>
 
     <!-- Detail Pane (Inline Split View on Desktop >= 1025px) -->
@@ -214,7 +246,15 @@
             [disabled]="busy()"
             (click)="close()"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              aria-hidden="true"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -241,227 +281,261 @@
       </div>
     </app-side-drawer>
   }
-</main>
+</section>
 
 <!-- Shared Detail Template for Master-Detail & Mobile Drawer -->
 <ng-template #detailContentTemplate>
-    @if (detailLoading()) {
-      <div class="state-container loading-state">
-        <div class="spinner-ring" aria-hidden="true"></div>
-        <p>{{ 'common.loading' | t }}</p>
-      </div>
-    }
+  @if (detailLoading()) {
+    <div class="state-container loading-state">
+      <div class="spinner-ring" aria-hidden="true"></div>
+      <p>{{ 'common.loading' | t }}</p>
+    </div>
+  }
 
-    @for (message of messages(); track $index) {
-      <div class="error-banner" role="alert">
-        <p>{{ message | t }}</p>
-      </div>
-    }
+  @for (message of messages(); track $index) {
+    <div class="error-banner" role="alert">
+      <p>{{ message | t }}</p>
+    </div>
+  }
 
-    @if (editing()) {
-      <form class="drawer-form-surface" [formGroup]="form" (ngSubmit)="save()">
-        <div class="form-body-deck">
-          @if (creating()) {
-            <div class="form-group">
-              <label class="form-label" for="manager-username">{{ 'medications.userName' | t }} *</label>
-              <input
-                id="manager-username"
-                class="form-input"
-                formControlName="userName"
-                autocomplete="off"
-                required
-              />
-            </div>
-          }
-
+  @if (editing()) {
+    <form class="drawer-form-surface" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <div class="form-body-deck">
+        @if (creating()) {
           <div class="form-group">
-            <label class="form-label" for="manager-email">{{ 'medications.email' | t }} *</label>
+            <label class="form-label" for="manager-username"
+              >{{ 'medications.userName' | t }} *</label
+            >
             <input
-              id="manager-email"
-              class="form-input ltr-text"
-              formControlName="email"
-              type="email"
-              dir="ltr"
-              autocomplete="email"
+              id="manager-username"
+              class="form-input"
+              formControlName="userName"
+              autocomplete="off"
               required
             />
+            @if (form.controls.userName.touched && form.controls.userName.invalid) {
+              <span class="field-error-text">{{ 'validation.required' | t }}</span>
+            }
           </div>
+        }
 
-          <div class="form-group">
-            <label class="form-label" for="manager-phone">{{ 'medications.phone' | t }}</label>
-            <input
-              id="manager-phone"
-              class="form-input ltr-text"
-              formControlName="phoneNumber"
-              type="tel"
-              dir="ltr"
-              autocomplete="tel"
-            />
-          </div>
-
-          @if (creating()) {
-            <div class="form-group">
-              <label class="form-label" for="manager-init-pass">{{ 'medications.initialPassword' | t }} *</label>
-              <input
-                id="manager-init-pass"
-                class="form-input"
-                formControlName="initialPassword"
-                type="password"
-                autocomplete="new-password"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="manager-conf-pass">{{ 'medications.confirmPassword' | t }} *</label>
-              <input
-                id="manager-conf-pass"
-                class="form-input"
-                formControlName="confirmPassword"
-                type="password"
-                autocomplete="new-password"
-                required
-              />
-            </div>
-
-            <div class="drawer-notice-box">
-              <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-              </svg>
-              <p>{{ (medical ? 'diagnostics.firstLoginHelp' : 'medications.firstLoginHelp') | t }}</p>
-            </div>
+        <div class="form-group">
+          <label class="form-label" for="manager-email">{{ 'medications.email' | t }} *</label>
+          <input
+            id="manager-email"
+            class="form-input ltr-text"
+            formControlName="email"
+            type="email"
+            dir="ltr"
+            autocomplete="email"
+            required
+          />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <span class="field-error-text">{{
+              (form.controls.email.errors?.['email'] ? 'validation.email' : 'validation.required')
+                | t
+            }}</span>
           }
         </div>
 
-        <div class="drawer-footer-actions">
-          @if (!creating()) {
+        <div class="form-group">
+          <label class="form-label" for="manager-phone">{{ 'medications.phone' | t }}</label>
+          <input
+            id="manager-phone"
+            class="form-input ltr-text"
+            formControlName="phoneNumber"
+            type="tel"
+            dir="ltr"
+            autocomplete="tel"
+          />
+        </div>
+
+        @if (creating()) {
+          <div class="form-group">
+            <label class="form-label" for="manager-init-pass"
+              >{{ 'medications.initialPassword' | t }} *</label
+            >
+            <input
+              id="manager-init-pass"
+              class="form-input"
+              formControlName="initialPassword"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+            @if (form.controls.initialPassword.touched && form.controls.initialPassword.invalid) {
+              <span class="field-error-text">{{ 'validation.required' | t }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="manager-conf-pass"
+              >{{ 'medications.confirmPassword' | t }} *</label
+            >
+            <input
+              id="manager-conf-pass"
+              class="form-input"
+              formControlName="confirmPassword"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+            @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) {
+              <span class="field-error-text">{{ 'validation.required' | t }}</span>
+            } @else if (
+              form.controls.confirmPassword.touched &&
+              form.controls.initialPassword.value &&
+              form.controls.initialPassword.value !== form.controls.confirmPassword.value
+            ) {
+              <span class="field-error-text">{{ 'common.passwordMismatch' | t }}</span>
+            }
+          </div>
+
+          <div class="drawer-notice-box">
+            <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <p>{{ (medical ? 'diagnostics.firstLoginHelp' : 'medications.firstLoginHelp') | t }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="drawer-footer-actions">
+        @if (!creating()) {
+          <button
+            type="button"
+            class="btn-drawer-secondary"
+            [disabled]="busy()"
+            (click)="cancelEdit()"
+          >
+            {{ 'common.cancel' | t }}
+          </button>
+        }
+        <button type="submit" class="btn-drawer-primary" [disabled]="busy()">
+          {{ 'common.save' | t }}
+        </button>
+      </div>
+    </form>
+  } @else if (detail(); as item) {
+    <div class="drawer-inner-surface">
+      <!-- Integrated Identity Header (Zero Carditis) -->
+      <section class="account-identity-section">
+        <div class="account-avatar-large" aria-hidden="true">
+          {{ item.userName.charAt(0).toUpperCase() }}
+        </div>
+        <div class="account-meta">
+          <div class="account-name-row">
+            <h3 class="account-name">{{ item.userName }}</h3>
+            <span
+              class="status-pill"
+              [class.status-active]="item.isActive"
+              [class.status-inactive]="!item.isActive"
+            >
+              {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
+            </span>
+          </div>
+          <p class="account-role-subtitle">
+            {{ (medical ? 'diagnostics.managers' : 'medications.managerRole') | t }}
+          </p>
+        </div>
+      </section>
+
+      <!-- Divider line -->
+      <div class="drawer-divider"></div>
+
+      <!-- Seamless Account Specification List -->
+      <section class="account-details-section">
+        <div class="detail-row">
+          <span class="detail-label">{{ 'medications.email' | t }}</span>
+          <span class="detail-value ltr-text" dir="ltr">{{ item.email }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'medications.phone' | t }}</span>
+          <span class="detail-value ltr-text" dir="ltr">{{ item.phoneNumber || '—' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">{{ 'reservations.status' | t }}</span>
+          <span class="detail-value">
+            {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
+          </span>
+        </div>
+        @if (item.isFirstLogin) {
+          <div class="detail-row">
+            <span class="detail-label">{{ 'medications.firstLogin' | t }}</span>
+            <span class="first-login-pill">{{ 'medications.firstLogin' | t }}</span>
+          </div>
+        }
+      </section>
+
+      @if (item.isFirstLogin) {
+        <div class="drawer-notice-box">
+          <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <p>{{ (medical ? 'diagnostics.firstLoginHelp' : 'medications.firstLoginHelp') | t }}</p>
+        </div>
+      }
+
+      @if (pendingAction()) {
+        <div class="confirm-prompt-panel">
+          <p class="confirm-prompt-title">{{ 'medications.confirmAccount' | t }}</p>
+          <div class="confirm-prompt-buttons">
+            <button
+              type="button"
+              class="btn-drawer-confirm"
+              [disabled]="busy()"
+              (click)="changeActive()"
+            >
+              {{ 'medications.confirm' | t }}
+            </button>
             <button
               type="button"
               class="btn-drawer-secondary"
               [disabled]="busy()"
-              (click)="cancelEdit()"
+              (click)="pendingAction.set(null)"
             >
               {{ 'common.cancel' | t }}
             </button>
-          }
-          <button type="submit" class="btn-drawer-primary" [disabled]="busy()">
-            {{ 'common.save' | t }}
-          </button>
+          </div>
         </div>
-      </form>
-    } @else if (detail(); as item) {
-      <div class="drawer-inner-surface">
-        <!-- Integrated Identity Header (Zero Carditis) -->
-        <section class="account-identity-section">
-          <div class="account-avatar-large" aria-hidden="true">
-            {{ item.userName.charAt(0).toUpperCase() }}
-          </div>
-          <div class="account-meta">
-            <div class="account-name-row">
-              <h3 class="account-name">{{ item.userName }}</h3>
-              <span class="status-pill" [class.status-active]="item.isActive" [class.status-inactive]="!item.isActive">
-                {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
-              </span>
-            </div>
-            <p class="account-role-subtitle">
-              {{ (medical ? 'diagnostics.managers' : 'medications.managerRole') | t }}
-            </p>
-          </div>
-        </section>
+      }
 
-        <!-- Divider line -->
-        <div class="drawer-divider"></div>
-
-        <!-- Seamless Account Specification List -->
-        <section class="account-details-section">
-          <div class="detail-row">
-            <span class="detail-label">{{ 'medications.email' | t }}</span>
-            <span class="detail-value ltr-text" dir="ltr">{{ item.email }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">{{ 'medications.phone' | t }}</span>
-            <span class="detail-value ltr-text" dir="ltr">{{ item.phoneNumber || '—' }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">{{ 'reservations.status' | t }}</span>
-            <span class="detail-value">
-              {{ (item.isActive ? 'medications.active' : 'medications.inactive') | t }}
-            </span>
-          </div>
-          @if (item.isFirstLogin) {
-            <div class="detail-row">
-              <span class="detail-label">{{ 'medications.firstLogin' | t }}</span>
-              <span class="first-login-pill">{{ 'medications.firstLogin' | t }}</span>
-            </div>
-          }
-        </section>
-
-        @if (item.isFirstLogin) {
-          <div class="drawer-notice-box">
-            <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-            <p>{{ 'medications.firstLoginHelp' | t }}</p>
-          </div>
+      <!-- Anchored Footer Actions -->
+      <footer class="drawer-footer-actions">
+        @if (!item.isActive && allowed('Activate')) {
+          <button
+            type="button"
+            class="btn-drawer-success"
+            [disabled]="busy()"
+            (click)="confirmAction('activate')"
+          >
+            {{ 'medications.activate' | t }}
+          </button>
         }
-
-        @if (pendingAction()) {
-          <div class="confirm-prompt-panel">
-            <p class="confirm-prompt-title">{{ 'medications.confirmAccount' | t }}</p>
-            <div class="confirm-prompt-buttons">
-              <button
-                type="button"
-                class="btn-drawer-confirm"
-                [disabled]="busy()"
-                (click)="changeActive()"
-              >
-                {{ 'medications.confirm' | t }}
-              </button>
-              <button
-                type="button"
-                class="btn-drawer-secondary"
-                [disabled]="busy()"
-                (click)="pendingAction.set(null)"
-              >
-                {{ 'common.cancel' | t }}
-              </button>
-            </div>
-          </div>
+        @if (item.isActive && allowed('Deactivate')) {
+          <button
+            type="button"
+            class="btn-drawer-danger"
+            [disabled]="busy()"
+            (click)="confirmAction('deactivate')"
+          >
+            {{ 'medications.deactivate' | t }}
+          </button>
         }
-
-        <!-- Anchored Footer Actions -->
-        <footer class="drawer-footer-actions">
-          @if (!item.isActive && allowed('Activate')) {
-            <button
-              type="button"
-              class="btn-drawer-success"
-              [disabled]="busy()"
-              (click)="confirmAction('activate')"
-            >
-              {{ 'medications.activate' | t }}
-            </button>
-          }
-          @if (item.isActive && allowed('Deactivate')) {
-            <button
-              type="button"
-              class="btn-drawer-danger"
-              [disabled]="busy()"
-              (click)="confirmAction('deactivate')"
-            >
-              {{ 'medications.deactivate' | t }}
-            </button>
-          }
-          @if (allowed('Update')) {
-            <button
-              type="button"
-              class="btn-drawer-primary"
-              [disabled]="busy()"
-              (click)="edit()"
-            >
-              {{ 'medications.edit' | t }}
-            </button>
-          }
-        </footer>
-      </div>
-    }
+        @if (allowed('Update')) {
+          <button type="button" class="btn-drawer-primary" [disabled]="busy()" (click)="edit()">
+            {{ 'medications.edit' | t }}
+          </button>
+        }
+      </footer>
+    </div>
+  }
 </ng-template>

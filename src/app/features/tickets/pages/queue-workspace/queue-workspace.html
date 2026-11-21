@@ -3,7 +3,11 @@
     [heading]="'tickets.queue.title' | t"
     [description]="'tickets.queue.subtitle' | t"
     icon="queue"
-    [actionLabel]="canWalkIn() ? ('tickets.walkIn.patientWithoutAppointment' | t) : null"
+    [actionLabel]="
+      canWalkIn() && !queueAccessDenied() && !walkInAccessDenied()
+        ? ('tickets.walkIn.patientWithoutAppointment' | t)
+        : null
+    "
     actionIcon="add"
     (actionClicked)="openWalkIn()"
   >
@@ -147,7 +151,7 @@
           }
         </div>
       } @else {
-        @if (canViewQueue()) {
+        @if (canViewQueue() && !queueAccessDenied()) {
           <button
             type="button"
             class="btn-action-archive"
@@ -170,13 +174,13 @@
             <span>{{ 'archive.title' | t }}</span>
           </button>
         }
-        @if (canViewActivity()) {
+        @if (canViewActivity() && !queueAccessDenied()) {
           <button type="button" class="btn-action-archive" [disabled]="!practiceId() || busy()" (click)="openActivity()">{{ 'activity.title' | t }}</button>
         }
       }
     </div>
   </app-page-header>
-  <div class="queue-workspace-layout" [class.has-walkin-open]="(walkInOpen() || !!walkInDone()) && canWalkIn()">
+  <div class="queue-workspace-layout" [class.has-walkin-open]="(walkInOpen() || !!walkInDone()) && canWalkIn() && !queueAccessDenied() && !walkInAccessDenied()">
     <div class="queue-board-column">
       <section class="queue-board" [attr.aria-busy]="loading()">
     @if (!practiceId()) {
@@ -206,6 +210,21 @@
     } @else if (loading()) {
       <div class="state-block" role="status">
         <p>{{ 'tickets.loading' | t }}</p>
+      </div>
+    } @else if (queueAccessDenied()) {
+      <div class="state-block" role="alert">
+        <img
+          class="state-empty-illustration"
+          src="/SVG-AVATAR/Doctors-bro.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <h2>{{ 'tickets.accessDeniedTitle' | t }}</h2>
+        <p>{{ 'tickets.accessDeniedHelp' | t }}</p>
+        <button type="button" class="btn btn-primary" (click)="loadQueue()">
+          {{ 'tickets.queue.retry' | t }}
+        </button>
       </div>
     } @else if (loadFailed()) {
       <div class="state-block" role="alert">
@@ -1759,7 +1778,7 @@
                   />
                   <h3>{{ 'tickets.queue.empty' | t }}</h3>
                   <p>{{ (isDoctor() ? 'tickets.queue.emptyHelpDoctor' : 'tickets.queue.emptyHelp') | t }}</p>
-                  @if (canWalkIn()) {
+                  @if (canWalkIn() && !walkInOpen() && !walkInDone()) {
                     <button
                       type="button"
                       class="btn btn-primary btn-empty-walk-in"
@@ -1893,7 +1912,7 @@
                         </svg>
                         <span>{{ 'tickets.callNext' | t }} (#{{ queue().waiting[0].ticketNumber }})</span>
                       </button>
-                    } @else if (canWalkIn()) {
+                    } @else if (canWalkIn() && !walkInOpen() && !walkInDone()) {
                       <button
                         type="button"
                         class="btn btn-outline-secondary btn-station-walkin"
@@ -1965,8 +1984,8 @@
               </div>
             }
 
-            <!-- 3. زر الإجراء السريع للمكتب / الاستقبال -->
-            @if (canWalkIn()) {
+            <!-- 3. زر الإجراء السريع للمكتب / الاستقبال (يظهر فقط عندما تكون الغرفة مشغولة والنافذة الجانبية مغلقة لمنع تكرار الزر) -->
+            @if (canWalkIn() && queueOccupied() && !walkInOpen() && !walkInDone()) {
               <div class="station-quick-action-card">
                 <button
                   type="button"
@@ -1991,6 +2010,11 @@
     </div>
 
     @if ((walkInOpen() || !!walkInDone()) && canWalkIn()) {
+      <div
+        class="walkin-mobile-backdrop"
+        (click)="close()"
+        aria-hidden="true"
+      ></div>
       <aside
         class="walkin-inline-sidebar-block"
         role="dialog"
@@ -3093,7 +3117,7 @@
               >
             }
             @if (walkInChoices().length) {
-              <label class="field"
+              <label class="field visit-choice-select-wrap"
                 >{{ 'tickets.walkIn.visitAndPrice' | t
                 }}<select
                   class="field-select visit-choice"
@@ -3110,12 +3134,39 @@
                         walkInModel().visitTypeId === choice.visitTypeId
                       "
                     >
-                      {{ label(choice) }} · {{ label(choice.segment) }} — {{ choice.price }}
+                      {{ label(choice) }} ({{ label(choice.segment) }}) — {{ choice.price }}
                       {{ 'tickets.currency' | t }}
                     </option>
                   }
                 </select></label
               >
+              <fieldset class="walkin-visit-choices-mobile" [disabled]="busy()">
+                <legend>{{ 'tickets.walkIn.visitAndPrice' | t }}</legend>
+                <div class="visit-choice-list" role="radiogroup" [attr.aria-label]="'tickets.walkIn.visitAndPrice' | t">
+                  @for (choice of walkInChoices(); track choice.key) {
+                    @let isSelected =
+                      walkInModel().segmentId === choice.segmentId &&
+                      walkInModel().visitTypeId === choice.visitTypeId;
+                    <button
+                      type="button"
+                      role="radio"
+                      class="visit-choice-option"
+                      [class.is-selected]="isSelected"
+                      [attr.aria-checked]="isSelected"
+                      (click)="selectChoiceByKey(choice.key)"
+                    >
+                      <span class="visit-choice-radio" aria-hidden="true"></span>
+                      <span class="visit-choice-info">
+                        <strong class="visit-choice-name">{{ label(choice) }}</strong>
+                        <span class="visit-choice-segment">{{ label(choice.segment) }}</span>
+                      </span>
+                      <strong class="visit-choice-price">
+                        <bdi>{{ choice.price }} {{ 'tickets.currency' | t }}</bdi>
+                      </strong>
+                    </button>
+                  }
+                </div>
+              </fieldset>
             } @else {
               <div class="state-block">
                 <img

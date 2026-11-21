@@ -199,4 +199,27 @@ export class FamilyMedicalEligibilityDetailsComponent {
       this.submitting.set(false);
     }
   }
+
+  protected formatStatus(status?: string | null): string {
+    if (!status) return '—';
+    const map: Record<string, string> = {
+      Pending: 'familyEligibility.status.pending',
+      PendingReview: 'familyEligibility.status.pending',
+      Approved: 'familyEligibility.status.approved',
+      Rejected: 'familyEligibility.status.rejected',
+      Revoked: 'familyEligibility.status.revoked',
+    };
+    const key = map[status];
+    return key ? this.uiLanguage.t(key) : status;
+  }
+
+  protected formatDate(utc?: string | null): string {
+    if (!utc) return '—';
+    const d = new Date(utc);
+    if (Number.isNaN(d.getTime())) return utc;
+    return new Intl.DateTimeFormat(this.uiLanguage.isRtl() ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(d);
+  }
 }

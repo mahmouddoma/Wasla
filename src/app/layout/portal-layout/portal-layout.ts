@@ -56,6 +56,8 @@ export class PortalLayout {
     inject(ReceptionRouteAccess).watch().pipe(takeUntilDestroyed()).subscribe();
     if (this.isReception()) {
       void this.practiceContext.ensureLoaded?.();
+    } else if (this.user()?.userType === 'Doctor') {
+      void this.subscription.refresh?.().catch(() => undefined);
     }
     const sub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
@@ -89,6 +91,14 @@ export class PortalLayout {
   protected readonly currentPageIcon = computed<NavigationItem['icon']>(
     () => this.currentNavItem()?.icon ?? 'home',
   );
+
+  protected readonly isSubscriptionGatePending = computed(() => {
+    if (this.user()?.userType !== 'Doctor') return false;
+    const path = this.currentUrl().split(/[?#]/)[0];
+    if (!path || !isDoctorSubscriptionGatedRoute(path)) return false;
+    if (this.subscription.deniedRoute() === path) return false;
+    return !!this.session.session?.() && !this.subscription.hasLoaded();
+  });
 
   protected readonly isSubscriptionGateActive = computed(() => {
     if (this.user()?.userType !== 'Doctor') return false;

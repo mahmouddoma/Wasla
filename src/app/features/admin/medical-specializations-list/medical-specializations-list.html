@@ -121,7 +121,11 @@
             tabindex="0"
             (keydown.enter)="openDrawer(item)"
             (keydown.space)="openDrawer(item); $event.preventDefault()"
-            title="انقر لفتح تفاصيل {{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}"
+            [title]="
+              uiLanguage.t('common.openDetails') +
+              ': ' +
+              (uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr)
+            "
           >
             <!-- Card Top: Icon + Sort Order Badge -->
             <div class="spec-card__top">
@@ -143,8 +147,10 @@
             <!-- Card Body: Arabic & English Names -->
             <div class="spec-card__body">
               <h3 class="spec-card__title">{{ uiLanguage.isRtl() ? item.nameAr : item.nameEn || item.nameAr }}</h3>
-              @if (item.nameEn) {
+              @if (uiLanguage.isRtl() && item.nameEn) {
                 <span class="spec-card__subtitle" lang="en" dir="ltr">{{ item.nameEn }}</span>
+              } @else if (!uiLanguage.isRtl() && item.nameAr && item.nameEn) {
+                <span class="spec-card__subtitle" lang="ar" dir="rtl">{{ item.nameAr }}</span>
               }
             </div>
 
@@ -207,6 +213,11 @@
 
     <!-- Specialization Details Master-Detail Pane -->
     @if (isDrawerOpen()) {
+      <div
+        class="wasla-detail-backdrop"
+        (click)="closeDrawer()"
+        aria-hidden="true"
+      ></div>
       <aside class="specializations-detail-pane" [attr.aria-label]="drawerTitle()">
         <header class="detail-pane-header">
           <div class="detail-pane-title-wrap">

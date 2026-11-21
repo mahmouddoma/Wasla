@@ -148,23 +148,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     ),
   );
   readonly highlights = computed(() => {
-    const defaultCodes = [
-      'AppointmentsScheduled',
-      'CheckIns',
-      'ReservationToTicketConversion',
-      'ReservationNoShowRate',
-      this.metricByCode('PatientRetention90d')
-        ? 'PatientRetention90d'
-        : this.metricByCode('ReturningDoctorPatients')
-          ? 'ReturningDoctorPatients'
-          : 'CancellationRateScheduledCohort',
-    ];
-    if (
-      this.canViewFinance() &&
-      this.visibleMetrics().some((m) => m.metricCode === 'NetCollected')
-    ) {
-      defaultCodes.push('NetCollected');
-    }
+    const defaultCodes = this.canViewFinance()
+      ? [...OVERVIEW_KPIS]
+      : OVERVIEW_KPIS.filter((code) => !FINANCE_CODES.includes(code));
     return defaultCodes.map(
       (code) =>
         this.visibleMetrics().find((metric) => metric.metricCode === code) ?? {
@@ -332,7 +318,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   readonly doctorGreeting = computed(() => {
     const isAr = this.language.isRtl();
-    const user = this.session.user();
+    const user = typeof this.session.user === 'function' ? this.session.user() : null;
     const rawName = user?.userName ?? '';
     let doctorName = '';
     if (rawName.includes('dr.')) {
@@ -356,6 +342,318 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
     return doctorName ? `Welcome Dr. ${doctorName}` : this.language.t('doctorRemediation.dashboard');
   });
+
+  readonly patientChartSummary = computed(() => {
+    const unique = this.metricValue('UniqueDoctorPatients') ?? 0;
+    const newPatients = this.metricValue('NewToDoctorPatients') ?? 0;
+    const returningPatients = this.metricValue('ReturningDoctorPatients') ?? 0;
+    const splitBase = newPatients + returningPatients;
+    const round1 = (v: number) => Math.round(v * 10) / 10;
+    const newPct = splitBase > 0 ? round1((newPatients / splitBase) * 100) : 0;
+    const returningPct = splitBase > 0 ? round1((returningPatients / splitBase) * 100) : 0;
+    const retention90d = this.metricValue('PatientRetention90d');
+    const retentionPct = retention90d !== null ? Math.min(100, Math.max(0, round1(retention90d))) : 0;
+    const followUp = this.metricValue('FollowUpActivity') ?? 0;
+    const followUpPct =
+      unique > 0 ? Math.min(100, round1((followUp / unique) * 100)) : followUp > 0 ? 100 : 0;
+    const workflow = this.metricValue('ClinicalWorkflowCompleted');
+    const workflowPct =
+      workflow !== null
+        ? Math.min(
+            100,
+            Math.max(
+              0,
+              this.metricByCode('ClinicalWorkflowCompleted')?.unit?.toLowerCase() === 'percent'
+                ? round1(workflow)
+                : unique > 0
+                  ? round1((workflow / unique) * 100)
+                  : workflow > 0
+                    ? 100
+                    : 0,
+            ),
+          )
+        : 0;
+    return {
+      unique,
+      newPatients,
+      returningPatients,
+      newPct,
+      returningPct,
+      retention90d,
+      retentionPct,
+      followUp,
+      followUpPct,
+      workflow,
+      workflowPct,
+    };
+  });
+
+  readonly patientDonutStyle = computed(() => {
+    const s = this.patientChartSummary();
+    if (s.newPatients === 0 && s.returningPatients === 0) {
+      return 'conic-gradient(#e2e8f0 0deg 360deg)';
+    }
+    const degNew = Math.round((Math.min(100, Math.max(0, s.newPct)) / 100) * 360);
+    return `conic-gradient(var(--wasla-teal-500, #0d9488) 0deg ${degNew}deg, #0284c7 ${degNew}deg 360deg)`;
+  });
+
+  readonly timingChartRows = computed(() => {
+    const codes = [
+      { code: 'WaitToFirstCall', color: 'amber' },
+      { code: 'WaitToServiceStart', color: 'blue' },
+      { code: 'CallToStart', color: 'slate' },
+      { code: 'ServiceDuration', color: 'teal' },
+    ];
+    const items = codes
+      .map((item) => {
+        const metric = this.metricByCode(item.code);
+        const val = metric ? measuredValue(metric) : null;
+        return {
+          code: item.code,
+          color: item.color,
+          metric,
+          label: metric ? this.metricLabel(metric) : this.language.t('doctorOverview.metric.' + item.code),
+          value: val !== null ? Math.round(val * 10) / 10 : null,
+        };
+      })
+      .filter((item) => item.metric !== undefined);
+    const maxVal = Math.max(1, ...items.map((i) => i.value ?? 0));
+    return items.map((item) => ({
+      ...item,
+      widthPct: item.value !== null && item.value > 0 ? Math.max(6, Math.round((item.value / maxVal) * 100)) : 0,
+    }));
+  });
+
+  readonly utilizationGaugeRows = computed(() => {
+    const codes = [
+      { code: 'ActualServiceUtilization', color: 'teal' },
+      { code: 'BookedUtilization', color: 'blue' },
+      { code: 'PunctualArrival', color: 'emerald' },
+      { code: 'ReservationToTicketConversion', color: 'teal' },
+    ];
+    return codes
+      .map((item) => {
+        const metric = this.metricByCode(item.code);
+        const val = metric ? measuredValue(metric) : null;
+        const pct = val !== null ? Math.min(100, Math.max(0, Math.round(val * 10) / 10)) : null;
+        return {
+          code: item.code,
+          color: item.color,
+          metric,
+          label: metric ? this.metricLabel(metric) : this.language.t('doctorOverview.metric.' + item.code),
+          value: pct,
+          widthPct: pct ?? 0,
+        };
+      })
+      .filter((item) => item.metric !== undefined)
+      .slice(0, 3);
+  });
+
+  moduleMetricBarWidth(metrics: readonly ReportMetric[], metric: ReportMetric): number {
+    const val = measuredValue(metric);
+    if (val === null || val <= 0) return 0;
+    if (metric.unit?.toLowerCase() === 'percent') {
+      return Math.min(100, Math.max(4, Math.round(val)));
+    }
+    const sameUnitMax = Math.max(
+      1,
+      ...metrics
+        .filter((m) => (m.unit ?? 'count') === (metric.unit ?? 'count'))
+        .map((m) => Math.abs(measuredValue(m) ?? 0)),
+    );
+    return Math.min(100, Math.max(6, Math.round((Math.abs(val) / sameUnitMax) * 100)));
+  }
+
+  metricBarColorClass(code: string | null | undefined): string {
+    if (!code) return 'pattern-bar-fill--teal';
+    if (/Cancel|NoShow|Exception|Overdue|Refund/i.test(code)) return 'pattern-bar-fill--rose';
+    if (/Wait|Pending|Unused|Recall|Reschedule/i.test(code)) return 'pattern-bar-fill--amber';
+    if (/Scheduled|BookingsCreated|Unique|Gross/i.test(code)) return 'pattern-bar-fill--blue';
+    if (/Completed|Conversion|Punctual|Retention|Net/i.test(code)) return 'pattern-bar-fill--emerald';
+    return 'pattern-bar-fill--teal';
+  }
+
+  readonly exceptionChartMetrics = computed(() => {
+    const codes = [
+      'CancellationRateScheduledCohort',
+      'ReservationNoShowRate',
+      'TicketNoShowRate',
+      'CancellationsByEvent',
+      'TicketsCancelled',
+      'TicketsNoShow',
+      'RescheduleEvents',
+      'RescheduledReservations',
+      'OperationalExceptions',
+    ];
+    const metrics = selectMetrics(this.visibleMetrics(), codes);
+    const maxCount = Math.max(
+      1,
+      ...metrics
+        .filter((m) => m.unit?.toLowerCase() !== 'percent')
+        .map((m) => measuredValue(m) ?? 0),
+    );
+    return metrics.map((metric) => {
+      const val = measuredValue(metric);
+      const isPct = metric.unit?.toLowerCase() === 'percent';
+      const widthPct =
+        val === null || val <= 0
+          ? 0
+          : isPct
+            ? Math.min(100, Math.max(4, Math.round(val)))
+            : Math.min(100, Math.max(6, Math.round((val / maxCount) * 100)));
+      return {
+        metric,
+        isPct,
+        widthPct,
+        colorClass: this.metricBarColorClass(metric.metricCode),
+      };
+    });
+  });
+
+  readonly cancellationSourceBars = computed(() => {
+    const points = (this.model()?.breakdowns ?? []).filter(
+      (p) =>
+        p.key?.startsWith('CancellationInitiator:') ||
+        p.key?.startsWith('CancellationReason:') ||
+        p.key?.startsWith('BookingCreator:'),
+    );
+    const rows = points.flatMap((point) =>
+      (point.metrics ?? []).map((metric) => ({
+        key: `${point.key}-${metric.metricCode}`,
+        title: this.breakdownTitle(point),
+        metricLabel: this.metricLabel(metric),
+        metric,
+        value: measuredValue(metric) ?? 0,
+        isCancel: Boolean(point.key?.includes('Cancellation')),
+      })),
+    );
+    const maxVal = Math.max(1, ...rows.map((r) => r.value));
+    return rows.map((row) => ({
+      ...row,
+      widthPct: row.value > 0 ? Math.min(100, Math.max(6, Math.round((row.value / maxVal) * 100))) : 0,
+    }));
+  });
+
+  private filterPracticeMetrics(point: BreakdownPoint): ReportMetric[] {
+    return (point.metrics ?? []).filter(
+      (metric) =>
+        this.canViewFinance() ||
+        (!this.financeCodes.includes(metric.metricCode ?? '') &&
+          metric.unit?.toLowerCase() !== 'egp'),
+    );
+  }
+
+  practiceVolumeChart(point: BreakdownPoint) {
+    const volumeCodes = [
+      'AppointmentsScheduled',
+      'BookingsCreated',
+      'CheckIns',
+      'TicketsCompleted',
+      'WalkIns',
+      'Waiting',
+      'Called',
+      'InProgress',
+      'CancellationsByEvent',
+      'TicketsCancelled',
+      'TicketsNoShow',
+      'RescheduleEvents',
+      'RescheduledReservations',
+    ];
+    const all = this.filterPracticeMetrics(point);
+    const selected = volumeCodes
+      .map((code) => all.find((m) => m.metricCode === code))
+      .filter((m): m is ReportMetric => m !== undefined);
+    const maxVal = Math.max(1, ...selected.map((m) => Math.abs(measuredValue(m) ?? 0)));
+    return selected.map((metric) => {
+      const val = measuredValue(metric);
+      return {
+        metric,
+        widthPct:
+          val !== null && val > 0 ? Math.min(100, Math.max(6, Math.round((val / maxVal) * 100))) : 0,
+        colorClass: this.metricBarColorClass(metric.metricCode),
+      };
+    });
+  }
+
+  practiceRateChart(point: BreakdownPoint) {
+    const all = this.filterPracticeMetrics(point);
+    const selected = all.filter((m) => m.unit?.toLowerCase() === 'percent');
+    return selected.map((metric) => {
+      const val = measuredValue(metric);
+      return {
+        metric,
+        widthPct: val !== null && val > 0 ? Math.min(100, Math.max(4, Math.round(val))) : 0,
+        colorClass: this.metricBarColorClass(metric.metricCode),
+      };
+    });
+  }
+
+  practiceTimingPatientChart(point: BreakdownPoint) {
+    const volumeSet = new Set([
+      'AppointmentsScheduled',
+      'BookingsCreated',
+      'CheckIns',
+      'TicketsCompleted',
+      'WalkIns',
+      'Waiting',
+      'Called',
+      'InProgress',
+      'CancellationsByEvent',
+      'TicketsCancelled',
+      'TicketsNoShow',
+      'RescheduleEvents',
+      'RescheduledReservations',
+    ]);
+    const all = this.filterPracticeMetrics(point);
+    const selected = all.filter(
+      (m) => m.unit?.toLowerCase() !== 'percent' && !volumeSet.has(m.metricCode ?? ''),
+    );
+    const maxByUnit = new Map<string, number>();
+    for (const m of selected) {
+      const u = (m.unit ?? 'count').toLowerCase();
+      const v = Math.abs(measuredValue(m) ?? 0);
+      maxByUnit.set(u, Math.max(maxByUnit.get(u) ?? 1, v));
+    }
+    return selected.map((metric) => {
+      const val = measuredValue(metric);
+      const u = (metric.unit ?? 'count').toLowerCase();
+      const maxVal = maxByUnit.get(u) ?? 1;
+      return {
+        metric,
+        widthPct:
+          val !== null && Math.abs(val) > 0
+            ? Math.min(100, Math.max(6, Math.round((Math.abs(val) / maxVal) * 100)))
+            : 0,
+        colorClass: this.metricBarColorClass(metric.metricCode),
+      };
+    });
+  }
+
+  channelMetricBarWidth(metric: ReportMetric): number {
+    const val = measuredValue(metric);
+    if (val === null || val <= 0) return 0;
+    const allChannelValues = this.channelBreakdowns().flatMap((p) =>
+      (p.metrics ?? []).map((m) => measuredValue(m) ?? 0),
+    );
+    const maxVal = Math.max(1, ...allChannelValues);
+    return Math.min(100, Math.max(6, Math.round((val / maxVal) * 100)));
+  }
+
+  groupMetricBarWidth(metric: ReportMetric): number {
+    const val = measuredValue(metric);
+    if (val === null || val === 0) return 0;
+    if (metric.unit?.toLowerCase() === 'percent') {
+      return Math.min(100, Math.max(4, Math.round(Math.abs(val))));
+    }
+    const groupMetrics = this.displayedGroupMetrics();
+    const sameUnitMax = Math.max(
+      1,
+      ...groupMetrics
+        .filter((m) => (m.unit ?? 'count').toLowerCase() === (metric.unit ?? 'count').toLowerCase())
+        .map((m) => Math.abs(measuredValue(m) ?? 0)),
+    );
+    return Math.min(100, Math.max(6, Math.round((Math.abs(val) / sameUnitMax) * 100)));
+  }
 
   readonly ticketSummary = computed(() => {
     const completed = this.metricValue('TicketsCompleted') ?? 0;

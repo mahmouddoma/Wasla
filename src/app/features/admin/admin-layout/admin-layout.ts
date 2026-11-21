@@ -108,6 +108,13 @@ export class AdminLayout {
         permission: PERMISSIONS.auditEventsView,
       },
       {
+        id: 'investigations',
+        labelKey: 'investigations.title',
+        route: '/admin/investigations',
+        icon: 'shield',
+        permission: 'Investigations.View',
+      },
+      {
         id: 'doctors',
         labelKey: 'admin.navDoctors',
         route: '/admin/doctors',
@@ -221,7 +228,7 @@ export class AdminLayout {
       {
         id: 'security-governance',
         labelKey: 'admin.group.securityGovernance',
-        itemIds: ['superadmins', 'roles', 'audit', 'archive-operations', 'archives'],
+        itemIds: ['superadmins', 'roles', 'investigations', 'audit', 'archive-operations', 'archives'],
       },
     ];
 

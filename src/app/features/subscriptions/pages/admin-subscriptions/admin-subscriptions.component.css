@@ -5,45 +5,54 @@
 
 /* ── Master-Detail Split Layout ──────────────────────────────────── */
 .subscriptions-split-layout {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
   width: 100%;
-  margin-top: 28px;
-  transition: all 0.25s ease;
+  margin-top: 0;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.subscriptions-split-layout.has-active-detail {
+  grid-template-columns: minmax(0, 1.05fr) minmax(440px, 0.95fr);
 }
 
 .subscriptions-master-pane {
-  flex: 1 1 100%;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  transition: all 0.25s ease;
+  gap: 16px;
 }
 
-.subscriptions-split-layout.has-active-detail .subscriptions-master-pane {
-  flex: 1 1 calc(100% - 480px);
-  max-width: calc(100% - 480px);
+/* When Detail Pane is Open on Desktop/Laptop, Compact Master Table so 0 Horizontal Scrollbar Occurs */
+.subscriptions-split-layout.has-active-detail .wasla-table th:nth-child(4),
+.subscriptions-split-layout.has-active-detail .wasla-table td:nth-child(4),
+.subscriptions-split-layout.has-active-detail .wasla-table th:nth-child(5),
+.subscriptions-split-layout.has-active-detail .wasla-table td:nth-child(5) {
+  display: none;
+}
+
+.subscriptions-split-layout.has-active-detail .wasla-table th,
+.subscriptions-split-layout.has-active-detail .wasla-table td {
+  padding: 12px 14px;
 }
 
 /* Detail Pane (Desktop Inline Split View) */
 .subscriptions-detail-pane {
-  width: 460px;
-  min-width: 460px;
-  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
   background: var(--wasla-surface, #ffffff);
   border: 1px solid var(--wasla-border-subtle, #edf1f5);
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
   position: sticky;
-  top: 90px;
-  max-height: calc(100vh - 110px);
-  overflow: hidden;
+  top: 20px;
   display: flex;
   flex-direction: column;
-  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 20;
+  animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
 }
 
 [dir='ltr'] .subscriptions-detail-pane {
@@ -708,9 +717,10 @@
 }
 
 .period-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   color: var(--wasla-slate, #64748b);
   font-size: 0.8rem;
 }
@@ -1077,8 +1087,8 @@
 /* Metrics Grid */
 .hero-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
 }
 
 .metric-card {
@@ -1213,45 +1223,53 @@
   font-weight: 700;
 }
 
-/* ── Entitlements Chips Grid (Fixes 20-line text dump) ───────────── */
+/* ── Entitlements Chips Grid (Clean 2-Column Structured Grid) ────── */
 .entitlements-chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 260px;
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 8px;
   padding: 2px;
 }
 
 .entitlement-pill {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
   background: #f8fafc;
   border: 1px solid var(--wasla-border-subtle, #e2e8f0);
-  border-radius: 999px;
-  font-size: 0.74rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
   color: var(--wasla-navy-950, #071c30);
+  min-width: 0;
 }
 
 .pill-check-icon {
   color: var(--wasla-teal-600, #0ba5a0);
   font-weight: 800;
   font-size: 0.78rem;
+  flex-shrink: 0;
 }
 
 .pill-label {
-  font-weight: 600;
+  font-weight: 700;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pill-level-tag {
   font-size: 0.68rem;
+  font-weight: 600;
   color: var(--wasla-slate, #64748b);
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid var(--wasla-border-subtle, #edf1f5);
+  flex-shrink: 0;
 }
 
 /* Period Info Row */
@@ -1616,17 +1634,57 @@
   }
 }
 
-/* ── Responsive Split View & Adaptive Table ──────────────────────── */
+/* ── Responsive Split View & Adaptive Table (Desktop / Laptop / Tablet >= 768px) ── */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .subscriptions-split-layout.has-active-detail {
+    grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+    gap: 16px;
+  }
+
+  .subscriptions-split-layout.has-active-detail .wasla-table th:nth-child(6),
+  .subscriptions-split-layout.has-active-detail .wasla-table td:nth-child(6) {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .filters-card {
+    padding: 14px 20px;
+    margin-bottom: 0;
+  }
+
+  .filters-compact-bar {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .filters-compact-search {
+    flex: 1 1 320px;
+  }
+
+  .filters-compact-status {
+    flex: 0 0 210px;
+  }
+
+  .table-surface-card {
+    margin-bottom: 0;
+  }
+
+  .legacy-tool-card {
+    flex-wrap: nowrap;
+    margin-top: 4px;
+    padding: 18px 24px;
+  }
+}
+
 @media (max-width: 1024px) {
-  .subscriptions-split-layout {
-    flex-direction: column;
-    align-items: stretch;
-    margin-top: 16px;
+  .subscriptions-split-layout,
+  .subscriptions-split-layout.has-active-detail {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 0;
   }
 
   .subscriptions-master-pane {
-    flex: 1 1 100% !important;
-    max-width: 100% !important;
     width: 100% !important;
   }
 
@@ -1636,7 +1694,7 @@
 
   .wasla-table th,
   .wasla-table td {
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
 
   .wasla-table th:nth-child(5),

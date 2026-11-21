@@ -132,28 +132,42 @@ describe('MedicalRecordsApi', () => {
   // WAS-594
   it('WAS-594: doctorTreatingOverview fetches treating overview', () => {
     api.doctorTreatingOverview('pr1', 'tk1').subscribe((res) => {
-      expect(res.ticketId).toBe('tk1');
+      expect(res.context.ticketId).toBe('tk1');
     });
     const req = http.expectOne(`${doctorUrl}/practices/pr1/tickets/tk1/medical-record/overview`);
     expect(req.request.method).toBe('GET');
     req.flush({
-      patientId: 'p1',
-      patientName: 'P1',
-      ticketId: 'tk1',
-      encounterId: 'e1',
-      visitsCount: 1,
-      diagnosesCount: 0,
-      prescriptionsCount: 0,
-      labOrdersCount: 0,
-      radiologyOrdersCount: 0,
-      hiddenEncountersCount: 0,
+      patient: {
+        patientId: 'p1',
+        nameAr: 'P1',
+        nameEn: 'P1',
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+      },
+      context: {
+        mode: 'TreatingDoctor',
+        ticketId: 'tk1',
+        treatingEncounterId: 'e1',
+        treatmentStatus: 'InProgress',
+      },
+      summary: {
+        totalVisibleItems: 1,
+        encountersCount: 1,
+        diagnosesCount: 0,
+        prescriptionsCount: 0,
+        labResultsCount: 0,
+        radiologyResultsCount: 0,
+        documentsCount: 0,
+        hiddenEncountersCount: 0,
+      },
+      timeline: { items: [], nextCursor: null, hasMore: false },
     });
   });
 
   // WAS-595
   it('WAS-595: doctorTreatingTimeline fetches treating timeline', () => {
     api.doctorTreatingTimeline('pr1', 'tk1').subscribe((res) => {
-      expect(res.items.length).toBe(1);
+      expect(res.items?.length).toBe(1);
     });
     const req = http.expectOne(
       (r) => r.url === `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/timeline`,
@@ -224,7 +238,7 @@ describe('MedicalRecordsApi', () => {
   // WAS-599
   it('WAS-599: doctorTreatingAccessRequests lists access requests for ticket', () => {
     api.doctorTreatingAccessRequests('pr1', 'tk1').subscribe((res) => {
-      expect(res.items.length).toBe(1);
+      expect(res.items?.length).toBe(1);
     });
     const req = http.expectOne(
       `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests`,
@@ -265,14 +279,15 @@ describe('MedicalRecordsApi', () => {
 
   // WAS-601
   it('WAS-601: doctorCreateAccessRequest submits new access request', () => {
-    const payload = { hiddenEncounterPlaceholderToken: 'tok123', reason: 'Review required' };
-    api.doctorCreateAccessRequest('pr1', 'tk1', payload).subscribe((res) => {
+    const payload = { hiddenEncounterToken: 'tok123', reason: 'Review required' };
+    api.doctorCreateAccessRequest('pr1', 'tk1', payload, 'idem-create-1').subscribe((res) => {
       expect(res.requestId).toBe('rq1');
     });
     const req = http.expectOne(
       `${doctorUrl}/practices/pr1/tickets/tk1/medical-record/access-requests`,
     );
     expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('Idempotency-Key')).toBe('idem-create-1');
     expect(req.request.body).toEqual(payload);
     req.flush(
       {
@@ -299,8 +314,8 @@ describe('MedicalRecordsApi', () => {
 
   // WAS-603
   it('WAS-603: doctorAccessInbox lists incoming requests page', () => {
-    api.doctorAccessInbox('Pending', 1, 10).subscribe((res) => {
-      expect(res.items.length).toBe(1);
+    api.doctorAccessInbox('Pending', undefined, 10).subscribe((res) => {
+      expect(res.items?.length).toBe(1);
     });
     const req = http.expectOne(
       (r) =>
@@ -345,11 +360,12 @@ describe('MedicalRecordsApi', () => {
   // WAS-605
   it('WAS-605: doctorApproveAccessRequest approves request', () => {
     const payload = { rowVersion: 'v1', note: 'Approved' };
-    api.doctorApproveAccessRequest('rq1', payload).subscribe((res) => {
+    api.doctorApproveAccessRequest('rq1', payload, 'idem-approve-1').subscribe((res) => {
       expect(res.status).toBe('Approved');
     });
     const req = http.expectOne(`${doctorUrl}/medical-record-access-requests/rq1/approve`);
     expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('Idempotency-Key')).toBe('idem-approve-1');
     expect(req.request.body).toEqual(payload);
     req.flush({ requestId: 'rq1', status: 'Approved', rowVersion: 'v2' });
   });
@@ -403,19 +419,24 @@ describe('MedicalRecordsApi', () => {
   // WAS-610
   it('WAS-610: doctorEncounterVisibilityHistory gets visibility history', () => {
     api.doctorEncounterVisibilityHistory('pr1', 'e1').subscribe((res) => {
-      expect(res.length).toBe(1);
+      expect(res.items?.length).toBe(1);
     });
     const req = http.expectOne(`${doctorUrl}/practices/pr1/encounters/e1/visibility/history`);
     expect(req.request.method).toBe('GET');
-    req.flush([
-      {
-        id: 'vh1',
-        previousVisibility: 'Visible',
-        newVisibility: 'Hidden',
-        changedByDoctorName: 'Dr A',
-        changedAtUtc: '2026-10-01',
-        reason: 'Sensitive',
-      },
-    ]);
+    req.flush({
+      items: [
+        {
+          historyId: 'vh1',
+          oldVisibility: 'Visible',
+          newVisibility: 'Hidden',
+          revision: 1,
+          actorApplicationUserId: 'doc-1',
+          occurredAtUtc: '2026-10-01',
+          source: 'Doctor',
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    });
   });
 });

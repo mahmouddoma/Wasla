@@ -1,41 +1,44 @@
 <div class="auth-form-wrap registration-wrap" [dir]="uiLanguage.dir()">
-  <!-- Mobile & Tablet Ambient Hero Header -->
-  <div class="mobile-ambient-hero d-lg-none" aria-hidden="true">
-    <div class="hero-glow-layer"></div>
-    <svg class="hero-pulse-wave" viewBox="0 0 600 160" preserveAspectRatio="none">
-      <path
-        d="M0,80 C60,40 120,120 180,60 C220,20 260,140 300,80 C340,30 380,110 440,70 C500,30 550,110 600,75"
-        fill="none"
-        stroke="rgba(14, 147, 137, 0.45)"
-        stroke-width="2.5"
-      />
-      <path
-        d="M0,95 C70,60 140,130 210,85 C270,40 320,130 380,75 C450,20 520,120 600,90"
-        fill="none"
-        stroke="rgba(255, 255, 255, 0.16)"
-        stroke-width="1.5"
-        stroke-dasharray="6 6"
-      />
-    </svg>
-    <div class="hero-brand-center">
-      <img
-        src="/images/wasla-mark.png"
-        width="64"
-        height="64"
-        alt=""
-        class="hero-brand-symbol"
-        decoding="async"
-      />
-      <h2 class="hero-brand-name">{{ 'common.appName' | t }}</h2>
-      <p class="hero-brand-subtitle">{{ 'common.platformSubtitle' | t }}</p>
+  @if (flowStage() !== 'otp') {
+    <!-- Mobile & Tablet Ambient Hero Header -->
+    <div class="mobile-ambient-hero d-lg-none" aria-hidden="true">
+      <div class="hero-glow-layer"></div>
+      <svg class="hero-pulse-wave" viewBox="0 0 600 160" preserveAspectRatio="none">
+        <path
+          d="M0,80 C60,40 120,120 180,60 C220,20 260,140 300,80 C340,30 380,110 440,70 C500,30 550,110 600,75"
+          fill="none"
+          stroke="rgba(14, 147, 137, 0.45)"
+          stroke-width="2.5"
+        />
+        <path
+          d="M0,95 C70,60 140,130 210,85 C270,40 320,130 380,75 C450,20 520,120 600,90"
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.16)"
+          stroke-width="1.5"
+          stroke-dasharray="6 6"
+        />
+      </svg>
+      <div class="hero-brand-center">
+        <img
+          src="/images/wasla-mark.png"
+          width="64"
+          height="64"
+          alt=""
+          class="hero-brand-symbol"
+          decoding="async"
+        />
+        <h2 class="hero-brand-name">{{ 'common.appName' | t }}</h2>
+        <p class="hero-brand-subtitle">{{ 'common.platformSubtitle' | t }}</p>
+      </div>
     </div>
-  </div>
+  }
 
   <div class="auth-sheet-container">
-    <div class="sheet-drag-pill d-lg-none" aria-hidden="true"></div>
+    @if (flowStage() !== 'otp') {
+      <div class="sheet-drag-pill d-lg-none" aria-hidden="true"></div>
 
-    <!-- Top Bar: Back to Login & Role Switcher -->
-    <div class="registration-top-bar">
+      <!-- Top Bar: Back to Login & Role Switcher -->
+      <div class="registration-top-bar">
       @if (flowStage() === 'entry') {
         <button
           type="button"
@@ -135,26 +138,29 @@
         </a>
       </div>
     </div>
-
-    <!-- Shared Alerts / Banners -->
-    @if (neutralInfoBanner()) {
-      <div class="form-notice info onboarding-neutral-banner" role="status">
-        <p>{{ neutralInfoBanner() }}</p>
-      </div>
     }
 
-    @if (apiMessages().length) {
-      <div class="form-notice error" role="alert">
-        @for (message of apiMessages(); track message) {
-          <p>{{ message | t }}</p>
-        }
-      </div>
-    }
+    <!-- Shared Alerts / Banners (OTP stage renders compact inline feedback instead) -->
+    @if (flowStage() !== 'otp') {
+      @if (neutralInfoBanner()) {
+        <div class="form-notice info onboarding-neutral-banner" role="status">
+          <p>{{ neutralInfoBanner() }}</p>
+        </div>
+      }
 
-    @if (stepNotice()) {
-      <div class="form-notice error" role="alert">
-        <p>{{ stepNotice() }}</p>
-      </div>
+      @if (apiMessages().length) {
+        <div class="form-notice error" role="alert">
+          @for (message of apiMessages(); track message) {
+            <p>{{ message | t }}</p>
+          }
+        </div>
+      }
+
+      @if (stepNotice()) {
+        <div class="form-notice error" role="alert">
+          <p>{{ stepNotice() }}</p>
+        </div>
+      }
     }
 
     <!-- ══════════════════════════════════════════════════════════════════
@@ -366,64 +372,309 @@
     }
 
     <!-- ══════════════════════════════════════════════════════════════════
-         STAGE 2: VERIFY EMAIL OTP (`POST /api/v1/patient-onboarding/verify-email`)
+         STAGE 2: DEDICATED EMAIL OTP VERIFICATION (`POST /api/v1/patient-onboarding/verify-email`)
+         Two-column spacious desktop layout + clean single-column mobile layout
          ══════════════════════════════════════════════════════════════════ -->
     @if (flowStage() === 'otp') {
-      <section class="onboarding-stage-section" aria-labelledby="onboardingOtpHeading">
-        <header class="auth-form-heading">
-          <div class="auth-heading-eyebrow">
-            <span class="eyebrow-dot" aria-hidden="true"></span>
-            <span class="eyebrow-text">{{ emailStartModel().email }}</span>
+      <section class="otp-verify-shell" [dir]="uiLanguage.dir()" aria-labelledby="onboardingOtpHeading">
+        <!-- Compact Top Header (Standalone mode only; embedded mode uses parent AuthShell topbar) -->
+        @if (!embedded()) {
+          <header class="otp-topbar">
+            <div class="otp-topbar-inner">
+              <a
+                routerLink="/"
+                class="otp-brand-lockup"
+                [attr.aria-label]="'common.appName' | t"
+              >
+                <img
+                  src="/Wasla_Brand_Identity_Kit_v2/brand/wasla-symbol-transparent.png"
+                  width="32"
+                  height="32"
+                  [alt]="'common.appName' | t"
+                  class="otp-brand-img"
+                  decoding="async"
+                />
+                <span class="otp-brand-name">{{ 'common.appName' | t }}</span>
+              </a>
+
+              <button
+                type="button"
+                class="otp-topbar-back"
+                [disabled]="isSubmitting() || otpVerifiedSuccess()"
+                (click)="changeVerificationEmail()"
+                [attr.aria-label]="'onboarding.changeEmail' | t"
+              >
+                <svg
+                  class="otp-back-arrow"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                <span>{{ 'onboarding.changeEmail' | t }}</span>
+              </button>
+            </div>
+          </header>
+        }
+
+        <!-- Main Two-Column Grid (Desktop: Right Form + Left Illustration | Mobile: Form Only) -->
+        <div class="otp-layout-grid">
+          <!-- Form Column (Right on Desktop RTL / Centered on Mobile) -->
+          <div class="otp-form-col">
+            <div class="otp-form-inner">
+              <!-- Small Security / Check Icon -->
+              <div class="otp-badge-icon" [class.is-success]="otpVerifiedSuccess()" aria-hidden="true">
+                @if (otpVerifiedSuccess()) {
+                  <svg class="otp-check-svg" viewBox="0 0 28 28" width="26" height="26" fill="none">
+                    <path
+                      class="otp-check-path"
+                      d="M7 14.5l4.8 4.8L21 9.5"
+                      stroke="currentColor"
+                      stroke-width="2.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                } @else {
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                }
+              </div>
+
+              <!-- Heading & Supporting Text -->
+              <div class="otp-heading-block">
+                <h1 id="onboardingOtpHeading" class="otp-heading">
+                  {{ 'onboarding.verifyEmailHeading' | t }}
+                </h1>
+                <p class="otp-lead">{{ 'onboarding.verifyEmailPrompt' | t }}</p>
+
+                <!-- Dynamic Recipient Email + Change Email Link -->
+                <div class="otp-recipient-line">
+                  <span class="otp-recipient-email" dir="ltr">{{ emailStartModel().email }}</span>
+                  <button
+                    type="button"
+                    class="otp-change-link"
+                    [disabled]="isSubmitting() || otpVerifiedSuccess()"
+                    (click)="changeVerificationEmail()"
+                    data-testid="change-otp-email-btn"
+                  >
+                    {{ 'onboarding.changeEmail' | t }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Verification Form -->
+              <form class="otp-verify-form" (submit)="submitVerifyEmailOtp($event)" novalidate>
+                <!-- 6 Visual OTP Cells Backed by ONE Real Native Input -->
+                <div
+                  class="otp-cells-field"
+                  dir="ltr"
+                  [class.is-error]="!!otpErrorMessage()"
+                  [class.is-shaking]="otpShake()"
+                  [class.is-success]="otpVerifiedSuccess()"
+                  (click)="focusOtpInput(otpNativeInput)"
+                >
+                  <input
+                    #otpNativeInput
+                    id="otp-native-input"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    name="one-time-code"
+                    dir="ltr"
+                    class="otp-native-input"
+                    [value]="otpModel().otp"
+                    [disabled]="isSubmitting() || otpVerifiedSuccess()"
+                    [attr.aria-label]="'onboarding.otpAriaLabel' | t"
+                    [attr.aria-invalid]="!!otpErrorMessage()"
+                    [attr.aria-describedby]="otpErrorMessage() ? 'otp-error-msg' : null"
+                    (input)="updateOtpField($event)"
+                    (paste)="onOtpPaste($event)"
+                    (focus)="otpFocused.set(true)"
+                    (blur)="otpFocused.set(false)"
+                    data-testid="onboarding-otp-input"
+                  />
+
+                  <div class="otp-cells-grid" aria-hidden="true">
+                    @for (idx of otpSlots; track idx) {
+                      @let digit = otpModel().otp.charAt(idx);
+                      @let isFilled = digit !== '';
+                      @let isActive =
+                        otpFocused() &&
+                        !isSubmitting() &&
+                        !otpVerifiedSuccess() &&
+                        (otpModel().otp.length === idx ||
+                          (otpModel().otp.length === 6 && idx === 5));
+
+                      <div
+                        class="otp-cell"
+                        [class.is-filled]="isFilled"
+                        [class.is-active]="isActive"
+                      >
+                        @if (isFilled) {
+                          <span class="otp-cell-digit">{{ digit }}</span>
+                        } @else if (isActive) {
+                          <span class="otp-cell-caret"></span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Accessible Error Message (Only Shown When Relevant) -->
+                @if (otpErrorMessage()) {
+                  <p id="otp-error-msg" class="otp-error-banner" role="alert">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="15"
+                      height="15"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>{{ otpErrorMessage() }}</span>
+                  </p>
+                }
+
+                <!-- Primary Action Button (Fixed Dimensions During Loading) -->
+                <button
+                  type="submit"
+                  class="otp-primary-btn"
+                  [class.is-ready]="otpModel().otp.length === 6 && !isSubmitting() && !otpVerifiedSuccess()"
+                  [class.is-verified]="otpVerifiedSuccess()"
+                  [disabled]="isSubmitting() || otpVerifiedSuccess() || otpModel().otp.length !== 6"
+                  data-testid="submit-verify-otp"
+                >
+                  @if (otpVerifiedSuccess()) {
+                    <svg class="otp-btn-check" viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                      <path
+                        d="M5 12.5l4.5 4.5L19 7.5"
+                        stroke="currentColor"
+                        stroke-width="2.6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    <span>{{ 'onboarding.otpVerified' | t }}</span>
+                  } @else if (isSubmitting()) {
+                    <span class="otp-btn-spinner" aria-hidden="true"></span>
+                    <span>{{ 'onboarding.otpVerifying' | t }}</span>
+                  } @else {
+                    <span>{{ 'onboarding.verifyEmailCta' | t }}</span>
+                  }
+                </button>
+
+                <!-- Minimal Resend Code Section -->
+                <div class="otp-resend-section">
+                  <span class="otp-resend-prompt">{{ 'onboarding.didntReceiveCode' | t }}</span>
+                  @if (resendCooldownSeconds() > 0) {
+                    <span class="otp-resend-timer" aria-live="off">
+                      {{ 'onboarding.resendShort' | t }}
+                      <strong class="otp-timer-digits" dir="ltr">({{ resendCooldownSeconds() }}s)</strong>
+                    </span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="otp-resend-btn"
+                      [disabled]="isSubmitting() || otpVerifiedSuccess()"
+                      (click)="resendEmailOtp()"
+                      data-testid="resend-otp-btn"
+                    >
+                      {{ 'onboarding.resendShort' | t }}
+                    </button>
+                  }
+                </div>
+              </form>
+            </div>
           </div>
-          <h1 id="onboardingOtpHeading">{{ 'onboarding.verifyOtpTitle' | t }}</h1>
-          <p>{{ 'onboarding.verifyOtpSubtitle' | t }}</p>
-        </header>
 
-        <div class="onboarding-fields-stack">
-          <label class="form-field field-full">
-            <span>{{ 'onboarding.otpLabel' | t }} <span class="required-star">*</span></span>
-            <input
-              type="text"
-              inputmode="numeric"
-              maxlength="6"
-              dir="ltr"
-              class="otp-code-input"
-              [value]="otpModel().otp"
-              (input)="updateOtpField($event)"
-              placeholder="000000"
-              data-testid="onboarding-otp-input"
-            />
-            <small class="field-hint">{{ 'onboarding.otpValidityHint' | t }}</small>
-          </label>
+          <!-- Left Visual Illustration Column (Desktop / Laptop Only — Removed on Mobile) -->
+          <div class="otp-visual-col" aria-hidden="true">
+            <div class="otp-illustration-stage">
+              <svg
+                class="otp-illustration-svg"
+                viewBox="0 0 420 380"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <!-- Soft Background Shapes -->
+                <circle cx="210" cy="195" r="142" fill="#E6F7F6" />
+                <circle cx="96" cy="96" r="24" fill="#CCFBF1" />
+                <circle cx="332" cy="278" r="18" fill="#E0F2FE" />
+                <rect x="64" y="256" width="38" height="10" rx="5" fill="#CBD5E1" opacity="0.55" />
+                <rect x="314" y="96" width="46" height="10" rx="5" fill="#99F6E4" opacity="0.7" />
 
-          <div class="step-actions-row">
-            <button
-              type="button"
-              class="btn-step-prev"
-              [disabled]="resendCooldownSeconds() > 0 || isSubmitting()"
-              (click)="resendEmailOtp()"
-              data-testid="resend-otp-btn"
-            >
-              @if (resendCooldownSeconds() > 0) {
-                <span>
-                  {{ 'onboarding.resendOtpIn' | t }} ({{ resendCooldownSeconds() }}s)
-                </span>
-              } @else {
-                <span>{{ 'onboarding.resendOtpAction' | t }}</span>
-              }
-            </button>
+                <!-- Envelope Back Body -->
+                <rect x="92" y="138" width="236" height="156" rx="18" fill="#071C30" />
 
-            <button
-              type="button"
-              class="auth-submit"
-              [disabled]="isSubmitting() || otpModel().otp.length !== 6"
-              (click)="submitVerifyEmailOtp($event)"
-              data-testid="submit-verify-otp"
-            >
-              <span>{{
-                (isSubmitting() ? 'reservations.loading' : 'onboarding.verifyOtpAction') | t
-              }}</span>
-            </button>
+                <!-- Rising Verification Letter Card -->
+                <rect
+                  x="116"
+                  y="74"
+                  width="188"
+                  height="152"
+                  rx="14"
+                  fill="#FFFFFF"
+                  stroke="#E2E8F0"
+                  stroke-width="2"
+                />
+                <!-- Letter Lines -->
+                <rect x="148" y="106" width="124" height="10" rx="5" fill="#E2E8F0" />
+                <rect x="166" y="126" width="88" height="8" rx="4" fill="#F1F5F9" />
+                <!-- 6 Mini Code Dots Inside Letter -->
+                <rect x="140" y="150" width="18" height="22" rx="5" fill="#F0FDFA" stroke="#0BA5A0" stroke-width="1.5" />
+                <rect x="164" y="150" width="18" height="22" rx="5" fill="#F0FDFA" stroke="#0BA5A0" stroke-width="1.5" />
+                <rect x="188" y="150" width="18" height="22" rx="5" fill="#F0FDFA" stroke="#0BA5A0" stroke-width="1.5" />
+                <rect x="212" y="150" width="18" height="22" rx="5" fill="#F0FDFA" stroke="#0BA5A0" stroke-width="1.5" />
+                <rect x="236" y="150" width="18" height="22" rx="5" fill="#F0FDFA" stroke="#0BA5A0" stroke-width="1.5" />
+                <rect x="260" y="150" width="18" height="22" rx="5" fill="#F0FDFA" stroke="#0BA5A0" stroke-width="1.5" />
+
+                <!-- Envelope Front Flaps -->
+                <path
+                  d="M92 158L210 232L328 158V276C328 285.941 319.941 294 310 294H110C100.059 294 92 285.941 92 276V158Z"
+                  fill="#0D2E4D"
+                />
+                <path
+                  d="M92 276L176 210L210 232L244 210L328 276C325.5 286.5 318.5 294 310 294H110C101.5 294 94.5 286.5 92 276Z"
+                  fill="#123B61"
+                />
+
+                <!-- Verification Seal Badge (Top Right of Envelope) -->
+                <circle cx="308" cy="116" r="34" fill="#0BA5A0" />
+                <circle cx="308" cy="116" r="27" fill="#0D9488" />
+                <path
+                  d="M296 116.5L304.5 125L321 107.5"
+                  stroke="#FFFFFF"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
           </div>
         </div>
       </section>

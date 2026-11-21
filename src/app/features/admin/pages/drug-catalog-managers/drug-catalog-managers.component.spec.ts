@@ -153,7 +153,7 @@ describe('Drug catalog manager governance UI', () => {
   it('shows translated labels and direction in Arabic', async () => {
     TestBed.inject(LanguageService).setLanguage('ar');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('main').getAttribute('dir')).toBe('rtl');
+    expect(fixture.nativeElement.querySelector('.management-page').getAttribute('dir')).toBe('rtl');
     expect(fixture.nativeElement.textContent).toContain('مسؤولو دليل الأدوية');
   });
   it('renders inline split-view detail pane on desktop and closes on close()', async () => {

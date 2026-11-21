@@ -189,6 +189,13 @@ export class FamilyRequestsList {
     }
   }
 
+  protected getRoleLabel(role?: string | null): string {
+    if (!role) return '—';
+    const key = `familyFlow.relation.${role}`;
+    const translated = this.uiLanguage.t(key);
+    return translated === key ? role : translated;
+  }
+
   protected formatDate(value: string): string {
     const date = new Date(value);
     return Number.isNaN(date.getTime())

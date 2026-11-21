@@ -113,7 +113,19 @@ export class PracticeAllocationComponent implements OnChanges, OnDestroy {
   }
   chooseTarget(event: Event): void {
     this.targetId.set((event.target as HTMLSelectElement).value);
-    this.selectedStaff.set([]);
+    this.preselectEligibleStaff();
+  }
+  private preselectEligibleStaff(): void {
+    if (!this.targetAllowsStaff()) {
+      this.selectedStaff.set([]);
+      return;
+    }
+    const maxSeats = Math.max(0, this.target()?.availableReceptionSeats ?? this.staff().length);
+    this.selectedStaff.set(
+      this.staff()
+        .slice(0, maxSeats)
+        .map((s) => s.id),
+    );
   }
   toggleStaff(id: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
@@ -134,13 +146,15 @@ export class PracticeAllocationComponent implements OnChanges, OnDestroy {
         seq = this.generation;
       try {
         const staff = await firstValueFrom(this.api.allocationReceptionOptions());
-        if (id === this.practice().id && seq === this.generation)
+        if (id === this.practice().id && seq === this.generation) {
           this.staff.set(
             staff.filter(
               (s) =>
                 s.isActive && s.assignments.some((a) => a.isActive && a.doctorPracticeId === id),
             ),
           );
+          this.preselectEligibleStaff();
+        }
       } catch (error) {
         this.toast.error(
           this.language.t(parseApiErrors(error).messages[0] ?? 'common.requestFailed'),

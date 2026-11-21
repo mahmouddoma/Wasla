@@ -37,14 +37,32 @@
 
   } @else if (details(); as doctor) {
     @if (canViewSubscriptions()) {
-      <section class="py-3" aria-live="polite">
-        <a routerLink="/admin/subscriptions" [queryParams]="{search: doctor.email}">{{ 'subscriptions.manage' | t }}</a>
-        @if (subscriptionReadFailed()) { <p>{{ 'subscriptions.loadError' | t }}</p> }
-        @if (subscriptionSummary()?.subscription; as subscription) {
-          <p>{{ 'subscriptions.status' | t }}: {{ 'subscriptions.' + subscription.status | t }}</p>
-          @if (subscription.kind === 'Paid' && subscription.status === 'Pending') { <p>{{ 'subscriptions.paidAfterApproval' | t }}</p> }
-          @if (subscription.kind === 'Trial') { <p>{{ 'subscriptions.trial' | t }}: <time dir="ltr">{{ subscription.trialStartedAtUtc | date:'mediumDate' }} — {{ subscription.trialEndsAtUtc | date:'mediumDate' }}</time></p> }
-        }
+      <section class="subscription-summary-strip" aria-live="polite">
+        <div class="subscription-strip-info">
+          @if (subscriptionReadFailed()) {
+            <p class="strip-text strip-error">{{ 'subscriptions.loadError' | t }}</p>
+          } @else if (subscriptionSummary()?.subscription; as subscription) {
+            <span class="strip-status-pill">
+              {{ 'subscriptions.status' | t }}: <strong>{{ 'subscriptions.' + subscription.status | t }}</strong>
+            </span>
+            @if (subscription.kind === 'Paid' && subscription.status === 'Pending') {
+              <span class="strip-meta">{{ 'subscriptions.paidAfterApproval' | t }}</span>
+            }
+            @if (subscription.kind === 'Trial') {
+              <span class="strip-meta">
+                {{ 'subscriptions.trial' | t }}:
+                <time dir="ltr">{{ subscription.trialStartedAtUtc | date:'mediumDate':undefined:uiLanguage.currentLang() }} — {{ subscription.trialEndsAtUtc | date:'mediumDate':undefined:uiLanguage.currentLang() }}</time>
+              </span>
+            }
+          }
+        </div>
+        <a
+          class="btn-manage-subscription"
+          routerLink="/admin/subscriptions"
+          [queryParams]="{ search: doctor.email }"
+        >
+          {{ 'subscriptions.manage' | t }}
+        </a>
       </section>
     }
     <!-- Profile Hero Banner -->
@@ -95,8 +113,10 @@
             }
           </div>
           <h1>{{ uiLanguage.isRtl() ? doctor.nameAr : doctor.nameEn || doctor.nameAr }}</h1>
-          @if (doctor.nameEn) {
+          @if (uiLanguage.isRtl() && doctor.nameEn) {
             <p class="hero-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</p>
+          } @else if (!uiLanguage.isRtl() && doctor.nameAr && doctor.nameEn) {
+            <p class="hero-name-en" lang="ar" dir="rtl">{{ doctor.nameAr }}</p>
           }
         </div>
       </div>

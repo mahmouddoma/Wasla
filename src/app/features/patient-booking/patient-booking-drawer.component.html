@@ -1,12 +1,40 @@
-<app-side-drawer
-  [opened]="booking.opened()"
-  [title]="'booking.drawerTitle' | t"
-  [description]="'booking.choosePracticeHelp' | t"
-  [busy]="booking.submitting()"
-  width="580px"
-  (closed)="booking.close()"
->
-  <div class="booking-drawer-wrapper" [attr.aria-busy]="booking.loading() || booking.submitting()">
+@if (booking.opened()) {
+  <div
+    class="booking-modal-backdrop"
+    [class.is-inline]="inline()"
+    [dir]="language.dir()"
+    (click)="!inline() && !booking.submitting() && booking.close()"
+  >
+    <div
+      class="booking-modal-card"
+      [class.is-inline]="inline()"
+      [attr.role]="inline() ? 'region' : 'dialog'"
+      [attr.aria-modal]="inline() ? null : 'true'"
+      [attr.aria-label]="'booking.drawerTitle' | t"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="booking-modal-header">
+        <div class="booking-modal-title-wrap">
+          <span class="booking-modal-icon" aria-hidden="true">
+            <i class="fa-regular fa-calendar-check"></i>
+          </span>
+          <div>
+            <h2 class="booking-modal-title">{{ 'booking.drawerTitle' | t }}</h2>
+            <p class="booking-modal-desc">{{ 'booking.choosePracticeHelp' | t }}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="booking-modal-close"
+          [disabled]="booking.submitting()"
+          [attr.aria-label]="'common.close' | t"
+          (click)="booking.close()"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="booking-drawer-wrapper" [attr.aria-busy]="booking.loading() || booking.submitting()">
     @if (booking.messages().length) {
       <div role="alert" class="booking-notice">
         @for (message of booking.messages(); track $index) {
@@ -119,7 +147,34 @@
                 }
               </section>
             } @else {
-              <!-- Available Days -->
+              <!-- Compact Selected Appointment Banner (Fast-Confirm Mode when slot was picked from card) -->
+              @if (hasPreselectedSlot() && !editingSchedule()) {
+                <section class="selected-slot-banner" [attr.aria-label]="'booking.selectedAppointment' | t">
+                  <div class="selected-slot-info">
+                    <div class="selected-slot-icon" aria-hidden="true">
+                      <i class="fa-regular fa-calendar-check"></i>
+                    </div>
+                    <div class="selected-slot-texts">
+                      <span class="selected-slot-label">{{ 'booking.selectedAppointment' | t }}</span>
+                      <strong class="selected-slot-value">
+                        {{ formatDateDayName(booking.date()) }} {{ formatDateDayMonth(booking.date()) }} · {{ formatSlotTime(booking.time()) }}
+                      </strong>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-change-slot"
+                    [disabled]="booking.submitting()"
+                    (click)="editingSchedule.set(true)"
+                  >
+                    <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+                    <span>{{ 'booking.changeSlot' | t }}</span>
+                  </button>
+                </section>
+              }
+
+              <!-- Available Days & Times (Shown only when choosing/changing a slot) -->
+              @if (showSchedulePicker()) {
               <section class="booking-step-section">
                 <h3 class="step-heading">
                   <span class="step-num">{{ doctor.practices.length > 1 ? '2' : '1' }}</span>
@@ -177,7 +232,7 @@
                         class="slot-card-pill"
                         [disabled]="booking.submitting()"
                         [attr.aria-pressed]="booking.time() === slot.time"
-                        (click)="booking.chooseTime(slot.time)"
+                        (click)="pickTime(slot.time)"
                       >
                         <i class="fa-regular fa-clock" aria-hidden="true"></i>
                         <span>{{ formatSlotTime(slot.time) }}</span>
@@ -190,12 +245,15 @@
                   </div>
                 </section>
               }
+              }
 
               <!-- Visit Type, Patient & Price Options -->
               @if (booking.options(); as options) {
                 <section class="booking-step-section">
                   <h3 class="step-heading">
-                    <span class="step-num">{{ doctor.practices.length > 1 ? '4' : '3' }}</span>
+                    @if (showSchedulePicker()) {
+                      <span class="step-num">{{ doctor.practices.length > 1 ? '4' : '3' }}</span>
+                    }
                     <span>{{ 'booking.visitAndPrice' | t }}</span>
                   </h3>
 
@@ -315,5 +373,7 @@
         }
       }
     }
+      </div>
+    </div>
   </div>
-</app-side-drawer>
+}

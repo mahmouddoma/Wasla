@@ -1,4 +1,4 @@
-<main class="management-page admin-claims-workspace" [dir]="uiLanguage.dir()">
+<section class="management-page admin-claims-workspace" [dir]="uiLanguage.dir()">
   <app-page-header
     [heading]="'adminClaims.title' | t"
     [description]="'adminClaims.subtitle' | t"
@@ -259,8 +259,10 @@
                 </td>
 
                 <!-- Submitted Date -->
-                <td class="date-cell" dir="ltr">
-                  {{ item.submittedOnUtc }}
+                <td class="date-cell">
+                  <time [attr.datetime]="item.submittedOnUtc">{{
+                    item.submittedOnUtc | date: 'medium':undefined:uiLanguage.currentLang()
+                  }}</time>
                 </td>
 
                 <!-- Action Button -->
@@ -325,7 +327,9 @@
                 <svg class="date-icon" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                 </svg>
-                <span dir="ltr">{{ item.submittedOnUtc }}</span>
+                <time [attr.datetime]="item.submittedOnUtc">{{
+                  item.submittedOnUtc | date: 'medium':undefined:uiLanguage.currentLang()
+                }}</time>
               </div>
             </div>
 
@@ -384,11 +388,14 @@
     } @else {
       <!-- Empty State -->
       <div class="state-container empty-state" data-testid="claims-empty-state">
-        <div class="empty-icon-wrap" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-          </svg>
-        </div>
+        <img
+          src="/SVG-AVATAR/Doctors-amico.svg"
+          [alt]="'adminClaims.noClaimsTitle' | t"
+          class="empty-avatar-illustration"
+          width="150"
+          height="150"
+          loading="lazy"
+        />
         <h3 class="empty-title">{{ 'adminClaims.noClaimsTitle' | t }}</h3>
         <p class="empty-help-text">{{ 'adminClaims.noClaimsDesc' | t }}</p>
         <div class="empty-actions-row">
@@ -405,7 +412,7 @@
             </button>
           } @else {
             <button type="button" class="btn-reset-filters" (click)="loadClaims(1)">
-              {{ 'common.retry' | t }}
+              {{ 'common.refresh' | t }}
             </button>
           }
         </div>
@@ -416,6 +423,11 @@
 
     <!-- Master-Detail Side Pane (Side-by-side next to the table) -->
     @if (drawerOpen()) {
+      <div
+        class="wasla-detail-backdrop wasla-detail-backdrop--lg"
+        (click)="!isSubmittingDecision() && closeDrawer()"
+        aria-hidden="true"
+      ></div>
       <aside class="claims-detail-pane" [attr.aria-label]="'adminClaims.drawerTitle' | t">
         <header class="detail-pane-header">
           <div class="detail-pane-title-wrap">
@@ -514,8 +526,16 @@
                     />
                     <div class="candidate-info">
                       <strong class="candidate-name">{{ cand.nameAr }}</strong>
-                      <span class="candidate-meta" dir="ltr">
-                        {{ cand.dateOfBirth }} • {{ cand.gender }} • {{ cand.emailMasked || '—' }}
+                      <span class="candidate-meta">
+                        <span dir="ltr">{{ cand.dateOfBirth }}</span> •
+                        {{
+                          (cand.gender === 'Male'
+                            ? 'common.male'
+                            : cand.gender === 'Female'
+                              ? 'common.female'
+                              : 'common.unknown') | t
+                        }}
+                        • <span dir="ltr">{{ cand.emailMasked || '—' }}</span>
                       </span>
                     </div>
                   </label>
@@ -690,7 +710,7 @@
                     @if (entry.actorName) {
                       — {{ entry.actorName }}
                     }
-                    <small dir="ltr">({{ entry.timestampUtc }})</small>
+                    <small>({{ entry.timestampUtc | date: 'medium':undefined:uiLanguage.currentLang() }})</small>
                     @if (entry.note) {
                       <p class="history-note">{{ entry.note }}</p>
                     }
@@ -705,4 +725,4 @@
   </aside>
 }
   </div>
-</main>
+</section>

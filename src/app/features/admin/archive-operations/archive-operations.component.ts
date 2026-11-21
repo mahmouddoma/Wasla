@@ -266,7 +266,7 @@ export class ArchiveOperationsComponent implements OnInit {
       this.resumeModalOpen.set(false);
       await this.refreshHealth();
     } catch (err) {
-      this.toast.error(this.language.t('common.actionFailed') || 'Failed to resume archive worker');
+      this.toast.error(this.language.t('common.actionFailed'));
       await this.refreshHealth();
     } finally {
       this.isMutating.set(false);
@@ -323,7 +323,7 @@ export class ArchiveOperationsComponent implements OnInit {
         this.archiveHasMore.set(res.hasMore);
       }
     } catch {
-      this.toast.error(this.language.t('common.errorLoading') || 'Error loading archived records');
+      this.toast.error(this.language.t('common.errorLoading'));
     } finally {
       if (sequence === this.readSequence) this.loading.set(false);
     }
@@ -375,7 +375,7 @@ export class ArchiveOperationsComponent implements OnInit {
       this.auditHasMore.set(events.hasMore);
       this.auditOptions.set(options);
     } catch {
-      this.toast.error(this.language.t('common.errorLoading') || 'Error loading audit trail');
+      this.toast.error(this.language.t('common.errorLoading'));
     } finally {
       if (sequence === this.readSequence) this.loading.set(false);
     }
@@ -417,7 +417,7 @@ export class ArchiveOperationsComponent implements OnInit {
       );
       this.sensitiveSearchResults.set(results.items ?? []);
     } catch {
-      this.toast.error(this.language.t('common.errorLoading') || 'Failed sensitive access search');
+      this.toast.error(this.language.t('common.errorLoading'));
     } finally {
       this.sensitiveSearching.set(false);
     }
@@ -446,21 +446,22 @@ export class ArchiveOperationsComponent implements OnInit {
     if (isNaN(start) || isNaN(end) || end < start) return '—';
 
     const diffMs = end - start;
-    const isAr = this.language.currentLang() === 'ar';
-
     if (diffMs < 1000) {
-      return isAr ? '< 1 ثانية' : '< 1s';
+      return this.language.t('archiveOps.duration.underSecond');
     }
     const diffSec = Math.round(diffMs / 1000);
+    const secLabel = this.language.t('archiveOps.duration.seconds');
     if (diffSec < 60) {
-      return isAr ? `${diffSec} ثانية` : `${diffSec}s`;
+      return `${diffSec} ${secLabel}`;
     }
     const mins = Math.floor(diffSec / 60);
     const remSec = diffSec % 60;
+    const minLabel = this.language.t('archiveOps.duration.minutes');
     if (remSec === 0) {
-      return isAr ? `${mins} دقيقة` : `${mins}m`;
+      return `${mins} ${minLabel}`;
     }
-    return isAr ? `${mins} دقيقة و ${remSec} ثانية` : `${mins}m ${remSec}s`;
+    const conj = this.language.t('archiveOps.duration.and');
+    return conj ? `${mins} ${minLabel} ${conj} ${remSec} ${secLabel}` : `${mins} ${minLabel} ${remSec} ${secLabel}`;
   }
 
   getOutcomeStatusClass(outcome?: string | null): string {
@@ -484,67 +485,70 @@ export class ArchiveOperationsComponent implements OnInit {
 
   formatOutcome(outcome?: string | null): string {
     if (!outcome) return '—';
-    const isAr = this.language.currentLang() === 'ar';
-    const map: Record<string, { ar: string; en: string }> = {
-      Succeeded: { ar: 'ناجح', en: 'Succeeded' },
-      Success: { ar: 'ناجح', en: 'Success' },
-      Completed: { ar: 'مكتمل', en: 'Completed' },
-      CompletedWithExceptions: { ar: 'مكتمل مع استثناءات', en: 'Completed with Exceptions' },
-      Cancelled: { ar: 'ملغى', en: 'Cancelled' },
-      Failed: { ar: 'فشل', en: 'Failed' },
-      Pending: { ar: 'قيد الانتظار', en: 'Pending' },
-      Active: { ar: 'نشط', en: 'Active' },
-      Paused: { ar: 'متوقف مؤقتاً', en: 'Paused' },
+    const map: Record<string, string> = {
+      Succeeded: 'archiveOps.outcome.success',
+      Success: 'archiveOps.outcome.success',
+      Completed: 'archiveOps.outcome.completed',
+      CompletedWithExceptions: 'archiveOps.outcome.completedWithExceptions',
+      Cancelled: 'archiveOps.outcome.cancelled',
+      Failed: 'archiveOps.outcome.failed',
+      Pending: 'archiveOps.outcome.pending',
+      Active: 'archiveOps.outcome.active',
+      Paused: 'archiveOps.outcome.paused',
+      Expired: 'archiveOps.outcome.expired',
     };
-    return map[outcome] ? (isAr ? map[outcome].ar : map[outcome].en) : outcome;
+    const key = map[outcome];
+    return key ? this.language.t(key) : outcome;
   }
 
   formatEntityType(entity?: string | null): string {
     if (!entity) return '—';
-    const isAr = this.language.currentLang() === 'ar';
-    const map: Record<string, { ar: string; en: string }> = {
-      OperationalDay: { ar: 'اليوم التشغيلي', en: 'Operational Day' },
-      Ticket: { ar: 'تذكرة كشف', en: 'Ticket' },
-      Reservation: { ar: 'حجز عيادة', en: 'Reservation' },
-      Doctor: { ar: 'طبيب', en: 'Doctor' },
-      Practice: { ar: 'عيادة', en: 'Practice' },
-      Patient: { ar: 'مريض', en: 'Patient' },
-      Encounter: { ar: 'كشف طبي', en: 'Encounter' },
-      Subscription: { ar: 'اشتراك', en: 'Subscription' },
+    const map: Record<string, string> = {
+      OperationalDay: 'archiveOps.entity.operationalDay',
+      Ticket: 'archiveOps.entity.ticket',
+      Reservation: 'archiveOps.entity.reservation',
+      Doctor: 'archiveOps.entity.doctor',
+      Practice: 'archiveOps.entity.practice',
+      Patient: 'archiveOps.entity.patient',
+      Encounter: 'archiveOps.entity.encounter',
+      Subscription: 'archiveOps.entity.subscription',
     };
-    return map[entity] ? (isAr ? map[entity].ar : map[entity].en) : entity;
+    const key = map[entity];
+    return key ? this.language.t(key) : entity;
   }
 
   formatAction(action?: string | null): string {
     if (!action) return '—';
-    const isAr = this.language.currentLang() === 'ar';
-    const map: Record<string, { ar: string; en: string }> = {
-      OperationalDayClosed: { ar: 'إغلاق اليوم التشغيلي', en: 'Operational Day Closed' },
-      OperationalDayOpened: { ar: 'فتح اليوم التشغيلي', en: 'Operational Day Opened' },
-      TicketArchived: { ar: 'أرشفة تذكرة كشف', en: 'Ticket Archived' },
-      ReservationArchived: { ar: 'أرشفة حجز', en: 'Reservation Archived' },
-      TicketCreated: { ar: 'إنشاء تذكرة كشف', en: 'Ticket Created' },
-      ReservationCreated: { ar: 'إنشاء حجز', en: 'Reservation Created' },
-      LoginSucceeded: { ar: 'تسجيل دخول ناجح', en: 'Login Succeeded' },
-      LoginFailed: { ar: 'فشل تسجيل الدخول', en: 'Login Failed' },
-      SensitiveAccessLogged: { ar: 'تسجيل وصول حساس', en: 'Sensitive Access Logged' },
+    const map: Record<string, string> = {
+      OperationalDayClosed: 'archiveOps.action.operationalDayClosed',
+      OperationalDayOpened: 'archiveOps.action.operationalDayOpened',
+      TicketArchived: 'archiveOps.action.ticketArchived',
+      ReservationArchived: 'archiveOps.action.reservationArchived',
+      TicketCreated: 'archiveOps.action.ticketCreated',
+      ReservationCreated: 'archiveOps.action.reservationCreated',
+      LoginSucceeded: 'archiveOps.action.loginSucceeded',
+      LoginFailed: 'archiveOps.action.loginFailed',
+      SensitiveAccessLogged: 'archiveOps.action.sensitiveAccessLogged',
+      OperationalDayObserved: 'archiveOps.action.operationalDayObserved',
+      PatientRedacted: 'archiveOps.action.patientRedacted',
     };
-    if (map[action]) return isAr ? map[action].ar : map[action].en;
+    const key = map[action];
+    if (key) return this.language.t(key);
     return action.replace(/([a-z])([A-Z])/g, '$1 $2');
   }
 
   formatActor(actor?: string | null): string {
     if (!actor) return '—';
-    const isAr = this.language.currentLang() === 'ar';
-    const map: Record<string, { ar: string; en: string }> = {
-      System: { ar: 'النظام الآلي', en: 'System' },
-      SuperAdmin: { ar: 'المشرف العام', en: 'Super Admin' },
-      Admin: { ar: 'المسؤول', en: 'Admin' },
-      Doctor: { ar: 'طبيب', en: 'Doctor' },
-      Receptionist: { ar: 'موظف الاستقبال', en: 'Receptionist' },
-      Patient: { ar: 'مريض', en: 'Patient' },
+    const map: Record<string, string> = {
+      System: 'archiveOps.actor.system',
+      SuperAdmin: 'archiveOps.actor.superAdmin',
+      Admin: 'archiveOps.actor.admin',
+      Doctor: 'archiveOps.actor.doctor',
+      Receptionist: 'archiveOps.actor.reception',
+      Patient: 'archiveOps.actor.patient',
     };
-    return map[actor] ? (isAr ? map[actor].ar : map[actor].en) : actor;
+    const key = map[actor];
+    return key ? this.language.t(key) : actor;
   }
 
   private allowed(tab: 'operations' | 'archives' | 'audit'): boolean {

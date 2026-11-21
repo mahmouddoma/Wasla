@@ -536,8 +536,8 @@ p,
 /* ═══ Ergonomic 2-Column Queue Workspace Layout ═══ */
 .queue-split-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 390px;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
   align-items: start;
   margin-top: 18px;
 }
@@ -554,6 +554,7 @@ p,
 }
 
 .queue-col-station {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -561,12 +562,13 @@ p,
   top: 84px;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1120px) {
   .queue-split-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .queue-col-station {
     position: static;
+    order: -1;
   }
 }
 
@@ -1407,26 +1409,53 @@ p,
   background: var(--wasla-surface, #ffffff);
   border: 1px solid var(--wasla-border-subtle, #edf1f5);
   border-radius: var(--radius-card, 14px);
-  padding: 16px 20px;
+  padding: 12px 18px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
 }
 
 .queue-exceptions summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 0;
   cursor: pointer;
   user-select: none;
-  padding: 4px 0;
+}
+
+.queue-exceptions summary::-webkit-details-marker {
+  display: none;
+}
+
+.queue-exceptions summary::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: transform 0.2s ease;
+}
+
+.queue-exceptions[open] summary::after {
+  transform: rotate(180deg);
 }
 
 .exceptions-summary-header {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .exceptions-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--wasla-navy-950);
+  line-height: 1.3;
 }
 
 .exceptions-count-pill {
@@ -1574,30 +1603,32 @@ summary {
 .ticket-done,
 .reason-form {
   display: grid;
-  gap: 20px;
+  gap: 16px;
   min-width: 0;
 }
 .field {
   display: grid;
   gap: 8px;
   font-weight: 700;
-  margin-block: 12px;
+  font-size: 0.875rem;
+  color: var(--wasla-navy-900, #1e293b);
+  margin-block: 4px;
 }
 .field-input,
 .field-select {
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  border: 1px solid var(--wasla-border, #e3eaf0);
+  border: 1px solid var(--wasla-border, #e2e8f0);
   border-radius: var(--radius-control, 10px);
   padding: 10px 14px;
-  background: #ffffff;
+  background: #fcfdfe;
   color: var(--wasla-navy-950, #071c30);
   font: inherit;
-  font-size: 0.925rem;
+  font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(12, 39, 66, 0.03);
+  box-shadow: 0 1px 2px rgba(12, 39, 66, 0.02);
 }
 
 .field-input:hover,
@@ -1610,6 +1641,7 @@ summary {
   outline: none;
   border-color: var(--wasla-teal-600, #078c88);
   box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.12);
+  background: #ffffff;
 }
 .field-select {
   appearance: none;
@@ -1620,6 +1652,7 @@ summary {
   background-repeat: no-repeat;
   background-position: right 14px center;
 }
+:host-context([dir='rtl']) .field-select,
 [dir='rtl'] .field-select {
   background-position: left 14px center;
 }
@@ -1634,11 +1667,22 @@ summary {
 }
 .amount-due {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding-block: 16px;
-  border-block: 1px solid var(--wasla-border-subtle);
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wasla-slate, #64748b);
+}
+.amount-due strong {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--wasla-navy-950, #071c30);
 }
 fieldset {
   border: 0;
@@ -1647,32 +1691,51 @@ fieldset {
   min-width: 0;
 }
 legend {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 700;
+  color: var(--wasla-navy-900, #1e293b);
   margin-bottom: 8px;
 }
 .payment-methods {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
 }
 .payment-methods button {
-  flex: 1;
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 1px solid var(--wasla-border);
-  border-radius: var(--radius-control);
-  background: #fff;
-  color: var(--wasla-navy-950);
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: var(--radius-control, 10px);
+  background: #ffffff;
+  color: var(--wasla-navy-900, #1e293b);
   font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+.payment-methods button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 .payment-methods button[aria-pressed='true'] {
-  color: var(--wasla-teal-700, #047c79);
-  background: var(--wasla-teal-50, #f0fbfa);
+  color: #ffffff;
+  background: var(--wasla-teal-600, #078c88);
   border-color: var(--wasla-teal-600, #078c88);
-  box-shadow: 0 0 0 1px var(--wasla-teal-600, #078c88);
+  box-shadow: 0 2px 6px rgba(7, 140, 136, 0.22);
   font-weight: 800;
+}
+.walk-in-form details {
+  border-top: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  padding-top: 8px;
+}
+.walk-in-form details summary {
+  min-height: 36px;
+  padding-block: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wasla-navy-900, #1e293b);
 }
 /* ═══ Queue Walk-In Done: Hero Ticket & Confirmation ══════════════ */
 .ticket-done {
@@ -3719,6 +3782,17 @@ textarea:focus-visible {
   flex: 0 1 420px;
 }
 
+@container queue-workspace (max-width: 900px) {
+  .queue-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .queue-toolbar-end {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+}
+
 .queue-search-wrap {
   position: relative;
   flex: 1;
@@ -4425,7 +4499,7 @@ textarea:focus-visible {
 .queue-workspace-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 24px;
+  gap: 20px;
   align-items: start;
   width: 100%;
   min-width: 0;
@@ -4433,7 +4507,41 @@ textarea:focus-visible {
 }
 
 .queue-workspace-layout.has-walkin-open {
-  grid-template-columns: minmax(0, 1fr) 520px;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+}
+
+/* When Walk-In sidebar is open, prevent 3-column crush by stacking the inner queue split layout
+   and switching the 4-card stats strip into a balanced 2x2 grid */
+.queue-workspace-layout.has-walkin-open .queue-stats-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.queue-workspace-layout.has-walkin-open .queue-stat-card:nth-child(2) {
+  border-inline-end: none;
+}
+
+.queue-workspace-layout.has-walkin-open .queue-stat-card:nth-child(1),
+.queue-workspace-layout.has-walkin-open .queue-stat-card:nth-child(2) {
+  border-bottom: 1px solid var(--wasla-border-subtle, #edf1f5);
+}
+
+.queue-workspace-layout.has-walkin-open .queue-split-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.queue-workspace-layout.has-walkin-open .queue-col-station {
+  position: static;
+  order: -1;
+}
+
+.queue-workspace-layout.has-walkin-open .queue-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.queue-workspace-layout.has-walkin-open .queue-toolbar-end {
+  flex: 0 0 auto;
+  width: 100%;
 }
 
 .queue-board-column {
@@ -4449,7 +4557,7 @@ textarea:focus-visible {
   border: 1px solid var(--wasla-border-subtle, #edf1f5);
   border-radius: var(--radius-panel, 14px);
   box-shadow:
-    0 4px 24px -4px rgba(12, 39, 66, 0.08),
+    0 4px 20px -4px rgba(12, 39, 66, 0.06),
     0 1px 3px rgba(12, 39, 66, 0.03);
   position: sticky;
   top: 20px;
@@ -4479,7 +4587,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 18px 24px;
+  padding: 16px 20px;
   background: #ffffff;
   border-bottom: 1px solid var(--wasla-border-subtle, #edf1f5);
   position: sticky;
@@ -4491,6 +4599,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .sidebar-live-dot {
@@ -4498,37 +4607,40 @@ textarea:focus-visible {
   height: 8px;
   border-radius: 50%;
   background: var(--wasla-teal-500, #0ba5a0);
-  box-shadow: 0 0 0 3px rgba(11, 165, 160, 0.2);
+  flex-shrink: 0;
   display: inline-block;
 }
 
 .sidebar-heading {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.02rem;
   font-weight: 800;
   color: var(--wasla-navy-950, #071c30);
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .sidebar-heading i {
   color: var(--wasla-teal-600, #078c88);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .sidebar-close-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 8px;
   border: 1px solid var(--wasla-border-subtle, #edf1f5);
   background: var(--wasla-navy-50, #f8fafc);
   color: var(--wasla-slate, #64748b);
   cursor: pointer;
   font-size: 0.95rem;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 
@@ -4544,36 +4656,25 @@ textarea:focus-visible {
 }
 
 .sidebar-block-body {
-  padding: 20px 24px;
+  padding: 18px 20px;
 }
 
 /* -------------------------------------------------------------
-   Walkin Selected Patient Card
+   Walkin Selected Patient Card (Strict Neutral Border Invariant)
 ------------------------------------------------------------- */
 .selected-patient.walkin-selected-patient-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 16px 18px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid var(--wasla-border-subtle, #edf1f5);
-  border-radius: var(--radius-panel, 14px);
-  box-shadow: 0 1px 3px rgba(12, 39, 66, 0.04);
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+  border-radius: 12px;
   position: relative;
   overflow: hidden;
-  margin-bottom: 6px;
-}
-
-.selected-patient.walkin-selected-patient-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  inset-inline-start: 0;
-  width: 4px;
-  background: linear-gradient(180deg, var(--wasla-teal-500, #0ba5a0) 0%, var(--wasla-teal-600, #078c88) 100%);
-  border-radius: 4px;
+  margin-bottom: 4px;
 }
 
 .patient-card-left {
@@ -4823,6 +4924,25 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.walkin-visit-choices-mobile {
+  display: none;
+}
+
+.walkin-mobile-backdrop {
+  display: none;
+}
+
+@keyframes walkinSheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1180px) {
   .queue-workspace-layout.has-walkin-open {
     grid-template-columns: minmax(0, 1fr);
@@ -4831,7 +4951,461 @@ textarea:focus-visible {
   .walkin-inline-sidebar-block {
     position: static;
     max-height: none;
-    margin-top: 12px;
+    order: -1;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .queue-shell {
+    padding: 10px 12px 24px;
+    gap: 12px;
+  }
+
+  .queue-board {
+    gap: 12px;
+  }
+
+  /* ── 1. Compact Native Mobile Page Header Actions ── */
+  .queue-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .queue-actions .btn-action-refresh,
+  .queue-actions .btn-action-archive {
+    width: 100%;
+    height: 38px;
+    justify-content: center;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  :host ::ng-deep app-page-header .page-header__action-btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    font-size: 0.86rem;
+    border-radius: 10px;
+  }
+
+  /* ── 2. Sleek Compact Mobile KPI Strip (4 Metrics in 1 Clean Row) ── */
+  .queue-overview-panel {
+    border-radius: 14px;
+  }
+
+  .queue-progress-strip {
+    padding: 10px 14px;
+    gap: 6px;
+  }
+
+  .progress-title {
+    font-size: 0.8rem;
+  }
+
+  .progress-ratio,
+  .ratio-unit {
+    font-size: 0.74rem;
+  }
+
+  .queue-stats-grid,
+  .queue-workspace-layout.has-walkin-open .queue-stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .queue-stat-card {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding: 10px 4px;
+    gap: 5px;
+    border-bottom: none !important;
+    border-inline-end: 1px solid var(--wasla-border-subtle, #edf1f5) !important;
+  }
+
+  .queue-stat-card:last-child {
+    border-inline-end: none !important;
+  }
+
+  .queue-stat-card .stat-card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .queue-stat-card .stat-card-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .queue-stat-card .stat-card-content {
+    align-items: center;
+    width: 100%;
+    gap: 1px;
+  }
+
+  .queue-stat-card .stat-card-label {
+    font-size: 0.66rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .queue-stat-card .stat-card-value {
+    font-size: 0.82rem;
+    font-weight: 800;
+    max-width: 100%;
+  }
+
+  .queue-stat-card .stat-card-value small {
+    display: none;
+  }
+
+  .queue-stat-card .stat-card-hint {
+    display: none;
+  }
+
+  /* ── 3. Compact Mobile Exam Room Station & Waiting List ── */
+  .queue-split-layout {
+    gap: 12px;
+    margin-top: 0;
+  }
+
+  .queue-col-main,
+  .queue-col-station {
+    gap: 12px;
+  }
+
+  .queue-now-station,
+  .queue-waiting,
+  .queue-exceptions {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .queue-now-station .room-station-vacant {
+    margin-top: 10px;
+    gap: 10px;
+  }
+
+  .station-vacant-icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .station-vacant-heading {
+    font-size: 0.94rem;
+  }
+
+  .station-vacant-hint {
+    font-size: 0.78rem;
+  }
+
+  /* ── 4. Mobile Waiting Queue Toolbar (Full-Width Search + Icon TV Button) ── */
+  .queue-toolbar {
+    margin-block: 12px;
+    padding-bottom: 12px;
+    gap: 10px;
+  }
+
+  .queue-filter-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    padding: 3px;
+    border-radius: 10px;
+  }
+
+  .queue-tab-btn {
+    justify-content: center;
+    min-height: 36px;
+    padding: 6px 4px;
+    font-size: 0.78rem;
+  }
+
+  .queue-toolbar-end {
+    flex: 0 0 auto;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .queue-search-input {
+    height: 40px;
+    font-size: 0.84rem;
+  }
+
+  .btn-tv-mode {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 10px;
+  }
+
+  .btn-tv-mode span {
+    display: none;
+  }
+
+  .empty-waiting-block {
+    padding: 20px 12px;
+    gap: 10px;
+  }
+
+  .empty-waiting-block .state-empty-illustration {
+    width: 100px;
+    height: 84px;
+  }
+
+  .empty-waiting-block h3 {
+    font-size: 1rem;
+  }
+
+  .empty-waiting-block p {
+    font-size: 0.8rem;
+  }
+
+  /* ── 5. Native Mobile Bottom-Sheet for Walk-In Form ── */
+  .walkin-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: rgba(7, 28, 48, 0.48);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .walkin-inline-sidebar-block {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 1050;
+    max-height: 88dvh;
+    margin: 0;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    box-shadow: 0 -10px 36px rgba(7, 28, 48, 0.22);
+    animation: walkinSheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar-block-header {
+    position: sticky;
+    top: 0;
+    padding: 20px 16px 14px;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .sidebar-block-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+
+  .sidebar-heading {
+    font-size: 0.96rem;
+  }
+
+  .sidebar-block-body {
+    padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Native Mobile Touch List for Visit Type & Price (Replaces OS <select> Dropdown) */
+  .visit-choice-select-wrap {
+    display: none;
+  }
+
+  .walkin-visit-choices-mobile {
+    display: block;
+    margin: 0;
+  }
+
+  .visit-choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .visit-choice-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid var(--wasla-border-subtle, #e2e8f0);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: start;
+    font-family: inherit;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .visit-choice-option:active {
+    background: #f8fafc;
+  }
+
+  .visit-choice-option.is-selected {
+    background: rgba(11, 165, 160, 0.06);
+    border-color: var(--wasla-teal-600, #078c88);
+  }
+
+  .visit-choice-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid #94a3b8;
+    background: #ffffff;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.15s ease;
+  }
+
+  .visit-choice-option.is-selected .visit-choice-radio {
+    border-color: var(--wasla-teal-600, #078c88);
+    background: var(--wasla-teal-600, #078c88);
+    box-shadow: inset 0 0 0 3.5px #ffffff;
+  }
+
+  .visit-choice-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .visit-choice-name {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--wasla-navy-950, #071c30);
+  }
+
+  .visit-choice-segment {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--wasla-slate, #475569);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .visit-choice-option.is-selected .visit-choice-segment {
+    background: rgba(11, 165, 160, 0.14);
+    color: var(--wasla-teal-700, #047c79);
+  }
+
+  .visit-choice-price {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: var(--wasla-navy-950, #071c30);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .visit-choice-option.is-selected .visit-choice-price {
+    color: var(--wasla-teal-700, #047c79);
+  }
+
+  .selected-patient.walkin-selected-patient-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .btn-change-patient {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .walkin-patient-search-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-quick-reg-toggle {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .payment-methods {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .payment-methods button {
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+
+  .btn-submit-walk-in {
+    position: sticky;
+    bottom: 0;
+    height: 48px;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+
+  /* ── 6. Mobile Ticket Rows ── */
+  .ticket-card-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .ticket-cell-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid var(--wasla-border-subtle, #f1f5f9);
+  }
+
+  .ticket-cell-actions .btn {
+    flex: 1 1 auto;
+    min-height: 42px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .payment-methods {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-stats-grid,
+  .queue-workspace-layout.has-walkin-open .queue-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queue-stat-card:nth-child(2) {
+    border-inline-end: none !important;
+  }
+
+  .queue-stat-card:nth-child(1),
+  .queue-stat-card:nth-child(2) {
+    border-bottom: 1px solid var(--wasla-border-subtle, #edf1f5) !important;
   }
 }
 

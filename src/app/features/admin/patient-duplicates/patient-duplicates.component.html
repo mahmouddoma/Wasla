@@ -1,4 +1,4 @@
-<main class="duplicates-page" [dir]="language.dir()">
+<section class="duplicates-page" [dir]="language.dir()">
   <app-page-header
     [heading]="'duplicates.title' | t"
     [description]="'duplicates.description' | t"
@@ -83,10 +83,12 @@
           <label class="filter-select-integrated">
             <span class="filter-select-label">{{ 'common.status' | t }}</span>
             <div class="select-wrapper">
-              <select [value]="status()" [disabled]="loading()" (change)="setStatus($event)">
-                <option value="">{{ 'reservations.All' | t }}</option>
+              <select [value]="status()" (change)="setStatus($event)">
+                <option value="" [selected]="status() === ''">{{ 'reservations.All' | t }}</option>
                 @for (value of statuses; track value) {
-                  <option [value]="value">{{ 'duplicates.status.' + value | t }}</option>
+                  <option [value]="value" [selected]="status() === value">
+                    {{ 'duplicates.status.' + value | t }}
+                  </option>
                 }
               </select>
               <svg class="select-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -169,11 +171,14 @@
         </div>
       } @else if (!result()?.items?.length) {
         <div class="state-container empty-state">
-          <div class="empty-icon-wrap" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-            </svg>
-          </div>
+          <img
+            src="/SVG-AVATAR/Doctors-pana.svg"
+            [alt]="'duplicates.empty' | t"
+            class="state-empty-illustration empty-avatar-illustration"
+            width="150"
+            height="150"
+            loading="lazy"
+          />
           <h2 class="empty-title">{{ 'duplicates.empty' | t }}</h2>
           <p class="empty-help-text">{{ 'duplicates.emptyHelp' | t }}</p>
           <div class="empty-actions-row">
@@ -334,6 +339,11 @@
 
     <!-- Master-Detail Side Pane (Side-by-side next to the table) -->
     @if (drawerOpen() && canView()) {
+      <div
+        class="wasla-detail-backdrop wasla-detail-backdrop--lg"
+        (click)="!busy() && close()"
+        aria-hidden="true"
+      ></div>
       <aside class="duplicates-detail-pane" [attr.aria-label]="'duplicates.review' | t">
         <header class="detail-pane-header">
           <div class="detail-pane-title-wrap">
@@ -409,7 +419,13 @@
                 </div>
                 <div class="candidate-field">
                   <span class="field-label">{{ 'common.gender' | t }}</span>
-                  <span class="field-val">{{ patient.gender }}</span>
+                  <span class="field-val">{{
+                    (patient.gender === 'Male'
+                      ? 'common.male'
+                      : patient.gender === 'Female'
+                        ? 'common.female'
+                        : 'common.unknown') | t
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -469,4 +485,4 @@
     }
   </div>
 }
-</main>
+</section>

@@ -5,6 +5,7 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -52,6 +53,9 @@ export type PatientOnboardingStage =
   templateUrl: './patient-registration.html',
   styleUrls: ['../registration.css', './patient-registration.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.is-otp-stage]': "flowStage() === 'otp'",
+  },
 })
 export class PatientRegistration {
   private readonly toast = inject(ToastService);
@@ -59,6 +63,7 @@ export class PatientRegistration {
 
   readonly backToLogin = output<void>();
   readonly switchRole = output<'patient' | 'doctor'>();
+  readonly otpStageChange = output<boolean>();
   readonly embedded = input(false);
 
   protected onBackToLogin(event: Event): void {
@@ -90,6 +95,21 @@ export class PatientRegistration {
   });
   readonly otpModel = signal({
     otp: '',
+  });
+  readonly otpSlots = [0, 1, 2, 3, 4, 5] as const;
+  readonly otpFocused = signal(false);
+  readonly otpShake = signal(false);
+  readonly otpVerifiedSuccess = signal(false);
+  readonly otpDeletedSlot = signal<{ index: number; digit: string } | null>(null);
+  private otpShakeTimerId: ReturnType<typeof setTimeout> | null = null;
+  private otpDeleteAnimTimerId: ReturnType<typeof setTimeout> | null = null;
+
+  readonly otpErrorMessage = computed(() => {
+    const notice = this.stepNotice();
+    if (notice) return notice;
+    const msgs = this.apiMessages();
+    if (msgs.length) return this.uiLanguage.t(msgs[0]);
+    return '';
   });
   readonly verificationRequestId = signal('');
   readonly emailVerificationToken = signal('');
@@ -229,7 +249,14 @@ export class PatientRegistration {
   private readonly idempotencyStore = new Map<string, { fingerprint: string; key: string }>();
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.clearResendTimer());
+    effect(() => {
+      this.otpStageChange.emit(this.flowStage() === 'otp');
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.clearResendTimer();
+      this.clearOtpAnimTimers();
+    });
     this.initFromRoute();
   }
 
@@ -304,8 +331,99 @@ export class PatientRegistration {
   }
 
   updateOtpField(event: Event): void {
-    const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 6);
-    this.otpModel.set({ otp: val });
+    const input = event.target as HTMLInputElement;
+    const sanitized = input.value.replace(/[^0-9]/g, '').slice(0, 6);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+    this.applyOtpValue(sanitized);
+  }
+
+  onOtpPaste(event: ClipboardEvent): void {
+    const raw = event.clipboardData?.getData('text') ?? '';
+    if (!raw) return;
+    const digits = raw.replace(/[^0-9]/g, '').slice(0, 6);
+    if (raw !== digits) {
+      event.preventDefault();
+      const input = event.target as HTMLInputElement | null;
+      if (input) {
+        input.value = digits;
+      }
+      this.applyOtpValue(digits);
+    }
+  }
+
+  focusOtpInput(inputEl: HTMLInputElement | null): void {
+    if (!inputEl || inputEl.disabled) return;
+    inputEl.focus();
+    const len = inputEl.value.length;
+    try {
+      inputEl.setSelectionRange(len, len);
+    } catch {
+      // Ignore selection range errors on unsupported input states
+    }
+  }
+
+  changeVerificationEmail(): void {
+    if (this.isSubmitting()) return;
+    this.clearFeedback();
+    this.clearOtpAnimTimers();
+    this.otpShake.set(false);
+    this.otpVerifiedSuccess.set(false);
+    this.otpDeletedSlot.set(null);
+    this.otpModel.set({ otp: '' });
+    this.flowStage.set('email');
+  }
+
+  private applyOtpValue(next: string): void {
+    const prev = this.otpModel().otp;
+    if (next.length < prev.length) {
+      const deletedIndex = next.length;
+      const deletedDigit = prev[deletedIndex] ?? '';
+      if (this.otpDeleteAnimTimerId !== null) {
+        clearTimeout(this.otpDeleteAnimTimerId);
+      }
+      this.otpDeletedSlot.set({ index: deletedIndex, digit: deletedDigit });
+      this.otpDeleteAnimTimerId = setTimeout(() => {
+        this.otpDeletedSlot.set(null);
+        this.otpDeleteAnimTimerId = null;
+      }, 190);
+    } else if (next.length > prev.length) {
+      this.otpDeletedSlot.set(null);
+    }
+
+    if (this.stepNotice() || this.apiMessages().length || this.otpShake()) {
+      this.stepNotice.set('');
+      this.apiMessages.set([]);
+      this.otpShake.set(false);
+    }
+    this.otpModel.set({ otp: next });
+  }
+
+  private triggerOtpShake(): void {
+    if (this.otpShakeTimerId !== null) {
+      clearTimeout(this.otpShakeTimerId);
+      this.otpShakeTimerId = null;
+    }
+    this.otpShake.set(false);
+    this.otpShakeTimerId = setTimeout(() => {
+      this.otpShake.set(true);
+      this.otpShakeTimerId = setTimeout(() => {
+        this.otpShake.set(false);
+        this.otpShakeTimerId = null;
+      }, 420);
+    }, 10);
+  }
+
+  private clearOtpAnimTimers(): void {
+    if (this.otpShakeTimerId !== null) {
+      clearTimeout(this.otpShakeTimerId);
+      this.otpShakeTimerId = null;
+    }
+    if (this.otpDeleteAnimTimerId !== null) {
+      clearTimeout(this.otpDeleteAnimTimerId);
+      this.otpDeleteAnimTimerId = null;
+    }
   }
 
   updateClaimField(
@@ -391,19 +509,24 @@ export class PatientRegistration {
 
   async resendEmailOtp(): Promise<void> {
     if (this.resendCooldownSeconds() > 0 || this.isSubmitting()) return;
+    const wasOnOtp = this.flowStage() === 'otp';
     await this.submitStartEmailVerification();
+    if (wasOnOtp && !this.stepNotice() && !this.apiMessages().length) {
+      this.toast.success(this.uiLanguage.t('onboarding.neutralOtpSentNotice'));
+    }
   }
 
   // === Step 2: Verify Email OTP ===
 
   async submitVerifyEmailOtp(event: Event): Promise<void> {
     event.preventDefault();
-    if (this.isSubmitting()) return;
+    if (this.isSubmitting() || this.otpVerifiedSuccess()) return;
     this.clearFeedback();
 
     const otp = this.otpModel().otp.trim();
     if (otp.length !== 6) {
       this.stepNotice.set(this.uiLanguage.t('onboarding.otpSixDigitsRequired'));
+      this.triggerOtpShake();
       return;
     }
 
@@ -425,6 +548,17 @@ export class PatientRegistration {
       }
       this.resendActivationEmail.set(verifiedEmail);
 
+      // Brief animated checkmark confirmation before proceeding through existing flow
+      this.otpVerifiedSuccess.set(true);
+      const prefersReduced =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReduced) {
+        await new Promise((resolve) => setTimeout(resolve, 480));
+      }
+      this.otpVerifiedSuccess.set(false);
+
       // If user re-verified specifically to check or resubmit an existing claim
       const returnStage = this.pendingReturnStage();
       if (returnStage) {
@@ -439,6 +573,7 @@ export class PatientRegistration {
       this.routeByNextAction(response.nextAction);
     } catch (error) {
       this.handleOnboardingError(error);
+      this.triggerOtpShake();
     } finally {
       this.isSubmitting.set(false);
     }

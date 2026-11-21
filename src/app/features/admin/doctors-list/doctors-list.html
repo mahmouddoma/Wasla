@@ -262,9 +262,11 @@
               }
 
               <div class="doctor-sub-cluster">
-                <span class="doctor-code-badge">{{ doctorCode(doctor) }}</span>
-                @if (doctor.nameEn) {
+                <span class="doctor-code-badge" dir="ltr">{{ doctorCode(doctor) }}</span>
+                @if (uiLanguage.isRtl() && doctor.nameEn) {
                 <span class="doctor-name-en" lang="en" dir="ltr">{{ doctor.nameEn }}</span>
+                } @else if (!uiLanguage.isRtl() && doctor.nameAr && doctor.nameEn) {
+                <span class="doctor-name-en" lang="ar" dir="rtl">{{ doctor.nameAr }}</span>
                 }
               </div>
             </div>
@@ -278,7 +280,7 @@
                 <rect x="2" y="4" width="20" height="16" rx="2" />
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
-              <span class="contact-text-truncate">{{ doctor.email }}</span>
+              <span class="contact-text-truncate" dir="ltr">{{ doctor.email }}</span>
             </a>
             <a class="contact-pill-link contact-phone" [href]="'tel:' + doctor.phone" dir="ltr" [title]="doctor.phone">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
@@ -288,7 +290,7 @@
               </svg>
               <span class="contact-phone-text">{{ doctor.phone }}</span>
             </a>
-            <span class="demographics-line">{{ doctor.age }} {{ 'ui.full.5' | t }} · {{ doctor.gender === 'Male' ?
+            <span class="demographics-line">{{ doctor.age }} {{ 'ui.full.5' | t }} {{ doctor.gender === 'Male' ?
               uiLanguage.t('register.male') : uiLanguage.t('register.female') }}</span>
           </div>
 
@@ -555,6 +557,11 @@
 
     <!-- Doctor Details Pane (Master-Detail side-by-side next to the list/grid) -->
     @if (selectedDoctor(); as selected) {
+      <div
+        class="wasla-detail-backdrop"
+        (click)="!(doctorReview()?.busy() ?? false) && closeDoctorDrawer()"
+        aria-hidden="true"
+      ></div>
       <aside class="doctors-detail-pane" [attr.aria-label]="selected.nameAr || ('common.theDoctor' | t)">
         <header class="detail-pane-header">
           <div class="detail-pane-title-wrap">

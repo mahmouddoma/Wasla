@@ -242,7 +242,7 @@
             <tr>
               <th scope="col">{{ 'review.parties' | t }}</th>
               <th scope="col">{{ 'review.relationshipType' | t }}</th>
-              <th scope="col">{{ 'common.statusLabel' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
               <th scope="col">{{ 'review.revision' | t }}</th>
               <th scope="col">{{ 'review.submittedAt' | t }}</th>
               <th scope="col" class="action-column"></th>
@@ -255,10 +255,16 @@
                 [class.is-selected-row]="selectedRequestId() === item.requestId"
                 tabindex="0"
                 (click)="
-                  openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)
+                  openReviewDrawer(
+                    item.requestId,
+                    item.requesterNameAr + (uiLanguage.isRtl() ? ' ← ' : ' → ') + item.targetNameAr
+                  )
                 "
                 (keydown.enter)="
-                  openReviewDrawer(item.requestId, item.requesterNameAr + ' ← ' + item.targetNameAr)
+                  openReviewDrawer(
+                    item.requestId,
+                    item.requesterNameAr + (uiLanguage.isRtl() ? ' ← ' : ' → ') + item.targetNameAr
+                  )
                 "
               >
                 <!-- Parties -->
@@ -266,13 +272,13 @@
                   <div class="parties-cell">
                     <span class="parties-names">
                       <strong>{{ item.requesterNameAr }}</strong>
-                      <span class="relation-arrow">←</span>
+                      <span class="relation-arrow">{{ uiLanguage.isRtl() ? '←' : '→' }}</span>
                       <span>{{ item.targetNameAr }}</span>
                     </span>
                     <span class="parties-roles">
-                      {{ item.requesterClaimedRole }}
-                      <span class="relation-arrow">←</span>
-                      {{ item.targetClaimedRole }}
+                      {{ getRoleLabel(item.requesterClaimedRole) }}
+                      <span class="relation-arrow">{{ uiLanguage.isRtl() ? '←' : '→' }}</span>
+                      {{ getRoleLabel(item.targetClaimedRole) }}
                     </span>
                   </div>
                 </td>
@@ -441,6 +447,11 @@
 
     <!-- Master-Detail Side Pane (Side-by-side next to the table) -->
     @if (selectedRequestId(); as reqId) {
+      <div
+        class="wasla-detail-backdrop wasla-detail-backdrop--lg"
+        (click)="closeReviewDrawer()"
+        aria-hidden="true"
+      ></div>
       <aside class="family-requests-detail-pane" [attr.aria-label]="selectedRequestTitle() || ('family.relationshipRequest' | t)">
         <header class="detail-pane-header">
           <div class="detail-pane-title-wrap">

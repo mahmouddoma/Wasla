@@ -121,7 +121,13 @@ export class MySubscriptionComponent {
   }
   getContractClinicName(contract: SubscriptionContract): string {
     if (contract.practices && contract.practices.length > 0) {
-      return contract.practices.map((p: { nameAr?: string; nameEn?: string | null }) => p.nameAr || p.nameEn || '').filter(Boolean).join(' · ');
+      const isRtl = this.language.isRtl();
+      return contract.practices
+        .map((p: { nameAr?: string; nameEn?: string | null }) =>
+          isRtl ? p.nameAr || p.nameEn || '' : p.nameEn || p.nameAr || '',
+        )
+        .filter(Boolean)
+        .join(' · ');
     }
     return '';
   }
@@ -132,9 +138,16 @@ export class MySubscriptionComponent {
     this.state.selectContract('');
   }
   practiceName(id: string): string {
+    const practice = this.state
+      .selectedContract()
+      ?.practices.find((p) => p.practiceId === id) as
+      | { nameAr?: string; nameEn?: string | null }
+      | undefined;
+    if (!practice) return this.language.t('subscriptions.practice');
     return (
-      this.state.selectedContract()?.practices.find((p) => p.practiceId === id)?.nameAr ??
-      this.language.t('subscriptions.practice')
+      (this.language.isRtl()
+        ? practice.nameAr || practice.nameEn
+        : practice.nameEn || practice.nameAr) || this.language.t('subscriptions.practice')
     );
   }
   async prepareRenewal(): Promise<void> {

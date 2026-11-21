@@ -1,4 +1,8 @@
-<div class="wasla-auth-page auth-right-container" [dir]="langService.dir()">
+<div
+  class="wasla-auth-page auth-right-container"
+  [class.is-otp-verification]="isOtpVerificationActive()"
+  [dir]="langService.dir()"
+>
   <!-- Accessible Semantic Page Heading (for Screen Readers & Standards) -->
   <h1 class="sr-only visually-hidden">{{ 'login.minimalTitle' | t }}</h1>
 
@@ -165,7 +169,7 @@
             <div class="laptop-lid">
               <!-- Webcam Dot -->
               <div class="laptop-camera" aria-hidden="true"></div>
-              <!-- Crisp System UI Screen -->
+              <!-- Crisp System UI Screen (Brand Reveal Video -> Crossfade to Live Dashboard) -->
               <div class="laptop-screen">
                 <img
                   src="/showcase/showcase-dashboard.png"
@@ -176,6 +180,18 @@
                   width="2720"
                   height="1700"
                 />
+                <video
+                  class="laptop-screen-video"
+                  [class.is-hidden]="!brandRevealPlaying()"
+                  src="/assets/videos/wasla-brand-reveal.mp4"
+                  autoplay
+                  muted
+                  playsinline
+                  preload="auto"
+                  aria-hidden="true"
+                  (ended)="onBrandRevealEnded()"
+                  (error)="onBrandRevealEnded()"
+                ></video>
                 <!-- Glass Glare Reflection -->
                 <div class="laptop-screen-glare" aria-hidden="true"></div>
               </div>
@@ -742,6 +758,7 @@
                 [embedded]="true"
                 (backToLogin)="setMode('login')"
                 (switchRole)="setMode($event)"
+                (otpStageChange)="isOtpVerificationActive.set($event)"
               />
             </div>
           }

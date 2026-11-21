@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PracticeQueue, PracticeTicket } from '../../../../domains/tickets';
@@ -1056,7 +1056,7 @@ describe('P2 Queue request scope', () => {
     expect(c['selected']()).toBeNull();
   });
 
-  it('registers a new patient inline during walk-in and transitions immediately to visit choices', async () => {
+  it('navigates to reception patient registration with queue return handoff during walk-in', async () => {
     grants = [
       'PracticeTickets.View',
       'PracticeTickets.CreateWalkIn',
@@ -1068,39 +1068,54 @@ describe('P2 Queue request scope', () => {
     const c = fixture.componentInstance;
     expect(c['canRegisterPatient']()).toBe(true);
 
-    c['startPatientRegistration']({ name: 'محمود دومه', phoneNumber: '0102010111' });
-    expect(c['walkInMode']()).toBe('create');
-    expect(c['patientCreateModel']().nameAr).toBe('محمود دومه');
-    expect(c['patientCreateModel']().phoneNumber).toBe('0102010111');
+    const router = TestBed.inject(Router);
+    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    c['patientCreateModel'].update((m) => ({
-      ...m,
-      dateOfBirth: '1992-05-15',
-      gender: 'Male',
-    }));
+    c['startPatientRegistration']({ name: 'محمود دومه', phoneNumber: '0102010111' });
+
+    expect(navSpy).toHaveBeenCalledWith(['/reception/patients'], {
+      queryParams: {
+        action: 'new',
+        returnTo: 'queue',
+        practiceId: 'a',
+      },
+    });
+  });
+
+  it('stops polling and prevents repeated queue or walk-in requests when queue fails with HTTP 403 Ticket.AccessDenied', async () => {
+    grants = ['PracticeTickets.View', 'PracticeTickets.CreateWalkIn', 'PracticeTickets.RecordPayment'];
+    await context.refresh();
+    api.queue.mockClear();
+    api.walkInOptions.mockClear();
+    api.queue.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: {
+              errors: [{ code: 'Ticket.AccessDenied', message: 'You are not authorized.' }],
+            },
+          }),
+      ),
+    );
+
+    const c = fixture.componentInstance;
+    await c['selectPractice']('a');
     fixture.detectChanges();
 
-    const event = new Event('submit', { cancelable: true });
-    await c['createWalkInPatient'](event);
+    expect(api.queue).toHaveBeenCalledTimes(1);
+    expect(api.walkInOptions).not.toHaveBeenCalled();
+    expect(c['queueAccessDenied']()).toBe(true);
+    expect(c['walkInAccessDenied']()).toBe(true);
 
-    expect(patientsApi.create).toHaveBeenCalledWith({
-      nameAr: 'محمود دومه',
-      nameEn: '',
-      dateOfBirth: '1992-05-15',
-      gender: 'Male',
-      phoneNumber: '0102010111',
-      email: '',
-      primaryContactNameAr: '',
-      primaryContactPhoneNumber: '',
-      primaryContactRelationshipType: 'Guardian',
-      primaryContactLinkedPatientId: '',
-      primaryContactIsPrimary: true,
-      doctorPracticeId: 'a',
-    });
+    // Triggering window focus / silent poll must not re-fire 403 requests
+    c['refreshNow']();
+    await c['syncQueueSilently']();
+    expect(api.queue).toHaveBeenCalledTimes(1);
 
-    expect(c['walkInMode']()).toBe('search');
-    expect(c['walkInModel']().patientId).toBe('p-new');
-    expect(c['selectedPatient']()?.patientId).toBe('p-new');
-    expect(c['selectedPatient']()?.nameAr).toBe('محمود دومه');
+    // Shows translated permission-denied heading
+    expect(fixture.nativeElement.textContent).toContain(
+      c['language'].t('tickets.accessDeniedTitle'),
+    );
   });
 });

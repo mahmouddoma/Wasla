@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthSession } from '../../../core/auth/auth-session';
@@ -24,7 +25,7 @@ import { PageHeader } from '../../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-patient-claims',
-  imports: [TranslatePipe, PageHeader],
+  imports: [DatePipe, TranslatePipe, PageHeader],
   templateUrl: './patient-claims.component.html',
   styleUrl: './patient-claims.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

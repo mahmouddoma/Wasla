@@ -191,8 +191,11 @@ export class DrugCatalogManagersComponent implements OnInit, OnDestroy {
       return;
     this.form.markAllAsTouched();
     const value = this.form.getRawValue();
-    if (this.form.invalid || (creating && value.initialPassword !== value.confirmPassword)) {
-      this.messages.set(['medications.invalidForm']);
+    const mismatch = creating && !!value.initialPassword && value.initialPassword !== value.confirmPassword;
+    if (this.form.invalid || mismatch) {
+      const errorKey = mismatch ? 'common.passwordMismatch' : 'common.fillRequiredFields';
+      this.messages.set([errorKey]);
+      this.toast.error(errorKey);
       return;
     }
     this.busy.set(true);

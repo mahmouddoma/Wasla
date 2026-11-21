@@ -49,8 +49,49 @@ export class WaslaLandingComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
   private sectionObserver: IntersectionObserver | null = null;
+  private heroVideoObserver: IntersectionObserver | null = null;
+  private pausedByViewport = false;
 
   protected readonly openFaqId = signal<string | null>('faq-1');
+  protected readonly introMuted = signal<boolean>(true);
+  protected readonly introEnded = signal<boolean>(false);
+  protected readonly introVideoFailed = signal<boolean>(false);
+  protected readonly introReducedMotion = signal<boolean>(false);
+  protected readonly introAutoplayBlocked = signal<boolean>(false);
+
+  protected toggleIntroSound(video: HTMLVideoElement): void {
+    const nextMuted = !this.introMuted();
+    this.introMuted.set(nextMuted);
+    video.muted = nextMuted;
+    if (!nextMuted && (video.ended || video.paused)) {
+      video.currentTime = 0;
+      this.introEnded.set(false);
+      this.introAutoplayBlocked.set(false);
+      void video.play().catch(() => undefined);
+    }
+  }
+
+  protected replayIntro(video: HTMLVideoElement): void {
+    this.introEnded.set(false);
+    this.introAutoplayBlocked.set(false);
+    this.pausedByViewport = false;
+    video.currentTime = 0;
+    void video.play().catch(() => undefined);
+  }
+
+  protected onIntroPlay(): void {
+    this.introAutoplayBlocked.set(false);
+    this.introEnded.set(false);
+  }
+
+  protected onIntroEnded(): void {
+    this.introEnded.set(true);
+    this.pausedByViewport = false;
+  }
+
+  protected onIntroError(): void {
+    this.introVideoFailed.set(true);
+  }
 
   protected readonly catalog = signal<CommercialCatalog | null>(null);
   protected readonly loadingCatalog = signal<boolean>(true);
@@ -103,11 +144,13 @@ export class WaslaLandingComponent {
 
   constructor() {
     afterNextRender(() => {
+      this.initHeroVideo();
       this.initLandingAnimations();
     });
 
     this.destroyRef.onDestroy(() => {
       this.sectionObserver?.disconnect();
+      this.heroVideoObserver?.disconnect();
     });
 
     void this.loadCatalog();
@@ -142,6 +185,55 @@ export class WaslaLandingComponent {
     );
   }
 
+  private initHeroVideo(): void {
+    if (this.prefersReducedMotion()) {
+      this.introReducedMotion.set(true);
+      return;
+    }
+
+    const root = this.elementRef.nativeElement;
+    const video = root.querySelector<HTMLVideoElement>('#hero-brand-video');
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.loop = true;
+
+    const tryAutoplay = () => {
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          this.introAutoplayBlocked.set(true);
+        });
+      }
+    };
+
+    tryAutoplay();
+    video.addEventListener('canplay', tryAutoplay, { once: true });
+
+    const heroSection = root.querySelector<HTMLElement>('.hero-section');
+    if (heroSection && 'IntersectionObserver' in window) {
+      this.heroVideoObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry) return;
+          if (!entry.isIntersecting) {
+            if (!video.paused) {
+              video.pause();
+              this.pausedByViewport = true;
+            }
+          } else if (this.pausedByViewport) {
+            this.pausedByViewport = false;
+            void video.play().catch(() => undefined);
+          }
+        },
+        { threshold: 0.15 },
+      );
+      this.heroVideoObserver.observe(heroSection);
+    }
+  }
+
   private initLandingAnimations(): void {
     if (this.prefersReducedMotion()) return;
 
@@ -152,12 +244,12 @@ export class WaslaLandingComponent {
     if (heroTargets.length) {
       gsap.fromTo(
         heroTargets,
-        { opacity: 0, y: 16 },
+        { opacity: 0, y: 12 },
         {
           opacity: 1,
           y: 0,
-          duration: 0.45,
-          stagger: 0.06,
+          duration: 0.3,
+          stagger: 0.05,
           ease: 'power2.out',
           overwrite: 'auto',
           clearProps: 'transform,opacity',

@@ -71,6 +71,7 @@ export class AdminSubscriptionsComponent implements OnDestroy {
   query: SubscriptionListQuery = {
     pageNumber: 1,
     pageSize: 20,
+    status: '',
     search:
       inject(ActivatedRoute, { optional: true })?.snapshot.queryParamMap.get('search') ?? undefined,
   };
@@ -219,7 +220,7 @@ export class AdminSubscriptionsComponent implements OnDestroy {
   }
 
   clearFilters(): void {
-    this.query = { pageNumber: 1, pageSize: 20 };
+    this.query = { pageNumber: 1, pageSize: 20, status: '' };
     void this.load();
   }
   async inspect(id: string): Promise<void> {
